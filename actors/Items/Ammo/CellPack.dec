@@ -1,0 +1,109 @@
+ACTOR NewCellPack : CustomInventory Replaces CellPack
+{
+	Game Doom
+	Scale 1.0
+	-COUNTITEM
+	+DONTGIB
+	+FLOORCLIP
+	States
+	{
+		Spawn:
+			TNT1 A 0
+			TNT1 A 1 ACS_NamedExecuteAlways("SmartScavengerAmmoScript",0)
+		Deciding:
+			TNT1 A 1
+			Loop
+		SpawnNormal:
+			TNT1 A 1 A_SpawnItemEx("NormalCellPack",0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288)
+			Stop
+		SpawnSmartScav:
+			TNT1 A 1 A_SpawnItemEx("SmartCellPack",0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288)
+			Stop
+	}
+}
+
+ACTOR SmartCellPack : SwitchableDecoration
+{
+	+LOOKALLAROUND
+	+USESPECIAL
+	+DONTGIB
+	+FLOORCLIP
+	Activation THINGSPEC_Activate
+	Radius 5
+	States
+	{
+	Spawn:
+		YELP ABCD 2 A_Look
+		Loop
+	Pickup:
+		YELP A 1
+		Fail
+	See:
+		YELP ABCD 2 A_JumpIfCloser(36,"CheckPlayerPack")
+		Loop
+	CheckPlayerPack:
+		TNT1 A 0 A_JumpIfInTargetInventory("Cell",0,"FullFail")
+		TNT1 A 0 A_JumpIfInTargetInventory("GotAPack_h",1,"CheckSkill_Pack_h")
+		TNT1 A 0 A_JumpIfInTargetInventory("GotAPack",1,"CheckSkill_Pack")
+		Goto CheckSkill_NoPack
+	CheckSkill_Pack:
+		TNT1 A 0 A_JumpIfInTargetInventory("Cell",520,"SpawnCells")
+		Goto SpawnBox
+	CheckSkill_NoPack:
+		TNT1 A 0 A_JumpIfInTargetInventory("Cell",220,"SpawnCells")
+		Goto SpawnBox
+	CheckSkill_Pack_h:
+		TNT1 A 0 A_JumpIfInTargetInventory("Cell",720,"SpawnCells")
+		Goto SpawnBox
+	SpawnBox:
+		TNT1 A 0 A_SpawnItemEx("NormalCellPack")
+		Stop
+	Active:
+	SpawnCells:
+		TNT1 A 0 A_ChangeFlag("USESPECIAL", 0)
+		Y3LP A 15 A_PlaySound("Ammocase/Open")
+		Y3LP B 10 A_SpawnItemEx("NewCell",0,0,0,frandom(2,4),0,frandom(2,4),random(1,360))
+		Y3LP C 10 A_SpawnItemEx("NewCell",0,0,0,frandom(2,4),0,frandom(2,4),random(1,360))
+		Y3LP D 10 A_SpawnItemEx("NewCell",0,0,0,frandom(2,4),0,frandom(2,4),random(1,360))
+		Y3LP E 10 A_SpawnItemEx("NewCell",0,0,0,frandom(2,4),0,frandom(2,4),random(1,360))
+		Y3LP F 10 A_SpawnItemEx("NewCell",0,0,0,frandom(2,4),0,frandom(2,4),random(1,360))
+		TNT1 A 0 ACS_NamedExecuteAlways("SmartScavContainerStay",0)
+		Y3LP G 70
+	 FadeOut:
+		Y3LP G 5 A_FadeOut(0.1,1)
+		Loop
+	RemainOpen:
+		Y3LP F -1
+		Stop
+	FullFail:
+		YELP A 5
+		Goto See
+	}
+}
+
+ACTOR NewCell : Cell Replaces Cell
+{
+	Inventory.PickUpSound "misc/cell_PickUp"
+	+FLOORCLIP
+	+DONTGIB
+	States
+	{
+	Spawn:
+		CELL ABCDE 2
+		Loop
+	}
+}
+
+ACTOR NormalCellPack : CellPack
+{
+	Inventory.PickupMessage "Picked up an Energy Cell Pack."
+	Inventory.PickupSound "misc/bulkcell_PickUp"
+	+DONTGIB
+	+FLOORCLIP
+	States
+	{
+	Spawn:
+		YELP ABCD 2
+		Loop
+	}
+}

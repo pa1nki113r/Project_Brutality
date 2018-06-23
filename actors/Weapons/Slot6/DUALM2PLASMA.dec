@@ -1,0 +1,794 @@
+//M2 Plasma RIFLES (c) 2014 SGT MARK IV, Das_M, Pa1nki113r (tm)
+
+ACTOR DualM2PlasmaRifles: DoomWeapon
+{
+	Weapon.BobRangeX 0.3
+	Weapon.BobRangeY 0.5
+	Weapon.BobStyle InverseSmooth
+	Weapon.BobSpeed 2.4
+	Weapon.AmmoUse1 0 
+	//Weapon.SelectionOrder 100
+	Weapon.AmmoGive1 0 //How much ammo can be gathered with this weapon
+	Weapon.AmmoUse2 0
+	Weapon.AmmoGive2 0
+	Weapon.AmmoType1 "Cell" //Reserve ammo type
+	Weapon.AmmoType2 "DoubleM2PlasmagunAmmo" //Magazine ammo type
+	Obituary "%o was fried by %k's Double Plasmaguns." //Kill message
+	+FLOORCLIP
+	+DONTGIB
+	Tag "Dual M2 Plasma Rifles"
+    AttackSound "None" //You better leave this clear
+	Inventory.Pickupmessage "" //Pickup message
+    +WEAPON.NOAUTOAIM //Makes this weapon never autoaim, so recoil can work better
+    Scale 0.6 //Weapon's pickup sprite size
+	+WEAPON.NOAUTOFIRE
+	+WEAPON.NO_AUTO_SWITCH
+	+POWERED_UP
+	Weapon.SisterWeapon M2PlasmaRifle
+	States
+	{
+	
+	Spawn:
+	TNT1 A 100//Pickup sprite
+	Loop
+	
+	GoToPurist:
+		TNT1 A 0 A_SelectWeapon("Plasma_Gun")
+		Goto Select
+	
+	LedgeClimb:
+		TNT1 A 0 A_PlaySound("IronSights",0)
+		CL1M A 1 A_SetPitch(-20)
+		CL1M B 1 A_SetPitch(-20)
+		CL1M C 1 A_SetPitch(-24)
+		CL1M D 1 A_SetPitch(-28)
+		TNT1 A 0 A_Playsound("ledgeclimb")
+		TNT1 A 0 A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0)
+		CL1M E 1 A_SetPitch(-20)
+		CL1M F 1 A_SetPitch(-16)
+		CL1M G 1 A_SetPitch(-12)
+		CL1M H 1 A_SetPitch(-8)
+		CL1M I 1 A_SetPitch(-4)
+		CL1M J 1 A_SetPitch(4)
+		CL1M K 1 A_SetPitch(8)
+		CL1M L 1 A_SetPitch(12)
+		CL1M M 1 A_SetPitch(16)
+		TNT1 A 0 A_SetPitch(0)
+		TNT1 A 0 A_TakeInventory("Climbed_Ledge", 1)
+		TNT1 A 0 A_TakeInventory("Grabbing_A_Ledge", 1)
+		Goto Ready+6
+		
+	DontFlashClimbing:
+	    TNT1 A 9
+		Goto Flash
+
+//First Person Legs in Doom (because, you know, "I'm not original")
+		FirstPersonLegsHide:
+			TNT1 A 20
+		FirstPersonLegsStand:
+			TNT1 A 0 
+			TNT1 A 0 A_JumpIf(momx > 0.8 || momx < -0.8 || momy > 0.8 || momy < -0.8, "FirstPersonLegsWalk1")
+			TNT1 A 0 A_JumpIf(momZ != 0, "FirstPersonLegsJump")
+			TNT1 A 0 A_JumpIf(Height < 54, "FirstPersonLegsCrouch")
+			TNT1 A 0 A_JumpIfInventory("FPSLegChecker", 1, 2)
+			STAN A 1 
+			{
+				A_OverlayOffset(-10, 0, (-pitch*2)+200);
+			}
+			Loop
+			TNT1 A 0 
+			TNT1 A 0 A_JumpIf(Height < 54, "FirstPersonLegsCrouch")
+			TNT1 A 0 A_JumpIf(momZ != 0, "FirstPersonLegsJump")
+			STAN M 1 
+			{
+				A_OverlayOffset(-10, 0, (-pitch*2)+200);
+			}
+			Loop
+			
+		FirstPersonLegsCrouch:
+			TNT1 A 0 
+			TNT1 A 0 A_PlaySound("IronSights", 0) //Sound when player crouches
+			FirstPersonLegsCrouchContinue:
+			TNT1 A 0 A_JumpIf(momZ != 0, "FirstPersonLegsJump")
+			TNT1 A 0 A_JumpIf(momx > 0.8 || momx < -0.8 || momy > 0.8 || momy < -0.8, "FirstPersonLegsWalk1")
+			TNT1 A 0 A_JumpIf(Height > 54, "FirstPersonLegsStand")
+			STAN N 1 
+			{
+				A_OverlayOffset(-10, 0, (-pitch*2)+200);
+			}
+			Loop
+			
+		FirstPersonLegsWalk1:
+			TNT1 A 0
+			TNT1 A 0 A_JumpIfInventory("FPSLegChecker", 1, "FirstPersonLegsWalk2")
+			TNT1 A 0 A_JumpIf(momZ != 0, "FirstPersonLegsJump")
+			TNT1 A 0 A_GiveInventory("FPSLegChecker",1)
+			STAN BCCDDEEFF 1
+			{
+				A_OverlayOffset(-10, 0, (-pitch*2)+200);
+				A_JumpIf(momZ != 0, "FirstPersonLegsJump");
+			}
+			Goto FirstPersonLegsStand
+			
+		FirstPersonLegsWalk2:
+			TNT1 A 0
+			TNT1 A 0 A_JumpIf(momZ != 0, "FirstPersonLegsJump")
+			TNT1 A 0 A_TakeInventory("FPSLegChecker",1)
+			STAN GHHIIJJKLL 1 
+			{
+				A_OverlayOffset(-10, 0, (-pitch*2)+200);
+				A_JumpIf(momZ != 0, "FirstPersonLegsJump");
+			}
+			Goto FirstPersonLegsStand
+			
+		FirstPersonLegsJump:
+			TNT1 A 0 
+			STAN I 1 
+			{
+				A_OverlayOffset(-10, 0, (-pitch*2)+200);
+			}
+			Goto FirstPersonLegsStand
+	
+	Ready:
+	TNT1 A 0 A_JumpIfInventory("IsPlayingAsPurist", 1, "GoToPurist")
+		P7SS ABCDE 1
+		TNT1 A 0 A_GunFlash
+		Goto ReadyToFire
+		
+	Fire:
+	TNT1 A 0 A_TakeInventory("StopDualWield", 1)
+	P7W2 A 1 
+			{
+				A_WeaponReady(WRF_NOFIRE);
+				A_WeaponOffset(CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY"),WOF_KEEPY);
+			}
+	Goto ReadyToFire
+	
+	ReadyToFire:
+	TNT1 A 0 A_TakeInventory("StopDualWield", 1)
+		P7W2 A 1 A_WeaponReady(WRF_NOFIRE)// Weapon is ready to fire
+		//TNT1 A 0 A_JumpIfInventory("IsFiringSecondary", 1, 1)
+		//TNT1 A 0 A_GunFlash
+		TNT1 A 0 A_JumpIfInventory("FiredPrimary",1,"FireLeftGun") //Check if player wants to reload
+		TNT1 A 0 A_JumpIfInventory("Reloading",1,"Reload2") //Check if player wants to reload
+		TNT1 A 0 A_JumpIfInventory("Grabbing_A_Ledge",1,"LedgeClimb")
+		TNT1 A 0 A_JumpIfInventory("Kicking",1,"DoKick")
+        TNT1 A 0 A_JumpIfInventory("Taunting",1,"Taunt")
+		TNT1 A 0 A_JumpIfInventory("Salute1", 1, "Salute")
+		TNT1 A 0 A_JumpIfInventory("Salute2", 1, "Salute")
+		TNT1 A 0 A_JumpIfInventory("DoGrenade", 1, "ThrowGrenade")//DoMine
+		TNT1 A 0 A_JumpIfInventory("DoMine", 1, "ThrowMine")
+		TNT1 A 0 A_JumpIfInventory("DoElecPod", 1, "ThrowElecPod")
+		TNT1 A 0 A_JumpIfInventory("DoSwarmPod", 1, "ThrowSwarmPod")
+		TNT1 A 0 A_JumpIfInventory("DoHealBackpack", 1, "UseHealthBackPack")
+		TNT1 A 0 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "NoDualWield")
+		TNT1 A 0 A_JumpIfInventory("GrabbedBarrel", 1, "GrabBarrel")
+		Loop
+		
+	NoDualWield:
+		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
+		TNT1 A 0 A_SelectWeapon("M2PlasmaRifle")
+		Goto Select
+		
+	Deselect:
+		TNT1 A 0 A_PlaySound("IronSights", 0)
+		TNT1 A 0 A_TakeInventory("DoPunch",1)
+		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+		Wait
+	GrabEnemy:	
+	    TNT1 A 0
+	    TNT1 A 0 A_PlaySound("weapons/fistwhoosh")
+        PKUP ABCDEF 1
+		TNT1 AAAAAAAAAAAAAAAAAAA 0 A_Lower
+		Wait
+	GrabBarrel:
+		TNT1 A 0
+		TNT1 A 0 A_Takeinventory("HasUnloaded",1)
+		TNT1 A 0 A_Takeinventory("Unloading",1)
+		TNT1 A 0 A_Takeinventory("Zoomed",1)
+        TNT1 A 0 A_ZoomFactor(1.0)
+	    TNT1 A 0 A_PlaySound("weapons/fistwhoosh")
+		TNT1 A 0 A_TakeInventory("GrabbedBarrel", 1)
+		TNT1 A 0 A_TakeInventory("GrabbedBurningBarrel", 1)
+        PKUP ABCDEF 1
+		TNT1 A 0 A_SelectWeapon("BarrelThrower")
+		TNT1 AAAAAAAAAAAAAAAAAAA 0 A_Lower
+		Wait
+	Select:
+		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
+		TNT1 A 0 A_PlaySound("IronSights", 0)
+		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
+		TNT1 AAAAAAAA 1 A_Raise
+		Wait
+	
+	DryFire:
+	    P7W2 D 1 A_PlaySound("DRYFIRE", 1)
+		P7W2 A 5
+		Goto ReadyToFire
+	 
+	FireLeftGun:
+		TNT1 A 0 A_WeaponOffset(0,32)
+	    P7W2 A 1
+		TNT1 A 0 A_JumpIfInventory("DoubleM2PlasmagunAmmo", 2, 1)//First of all, checks if there is ammo inside the gun
+		Goto Reload//Couldn't find any ammo. Reload
+		
+		TNT1 A 0 A_JumpIfInventory("LeftM2PlasmagunAmmo", 2, 1)//Checks if there is ammo inside the left Plasmagun
+		Goto DryFire//Couldn't find any ammo. Don't fire.
+		
+		TNT1 A 0 A_TakeInventory("DoubleM2PlasmagunAmmo", 2)//Removes 1 ammo from magazine
+		TNT1 A 0 A_AlertMonsters
+	    P7W2 B 1 BRIGHT A_FireCustomMissile("HeavyPlasmaBall", random(-4,4), 0, -6, -4, 0, random(-3,3))//Horizontal Spread, Vertical Spread, Numbers of Projectiles (Leave as -1 if its a single one), Damage Factor
+		TNT1 A 0 A_FireCustomMissile("Shakeyourassminor", 0, 0, 0, 0)//Shakes the camera to simulate recoil.
+		TNT1 A 0 A_PlaySound("m2plasma", 4)//Play gun fire sound
+		P7W2 C 1 BRIGHT A_FireCustomMissile("AltHeavyPlasmaBall", random(-4,4), 0, -6, -4, 0, random(-3,3))//Horizontal Spread, Vertical Spread, Numbers of Projectiles (Leave as -1 if its a single one), Damage Factor
+		TNT1 A 0 A_FireCustomMissile("Shakeyourassminor", 0, 0, 0, 0)//Shakes the camera to simulate recoil.
+		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, -5, 0, 0, 0)
+		//TNT1 A 0 A_PlaySound("PLSM8", 5)//Play gun fire sound
+		TNT1 A 0 A_SetPitch(+0.4 + pitch)//Vertical recoil up
+		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
+		
+		P7W2 D 1 BRIGHT //A_FireCustomMissile("PlasmaCaseSpawn",0,0,6,4) //Ejetts empty brass
+		P7W2 C 0 A_SetPitch(-0.7 + pitch)//Vertical recoil down
+		P7W2 A 1 A_TakeInventory("LeftM2PlasmagunAmmo", 2)//Remove the fake ammo
+		TNT1 A 0 A_JumpIfInventory("DoubleM2PlasmagunAmmo", 2, 1)//Checks if there is ammo inside the gun
+		P7W2 A 2
+		TNT1 A 0 A_JumpIfInventory("DoubleM2PlasmagunAmmo", 2, 1)//Checks if there is ammo inside the gun
+	//	TNT1 A 0 A_GiveInventory("IsReloading", 1)//Couldn't find any ammo. Reload
+		Goto Reload//Couldn't find any ammo. Reload.
+		P2W2 A 0
+		Goto ReadyToFire//No need to reload. Get back to Ready state.
+		
+	Flash:	
+	    TNT1 A 0
+		TNT1 A 0 A_JumpIfInventory("StopDualWield", 1, "LightDone")
+		P7W1 A 1
+		TNT1 A 0 A_JumpIfInventory("FiredSecondary", 1, "FireRightGun")
+		//P2W1 A 1
+		Loop
+		
+	
+	DontFlash:
+	    TNT1 A 1
+		Goto Flash
+	
+	FireRightGun:
+		TNT1 A 0 A_WeaponOffset(0,32)
+	    P7W1 A 1
+		
+		TNT1 A 0 A_JumpIfInventory("StopDualWield", 1, "LightDone")
+		TNT1 A 0 A_GiveInventory("IsFiringSecondary", 1)
+		TNT1 A 0 A_JumpIfInventory("DoubleM2PlasmagunAmmo", 2, 2)
+		TNT1 A 0 A_GiveInventory("IsReloading", 1)
+		Goto Flash
+		
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo", 2, 1)//Checks if there is ammo inside the left Plasmagun
+		Goto DryFire2//Couldn't find any ammo. Don't fire.
+		
+		TNT1 A 0 A_TakeInventory("DoubleM2PlasmagunAmmo", 2)//Removes 1 ammo from magazine
+		
+		TNT1 A 0 A_AlertMonsters
+	    P7W1 B 1 BRIGHT A_FireCustomMissile("HeavyPlasmaBall", random(-4,4), 0, 6, -4, 0, random(-3,3))//Horizontal Spread, Vertical Spread, Numbers of Projectiles (Leave as -1 if its a single one), Damage Factor
+		TNT1 A 0 A_PlaySound("m2plasma", 2)//Play gun fire sound
+		TNT1 A 0 A_FireCustomMissile("Shakeyourassminor", 0, 0, 0, 0)//Shakes the camera to simulate recoil.
+		
+		P7W1 C 1 BRIGHT A_FireCustomMissile("AltHeavyPlasmaBall", random(-4,4), 0, 6, -4, 0, random(-3,3))//Horizontal Spread, Vertical Spread, Numbers of Projectiles (Leave as -1 if its a single one), Damage Factor
+		//TNT1 A 0 A_PlaySound("PLSM8", 3)//Play gun fire sound
+		TNT1 A 0 A_FireCustomMissile("Shakeyourassminor", 0, 0, 0, 0)//Shakes the camera to simulate recoil.
+		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 5, 0, 0, 0)
+		
+		P7W1 D 1 BRIGHT //A_FireCustomMissile("PlasmaCaseSpawn",0,0,6,4) //Ejetts empty brass
+		P2W1 C 0 A_SetPitch(-0.4 + pitch)//Vertical recoil down
+		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
+		TNT1 A 0 A_TakeInventory("RightM2PlasmagunAmmo", 2)//Remove the fake ammo
+		P7W1 A 1 A_TakeInventory("M2PlasmaAmmo", 2)//Remove the fake ammo//
+		TNT1 A 0 A_JumpIfInventory("DoubleM2PlasmagunAmmo", 2, 1)//Checks if there is ammo inside the gun
+		P7W1 A 2
+		TNT1 A 0 A_GiveInventory("IsReloading", 1)//Couldn't find any ammo. Reload
+		Goto Flash
+		
+	DryFIre2:
+	    P7W1 D 1 A_PlaySound("DRYFIRE", 1)
+		P7W1 AAAAA 1 A_JumpIfInventory("StopDualWield", 1, "LightDone")
+		Goto Flash
+		
+		
+	Reload:
+	Reload2:
+	    
+	    P7SS E 0 //Always leave one free line before the reload animation to prevent bugs
+		TNT1 A 0 A_TakeInventory("Reloading")//Always put this to make sure that the game understand that you already are reloading your weapon, and calling this state again is not necessary
+		TNT1 A 0 A_JumpIfInventory("DoubleM2PlasmagunAmmo", 100, "ReadytoFire")//Checks if the weapon is not fully reloaded, if yes, cancel reload.
+		TNT1 A 0 A_PlaySound("DRYFIRE", 1)
+		TNT1 A 0 A_JumpIfInventory("Cell", 1, 1)//Checks if you have spare ammo
+		Goto ReadyToFire//Identified that you have no spare ammo. Get back to Ready animation
+		TNT1 A 0 A_GiveInventory("StopDualWield", 1)
+        
+	Refill:	
+	    TNT1 A 0
+		TNT1 A 0 A_JumpIfInventory("Cell", 1, 1)//Check if you have spare ammo again. This line is necessary in case you don't have enough ammo to fill an entire Cell.
+		Goto FinishReload//Gun is fully loaded. Go to finish animation
+	    TNT1 A 0 A_TakeInventorY("Cell", 1)//Removes one spare bullet
+		TNT1 A 0 A_GiveInventory("DoubleM2PlasmagunAmmo", 1)//Puts one bullet inside the Cell
+		TNT1 A 0 A_JumpIfInventory("DoubleM2PlasmagunAmmo", 100, "FinishReload")//Checks if weapons is full
+		Loop
+		
+	 FinishReload:	//Weapon is fully loaded. Time to play the reloading animation.
+		TNT1 A 0
+		TNT1 A 0 A_JumpIfInventory("LeftM2PlasmagunAmmo", 50, "FinishReloadRightOnly")
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo", 50, "FinishReloadLeftOnly")
+		TNT1 A 0 A_GiveInventory("LeftM2PlasmagunAmmo", 50)
+		TNT1 A 0 A_GiveInventory("M2PlasmaAmmo", 50)
+		TNT1 A 0 A_GiveInventory("RightM2PlasmagunAmmo", 50)
+		
+		P7SS EDCBA 1
+		TNT1 A 5
+		
+		TNT1 A 0 A_PlaySound("PLREADY")
+
+        PR29 ABC 2
+		TNT1 A 0 A_FireCustomMissile("PlasmaCaseSpawn",-30,0,-4,-4)
+		PR2R D 5
+		TNT1 A 0 A_PlaySound("PLREADY")
+		PR2R D 15
+		
+		PR2R EFE 1
+		PR2R D 15
+        PR29 CBA 2
+		
+		
+		TNT1 A 0 A_PlaySound("PLREADY")
+
+        PR19 ABC 2
+		TNT1 A 0 A_FireCustomMissile("PlasmaCaseSpawn",-30,0,-4,-4)
+		PR1R D 5
+		TNT1 A 0 A_PlaySound("PLREADY")
+		PR1R D 15
+		
+		PR1R EFE 1
+		PR1R D 15
+        PR19 CBA 2
+		
+		TNT1 A 0 A_TakeInventory("StopDualWield", 1)
+		TNT1 A 0 A_TakeInventory("FiredPrimary", 1)
+		TNT1 A 0 A_TakeInventory("FiredSecondary", 1)
+		TNT1 A 5
+		P7SS ABCDE 1
+		TNT1 A 0 A_GunFlash
+		Goto ReadyToFire
+		
+		
+		
+	
+	FinishReloadLeftOnly:	//Weapon is fully loaded. Time to play the reloading animation.
+		TNT1 A 0 A_GiveInventory("LeftM2PlasmagunAmmo", 50)
+		TNT1 A 0 A_GiveInventory("M2PlasmaAmmo", 50)
+		TNT1 A 0 A_GiveInventory("RightM2PlasmagunAmmo", 50)
+		P7SS EDCBA 1
+		TNT1 A 5
+		
+		TNT1 A 0 A_PlaySound("PLREADY")
+
+        PR19 ABC 2
+		TNT1 A 0 A_FireCustomMissile("PlasmaCaseSpawn",-30,0,-4,-4)
+		PR1R D 5
+		TNT1 A 0 A_PlaySound("PLREADY")
+		PR1R D 15
+		
+		PR1R EFE 1
+		PR1R D 15
+        PR19 CBA 2
+		TNT1 A 0 A_TakeInventory("StopDualWield", 1)
+		TNT1 A 0 A_TakeInventory("FiredPrimary", 1)
+		TNT1 A 0 A_TakeInventory("FiredSecondary", 1)
+		P7SS ABCDE 1
+		TNT1 A 0 A_GunFlash
+		Goto ReadyToFire	
+		
+	FinishReloadRightOnly:	//Weapon is fully loaded. Time to play the reloading animation.
+		TNT1 A 0 A_GiveInventory("LeftM2PlasmagunAmmo", 50)
+		TNT1 A 0 A_GiveInventory("M2PlasmaAmmo", 50)
+		TNT1 A 0 A_GiveInventory("RightM2PlasmagunAmmo", 50)
+		
+		P7SS EDCBA 1
+		TNT1 A 5
+		
+		TNT1 A 0 A_PlaySound("PLREADY")
+
+        PR29 ABC 2
+		TNT1 A 0 A_FireCustomMissile("PlasmaCaseSpawn",-30,0,-4,-4)
+		PR2R D 5
+		TNT1 A 0 A_PlaySound("PLREADY")
+		PR2R D 15
+		
+		PR2R EFE 1
+		PR2R D 15
+        PR29 CBA 2
+		TNT1 A 0 A_TakeInventory("StopDualWield", 1)
+		TNT1 A 0 A_TakeInventory("FiredPrimary", 1)
+		TNT1 A 0 A_TakeInventory("FiredSecondary", 1)
+		P7SS ABCDE 1
+		TNT1 A 0 A_GunFlash
+		Goto ReadyToFire		
+		
+	UseHealthBackPack:
+		TNT1 A 0 A_GiveInventory("StopDualWield", 1)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_TakeInventory("ADSMode", 1)
+		TNT1 A 0 A_TakeInventory("DoHealBackpack", 1)
+		SYRI ABCDEFGHIJ 1
+		SYRI A 0 A_PlaySound("blodr1", 3)
+		SYRI KLL 1
+		SYRI A 0 A_PlaySound("misc/N_HP_pickup", 2)
+		SYRI MMMM 1
+		SYRI LKJIHGFEDCBA 1
+		TNT1 A 0 A_TakeInventory("StopDualWield", 1)
+		Goto Ready
+		
+		
+	 ThrowMine:
+	 ThrowGrenade:
+	 ThrowElecPod:
+	 ThrowSwarmPod:
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_TakeInventory("ADSMode", 1)
+		TNT1 A 0 A_TakeInventory("DoGrenade", 1)
+		TNT1 A 0 A_TakeInventory("DoSwarmPod", 1)
+		TNT1 A 0 A_TakeInventory("DoElecPod", 1)
+		TNT1 A 0 A_TakeInventory("DoMine", 1)
+		TNT1 A 0
+		TNT1 A 0 A_Print("You can't throw right now!")
+		Goto ReadyToFire		
+		
+	FlashKicking:
+		P7SS E 1 
+		P7SS D 1 
+		P7SS C 1 
+		P7SS B 3 
+		P7SS A 3
+		P7SS B 3 
+		P7SS C 1 
+		P7SS D 1 
+		P7SS E 1 
+		P7SS EEE 1 
+		Goto Flash
+		
+	FlashAirKicking:
+		P7SS E 1 
+		P7SS D 1 
+		P7SS C 1 
+		P7SS B 3 
+		P7SS A 3
+		P7SS B 3 
+		P7SS C 1 
+		P7SS D 1 
+		P7SS E 1 
+		P7SS EEEE 1  
+		Goto Flash
+		
+	FlashSlideKicking:
+		P7SS EE 2 
+		P7SS DDCCCBBBAAA 2  
+		Goto Flash
+		
+	FlashSlideKickingStop:
+		//TNT1 A 0
+		P7SS ABCDE 1 
+		P7SS EE 1 
+		Goto Flash
+
+    DoKick:
+	    TNT1 A 0
+		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsHide")
+		TNT1 A 0 A_TakeInventory("Zoomed",1)
+        TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_TakeInventory("ADSmode",1)
+		NULL A 0 A_JumpIf (momZ > 0, "AirKick")
+		NULL A 0 A_JumpIf (momZ < 0, "AirKick")
+		NULL A 0 A_JumpIf(Height < 54, "SlideKick")
+        TNT1 A 0 A_JumpIfInventory("PowerStrength",1,"BerserkerKick")
+		TNT1 A 0 A_PlaySound("KICK", 1)
+		TNT1 A 0 SetPlayerProperty(0,1,0)
+		TNT1 A 0 A_GunFlash("FlashKicking")
+		TNT1 A 0 A_SetAngle(-0.5 + angle)
+		TNT1 A 1 A_SetPitch(+0.5 + pitch)
+		TNT1 A 0 A_SetAngle(-0.5 + angle)
+		TNT1 A 1 A_SetPitch(+0.5 + pitch)
+		TNT1 A 0 A_ZoomFactor(0.985)
+		KICK B 1 A_SetPitch(+0.5 + pitch)
+		TNT1 A 0 A_SetAngle(-0.5 + angle)
+		TNT1 A 0 A_ZoomFactor(0.970)
+		KICK C 1 A_SetAngle(-0.5 + angle)
+		TNT1 A 0 A_ZoomFactor(0.965)
+		TNT1 A 0 A_SetAngle(+0.5 + angle)
+		KICK D 1 A_SetPitch(+1.25 + pitch)
+		TNT1 A 0 A_ZoomFactor(0.950)
+		RIfF A 0 A_FireCustomMissile("KickAttack", 0, 0, 0, -7)
+		
+        KICK H 3 
+		TNT1 A 0 A_ZoomFactor(0.965)
+		TNT1 A 0 A_SetAngle(+1 + angle)
+		TNT1 A 0 A_Recoil(-1)
+		KICK A 0 A_TakeInventory("Kicking",1)
+		KICK I 1
+		TNT1 A 0 A_ZoomFactor(0.970)
+		TNT1 A 0 A_SetAngle(+1 + angle)
+		KICK G 1 A_SetPitch(-0.5 + pitch)
+		TNT1 A 0 A_ZoomFactor(0.985)
+		KICK F 1 A_SetPitch(-0.5 + pitch)
+		TNT1 A 0 A_ZoomFactor(0.998)
+		TNT1 A 0 A_SetAngle(+0.5 + angle)
+		KICK E 1 A_SetPitch(-0.5 + pitch)
+		TNT1 A 0 A_ZoomFactor(0.999)
+		TNT1 A 0 A_SetAngle(+0.5 + angle)
+		KICK D 1 A_SetAngle(+0.5 + angle)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_SetPitch(-0.5 + pitch)
+		KICK C 1 A_SetAngle(-0.5 + angle)
+		KICK B 1 A_SetPitch(-1.25 + pitch)
+		KICK A 1
+		TNT1 A 0 SetPlayerProperty(0,0,0)
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		Goto ReadyToFire
+		
+	SlideKick:
+		TNT1 A 0 A_GiveInventory("IsSlideKicking", 1)
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		TNT1 A 0 A_Jumpifinventory("PowerStrength",1,"SuperSlideKick")
+		TNT1 A 0 ACS_Execute(5922, 0, 0, 0, 0)
+		TNT1 A 0 A_PlaySound("SlideKick/Start", 1)
+		TNT1 A 0 A_Recoil (-13)
+		TNT1 A 0 A_GunFlash("FlashSlideKicking")
+		//NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_ZoomFactor(0.95)
+		SLDK A 1 A_ZoomFactor(0.90)
+		SLDK B 1 A_ZoomFactor(0.85)
+		SLDK C 1 A_ZoomFactor(0.80)
+		SLDK D 1 A_ZoomFactor(0.75)
+        RIFF AA 0 A_FireCustomMissile("KickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		SLDK F 3
+		TNT1 A 0 A_FireCustomMissile("KickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		TNT1 A 0 A_Recoil (-5)
+		SLDK E 3
+		TNT1 A 0 A_FireCustomMissile("KickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		TNT1 A 0 A_Recoil (-5)
+		SLDK F 3
+		TNT1 A 0 A_ZoomFactor(0.960)
+		TNT1 A 0 A_FireCustomMissile("KickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		TNT1 A 0 A_Recoil (-4)
+		SLDK G 3
+		TNT1 A 0 A_FireCustomMissile("KickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		TNT1 A 0 A_Recoil (-4)
+		SLDK F 3
+		TNT1 A 0 A_FireCustomMissile("KickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		TNT1 A 0 A_Recoil (-3)
+		SLDK F 3
+		TNT1 A 0 A_FireCustomMissile("KickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		TNT1 A 0 A_Recoil (-2)
+		KICK A 0 A_Takeinventory("Kicking",1)
+		KICK A 0 A_Takeinventory("IsSlideKicking",1)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		SLDK HK 2
+		TNT1 A 0 ACS_Execute(5923, 0, 0, 0, 0)
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		Goto ReadyToFire
+		
+	 LowerKick:
+		TNT1 A 0 A_ZoomFactor(1.0)
+		KICK A 0 A_Takeinventory("Kicking",1)
+		KICK A 0 A_Takeinventory("KickHasHitAnObject",1)
+		TNT1 A 0 A_TakeInventory("IsSlideKicking", 1)
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		TNT1 A 0 A_PlaySound("SlideKick/End", 1)
+		TNT1 A 0 A_GunFlash("FlashSlideKickingStop")
+		SLDK HK 2
+		TNT1 A 0 ACS_Execute(5923, 0, 0, 0, 0)
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		Goto ReadyToFire
+		
+	SuperSlideKick:
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		TNT1 A 0 ACS_Execute(5922, 0, 0, 0, 0)
+		TNT1 A 0 A_PlaySound("SlideKick/Start", 1)
+		TNT1 A 0 A_Recoil (-15)
+		TNT1 A 0 A_GunFlash("FlashSlideKicking")
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_ZoomFactor(0.95)
+		SLDK A 1 A_ZoomFactor(0.90)
+		SLDK B 1 A_ZoomFactor(0.85)
+		SLDK C 1 A_ZoomFactor(0.80)
+		SLDK D 1 A_ZoomFactor(0.75)
+        RIFF AA 0 A_FireCustomMissile("SuperKickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		SLDK F 3
+		TNT1 A 0 A_FireCustomMissile("SuperKickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		TNT1 A 0 A_Recoil (-5)
+		SLDK E 3
+		TNT1 A 0 A_FireCustomMissile("SuperKickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		TNT1 A 0 A_Recoil (-5)
+		SLDK F 3
+		TNT1 A 0 A_FireCustomMissile("SuperKickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		TNT1 A 0 A_Recoil (-4)
+		SLDK G 3
+		TNT1 A 0 A_FireCustomMissile("SuperKickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		TNT1 A 0 A_Recoil (-4)
+		SLDK F 3
+		TNT1 A 0 A_FireCustomMissile("SuperKickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		TNT1 A 0 A_Recoil (-3)
+		SLDK F 3
+		TNT1 A 0 A_FireCustomMissile("SuperKickAttack", 0, 0, 0, -31)
+		NULL A 0 A_JumpIf(Height > 54, "LowerKick")
+		TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick")
+		TNT1 A 0 A_Recoil (-2)
+		KICK A 0 A_Takeinventory("Kicking",1)
+		KICK A 0 A_Takeinventory("IsSlideKicking",1)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		SLDK HK 2
+		TNT1 A 0 ACS_Execute(5923, 0, 0, 0, 0)
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		Goto ReadyToFire
+		
+		
+	   BerserkerKick:
+		TNT1 A 0 A_PlaySound("KICK", 1)
+		TNT1 A 0 SetPlayerProperty(0,1,0)
+		TNT1 A 0 A_GunFlash("FlashKicking")
+		TNT1 A 0 A_SetAngle(-0.5 + angle)
+		TNT1 A 1 A_SetPitch(+0.5 + pitch)
+		TNT1 A 0 A_SetAngle(-0.5 + angle)
+		TNT1 A 1 A_SetPitch(+0.5 + pitch)
+		KICK B 1 A_SetPitch(+0.5 + pitch)
+		TNT1 A 0 A_ZoomFactor(0.985)
+		TNT1 A 0 A_SetAngle(-0.5 + angle)
+		KICK C 1 A_SetAngle(-0.5 + angle)
+		TNT1 A 0 A_ZoomFactor(0.970)
+		TNT1 A 0 A_SetAngle(+0.5 + angle)
+		KICK D 1 A_SetPitch(+1.25 + pitch)
+		TNT1 A 0 A_ZoomFactor(0.955)
+		TNT1 A 0 A_FireCustomMissile("SuperKickAttack", 0, 0, 0, -7)
+		
+        KICK H 3 A_ZoomFactor(0.950)
+		TNT1 A 0 A_SetAngle(+1 + angle)
+		TNT1 A 0 A_Recoil(-1)
+		KICK A 0 A_TakeInventory("Kicking",1)
+		KICK I 1 
+		TNT1 A 0 A_ZoomFactor(0.955)
+		TNT1 A 0 A_SetAngle(+1 + angle)
+		KICK G 1 A_SetPitch(-0.5 + pitch)
+		TNT1 A 0 A_ZoomFactor(0.970)
+		KICK F 1 A_SetPitch(-0.5 + pitch)
+		TNT1 A 0 A_ZoomFactor(0.985)
+		TNT1 A 0 A_SetAngle(+0.5 + angle)
+		KICK E 1 A_SetPitch(-0.5 + pitch)
+		TNT1 A 0 A_ZoomFactor(0.995)
+		TNT1 A 0 A_SetAngle(+0.5 + angle)
+		KICK D 1 A_SetAngle(+0.5 + angle)
+		TNT1 A 0 A_ZoomFactor(0.998)
+		TNT1 A 0 A_SetPitch(-0.5 + pitch)
+		KICK C 1 A_SetAngle(-0.5 + angle)
+		TNT1 A 0 A_ZoomFactor(0.999)
+		KICK B 1 A_SetPitch(-1.25 + pitch)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		KICK A 1 
+		TNT1 A 0 SetPlayerProperty(0,0,0)
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		Goto ReadyToFire
+
+	AirKick:
+	    TNT1 A 0 A_jumpifinventory("PowerStrength",1,"SuperAirKick")
+		TNT1 A 0 A_PlaySound("KICK", 1)
+		TNT1 A 0 A_Recoil (-6)
+		TNT1 A 0 A_GunFlash("FlashAirKicking")
+		TNT1 A 0 A_ZoomFactor(0.95)
+		KICK JKLMN 1
+        RIFF A 0 A_FireCustomMissile("AirKickAttack", 0, 0, 0, -31)
+		TNT1 A 0 A_ZoomFactor(0.975)
+        KICK O 3
+		TNT1 A 0 A_ZoomFactor(0.995)
+		KICK A 0 A_TakeInventory("Kicking",1)
+		KICK PQRST 2
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		Goto ReadyToFire
+
+	SuperAirKick:
+		TNT1 A 0 A_PlaySound("KICK", 1)
+		TNT1 A 0 A_Recoil (-6)
+		TNT1 A 0 A_GunFlash("FlashKicking")
+		TNT1 A 0 A_ZoomFactor(0.95)
+		KICK JKLMN 1
+        RIFF A 0 A_FireCustomMissile("SuperAirKickAttack", 0, 0, 0, -31)
+        TNT1 A 0 A_ZoomFactor(0.975)
+        KICK O 3
+		TNT1 A 0 A_ZoomFactor(0.995)
+		KICK A 0 A_TakeInventory("Kicking",1)
+		KICK PQRST 2
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		Goto ReadyToFire
+		
+	Taunt:
+		TNT1 A 0 A_TakeInventory("Zoomed", 1)
+        TNT1 A 0 A_ZoomFactor(1.0)
+        TNT1 A 5
+		FUCK F 2
+		TNT1 A 0 BRIGHT A_FireCustomMissile("Taunter", 0, 0, -1, 0)
+		TNT1 A 0 BRIGHT A_FireCustomMissile("Taunter", -9, 0, -1, 0)
+		TNT1 A 0 BRIGHT A_FireCustomMissile("Taunter", 9, 0, -1, 0)
+        FUCK G 2 A_PlaySound("FUCK", 1)
+        FUCK HI 2 A_AlertMonsters
+		FUCK J 15 A_TakeInventory("Taunting",1)
+        FUCK IHGF 5
+		TNT1 A 5
+		Goto ReadyToFire
+	Salute:
+	    TNT1 A 0 SetPlayerProperty(0,1,0)
+		TNT1 A 0 A_ALertMonsters
+		SALU ABCDEDCDEDCDEDCBA 4
+		TNT1 A 0 A_TakeInventory("Salute1",1)
+		TNT1 A 0 A_TakeInventory("Salute2",1)
+		TNT1 A 0 SetPlayerProperty(0,0,0)
+		Goto ReadyToFire	
+	Steady:
+	TNT1 A 1
+	Goto ReadyToFire	
+		
+		
+		
+	}
+}
+
+ACTOR DoubleM2PlasmagunAmmo : Ammo //Your weapon's magazine ammo.
+{
+   Inventory.Amount 0
+   Inventory.MaxAmount 100 //Your weapon's magazine ammo limit. Always leave one more bullet, so you can do the 12+1 effect.
+   Ammo.BackpackAmount 0
+   Ammo.BackpackMaxAmount 100
+   Inventory.Icon SMGPA0
+}
+
+
+ACTOR LeftM2PlasmagunAmmo : Ammo //Your weapon's magazine ammo.
+{
+   Inventory.Amount 0
+   Inventory.MaxAmount 50 //Your weapon's magazine ammo limit. Always leave one more bullet, so you can do the 12+1 effect.
+   Ammo.BackpackAmount 0
+   Ammo.BackpackMaxAmount 50
+   Inventory.Icon SMGPA0
+}
+
+
+ACTOR RightM2PlasmagunAmmo : Ammo //Your weapon's magazine ammo.
+{
+   Inventory.Amount 0
+   Inventory.MaxAmount 50 //Your weapon's magazine ammo limit. Always leave one more bullet, so you can do the 12+1 effect.
+   Ammo.BackpackAmount 0
+   Ammo.BackpackMaxAmount 50
+   Inventory.Icon SMGPA0
+}
