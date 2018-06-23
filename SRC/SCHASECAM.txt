@@ -1,0 +1,151 @@
+#include "zcommon.acs"
+#library "chasecam"
+
+#define C_TID		1000	//Default camera tid
+#define MAX_R		56	//Maximum radius (or distance from the player)
+#define ADJUST_R	8	//Amount to adjust the camera by
+#define VIEW_HEIGHT	61.0	//The approximate hight of the player's view
+
+bool camera_mode[8];		//Variable for turning the camera on or off.
+	
+Script 477 (VOID)
+{
+	camera_mode[PlayerNumber ()] = ON;
+	ACS_ExecuteAlways (401, 0, PlayerNumber ());
+}
+
+
+Script 401 (int p_num)
+{
+	int r = MAX_R;
+	
+	while (camera_mode[p_num] == ON)
+	{	
+		int a = GetActorAngle (0);
+		int p = GetActorPitch (0);
+		int x = GetActorX (0);
+		int y = GetActorY (0);
+		int z = GetActorZ (0) + VIEW_HEIGHT;
+		int xyr = r * cos (p) >> 16;
+		
+		if (!ThingCountName ("ChaseCam2", C_TID+p_num))
+		{
+			while (!Spawn ("ChaseCam2", x-cos(a)*xyr, y-sin(a)*xyr, z+sin(p)*r, C_TID+p_num, a >> 8) && r > 0)
+			{
+				r -= ADJUST_R;
+				xyr = cos (p) * r >> 16;
+			}
+			
+			if (ThingCountName ("ChaseCam2", C_TID + p_num))
+				ChangeCamera (C_TID + p_num, 0, 0);
+			else
+			{
+				camera_mode[p_num] = OFF;
+				print (s:"Camera script failed to initialize.");
+			}
+		}
+
+
+
+
+
+	        else
+		{
+			while (!SetActorPosition (C_TID+p_num, x-cos(a)*xyr, y-sin(a)*xyr, z+sin(p)*r, 0) && r > 0)
+			{
+				r -= ADJUST_R;
+				xyr = cos (p) * r >> 16;
+			}
+			
+			SetActorAngle (C_TID + p_num, a);
+			SetActorPitch (C_TID + p_num, p);
+			
+			if (r < MAX_R) 
+                                r += ADJUST_R;
+		}
+		
+		delay (1);
+	}
+}
+
+
+
+
+Script 171 (VOID)
+{
+	camera_mode[PlayerNumber ()] = OFF;
+	Thing_Remove (C_TID + PlayerNumber ());
+}
+
+Script 420 (int p_num) DISCONNECT
+{
+       camera_mode[p_num] = OFF;
+       Thing_Remove (C_TID + p_num);
+}
+
+
+
+
+
+
+
+
+
+
+
+Script 308 (VOID)
+{
+	int r = MAX_R;
+	
+	while (camera_mode[p_num] == ON)
+	{	
+		int a = GetActorAngle (0);
+		int p = GetActorPitch (0);
+		int x = GetActorX (0);
+		int y = GetActorY (0);
+		int z = GetActorZ (0) + VIEW_HEIGHT;
+		int xyr = r * cos (p) >> 16;
+		
+		if (!ThingCountName ("ChaseCam2", C_TID+p_num))
+		{
+			while (!Spawn ("ChaseCam2", x-cos(a)*xyr, y-sin(a)*xyr, z+sin(p)*r, C_TID+p_num, a >> 8) && r > 0)
+			{
+				r -= ADJUST_R;
+				xyr = cos (p) * r >> 16;
+			}
+			
+			if (ThingCountName ("ChaseCam2", C_TID + p_num))
+				ChangeCamera (C_TID + p_num, 0, 0);
+			else
+			{
+				camera_mode[p_num] = OFF;
+				print (s:"Camera script failed to initialize.");
+			}
+		}
+
+
+
+
+
+	        else
+		{
+			while (!SetActorPosition (C_TID+p_num, x-cos(a)*xyr, y-sin(a)*xyr, z+sin(p)*r, 0) && r > 0)
+			{
+				r -= ADJUST_R;
+				xyr = cos (p) * r >> 16;
+			}
+			
+			SetActorAngle (C_TID + p_num, a);
+			SetActorPitch (C_TID + p_num, p);
+			
+			if (r < MAX_R) 
+                                r += ADJUST_R;
+		}
+		
+		delay (300);
+			camera_mode[PlayerNumber ()] = OFF;
+	Thing_Remove (C_TID + PlayerNumber ());
+		
+		
+	}
+}

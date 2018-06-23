@@ -1,0 +1,94 @@
+// If I make this script work I'm the greatest Doom modder on the face of the Earth. 
+
+#include "zcommon.acs"
+#library "WeaponWheel"
+
+//===========================================================================
+//
+// MOUSE INPUT
+//
+//===========================================================================
+
+// UI resolution
+#define UI_RES_WIDTH 1024
+#define UI_RES_HEIGHT 768
+
+// the smallest tic for a HUDMessage
+#define HUDMSG_TIC 1.0 / 35 + 1
+
+// mouse cursor HUDMessage ID
+#define HMID_MOUSECURSOR 1
+
+Script "WeaponWheel" Enter NET //Starts the script at the beginning of the level for the player
+{
+	int UserButtons;
+	
+	int toggle = 0;
+	
+	while(1)
+	{
+		UserButtons = GetPlayerInput(0, INPUT_BUTTONS);
+		
+		if(UserButtons & BT_USER1) //Detects whether or not player is pressing the weapon wheel key
+		{
+			if(toggle == 0)
+			{
+				print(s:"You are pressing the weapon wheel key. Toggle now equals 1");
+				SetPlayerProperty(0, ON, PROP_TOTALLYFROZEN);
+				toggle = 1;
+				ACS_NamedExecute("MouseMenu", 0, 0); //Actually pulls up the mouse menu and wheel
+				Delay(2);
+			}
+			else
+			{
+				print(s:"You are pressing the weapon wheel key. Toggle now equals 0");
+				SetPlayerProperty(0, OFF, PROP_TOTALLYFROZEN);
+				toggle = 0;
+				ACS_NamedTerminate("MouseMenu", 0);
+				Delay(2);
+			}
+		}
+		Delay(5);
+	}
+}
+
+script "MouseMenu" (void) //This is where all the coding for the weapon wheel is
+{
+    // initialize cursor X and Y
+    int x = UI_RES_WIDTH / 2;
+    int y = UI_RES_HEIGHT / 2;
+    int dx;
+    int dy;
+
+    // mouse sensitivity multiplier
+    int xSensitivity = 1.0;
+    int ySensitivity = 1.0;
+
+    while(true) //Mouse Cursor Stuff
+    {
+        // poll player input
+        dx = FixedMul(xSensitivity, GetPlayerInput(-1, INPUT_YAW)) / 24;
+        x -= dx;
+        
+        dy = FixedMul(ySensitivity, GetPlayerInput(-1, INPUT_PITCH)) / 12;
+        if (!GetCVar("invertmouse"))
+            y -= dy;
+        else
+            y += dy;
+
+        // draw mouse cursor on screen
+        SetHUDSize(UI_RES_WIDTH, UI_RES_HEIGHT, 1);
+        SetFont("zcursor");
+        HUDMessage(s: "A"; HUDMSG_PLAIN, HMID_MOUSECURSOR, CR_UNTRANSLATED, (x << 16) + 0.1, (y << 16) + 0.1, HUDMSG_TIC);
+
+        // debug: print mouse coords
+        int heh = 0;
+        if (heh)
+        {
+        SetFont("SmallFont");
+        Print(d: x, s: "/", d: y);
+        }
+
+        Delay(1);
+    }
+}
