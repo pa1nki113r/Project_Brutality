@@ -1,8 +1,25 @@
 //I'm a fucking DANGEROUS cowboy (c) 2014 SGT MARK IV tm... And a bit of Pa1nki113r (R). Original Sprites by Doom Nukem.
-ACTOR PB_DualSSGFireAnimation : Inventory
+
+ACTOR FiredLeftSSG : Inventory // How many times you fired with the LMB
 {
-Inventory.MaxAmount 1
+ Inventory.MaxAmount 2
 }
+
+Actor FiredLeftSSGLMB : Inventory 
+{
+ Inventory.MaxAmount 1
+}
+
+Actor FiredRightSSG : Inventory // How many times you fired with the RMB
+{
+ Inventory.MaxAmount 4
+}
+
+Actor FiredRightSSGRMB : Inventory 
+{
+ Inventory.MaxAmount 1
+}
+
 ACTOR DualSSG: PB_DualWeapon
 {
 	Weapon.BobRangeX 0.3
@@ -57,6 +74,7 @@ ACTOR DualSSG: PB_DualWeapon
 		TNT1 A 0 A_JumpIfInventory("FiredPrimary",1,"FireLeftGun") //Check if player wants to reload
 		TNT1 A 0 A_JumpIfInventory("Reloading",1,"Reload2") //Check if player wants to reload
 		TNT1 A 0 A_JumpIfInventory("Grabbing_A_Ledge",1,"LedgeClimb")
+		TNT1 A 0 A_JumpIfInventory("Unloading",1,"Unload")
 		TNT1 A 0 A_JumpIfInventory("Kicking",1,"DoKick")
         TNT1 A 0 A_JumpIfInventory("Taunting",1,"Taunt")
 		TNT1 A 0 A_JumpIfInventory("Salute1", 1, "Salute")
@@ -130,21 +148,21 @@ ACTOR DualSSG: PB_DualWeapon
 		Goto ReadyToFire
 	 
 		///////////////////////////////////////////////////
-		
-		
+			
+	Fire:
 	FireLeftGun:
+		TNT1 A 0 A_JumpIfInventory("FiredRightSSGRMB",1,2)
+		TNT1 A 0 A_JumpIfInventory("FiredLeftSSG",1,"FireRightGun")
 		TNT1 A 0 A_WeaponOffset(0,32)
-		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 1, 1)//First of all, checks if there is ammo inside the gun
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 2, 1)//First of all, checks if there is ammo inside the gun
 		Goto Reload//Couldn't find any ammo. Reload
-		TNT1 A 0
-		TNT1 A 0 A_JumpIfInventory("SSGAmmoCounter",2,2)
-		Goto FireHalfBlastLeftGun
-		TNT1 A 0
-		TNT1 A 0 A_TakeInventory("PB_DualSSGFireAnimation",1,1)
+	FLGStart:
+		TNT1 A 0 A_GiveInventory("FiredLeftSSGLMB",1)
+		TNT1 A 0 A_GiveInventory("FiredLeftSSG",1)
 		TNT1 A 0 A_TakeInventory("DualSSGAmmo", 2)
 		TNT1 A 0 A_TakeInventory("SSGAmmoCounter", 2)
 		TNT1 A 0 A_AlertMonsters
-		
+		P6W2 A 1 BRIGHT
 	    P6W2 B 1 BRIGHT A_FireBullets(0, 0, 1, 35, "shotpuff", 1, 220)//Horizontal Spread, Vertical Spread, Numbers of Projectiles (Leave as -1 if its a single one), Damage Factor
 		TNT1 A 0  A_PlaySound("SSHFIRE", 1)//Play gun fire sound
 		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, -3, 0, 0, 0)
@@ -158,48 +176,56 @@ ACTOR DualSSG: PB_DualWeapon
 		P6W2 C 2 //A_FireCustomMissile("RifleCaseSpawn",0,0,6,4) //Ejetts empty brass
 		
 		P6W2 DEFGHIJKLM 1 //A_Refire
-		
+	    
 		Goto ReadyToFire//No need to reload. Get back to Ready state.
+	
+	FireRightGun:
+		TNT1 A 0 A_WeaponOffset(0,32)
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 2, 1)
+		Goto Reload//Couldn't find any ammo. Reload
+		TNT1 A 0 A_JumpIfInventory("FiredRightSSGRMB",1,"FLGStart")
+		TNT1 A 0 A_JumpIfInventory("FiredRightSSG",2,"FLGStart")
+		TNT1 A 0 A_GiveInventory("FiredLeftSSG",1)
+		TNT1 A 0 A_GiveInventory("FiredRightSSGRMB",1)
+		TNT1 A 0 A_TakeInventory("DualSSGAmmo", 2)
+		TNT1 A 0 A_TakeInventory("SSGAmmoCounter", 2)
+		TNT1 A 0 A_AlertMonsters
+		P6W1 A 1 BRIGHT
+	    P6W1 B 1 BRIGHT A_FireBullets(0, 0, 1, 35, "shotpuff", 1, 220)
+		TNT1 A 0  A_PlaySound("SSHFIRE", 1)
+		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, -3, 0, 0, 0)
+		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, -6, 0, 0, 0)
+		TNT1 AAAAAAAAAAA 0 A_FireCustomMissile("Tracer", Random(-7, 7), 0, -1, Random(-7, 7))
+		TNT1 A 0 A_FireBullets(15, 9, 22, 7, "ShotgunPuff")
+		TNT1 AA 0 A_FireCustomMissile("YellowFlareSpawn", 15, 0, 0, 0)
+		TNT1 AA 0 A_FireCustomMissile("YellowFlareSpawn", -15, 0, 0, 0)
+		TNT1 A 0 A_SetPitch(-1.55 + pitch)
+		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
+		P6W1 C 2 
 		
-		
+		P6W1 DEFGHIJKLM 1 //A_Refire
+		TNT1 A 0 A_Refire
+		Goto ReadyToFire
+			
 		////////////////////////////////////////////////////
 	
 	DontFlash:
 	    TNT1 A 1
-		Goto Flash
-	
-	Fire:
-		TNT1 A 0 A_JumpIfInventory("PB_DualSSGFireAnimation",1,"FireLeftGun")
-		TNT1 A 0 A_WeaponOffset(0,32)
-		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 1, 1)//First of all, checks if there is ammo inside the gun
-		Goto Reload//Couldn't find any ammo. Reload
-		TNT1 A 0
-		TNT1 A 0 A_GiveInventory("PB_DualSSGFireAnimation",1)
-		TNT1 A 0 A_TakeInventory("DualSSGAmmo", 2)
-		TNT1 A 0 A_AlertMonsters
-		
-	    P6W1 B 1 BRIGHT A_FireBullets(0, 0, 1, 35, "shotpuff", 1, 220)//Horizontal Spread, Vertical Spread, Numbers of Projectiles (Leave as -1 if its a single one), Damage Factor
-		TNT1 A 0  A_PlaySound("SSHFIRE", 1)//Play gun fire sound
-		TNT1 AAAAAAAAAAA 0 A_FireCustomMissile("Tracer", Random(-7, 7), 0, -1, Random(-7, 7))
-		TNT1 A 0 A_FireBullets(15, 9, 22, 7, "ShotgunPuff")
-		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 3, 0, 0, 0)
-		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 6, 0, 0, 0)
-		TNT1 AA 0 A_FireCustomMissile("YellowFlareSpawn", 15, 0, 0, 0)
-		TNT1 AA 0 A_FireCustomMissile("YellowFlareSpawn", -15, 0, 0, 0)
-		TNT1 A 0 A_SetPitch(-1.55 + pitch)//Vertical recoil down
-		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
-		P6W1 C 2 //A_FireCustomMissile("RifleCaseSpawn",0,0,6,4) //Ejetts empty brass
-		
-		P6W1 DEFGHIJKLM 1 //A_Refire
 		Goto ReadyToFire
-		
-	FireHalfBlastLeftGun:
-		
+	
+	AltFire:
+	TNT1 A 0 A_Jumpif(GetCVar(pb_olddualssgfiresystem)==1,"FireRightGun")
+	FireHalfBlastRightGun:
+	    TNT1 A 0 A_JumpIfInventory("FiredRightSSG",2,"FireHalfBlastLeftGun")
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 1, 1)//First of all, checks if there is ammo inside the gun
+		Goto Reload
+	FireHBRGStart:
 		TNT1 A 0 A_TakeInventory("DualSSGAmmo", 1)
 		TNT1 A 0 A_TakeInventory("SSGAmmoCounter", 1)
+		TNT1 A 0 A_GiveInventory("FiredRightSSG",1)
 		TNT1 A 0 A_AlertMonsters
-		TNT1 A 0 A_TakeInventory("PB_DualSSGFireAnimation",1)
-	    P6W2 B 1 BRIGHT A_FireBullets(0, 0, 1, 20, "shotpuff", 1, 120)//Horizontal Spread, Vertical Spread, Numbers of Projectiles (Leave as -1 if its a single one), Damage Factor
+		P6W1 A 1 BRIGHT
+		P6W1 B 1 BRIGHT A_FireBullets(0, 0, 1, 20, "shotpuff", 1, 120)//Horizontal Spread, Vertical Spread, Numbers of Projectiles (Leave as -1 if its a single one), Damage Factor
 		TNT1 A 0  A_PlaySound("weapons/shh2", 1)//Play gun fire sound
 		TNT1 AAAAAA 0 A_FireCustomMissile("Tracer", Random(-7, 7), 0, -1, Random(-7, 7))
 		TNT1 A 0 A_FireBullets(15, 9, 11, 7, "ShotgunPuff")
@@ -209,130 +235,241 @@ ACTOR DualSSG: PB_DualWeapon
 		TNT1 AA 0 A_FireCustomMissile("YellowFlareSpawn", -15, 0, 0, 0)
 		TNT1 A 0 A_SetPitch(-1.55 + pitch)//Vertical recoil down
 		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
-		P6W2 C 2 //A_FireCustomMissile("RifleCaseSpawn",0,0,6,4) //Ejetts empty brass
+		P6W1 C 2 //A_FireCustomMissile("RifleCaseSpawn",0,0,6,4) //Ejetts empty brass
+		
+		P6W1 DEFGHIJKLM 1 //A_Refire
+		TNT1 A 0 A_Refire
+		Goto ReadyToFire
+	
+	FireHalfBlastLeftGun:
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 1, 1)
+		Goto Reload
+		TNT1 A 0 A_JumpIfInventory("FiredLeftSSG",1,"FireHBRGStart") 
+		TNT1 A 0 A_TakeInventory("DualSSGAmmo", 1)
+		TNT1 A 0 A_TakeInventory("SSGAmmoCounter", 1)
+		TNT1 A 0 A_GiveInventory("FiredRightSSG",1)
+		TNT1 A 0 A_AlertMonsters
+		P6W2 A 1 BRIGHT
+		P6W2 B 1 BRIGHT A_FireBullets(0, 0, 1, 20, "shotpuff", 1, 120)
+		TNT1 A 0  A_PlaySound("weapons/shh2", 1)
+		TNT1 AAAAAA 0 A_FireCustomMissile("Tracer", Random(-7, 7), 0, -1, Random(-7, 7))
+		TNT1 A 0 A_FireBullets(15, 9, 11, 7, "ShotgunPuff")
+		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 3, 0, 0, 0)
+		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 6, 0, 0, 0)
+		TNT1 AA 0 A_FireCustomMissile("YellowFlareSpawn", 15, 0, 0, 0)
+		TNT1 AA 0 A_FireCustomMissile("YellowFlareSpawn", -15, 0, 0, 0)
+		TNT1 A 0 A_SetPitch(-1.55 + pitch)
+		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
+		P6W2 C 2 
 		
 		P6W2 DEFGHIJKLM 1 //A_Refire
+		TNT1 A 0 A_Refire
 		Goto ReadyToFire
 		
-		
 	DryFIre2:
-	    P6W1 D 1 A_PlaySound("weapons/empty", 1)
-		P6W1 AAA 1 A_JumpIfInventory("StopDualWield", 1, "LightDone")
-		Goto Flash	
+	    P6W1 M 1 A_PlaySound("weapons/empty", 1)
+		P6W1 MMM 1 A_JumpIfInventory("StopDualWield", 1, "LightDone")
+		Goto ReadyToFire	
 		
 		
 	Reload:
-	Reload2:
-	    
-	    DPRS E 0 //Always leave one free line before the reload animation to prevent bugs
-		TNT1 A 0 A_TakeInventory("Reloading")//Always put this to make sure that the game understand that you already are reloading your weapon, and calling this state again is not necessary
+		DPRS E 0 //Always leave one free line before the reload animation to prevent bugs
+		TNT1 A 0 A_TakeInventory("Reloading",1)//Always put this to make sure that the game understand that you already are reloading your weapon, and calling this state again is not necessary
 		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 4, "ReadytoFire")//Checks if the weapon is not fully reloaded, if yes, cancel reload.
 		TNT1 A 0 A_PlaySound("DRYFIRE", 1)
 		TNT1 A 0 A_JumpIfInventory("NewShell", 1, 1)//Checks if you have spare ammo
 		Goto ReadyToFire//Identified that you have no spare ammo. Get back to Ready animation
 		TNT1 A 0 A_GiveInventory("StopDualWield", 1)
-        
-	Refill:	
+	Reload2:	
 	    TNT1 A 0
-		TNT1 A 0 A_JumpIfInventory("NewShell", 1, 1)//Check if you have spare ammo again. This line is necessary in case you don't have enough ammo to fill an entire Cell.
-		Goto FinishReload//Gun is fully loaded. Go to finish animation
-	    TNT1 A 0 A_TakeInventorY("NewShell", 1)//Removes one spare bullet
-		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 1)//Puts one bullet inside the Cell
-		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 4, "FinishReload")//Checks if weapons is full
-		Loop
-		
-	 FinishReload:	//Weapon is fully loaded. Time to play the reloading animation.
-		TNT1 A 0
-		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 2)
 		P6SS EDCBA 1
-		TNT1 A 5
-		
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 4, "ReadyToFire")
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 3, "RightReloadSingle")
+		TNT1 A 0 A_JumpIfInventory("FiredRightSSG", 4,"RightReload")
+		TNT1 A 0 A_JumpIfInventory("FiredRightSSG", 3,"LeftReloadSingle")
+		TNT1 A 0 A_JumpIfInventory("FiredRightSSGRMB",1,"RightReload")
+		TNT1 A 0 A_JumpIfInventory("FiredRightSSG",2,"RightReload")
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 2, "LeftReload")
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 1, "RightReloadSingle")
+							
+	LeftReload:  
+		TNT1 A 0 A_JumpIfInventory("NewShell", 2, 1)
+		Goto ReadyToFire
+		TNT1 A 0 A_TakeInventorY("NewShell", 2)
+		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 2)
+		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 2)
 		R6FL ABCDEFGHIJ 1
-        TNT1 A 0 A_PlaySound("weapons/ssg/open", 8)
-		TNT1 AA 0 A_FireCustomMissile("SSGCaseSpawner",0,0,-10)
-        R6FL K 5
+	    TNT1 A 0 A_PlaySound("weapons/ssg/open", 8)
+	    TNT1 AA 0 A_FireCustomMissile("ShotCaseSpawn",0,0,-10)
+		R6FL K 5
         R6FL LLMMNNOO 1
-        R6FL PP 1
-        TNT1 A 0 A_PlaySound("weapons/ssg/in", 8)
-		R6FL QRST 1 
+        R6FL PP 1 
+		TNT1 A 0 A_PlaySound("weapons/ssg/in", 8)
+	    R6FL QRST 1 
         TNT1 A 0 A_PlaySound("weapons/ssg/close", 8)
         R6FL UV 1
-		
-		TNT1 A 5
-		
+        TNT1 A 0 A_JumpIfInventory("DualSSGAmmo",4,"EndOfReload")
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo",2,"RightReload")
+		Goto EndOfReload
+	RightReload:
+		TNT1 A 0 A_JumpIfInventory("NewShell", 2, 1)
+		Goto ReadyToFire
+		TNT1 A 0 A_TakeInventorY("NewShell", 2)
+		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 2)
+		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 2)
+		TNT1 A 0 A_TakeInventory("FiredRightSSG",2)
 		R6FR ABCDEFGHIJ 1
         TNT1 A 0 A_PlaySound("weapons/ssg/open", 8)
-		TNT1 AA 0 A_FireCustomMissile("SSGCaseSpawner",0,0,-10)
-        R6FR K 5
+	    TNT1 AA 0 A_FireCustomMissile("SSGCaseSpawner",0,0,-10)
+		R6FR K 5
         R6FR LLMMNNOO 1
-        R6FR PP 1
+	    R6FR PP 1
         TNT1 A 0 A_PlaySound("weapons/ssg/in", 8)
-		R6FR QRST 1 
+	    R6FR QRST 1 
         TNT1 A 0 A_PlaySound("weapons/ssg/close", 8)
         R6FR UV 1
-		
-		TNT1 A 0 A_TakeInventory("StopDualWield", 1)
-		TNT1 A 0 A_TakeInventory("FiredPrimary", 1)
-		TNT1 A 0 A_TakeInventory("FiredSecondary", 1)
 		TNT1 A 5
-		P6SS ABCDE 1
-		TNT1 A 0 A_TakeInventory("StopDualWield", 1)
-		TNT1 A 0 A_TakeInventory("FiredPrimary", 1)
-		TNT1 A 0 A_TakeInventory("FiredSecondary", 1)
-		TNT1 A 0 A_GunFlash
-		Goto ReadyToFire
-		
-			
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo",4,"EndOfReload")
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo", 2,"LeftReload")
+		Goto EndOfReload
 	
-	FinishReloadLeftOnly:	//Weapon is fully loaded. Time to play the reloading animation.
-		TNT1 A 0 A_GiveInventory("LeftSSGAmmo", 2)
-		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 2)
-		TNT1 A 0 A_GiveInventory("RightSSGAmmo", 2)
-		P6SS EDCBA 1
-		TNT1 A 5
-		
-		R6FL ABCDEFGHIJ 1
-        TNT1 A 0 A_PlaySound("weapons/ssg/open", 8)
-		TNT1 AA 0 A_FireCustomMissile("SSGCaseSpawner",0,0,-10)
-        R6FL K 5
-        R6FL LLMMNNOO 1
-        R6FL PP 1
-        TNT1 A 0 A_PlaySound("weapons/ssg/in", 8)
-		R6FL QRST 1 
+	LeftReloadSingle:
+		TNT1 A 0 A_JumpIfInventory("NewShell", 1, 1)
+		Goto ReadyToFire
+		TNT1 A 0 A_TakeInventorY("NewShell", 1)
+		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 1)
+		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 1)
+		R6FL ABCDEFGH 1
+	    TNT1 A 0 A_PlaySound("weapons/ssg/open", 8)
+	    TNT1 A 0 A_FireCustomMissile("ShotCaseSpawn",0,0,-10)
+        SHT9 AABBCCDD 1
+        R6FL OOPP 1
+		TNT1 A 0 A_PlaySound("weapons/ssg/in", 8)
+	    R6FL QRST 1 
         TNT1 A 0 A_PlaySound("weapons/ssg/close", 8)
         R6FL UV 1
-		TNT1 A 5
-		P6SS ABCDE 1
-		TNT1 A 0 A_TakeInventory("StopDualWield", 1)
-		TNT1 A 0 A_TakeInventory("FiredPrimary", 1)
-		TNT1 A 0 A_TakeInventory("FiredSecondary", 1)
-		TNT1 A 0 A_GunFlash
-		Goto ReadyToFire	
-		
-	FinishReloadRightOnly:	//Weapon is fully loaded. Time to play the reloading animation.
-		TNT1 A 0 A_GiveInventory("LeftSSGAmmo", 2)
+        TNT1 A 0 A_JumpIfInventory("DualSSGAmmo",4,"EndOfReload")
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo",2,"RightReload2")
+		Goto EndOfReload
+	
+	RightReload2:
+		TNT1 A 0 A_JumpIfInventory("NewShell", 2, 1)
+		Goto ReadyToFire
+		TNT1 A 0 A_TakeInventorY("NewShell", 2)
+		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 2)
 		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 2)
-		TNT1 A 0 A_GiveInventory("RightSSGAmmo", 2)
-		P6SS EDCBA 1
-		TNT1 A 5
 		R6FR ABCDEFGHIJ 1
         TNT1 A 0 A_PlaySound("weapons/ssg/open", 8)
-		TNT1 AA 0 A_FireCustomMissile("SSGCaseSpawner",0,0,-10)
-        R6FR K 5
+	    TNT1 AA 0 A_FireCustomMissile("SSGCaseSpawner",0,0,-10)
+		R6FR K 5
         R6FR LLMMNNOO 1
-        R6FR PP 1
+	    R6FR PP 1
         TNT1 A 0 A_PlaySound("weapons/ssg/in", 8)
-		R6FR QRST 1 
+	    R6FR QRST 1 
         TNT1 A 0 A_PlaySound("weapons/ssg/close", 8)
         R6FR UV 1
 		TNT1 A 5
-		P6SS ABCDE 1
-		TNT1 A 0 A_TakeInventory("StopDualWield", 1)
-		TNT1 A 0 A_TakeInventory("FiredPrimary", 1)
-		TNT1 A 0 A_TakeInventory("FiredSecondary", 1)
-		TNT1 A 0 A_GunFlash
+		Goto EndOfReload
+			
+	RightReloadSingle:
+		TNT1 A 0 A_JumpIfInventory("NewShell", 1, 1)
 		Goto ReadyToFire
-		
+		TNT1 A 0 A_TakeInventorY("NewShell", 1)
+		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 1)
+		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 1)
+		TNT1 A 0 A_JumpIfInventory("NewShell", 1, 1)
+		Goto ReadyToFire
+		TNT1 A 0 A_TakeInventorY("NewShell", 1)
+		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 1)
+		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 1)
+		R6FR ABCDEFGH 1
+        TNT1 A 0 A_PlaySound("weapons/ssg/open", 8)
+	    TNT1 A 0 A_FireCustomMissile("SSGCaseSpawner",0,0,-10)
+        SHT9 EEFFGGHH 1
+	    R6FR OOPP 1
+        TNT1 A 0 A_PlaySound("weapons/ssg/in", 8)
+	    R6FR QRST 1 
+        TNT1 A 0 A_PlaySound("weapons/ssg/close", 8)
+        R6FR UV 1
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo",4,"EndOfReload")
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo",2,"LeftReload2")
+		Goto EndOfReload
+	
+	LeftReload2:  
+		TNT1 A 0 A_JumpIfInventory("NewShell", 1, 1)
+		Goto ReadyToFire
+		TNT1 A 0 A_TakeInventorY("NewShell", 1)
+		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 1)
+		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 1)
+		R6FL ABCDEFGHIJ 1
+	    TNT1 A 0 A_PlaySound("weapons/ssg/open", 8)
+	    TNT1 AA 0 A_FireCustomMissile("ShotCaseSpawn",0,0,-10)
+		R6FL K 5
+        R6FL LLMMNNOO 1
+        R6FL PP 1 
+		TNT1 A 0 A_PlaySound("weapons/ssg/in", 8)
+	    R6FL QRST 1 
+        TNT1 A 0 A_PlaySound("weapons/ssg/close", 8)
+        R6FL UV 1
+		Goto EndOfReload
+				
+	EndOfReload:
+	TNT1 A 0 A_TakeInventory("FiredLeftSSGLMB",1)
+	TNT1 A 0 A_TakeInventory("FiredRightSSGRMB",1)
+	TNT1 A 0 A_TakeInventory("StopDualWield", 1)
+	P6SS ABCDE 1
+	TNT1 A 0 A_TakeInventory("FiredLeftSSG",2)
+	TNT1 A 0 A_TakeInventory("FiredRightSSG",4)
+	Goto ReadyToFire	
+
+	AlreadyUnloaded:
+		TNT1 A 0 A_Takeinventory("Unloading",1)
+		Goto ReadyToFire
+	
+	Unload:
+		TNT1 A 0 A_JumpIfInventory("PBSSGHasUnloaded", 1, "AlreadyUnloaded")
+		P6SS E 1 A_WeaponReady(WRF_ALLOWRELOAD)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_Takeinventory("Unloading",1)
+		TNT1 A 0 A_Takeinventory("ADSmode",1)
+        //TNT1 A 0 A_JumpIfInventory("SSGAmmoCounter",1,3)
+        TNT1 A 0 A_JumpIfInventory("DualSSGAmmo",1,3)
+		Goto ReadyToFire
+        TNT1 AAA 0
+		TNT1 A 0 A_Takeinventory("Unloading",1)
+	
+	RemoveBullets:
+		TNT1 AAAA 0
+		TNT1 A 0 A_JumpIfInventory("SSGAmmoCounter",1,4)
+		TNT1 A 0 A_JumpIfInventory("DualSSGAmmo",1,3)
+		Goto FinishUnload
+        TNT1 AAAAAA 0
+		TNT1 A 0 A_Takeinventory("SSGAmmoCounter",1)
+		TNT1 A 0 A_Takeinventory("DualSSGAmmo", 1)
+		TNT1 A 0 A_Giveinventory("NewShell",1)
+		Goto RemoveBullets
+	
+	FinishUnload:
+	P6SS EDCBA 1
+	R6FL AB 1
+	R6FL BCDEF 1
+	R6FL GH 1
+	TNT1 A 0 A_PlaySound("weapons/sshotc")
+	R6FL IJ 1
+	TNT1 A 0 A_PlaySound("weapons/sshotc")
+	R6FL JIHGFEDCBA 1
+	
+	R6FR AB 1
+	R6FR BCDEF 1
+	R6FR GH 1
+	TNT1 A 0 A_PlaySound("weapons/sshotc")
+	R6FR IJ 1
+	TNT1 A 0 A_PlaySound("weapons/sshotc")
+	R6FR JIHGFEDCA 1
+	P6SS ABCDE 1
+	Goto ReadyToFire
+	
+											
 	FlashKicking:
 		P6SS F 1 
 		P6SS F 1 
@@ -375,27 +512,26 @@ ACTOR DualSSG: PB_DualWeapon
 ACTOR DualSSGAmmo : Ammo //Your weapon's magazine ammo.
 {
    Inventory.Amount 0
-   Inventory.MaxAmount 4 //Your weapon's magazine ammo limit. Always leave one more bullet, so you can do the 12+1 effect.
+   Inventory.MaxAmount 4 //Your weapon's magazine ammo limit.
    Ammo.BackpackAmount 0
    Ammo.BackpackMaxAmount 4
    Inventory.Icon SHELA0
 }
 
-
-ACTOR LeftSSGAmmo : Ammo //Your weapon's magazine ammo.
+ACTOR LeftSSGAmmo : Ammo 
 {
    Inventory.Amount 0
-   Inventory.MaxAmount 2 //Your weapon's magazine ammo limit. Always leave one more bullet, so you can do the 12+1 effect.
+   Inventory.MaxAmount 2 
    Ammo.BackpackAmount 0
    Ammo.BackpackMaxAmount 2
    Inventory.Icon SHELA0
 }
 
 
-ACTOR RightSSGAmmo : Ammo //Your weapon's magazine ammo.
+ACTOR RightSSGAmmo : Ammo 
 {
    Inventory.Amount 0
-   Inventory.MaxAmount 2 //Your weapon's magazine ammo limit. Always leave one more bullet, so you can do the 12+1 effect.
+   Inventory.MaxAmount 2 
    Ammo.BackpackAmount 0
    Ammo.BackpackMaxAmount 2
    Inventory.Icon SHELA0
