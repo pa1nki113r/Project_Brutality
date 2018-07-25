@@ -4,7 +4,7 @@
 
 Actor PB_PistolFireAnimation1: Inventory
 {
-Inventory.maxamount 1
+	Inventory.maxamount 1
 }
 
 
@@ -25,36 +25,42 @@ ACTOR Handgun: PB_DualWeapon
 	+FLOORCLIP
 	+DONTGIB
 	Tag "Dual .45 Pistols"
-    AttackSound "None" //You better leave this clear
+	AttackSound "None" //You better leave this clear
 	Inventory.Pickupmessage "" //Pickup message
-    +WEAPON.NOAUTOAIM //Makes this weapon never autoaim, so recoil can work better
-    Scale 0.6 //Weapon's pickup sprite size
+	+WEAPON.NOAUTOAIM //Makes this weapon never autoaim, so recoil can work better
+	Scale 0.6 //Weapon's pickup sprite size
 	//+WEAPON.NOAUTOFIRE
 	+WEAPON.NO_AUTO_SWITCH
 	Weapon.SlotPriority 1
-	
+	+WEAPON.NOALERT
 	+POWERED_UP
 	Weapon.SisterWeapon BDPistol
 	
 	States
 	{
-	
+		
 	Spawn:
-	TNT1 A 100//Pickup sprite
-	Loop
-	
+		TNT1 A 100 //Pickup sprite
+		Loop
+		
+	// Weapon Management States
+		
 	GoToPurist:
 		TNT1 A 0 A_SelectWeapon("DualVanillaRifles")
 		Goto Select
-	
+		
 	Ready:
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"ReadySilencer")
 		D2GS ABCDE 1
+		Goto ReadyToFire
+		
 	Ready3:
 	ReadyToFire:
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"ReadyToFireSilencer")
 		TNT1 A 0 A_JumpIfInventory("Unloading",1,"Unload")
 		TNT1 A 0 A_JumpIfInventory("Grabbing_A_Ledge",1,"LedgeClimb")
 		TNT1 A 0 A_JumpIfInventory("Kicking",1,"DoKick")
-        TNT1 A 0 A_JumpIfInventory("Taunting",1,"Taunt")
+		TNT1 A 0 A_JumpIfInventory("Taunting",1,"Taunt")
 		TNT1 A 0 A_JumpIfInventory("Salute1", 1, "Salute")
 		TNT1 A 0 A_JumpIfInventory("Salute2", 1, "Salute")
 		TNT1 A 0 A_JumpIfInventory("DoGrenade", 1, "ThrowGrenade")
@@ -65,10 +71,35 @@ ACTOR Handgun: PB_DualWeapon
 		TNT1 A 0 A_JumpIfInventory("GrabbedBarrel", 1, "GrabBarrel")   
 		TNT1 A 0 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "NoDualWield")
 		D2GG A 1 
-			{
-				A_WeaponReady(WRF_ALLOWRELOAD);
-				A_WeaponOffset(CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY"),WOF_KEEPY);
-			}
+		{
+			A_WeaponReady(WRF_ALLOWRELOAD);
+			A_WeaponOffset(CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY"),WOF_KEEPY);
+		}
+		Loop
+		
+	ReadySilencer:
+		D2GS FGHIJ 1
+		Goto ReadyToFireSilencer
+		
+	ReadyToFireSilencer:
+		TNT1 A 0 A_JumpIfInventory("Unloading",1,"Unload")
+		TNT1 A 0 A_JumpIfInventory("Grabbing_A_Ledge",1,"LedgeClimb")
+		TNT1 A 0 A_JumpIfInventory("Kicking",1,"DoKick")
+		TNT1 A 0 A_JumpIfInventory("Taunting",1,"Taunt")
+		TNT1 A 0 A_JumpIfInventory("Salute1", 1, "Salute")
+		TNT1 A 0 A_JumpIfInventory("Salute2", 1, "Salute")
+		TNT1 A 0 A_JumpIfInventory("DoGrenade", 1, "ThrowGrenade")
+		TNT1 A 0 A_JumpIfInventory("DoMine", 1, "ThrowMine")
+		TNT1 A 0 A_JumpIfInventory("DoElecPod", 1, "ThrowElecPod")
+		TNT1 A 0 A_JumpIfInventory("DoSwarmPod", 1, "ThrowSwarmPod")
+		TNT1 A 0 A_JumpIfInventory("DoHealBackpack", 1, "UseHealthBackPack")
+		TNT1 A 0 A_JumpIfInventory("GrabbedBarrel", 1, "GrabBarrel")   
+		TNT1 A 0 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "NoDualWield")
+		D2GS J 1
+		{
+			A_WeaponReady(WRF_ALLOWRELOAD);
+			A_WeaponOffset(CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY"),WOF_KEEPY);
+		}
 		Loop
 		
 	NoDualWield:
@@ -123,32 +154,59 @@ ACTOR Handgun: PB_DualWeapon
 		TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
 		TNT1 AAAAAAAA 1 A_Raise
-		Wait
-	
+		Wait	
 		
-	Fire:
-	Altfire:
+	// Silencer Swapping States
+		
+	AltFire: // Attach Silencer
 		TNT1 A 0 A_WeaponOffset(0,32)
-		TNT1 A 0 A_JumpIfInventory("PB_PistolFireAnimation1", 1, "Fire2")
-        TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,2)
-        Goto Reload
-        TNT1 AAAA 0
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"DetachSilencer")
+		TNT1 A 0 A_GiveInventory ("SilencerEquipped",1)
+		D6GC ABCDEFFFG 1
+		D5GA HIJKLM 1
+		TNT1 A 0 A_PlaySound("weapons/pistolup")
+		D5GA NNNOPOPOQRRRSS 1
+		D6GC HIJKLMN 1
+		TNT1 A 0
+		TNT1 A 0 A_Print("Silencer Attached")
+		Goto ReadyToFireSilencer
+		
+	DetachSilencer:
+		TNT1 A 0 A_TakeInventory ("SilencerEquipped",1)
+		D6GD ABCDEFGHII 1
+		D5GF JJKKLLMMNOPQRST 1
+		TNT1 A 0 A_PlaySound("weapons/pistolup")
+		D5GF UU 1
+		D6GD JKLMNO 1
+		TNT1 A 0
+		TNT1 A 0 A_Print("Silencer Detached")
+		Goto ReadyToFire
+		
+	// Firing States (no silencer)
+		
+	Fire: // Fires right gun to start with.
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FireSilencer")
+		TNT1 A 0 A_WeaponOffset(0,32)
+		TNT1 A 0 A_JumpIfInventory("PB_PistolFireAnimation1", 1, "FireLeft")
+		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,2)
+		Goto Reload
+		TNT1 AAAA 0
 		
 		TNT1 A 0 A_GiveInventory("PB_PistolFireAnimation1")
 		
-		
-        TNT1 A 0 A_PlaySound("weapons/pistol")
+		TNT1 A 0 A_PlaySound("weapons/pistol")
 		TNT1 A 0 A_ZoomFactor(0.98)
 		D2RF A 1 BRIGHT A_FireBullets (8, 2, -1, 14, "HitPuff", FBF_NORANDOM,4096,"Tracer", random(-2,2),4)
-       // RIFF A 0 A_FireCustomMissile("Tracer", random(1,4), 0, 4, random(-2,2))
+		// RIFF A 0 A_FireCustomMissile("Tracer", random(1,4), 0, 4, random(-2,2))
 		TNT1 A 0 A_Takeinventory("PistolAmmo",1)
 		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
-        D2RF B 1 BRIGHT //A_WeaponReady(1)
+		TNT1 A 0 A_AlertMonsters
+		D2RF B 1 BRIGHT //A_WeaponReady(1)
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0)
 		TNT1 A 0 A_FireCustomMissile("MP40CaseSpawn",0,0,6,4) //Ejetts empty brass
 		TNT1 A 0 //A_WeaponReady(WRF_NOPRIMARY)
-		TNT1 A 0 A_Refire("HoldingFire1")
+		TNT1 A 0 A_Refire("HoldingFireRight")
 		D2RF C 1 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOPRIMARY)
 		TNT1 A 0 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOPRIMARY)
 		D2RF D 1 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOPRIMARY)
@@ -157,7 +215,8 @@ ACTOR Handgun: PB_DualWeapon
 		TNT1 A 0 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOPRIMARY)
 		TNT1 A 0 A_Refire
 		Goto ReadyToFire
-	HoldingFire1:
+		
+	HoldingFireRight:
 		D2RF C 1 
 		TNT1 A 0 
 		D2RF D 1 
@@ -167,11 +226,10 @@ ACTOR Handgun: PB_DualWeapon
 		TNT1 A 0 A_Refire
 		Goto ReadyToFire
 		
-		
-	Fire2:
+	FireLeft:
 		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,2)
-        Goto Reload
-        TNT1 AAAA 0
+		Goto Reload
+		TNT1 AAAA 0
 		
 		TNT1 A 0 A_TakeInventory("PB_PistolFireAnimation1")
 		
@@ -179,12 +237,13 @@ ACTOR Handgun: PB_DualWeapon
 		TNT1 A 0 A_ZoomFactor(0.98)
 		D2LF A 1 BRIGHT A_FireBullets (8, 2, -1, 14, "HitPuff", FBF_NORANDOM,4096,"Tracer", random(-2,2),4)
 		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
-        D2LF B 1 BRIGHT //A_WeaponReady(1)
+		TNT1 A 0 A_AlertMonsters
+		D2LF B 1 BRIGHT //A_WeaponReady(1)
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0)
 		TNT1 A 0 A_FireCustomMissile("MP40CaseSpawn",0,0,-6,4) //Ejetts empty brass
 		TNT1 A 0 //A_WeaponReady(WRF_NOSECONDARY)
-		TNT1 A 0 A_Refire("HoldingFire2")
+		TNT1 A 0 A_Refire("HoldingFireLeft")
 		D2LF C 1 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOSECONDARY)
 		TNT1 A 0 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOSECONDARY)
 		D2LF D 1 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOSECONDARY)
@@ -194,7 +253,7 @@ ACTOR Handgun: PB_DualWeapon
 		TNT1 A 0 A_Refire
 		Goto ReadyToFire
 		
-		HoldingFire2:
+	HoldingFireLeft:
 		D2LF C 1 
 		TNT1 A 0 
 		D2LF D 1 
@@ -204,23 +263,24 @@ ACTOR Handgun: PB_DualWeapon
 		TNT1 A 0 A_Refire
 		Goto ReadyToFire
 		
-	Hold:
+	Hold: // Holding for Right Gun
 	//AltHold:
-		TNT1 A 0 A_JumpIfInventory("PB_PistolFireAnimation1", 1, "HoldFire2")
-        TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,2)
-        Goto Reload
-        TNT1 AAAA 0
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"HoldSilencer")
+		TNT1 A 0 A_JumpIfInventory("PB_PistolFireAnimation1", 1, "HoldFireLeft")
+		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,2)
+		Goto Reload
+		TNT1 AAAA 0
 		
 		TNT1 A 0 A_GiveInventory("PB_PistolFireAnimation1")
 		
-		
-        TNT1 A 0 A_PlaySound("weapons/pistol")
+		TNT1 A 0 A_PlaySound("weapons/pistol")
 		TNT1 A 0 A_ZoomFactor(0.98)
 		D2RF A 1 BRIGHT A_FireBullets (8, 2, -1, 14, "HitPuff", FBF_NORANDOM)
-        RIFF A 0 A_FireCustomMissile("Tracer", -1, 0, 4, -1)
+		RIFF A 0 A_FireCustomMissile("Tracer", -1, 0, 4, -1)
 		TNT1 A 0 A_Takeinventory("PistolAmmo",1)
 		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
-        D2RF B 1 BRIGHT //A_WeaponReady(1)
+		TNT1 A 0 A_AlertMonsters
+		D2RF B 1 BRIGHT //A_WeaponReady(1)
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0)
 		TNT1 A 0 A_FireCustomMissile("MP40CaseSpawn",0,0,6,4) //Ejetts empty brass
@@ -234,19 +294,20 @@ ACTOR Handgun: PB_DualWeapon
 		TNT1 A 0 A_ClearReFire 
 		Goto ReadyToFire
 		
-		HoldFire2:
+	HoldFireLeft:
 		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,2)
-        Goto Reload
-        TNT1 AAAA 0
+		Goto Reload
+		TNT1 AAAA 0
 		
 		TNT1 A 0 A_TakeInventory("PB_PistolFireAnimation1")
 		
 		TNT1 A 0 A_PlaySound("weapons/pistol")
 		TNT1 A 0 A_ZoomFactor(0.98)
 		D2LF A 1 BRIGHT A_FireBullets (8, 2, -1, 14, "HitPuff", FBF_NORANDOM)
-        RIFF A 0 A_FireCustomMissile("Tracer", -1, 0, -4, -1)
+		RIFF A 0 A_FireCustomMissile("Tracer", -1, 0, -4, -1)
 		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
-        D2LF B 1 BRIGHT //A_WeaponReady(1)
+		TNT1 A 0 A_AlertMonsters
+		D2LF B 1 BRIGHT //A_WeaponReady(1)
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0)
 		TNT1 A 0 A_FireCustomMissile("MP40CaseSpawn",0,0,-6,4) //Ejetts empty brass
@@ -260,166 +321,423 @@ ACTOR Handgun: PB_DualWeapon
 		TNT1 A 0 A_ClearReFire 
 		Goto ReadyToFire
 		
+	// Firing Silencer States
+		
+	FireSilencer: // Fires right gun to start with.
+		TNT1 A 0 A_WeaponOffset(0,32)
+		TNT1 A 0 A_JumpIfInventory("PB_PistolFireAnimation1", 1, "FireLeftSilencer")
+		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,2)
+		Goto Reload
+		TNT1 AAAA 0
+		
+		TNT1 A 0 A_GiveInventory("PB_PistolFireAnimation1")
+		
+		TNT1 A 0 A_PlaySound("weapons/suppressedpistol")
+		TNT1 A 0 A_ZoomFactor(0.98)
+		D2RF F 1 BRIGHT A_FireBullets (8, 2, -1, 14, "HitPuff", FBF_NORANDOM,4096,"Tracer", random(-2,2),4)
+		// DEGF A 1 BRIGHT A_FireBullets (2, 2, -1, 9, "HitPuff") // Original Silencer shot
+		// RIFF A 0 A_FireCustomMissile("Tracer", random(1,4), 0, 4, random(-2,2))
+		TNT1 A 0 A_Takeinventory("PistolAmmo",1)
+		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
+		D2RF G 1 BRIGHT //A_WeaponReady(1)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0)
+		TNT1 A 0 A_FireCustomMissile("MP40CaseSpawn",0,0,6,4) //Ejetts empty brass
+		TNT1 A 0 //A_WeaponReady(WRF_NOPRIMARY)
+		TNT1 A 0 A_Refire("HoldingFireSilencer") // was this right? Was HoldingFire1
+		D2RF H 1 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOPRIMARY)
+		TNT1 A 0 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOPRIMARY)
+		D2RF I 1 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOPRIMARY)
+		TNT1 A 0 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOPRIMARY)
+		D2RF J 1 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOPRIMARY)
+		TNT1 A 0 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOPRIMARY)
+		TNT1 A 0 A_Refire
+		Goto ReadyToFireSilencer
+		
+	HoldingFireRightSilencer:
+		D2RF H 1 
+		TNT1 A 0 
+		D2RF I 1 
+		TNT1 A 0 
+		D2RF J 1 
+		TNT1 A 0 
+		TNT1 A 0 A_Refire
+		Goto ReadyToFireSilencer
+		
+	FireLeftSilencer:
+		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,2)
+		Goto Reload
+		TNT1 AAAA 0
+		
+		TNT1 A 0 A_TakeInventory("PB_PistolFireAnimation1")
+		
+		TNT1 A 0 A_PlaySound("weapons/suppressedpistol")
+		TNT1 A 0 A_ZoomFactor(0.98)
+		D2LF F 1 BRIGHT A_FireBullets (8, 2, -1, 14, "HitPuff", FBF_NORANDOM,4096,"Tracer", random(-2,2),4)
+		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
+		D2LF G 1 BRIGHT //A_WeaponReady(1)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0)
+		TNT1 A 0 A_FireCustomMissile("MP40CaseSpawn",0,0,-6,4) //Ejetts empty brass
+		TNT1 A 0 //A_WeaponReady(WRF_NOSECONDARY)
+		TNT1 A 0 A_Refire("HoldingFireLeftSilencer")
+		D2LF H 1 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOSECONDARY)
+		TNT1 A 0 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOSECONDARY)
+		D2LF I 1 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOSECONDARY)
+		TNT1 A 0 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOSECONDARY)
+		D2LF J 1 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOSECONDARY)
+		TNT1 A 0 A_WeaponReady(WRF_ALLOWRELOAD)//(WRF_NOSECONDARY)
+		TNT1 A 0 A_Refire
+		Goto ReadyToFireSilencer
+		
+	HoldingFireLeftSilencer:
+		D2LF H 1 
+		TNT1 A 0 
+		D2LF I 1 
+		TNT1 A 0 
+		D2LF J 1 
+		TNT1 A 0 
+		TNT1 A 0 A_Refire
+		Goto ReadyToFireSilencer
+		
+	HoldSilencer: // Holding for Right Gun
+	//AltHold:
+		TNT1 A 0 A_JumpIfInventory("PB_PistolFireAnimation1", 1, "HoldFireLeftSilencer")
+		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,2)
+		Goto Reload
+		TNT1 AAAA 0
+		
+		TNT1 A 0 A_GiveInventory("PB_PistolFireAnimation1")
+		
+		TNT1 A 0 A_PlaySound("weapons/suppressedpistol")
+		TNT1 A 0 A_ZoomFactor(0.98)
+		D2RF F 1 BRIGHT A_FireBullets (8, 2, -1, 14, "HitPuff", FBF_NORANDOM)
+		RIFF A 0 A_FireCustomMissile("Tracer", -1, 0, 4, -1)
+		TNT1 A 0 A_Takeinventory("PistolAmmo",1)
+		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
+		D2RF G 1 BRIGHT //A_WeaponReady(1)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0)
+		TNT1 A 0 A_FireCustomMissile("MP40CaseSpawn",0,0,6,4) //Ejetts empty brass
+		TNT1 A 0 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		D2RF H 1 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		TNT1 A 0 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		D2RF I 1 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		TNT1 A 0 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		D2RF J 1 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		TNT1 A 0 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		TNT1 A 0 A_ClearReFire 
+		Goto ReadyToFireSilencer
+		
+	HoldFireLeftSilencer:
+		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,2)
+		Goto Reload
+		TNT1 AAAA 0
+		
+		TNT1 A 0 A_TakeInventory("PB_PistolFireAnimation1")
+		
+		TNT1 A 0 A_PlaySound("weapons/suppressedpistol")
+		TNT1 A 0 A_ZoomFactor(0.98)
+		D2LF F 1 BRIGHT A_FireBullets (8, 2, -1, 14, "HitPuff", FBF_NORANDOM)
+		RIFF A 0 A_FireCustomMissile("Tracer", -1, 0, -4, -1)
+		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
+		D2LF G 1 BRIGHT //A_WeaponReady(1)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0)
+		TNT1 A 0 A_FireCustomMissile("MP40CaseSpawn",0,0,-6,4) //Ejetts empty brass
+		TNT1 A 0 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		D2LF H 1 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		TNT1 A 0 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		D2LF I 1 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		TNT1 A 0 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		D2LF J 1 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		TNT1 A 0 A_WeaponReady(WRF_NOFIRE|WRF_ALLOWRELOAD)
+		TNT1 A 0 A_ClearReFire 
+		Goto ReadyToFireSilencer
+		
+	// No Ammo
 		
 	NoAmmo:
 	DryFire:
-	    D2GG A 1 A_PlaySound("weapons/empty", 1)
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"NoAmmoSilencer")	
+		D2GG A 1 A_PlaySound("weapons/empty", 1)
 		Goto ReadyToFire
 		
+	NoAmmoSilencer:
+		D2GS J 1 A_PlaySound("weapons/empty", 1)
+		Goto ReadyToFireSilencer
+		
+	// Reloading States
+		
 	Reload:
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"ReloadSilencer")
 		D2GG A 1 A_WeaponReady
 		TNT1 A 0 A_Takeinventory("Reloading",1)
 		TNT1 A 0 A_Takeinventory("ADSmode",1)
 		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",32,"ReadytoFire")
-        TNT1 A 0 A_JumpIfInventory("PistolBullets",1,1)
-        Goto NoAmmo
+		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,1)
+		Goto NoAmmo
 		TNT1 AAAA 0
 		TNT1 A 0 A_PlaySound("PSRLOUT")
-		D4GR ABCEFGH 1
+		D6GA ABCDEFGHIJK 1
 		TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",5,0,6,-2)
 		TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",-5,0,-6,-2)
 		TNT1 A 0 //A_PlaySound("IronSights")
-		D4GR IJKLMN 1
-		TNT1 A 5
-		
-		D2GR ABCD 1
+		D6GA LMNOPQR 1
+		TNT1 A 0
 		TNT1 A 0 A_PlaySound("PSRLIN", 2)
-		D2GR DEFG 2
+		D6GA SSTTSSU 1
 		TNT1 A 0 A_PlaySound("PSRLFIN", 3)
-		TNT1 A 4
-		DEGR ABCD 1
+		D6GA VVWXYZ 1
+		D6GB ABCDEFGH 1
 		TNT1 A 0 A_PlaySound("PSRLIN", 2)
-		DEGR DEFG 2
+		D6GB IIJJIIK 1
 		TNT1 A 0 A_PlaySound("PSRLFIN", 3)
+		D6GB LLMNOPQRSTUVW 1
 		TNT1 A 0 A_Takeinventory("PBPistolHasUnloaded",1)
-		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,"InsertBullets2")
+		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,"InsertBulletsNoRechamber")
+		Goto InsertBulletsRechamber
 		
-	InsertBullets:
+	InsertBulletsRechamber:
 		TNT1 AAAA 0
 		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",30,15)
 		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,3)
-		Goto Ready
-        TNT1 AAAAAA 0
+		Goto ReadyToFire
+		TNT1 AAAAAA 0
 		TNT1 A 0 A_Giveinventory("HandgunAmmo",1)
 		TNT1 A 0 A_Giveinventory("PistolAmmo",1)
 		TNT1 A 0 A_Takeinventory("PistolBullets",1)
-		Goto InsertBullets
+		Goto InsertBulletsRechamber
 		
 		TNT1 AAAAAAAAAA 0
 		TNT1 A 0 A_Takeinventory("Reloading",1)
 		
 		TNT1 A 0 A_Refire
-        Goto Ready
+		Goto ReadyToFire
 		TNT1 AAAA 0
 		TNT1 A 0 A_Takeinventory("Reloading",1)
 		
 		TNT1 A 0 A_Refire
-        Goto Ready
+		Goto ReadyToFire
 		
-	InsertBullets2:
+	InsertBulletsNoRechamber:
 		TNT1 AAAA 0
 		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",32,15)
 		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,3)
-		Goto Ready
-        TNT1 AAAAAA 0
+		Goto ReadyToFire
+		TNT1 AAAAAA 0
 		TNT1 A 0 A_Giveinventory("HandgunAmmo",1)
 		TNT1 A 0 A_Giveinventory("PistolAmmo",1)
 		TNT1 A 0 A_Takeinventory("PistolBullets",1)
-		Goto InsertBullets2
+		Goto InsertBulletsNoRechamber
 		
 		TNT1 AAAAAAAAAA 0
 		TNT1 A 0 A_Takeinventory("Reloading",1)
 		TNT1 A 0 A_Refire
-        Goto Ready
+		Goto ReadyToFire
 		TNT1 AAAA 0
 		TNT1 A 0 A_Takeinventory("Reloading",1)
 		
 		TNT1 A 0 A_Refire
-        Goto Ready
+		Goto ReadyToFire
+		
+	ReloadSilencer:
+		D2GS J 1 A_WeaponReady
+		TNT1 A 0 A_Takeinventory("Reloading",1)
+		TNT1 A 0 A_Takeinventory("ADSmode",1)
+		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",32,"ReadytoFire")
+		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,1)
+		Goto NoAmmo
+		TNT1 AAAA 0
+		TNT1 A 0 A_PlaySound("PSRLOUT")
+		D6GE ABCDEFGHIJK 1
+		TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",5,0,6,-2)
+		TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",-5,0,-6,-2)
+		TNT1 A 0 //A_PlaySound("IronSights")
+		D6GE LMNOPQR 1
+		TNT1 A 0
+		TNT1 A 0 A_PlaySound("PSRLIN", 2)
+		D6GE SSTTSSU 1
+		TNT1 A 0 A_PlaySound("PSRLFIN", 3)
+		D6GE VVWXYZ 1
+		D6GF ABCDEFGH 1
+		TNT1 A 0 A_PlaySound("PSRLIN", 2)
+		D6GF IIJJIIK 1
+		TNT1 A 0 A_PlaySound("PSRLFIN", 3)
+		D6GF LLMNOPQRSTUVW 1
+		TNT1 A 0 A_Takeinventory("PBPistolHasUnloaded",1)
+		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,"InsertBulletsNoRechamberSilencer")
+		Goto InsertBulletsRechamberSilencer
+		
+	InsertBulletsRechamberSilencer:
+		TNT1 AAAA 0
+		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",30,15)
+		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,3)
+		Goto ReadyToFireSilencer
+		TNT1 AAAAAA 0
+		TNT1 A 0 A_Giveinventory("HandgunAmmo",1)
+		TNT1 A 0 A_Giveinventory("PistolAmmo",1)
+		TNT1 A 0 A_Takeinventory("PistolBullets",1)
+		Goto InsertBulletsRechamberSilencer
+		
+		TNT1 AAAAAAAAAA 0
+		TNT1 A 0 A_Takeinventory("Reloading",1)
+		
+		TNT1 A 0 A_Refire
+		Goto ReadyToFireSilencer
+		TNT1 AAAA 0
+		TNT1 A 0 A_Takeinventory("Reloading",1)
+		
+		TNT1 A 0 A_Refire
+		Goto ReadyToFireSilencer
+		
+	InsertBulletsNoRechamberSilencer:
+		TNT1 AAAA 0
+		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",32,15)
+		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,3)
+		Goto ReadyToFireSilencer
+		TNT1 AAAAAA 0
+		TNT1 A 0 A_Giveinventory("HandgunAmmo",1)
+		TNT1 A 0 A_Giveinventory("PistolAmmo",1)
+		TNT1 A 0 A_Takeinventory("PistolBullets",1)
+		Goto InsertBulletsNoRechamberSilencer
+		
+		TNT1 AAAAAAAAAA 0
+		TNT1 A 0 A_Takeinventory("Reloading",1)
+		TNT1 A 0 A_Refire
+		Goto ReadyToFireSilencer
+		TNT1 AAAA 0
+		TNT1 A 0 A_Takeinventory("Reloading",1)
+		
+		TNT1 A 0 A_Refire
+		Goto ReadyToFireSilencer
+		
+	// Unloading States
 		
 	Unload:
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"UnloadSilencer")
+		D2GS E 1 A_WeaponReady
+		TNT1 A 0 A_Takeinventory("Unloading",1)
+		TNT1 A 0 A_Takeinventory("ADSmode",1)
+		TNT1 A 0 A_JumpIfInventory("PistolAmmo",1,1)
+		Goto NoAmmo
+		TNT1 A 0
+		TNT1 A 0 A_Takeinventory("Zoomed",1)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_GiveInventory("Pumping", 1)
+		TNT1 A 0 A_Takeinventory("Reloading",1)
+		
+		D6GA BCDE 1
+		TNT1 A 0 A_PlaySound("PSRLFIN", 3)
+		D6GA FGHIJ 1
+		TNT1 A 0 A_PlaySound("PSRLIN", 2)
+		D6GA BA 1
+		D2GS EDCBA 1
+		TNT1 A 5
+		
+		TNT1 A 0 A_Giveinventory("PBPistolHasUnloaded",1)
+		Goto RemoveBullets
+		
+	UnloadSilencer:
+		D2GS J 1 A_WeaponReady
+		TNT1 A 0 A_Takeinventory("Unloading",1)
+		TNT1 A 0 A_Takeinventory("ADSmode",1)
+		TNT1 A 0 A_JumpIfInventory("PistolAmmo",1,1)
+		Goto NoAmmoSilencer
+		TNT1 A 0
+		TNT1 A 0 A_Takeinventory("Zoomed",1)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_GiveInventory("Pumping", 1)
+		TNT1 A 0 A_Takeinventory("Reloading",1)
+		
+		D6GE BCDE 1
+		TNT1 A 0 A_PlaySound("PSRLFIN", 3)
+		D6GE FGHIJ 1
+		TNT1 A 0 A_PlaySound("PSRLIN", 2)
+		D6GE BA 1
+		D2GS JIHGF 1
+		TNT1 A 5
+		TNT1 A 0 A_Giveinventory("PBPistolHasUnloaded",1)
+		Goto RemoveBullets
+		
+		/*
 		D2GG A 1 A_WeaponReady
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		TNT1 A 0 A_Takeinventory("ADSmode",1)
 		TNT1 A 0 A_JumpIfInventory("PistolAmmo",1,3)
-        Goto NoAmmo
-        TNT1 AAA 0
+		Goto NoAmmo
+		TNT1 AAA 0
 		TNT1 A 0 A_Takeinventory("Zoomed",1)
-        TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_GiveInventory ("Pumping", 1)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_GiveInventory("Pumping", 1)
 		TNT1 A 0 A_Takeinventory("Reloading",1)
-		
 		
 		D2GR GFED 1
 		TNT1 A 0 A_PlaySound("PSRLFIN", 3)
-        D2GR CBA 1
+		D2GR CBA 1
 		TNT1 A 0 A_PlaySound("PSRLIN", 2)
 		TNT1 A 5
 		DEGR GFED 1
 		TNT1 A 0 A_PlaySound("PSRLFIN", 3)
-        DEGR CBA 1
+		DEGR CBA 1
 		TNT1 A 0 A_PlaySound("PSRLIN", 2)
 		
-		
 		TNT1 A 0 A_Giveinventory("PBPistolHasUnloaded",1)
-		TNT1 A 0 A_JumpIfInventory("PistolAmmo",1,"RemoveBullets")
-
+		Goto RemoveBullets
+		*/
+		
 	RemoveBullets:
-		TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,3)
+		TNT1 A 0 A_JumpIfInventory("HandgunAmmo",1,2)
+		TNT1 A 0 A_Takeinventory("Reloading",1)
 		Goto Ready
-        TNT1 AAAAAA 0
+		TNT1 A 0
 		TNT1 A 0 A_Takeinventory("PistolAmmo",1)
 		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
 		TNT1 A 0 A_Giveinventory("PistolBullets",1)
 		Goto RemoveBullets
 		
-		TNT1 AAAAAAAAAA 0
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-		
-		TNT1 A 0 A_Refire
-        Goto Ready
-		TNT1 AAAA 0
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-		
-		TNT1 A 0 A_Refire
-        Goto Ready	
+	// Flash States
 		
 	FlashKicking:
-		D2GS E 1 
-		D2GS E 1 
-		D2GS D 1 
-		D2GS C 3 
-		D2GS B 3
-		D2GS C 3 
-		D2GS D 1 
-		D2GS E 1 
-		D2GS E 1 
-		D2GS E 1 
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashKickingSilencer")
+		D6GG ABCDEFGHIJKLMN 1
+		D2GS EE 1 // Pause
+		Stop
+		
+	FlashKickingSilencer:
+		D6GH ABCDEFGHIJKLMN 1
+		D2GS JJ 1 // Pause
 		Stop
 		
 	FlashAirKicking:
-		D2GS E 1 
-		D2GS E 1 
-		D2GS D 1 
-		D2GS C 3 
-		D2GS B 3
-		D2GS C 3 
-		D2GS D 1 
-		D2GS E 1 
-		D2GS E 1 
-		D2GS EEE 1 
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashAirKickingSilencer")
+		D6GG ABCDEFGHIJKLMN 1
+		D2GS EEEE 1 // Pause
+		Stop
+		
+	FlashAirKickingSilencer:
+		D6GH ABCDEFGHIJKLMN 1
+		D2GS JJJJ 1 // Pause
 		Stop
 		
 	FlashSlideKicking:
-		D2GS ED 2 
-		D2GS DDCCCBBBAAA 2  
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashSlideKickingSilencer")
+		D6GI ABCDEFGHIJKLMNOPQRSTUV 1
+		Stop
+		
+	FlashSlideKickingSilencer:
+		D6GJ ABCDEFGHIJKLMNOPQRSTUV 1
 		Stop
 		
 	FlashSlideKickingStop:
-		//TNT1 A 0
-		D2GS ABCDE 1 
-		D2GS E 1 
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashSlideKickingStopSilencer")
+		D6GI WXYZ 1
+		D2GS EE 1 // Pause
+		Stop
+		
+	FlashSlideKickingStopSilencer:
+		D6GJ WXYZ 1
+		D2GS JJ 1 // Pause
 		Stop
 	}
 }
@@ -433,7 +751,6 @@ ACTOR HandgunAmmo : Ammo //Your weapon's magazine ammo.
    Inventory.Icon SMGPA0
 }
 
-
 ACTOR LeftPistolAmmo : Ammo //Your weapon's magazine ammo.
 {
    Inventory.Amount 0
@@ -443,7 +760,6 @@ ACTOR LeftPistolAmmo : Ammo //Your weapon's magazine ammo.
    Inventory.Icon SMGPA0
 }
 
-
 ACTOR RightPistolAmmo : Ammo //Your weapon's magazine ammo.
 {
    Inventory.Amount 0
@@ -452,5 +768,3 @@ ACTOR RightPistolAmmo : Ammo //Your weapon's magazine ammo.
    Ammo.BackpackMaxAmount 16
    Inventory.Icon SMGPA0
 }
-
-
