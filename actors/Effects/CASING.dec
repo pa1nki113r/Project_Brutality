@@ -76,18 +76,19 @@ ACTOR ShotCaseSpawn3 : RifleCaseSpawn
  }
 }
 
-Actor SSGCaseSpawner : ShotcaseSpawn
+Actor SSGCaseSpawner : RifleCaseSpawn
 {
 		States
 		{
 		Spawn:
 			TNT1 A 0
 			TNT1 A 0 Thing_ChangeTID(0,390)
-				TNT1 A 1
-				Goto Death
+			TNT1 A 1 A_CustomMissile("ShotgunCasingSSG",0,0,random(80,100),2,random(50,70))
+			Stop
+        /*Goto Death
 		Death:
-				TNT1 A 0 A_CustomMissile("ShotgunCasing",0,0,random(80,100),2,random(50,70))
-				Stop
+				TNT1 A 0 A_CustomMissile("ShotgunCasingSSG",0,0,random(80,100),2,random(50,70))
+				Stop*/
 		}
 }
 
@@ -102,7 +103,7 @@ ACTOR 50CaseSpawn
 	{
 	Spawn:
         TNT1 A 0
-		TNT1 A 1 A_CustomMissile("EmptyBrass",-2,0,random(80,100),2,random(40,80))
+		TNT1 A 1 A_CustomMissile("EmptyBrassMinigun",-2,0,random(80,100),2,random(40,80))
 		Stop
 	}
 }
@@ -114,7 +115,7 @@ ACTOR 50CaseSpawn2: 50CaseSpawn
 	{
 	Spawn:
         TNT1 A 0
-		TNT1 A 1 A_CustomMissile("EmptyBrass",-2,0,random(-80,-100),2,random(40,80))
+		TNT1 A 1 A_CustomMissile("EmptyBrassMinigun",-2,0,random(-80,-100),2,random(40,80))
 		TNT1 A 1 A_CustomMissile("MinigunBeltPiece",-4,0,random(-80,-100),2,random(40,80))
 		Stop
 	}
@@ -188,6 +189,7 @@ ACTOR EmptyBrass
    -CANBOUNCEWATER
    +FLOORCLIP
    +THRUACTORS
+   +ROLLSPRITE
    Mass 4
    SeeSound "weapons/casing"
    States
@@ -196,11 +198,13 @@ ACTOR EmptyBrass
 	  TNT1 A 0
 	  TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
 	  Exist:
-      CAS3 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 3 A_JumpIf(waterlevel > 1, "Splash")
-      STOP
+      TNT1 A 0 A_SetRoll(roll + (30),SPF_INTERPOLATE)
+	  CAS3 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 3 A_JumpIf(waterlevel > 1, "Splash")
+	  STOP
 
    Death:
-      CAS3 I 0
+      TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
+	  CAS3 I 0
       LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
       Goto Rest1
     Rest1:
@@ -248,6 +252,26 @@ ACTOR EmptyBrass
    }
 }
 
+ACTOR EmptyBrassMinigun: EmptyBrass
+{
+   States
+   {
+   Spawn:
+	  TNT1 A 0
+	  TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
+	  Exist:
+      TNT1 A 0 A_SetRoll(roll + (-210),SPF_INTERPOLATE)
+	  CAS3 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 3 A_JumpIf(waterlevel > 1, "Splash")
+	  STOP
+
+   Death:
+      TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
+	  CAS3 I 0
+      LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
+      Goto Rest1	
+   }
+}
+
 ACTOR EmptyGrenadeBrass
 {
    Height 2
@@ -278,12 +302,12 @@ ACTOR EmptyGrenadeBrass
       TNT1 A 0
 	  TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
 	  Exist:
-      CAS4 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)//A_JumpIf(waterlevel > 1, "Splash")
+	  CAS4 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)//A_JumpIf(waterlevel > 1, "Splash")
       STOP
 
    Death:
-       CAS4 I 0
-      LCPJ A 0 A_Jump(256,"Rest1","Rest2")
+      CAS4 I 0
+	  LCPJ A 0 A_Jump(256,"Rest1","Rest2")
       Goto Rest1
     Rest1:
 	  CAS4 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
@@ -368,6 +392,7 @@ ACTOR ShotgunCasing
    +FORCEXYBILLBOARD
    +NOTDMATCH
    +GHOST
+   +ROLLSPRITE
    Mass 1
    SeeSound "weapons/shell"
    States
@@ -376,10 +401,12 @@ ACTOR ShotgunCasing
       TNT1 A 0
 	  TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
 	  Exist:
-      CAS2 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
-      Stop
+      TNT1 A 0 A_SetRoll(roll + -(-210),SPF_INTERPOLATE)
+	  CAS2 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
+	  Stop
    Death:
-      LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
+      TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
+	  LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
       Goto Rest1
     Rest1:
 	  CAS2 IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
@@ -388,7 +415,7 @@ ACTOR ShotgunCasing
 	  TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("ToggleBulletJanitor")==1,"Disappear")
       loop
     Rest2:
-	  CAS2 JJJJJJJJJJJJJJJJJJJJJJJJJJJ 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
+	 CAS2 JJJJJJJJJJJJJJJJJJJJJJJJJJJ 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
 	  Rest2Dead:
       CAS2 J 900
 	  TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("ToggleBulletJanitor")==1,"Disappear")
@@ -436,6 +463,24 @@ ACTOR ShotgunCasing
    }
 }
 
+// For different roll sprite angles
+ACTOR ShotgunCasingSSG: ShotgunCasing
+{
+ States
+   {
+    Spawn:
+      TNT1 A 0
+	  TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
+	  Exist:
+      TNT1 A 0 A_SetRoll(roll + -(30),SPF_INTERPOLATE)
+	  CAS2 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
+	  Stop
+   Death:
+      TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
+	  LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
+      Goto Rest1
+}}
+
 ACTOR ShotgunCasing2
 {
    Height 12
@@ -454,6 +499,7 @@ ACTOR ShotgunCasing2
    +FORCEXYBILLBOARD
    +NOTDMATCH
    +GHOST
+   +ROLLSPRITE
    Mass 1
    SeeSound "weapons/shell"
    States
@@ -462,10 +508,12 @@ ACTOR ShotgunCasing2
       TNT1 A 0
 	  TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
 	  Exist:
-      CAS5 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
+      TNT1 A 0 A_SetRoll(roll + -(-210),SPF_INTERPOLATE)
+	  CAS5 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
       Stop
    Death:
-      LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
+      TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
+	  LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
       Goto Rest1
     Rest1:
 	  CAS5 IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
@@ -540,6 +588,7 @@ ACTOR ShotgunCasing3
    +FORCEXYBILLBOARD
    +NOTDMATCH
    +GHOST
+   +ROLLSPRITE
    Mass 1
    SeeSound "weapons/shell"
    States
@@ -548,10 +597,12 @@ ACTOR ShotgunCasing3
       TNT1 A 0
 	  TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
 	  Exist:
-      CAS6 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
+      TNT1 A 0 A_SetRoll(roll + -(-210),SPF_INTERPOLATE)
+	  CAS6 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
       Stop
    Death:
-      LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
+      TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
+	  LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
       Goto Rest1
     Rest1:
 	  CAS6 IIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
@@ -715,13 +766,13 @@ ACTOR EmptyBrassMP40
       TNT1 A 0
       TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
 	  Exist:
-      MPB3 ABCDEFGH 3 A_JumpIf(waterlevel > 1, "Splash")
+	  MPB3 ABCDEFGH 3 A_JumpIf(waterlevel > 1, "Splash")
       Loop
 
    Death:
       TNT1 A 0 A_StopSoundEx("weapons/smcasebounce")
 	  TNT1 A 0 A_PlaySound("decasebounce")
-      LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
+	  LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
       Goto Rest1
     Rest1:
       MPB3 I 900
