@@ -52,6 +52,7 @@ Actor RifleUpgrade: Custominventory
 	
     Pickup:
 	  TNT1 A 0
+	  TNT1 A 0 A_GiveInventory("UnderBarrelGrenadeLoaded", 1)
 	  TNT1 A 0 A_GiveInventory("HasUnderBarrelGrenadeLauncher", 1)
       Stop
 	}
@@ -133,7 +134,7 @@ ACTOR Rifle : PB_Weapon
 		HLMT JKLMN 3
 		TNT1 A 0 A_PlaySound("HLMTBEP",3)
 		HLMT O 3 A_PlaySound("HLMTBPP",4)
-		TNT1 A 0 A_TakeInventory("sae_extcam", 1)
+		TNT1 A 0 A_TakeInventory("sae_extcam", 1)	
 		TNT1 A 0 A_TakeInventory("sae_deathcam", 1)
 		HLMT PQRS 3
         TNT1 A 0 A_SetCrosshair(0)
@@ -155,11 +156,8 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 A_JumpIfInventory("Salute1", 1, "Salute")
 		TNT1 A 0 A_JumpIfInventory("Salute2", 1, "Salute")
 		TNT1 A 0 A_JumpIfInventory("Unloading",1,"Unload")
-	    TNT1 A 0 A_JumpIfInventory("DoGrenade", 1, "ThrowGrenade")//DoMine
-		TNT1 A 0 A_JumpIfInventory("DoMine", 1, "ThrowMine")//DoElecPod
-		TNT1 A 0 A_JumpIfInventory("DoElecPod", 1, "ThrowElecPod")
-		TNT1 A 0 A_JumpIfInventory("DoSwarmPod", 1, "ThrowSwarmPod")
-		TNT1 A 0 A_JumpIfInventory("DoHealBackpack", 1, "UseHealthBackPack")
+	    TNT1 A 0 A_JumpIfInventory("UseEquipment", 1, "UseEquipment") //NEW EQUIPMENT SYSTEM
+		TNT1 A 0 A_JumpIfInventory("ToggleEquipment", 1, "SwitchEquipment") //NEW EQUIPMENT SYSTEM
 		TNT1 A 0 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "DualWieldBaby")
 		TNT1 A 0 A_JumpIfInventory("GrabbedBarrel", 1, "GrabBarrel")
 		TNT1 A 0 A_SetCrosshair(0)
@@ -176,11 +174,8 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 A_JumpIfInventory("Unloading",1,"Unload")
 		TNT1 A 0 A_JumpIfInventory("Salute1", 1, "Salute")
 		TNT1 A 0 A_JumpIfInventory("Salute2", 1, "Salute")
-	    TNT1 A 0 A_JumpIfInventory("DoGrenade", 1, "ThrowGrenade")
-		TNT1 A 0 A_JumpIfInventory("DoMine", 1, "ThrowMine")
-		TNT1 A 0 A_JumpIfInventory("DoElecPod", 1, "ThrowElecPod")
-		TNT1 A 0 A_JumpIfInventory("DoSwarmPod", 1, "ThrowSwarmPod")
-		TNT1 A 0 A_JumpIfInventory("DoHealBackpack", 1, "UseHealthBackPack")
+	    TNT1 A 0 A_JumpIfInventory("UseEquipment", 1, "UseEquipment") //NEW EQUIPMENT SYSTEM
+		TNT1 A 0 A_JumpIfInventory("ToggleEquipment", 1, "SwitchEquipment") //NEW EQUIPMENT SYSTEM
 		TNT1 A 0 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "DualWieldBaby")
 		TNT1 A 0 A_JumpIfInventory("Grabbing_A_Ledge", 1, "LedgeClimb")
 		TNT1 A 0 A_JumpIfInventory("GrabbedBarrel", 1, "GrabBarrel")
@@ -284,9 +279,9 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 A_SelectWeapon("Mini_gun")
 		TNT1 A 0 A_Raise
 		Wait
+		
+	//This code will be reworked since the new equipment system breaks it
 	ThrowGrenade:
-		TNT1 A 0 A_JumpIfInventory("HandGrenadeAmmo", 1, 1)
-		Goto NoGrenade
 		TNT1 AA 0
 		TNT1 A 0 A_JumpIfInventory("HasUnderBarrelGrenadeLauncher",1,1)
 		Goto Super::ThrowGrenade
@@ -304,7 +299,6 @@ ACTOR Rifle : PB_Weapon
 		TNT1 AAAAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-16,16), 0, -1, random(-9,9))
 		TNT1 A 0 A_ZoomFactor(0.985)
 		TNT1 A 0 A_FireCustomMissile("BouncingGrenadeHE", 0, 0, 0, 0)
-		TNT1 A 0 A_TakeInventory("HandGrenadeAmmo", 1)
 		TNT1 A 0 A_TakeInventory("UnderBarrelGrenadeLoaded", 1)
 		R1GF DDEE 1 BRIGHT
         TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
@@ -315,7 +309,10 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 A_ZoomFactor(0.99)
 		R1GF A 1 A_ZoomFactor(1.0)
 		TNT1 A 0 A_TakeInventory("DoGrenade", 1)
+        TNT1 A 0 A_JumpIfInventory("HandGrenade",1,2)
 		Goto ReallyReady
+		TNT1 A 0 A_TakeInventory("DoGrenade", 1)
+        Goto ReloadGrenadeLauncher
 		
     Fire:
 		TNT1 A 0 A_WeaponOffset(0,32)
@@ -330,7 +327,8 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 A_ZoomFactor(0.982)
 		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
 		TNT1 A 0 A_AlertMonsters
-		RIFF BB 1
+		RIFF B 1 BRIGHT
+		RIFF C 1
 		TNT1 A 0 A_ZoomFactor(0.990)
         RIFF A 0 A_FireCustomMissile("Tracer", random(-1,1), 0, -1, 0)
 		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0)
@@ -340,9 +338,9 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 A_SetPitch(-0.9 + pitch)
 		TNT1 A 0 A_Takeinventory("DoubleRifleAmmo",1)
 		TNT1 A 0 A_SetPitch(+0.3 + pitch)
-		RIFF C 1 A_FireCustomMissile("RifleCaseSpawn",5,0,8,-9)
+		RIFF D 1 A_FireCustomMissile("RifleCaseSpawn",5,0,8,-9)
 		TNT1 A 0 A_ZoomFactor(0.995)
-        RIFG AA 1 A_SetPitch(+0.3 + pitch)
+        RIFF EE 1 A_SetPitch(+0.3 + pitch)
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_Refire
 		RIFG AA 1 A_ReFire
@@ -358,7 +356,8 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 A_ZoomFactor(0.982)
 		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
 		TNT1 A 0 A_AlertMonsters
-		RIFF BB 1 
+		RIFF B 1 BRIGHT
+		RIFF C 1
 		TNT1 A 0 A_ZoomFactor(0.990)
         RIFF A 0 A_FireCustomMissile("Tracer", random(-1,1), 0, -1, 0)
 		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0)
@@ -368,9 +367,9 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 A_Takeinventory("RifleAmmo",1)
 		TNT1 A 0 A_Takeinventory("DoubleRifleAmmo",1)
 		TNT1 A 0 A_SetPitch(+0.3 + pitch)
-		RIFF C 1 A_FireCustomMissile("RifleCaseSpawn",5,0,8,-9)
+		RIFF D 1 A_FireCustomMissile("RifleCaseSpawn",5,0,8,-9)
 		TNT1 A 0 A_ZoomFactor(0.995)
-        RIFG A 1 A_SetPitch(+0.3 + pitch)
+        RIFF E 1 A_SetPitch(+0.3 + pitch)
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_Refire
 		RIFG AA 1 A_Refire
@@ -580,9 +579,9 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 A_PlaySound("IronSights", 0)
 		RIFR UVWX 2
 		TNT1 A 0 A_PlaySound("RIFCL_CK", 0)
-		RIFR YY 1
-		RIFR ZZ 1
-		RIFG A 1
+		RIFR Y 1
+		RIFR Z 2
+		RIFZ AB 1
 		TNT1 A 0 A_Takeinventory("Reloading",1)
 		TNT1 A 0 A_Takeinventory("RifleWasEmpty",1)
 		Goto ReallyReady
