@@ -1859,7 +1859,7 @@ script PARKMORE_ENTER enter
                 {
                     ACS_ExecuteAlways(PARKMORE_LEDGEWALL, 0, LW_WALL,0,0);
                 }
-                else if ((GetActorVelZ(0) < 0) && !grabbing[pln] && !dontGrab[pln])
+                else if ((GetActorVelZ(0) < 0 ) && !grabbing[pln] && !dontGrab[pln])
                 {
                     ACS_ExecuteAlways(PARKMORE_LEDGEWALL, 0, LW_LEDGE,0,0);
                 }
