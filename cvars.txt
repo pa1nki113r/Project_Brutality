@@ -136,7 +136,7 @@ script "DoubleJumpScript" enter
 		lastZ = GetActorZ(0);
 		delay(1);
 		
-		if((CheckInventory("TimeFreezer") == 1) || (CheckInventory("TimeSphere") == 1) || (CheckInventory("DemonVision") == 1) || (GetCvar("donotdoublejump") == 1)||(GetCvar("bd_classicmonsters") == 1) ||(GetCvar("bd_TraditionalMode") == 1) )
+		if((CheckInventory("PowerTimeFreezer") == 1) || (CheckInventory("TimeSphere") == 1) || (CheckInventory("DemonVision") == 1) || (GetCvar("donotdoublejump") == 1)||(GetCvar("bd_classicmonsters") == 1) ||(GetCvar("bd_TraditionalMode") == 1) )
 		{
 			//terminate;
 		}
@@ -449,7 +449,16 @@ Script "StarterPackWolfensteinBuzzsawFix" (void) NET
 		SetActorState(0, "BuzzSawSpawn");
 	}
 }
-
+script "LedgeClimbFix" ENTER NET
+{
+	if (CheckInventory("LedgeGrabbingRightnow"))
+	{
+		SetActorProperty(0, APROP_SPEED, 1.0);
+		SetActorProperty(0, APROP_Gravity, 1.0);
+		TakeInventory("LedgeGrabbingRightnow",1);
+		TakeInventory("Grabbing_A_Ledge", 10000);
+	}
+}
 Script "ValientMap18BarrelFix" (void) NET
 {
 	//Initialize variables
@@ -482,7 +491,9 @@ script "DemonMorphTimer" (VOID) NET
 	while(demon_timer < 2500)
 	{	
 		demon_timer++;
+		if (CheckInventory("HasUnmorphed")) Terminate;
 		delay(1);
+		if (CheckInventory("HasUnmorphed")) Terminate;
 	}
 	delay(1);
 	ACS_NamedExecuteAlways("DemonMorphHealthReset",0);
@@ -514,7 +525,9 @@ script "BaronMorphModeDisable" (VOID) NET
 	ACS_NamedTerminate("DemonMorphTimer",0);
 	TakeInventory("HasSpawnedAsBaronDemon", 1);
 	TakeInventory("DemonVision", 1);
+	GiveInventory("HasUnmorphed", 1);
 	Delay(1);
+	TakeInventory("HasUnmorphed", 1);
 	ACS_NamedExecuteAlways("DemonMorphHealthReset",0);
 }
 
@@ -527,7 +540,9 @@ script "RevenantMorphModeDisable" (VOID) NET
 	TakeInventory("DoomerJetpackActivated", 1);
 	TakeInventory("PowerFlight2", 1);
 	TakeInventory("DemonVision", 1);
+	GiveInventory("HasUnmorphed", 1);
 	Delay(1);
+	TakeInventory("HasUnmorphed", 1);
 	ACS_NamedExecuteAlways("DemonMorphHealthReset",0);
 }
 
@@ -1533,7 +1548,15 @@ Script "ToggleCarryableHealth" (VOID) net
 		SetResultValue(0);
 }
 
-
+Script "ActorSolidCheck" (int loop)
+{
+	if (loop == 1) delay(1);
+	if ((GetActorZ(0) + GetActorProperty(0,APROP_HEIGHT)) <= GetActorCeilingZ(0))
+	{
+		SetActorFlag(0, "SOLID", 1);
+	}
+	if (loop == 1) restart;
+}
 
 Script "ToggleHelmetAnimation" (VOID) NET
 {

@@ -865,7 +865,7 @@ function int roundAway(int toround)
     return ftoi(toround + (1.0 - i));
 }
 
-function int round(int toround)
+function int roundParkmore(int toround)
 {
     return ftoi(toround + 0.5);
 }
@@ -1344,6 +1344,7 @@ script PARKMORE_LEDGEWALL (int mode)
         }
         
         heightTID = highestTID;
+		GiveInventory("HeightTIDIndicator", heightTID);
         ACS_ExecuteAlways(PARKMORE_LEDGEHOLD, 0, heightTID,0,0);
     }
     
@@ -1459,8 +1460,9 @@ script PARKMORE_LEDGEHOLD (int heightTID)
         ledgeY /= ledgeMag;
 
         SetActorVelocity(0, 24*ledgeX, 24*ledgeY,0, 0, 0);
-			
+		GiveInventory("LedgeGrabbingRightNow", 1);
 		Delay(9);
+		TakeInventory("LedgeGrabbingRightNow", 1);
 		for (i = 0; i < 2; i++)
 		{
 			curZ += 12.0;
@@ -1857,7 +1859,7 @@ script PARKMORE_ENTER enter
                 {
                     ACS_ExecuteAlways(PARKMORE_LEDGEWALL, 0, LW_WALL,0,0);
                 }
-                else if ((GetActorVelZ(0) < 0) && !grabbing[pln] && !dontGrab[pln])
+                else if ((GetActorVelZ(0) < 0 ) && !grabbing[pln] && !dontGrab[pln])
                 {
                     ACS_ExecuteAlways(PARKMORE_LEDGEWALL, 0, LW_LEDGE,0,0);
                 }
