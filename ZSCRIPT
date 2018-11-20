@@ -3,19 +3,53 @@ class HeadShotBaseZScript : Actor
 {
 	Default
 	{
-	-COUNTKILL +NOTARGET
-	+NOGRAVITY +SHOOTABLE +NOTELEPORT /*+FORCERADIUSDMG*/ -SOLID +NODAMAGETHRUST
-	+THRUGHOST +NORADIUSDMG +GHOST -COUNTKILL +NOTAUTOAIMED
+		damagefactor "Taunt", 0.0;
+		damagefactor "Blood", 0.0;
+		damagefactor "BlueBlood", 0.0;
+		damagefactor "Head", 0.0;
+		damagefactor "MinorHead", 0.0;
+		damagefactor "KillMe", 0.0;
+		damagefactor "Control", 0.0;
+		damagefactor "Trample", 0.0;
+		damagefactor "GibRemoving", 0.0;
+		//damagefactor "Melee", 0.3
+		damagefactor "Alert", 0.0;
+		damagefactor "SSG", 8.0;
+		damagefactor "ExplosiveImpact", 0.0;
+		damagefactor "Bullet", 1.5;
+		damagefactor "GibRemoving", 0.0;
+		damagefactor "TeleportRemover", 0.0;
+		DamageFactor "Freeze", 0.0;
+		DamageFactor "Shrink", 0.0;
+		DamageFactor "Frost", 0.0;
+		DamageFactor "Ice", 0.0;
+		DamageFactor "Blackhole", 0.0;
+		Speed 0;
+		Radius 7;
+		Height 18;
+		BloodType "Brutal_Blood", "SawBlood", "SawBlood";
+		-COUNTKILL +NOTARGET +MISSILE
+		+NOGRAVITY +SHOOTABLE +NOTELEPORT /*+FORCERADIUSDMG*/ -SOLID +NODAMAGETHRUST
+		+THRUGHOST +NORADIUSDMG +GHOST -COUNTKILL +NOTAUTOAIMED +DONTTHRUST
 	}
 	override void Tick()
 	{
 		Super.Tick();
 		if (master) SetOrigin(master.pos + (0,0,master.height),true);
 	}
-	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		if (target) 
+		{
+			master = target;
+			target = null;
+			bMISSILE = false;
+		}
+	}
 	override int DamageMobj(Actor inflictor, Actor source,int damage,Name mod,int Flags,Double angle)
 	{
-		if (master) master.DamageMobj(inflictor,source,damage * 1.5,mod != 'None' ? 'Head' : mod, flags,angle);
+		if (master) master.DamageMobj(inflictor,source,damage * 1.5,mod == 'None' ? 'Head' : mod, flags,angle);
 		return 0; //Do no real damage to self
 	}
 }
@@ -24,8 +58,10 @@ class PB_WeaponBase : DoomWeapon
 }
 extend class PB_WeaponBase
 {
-	action state A_DoPBWeaponAction(Statelabel st)
+	action state A_DoPBWeaponAction()
 	{
+		A_WeaponReady(WRF_ALLOWRELOAD);
+		A_WeaponOffset(CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY"),WOF_KEEPY);
 		if (CountInv("Grabbing_A_Ledge")>=1) 
 		{
 			return ResolveState("LedgeClimb");
@@ -42,6 +78,7 @@ extend class PB_WeaponBase
 		else if (CountInv("ToggleEquipment")>=1) {return ResolveState("SwitchEquipment");}
 		else if (CountInv("GoWeaponSpecialAbility")>=1) {return ResolveState("WeaponSpecial");}
 		else if (CountInv("GrabbedBarrel")>=1) {return ResolveState("GrabBarrel");}
+		else if (CountInv("GrabbedBurningBarrel")>=1) {return ResolveState("GrabBarrel");}
 		return null;
 	}
 }
