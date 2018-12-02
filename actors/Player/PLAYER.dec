@@ -7,7 +7,6 @@ Actor ExecuteDownedEnemy : Inventory
 {
 inventory.maxamount 1
 }
-
 Actor PlayerIsDead : Inventory
 {
 inventory.maxamount 1
@@ -884,6 +883,7 @@ ACTOR Doomer : PlayerPawn Replaces DoomPlayer
     player.attackzoffset 17
     GibHealth 20
 	PainChance 255
+	+ROLLSPRITE
 	+SOLID
 	+THRUSPECIES
 	+MTHRUSPECIES
@@ -993,8 +993,8 @@ ACTOR Doomer : PlayerPawn Replaces DoomPlayer
 	 Player.StartItem "SlotOWN8", 1
 	 Player.StartItem "SlotOWN9", 1
 	 Player.StartItem "SlotOWN0", 1
-	
-	Player.StartItem "HandGrenade"
+	 
+	Player.StartItem "FragGrenadeSelected", 1
 	Player.StartItem "HandGrenadeAmmo", 3
 	Player.StartItem "IsPlayingAsProjectBrutality", 1
 	//
@@ -1004,20 +1004,27 @@ ACTOR Doomer : PlayerPawn Replaces DoomPlayer
 	Player.DamageScreenColor "Red", 2.0
 	States
 	{
-
-
-
     Spawn:
-		MARN A 0
+		MARN A 1
+		MARN A 0 A_TakeInventory("PlayerIsDead", 1)
+		MARN A 0 A_TakeInventory("IsInvisible", 1)
 		MARN A 0 A_JumpIfInventory("CheckMarines", 1, "SpawnFriends")
 		MARN A 0 A_TakeInventory("ChainguyguyContinue", 1)
-		MARN A 1 
 		MARN A 0 ACS_ExecuteAlways(289, 0, 0, 0, 0)//Check if playing in realism mode.
 		MARN A 0 ACS_ExecuteAlways(171, 0, 0, 0, 0)//Disable Camera.
 		MARN A 1
 	StandStill:	
 		MARN A 0
-		TNT1 A 0 A_Changeflag("NOPAIN", 0)
+		TNT1 A 0 
+		{
+		if (Height < 54)
+		{
+		A_GiveInventory("IsCrouching",1);
+		}
+		}
+		TNT1 A 0 A_Changeflag("NOPAIN", false)
+		TNT1 A 0 A_TakeInventory("DoNotJump",1)
+		TNT1 A 0 A_ChangeFlag("PICKUP", true)
 		MARN A 0 A_TakeInventory("PowerFlight2", 1)
 		TNT1 A 0 A_Takeinventory("DoomerJetpackActivated",1)
 		MARN A 0 ACS_ExecuteAlways(171, 0, 0, 0, 0)//Disable Camera.
@@ -4659,10 +4666,14 @@ SFNZ C 16
 		Goto See	
 		
 		
-		
+		RemoveMeatshield:
+		NULL A 0 A_TakeInventory("GotMeatShield",1)
+		NULL A 0 A_TakeInventory("GoSpecial",1)
+		Goto See
 		MeatShieldChecker:
         NULL A 1
         //NULL A 0 A_TakeInventory("GotMeatShield", 1)
+		NULL A 0 A_JumpIfInventory("IsPlayingAsTraditional", 1, "RemoveMeatShield")
 		NULL A 0 A_TakeInventory("GoSpecial", 1)
 		NULL A 0 A_JumpIfInventory("HasBarrel", 1, "BarrelStand")
         NULL A 0 A_JumpIfInventory("HasImpShield", 1, "GotImpShield")

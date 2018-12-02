@@ -1,74 +1,143 @@
-Actor Mine
+Actor HasLeech : Inventory {inventory.maxamount 1}
+
+ACTOR LeechGrenade: CustomInventory 
 {
-Radius 8
-Height 5
-Mass 1000000
-Health 20
-Damage 0
-Damagetype landmine
-SeeSound "MINE001"
-DONTHURTSHOOTER
-Speed 2
-+NOBLOOD
--SHOOTABLE
-+MISSILE
-+DOOMBOUNCE
-BounceFactor 0.1
-+THRUGHOST
+	Game Doom
+	Scale 0.45
+	+DONTGIB
+	+FLOORCLIP
+	Inventory.PickupMessage "What the fuck is this thing..?"
+	Inventory.PickupSound "SiphonGrowl"
 	States
 	{
-	Spawn:
-		LMIN A 0 A_Gravity
-		LMIN AAABBB 4
-		Loop
-	Death:
-		TNT1 A 0 A_SpawnItemEx("MineBase",0,0,0,0,0,0,0,288)
+		Spawn:
+			FLSP BAFEFA 6 
+			Loop
+			
+		Pickup:
+		TNT1 A 0 A_GiveInventory("HasLeech",1) 		
+		TNT1 A 20
 		Stop
+			
 	}
 }
 
-Actor MineBase
+ACTOR HandGrenadeAmmo : Ammo
 {
-Radius 8
-Height 5
-Mass 100000
-Health 20
-Damage 1
-Damagetype landmine
-Damagefactor "Landmine", 0.0
-SeeSound "MINE001"
-Speed 0
-+NOBLOOD
--SHOOTABLE
-+MISSILE
-+THRUGHOST
-+DEHEXPLOSION
-+FORCERADIUSDMG
-+FRIENDLY
+   Inventory.Amount 1
+   Inventory.MaxAmount 6
+   Ammo.BackPackAmount 1
+   Ammo.BackPackMaxAmount 12
+   Inventory.PickUpMessage ""
+   Inventory.Icon PGRND0
+   Scale 0.45
+   States
+   {
+   Spawn:
+      PGRN D -1
+      Stop
+   }
+}
+
+Actor MineAmmo : Ammo
+{
+Radius 10
+Inventory.Amount 1
+Inventory.MaxAmount 6
+Ammo.BackpackAmount 3
+Ammo.BackpackMaxAmount 12
+Inventory.PickupMessage "Picked up a proximity mine"
+Inventory.Icon ""
+Inventory.PickupSound "GRNPIN"
+Scale 0.35
 States
 {
 Spawn:
-		LMIN A 0 A_Gravity
-		LMIN AAABBB 4
-		TNT1 A 0 A_SpawnItemEx ("RedFlare",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
-		Loop
-Death:
-		TNT1 A 0 A_AlertMonsters
-		TNT1 A 0 A_PlaySound("Explosion")
-		TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
-	    TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
-		TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
-		TNT1 A 0 A_SpawnItemEx ("MineExplosion",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
-		TNT1 A 0 A_SpawnItemEx ("NewGroundExplosionSmoke",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
-        TNT1 AAA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180))
-        TNT1 AAAAAAAAAAAAAAAAAA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 360))
-		TNT1 AAAAAAAAA 0 A_CustomMissile ("ExplosionParticleVeryFast", 0, 0, random (0, 360), 2, random (0, 360))
-        TNT1 AAAAAAA 0 A_CustomMissile ("MediumExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360))
-        EXPL AAAAAA 0 A_CustomMissile ("ExplosionSmokeFast22", 0, 0, random (0, 360), 2, random (0, 360))
-		MISL C 1
-		MISL D 1
-		Stop
+	XPFP A -1
+	Loop
 }
+}
+
+ACTOR StunGrenadeAmmo : Ammo
+{
+   Inventory.Amount 1
+   Inventory.MaxAmount 6
+   Ammo.BackPackAmount 1
+   Ammo.BackPackMaxAmount 12
+   Inventory.PickUpMessage "Picked up a stun grenade"
+   Inventory.Icon STNGA0
+   Scale 0.3
+   States
+   {
+   Spawn:
+      STNG A -1
+      Stop
+   }
+}
+
+ACTOR HandGrenade: CustomInventory //23167
+{
+	Game Doom
+	Scale 0.45
+	+DONTGIB
+	+FLOORCLIP
+	Inventory.PickupMessage "You got a UAC-M26 Frag Grenade"
+	Inventory.PickupSound "GRNPIN"
+	States
+	{
+		Spawn:
+			PGRN D 2 
+			Loop
+			
+		Pickup:
+		TNT1 A 0 A_GiveInventory("HandGrenadeAmmo",1) 		
+		TNT1 A 20
+		Stop
+		
+	}
+}
+
+
+ACTOR DropedGrenade
+{
+    Radius 8
+    Height 10
+    Scale 0.45
+	Speed 1
+	Mass 1
+    gravity 1
+	Decal none
+    +MOVEWITHSECTOR
+    +NOBLOCKMAP
+    +NOTELEPORT
+    +MISSILE
+    States
+    {
+    Spawn:
+		TNT1 A 1 NoDelay A_JumpIf(ACS_NamedExecuteWithResult("CheckTraditional")==1,"ReplaceTraditional")
+		TNT1 AA 1
+		TNT1 AA 1
+		Goto Death
+		
+	Death:
+		TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckTraditional")==1,"ReplaceTraditional")
+		TNT1 A 1 ACS_ExecuteAlways(796, 0, 0, 0, 0)//Check if Vanilla Mode is activated
+		TNT1 A 1 
+	    TNT1 AA 1
+		TNT1 AA 1
+        TNT1 A 0 A_SpawnItemEx("HandGrenade",0,0,0,0,0,0,0,288)
+        Stop
+		
+	ReplaceVanilla:
+		TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckTraditional")==1,"ReplaceTraditional")
+		TNT1 A 0 A_SpawnItemEx("HandGrenade",0,0,0,0,0,0,0,288)
+        Stop
+		
+	ReplaceTraditional:
+		TNT1 A 2 
+		Stop
+	
+    }
 }
 
 //Revamped Proximity mines, courtesy from Brutal Hellfest!!
@@ -281,102 +350,6 @@ States    {
 	}
 }
 
-
-Actor Mine2 : Mine
-{
-Damagetype landmine
-Speed 15
-}
-
-
-Actor MineAmmo : Ammo
-{
-Radius 10
-Inventory.Amount 1
-Inventory.MaxAmount 10
-Ammo.BackpackAmount 3
-Ammo.BackpackMaxAmount 20
-Inventory.PickupMessage "Picked up a proximity mine"
-Inventory.Icon ""
-Inventory.PickupSound "GRNPIN"
-Scale 0.35
-States
-{
-Spawn:
-	XPFP A -1
-	Loop
-}
-}
-
-ACTOR HandGrenade: CustomInventory //23167
-{
-	Game Doom
-	Scale 0.45
-	+DONTGIB
-	+FLOORCLIP
-	Inventory.PickupMessage "You got a UAC-M26 Frag Grenade"
-	Inventory.PickupSound "GRNPIN"
-	States
-	{
-		Spawn:
-			PGRN D 2 
-			Loop
-			
-		Pickup:
-		TNT1 A 0 A_GiveInventory("HandGrenadeAmmo",1) 		
-		TNT1 A 20
-		Stop
-		
-	}
-}
-
-
-ACTOR DropedGrenade
-{
-    Radius 8
-    Height 10
-    Scale 0.45
-	Speed 1
-	Mass 1
-    gravity 1
-	Decal none
-    +MOVEWITHSECTOR
-    //+CLIENTSIDEONLY
-    +NOBLOCKMAP
-    +NOTELEPORT
-    +MISSILE
-    States
-    {
-    Spawn://SPAWN_A_FUCKING_CHAINGUN
-		TNT1 A 1 NoDelay A_JumpIf(ACS_NamedExecuteWithResult("CheckTraditional")==1,"ReplaceTraditional")
-		TNT1 AA 1
-		TNT1 AA 1
-		Goto Death
-		
-	Death:
-		TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckTraditional")==1,"ReplaceTraditional")
-		TNT1 A 1 ACS_ExecuteAlways(796, 0, 0, 0, 0)//Check if Vanilla Mode is activated
-		TNT1 A 1 
-	    TNT1 AA 1
-		TNT1 AA 1
-        TNT1 A 0 A_SpawnItemEx("HandGrenade",0,0,0,0,0,0,0,288)
-        Stop
-		
-	ReplaceVanilla:
-		TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("CheckTraditional")==1,"ReplaceTraditional")
-		TNT1 A 0 A_SpawnItemEx("HandGrenade",0,0,0,0,0,0,0,288)
-        Stop
-		
-	ReplaceTraditional:
-		TNT1 A 2 //A_SpawnItemEx("Traditional_Chaingun",0,0,0,0,0,0,0,288)
-		Stop
-	
-
-		
-//Traditional_Chaingun
-    }
-}
-
 Actor GrenadeTime : Inventory
 {
 inventory.maxamount 6
@@ -425,6 +398,7 @@ ACTOR ThrownGrenade1
 		TNT1 A 0 A_GiveInventory("GrenadeTime", 1)
 		TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, "Explode")
 		Loop
+
 	Death:
 		TNT1 A 0
 		TNT1 A 0
@@ -745,19 +719,56 @@ ACTOR ThrownGrenade30 : HandGrenadeAnother
    Speed 30
 }
 
-ACTOR HandGrenadeAmmo : Ammo
+ACTOR ThrownStunGrenade : ThrownGrenade1
 {
-   Inventory.Amount 1
-   Inventory.MaxAmount 6
-   Ammo.BackPackAmount 1
-   Ammo.BackPackMaxAmount 12
-   Inventory.PickUpMessage ""
-   Inventory.Icon PGRND0
-   Scale 0.3
-   States
-   {
-   Spawn:
-      TNT1 D -1
-      Stop
-   }
+	Speed 25
+    Damage 0
+    Gravity 0.9
+	Scale 0.6
+	DamageType Stun
+	BounceFactor 0.3
+	WallBounceFactor 0.2
+    Health 5
+    SeeSound "StunGrenadeBounce"
+	DeathSound "none"
+	Obituary "%o ate %k grenade."
+	+ROLLSPRITE 
+	States
+	{
+		Spawn:
+			TNT1 A 0
+			TNT1 A 0 A_PlaySound("StunGrenadeLoop", 5,0.4,1)
+			STNG AAAAAAAAAAAA 1 A_SetRoll(roll+20)
+			TNT1 A 0 A_GiveInventory("GrenadeTime", 1)
+			TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, "Death")
+			Loop
+	/*
+		Death:
+			TNT1 A 0
+			STNG Z 12 //A_SetRoll(roll)
+			TNT1 A 0 A_GiveInventory("GrenadeTime", 1)
+			TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, 1)
+			Loop
+			TNT1 A 0 A_StopSound(5)
+			TNT1 A 0 A_PlaySound("StunGrenadeDetonate", 6,1,1)
+			STNG Z 12 //A_SetRoll(roll)
+			Goto ExplodeZ
+			*/
+			
+		ExplodeZ:
+			TNT1 A 0 A_Stop
+			TNT1 A 0 A_SpawnItemEx ("StunGrenadeExplosion",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			STNG Z 15 A_SetRoll(roll)
+			Fade:
+			STNG ZZZZZZZZZZ 1 A_FadeOut(0.1)
+			Loop
+		
+		Death:
+			TNT1 A 0 A_StopSound(5)
+			TNT1 A 0 A_PlaySound("StunGrenadeDetonate", 6,1,1)
+			STNG Z 12 //A_SetRoll(roll)
+			TNT1 A 0 A_SpawnItemEx ("StunGrenadeExplosion",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			Stop
+	}
 }
+
