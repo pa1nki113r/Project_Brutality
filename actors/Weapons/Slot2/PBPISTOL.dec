@@ -1,16 +1,16 @@
 Actor SilencerEquipped: Inventory
 {
-Inventory.maxamount 1
+	Inventory.maxamount 1
 }
 
 Actor PBPistolWasEmpty: Inventory
 {
-Inventory.maxamount 1
+	Inventory.maxamount 1
 }
 
 Actor PBPistolHasUnloaded: Inventory
 {
-Inventory.maxamount 1
+	Inventory.maxamount 1
 }
 
 ACTOR BDPistol : PB_Weapon //Replaces Pistol
@@ -25,7 +25,7 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
 	Weapon.AmmoUse2 0
 	Weapon.AmmoGive2 0
 	Weapon.AmmoType1 "PistolBullets"
-	Weapon.AmmoType2 "PistolAmmo"
+	Weapon.AmmoType2 "PrimaryPistolAmmo"
 	+FLOORCLIP
 	+DONTGIB
 	Obituary "%o was shot down by %k's Pistol"
@@ -43,23 +43,25 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
 	States
 	{
 	Spawn:
-	TNT1 A 0 A_SPawnItem("Handgun")
-	TNT1 A 0 A_SpawnItem("HasTwoPistols")
-	DEGT A -1
-	Stop 
-
+		TNT1 A 0 A_SPawnItem("Handgun")
+		TNT1 A 0 A_SpawnItem("HasTwoPistols")
+		DEGT A -1
+		Stop 
+		
+	// Weapon Management States
+		
 	Steady:
-	TNT1 A 1
-	TNT1 A 1 A_JumpIfInventory("GoFatality", 1, "Steady")
-	Goto Ready
-	
+		TNT1 A 1
+		TNT1 A 1 A_JumpIfInventory("GoFatality", 1, "Steady")
+		Goto Ready
+		
 	Ready:
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"Ready2")
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"ReadySilencer")
 		DEGG E 1 A_PlaySound("weapons/pistolup")
         DEGG DCB 1 A_JumpIfInventory("GoFatality", 1, "Steady")
-        TNT1 AAAAAAA 0
-        TNT1 A 0
-        TNT1 AAA 0
+		Goto ReadyToFire
+		
+	ReadyToFire:
 	Ready3:
 		TNT1 A 0 A_JumpIfInventory("PBPistolWasEmpty", 1, "LoadChamber")
         TNT1 A 0 A_JumpIfInventory("Grabbing_A_Ledge",1,"LedgeClimb")
@@ -70,43 +72,56 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
 		TNT1 A 0 A_JumpIfInventory("Salute1", 1, "Salute")
 		TNT1 A 0 A_JumpIfInventory("Salute2", 1, "Salute")
 		TNT1 A 0 A_JumpIfInventory("Unloading",1,"Unload")
-	    TNT1 A 0 A_JumpIfInventory("UseEquipment", 1, "UseEquipment") //NEW EQUIPMENT SYSTEM
-		TNT1 A 0 A_JumpIfInventory("ToggleEquipment", 1, "SwitchEquipment") //NEW EQUIPMENT SYSTEM
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"SeriouslyReady2")
-		TNT1 A 0 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "DualWieldBaby")
+	    TNT1 A 0 A_JumpIfInventory("DoGrenade", 1, "ThrowGrenade")
+		TNT1 A 0 A_JumpIfInventory("DoMine", 1, "ThrowMine")
+		TNT1 A 0 A_JumpIfInventory("DoElecPod", 1, "ThrowElecPod")
+		TNT1 A 0 A_JumpIfInventory("DoSwarmPod", 1, "ThrowSwarmPod")
+		TNT1 A 0 A_JumpIfInventory("DoHealBackpack", 1, "UseHealthBackPack")
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"ReadyToFireSilencer")
+		TNT1 A 0 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "WeaponSpecial")
 		TNT1 A 0 A_JumpIfInventory("GrabbedBarrel", 1, "GrabBarrel")
-		DEGG A 1 
+		DEGG A 1
 			{
 				A_WeaponReady(WRF_ALLOWRELOAD);
-				A_WeaponOffset(CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY"),WOF_KEEPY);
+				A_WeaponOffset(-CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY"));
+				if (CountInv("PBPistolWasEmpty") == 1) { return state("LoadChamber"); }
+				if (CountInv("DoPunch") == 1) { return state("QuickPunch"); }
+				if (CountInv("Grabbing_A_Ledge") == 1) { return state("LedgeClimb"); }
+				if (CountInv("GoWeaponSpecialAbility") == 1) { return state("WeaponSpecial"); }
+				if (CountInv("UseEquipment") == 1) { return state("UseEquipment"); }
+				if (CountInv("ToggleEquipment") == 1) { return state("SwitchEquipment"); }
+				if (CountInv("GrabbedBarrel") == 1) { return state("GrabBarrel"); }
+				if (CountInv("SilencerEquipped") == 1) { return state("ReadyToFireSilencer"); }
+				if (CountInv("Kicking") == 1) { return state("DoKick"); }
+				if (CountInv("Taunting") == 1) { return state("Taunt"); }
+				if (CountInv("Salute1") == 1 || CountInv("Salute2") == 1) { return state("Salute"); }
+				return state("");
 			}
-		Goto Ready+9
+		Goto ReadyToFire
 		
-	Ready2:
+	ReadySilencer:
 		D3GG E 1 A_PlaySound("weapons/pistolup")
         D3GG DCB 1 A_JumpIfInventory("GoFatality", 1, "Steady")
-	SeriouslyReady2:
-		TNT1 AAAAAAAA 0
-        TNT1 A 0
-        TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("PBPistolWasEmpty", 1, "LoadChamber2")
-        TNT1 A 0 A_JumpIfInventory("Grabbing_A_Ledge",1,"LedgeClimb")
-        TNT1 A 0 A_JumpIfInventory("Kicking",1,"DoKick")
-		TNT1 A 0 A_JumpIfInventory("DoPunch",1,"QuickPunch")
-        TNT1 A 0 A_JumpIfInventory("Taunting",1,"Taunt")
-		TNT1 A 0 A_JumpIfInventory("Salute1", 1, "Salute")
-		TNT1 A 0 A_JumpIfInventory("Salute2", 1, "Salute")
-		TNT1 A 0 A_JumpIfInventory("Unloading",1,"Unload")
-	    TNT1 A 0 A_JumpIfInventory("UseEquipment", 1, "UseEquipment") //NEW EQUIPMENT SYSTEM
-		TNT1 A 0 A_JumpIfInventory("ToggleEquipment", 1, "SwitchEquipment") //NEW EQUIPMENT SYSTEM
-		TNT1 A 0 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "DualWieldBaby")
-		TNT1 A 0 A_JumpIfInventory("GrabbedBarrel", 1, "GrabBarrel")
-		D3GG A 1 
+		Goto ReadyToFireSilencer
+		
+	ReadyToFireSilencer:
+		D3GG A 1
 			{
 				A_WeaponReady(WRF_ALLOWRELOAD);
-				A_WeaponOffset(CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY"),WOF_KEEPY);
+				A_WeaponOffset(-CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY"));
+				if (CountInv("PBPistolWasEmpty") == 1) { return state("LoadChamber"); }
+				if (CountInv("DoPunch") == 1) { return state("QuickPunch"); }
+				if (CountInv("Grabbing_A_Ledge") == 1) { return state("LedgeClimb"); }
+				if (CountInv("GoWeaponSpecialAbility") == 1) { return state("WeaponSpecial"); }
+				if (CountInv("UseEquipment") == 1) { return state("UseEquipment"); }
+				if (CountInv("ToggleEquipment") == 1) { return state("SwitchEquipment"); }
+				if (CountInv("GrabbedBarrel") == 1) { return state("GrabBarrel"); }
+				if (CountInv("Kicking") == 1) { return state("DoKick"); }
+				if (CountInv("Taunting") == 1) { return state("Taunt"); }
+				if (CountInv("Salute1") == 1 || CountInv("Salute2") == 1) { return state("Salute"); }
+				return state("");
 			}
-		Goto Ready2+9
+		Goto ReadyToFireSilencer
 		
 	Deselect:	    
 		TNT1 A 0 A_Takeinventory("Unloading",1)
@@ -120,12 +135,12 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
 		
-	DualWieldBaby:
+	WeaponSpecial:
 		TNT1 AAAAA 0
 		TNT1 A 0 A_JumpIfInventory("DualPistolChecker", 1,"SwitchToDualWield")
 		TNT1 A 0 A_Print("You need two pistols to dual wield!")
 		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
-		Goto Ready+9
+		Goto ReadyToFire
 		
 	SwitchToDualWield:
 		TNT1 A 0 A_SelectWeapon("Handgun")
@@ -175,17 +190,13 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
 		TNT1 AAAAAAAA 1 A_Raise
 		Wait
-	GoToPurist:
-		TNT1 AAA 0
-		TNT1 A 0 A_Print("Classic v20 Weapons Only!")
-		TNT1 A 0 A_SelectWeapon("VanillaRifle")
-		TNT1 A 0 A_Raise
-		Wait
+		
+	// Firing States
 		
 	Fire:
 		TNT1 A 0 A_WeaponOffset(0,32)
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"Fire2")
-        TNT1 A 0 A_JumpIfInventory("PistolAmmo",1,2)
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FireSilencer")
+        TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,2)
         Goto Reload
         TNT1 AAAA 0
         TNT1 A 0 A_PlaySound("weapons/pistol", CHAN_WEAPON)
@@ -196,23 +207,20 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
         RIFF A 0 A_FireCustomMissile("Tracer", random(-2,2), 0, -1, 0)
 		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0)
 		TNT1 A 0 A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0)
-		TNT1 A 0 A_Takeinventory("PistolAmmo",1)
+		TNT1 A 0 A_Takeinventory("PrimaryPistolAmmo",1)
 		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
 		TNT1 A 0 A_FireCustomMissile("Mp40CaseSpawn", 0,0,-1,-2)
         DEGF BB 1
 		TNT1 A 0 A_ZoomFactor(0.995)
 		DEGF C 1 A_WeaponReady(WRF_ALLOWRELOAD)
 		TNT1 A 0 A_ZoomFactor(1.0)
-		DEGG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		DEGG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		DEGG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		DEGG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
+		DEGG AAAA 1 A_WeaponReady(WRF_ALLOWRELOAD)
 		DEGG A 0 A_Refire
-		Goto Ready+6
+		Goto ReadyToFire
 		
-	Fire2:
-		TNT1 A 0 A_JumpIfInventory("PistolAmmo",1,2)
-        Goto Reload2
+	FireSilencer:
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,2)
+        Goto ReloadSilencer
         TNT1 AAAA 0
         TNT1 A 0 A_PlaySound("weapons/suppressedpistol")
 		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
@@ -221,379 +229,333 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
         RIFF A 0 A_FireCustomMissile("Tracer", random(-2,2), 0, -1, 0)
 		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0)
 		TNT1 A 0 A_FireCustomMissile("ShakeYourAssMinor", 270, 0, 0, 0)
-		TNT1 A 0 A_Takeinventory("PistolAmmo",1)
+		TNT1 A 0 A_Takeinventory("PrimaryPistolAmmo",1)
 		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
 		TNT1 A 0 A_FireCustomMissile("Mp40CaseSpawn", 0,0,-1,-2)
         D3GF BB 1
 		TNT1 A 0 A_ZoomFactor(0.995)
 		D3GF C 1 A_WeaponReady(WRF_ALLOWRELOAD)
 		TNT1 A 0 A_ZoomFactor(1.0)
-		D3GG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		D3GG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		D3GG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		D3GG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
+		D3GG AAAA 1 A_WeaponReady(WRF_ALLOWRELOAD)
 		D3GG A 0 A_Refire
-        Goto Ready2+9
+        Goto ReadyToFireSilencer
 		
-	Prompt1:
-	TNT1 A 0 A_Print("Silencer Detached")
-	goto Ready+6
-
-	Prompt2:
-	TNT1 A 0 A_Print("Silencer Attached")
-	goto Ready2+8
-
-  AltFire:
-	 TNT1 A 0 A_WeaponOffset(0,32)
-     TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"DetachSilencer")
-     TNT1 A 0 A_GiveInventory ("SilencerEquipped",1)
-     D2GK ABCDEFGHIJ 1
-	 TNT1 A 5 A_PlaySound("weapons/pistolup")
-	 D3GK JIHGFEDCBA 1
-     TNT1 A 0
-     Goto Prompt2
-
-  DetachSilencer:
-     TNT1 A 0 A_TakeInventory ("SilencerEquipped",1)
-     D3GK ABCDEFGHIJ 1
-     TNT1 A 5 A_PlaySound("weapons/pistolup")
-	 D2GK JIHGFEDCBA 1
-	 TNT1 A 0
-     Goto Prompt1
+	// Silencer Swapping States
+		
+	AltFire: // Attach Silencer
+		TNT1 A 0 A_WeaponOffset(0,32)
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"DetachSilencer")
+		TNT1 A 0 A_GiveInventory ("SilencerEquipped",1)
+		D5GA ABCDEFFFGHIJKLM 1
+		TNT1 A 0 A_PlaySound("weapons/pistolup")
+		D5GA NNNOPOPOQRRRSSSTUVWXY 1
+		TNT1 A 0
+		TNT1 A 0 A_Print("Silencer Attached")
+		Goto ReadyToFireSilencer
+		
+	DetachSilencer:
+		TNT1 A 0 A_TakeInventory ("SilencerEquipped",1)
+		D5GF ABCDEFGFHIJJKKLLMMNOPQRST 1
+		TNT1 A 0 A_PlaySound("weapons/pistolup")
+		D5GF UUUVWXYZ 1
+		D5GG AB 2
+		TNT1 A 0
+		TNT1 A 0 A_Print("Silencer Detached")
+		Goto ReadyToFire
+		
+	// Reloading States
 		
 	NoAmmo:
-	TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"NoAmmo2")
-	DEGG A 1 A_PlaySound("weapons/empty")
-	TNT1 A 0 A_Takeinventory("ADSmode",1)
-	Goto Ready+12
-	
-	NoAmmo2:
-	D3GG A 1 A_PlaySound("weapons/empty")
-	TNT1 A 0 A_Takeinventory("ADSmode",1)
-	Goto Ready2+12
-
-	
-	 Reload:
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"Reload2")
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"NoAmmoSilencer")
+		DEGG A 1 A_PlaySound("weapons/empty")
+		TNT1 A 0 A_Takeinventory("ADSmode",1)
+		Goto ReadyToFire
+		
+	NoAmmoSilencer:
+		D3GG A 1 A_PlaySound("weapons/empty")
+		TNT1 A 0 A_Takeinventory("ADSmode",1)
+		Goto ReadyToFireSilencer
+		
+	WrapUpReload:
+		TNT1 A 0 A_Takeinventory("Reloading",1)
+		Goto ReadyToFire
+		
+	Reload:
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"ReloadSilencer")
 		DEGG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_Takeinventory("Reloading",1)
 		TNT1 A 0 A_Takeinventory("ADSmode",1)
 		TNT1 A 0 A_Takeinventory("Zoomed",1)
-		TNT1 A 0 A_JumpIfInventory("PistolAmmo",16,54)
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",16,"WrapUpReload") // Gun was full already.
         TNT1 A 0 A_JumpIfInventory("PistolBullets",1,3)
         Goto NoAmmo
         TNT1 AAA 0
 		TNT1 A 0 A_Takeinventory("Zoomed",1)
 		TNT1 A 0 A_GiveInventory ("Pumping", 1)
 		TNT1 A 0 A_Takeinventory("Reloading",1)
-		
-		
-        D2GR A 1 A_JumpIfInventory("PBPistolHasUnloaded", 1, 2)
+        D5GB A 1 A_JumpIfInventory("PBPistolHasUnloaded", 1, 2)
 		TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",5,0,8,-4)
 		TNT1 AA 0
+		D5GB BCD 1
 		TNT1 A 0 A_PlaySound("PSRLOUT", 1)
-        D2GR GFEDC 2
+		D5GB EFGHI 1 // Drop Magazines
+		
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo", 1, 2) // Skip the empty mag frame.
+		D5GB J 1
+		TNT1 A 0 A_JumpIf(CountInv("PrimaryPistolAmmo") == 0, 2) // Skip the full mag frame.
+		D5GC C 1
+		
+		D5GB KKLMNOPQR 1 // Continue animation.
 		TNT1 A 0 A_PlaySound("PSRLIN", 2)
-		D2GR B 8
-		D2GR CDEF 2
-		//TNT1 A 0 A_PlaySound("PSRLFIN", 3)
-		D2GR G 1
-		D2GR A 1
-		
-		
+		D5GB SRTUVW 1
+		// TNT1 A 0 A_PlaySound("PSRLFIN", 3)
 		TNT1 A 0 A_Takeinventory("PBPistolHasUnloaded",1)
-		TNT1 A 0 A_JumpIfInventory("PistolAmmo",1,"InsertBullets2")//30+1 effect
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,"InsertBulletsNoChamber")//16+1 effect
 		TNT1 A 0 A_GiveInventory("PBPistolWasEmpty", 1)
-	InsertBullets:
-		TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("PistolAmmo",15,15)
-		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,3)
-		Goto Ready+6
-        TNT1 AAAAAA 0
-		TNT1 A 0 A_Giveinventory("PistolAmmo",1)
-		TNT1 A 0 A_Giveinventory("HandgunAmmo",1)
+		Goto InsertBulletsChamber
+		
+	InsertBulletsChamber:
+		TNT1 A 0 A_JumpIfInventory("PistolBullets", 1, 1)
+		Goto WrapUpReload
+		TNT1 A 0
+		TNT1 A 0 A_Giveinventory("PrimaryPistolAmmo",1)
+		//TNT1 A 0 A_Giveinventory("HandgunAmmo",1)
 		TNT1 A 0 A_Takeinventory("PistolBullets",1)
-		Goto InsertBullets
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",15, "WrapUpReload")
+		Goto InsertBulletsChamber
 		
-		TNT1 AAAAAAAAAA 0
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-        Goto Ready+6
-		TNT1 AAAA 0
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-        Goto Ready+6
-		
-	InsertBullets2:
-		TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("PistolAmmo",16,15)
-		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,3)
-		Goto Ready+6
-        TNT1 AAAAAA 0
-		TNT1 A 0 A_Giveinventory("PistolAmmo",1)
-		TNT1 A 0 A_Giveinventory("HandgunAmmo",1)
+	InsertBulletsNoChamber:
+		TNT1 A 0 A_JumpIfInventory("PistolBullets", 1, 1)
+		Goto WrapUpReload
+		TNT1 A 0
+		TNT1 A 0 A_Giveinventory("PrimaryPistolAmmo",1)
+		//TNT1 A 0 A_Giveinventory("HandgunAmmo",1)
 		TNT1 A 0 A_Takeinventory("PistolBullets",1)
-		Goto InsertBullets2
-		
-		TNT1 AAAAAAAAAA 0
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-        Goto Ready+6
-		TNT1 AAAA 0
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-        Goto Ready+6	
-	
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",16, "WrapUpReload")
+		Goto InsertBulletsNoChamber
+		TNT1 A 0 
+		D5GB XYZ 1
+		D5GC ABC 1
+		Goto WrapUpReload
 		
 	LoadChamber:
 		TNT1 A 0
 		TNT1 A 0 A_PlaySound("IronSights", 0)
-		DEGR H 1 A_PlaySound("PSRLFIN", 1)
-		DEGR IJK 1 
-		DEGR LMNO 1
-		DEGG A 1
+		TNT1 A 0 A_PlaySound("PSRLFIN", 1)
+		D5GC CDEFFGHIJKLMNOPQ 1
 		TNT1 A 0 A_Takeinventory("Reloading",1)
 		TNT1 A 0 A_Takeinventory("PBPistolWasEmpty",1)
-		Goto Ready+6
+		Goto WrapUpReload
 		
+	WrapUpReloadSilencer:
+		TNT1 A 0 A_Takeinventory("Reloading",1)
+		Goto ReadyToFireSilencer
 		
-////////////////////////////////////////Unloading	
-
+	ReloadSilencer:
+		D3GG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 A_Takeinventory("Reloading",1)
+		TNT1 A 0 A_Takeinventory("ADSmode",1)
+		TNT1 A 0 A_Takeinventory("Zoomed",1)
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",16,"WrapUpReloadSilencer")
+        TNT1 A 0 A_JumpIfInventory("PistolBullets",1,3)
+        Goto NoAmmoSilencer
+        TNT1 AAA 0
+		TNT1 A 0 A_Takeinventory("Zoomed",1)
+		TNT1 A 0 A_GiveInventory ("Pumping", 1)
+		TNT1 A 0 A_Takeinventory("Reloading",1)
+        D5GD A 1 A_JumpIfInventory("PBPistolHasUnloaded", 1, 2)
+		TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",5,0,8,-4)
+		TNT1 AA 0
+		D5GD BCD 1
+		TNT1 A 0 A_PlaySound("PSRLOUT", 1)
+		D5GD EFGHI 1
+		
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo", 1, 2) // Skip the empty mag frame.
+		D5GD J 1
+		TNT1 A 0 A_JumpIf(CountInv("PrimaryPistolAmmo") == 0, 2) // Skip the full mag frame.
+		D5GE C 1
+		
+		D5GD KKLMNOPQR 1
+		TNT1 A 0 A_PlaySound("PSRLIN", 2)
+		D5GD SRTUVW 1
+		// TNT1 A 0 A_PlaySound("PSRLFIN", 3)
+		TNT1 A 0 A_Takeinventory("PBPistolHasUnloaded",1)
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,"InsertBulletsSilencerNoChamber")//16+1 effect
+		TNT1 A 0 A_GiveInventory("PBPistolWasEmpty", 1)
+		Goto InsertBulletsSilencerChamber
+		
+	InsertBulletsSilencerChamber:
+		TNT1 A 0 A_JumpIfInventory("PistolBullets", 1, 1)
+		Goto WrapUpReloadSilencer
+		TNT1 A 0
+		TNT1 A 0 A_Giveinventory("PrimaryPistolAmmo",1)
+		TNT1 A 0 A_Giveinventory("HandgunAmmo",1)
+		TNT1 A 0 A_Takeinventory("PistolBullets",1)
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",15, "WrapUpReloadSilencer")
+		Goto InsertBulletsSilencerChamber
+		
+	InsertBulletsSilencerNoChamber:
+		TNT1 A 0 A_JumpIfInventory("PistolBullets", 1, 1)
+		Goto WrapUpReloadSilencer
+		TNT1 A 0
+		TNT1 A 0 A_Giveinventory("PrimaryPistolAmmo",1)
+		TNT1 A 0 A_Giveinventory("HandgunAmmo",1)
+		TNT1 A 0 A_Takeinventory("PistolBullets",1)
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",16, "WrapUpReloadSilencer")
+		Goto InsertBulletsSilencerNoChamber
+		TNT1 A 0 
+		D5GD XYZ 1
+		D5GE ABC 1
+		Goto WrapUpReloadSilencer
+		
+	LoadChamberSilencer:
+		TNT1 A 0
+		TNT1 A 0 A_PlaySound("IronSights", 0)
+		TNT1 A 0 A_PlaySound("PSRLFIN", 1)
+		D5GE CDEFFGHIJKLMNOPQ 1
+		TNT1 A 0 A_Takeinventory("Reloading",1)
+		TNT1 A 0 A_Takeinventory("PBPistolWasEmpty",1)
+		Goto WrapUpReloadSilencer
+		
+	// Unloading States
+		
 	AlreadyUnloaded:
 		TNT1 A 0 A_Takeinventory("Unloading",1)
-		Goto Ready+6
-	
+		Goto ReadyToFire
+		
 	Unload:
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"Unload2")
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"UnloadSilencer")
 		DEGG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
 		TNT1 A 0 A_JumpIfInventory("PBPistolHasUnloaded", 1, "AlreadyUnloaded")
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		TNT1 A 0 A_Takeinventory("ADSmode",1)
 		TNT1 A 0 A_Takeinventory("Zoomed",1)
-        TNT1 A 0 A_JumpIfInventory("PistolAmmo",1,3)
+        TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,3)
         Goto NoAmmo
         TNT1 AAA 0
 		TNT1 A 0 A_Takeinventory("Zoomed",1)
-		D2GR A 1 
+		D5GB A 1 
 		TNT1 A 0 A_PlaySound("PSRLOUT", 1)
-        D2GR GFEDCBA 2
+        D5GB BCDEFGHIJKDCBA 1
 		TNT1 A 0 A_GiveInventory ("Pumping", 1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
+		Goto RemoveBullets
 		
 	RemoveBullets:
 		TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("PistolAmmo",1,3)
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,3)
 		Goto FinishUnload
         TNT1 AAAAAA 0
-		TNT1 A 0 A_Takeinventory("PistolAmmo",1)
+		TNT1 A 0 A_Takeinventory("PrimaryPistolAmmo",1)
 		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
 		TNT1 A 0 A_Giveinventory("PistolBullets",1)
 		Goto RemoveBullets
-	
-	FInishUnload:
+		
+	FinishUnload:
 		TNT1 A 0 A_PlaySound("DryFire")
 		TNT1 A 0 A_GiveInventory("PBPistolHasUnloaded", 1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
-		Goto Ready+6
+		Goto ReadyToFire
 		
-		
-	Unload2:
+	UnloadSilencer:
 		D3GG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
 		TNT1 A 0 A_JumpIfInventory("PBPistolHasUnloaded", 1, "AlreadyUnloaded")
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		TNT1 A 0 A_Takeinventory("ADSmode",1)
 		TNT1 A 0 A_Takeinventory("Zoomed",1)
-        TNT1 A 0 A_JumpIfInventory("PistolAmmo",1,3)
+        TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,3)
         Goto NoAmmo
         TNT1 AAA 0
 		TNT1 A 0 A_Takeinventory("Zoomed",1)
-		D3GR A 1 
+		D5GD A 1 
 		TNT1 A 0 A_PlaySound("PSRLOUT", 1)
-        D3GR GFEDCBA 2
+        D5GD BCDEFGHIJKDCBA 1
 		TNT1 A 0 A_GiveInventory ("Pumping", 1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
+		Goto RemoveBulletsSilencer
 		
-	RemoveBullets2:
+	RemoveBulletsSilencer:
 		TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("PistolAmmo",1,3)
-		Goto FinishUnload2
+		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,3)
+		Goto FinishUnloadSilencer
         TNT1 AAAAAA 0
-		TNT1 A 0 A_Takeinventory("PistolAmmo",1)
+		TNT1 A 0 A_Takeinventory("PrimaryPistolAmmo",1)
 		TNT1 A 0 A_Takeinventory("HandgunAmmo",1)
 		TNT1 A 0 A_Giveinventory("PistolBullets",1)
-		Goto RemoveBullets2
-	
-	FInishUnload2:
+		Goto RemoveBulletsSilencer
+		
+	FinishUnloadSilencer:
 		TNT1 A 0 A_PlaySound("DryFire")
 		TNT1 A 0 A_GiveInventory("PBPistolHasUnloaded", 1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
-		Goto Ready2+10
-
-//////////////////////////////////////////Unloading
+		Goto ReadyToFireSilencer
 		
-	
-	Reload2:
-		D3GG A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-		TNT1 A 0 A_Takeinventory("ADSmode",1)
-		TNT1 A 0 A_Takeinventory("Zoomed",1)
-		TNT1 A 0 A_JumpIfInventory("PistolAmmo",16,54)
-        TNT1 A 0 A_JumpIfInventory("PistolBullets",1,3)
-        Goto NoAmmo2
-        TNT1 AAA 0
-		TNT1 A 0 A_Takeinventory("Zoomed",1)
-		TNT1 A 0 A_GiveInventory ("Pumping", 1)
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-		
-		D3GR A 1 A_JumpIfInventory("PBPistolHasUnloaded", 1, 2)
-		TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",5,0,8,-4)
-		TNT1 AA 0
-		TNT1 A 0 A_PlaySound("PSRLOUT", 1)
-        D3GR GFEDC 2
-		TNT1 A 0 A_PlaySound("PSRLIN", 2)
-		D3GR B 8
-		D3GR CDEF 2
-		//TNT1 A 0 A_PlaySound("PSRLFIN", 3)
-		D3GR G 1
-		D3GR A 1
-		
-		TNT1 A 0 A_Takeinventory("PBPistolHasUnloaded",1)
-		TNT1 A 0 A_JumpIfInventory("PistolAmmo",1,"InsertBullets4")//30+1 effect
-		TNT1 A 0 A_GiveInventory("PBPistolWasEmpty", 1)
-	InsertBullets3:
-		TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("PistolAmmo",15,15)
-		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,3)
-		Goto Ready2+10
-        TNT1 AAAAAA 0
-		TNT1 A 0 A_Giveinventory("PistolAmmo",1)
-		TNT1 A 0 A_Giveinventory("HandgunAmmo",1)
-		TNT1 A 0 A_Takeinventory("PistolBullets",1)
-		Goto InsertBullets3
-		
-		TNT1 AAAAAAAAAA 0
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-        Goto Ready2+10
-		TNT1 AAAA 0
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-        Goto Ready2+10
-		
-	InsertBullets4:
-		TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("PistolAmmo",16,15)
-		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,3)
-		Goto Ready+6
-        TNT1 AAAAAA 0
-		TNT1 A 0 A_Giveinventory("PistolAmmo",1)
-		TNT1 A 0 A_Giveinventory("HandgunAmmo",1)
-		TNT1 A 0 A_Takeinventory("PistolBullets",1)
-		Goto InsertBullets4
-		
-		TNT1 AAAAAAAAAA 0
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-        Goto Ready2+10
-		TNT1 AAAA 0
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-        Goto Ready2+10	
-	
-		
-	LoadChamber2:
-		TNT1 A 0
-		TNT1 A 0 A_PlaySound("IronSights", 0)
-		D3GR H 1 A_PlaySound("PSRLFIN", 1)
-		D3GR IJK 1 
-		D3GR LMNO 1
-		D3GG A 1
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-		TNT1 A 0 A_Takeinventory("PBPistolWasEmpty",1)
-		Goto Ready2+10
-	
-//////////////////////////////////////////////////////////
- 	Spawn:
+	Spawn:
 		DEGT A -1
 		Stop
 		
+	// Flash States
+		
 	FlashKicking:
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashKicking2")
-		D2GK A 1 
-		D2GK B 1 
-		D2GK B 1 
-		D2GK C 3 
-		D2GK D 3
-		D2GK C 3 
-		D2GK B 1 
-		D2GK B 1 
-		DEGS A 1 
-		DEGG AAA 1 
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashKickingSilencer")
+		D5GU ABCDEFGHIJKLMN 1
+		DEGG AAAA 1 // Pause?
 		Stop
 		
-	FlashKicking2:
-		D3GK A 1 
-		D3GK B 1 
-		D3GK B 1 
-		D3GK C 3 
-		D3GK D 3
-		D3GK C 3 
-		D3GK B 1 
-		D3GK B 1 
-		D3GG A 1 
-		D3GG AAA 1 
+	FlashKickingSilencer:
+		D5GV ABCDEFGHIJKLMN 1
+		D3GG AAAA 1 // Pause?
 		Stop
 		
 	FlashAirKicking:
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashAirKicking2")
-		D2GK A 1 
-		D2GK B 1 
-		D2GK B 1 
-		D2GK C 3 
-		D2GK D 3
-		D2GK C 3 
-		D2GK B 1 
-		D2GK B 1 
-		DEGS A 1 
-		DEGG AAAA 1 
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashAirKickingSilencer")
+		D5GU ABCDEFGHIJKLMN 1
+		DEGG AAAA 1 // Pause?
 		Stop
 		
-	FlashAirKicking2:
-		D3GK A 1 
-		D3GK B 1 
-		D3GK B 1 
-		D3GK C 3 
-		D3GK D 3
-		D3GK C 3 
-		D3GK B 1 
-		D3GK B 1 
-		D3GG A 1 
-		D3GG AAAA 1 
+	FlashAirKickingSilencer:
+		D5GV ABCDEFGHIJKLMN 1
+		D3GG AAAA 1 // Pause?
 		Stop
 		
 	FlashSlideKicking:
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashSlideKicking2")
-		D2GK AA 2 
-		D2GK BBBBCCCCDDDD 2  
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashSlideKickingSilencer")
+		D5GY ABCDEFGHIJKLMNOPQRSTUV 1
 		Stop
 		
-	FlashSlideKicking2:
-		D3GK AA 2 
-		D3GK BBBBCCCCDDDD 2  
+	FlashSlideKickingSilencer:
+		D5GZ ABCDEFGHIJKLMNOPQRSTUV 1
 		Stop
 		
 	FlashSlideKickingStop:
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashSlideKickingStop2")
-		D2GK DCBA 1 
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashSlideKickingStopSilencer")
+		D5GY WXYZ 1 
 		DEGS A 1 
 		Stop
 		
-	FlashSlideKickingStop2:
-		D3GK DCBA 1 
+	FlashSlideKickingStopSilencer:
+		D5GZ WXYZ 1 
 		D3GG A 1 
 		Stop
 		
-
+	FlashPunching:
+		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashPunchingSilencer")
+		D5GS ABCDEFGHIJKLMN 1
+		DEGG AAAA 1 // Pause?
+		Stop
+		
+	FlashPunchingSilencer:
+		D5GT ABCDEFGHIJKLMN 1
+		D3GG AAAA 1 // Pause?
+		Stop
 	}
 }
 
-ACTOR PistolAmmo : Ammo
+ACTOR PrimaryPistolAmmo: Ammo
 {
    Inventory.Amount 0
    Inventory.MaxAmount 16
