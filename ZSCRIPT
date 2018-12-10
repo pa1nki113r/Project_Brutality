@@ -122,16 +122,55 @@ class SpawnerBase : Actor
 		PBWEAP_CHECKRIFLEEMPTY = 1<<2,
 		PBWEAP_ISPISTOLSILENCERSTATE = 1<<3
 	}
+class InvisiblePuff : BulletPuff
+{
+	Default
+	{
+		-ALLOWPARTICLES
+	}
+}
+class LaserDeactivated : Inventory {}
 class PB_WeaponBase : DoomWeapon 
 {
+	Actor laseractor;
+	Actor InvActor;
+	Vector3 invactorpos;
+	int integer;
+	action void A_DecideSpawnLaserPuff()
+	{
+			if (CountInv("LaserSightActivated")==1 && CountInv("KeepLaserDeactivated") != 1)
+			{
+				invoker.A_SpawnLaserPuff();
+			}
+			else 
+			{
+				invoker.A_DestroyLaserPuff();
+			}
+	}
+	action void A_DestroyLaserPuff()
+	{
+		if (invoker.laseractor) invoker.laseractor.Destroy();
+	}
+	action Actor A_SpawnLaserPuff()
+	{
+		int integer;
+		[invoker.InvActor, invoker.integer] = LineAttack(angle,4096,pitch,0,'None',"InvisiblePuff",LAF_NORANDOMPUFFZ|LAF_NOINTERACT);
+		if (invoker.InvActor)
+		{
+			invoker.invactorpos = invoker.InvActor.pos;
+			invoker.InvActor.Destroy();
+		}
+		if (!invoker.laseractor) invoker.laseractor = Spawn("LaserDotPerma",invoker.invactorpos);
+		else invoker.laseractor.SetOrigin(invoker.invactorpos, true);
+		
+		return invoker.laseractor;
+	}
 	action state A_DoPBWeaponAction(int weapflags = WRF_ALLOWRELOAD, int pbFlags = 0)
 	{
 		static const string PBWeapEmptyToken[] = 
 		{
-			"PBPistolWasEmpty","RifleWasEmpty"
+			"PBPistolWasEmpty","RifleWasEmpty","UACSMGWasEmpty"
 		};
-		A_WeaponReady(weapflags);
-		A_WeaponOffset(-CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY"),WOF_INTERPOLATE | (!!(pbFlags & PBWEAP_KEEPYOFFSET) ? WOF_KEEPY : 0));
 		if (CountInv("GoFatality")>=1)
 		{
 			return ResolveState("Steady");
@@ -188,10 +227,13 @@ class PB_WeaponBase : DoomWeapon
 			}
 		}
 		else if (ResolveState("ReadyToFireSilencer") 
-		&& CountInv("SilencerEquipped") >= 1 && !(pbFlags & PBWEAP_ISPISTOLSILENCERSTATE))
+		&& CountInv("SilencerEquipped") >= 1
+		&& !(pbFlags & PBWEAP_ISPISTOLSILENCERSTATE))
 		{
 			return ResolveState("ReadyToFireSilencer");
 		}
+		A_WeaponReady(weapflags);
+		A_WeaponOffset(-CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY"),WOF_INTERPOLATE | (!!(pbFlags & PBWEAP_KEEPYOFFSET) ? WOF_KEEPY : 0));
 		return null;
 	}
 }
