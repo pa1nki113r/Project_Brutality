@@ -1,5 +1,8 @@
-version "2.3.0"
-
+version "2.4.0"
+const C_TID	= 1000;	//Default camera tid
+const  MAX_R	= 56;	//Maximum radius (or distance from the player)
+const  ADJUST_R = 8;	//Amount to adjust the camera by
+const  VIEW_HEIGHT = 61.0;	//The approximate hight of the player's view
 class BossBrainBase : Actor
 {
 	void RemoveCubes()
@@ -57,7 +60,7 @@ class HeadShotBaseZScript : Actor //ZScriptified Headbox
 	{
 		Super.Tick();
 		Console.Printf("1");
-		if (master) SetXYZ(master.pos + (0,0,master.height - (master.height / 6)));
+		if (master) SetOrigin(master.pos + (0,0,master.height - (master.height / 6)),true);
 	}
 	override void PostBeginPlay()
 	{
@@ -129,7 +132,125 @@ class InvisiblePuff : BulletPuff
 		-ALLOWPARTICLES
 	}
 }
+class PlayerPawnBase : PlayerPawn
+{
+	bool CheckForCamera(class<Actor> classname,int tidnum)
+	{
+		ActorIterator at = ActorIterator.Create(tidnum);
+		Actor a = at.Next();
+		if (a != NULL && a.GetClassName() == classname) return true;
+		return false;
+	}
+
+	Actor CheckForCameraActor(class<Actor> classname,int tidnum)
+	{
+		ActorIterator at = ActorIterator.Create(tidnum);
+		Actor a = at.Next();
+		if (a != NULL && a.GetClassName() == classname) return a;
+		return null;
+	}
+	void SetActorAngle(int tidnum, double angle)
+	{
+		ActorIterator at = ActorIterator.Create(tidnum);
+		Actor a = at.Next();
+		if (a != NULL) a.angle = angle;
+	}
+	void SetActorPitch(int tidnum, double pitch)
+	{
+		ActorIterator at = ActorIterator.Create(tidnum);
+		Actor a = at.Next();
+		if (a != NULL) a.pitch = pitch;
+	}
+	bool, Actor ExtSpawn(class<Actor> classname,Vector3 pos,int tid,double angle)
+	{
+		Actor a = Spawn(classname,pos,ALLOW_REPLACE);
+		if (a != NULL)
+		{
+			a.ChangeTid(tid);
+			a.angle = angle;
+			return true;
+		}
+		return false;
+	}
+	bool SetActorPosition(int tidnum, Vector3 xyz)
+	{
+		Actor a = CheckForCameraActor("ChaseCam2",tidnum);
+		if (a != NULL)
+		{
+			a.SetOrigin(xyz + (cos(pitch)*56,0,0),true);
+			if (a.pos == xyz) return true;
+		}
+		return false;
+	}
+	void TerminateCamera()
+	{
+		SetCamera(null);
+		Actor a = CheckForCameraActor("ChaseCam2",C_TID + PlayerNumber());
+		if (a != NULL) a.Destroy();
+	}
+	void RunCamera()
+	{
+		int r = MAX_R;
+		int p_num = PlayerNumber();
+		int a = angle;
+		int p = pitch;
+		int x = pos.x;
+		int y = pos.y;
+		int z = pos.z + player.ViewHeight;
+		int fakexyr = (r * cos (p));
+		int xyr = fakexyr >> 16;
+		Actor cameraactor;
+		
+		if (!CheckForCamera("ChaseCam2",C_TID + p_num))
+		{
+			Actor cameraactor;
+			bool cameraspawned;
+			[cameraspawned, cameraactor] = ExtSpawn ("ChaseCam2", (x-cos(a)*xyr, y-sin(a)*xyr, z+sin(p)*r), C_TID+p_num, a >> 8);
+			while (!(cameraspawned) && r > 0)
+			{
+				r -= ADJUST_R;
+				fakexyr = (cos (p) * r);
+				xyr = fakexyr >> 16;
+			}
+			
+			if (CheckForCamera ("ChaseCam2", C_TID + p_num))
+				ACS_NamedExecute('ChangeCamera',0,C_TID + p_num);
+			else
+			{
+				//camera_mode[p_num] = OFF;
+				Console.MidPrint ("INDEXFONT_DOOM","Camera script failed to initialize.");
+				return;
+			}
+		}
+		else
+		{
+			while (!SetActorPosition (C_TID+p_num,(x-cos(a)*xyr, y-sin(a)*xyr, z+sin(p)*r)) && r > 0)
+			{
+				r -= ADJUST_R;
+				fakexyr = (cos (p) * r);
+				xyr = fakexyr >> 16;
+			}
+			
+			SetActorAngle (C_TID + p_num, a);
+			SetActorPitch (C_TID + p_num, p);
+			
+			if (r < MAX_R) 
+            r += ADJUST_R;
+		}
+	}
+}
 class LaserDeactivated : Inventory {}
+class ChaseCamBase : Actor
+{
+	States
+	{
+		Spawn:
+			TNT1 A 2;
+		Spawned:
+			TNT1 A 1;
+			Loop;
+	}
+}
 class PB_WeaponBase : DoomWeapon 
 {
 	Actor laseractor;
