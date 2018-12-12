@@ -132,9 +132,30 @@ class InvisiblePuff : BulletPuff
 		-ALLOWPARTICLES
 	}
 }
+class CameraRunner : Inventory
+{
+	override void DoEffect()
+	{
+		let p = PlayerPawnBase(owner);
+		if (p)
+		{
+			p.InitCamera();
+		}
+	}
+	override void OnDestroy()
+	{
+		let p = PlayerPawnBase(owner);
+		if (p)
+		{
+			p.TerminateCamera();
+		}
+		Super.OnDestroy();
+	}
+}
 class PlayerPawnBase : PlayerPawn
 {
 	int r;
+	bool camerarunning;
 	bool CheckForCamera(class<Actor> classname,int tidnum)
 	{
 		ActorIterator at = ActorIterator.Create(tidnum);
@@ -142,7 +163,16 @@ class PlayerPawnBase : PlayerPawn
 		if (a != NULL && a.GetClassName() == classname) return true;
 		return false;
 	}
-
+	void InitCamera()
+	{
+		if (!camerarunning)
+		{
+			r = MAX_R;
+			camerarunning = true;
+			RunCamera();
+		}
+		else RunCamera();
+	}
 	Actor CheckForCameraActor(class<Actor> classname,int tidnum)
 	{
 		ActorIterator at = ActorIterator.Create(tidnum);
@@ -186,13 +216,9 @@ class PlayerPawnBase : PlayerPawn
 	void TerminateCamera()
 	{
 		SetCamera(null);
+		camerarunning = false;
 		Actor a = CheckForCameraActor("ChaseCam2",C_TID + PlayerNumber());
 		if (a != NULL) a.Destroy();
-	}
-	override void BeginPlay()
-	{
-		Super.BeginPlay();
-		r = MAX_R;
 	}
 
 	void RunCamera()
@@ -204,7 +230,7 @@ class PlayerPawnBase : PlayerPawn
 		int y = pos.y;
 		int z = pos.z + player.ViewHeight;
 		int fakexyr = (r * cos (p));
-		int xyr = fakexyr >> 16;
+		int xyr = ACS_NamedExecuteWithResult("GetTriResult",r);
 		Actor cameraactor;
 		
 		if (!CheckForCamera("ChaseCam2",C_TID + p_num))
@@ -215,8 +241,7 @@ class PlayerPawnBase : PlayerPawn
 			while (!(cameraspawned) && r > 0)
 			{
 				r -= ADJUST_R;
-				fakexyr = (cos (p) * r);
-				xyr = fakexyr >> 16;
+				xyr = ACS_NamedExecuteWithResult("GetTriResult",r,p);
 			}
 			
 			if (CheckForCamera ("ChaseCam2", C_TID + p_num))
@@ -230,11 +255,10 @@ class PlayerPawnBase : PlayerPawn
 		}
 		else
 		{
-			while (!SetActorPosition (C_TID+p_num,pos.x-cos(a)*xyr, pos.y-sin(a)*xyr, pos.z+sin(p)*r) && r > 0)
+			while (!SetActorPosition (C_TID+p_num,pos.x-cos(a)*xyr, pos.y-sin(a)*xyr, z+sin(p)*r) && r > 0)
 			{
 				r -= ADJUST_R;
-				fakexyr = (cos (p) * r);
-				xyr = fakexyr >> 16;
+				xyr = ACS_NamedExecuteWithResult("GetTriResult",r,p);
 			}
 			
 			SetActorAngle (C_TID + p_num, angle);
