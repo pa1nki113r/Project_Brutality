@@ -1,6 +1,6 @@
 version "2.4.0"
 const C_TID	= 1000;	//Default camera tid
-const  MAX_R	= 56;	//Maximum radius (or distance from the player)
+const  MAX_R	= 56+32;	//Maximum radius (or distance from the player)
 const  ADJUST_R = 8;	//Amount to adjust the camera by
 const  VIEW_HEIGHT = 61.0;	//The approximate hight of the player's view
 class BossBrainBase : Actor
@@ -132,6 +132,13 @@ class InvisiblePuff : BulletPuff
 		-ALLOWPARTICLES
 	}
 }
+class InvisiblePuffAlways : InvisiblePuff
+{
+	Default
+	{
+		+ALWAYSPUFF
+	}
+}
 class CameraRunner : Inventory
 {
 	override void DoEffect()
@@ -139,7 +146,7 @@ class CameraRunner : Inventory
 		let p = PlayerPawnBase(owner);
 		if (p)
 		{
-			p.InitCamera();
+			p.RunCameraNew();
 		}
 	}
 	override void OnDestroy()
@@ -154,24 +161,17 @@ class CameraRunner : Inventory
 }
 class PlayerPawnBase : PlayerPawn
 {
-	int r;
-	bool camerarunning;
+	override void Die(Actor source, Actor inflictor, int dmgflags)
+	{
+		A_TakeInventory("CameraRunner",1);
+		Super.Die(source, inflictor, dmgflags);
+	}
 	bool CheckForCamera(class<Actor> classname,int tidnum)
 	{
 		ActorIterator at = ActorIterator.Create(tidnum);
 		Actor a = at.Next();
 		if (a != NULL && a.GetClassName() == classname) return true;
 		return false;
-	}
-	void InitCamera()
-	{
-		if (!camerarunning)
-		{
-			r = MAX_R;
-			camerarunning = true;
-			RunCamera();
-		}
-		else RunCamera();
 	}
 	Actor CheckForCameraActor(class<Actor> classname,int tidnum)
 	{
@@ -192,6 +192,12 @@ class PlayerPawnBase : PlayerPawn
 		Actor a = at.Next();
 		if (a != NULL) a.pitch = pitch;
 	}
+	void SetActorRoll(int tidnum, double roll)
+	{
+		ActorIterator at = ActorIterator.Create(tidnum);
+		Actor a = at.Next();
+		if (a != NULL) a.roll = roll;
+	}
 	bool, Actor ExtSpawn(class<Actor> classname,Vector3 pos,int tid,double angle)
 	{
 		Actor a = Spawn(classname,pos,ALLOW_REPLACE);
@@ -203,13 +209,13 @@ class PlayerPawnBase : PlayerPawn
 		}
 		return false;
 	}
-	bool SetActorPosition(int tidnum, int x, int y, int z)
+	bool SetActorPositionVector3(int tidnum, Vector3 pos)
 	{
 		Actor a = CheckForCameraActor("ChaseCam2",tidnum);
 		if (a != NULL)
 		{
-			a.SetOrigin((x,y,z),true);
-			if (a.pos == (x,y,z)) return true;
+			a.SetOrigin(pos,true);
+			if (a.pos == pos) return true;
 		}
 		return false;
 	}
@@ -220,32 +226,32 @@ class PlayerPawnBase : PlayerPawn
 		Actor a = CheckForCameraActor("ChaseCam2",C_TID + PlayerNumber());
 		if (a != NULL) a.Destroy();
 	}
-
-	void RunCamera()
+	Vector3, double, double ReturnCamPos()
 	{
-		int p_num = PlayerNumber();
-		int a = angle;
-		int p = pitch;
-		int x = pos.x;
-		int y = pos.y;
-		int z = pos.z + player.ViewHeight;
-		int fakexyr = (r * cos (p));
-		int xyr = ACS_NamedExecuteWithResult("GetTriResult",r);
-		Actor cameraactor;
-		
-		if (!CheckForCamera("ChaseCam2",C_TID + p_num))
+		Actor linepuff = LineAttack(angle - 180,128,-pitch,0,'None',"InvisiblePuffAlways",LAF_NOINTERACT|LAF_NORANDOMPUFFZ,null);
+		if (linepuff)
+		{
+			let vec3 = linepuff.pos;
+			let anglevalue = linepuff.angle;
+			let pitchvalue = linepuff.pitch;
+			linepuff.Destroy();
+			return vec3, anglevalue, pitchvalue;
+		}
+		return pos, angle, pitch;
+	}
+	void RunCameraNew()
+	{
+		Double anglevalue;
+		Double pitchvalue;
+		Vector3 campos;
+		[campos,anglevalue, pitchvalue] = ReturnCamPos();
+		if (!CheckForCamera("ChaseCam2",C_TID + playernumber()))
 		{
 			Actor cameraactor;
 			bool cameraspawned;
-			[cameraspawned, cameraactor] = ExtSpawn ("ChaseCam2", (x-cos(a)*xyr, y-sin(a)*xyr, z+sin(p)*r), C_TID+p_num, a >> 8);
-			while (!(cameraspawned) && r > 0)
-			{
-				r -= ADJUST_R;
-				xyr = ACS_NamedExecuteWithResult("GetTriResult",r,p);
-			}
-			
-			if (CheckForCamera ("ChaseCam2", C_TID + p_num))
-				ACS_NamedExecute('ChangeCamera',0,C_TID + p_num);
+			[cameraspawned, cameraactor] = ExtSpawn ("ChaseCam2", campos, C_TID+playernumber(), angle);
+			if (CheckForCamera ("ChaseCam2", C_TID + playernumber()))
+			ACS_NamedExecuteAlways('ChangeCamera',0,C_TID + playernumber());
 			else
 			{
 				//camera_mode[p_num] = OFF;
@@ -255,32 +261,16 @@ class PlayerPawnBase : PlayerPawn
 		}
 		else
 		{
-			while (!SetActorPosition (C_TID+p_num,pos.x-cos(a)*xyr, pos.y-sin(a)*xyr, z+sin(p)*r) && r > 0)
+			while (!SetActorPositionVector3(C_TID + PlayerNumber(),campos))
 			{
-				r -= ADJUST_R;
-				xyr = ACS_NamedExecuteWithResult("GetTriResult",r,p);
 			}
-			
-			SetActorAngle (C_TID + p_num, angle);
-			SetActorPitch (C_TID + p_num, pitch);
-			
-			if (r < MAX_R) 
-            r += ADJUST_R;
+			SetActorAngle (C_TID + PlayerNumber(), anglevalue);
+			SetActorPitch (C_TID + PlayerNumber(), clamp(pitch,-88,88));
+			SetActorRoll  (C_TID + PlayerNumber(), roll);
 		}
 	}
 }
 class LaserDeactivated : Inventory {}
-class ChaseCamBase : Actor
-{
-	States
-	{
-		Spawn:
-			TNT1 A 2;
-		Spawned:
-			TNT1 A 1;
-			Loop;
-	}
-}
 class PB_WeaponBase : DoomWeapon 
 {
 	Actor laseractor;
