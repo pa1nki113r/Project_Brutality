@@ -62,6 +62,7 @@ Stop
 ACTOR attackhelicopter: SwitchableDecoration 7262
 {
 var int user_helicopterdirection;
+var int user_attackhelicopterdeathcounter;
     Scale 1.0
 	Radius 36
 	Height 96
@@ -103,13 +104,41 @@ var int user_helicopterdirection;
 		TNT1 A 0 ACS_ExecuteAlways(137, 0, 0, 0, 0)//Check vehicle initial angle.
 		TNT1 A 1 A_ChangeFlag("FRIENDLY", 0)
 		TNT1 A 0 A_SpawnItem("HeliBase8")
+
 		TNT1 A 5 
 		TNT1 A 0 Thing_ChangeTID(0, 0)
 		TNK1 C 0 A_ChangeFlag("THRUACTORS", 0)
 		TNT1 A 0 A_ChangeFlag("FRIENDLY", 1)
 		Goto StandingHere
 		
-	  StandingHere:
+	  StandingHere:	
+	  TNT1 A 0 
+		{
+			if (health < 150)
+			{
+				A_CustomMissile ("BigNeoSmoke", 0, 0, random (0, 360), 2, random (0, 360));
+			}
+			if (health < 100)
+			{
+				A_CustomMissile ("ExplosionSmoke", 0, 0, random (0, 360), 2, random (0, 360));
+			}
+			if (health < 20)
+			{
+				A_CustomMissile ("FlameThrowerFireParticles", 0, 0, random (0, 360), 2, random (0, 360));
+				A_Playsound("BDFireplace2", 1, 1, 1);
+				if (CountInv("SpeedAlreadyHalved") != 1)
+				{
+					A_SetSpeed(speed / 2);
+				}
+				A_GiveInventory("SpeedAlreadyHalved",1);
+				A_SetUserVar("user_attackhelicopterdeathcounter",user_attackhelicopterdeathcounter+4);
+				if (user_attackhelicopterdeathcounter >= 35)
+				{
+					user_attackhelicopterdeathcounter = 0;
+					A_DamageSelf(2);
+				}
+			}
+		}
 		TNT1 A 7
 		TNT1 A 0 A_SpawnItem("HeliBase8")
 		TNT1 A 0 A_SpawnItem("StationedVehicleCheckRepairs")
@@ -256,10 +285,11 @@ ACTOR attackhelicopterMorphActivation : PowerupGiver
  
  
 
-
-ACTOR Playerattackhelicopter : PlayerPawn
+Actor SpeedAlreadyHalved : Inventory {}
+ACTOR Playerattackhelicopter : PlayerPawnBase
 {
 var int user_attackhelicopterbasedirection;
+var int user_attackhelicopterdeathcounter;
 	Speed 0.8
 	Scale 1.0
 	Radius 36
@@ -340,7 +370,7 @@ var int user_attackhelicopterbasedirection;
 		TNT1 A 0 A_TakeInventory("HelicopterIsFlying", 1)
 		TNT1 A 0 A_TakeInventory("CanLeaveVehicle", 1)
 		TNT1 A 0 ACS_Execute(135)
-		TNT1 A 0 ACS_ExecuteAlways(871, 0, 0, 0, 0)
+		TNT1 A 0 A_TakeInventory("CameraRunner",1)
 		TNT1 A 0 A_SpawnItemEx ("attackhelicopterUsed", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION)
 		Goto FinishExit
 
@@ -359,7 +389,7 @@ var int user_attackhelicopterbasedirection;
 		TNT1 A 0 A_TakeInventory("TurnLeft", 1)
 		TNT1 A 0 A_TakeInventory("Accelerate", 1)
 		TNT1 A 0 A_TakeInventory("BackPedal", 1)
-		TNT1 A 0 ACS_ExecuteAlways(877, 0, 0, 0, 0)//Camera
+		TNT1 A 0 A_GiveInventory("CameraRunner",1)//Camera
 		HEL1 A 1
 		TNT1 A 0 A_TakeInventory("PressedUse", 1)
 		TNT1 A 0 A_TakeInventory("FiredTankMainGun", 1)
@@ -396,10 +426,34 @@ var int user_attackhelicopterbasedirection;
 		Goto Spawn2
 		
 	Stay:
-		TNT1 A 1 A_SpawnItem("HeliBase1")
-		TNT1 A 1 A_SpawnItem("HeliBase2")
-		TNT1 A 1 A_SpawnItem("HeliBase3")
-		TNT1 A 1 A_SpawnItem("HeliBase4")
+		HEL1 ABCD 1 
+		TNT1 A 0 
+		{
+			if (health < 150)
+			{
+				A_CustomMissile ("BigNeoSmoke", 0, 0, random (0, 360), 2, random (0, 360));
+			}
+			if (health < 100)
+			{
+				A_CustomMissile ("ExplosionSmoke", 0, 0, random (0, 360), 2, random (0, 360));
+			}
+			if (health < 20)
+			{
+				A_CustomMissile ("FlameThrowerFireParticles", 0, 0, random (0, 360), 2, random (0, 360));
+				A_Playsound("BDFireplace2", 1, 0.25, 1);
+				if (CountInv("SpeedAlreadyHalved") != 1)
+				{
+					A_SetSpeed(speed / 2);
+				}
+				A_GiveInventory("SpeedAlreadyHalved",1);
+				A_SetUserVar("user_attackhelicopterdeathcounter",user_attackhelicopterdeathcounter+4);
+				if (user_attackhelicopterdeathcounter >= 35)
+				{
+					user_attackhelicopterdeathcounter = 0;
+					A_DamageSelf(2);
+				}
+			}
+		}
 		TNT1 A 0 A_CustomMissile ("HelicopterHitDetection", 70, 0, 0, 2, 0)
 		TNT1 A 0 A_CustomMissile ("HelicopterHitDetection", 70, 0, 90, 2, 0)
 		TNT1 A 0 A_CustomMissile ("HelicopterHitDetection", 70, 0, 45, 2, 0)
@@ -413,7 +467,7 @@ var int user_attackhelicopterbasedirection;
 		TNT1 A 0 A_PlaySound("HELILOP", 6, 1, 1)
 		TNT1 A 0 A_PlaySound("HELILOP2", 7, 1, 1)
 		TNT1 A 0 A_GIVEiNVENTORY("PowerFlight", 1)
-		TNT1 A 0 A_SpawnItem("HeliBase4")
+		TNT1 A 0 //A_SpawnItem("HeliBase4")
 		Loop
 		
 	Pain.HitGround:

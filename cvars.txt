@@ -140,7 +140,6 @@ script "DoubleJumpScript" enter
 		{
 			//terminate;
 		}
-	
 		else if( (GetPlayerInput(-1, MODINPUT_BUTTONS) & BT_JUMP) && !(GetPlayerInput(-1, INPUT_OLDBUTTONS) & BT_JUMP)  && (GetActorProperty(0, APROP_HEALTH) >= 1))
 		{
 			if( (GetActorZ(0) > lastZ) && (lastZ <= olderZ) )
@@ -177,7 +176,10 @@ script "CoopLivesScript" OPEN NET
 		num_coop_lives = GetCvar("bd_numcooplives");
 	}
 }
-
+script "ChangeCamera" (int cameratid)
+{
+	ChangeCamera(cameratid,0,0);
+}
 script "CoopLivesDecrementOnDeath" DEATH NET
 {
 	if (GetCvar("bd_cooplives") == 1 && GameType () == GAME_NET_COOPERATIVE)
@@ -200,7 +202,10 @@ script "CheckMarinesOnLevelEntrance" enter
 {
     GiveInventory("CheckMarines", 1);
 }
-
+Script "GetTriResult" (int radius, int pitch)
+{
+	SetResultValue(radius * cos(pitch) >> 16);
+}
 Script "GuranteeGameMode" ENTER NET
 {
 	if (GameType () == GAME_SINGLE_PLAYER) 
@@ -222,7 +227,10 @@ Script "GuranteeGameMode" ENTER NET
 		}
 	}
 }
-
+script "PlayerTakeCamera" RESPAWN
+{
+	TakeInventory("CameraRunner",3);
+}
 script "StarterPackDynamicProgressionFix" (void) NET
 {
 	//Initialize variables
@@ -590,7 +598,34 @@ script "PlayerEnterLevelScript" enter NET
 	
 	//Sets the player's TID to a number, useful for functions that indirectly reference players
 	Thing_ChangeTID(0, 800 + PlayerNumber());
-
+	Terminate;
+}
+script 32111 (int secret)
+{
+	if (GetCvar("PB_FadeOnMapExit") == true)
+	{
+		ACS_NamedExecuteAlways("PlayerExitFade",0,secret);
+		Delay(13);
+		SetPlayerProperty(0,0,PROP_TOTALLYFROZEN);
+		TakeInventory("PowerTimeFreezer",1);
+	}
+	switch (secret)
+	{
+		case 0:
+			Exit_Normal(0);
+			break;
+		case 1:
+			Exit_Secret(0);
+			break;
+	}
+}
+script "PlayerExitFade" (void)
+{
+	setfont("BLASCR");
+	HudMessageBold(s:"a"; HUDMSG_FADEINOUT, 1, CR_BLACK, 1.2, 0.1, 0.5, 0.3,0.5,1.0);
+	SetPlayerProperty(0,1,PROP_TOTALLYFROZEN);
+	GiveInventory("PowerTimeFreezer",1);
+	Delay(13);
 }
 /*
 Script "Regen" ENTER
@@ -976,7 +1011,11 @@ Script 363 (VOID) NET
  GiveInventory("Unloading", 1);
  GiveInventory("GoSpecial", 1);
 }
-
+Script "GetCamPosZ" (int radius)
+{
+	int s = sin(GetActorPitch(0));
+	SetResultValue(GetActorZ(0) + GetActorProperty(0,APROP_HEIGHT)); 
+}
 Script "ZombieManGrenades" (VOID) NET
 {
 if	(GetCvar("bd_NoZmanGrenade") == 1) { GiveInventory("NoZombieGrenade", 1); }
