@@ -3,6 +3,19 @@ const C_TID	= 1000;	//Default camera tid
 const  MAX_R	= 56+32;	//Maximum radius (or distance from the player)
 const  ADJUST_R = 8;	//Amount to adjust the camera by
 const  VIEW_HEIGHT = 61.0;	//The approximate hight of the player's view
+class PB_EventHandler : StaticEventHandler
+{
+	override void WorldThingDied(WorldEvent e)
+	{
+		if (e.thing && e.thing.target
+		&& e.thing.target.player
+		&& e.thing.bCOUNTKILL
+		&& e.thing.bISMONSTER)
+		{
+			e.thing.target.player.mo.A_SetBlend("RoyalBlue",0.1,17);
+		}
+	}
+}
 class BossBrainBase : Actor
 {
 	void RemoveCubes()
@@ -210,11 +223,11 @@ class PlayerPawnBase : PlayerPawn
 		{
 			a.ChangeTid(tid);
 			a.angle = angle;
-			return true;
+			return true, a;
 		}
-		return false;
+		return false, null;
 	}
-	bool SetActorPositionVector3(int tidnum, Vector3 pos)
+	bool SetActorPosition(int tidnum, Vector3 pos)
 	{
 		Actor a = CheckForCameraActor("ChaseCam2",tidnum);
 		if (a != NULL)
@@ -265,7 +278,7 @@ class PlayerPawnBase : PlayerPawn
 		}
 		else
 		{
-			while (!SetActorPositionVector3(C_TID + PlayerNumber(),campos))
+			while (!SetActorPosition(C_TID + PlayerNumber(),campos))
 			{
 			}
 			SetActorAngle (C_TID + PlayerNumber(), anglevalue);
@@ -276,7 +289,7 @@ class PlayerPawnBase : PlayerPawn
 	override void Tick()
 	{
 		Super.Tick();
-		if (!level.IsJumpingAllowed()) GiveInventory("DoNotJump",1);
+		if (!level.IsJumpingAllowed() || (player && player.mo && player.mo.JumpZ == 0)) GiveInventory("DoNotJump",1);
 		if (IsTank && !(health <= 0))
 		{
 			if (health < 500)
@@ -349,6 +362,14 @@ class PB_WeaponBase : DoomWeapon
 		{
 			"PBPistolWasEmpty","RifleWasEmpty","UACSMGWasEmpty"
 		};
+		static const string PBWeapUnloadedToken[] =
+		{
+			"HasUnloaded","PulseCannonHasUnloaded"
+		};
+		static const string PBWeapUnloadableClasses [] =
+		{
+			"PB_Weapon","PulseCannon"
+		};
 		if (CountInv("GoFatality")>=1)
 		{
 			return ResolveState("Steady");
@@ -395,7 +416,17 @@ class PB_WeaponBase : DoomWeapon
 		{
 			return ResolveState("Unload");
 		}
-		else if (ResolveState("LoadChamber"))
+		else 
+		{
+			for (int untoken = 0; untoken < PBWeapUnloadedToken.Size(); ++untoken)
+			{
+				if (CountInv(PBWeapUnloadedToken[untoken]) >= 1)
+				{
+					return ResolveState("GunEmpty");
+				}
+			}
+		}
+		if (ResolveState("LoadChamber"))
 		{
 			for (int i = 0; i < PBWeapEmptyToken.Size(); ++i)
 			{
