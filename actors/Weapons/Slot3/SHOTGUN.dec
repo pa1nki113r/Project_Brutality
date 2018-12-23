@@ -56,8 +56,11 @@ Actor DragonBreathShellsUpgrade: Custominventory
 		Loop
 	
     Pickup:
-	  TNT1 A 0 A_GiveInventory("DragonBreathUpgrade", 1)
-	  TNT1 A 0 A_GiveInventory("NewShell", 20)
+	  TNT1 AA 0
+	  {
+	   A_GiveInventory("DragonBreathUpgrade", 1);
+	   A_GiveInventory("NewShell", 20);
+	  }
       Stop
 	}
 }
@@ -131,9 +134,12 @@ states
 		Loop
 Death:
 XDeath:
-	TNT1 A 0 A_Explode(5, 30, 0)
-	TNT1 A 0 A_Playsound("ricochet/hit")
-    TNT1 A 0 A_SpawnItemEx ("DragonBreath",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	TNT1 A 0 
+	{
+	A_Explode(5, 30, 0);
+	A_Playsound("ricochet/hit");
+    A_SpawnItemEx ("DragonBreath",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0);
+	}
     Stop
 	}
 }
@@ -161,7 +167,6 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 	Weapon.AmmoGive2 0
 	Weapon.AmmoType1 "NewShell"
 	Weapon.AmmoType2 "ShotgunAmmo"
-	//Weapon.SisterWeapon "Shot_Mag"
 	Inventory.PickupMessage "You got the Pump Shotgun! (Slot 3)"
     Inventory.PickupSound "SHOTPICK"
 	Obituary "%o sucked %k's Shotgun"
@@ -175,307 +180,495 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 	{
 	
 	NoAmmo:
-		TNT1 A 0 A_PlaySound("weapons/empty")
-		TNT1 A 0 A_TakeInventory("Zoomed", 1)
-		TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_TakeInventory("ADSmode", 1)
-		TNT1 A 0 A_TakeInventory("Reloading", 1)
-		SHTG A 1 A_WeaponReady
+		TNT1 A 0
+		{
+		A_PlaySound("weapons/empty");
+		A_TakeInventory("Zoomed", 1);
+		A_ZoomFactor(1.0);
+		A_TakeInventory("ADSmode", 1);
+		A_TakeInventory("Reloading", 1);
+		}
 		Goto Ready3
 		
 	Ready:
-		TNT1 AAAA 0 A_JumpIfInventory("GoFatality", 1, "Steady")
-        SHSS ABCD 1
+		TNT1 AA 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		TNT1 A 0 A_JumpIfInventory("Shot_Mag",1,"Select") 
+		SHSS ABCD 1
         TNT1 A 0 A_PlaySound("weapons/sgmvpump")
 	Ready3:
-        TNT1 A 0 A_JumpIfInventory("Shot_Mag", 1, "Select")
-		TNT1 AAA 0
-		SHTG A 1 
+	    TNT1 A 0
+		SHTG A 1	
 			{
+			    if (CountInv("HasSlugs") >= 1 ) { A_SetWeaponSprite("SHTS"); }
+				if (CountInv("HasDragonBreath") >= 1 ) { A_SetWeaponSprite("SHTD"); }
 				A_SetCrosshair(0);
 				return A_DoPBWeaponAction;
 			}
 		Loop
-
+			 
 	Ready2:
-		SHT8 A 1 A_DoPBWeaponAction
+	    TNT1 A 0
+		SHT8 A 1 		
+			{
+				if (CountInv("HasSlugs") >= 1 ) { A_SetWeaponSprite("SHT6"); }
+				if (CountInv("HasDragonBreath") >= 1 ) { A_SetWeaponSprite("SHT4"); }
+				return A_DoPBWeaponAction;
+			}
 		Loop
-		
+				
 	WeaponSpecial:
 		TNT1 AAAAA 0
-		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",3)
+		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
 		TNT1 A 0 A_JumpIfInventory("HasSlugs", 1, "SwitchToDragonBreath")
 		TNT1 A 0 A_JumpIfInventory("HasDragonBreath", 1, "SwitchToBuckshot")
-		TNT1 A 0 A_Print("Slug Shells Loaded")
-		TNT1 A 0 A_GiveInventory("HasSlugs")
-		Goto FakeReload
+		TNT1 A 0 
+		{
+		A_Print("Slug Shells Loaded");
+		A_Takeinventory("GoWeaponSpecialAbility",3);
+        A_GiveInventory("HasSlugs");
+		}
+		Goto AlternateWeaponSpecialAnimationSwitchToSlugs
 		
 	SwitchToDragonBreath:
-		TNT1 A 0 A_JumpIfInventory("DragonBreathUpgrade", 1, 2)
+		TNT1 AAAAA 0
+		TNT1 A 0 A_JumpIfInventory("DragonBreathUpgrade", 1, 1)
 		Goto SwitchToBuckshot
-		TNT1 AAA 0
-		TNT1 A 0 A_Print("Dragon's Breath Shells Loaded")
-		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
-		TNT1 A 0 A_Takeinventory("HasSlugs", 1)
-		TNT1 A 0 A_GiveInventory("HasDragonBreath")
-		Goto FakeReload
+		TNT1 AA 0
+		{ 
+		A_Print("Dragon's Breath Shells Loaded");
+		A_Takeinventory("GoWeaponSpecialAbility",3); 
+		A_Takeinventory("HasSlugs", 1); 
+		A_GiveInventory("HasDragonBreath");
+		}
+		Goto AlternateWeaponSpecialAnimationSwitchToDB
 				
 	SwitchToBuckshot:
-		TNT1 A 0 A_Print("Buckshot Shells Loaded")
-		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
-		TNT1 A 0 A_Takeinventory("HasSlugs", 1)
-		TNT1 A 0 A_Takeinventory("HasDragonBreath",1)
-		Goto FakeReload
-
+		TNT1 AAAAA 0
+		TNT1 A 0 
+		{
+		A_Print("Buckshot Shells Loaded");
+		A_Takeinventory("GoWeaponSpecialAbility",1);
+		A_Takeinventory("HasSlugs", 1);
+		A_Takeinventory("HasDragonBreath",1);
+		}
+		Goto AlternateWeaponSpecialAnimationSwitchToBuckshot
+	
+  AlternateWeaponSpecialAnimationSwitchToSlugs:
+	TNT1 A 0
+	SHZA A 1 
+	SHTZ ZYXTSRQPONMLK 1 
+	SHTZ A 1
+  SlugAltEquip:
+	TNT1 A 0
+	SHZA BCDEFGHIJKLM 1
+	SHTS A 1
+	Goto Ready3
+  AlternateWeaponSpecialAnimationSwitchToDB:
+	TNT1 A 0
+	SHZA MLK 1
+	SHTZ X 1
+	SHZA IHGFEDB 1
+	SHTZ A 1
+  DBAltEquip:
+    TNT1 A 0
+	SHZA NOPQRSTUVWXY 1
+	SHTD A 1
+	Goto Ready3
+  AlternateWeaponSpecialAnimationSwitchToBuckshot:
+    TNT1 A 0
+	SHZA YXW 1
+	SHTZ X 1
+	SHZA UTSRQPON 1
+	SHTZ A 1
+  ReequipBuckShot:
+    TNT1 A 0
+	SHTZ KLMNOPQRSTWXYZ 1
+	SHTG A 1
+	Goto Ready3
+	
 	Deselect:
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		TNT1 A 0 A_TakeInventory("Zoomed",1)
-        TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_TakeInventory("ADSmode",1)
-		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
+		TNT1 A 0
+		 {
+		 A_Takeinventory("Unloading",1);
+		 A_TakeInventory("Zoomed",1);
+         A_ZoomFactor(1.0);
+		 A_TakeInventory("ADSmode",1);
+		 } 
         SHSS DCBA 1
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
-
+		
 	Select:
 		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
-		TNT1 A 0 A_SelectWeapon("Shot_Mag")
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		TNT1 A 0 A_TakeInventory("RifleSelected",1)
-		TNT1 A 0 A_TakeInventory("CarbineSelected",1)
-		TNT1 A 0 A_TakeInventory("FistsSelected",1)
-		TNT1 A 0 A_TakeInventory("SawSelected",1)
-		TNT1 A 0 A_TakeInventory("SledgeSelected",1)
-		TNT1 A 0 A_TakeInventory("HandgunSelected",1)
-		TNT1 A 0 A_TakeInventory("DualHandgunSelected",1)
-		TNT1 A 0 A_TakeInventory("RevolverSelected",1)
-		TNT1 A 0 A_GiveInventory("ShotgunSelected",1)
-		TNT1 A 0 A_TakeInventory("SSGSelected",1)
-		TNT1 A 0 A_TakeInventory("ASGSelected",1)
-		TNT1 A 0 A_TakeInventory("QSGSelected",1)
-		TNT1 A 0 A_TakeInventory("MinigunSelected",1)
-		TNT1 A 0 A_TakeInventory("NewChaingunSelected",1)	
-		TNT1 A 0 A_TakeInventory("RocketLauncherSelected",1)
-		TNT1 A 0 A_TakeInventory("GrenadeLauncherSelected",1)
-		TNT1 A 0 A_TakeInventory("SGLSelected",1)
-		TNT1 A 0 A_TakeInventory("PlasmaGunSelected",1)
-		TNT1 A 0 A_TakeInventory("M2Selected",1)	
-		TNT1 A 0 A_TakeInventory("FreezerSelected",1)
-		TNT1 A 0 A_TakeInventory("RailGunSelected",1)
-		TNT1 A 0 A_TakeInventory("BFGSelected",1)
-		TNT1 A 0 A_TakeInventory("BFGBeamSelected",1)
-		TNT1 A 0 A_TakeInventory("BHCSelected",1)
-		TNT1 A 0 A_TakeInventory("RevenantLauncherSelected",1)
-		TNT1 A 0 A_TakeInventory("FlameCannonSelected",1)
-		TNT1 A 0 A_TakeInventory("HellRifleSelected",1)
-		TNT1 A 0 A_TakeInventory("LandMineSelected",1)
-		TNT1 A 0 A_TakeInventory("UACSMGSelected",1)
-		TNT1 A 0 A_TakeInventory("SubMachineGunSelected",1)
-		TNT1 A 0 A_TakeInventory("LostSoulSelected",1)
-		TNT1 A 0 A_TakeInventory("HasBarrel",1)
-		TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
-		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
-		TNT1 AAAAAAAA 1 A_Raise
+		TNT1 A 0 ACS_NamedExecuteAlways("ToggleShotgunUpgraded",0) //For people who want this weapon to replace another
+		TNT1 A 0 
+		{
+		A_SelectWeapon("Shot_Mag");
+		A_Takeinventory("Unloading",1);
+		A_TakeInventory("RifleSelected",1);
+		A_TakeInventory("CarbineSelected",1);
+		A_TakeInventory("FistsSelected",1);
+		A_TakeInventory("SawSelected",1);
+		A_TakeInventory("SledgeSelected",1);
+		A_TakeInventory("HandgunSelected",1);
+		A_TakeInventory("DualHandgunSelected",1);
+		A_TakeInventory("RevolverSelected",1);
+		A_GiveInventory("ShotgunSelected",1);
+		A_TakeInventory("SSGSelected",1);
+		A_TakeInventory("ASGSelected",1);
+		A_TakeInventory("QSGSelected",1);
+		A_TakeInventory("MinigunSelected",1);
+		A_TakeInventory("NewChaingunSelected",1);	
+	    A_TakeInventory("RocketLauncherSelected",1);
+		A_TakeInventory("GrenadeLauncherSelected",1);
+		A_TakeInventory("SGLSelected",1);
+		A_TakeInventory("PlasmaGunSelected",1);
+		A_TakeInventory("M2Selected",1);	
+		A_TakeInventory("FreezerSelected",1);
+		A_TakeInventory("RailGunSelected",1);
+		A_TakeInventory("BFGSelected",1);
+		A_TakeInventory("BFGBeamSelected",1);
+		A_TakeInventory("BHCSelected",1);
+		A_TakeInventory("RevenantLauncherSelected",1);
+	    A_TakeInventory("FlameCannonSelected",1);
+		A_TakeInventory("HellRifleSelected",1);
+		A_TakeInventory("LandMineSelected",1);
+		A_TakeInventory("UACSMGSelected",1);
+		A_TakeInventory("SubMachineGunSelected",1);
+		A_TakeInventory("LostSoulSelected",1);
+		A_TakeInventory("HasBarrel",1);
+		A_TakeInventory("HasBurningBarrel",1);
+		}
+		TNT1 A 0 A_Raise
 		Wait
-
+	   
     Fire:
-		TNT1 A 0 A_WeaponOffset(0,32)
-		TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "Fire2")
-		TNT1 A 0 A_JumpIfInventory("HasDragonBreath", 1, "DragonFire")
-		TNT1 A 0 A_JumpIfInventory("HasSlugs", 1, "SlugFire")
 		TNT1 A 0 A_TakeInventory("Reloading", 1)
-        TNT1 A 0 A_JumpIfInventory("ShotgunAmmo", 1, 2)
+		TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "Fire2")
+        TNT1 A 0 A_JumpIfInventory("ShotgunAmmo", 1, 1)
         Goto Reload
-        TNT1 AAAA 0
-        TNT1 A 0 A_AlertMonsters
-        TNT1 A 0 A_PlaySound("weapons/sg", 5)
-        TNT1 A 0
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
-		TNT1 AAAAAAAAA 0 A_FireCustomMissile("Tracer", Random(-5, 5), 0, -1, Random(-5, 5))
-		TNT1 A 0 A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0)
-		TNT1 A 0 A_TakeInventory("ShotgunAmmo", 1)
-		TNT1 AAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
+		TNT1 A 0 
+		{
+		A_TakeInventory("ShotgunAmmo", 1);
+		A_AlertMonsters;
+		A_FireCustomMissile("YellowFlareSpawn", 0, 0, 0, 0);
+		A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0);
+		}
+		TNT1 A 0 A_JumpIfInventory("HasSlugs", 1, "SlugFire")
+		TNT1 A 0 A_JumpIfInventory("HasDragonBreath", 1, "DragonFire")
+		TNT1 A 0 A_PlaySound("weapons/sg", 5)
+		TNT1 AAAA 0 A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
+		//TNT1 AAAAAA 0 A_FireCustomMissile("Tracer", Random(3, 3), 0, -1, Random(1, 1))
 		TNT1 AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0)
-        SHTF AB 1 BRIGHT
-		TNT1 A 0 A_ZoomFactor(0.95)
-		SHTG A 0 A_FireBullets(3.65, 1.85, 9, 8, "ShotgunPuff")////////////////////////////////////// Project Brutality Pump Shotgun
-		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
-		SHTF CDE 1
-		TNT1 A 0 A_ZoomFactor(0.975)
-		SHTG A 0
-		TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_GiveInventory("IsCocking", 1)
-		SHTG BCDEFG 1
-		TNT1 A 0 A_FireCustomMissile("ShotCaseSpawn",0,0,-4,-4)
-		SHTG H 1
-		SHTG I 1 A_PlaySound("weapons/sgmvpump", 1)
-		SHTG JKLMLKJ 1
-		SHTG I 1 A_PlaySound("weapons/sgpump", 1)
-		SHTG FEDCB 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-		SHTG A 0 Offset(4,40) A_WeaponReady(WRF_ALLOWRELOAD)
-        SHTG A 1 Offset(0,32) A_ReFire
-		Goto Ready3
-
+		SHTF AB 1 BRIGHT
+		TNT1 A 0  
+		{
+		 A_FireBullets(3.65, 1.85,9,16,"ShotgunPuff",FBF_NORANDOM,8192,"Tracer",-2);////////////////////////////////////// Project Brutality Pump Shotgun
+		 A_ZoomFactor(0.97);
+		 if (CountInv("PowerStrength") >= 1 ) {
+				A_SetPitch(pitch-1);
+				A_SetAngle(angle-1);
+				}
+			else {
+				A_SetPitch(pitch-2);
+				A_SetAngle(angle-2);
+				}
+		 }
+		TNT1 A 0 
+		{
+		 A_ZoomFactor(0.98);
+		 if (CountInv("PowerStrength") >= 1 ) {
+				A_SetPitch(pitch-1);
+				A_SetAngle(angle-1);
+				}
+			else {
+				A_SetPitch(pitch-2);
+				A_SetAngle(angle-2);
+				}
+		 }
+		SHTF C 1
+		{
+		 A_ZoomFactor(0.99);
+		 if (CountInv("PowerStrength") >= 1 ) {
+				A_SetPitch(pitch+1);
+				A_SetAngle(angle+1);
+				}
+			else {
+				A_SetPitch(pitch+2);
+				A_SetAngle(angle+2);
+				}
+		 }
+		SHTF D 1
+		{
+		 A_ZoomFactor(1);
+		 if (CountInv("PowerStrength") >= 1 ) {
+				A_SetPitch(pitch+1);
+				A_SetAngle(angle+1);
+				}
+			else {
+				A_SetPitch(pitch+2);
+				A_SetAngle(angle+2);
+				}
+		 }
+		Goto Pump1
+	
 	SlugFire:
-        TNT1 A 0 A_TakeInventory("Reloading", 1)
-		TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "Fire2")
-        TNT1 A 0 A_JumpIfInventory("ShotgunAmmo", 1, 2)
-        Goto Reload
-        TNT1 AAAA 0
-        TNT1 A 0 A_AlertMonsters
-        TNT1 A 0 A_PlaySound("SlugShot", 5)
-        TNT1 A 0
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
-		TNT1 A 0 A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0)
-		TNT1 A 0 A_TakeInventory("ShotgunAmmo", 1)
+		TNT1 A 0 A_PlaySound("SlugShot", 5)
 		TNT1 AAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
+		//TNT1 A 0 A_FireCustomMissile("Tracer")
 		TNT1 AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0)
         SHTF AB 1 BRIGHT
-		SHTG A 0 A_FireCustomMissile("Tracer")
-		TNT1 A 0 A_ZoomFactor(0.95)
-		SHTG A 0 A_FireBullets(1.5, 0.5, 1, 67, "ShotgunPuff")
-		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
-		SHTF CDE 1
-		TNT1 A 0 A_ZoomFactor(0.975)
-		TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_GiveInventory("IsCocking", 1)
-		SHTG BCDEFN 1//G 1
-		SHTG O 1
-		TNT1 A 0 A_FireCustomMissile("ShotCaseSpawn2",0,0,-4,-4)
-		SHTG I 1 A_PlaySound("weapons/sgmvpump", 1)
-		SHTG JKLMLKJI 1
-        SHTG I 1 A_PlaySound("weapons/sgpump", 1)
-		SHTG FEDCB 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-        SHTG A 1 Offset(4,40) A_WeaponReady(WRF_ALLOWRELOAD)
-        SHTG A 1 Offset(0,32) A_ReFire
-		Goto Ready3
-				
+		TNT1 A 0 
+		{
+		A_FireBullets(1.5, 0.5, 1, 67, "ShotgunPuff",FBF_NORANDOM,8192,"Tracer",-1);
+		A_ZoomFactor(0.97);
+		 if (CountInv("PowerStrength") >= 1 ) {
+				A_SetPitch(pitch-1);
+				A_SetAngle(angle-1);
+				}
+			else {
+				A_SetPitch(pitch-2);
+				A_SetAngle(angle-2);
+				}
+		 }
+		TNT1 A 0 
+		{
+		 A_ZoomFactor(0.98);
+		 if (CountInv("PowerStrength") >= 1 ) {
+				A_SetPitch(pitch-1);
+				A_SetAngle(angle-1);
+				}
+			else {
+				A_SetPitch(pitch-2);
+				A_SetAngle(angle-2);
+				}
+		 }
+		SHTF C 1
+		{
+		 A_ZoomFactor(0.99);
+		 if (CountInv("PowerStrength") >= 1 ) {
+				A_SetPitch(pitch+1);
+				A_SetAngle(angle+1);
+				}
+			else {
+				A_SetPitch(pitch+2);
+				A_SetAngle(angle+2);
+				}
+		 }
+		SHTF D 1
+		{
+		 A_ZoomFactor(1);
+		 if (CountInv("PowerStrength") >= 1 ) {
+				A_SetPitch(pitch+1);
+				A_SetAngle(angle+1);
+				}
+			else {
+				A_SetPitch(pitch+2);
+				A_SetAngle(angle+2);
+				}
+		 }
+		Goto Pump1
+	
 	DragonFire:
-        TNT1 A 0 A_TakeInventory("Reloading", 1)
-		TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "Fire2")
-        TNT1 A 0 A_JumpIfInventory("ShotgunAmmo", 1, 2)
-        Goto Reload
-        TNT1 AAAA 0
-        TNT1 A 0 A_AlertMonsters
-        TNT1 A 0 A_PlaySound("DRBTFIRE", 5)
-        TNT1 A 0
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
 		TNT1 AAAAA 0 A_FireCustomMissile("Tracer", Random(-5, 5), 0, -1, Random(-5, 5))
 		TNT1 AAAAA 0 A_FireCustomMissile("DragonsBreathTracer", Random(-5, 5), 0, -1, Random(-5, 5))
-		TNT1 A 0 A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0)
-		TNT1 A 0 A_TakeInventory("ShotgunAmmo", 1)
+		TNT1 A 0 A_PlaySound("DRBTFIRE", 5)
 		TNT1 AAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
 		TNT1 AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0)
-        SHTF AB 1 BRIGHT
-		TNT1 A 0 A_ZoomFactor(0.95)
-		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
-		SHTF CDE 1
-		TNT1 A 0 A_ZoomFactor(0.975)
-		TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_GiveInventory("IsCocking", 1)
-		SHTG BCDEFP 1 //G 1
-		SHTG Q 1
-		TNT1 A 0 A_FireCustomMissile("ShotCaseSpawn3",0,0,-4,-4)
-		TNT1 A 0 A_PlaySound("weapons/sgmvpump", 1)
-		SHTG I 3 //A_PlaySound("weapons/sgmvpump", 1)
-		SHTG JKLMLKJI 1
-        SHTG I 1 A_PlaySound("weapons/sgpump", 1)
-		SHTG FEDCB 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-        SHTG A 1 Offset(4,40) A_WeaponReady(WRF_ALLOWRELOAD)
-        SHTG A 1 Offset(0,32) A_ReFire
+		SHTF AB 1 BRIGHT
+		A_ZoomFactor(0.97);
+		 if (CountInv("PowerStrength") >= 1 ) {
+				A_SetPitch(pitch-1);
+				A_SetAngle(angle-1);
+				}
+			else {
+				A_SetPitch(pitch-2);
+				A_SetAngle(angle-2);
+				}
+		 }
+		TNT1 A 0 
+		{
+		 A_ZoomFactor(0.98);
+		 if (CountInv("PowerStrength") >= 1 ) {
+				A_SetPitch(pitch-1);
+				A_SetAngle(angle-1);
+				}
+			else {
+				A_SetPitch(pitch-2);
+				A_SetAngle(angle-2);
+				}
+		 }
+		SHTF C 1
+		{
+		 A_ZoomFactor(0.99);
+		 if (CountInv("PowerStrength") >= 1 ) {
+				A_SetPitch(pitch+1);
+				A_SetAngle(angle+1);
+				}
+			else {
+				A_SetPitch(pitch+2);
+				A_SetAngle(angle+2);
+				}
+		 }
+		SHTF D 1
+		{
+		 A_ZoomFactor(1);
+		 if (CountInv("PowerStrength") >= 1 ) {
+				A_SetPitch(pitch+1);
+				A_SetAngle(angle+1);
+				}
+			else {
+				A_SetPitch(pitch+2);
+				A_SetAngle(angle+2);
+				}
+		 }
+		Goto Pump1
+				
+	Pump1:
+	    TNT1 A 0 A_GiveInventory("IsCocking", 1)
+		SHTG BCDEFG 1 
+		 {
+		  if (CountInv("Kicking") == 1) { return state("DoKick"); }
+		  if (CountInv("DoPunch") == 1) { return state("QuickPunch"); }
+		  return state("");
+		 }
+	P1Begin:
+		SHTG HI 1
+		 {
+		 If(CountInv("HasSlugs") >=1 )        
+		 {A_SetWeaponSprite("SHTS");} 
+		 If(CountInv("HasDragonBreath") >=1 )        
+		 {A_SetWeaponSprite("SHTD");} 
+		 return state("");
+		 }
+	P1B:
+	    SHTG J 1 A_PlaySound("weapons/sgpump", 1)
+		TNT1 A 0
+		 {
+		 If(CountInv("HasSlugs") >=1 ) {A_FireCustomMissile("ShotCaseSpawn2",0,0,-4,-4);
+		 return state("P1C");}        
+		 If(CountInv("HasDragonBreath") >=1 ) {A_FireCustomMissile("ShotCaseSpawn3",0,0,-4,-4);
+		 return state("P1C");}
+		 A_FireCustomMissile("ShotCaseSpawn",0,0,-4,-4);
+		 return state("");
+		 }
+	P1C:	 
+		SHTG KLM 1 
+		SHTG MLK 1 
+		SHTG J 1 A_PlaySound("weapons/sgpump", 1)
+		SHTG IH 1
+		{
+		 If(CountInv("HasSlugs") >=1 )        
+		 {A_SetWeaponSprite("SHTS");} 
+		 If(CountInv("HasDragonBreath") >=1 )        
+		 {A_SetWeaponSprite("SHTD");} 
+		 return state("");
+		 }
+		SHTG GFEDCB 1
+		{
+		  if (CountInv("Kicking") == 1) { return state("DoKick"); }
+		  if (CountInv("DoPunch") == 1) { return state("QuickPunch"); }
+		  return state("");
+		 }
+	P1End:	
+        SHTG A 1
+		{
+		 If(CountInv("HasSlugs") >=1 )        
+		 {A_SetWeaponSprite("SHTS");} 
+		 If(CountInv("HasDragonBreath") >=1 )        
+		 {A_SetWeaponSprite("SHTD");}
+		 A_WeaponReady(WRF_ALLOWRELOAD);
+		 A_ReFire;
+		 return state("");
+		 }
 		Goto Ready3
-			
+				
 	Fire2:
+        TNT1 A 0 A_TakeInventory("Reloading", 1)
+        TNT1 A 0 A_JumpIfInventory("ShotgunAmmo", 1, 1)
+        Goto Reload
+        TNT1 A 0 
+		{
+		A_AlertMonsters;
+		A_FireCustomMissile("YellowFlareSpawn", 0, 0, 0, 0);
+		}
+		TNT1 A 0 A_TakeInventory("ShotgunAmmo", 1)
 		TNT1 A 0 A_JumpIfInventory("HasDragonBreath", 1, "DragonFire2")
 		TNT1 A 0 A_JumpIfInventory("HasSlugs", 1, "SlugFire2")
-        TNT1 A 0 A_TakeInventory("Reloading", 1)
-        TNT1 A 0 A_JumpIfInventory("ShotgunAmmo", 1, 2)
-        Goto Reload
-        TNT1 AAAA 0
-        TNT1 A 0 A_AlertMonsters
         TNT1 A 0 A_PlaySound("weapons/sg", 5)
-        TNT1 A 0
-		
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
 		TNT1 A 0 A_FireBullets(3.25, 1.35, 9, 8, "ShotgunPuff")
-		TNT1 A 0 A_TakeInventory("ShotgunAmmo", 1)
 		TNT1 AAAAA 0 A_FireCustomMissile("Tracer", Random(-5, 5), 0, -1, Random(-5, 5))
 		TNT1 AAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
 		TNT1 AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 2, 0, 0)
 		TNT1 A 0 A_SetPitch(-10.0 + pitch)
-        SHT8 F 1 BRIGHT A_SetPitch(+2.5 + pitch)
+        SHT8 F 2 BRIGHT A_SetPitch(+2.5 + pitch)
 		SHT8 GHI 1 A_SetPitch(+2.5 + pitch)
-		TNT1 A 0 A_PlaySound("weapons/sgmvpump")
-		SHT8 JKLMNO 1 
-		SHT8 P 2 A_FireCustomMissile("ShotCaseSpawn", 0, 0, -4, -4)
-		TNT1 A 0 A_PlaySound("weapons/sgpump")
-		SHT8 ONMLKJ 1 
-		SHT8 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		SHT8 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		SHT8 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		SHT8 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		SHT8 A 1 A_ReFire
-		Goto Ready2
-		
+		Goto AltFirePump1
+			
 	SlugFire2:
-        TNT1 A 0 A_TakeInventory("Reloading", 1)
-        TNT1 A 0 A_JumpIfInventory("ShotgunAmmo", 1, 2)
-        Goto Reload
-        TNT1 AAAA 0
-		TNT1 A 0 A_AlertMonsters
-        TNT1 A 0 A_PlaySound("SlugShot", 5)
-        TNT1 A 0
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
+		TNT1 A 0 A_PlaySound("SlugShot", 5)
 		SHTG A 0 A_FireBullets(1.1, 0.25, 1, 67, "ShotgunPuff",0,0,"none",-2)
 		SHTG A 0 A_FireCustomMissile("Tracer")
-		TNT1 A 0 A_TakeInventory("ShotgunAmmo", 1)
 		TNT1 AAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
 		TNT1 AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 2, 0, 0)
 		TNT1 A 0 A_SetPitch(-11.0 + pitch)
-        SHT8 F 1 BRIGHT A_SetPitch(+2.5 + pitch)
-		SHT8 GHI 1 A_SetPitch(+2.5 + pitch)
-		TNT1 A 0 A_PlaySound("weapons/sgmvpump")
-		SHT8 JKLMNO 1 
-		SHT8 P 2 A_FireCustomMissile("ShotCaseSpawn2", 0, 0, -4, -4)
-		TNT1 A 0 A_PlaySound("weapons/sgpump")
-		SHT8 ONMLKJ 1 
-		SHT8 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		SHT8 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		SHT8 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		SHT8 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		SHT8 A 1 A_ReFire
-		Goto Ready2
+		SHT6 F 2 BRIGHT A_SetPitch(+2.5 + pitch)
+		SHT6 GHI 1 A_SetPitch(+2.5 + pitch)
+		Goto AltFirePump1
 
 	DragonFire2:
-        TNT1 A 0 A_TakeInventory("Reloading", 1)
-        TNT1 A 0 A_JumpIfInventory("ShotgunAmmo", 1, 2)
-        Goto Reload
-        TNT1 AAAA 0
-		TNT1 A 0 A_AlertMonsters
         TNT1 A 0 A_PlaySound("DRBTFIRE", 5)
         TNT1 A 0
 		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
 		TNT1 AAAAA 0 A_FireCustomMissile("DragonsBreathTracer", Random(-5, 5), 0, -1, Random(-5, 5))
 		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
-		TNT1 A 0 A_TakeInventory("ShotgunAmmo", 1)
 		TNT1 AAAAAAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
 		TNT1 AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 2, 0, 0)
-		
         TNT1 A 0 A_SetPitch(-8.0 + pitch)
-        SHT8 F 1 BRIGHT A_SetPitch(+2.0 + pitch)
-		SHT8 GHI 1 A_SetPitch(+2.0 + pitch)
-		TNT1 A 0 A_PlaySound("weapons/sgmvpump")
-		SHT8 JKLMNO 1 
-		SHT8 P 2 A_FireCustomMissile("ShotCaseSpawn3", 0, 0, -4, -4)
+		SHT4 F 2 BRIGHT A_SetPitch(+2.0 + pitch)
+		SHT4 GHI 1 A_SetPitch(+2.0 + pitch)
+	
+	AltFirePump1:
+	    TNT1 A 0 A_PlaySound("weapons/sgmvpump")
+		SHT8 JKLMNOPP 1
+		{
+		 If(CountInv("HasSlugs") >=1 )        
+		 {A_SetWeaponSprite("SHT6");} 
+		 If(CountInv("HasDragonBreath") >=1 )        
+		 {A_SetWeaponSprite("SHT4");} 
+		 return state("");
+		 }
+		TNT1 A 0
+		{
+		 If(CountInv("HasSlugs") >=1 ) {A_FireCustomMissile("ShotCaseSpawn2",0,0,-4,-4);
+		 return state("AFP1E");}        
+		 If(CountInv("HasDragonBreath") >=1 ) {A_FireCustomMissile("ShotCaseSpawn3",0,0,-4,-4);
+		 return state("AFP1E");}
+		 A_FireCustomMissile("ShotCaseSpawn",0,0,-4,-4);
+		 return state("");
+		 }
+	AFP1E:	 
 		TNT1 A 0 A_PlaySound("weapons/sgpump")
-		SHT8 ONMLKJ 1 
-		SHT8 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		SHT8 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		SHT8 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		SHT8 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
-		SHT8 A 1 A_ReFire
-		Goto Ready2
-		
+		SHT8 ONMLKJ 1
+		{
+		 If(CountInv("HasSlugs") >=1 )        
+		 {A_SetWeaponSprite("SHT6");} 
+		 If(CountInv("HasDragonBreath") >=1 )        
+		 {A_SetWeaponSprite("SHT4");} 
+		 return state("");
+		 }
+		SHT8 A 5
+		{
+		 If(CountInv("HasSlugs") >=1 )        
+		 {A_SetWeaponSprite("SHT6");} 
+		 If(CountInv("HasDragonBreath") >=1 )        
+		 {A_SetWeaponSprite("SHT4");} 
+		 A_WeaponReady(WRF_ALLOWRELOAD);
+		 A_ReFire;
+		 return state("");
+		 }
+		 Goto Ready2
+							
 	AltFire:
 		TNT1 A 0 A_WeaponOffset(0,32)
 		TNT1 A 0 A_PlaySound("IronSights", 0)
@@ -496,7 +689,7 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 		TNT1 A 0 A_TakeInventory("ADSmode",1)
         Goto Ready3
 	
-	Pump2:
+	/*Pump2: // Old 7+1 Pump, Replaced with an 8+1 shell insert. Never Used.
 		TNT1 A 0 A_GiveInventory ("Pumping", 1)
 		TNT1 A 0 A_TakeInventory("Reloading", 1)
 	    TNT1 A 0 A_Takeinventory("Zoomed",1)
@@ -506,7 +699,7 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 		SHTG I 1 A_PlaySound("weapons/sgpump", 1)
 		SHTG FEDCB 1 A_JumpIfInventory("Kicking", 1, "DoKick")
 		TNT1 A 0 A_Takeinventory("PBPumpShotgunWasEmpty",1)
-		Goto ReadyToFireAgain
+		Goto ReadyToFireAgain*/
    
 		
 	ReadyToFireAgain:	
@@ -523,53 +716,57 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 	ReloadWithNoAmmoLeft:
     Reload:
 	    TNT1 A 0
-		TNT1 A 0 A_TakeInventory("Reloading", 1)
-	    TNT1 A 0 A_Takeinventory("Zoomed",1)
-        TNT1 A 0 A_ZoomFactor(1.0)
-		SHTG A 1 A_WeaponReady
+		{
+		A_TakeInventory("Reloading", 1);
+	    A_Takeinventory("Zoomed",1);
+        A_ZoomFactor(1.0);
+		}
+		SHTG A 1
+		{
+		 If(CountInv("HasSlugs") >=1 )        
+		 {A_SetWeaponSprite("SHTS");} 
+		 If(CountInv("HasDragonBreath") >=1 )        
+		 {A_SetWeaponSprite("SHTD");}
+		 A_WeaponReady;
+		 return state("");
+		 }
 		TNT1 A 0 A_JumpIfInventory("ShotgunAmmo",9,"OkToFire")
 		TNT1 A 0 A_JumpIfInventory("ShotgunAmmo", 1, "ReloadNormally")
 		TNT1 A 0 A_GiveInventory("PBPumpShotgunWasEmpty", 1)
 	ReloadNormally:	
-        TNT1 A 0 A_JumpIfInventory("NewShell",1,1)
-        Goto Ready3
+		TNT1 A 0 A_JumpIfInventory("NewShell",1,1)
+        Goto NoAmmo
         TNT1 A 0
 		SHTG B 1 
 		TNT1 A 0 A_GiveInventory ("Pumping", 1)
 		SHTG CDE 1
 	ReloadInsertShell:
-        TNT1 A 0
-        TNT1 A 0
 		TNT1 A 0 A_GiveInventory ("Pumping", 1)
     ShellChecker:
-		TNT1 A 0 A_JumpIfInventory("PBPumpShotgunWasEmpty", 1, "ShellChecker2")
 		TNT1 A 0 A_JumpIfInventory("NewShell",1,1)
         Goto ReloadFinished
 		TNT1 A 0 A_JumpIfInventory("ShotgunAmmo",9,"ReloadFinished")
-        TNT1 A 0 A_Giveinventory("ShotgunAmmo",1)
-		TNT1 A 0 A_Takeinventory("NewShell",1)
-        TNT1 A 0 A_JumpIfInventory("HasSlugs",1,"SlugInsert")
-		TNT1 A 0 A_JumpIfInventory("HasDragonBreath",1,"DragonInsert")
-		SSHR ABCDE 1 A_WeaponReady(WRF_NOBOB) 
-		SSHR F 1 A_PlaySound("insertshell") 
-		SSHR G 1 A_WeaponReady(WRF_NOBOB) 
+        TNT1 A 0 
+		{
+		A_Giveinventory("ShotgunAmmo",1);
+		A_Takeinventory("NewShell",1);
+		}
+		SSHR A 1
+		SSHR BC 1
+		{
+		 If(CountInv("HasSlugs") >=1 )        
+		 {A_SetWeaponSprite("SHTS");}
+		 //return state("");
+		 If(CountInv("HasDragonBreath") >=1 )        
+		 {A_SetWeaponSprite("SHTD");}
+		 return state("");
+		 }
+		SSHR D 1 A_PlaySound("insertshell")	
+		SSHR EFGHIJ 1 A_WeaponReady(WRF_NOBOB)
 		SSHR A 0 A_Refire
         TNT1 A 0 A_JumpIfInventory("Kicking",1,"DoKick")
-        loop
-	ShellChecker2:
-		TNT1 A 0 A_JumpIfInventory("ShotgunAmmo",8,"ReloadFinished")
-        TNT1 A 0 A_JumpIfInventory("NewShell",1,1)
-        Goto ReloadFinished
-	    TNT1 A 0 A_Giveinventory("ShotgunAmmo",1)
-		TNT1 A 0 A_Takeinventory("NewShell",1)
-        TNT1 A 0 A_JumpIfInventory("HasSlugs",1,"SlugInsert2")
-		TNT1 A 0 A_JumpIfInventory("HasDragonBreath",1,"DragonInsert2")
-		SSHR ABCDE 1 A_WeaponReady(WRF_NOBOB) 
-		SSHR F 1 A_PlaySound("insertshell") 
-		SSHR G 1 A_WeaponReady(WRF_NOBOB) 
-		SSHR A 0 A_Refire
-        TNT1 A 0 A_JumpIfInventory("Kicking",1,"DoKick")
-        loop	
+		Goto ShellChecker
+	
 	ReloadFinished:
 		TNT1 A 0 A_JumpIfInventory("PBPumpShotgunWasEmpty", 1, "SideLoadShellChecker")
 		SHTG FEDCBA 1 A_WeaponReady
@@ -580,19 +777,14 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 	SideLoadShellChecker:
         TNT1 A 0
 		TNT1 A 0 A_Takeinventory("PBPumpShotgunWasEmpty",1)
-		TNT1 A 0 A_JumpIfInventory("NewShell",1,1)
-		Goto Ready3 
-		TNT1 A 0 A_GiveInventory ("Pumping", 1)
-		TNT1 A 0 A_GiveInventory ("Pumping", 1)
-        TNT1 A 0 A_Giveinventory("ShotgunAmmo",1)
-		TNT1 A 0 A_Takeinventory("NewShell",1)
 	SideLoadShellInsert:
 		SSHR A 1
 		SSHQ CDE 2 
 		SSHQ F 1  A_WeaponReady(WRF_NOBOB)
 		TNT1 A 0 A_JumpIfInventory("HasSlugs",1,"SlugSideLoadShell")
 		TNT1 A 0 A_JumpIfInventory("HasDragonBreath",1,"DragonSideLoadShell") 
-		SSHQ GH 2 
+		SSHQ GH 2
+		
 	EndOfLSI:
 		SSHQ I 1 A_PlaySound("insertshell") 
 		SSHQ JK 1 A_WeaponReady(WRF_NOBOB)
@@ -610,68 +802,20 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 	DragonSideLoadShell:
 		SSHQ NO 2
 		Goto EndofLSI
-	
-	DragonSlideLoadShell:
-		SSHR A 1
-		SSHQ CDE 2 
-		SSHQ F 1  A_WeaponReady(WRF_NOBOB)
-		SSHQ NO 2 
-		SSHQ I 1 A_PlaySound("insertshell") 
-		SSHQ JK 1 A_WeaponReady(WRF_NOBOB)
-		SSHR A 0 A_Refire
-		TNT1 A 0 A_JumpIfInventory("Kicking",1,"DoKick")
-		SHTG FEDCBA 1 A_WeaponReady
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-		TNT1 A 0 A_Refire
-		Goto Ready3
 		
-	SlugInsert:
-		SSHR A 1
-		SSHS BCD 1
-		SSHR E 1 
-		SSHR F 1 A_PlaySound("insertshell")
-		SSHR G 1
-		SSHR A 0 A_Refire
-		Goto ShellChecker
-	
-	SlugInsert2:
-		SSHR A 1
-		SSHS BCD 1
-		SSHR E 1 
-		SSHR F 1 A_PlaySound("insertshell")
-		SSHR G 1
-		SSHR A 0 A_Refire
-		Goto ShellChecker2
-	
-	DragonInsert:
-		SSHR A 1
-		SSHD BCD 1
-		SSHR F 1 A_PlaySound("insertshell")
-		SSHR G 1
-		SSHR A 0 A_Refire
-		Goto ShellChecker
-	
-	DragonInsert2:
-		SSHR A 1
-		SSHD BCD 1
-		SSHR F 1 A_PlaySound("insertshell")
-		SSHR G 1
-		SSHR A 0 A_Refire
-		Goto ShellChecker
-
 	//////////////////////////////////////
 		
 	OkToFire:
 		SHTG A 1 A_WeaponReady
 		Goto Ready3
-		
-		
-	FakeReload:
+	
+	// Replaced. Currently Not Used.
+	/*FakeReload:
+	    TNT1 A 0 
 		TNT1 A 0 A_TakeInventory("Zoomed", 1)
         TNT1 A 0 A_ZoomFactor(1.0)
 		SHTG A 1 A_WeaponReady
         TNT1 AAAA 0
-		TNT1 A 0 A_TakeInventory("GoWeaponSpecialAbility",1)
 		SHTG B 1 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "WeaponSpecial")
 		TNT1 A 0 A_GiveInventory("IsCocking", 1)
 		SHTG CDEF 1 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "WeaponSpecial")
@@ -683,13 +827,11 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 		TNT1 A 0 A_JumpIfInventory("HasDragonBreath",1,"DragonsbreathFakeReload")
 		SSHR ABCDEF 1 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "WeaponSpecial")
 		SSHR G 1 A_PlaySound("insertshell")
-        EndOfFakeReload:
+    EndOfFakeReload:
 		SSHR A 1 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "WeaponSpecial")
         TNT1 A 0 A_JumpIfInventory("Kicking", 1, "DoKick")
 		TNT1 AAAAA 0
 		TNT1 A 0 A_TakeInventory("Reloading", 1)
-		TNT1 A 0 A_TakeInventory("Reloading", 1)
-		TNT1 A 0 A_TakeInventory("GoWeaponSpecialAbility",1)
 		SHTG GGGGGGGGGGGGGG 0
 		SHTG I 1 A_PlaySound("weapons/sgmvpump", 1)
 		SHTG JKLMLKJI 1 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "WeaponSpecial")
@@ -697,7 +839,7 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 		SHTG FEDCB 1 A_JumpIfInventory("Kicking", 1, "DoKick")
 		TNT1 A 0 A_TakeInventory("Reloading", 1)
 		TNT1 AAAAAAAAAAAAAAAAAAAA 0
-		Goto Ready3
+		Goto Ready+23
 	
 	SlugsFakeReload:
 		SSHR A 1 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "WeaponSpecial")
@@ -709,7 +851,7 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 		SSHR A 1 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "WeaponSpecial")
         SSHD BCD 1 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "WeaponSpecial")
 		SSHR EFG 1 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "WeaponSpecial")
-		Goto EndOfFakeReload
+		Goto EndOfFakeReload*/
 		
 	Unload:
 		SHTG A 1
@@ -724,7 +866,7 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 		TNT1 A 0 A_Takeinventory("Zoomed",1)
 		TNT1 A 0 A_GiveInventory ("Pumping", 1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
-		SHTG ABCDEF 1
+		SHTG ABCDEFG 1
 		
 	RemoveBullets:
 		TNT1 AAAA 0
@@ -734,13 +876,35 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 		TNT1 A 0 A_Takeinventory("ShotgunAmmo",1)
 		TNT1 A 0 A_Giveinventory("NewShell",1)
 		
+		TNT1 A 0 A_JumpIfInventory("HasSlugs", 1, "SlugUnload")
+		TNT1 A 0 A_JumpIfInventory("HasDragonBreath",1,"DBUnload")
 		SHTG I 1 A_PlaySound("weapons/sgmvpump", 1)
-		SHTG JKLMLKJI 1
+	ActuallyUnload:
+		SHTG JKLM 1
+		SHTG MLKJ 1
+		TNT1 A 0 A_JumpIfInventory("HasSlugs", 1, "SlugUnload")
+		TNT1 A 0 A_JumpIfInventory("HasDragonBreath",1,"DBUnload")
         SHTG I 1 A_PlaySound("weapons/sgpump", 2)
-		
-		SHTG FED 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-	   TNT1 A 0 A_Giveinventory("PBPumpShotgunWasEmpty",1)
+	ActuallyUnload2:
+		SHTG GFED 1 A_JumpIfInventory("Kicking", 1, "DoKick")
+	    TNT1 A 0 A_Giveinventory("PBPumpShotgunWasEmpty",1)
 		Goto RemoveBullets
+	
+	SlugUnload:
+	SHTG O 1 A_PlaySound("weapons/sgmvpump", 1)
+	Goto ActuallyUnload
+	
+	SlugUnload2:
+	SHTG O 1 A_PlaySound("weapons/sgmvpump", 1)
+	Goto ActuallyUnload2
+	
+	DBUnload:
+	SHTG Q 1 A_PlaySound("weapons/sgmvpump", 2)
+	Goto ActuallyUnload
+	
+	DBUnload2:
+	SHTG Q 1 A_PlaySound("weapons/sgmvpump", 2)
+	Goto ActuallyUnload2
 	
 	FInishUnload:
 		SHTG EDCBA 1
@@ -750,59 +914,62 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 	Spawn:
 		SHTC A -1
 		Stop
-
+	
     FlashKicking:
-		TNT1 A 0 A_JumpIfInventory("PBPumpShotgunHasUnloaded", 1, 2)
+		//TNT1 A 0 A_JumpIfInventory("PBPumpShotgunHasUnloaded", 1, 2)
 		SHTG B 1 
 		SHTG C 1 
 		SHTG D 1 
-		SHTG E 3 
-		SHTG F 3
-		SHTG E 3 
+		SHTG E 1 
+		SHTG F 1
+		SHTG G 6
+		SHTG F 1
+		SHTG E 1 
 		SHTG D 1 
 		SHTG C 1 
 		SHTG B 1 
-		SHTG AAA 1 
 		Stop
 		
 	FlashAirKicking:
-		TNT1 A 0 A_JumpIfInventory("PBPumpShotgunHasUnloaded", 1, 2)
+		//TNT1 A 0 A_JumpIfInventory("PBPumpShotgunHasUnloaded", 1, 2)
 		SHTG B 1 
 		SHTG C 1 
 		SHTG D 1 
-		SHTG E 3 
-		SHTG F 3
-		SHTG E 3 
+		SHTG E 1 
+		SHTG F 1
+		SHTG G 6
+		SHTG F 1
+		SHTG E 1 
 		SHTG D 1 
 		SHTG C 1 
 		SHTG B 1
-		SHTG AAAA 1
 		Stop	
 		
 	FlashSlideKicking:
-		TNT1 A 0 A_JumpIfInventory("PBPumpShotgunHasUnloaded", 1, 2)
+		//TNT1 A 0 A_JumpIfInventory("PBPumpShotgunHasUnloaded", 1, 2)
 		SHTG BC 2 
-		SHTG DEEFFFFFFEE 2  
+		SHTG DEEFGGGFFEE 2  
 		Stop
 
 	FlashSlideKickingStop:
-		TNT1 A 0 A_JumpIfInventory("PBPumpShotgunHasUnloaded", 1, 2)
+		//TNT1 A 0 A_JumpIfInventory("PBPumpShotgunHasUnloaded", 1, 2)
 		SHTG EDCBA 1 
 		SHTG A 1 
 		Stop	
 		
 	FlashPunching:
-		TNT1 A 0 A_JumpIfInventory("PBPumpShotgunHasUnloaded", 1, 2)
+		//TNT1 A 0 A_JumpIfInventory("PBPumpShotgunHasUnloaded", 1, 2)
 		SHTG B 1 
 		SHTG C 1 
 		SHTG D 1 
-		SHTG E 3 
-		SHTG F 3
-		SHTG E 3 
+		SHTG E 1 
+		SHTG F 1
+		SHTG G 6
+		SHTG F 1
+		SHTG E 1 
 		SHTG D 1 
 		SHTG C 1 
 		SHTG B 1 
-		SHTG AAA 1 
 		Stop
 	}
 }
@@ -810,8 +977,8 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 ACTOR ShotgunAmmo : Ammo
 {
    Inventory.Amount 0
-   Inventory.MaxAmount 11
+   Inventory.MaxAmount 9
    Ammo.BackpackAmount 0
-   Ammo.BackpackMaxAmount 11
+   Ammo.BackpackMaxAmount 9
    Inventory.Icon "SHTCA1"
 }
