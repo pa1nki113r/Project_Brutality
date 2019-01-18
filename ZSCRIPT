@@ -157,20 +157,124 @@ class InvisiblePuffAlways : InvisiblePuff
 }
 class CameraRunner : Inventory
 {
+	static bool CheckForCamera(class<Actor> classname,int tidnum)
+	{
+		ActorIterator at = ActorIterator.Create(tidnum);
+		Actor a = at.Next();
+		if (a != NULL && a.GetClassName() == classname) return true;
+		return false;
+	}
+	static Actor CheckForCameraActor(class<Actor> classname,int tidnum)
+	{
+		ActorIterator at = ActorIterator.Create(tidnum);
+		Actor a = at.Next();
+		if (a != NULL && a.GetClassName() == classname) return a;
+		return null;
+	}
+	static void SetActorAngle(int tidnum, double angle)
+	{
+		ActorIterator at = ActorIterator.Create(tidnum);
+		Actor a = at.Next();
+		if (a != NULL) a.angle = angle;
+	}
+	static void SetActorPitch(int tidnum, double pitch)
+	{
+		ActorIterator at = ActorIterator.Create(tidnum);
+		Actor a = at.Next();
+		if (a != NULL) a.pitch = pitch;
+	}
+	static void SetActorRoll(int tidnum, double roll)
+	{
+		ActorIterator at = ActorIterator.Create(tidnum);
+		Actor a = at.Next();
+		if (a != NULL) a.roll = roll;
+	}
+	static bool, Actor ExtSpawn(class<Actor> classname,Vector3 pos,int tid,double angle)
+	{
+		Actor a = Spawn(classname,pos,ALLOW_REPLACE);
+		if (a != NULL)
+		{
+			a.ChangeTid(tid);
+			a.angle = angle;
+			return true, a;
+		}
+		return false, null;
+	}
+	static bool SetActorPosition(int tidnum, Vector3 pos)
+	{
+		Actor a = CheckForCameraActor("ChaseCam2",tidnum);
+		if (a != NULL)
+		{
+			a.SetOrigin(pos,true);
+			if (a.pos == pos) return true;
+		}
+		return false;
+	}
+	void TerminateCamera()
+	{
+		owner.SetCamera(null);
+		Actor a = CheckForCameraActor("ChaseCam2",C_TID + PlayerPawn(owner).PlayerNumber());
+		if (a != NULL) a.Destroy();
+	}
+	Vector3, double, double ReturnCamPos(Actor a)
+	{
+		Actor linepuff = a.LineAttack(a.angle - 180,128 + (a.radius*2),-a.pitch,0,'None',"InvisiblePuffAlways",LAF_NOINTERACT|LAF_NORANDOMPUFFZ,null,-(a.height/2) + a.player.viewheight);
+		if (linepuff)
+		{
+			let vec3 = linepuff.pos;
+			let anglevalue = linepuff.angle;
+			let pitchvalue = linepuff.pitch;
+			linepuff.Destroy();
+			return vec3, anglevalue, pitchvalue;
+		}
+		return a.pos, a.angle, a.pitch;
+	}
+	void RunCameraNew()
+	{
+		if (!owner.player || !owner) return; //Don't start camera if the owner isn't a player.
+		Double anglevalue;
+		Double pitchvalue;
+		Double actualpitch = owner.pitch;
+		Vector3 campos;
+		int plrnum = PlayerPawn(owner).PlayerNumber();
+		[campos,anglevalue, pitchvalue] = ReturnCamPos(owner);
+		if (!CheckForCamera("ChaseCam2",C_TID + plrnum))
+		{
+			Actor cameraactor;
+			bool cameraspawned;
+			[cameraspawned, cameraactor] = self.ExtSpawn ("ChaseCam2", campos, C_TID+plrnum, angle);
+			if (CheckForCamera ("ChaseCam2", C_TID + plrnum))
+			owner.SetCamera(cameraactor);
+			else
+			{
+				Console.MidPrint ("INDEXFONT_DOOM","Camera script failed to initialize.");
+				return;
+			}
+		}
+		else
+		{
+			while (!SetActorPosition(C_TID + plrnum, campos))
+			{
+			}
+			self.SetActorAngle (C_TID + plrnum, anglevalue);
+			self.SetActorPitch (C_TID + plrnum, actualpitch);
+			self.SetActorRoll  (C_TID + plrnum, roll);
+		}
+	}
 	override void DoEffect()
 	{
-		let p = PlayerPawnBase(owner);
+		let p = PlayerPawn(owner);
 		if (p)
 		{
-			p.RunCameraNew();
+			self.RunCameraNew();
 		}
 	}
 	override void OnDestroy()
 	{
-		let p = PlayerPawnBase(owner);
+		let p = PlayerPawn(owner);
 		if (p)
 		{
-			p.TerminateCamera();
+			self.TerminateCamera();
 		}
 		Super.OnDestroy();
 	}
@@ -184,109 +288,6 @@ class PlayerPawnBase : PlayerPawn
 	{
 		A_TakeInventory("CameraRunner",1);
 		Super.Die(source, inflictor, dmgflags);
-	}
-	bool CheckForCamera(class<Actor> classname,int tidnum)
-	{
-		ActorIterator at = ActorIterator.Create(tidnum);
-		Actor a = at.Next();
-		if (a != NULL && a.GetClassName() == classname) return true;
-		return false;
-	}
-	Actor CheckForCameraActor(class<Actor> classname,int tidnum)
-	{
-		ActorIterator at = ActorIterator.Create(tidnum);
-		Actor a = at.Next();
-		if (a != NULL && a.GetClassName() == classname) return a;
-		return null;
-	}
-	void SetActorAngle(int tidnum, double angle)
-	{
-		ActorIterator at = ActorIterator.Create(tidnum);
-		Actor a = at.Next();
-		if (a != NULL) a.angle = angle;
-	}
-	void SetActorPitch(int tidnum, double pitch)
-	{
-		ActorIterator at = ActorIterator.Create(tidnum);
-		Actor a = at.Next();
-		if (a != NULL) a.pitch = pitch;
-	}
-	void SetActorRoll(int tidnum, double roll)
-	{
-		ActorIterator at = ActorIterator.Create(tidnum);
-		Actor a = at.Next();
-		if (a != NULL) a.roll = roll;
-	}
-	bool, Actor ExtSpawn(class<Actor> classname,Vector3 pos,int tid,double angle)
-	{
-		Actor a = Spawn(classname,pos,ALLOW_REPLACE);
-		if (a != NULL)
-		{
-			a.ChangeTid(tid);
-			a.angle = angle;
-			return true, a;
-		}
-		return false, null;
-	}
-	bool SetActorPosition(int tidnum, Vector3 pos)
-	{
-		Actor a = CheckForCameraActor("ChaseCam2",tidnum);
-		if (a != NULL)
-		{
-			a.SetOrigin(pos,true);
-			if (a.pos == pos) return true;
-		}
-		return false;
-	}
-	void TerminateCamera()
-	{
-		SetCamera(null);
-		Actor a = CheckForCameraActor("ChaseCam2",C_TID + PlayerNumber());
-		if (a != NULL) a.Destroy();
-	}
-	Vector3, double, double ReturnCamPos()
-	{
-		Actor linepuff = LineAttack(angle - 180,128 + (radius*2),-pitch,0,'None',"InvisiblePuffAlways",LAF_NOINTERACT|LAF_NORANDOMPUFFZ,null,-(height/2) + player.viewheight);
-		if (linepuff)
-		{
-			let vec3 = linepuff.pos;
-			let anglevalue = linepuff.angle;
-			let pitchvalue = linepuff.pitch;
-			linepuff.Destroy();
-			return vec3, anglevalue, pitchvalue;
-		}
-		return pos, angle, pitch;
-	}
-	void RunCameraNew()
-	{
-		Double anglevalue;
-		Double pitchvalue;
-		Vector3 campos;
-		[campos,anglevalue, pitchvalue] = ReturnCamPos();
-		if (!CheckForCamera("ChaseCam2",C_TID + playernumber()))
-		{
-			Actor cameraactor;
-			bool cameraspawned;
-			[cameraspawned, cameraactor] = ExtSpawn ("ChaseCam2", campos, C_TID+playernumber(), angle);
-			if (CheckForCamera ("ChaseCam2", C_TID + playernumber()))
-			//ACS_NamedExecuteAlways('ChangeCamera',0,C_TID + playernumber());
-			SetCamera(cameraactor);
-			else
-			{
-				//camera_mode[p_num] = OFF;
-				Console.MidPrint ("INDEXFONT_DOOM","Camera script failed to initialize.");
-				return;
-			}
-		}
-		else
-		{
-			while (!SetActorPosition(C_TID + PlayerNumber(),campos))
-			{
-			}
-			SetActorAngle (C_TID + PlayerNumber(), anglevalue);
-			SetActorPitch (C_TID + PlayerNumber(), clamp(pitch,-88,88));
-			SetActorRoll  (C_TID + PlayerNumber(), roll);
-		}
 	}
 	override void PostBeginPlay()
 	{
