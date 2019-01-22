@@ -132,13 +132,12 @@ class SpawnerBase : Actor
 			r.Vel = a.vel;
 	}
 }
-	enum EPBWeaponFlags
-	{
-		PBWEAP_KEEPYOFFSET = 1<<0,
-		PBWEAP_ISRIFLE = 1<<1,
-		PBWEAP_CHECKRIFLEEMPTY = 1<<2,
-		PBWEAP_ISPISTOLSILENCERSTATE = 1<<3
-	}
+enum EPBWeaponFlags
+{
+	PBWEAP_KEEPYOFFSET = 1<<0, //Weapon must not move up/down when looking up/down.
+	PBWEAP_ISPISTOLSILENCERSTATE = 1<<3, // Weapon is equipped with a silencer.
+	PBWEAP_UNLOADED = 1<<4 // Weapon has been unloaded.
+}
 class InvisiblePuff : BulletPuff
 {
 	Default
@@ -333,7 +332,15 @@ class PB_WeaponBase : DoomWeapon
 	Actor laseractor;
 	Actor InvActor;
 	Vector3 invactorpos;
+	Statelabel UnloadedState;
+	property UnloadedState: UnloadedState;
+	string UnloaderToken;
+	property UnloaderToken: UnloaderToken;
 	int integer;
+	Default
+	{
+		PB_WeaponBase.UnloaderToken "HasUnloaded";
+	}
 	action void A_DecideSpawnLaserPuff()
 	{
 			if (CountInv("LaserSightActivated")==1 && CountInv("KeepLaserDeactivated") != 1)
@@ -362,6 +369,11 @@ class PB_WeaponBase : DoomWeapon
 		else invoker.laseractor.SetOrigin(invoker.invactorpos, true);
 		
 		return invoker.laseractor;
+	}
+	action int CheckUnloaded(string token)
+	{
+		if (CountInv(token) == 1) return PBWEAP_UNLOADED;
+		return 0;
 	}
 	action state A_DoPBWeaponAction(int weapflags = WRF_ALLOWRELOAD, int pbFlags = 0, string unloadtoken = "HasUnloaded")
 	{
@@ -419,21 +431,15 @@ class PB_WeaponBase : DoomWeapon
 		{
 			return ResolveState("GrabBarrel");
 		}
-		else if (CountInv("Unloading")>=1 && ResolveState("Unload"))
+		else if (CountInv("Unloading")>=1 && ResolveState("Unload") && !(pbFlags & PBWEAP_UNLOADED) && CountInv(invoker.UnloaderToken) != 1)
 		{
 			return ResolveState("Unload");
 		}
-		else 
+		else if (CountInv(invoker.UnloaderToken) >= 1 && !(pbFlags & PBWEAP_UNLOADED) && !InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("GunEmpty")))
 		{
-			for (int untoken = 0; untoken < PBWeapUnloadedToken.Size(); ++untoken)
-			{
-				if (CountInv(PBWeapUnloadedToken[untoken]) >= 1 || CountInv(unloadtoken) >= 1)
-				{
-					return ResolveState("GunEmpty");
-				}
-			}
+			return ResolveState("GunEmpty");
 		}
-		if (ResolveState("LoadChamber"))
+		else if (ResolveState("LoadChamber"))
 		{
 			for (int i = 0; i < PBWeapEmptyToken.Size(); ++i)
 			{
