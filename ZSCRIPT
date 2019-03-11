@@ -215,7 +215,7 @@ class CameraRunner : Inventory
 		Actor a = CheckForCameraActor("ChaseCam2",C_TID + PlayerPawn(owner).PlayerNumber());
 		if (a != NULL) a.Destroy();
 	}
-	Vector3, double, double ReturnCamPos(Actor a)
+	Vector3, double, double, actor ReturnCamPos(Actor a)
 	{
 		Actor linepuff = a.LineAttack(a.angle - 180,128 + (a.radius*2),-a.pitch,0,'None',"InvisiblePuffAlways",LAF_NOINTERACT|LAF_NORANDOMPUFFZ,null,-(a.height/2) + a.player.viewheight);
 		if (linepuff)
@@ -223,10 +223,11 @@ class CameraRunner : Inventory
 			let vec3 = linepuff.pos;
 			let anglevalue = linepuff.angle;
 			let pitchvalue = linepuff.pitch;
-			linepuff.Destroy();
-			return vec3, anglevalue, pitchvalue;
+			linepuff.bINVISIBLE = true;
+			//linepuff.Destroy();
+			return vec3, anglevalue, pitchvalue,linepuff;
 		}
-		return a.pos, a.angle, a.pitch;
+		return a.pos, a.angle, a.pitch, null;
 	}
 	void RunCameraNew()
 	{
@@ -234,9 +235,10 @@ class CameraRunner : Inventory
 		Double anglevalue;
 		Double pitchvalue;
 		Double actualpitch = owner.pitch;
+		actor linepuff;
 		Vector3 campos;
 		int plrnum = PlayerPawn(owner).PlayerNumber();
-		[campos,anglevalue, pitchvalue] = ReturnCamPos(owner);
+		[campos,anglevalue, pitchvalue,linepuff] = ReturnCamPos(owner);
 		if (!CheckForCamera("ChaseCam2",C_TID + plrnum))
 		{
 			Actor cameraactor;
@@ -252,12 +254,11 @@ class CameraRunner : Inventory
 		}
 		else
 		{
-			while (!SetActorPosition(C_TID + plrnum, campos))
-			{
-			}
+			Actor cameraactor = CheckForCameraActor("ChaseCam2",C_TID + plrnum);
+			cameraactor.SetOrigin(campos + owner.vel,true);
 			self.SetActorAngle (C_TID + plrnum, anglevalue);
 			self.SetActorPitch (C_TID + plrnum, actualpitch);
-			self.SetActorRoll  (C_TID + plrnum, roll);
+			self.SetActorRoll  (C_TID + plrnum, owner.roll);
 		}
 	}
 	override void DoEffect()
