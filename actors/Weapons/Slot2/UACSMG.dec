@@ -28,6 +28,11 @@ Actor PB_SMGFireAnimation1: Inventory
 	Inventory.maxamount 1
 }
 
+Actor PB_SMGFireAnimation2: Inventory
+{
+	Inventory.maxamount 1
+}
+
 ACTOR Laserdot: BulletPuff
 { 
 	Decal "None"
@@ -103,6 +108,8 @@ ACTOR CompactSMG : PB_Weapon
 	Weapon.AmmoGive2 0
 	Weapon.AmmoType1 "PistolBullets"
 	Weapon.AmmoType2 "SMGAmmo"
+	Inventory.MaxAmount 3
+	Inventory.Amount 1
 	+FLOORCLIP
 	+DONTGIB
 	Obituary "%o was shot down by %k's UAC17 Compact Sub-Machine Gun."
@@ -227,6 +234,9 @@ ACTOR CompactSMG : PB_Weapon
 			A_ZoomFactor(1.0);
 			}
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "StopDualWield")
+		TNT1 A 0 A_JumpIfInventory("CompactSMG", 2,"SwitchToDualWield")
+		Goto Ready3
+	SwitchToDualWield:
 		TNT1 A 0 {
 			A_GiveInventory("DualWieldingSMGs", 1);
 			A_PlaySoundEx("weapons/smg_up", "Auto");
@@ -441,6 +451,7 @@ ACTOR CompactSMG : PB_Weapon
 			A_FireCustomMissile("Mp40CaseSpawnRight",5,0,-8,2);
 			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
 			A_Takeinventory("PB_SMGFireAnimation1",1);
+			A_Giveinventory("PB_SMGFireAnimation2",1);
 			A_ZoomFactor(0.985);
 			
 			if (CountInv("PowerStrength") >= 1 ) {
@@ -493,17 +504,14 @@ ACTOR CompactSMG : PB_Weapon
 			}
         Goto Ready3
 		
-	NoAmmo:
-		A1F1 E 1 A_PlaySoundEx("weapons/empty", "Weapon")
-		Goto Ready3
-	
 	Reload:
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_Takeinventory("ADSmode",1)
 		TNT1 A 0 A_Takeinventory("Zoomed",1)
 		TNT1 A 0 A_JumpIfInventory("SMGAmmo",51,"Ready3")
-        TNT1 A 0 A_JumpIfInventory("PistolBullets",1,1)
-        Goto NoAmmo
+        TNT1 A 0 A_JumpIfInventory("PistolBullets",1,2)
+        TNT1 A 0 A_PlaySoundEx("weapons/empty", "Weapon")
+        Goto Ready3
 		TNT1 A 0 {
 			A_ZoomFactor(1.0);
 			A_SetCrosshair(5);
@@ -577,7 +585,6 @@ ACTOR CompactSMG : PB_Weapon
 		A3F4 B 1
 		A3F4 C 1 A_PlaySoundEx("weapons/smg_out", "Auto")
 		A3F4 DEFGHI 1
-		
 		// Normal Reload Frames
 		A1F4 J 1
         A1F4 KLMNNN 1
@@ -593,13 +600,13 @@ ACTOR CompactSMG : PB_Weapon
 		A1F4 UV 1
 		A1F4 WXYZ 1 
 		// Normal Reload Frames
-		
 		A3F4 JKLMN 1
+		TNT1 A 0 A_JumpIf(CountInv("PB_SMGFireAnimation2") == 1,2)
+		TNT1 A 0 A_JumpIfInventory("UACSMGWasEmpty",1,"InsertBullets3")
+		Goto InsertBullets4
 		TNT1 A 3
 		TNT1 A 0 A_PlaySoundEx("weapons/smg_up", "Auto")
 		A3F4 NMLOPQ 1
-		
-		
 		// Normal Reload Frames
 		A1F4 J 1
         A1F4 KLMNNN 1
@@ -616,15 +623,43 @@ ACTOR CompactSMG : PB_Weapon
 		A1F4 WXYZ 1 
 		// Normal Reload Frames
 		A1F2 EFGHI 1
+		TNT1 A 0 A_JumpIfInventory("UACSMGWasEmpty",1,"InsertBullets3")
+		Goto InsertBullets4
+		
 	InsertBullets3:
-		TNT1 A 0 A_JumpIfInventory("SMGAmmo",51,"ReadyDualWield")
-		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,1)
-		Goto ReadyDualWield
+		TNT1 A 0 A_JumpIfInventory("SMGAmmo",50,"FinishInsertBullets")
+		TNT1 A 0 A_JumpIfInventory("PistolBullets",2,1)
+		Goto FinishInsertBullets
 		TNT1 A 0 {
+			if(CountInv("PB_SMGFireAnimation2")==1)
+			{
+				A_Takeinventory("PistolBullets",1);
+			}
 			A_Giveinventory("SMGAmmo",1);
 			A_Takeinventory("PistolBullets",1);
+		}
+		Goto InsertBullets3
+		
+	InsertBullets4:
+		TNT1 A 0 A_JumpIfInventory("SMGAmmo",51,"FinishInsertBullets")
+		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,1)
+		Goto FinishInsertBullets
+		TNT1 A 0 {
+			if(CountInv("PB_SMGFireAnimation2")==1)
+			{
+				A_Takeinventory("PistolBullets",1);
 			}
-		Loop
+			A_Giveinventory("SMGAmmo",1);
+			A_Takeinventory("PistolBullets",1);
+		}
+		Goto InsertBullets4
+	FinishInsertBullets:
+		TNT1 A 0 {
+			A_Takeinventory("PB_SMGFireAnimation1",1);
+			A_Takeinventory("PB_SMGFireAnimation2",1);
+			A_Takeinventory("UACSMGWasEmpty",1);
+		}
+		Goto Ready3
 		
 	Unload:
 		ATFG A 0 A_Takeinventory("Unloading",1)
