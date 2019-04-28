@@ -48,7 +48,7 @@ ACTOR ShotCaseSpawn : RifleCaseSpawn
 	States
 	{
 	Spawn:
-        TNT1 A 0
+	    TNT1 A 0 
 		TNT1 A 1 A_CustomMissile("ShotgunCasing",0,0,random(-80,-100),2,random(40,60))
 		Stop
 	}
@@ -197,10 +197,14 @@ ACTOR EmptyBrass
    Spawn:
 	  CAS3 A 1 
 	  TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
-	  Exist:
-      TNT1 A 0 A_SetRoll(roll + (30),SPF_INTERPOLATE)
-	  CAS3 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 3 A_JumpIf(waterlevel > 1, "Splash")
-	  STOP
+	Exist:
+       TNT1 A 0 A_SetRoll(roll + (30),SPF_INTERPOLATE)
+	   CAS3 G 1 
+	  //CAS3 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 3 A_JumpIf(waterlevel > 1, "Splash")
+	RotateRight:
+	  TNT1 A 0 A_SetRoll(roll + (10),SPF_INTERPOLATE)
+	  CAS3 G 1 A_JumpIf(waterlevel > 1, "Splash")
+	  Loop
 
    Death:
       TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
@@ -259,10 +263,14 @@ ACTOR EmptyBrassMinigun: EmptyBrass
    Spawn:
 	  CAS3 A 1 
 	  TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
-	  Exist:
-      TNT1 A 0 A_SetRoll(roll + (-210),SPF_INTERPOLATE)
-	  CAS3 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 3 A_JumpIf(waterlevel > 1, "Splash")
-	  STOP
+	 Exist:
+      TNT1 A 0 A_SetRoll(roll - (30),SPF_INTERPOLATE)
+	  CAS3 G 1 
+	  //CAS3 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 3 A_JumpIf(waterlevel > 1, "Splash")
+	 RotateLeft:
+	  TNT1 A 0 A_SetRoll(roll - (10),SPF_INTERPOLATE)
+	  CAS3 G 1 A_JumpIf(waterlevel > 1, "Splash")
+	  Loop
 
    Death:
       TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
@@ -398,13 +406,20 @@ ACTOR ShotgunCasing
    States
    {
     Spawn:
-      TNT1 A 0
 	  TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
-	  Exist:
-      TNT1 A 0 A_SetRoll(roll + -(-210),SPF_INTERPOLATE)
-	  CAS2 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
-	  Stop
-   Death:
+	Exist:
+	  TNT1 A 0 A_JumpIfInventory("Zoomed",1,"ShellSpin")
+	  TNT1 A 0 A_SetRoll(roll + (20),SPF_INTERPOLATE)
+	  CAS2 G 1
+	ShellSpin:
+	  CAS2 G 1 // 10 degree rotations, 36x for one full rotation.
+	  {
+	  A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0);
+	  }
+	  TNT1 A 0 A_SetRoll(roll - (10),SPF_INTERPOLATE)
+	  TNT1 A 0 A_JumpIf(waterlevel > 1, "Disappear")
+	  Goto ShellSpin
+    Death:
       TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
 	  LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
       Goto Rest1
@@ -506,11 +521,19 @@ ACTOR ShotgunCasing2
    {
     Spawn:
       TNT1 A 0
+	  TNT1 A 0 A_JumpIfInventory("Zoomed",1,"ShellSpin")
 	  TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
 	  Exist:
-      TNT1 A 0 A_SetRoll(roll + -(-210),SPF_INTERPOLATE)
-	  CAS5 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
-      Stop
+      TNT1 A 0 A_SetRoll(roll + (20),SPF_INTERPOLATE)
+	  CAS5 G 1
+	 ShellSpin:
+	  CAS5 G 1 
+	  {
+	  A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0);
+	  }
+	  TNT1 A 0 A_SetRoll(roll - (10),SPF_INTERPOLATE)
+	  TNT1 A 0 A_JumpIf(waterlevel > 1, "Disappear")
+	  Goto ShellSpin
    Death:
       TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
 	  LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
@@ -597,9 +620,17 @@ ACTOR ShotgunCasing3
       TNT1 A 0
 	  TNT1 A 0 ACS_ExecuteAlways(7798, 0, 0, 0, 0)//Check Effects
 	  Exist:
-      TNT1 A 0 A_SetRoll(roll + -(-210),SPF_INTERPOLATE)
-	  CAS6 ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 2 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0)
-      Stop
+	  TNT1 A 0 A_JumpIfInventory("Zoomed",1,"ShellSpin")
+      TNT1 A 0 A_SetRoll(roll + (20),SPF_INTERPOLATE)
+	  CAS6 G 1
+	 ShellSpin:
+	  CAS6 G 1 
+	  {
+	  A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0);
+	  }
+	  TNT1 A 0 A_SetRoll(roll - (10),SPF_INTERPOLATE)
+	  TNT1 A 0 A_JumpIf(waterlevel > 1, "Disappear")
+	  Goto ShellSpin
    Death:
       TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
 	  LCPJ A 0 A_Jump(256,"Rest1","Rest2","Rest3","Rest4","Rest5","Rest6","Rest7","Rest8")
