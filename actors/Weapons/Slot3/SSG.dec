@@ -9,6 +9,11 @@ Actor PBSSGHasUnloaded: Inventory
 Inventory.maxamount 1
 }
 
+Actor InspectSSG: Inventory
+{
+Inventory.maxamount 1
+}
+
 ACTOR SSG : PB_weapon Replaces SuperShotgun
 {
 	Weapon.BobRangeX 0.3
@@ -95,13 +100,30 @@ ACTOR SSG : PB_weapon Replaces SuperShotgun
 		TNT1 A 1
 		Goto Ready
 		
-
-	Ready:
-		TNT1 A 1 A_JumpIfInventory("GoFatality", 1, "Steady")
+    Ready:
+	InspectSSG:
+	    TNT1 A 0 A_JumpIfInventory("InspectSSG",1,"Ready3")
+		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 2)
+		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 2)
+		TNT1 A 0 A_GiveInventory("RightSSGAmmo", 2)
+		TNT1 A 0 A_GiveInventory("InspectSSG", 1)
+	    SHT2 BDFHJKLMOPQRS 1 A_WeaponReady(WRF_NOBOB)
+		TNT1 A 0 A_GiveInventory("Pumping", 1)
+        TNT1 A 0 A_PlaySound("weapons/ssg/open", 8)
+        SHT2 TUVWXYYZ 1 A_WeaponReady(WRF_NOBOB)
+        TNT1 A 0 A_PlaySound("weapons/ssg/in", 9)
+		SHT3 ABCDE 1 A_WeaponReady(WRF_NOBOB)
+		TNT1 A 0 A_GiveInventory("Pumping", 1)
+        TNT1 A 0 A_PlaySound("weapons/ssg/close", 8)
+		SHT3 FGHIJLMNOPQ 1 A_WeaponReady(WRF_NOBOB)
+		TNT1 A 0 A_TakeInventory("Pumping", 1)
+        SHT2 A 1 A_WeaponReady(WRF_NOBOB)
+		Goto RealReady
+	    TNT1 A 1 A_JumpIfInventory("GoFatality", 1, "Steady")
 		TNT1 A 1 A_SelectWeapon("Quad_SSG")
         TNT1 A 0 A_PlaySound("CLIPINQS")
-        SHT5 ABCD 1 A_JumpIfInventory("GoFatality", 1, "Steady")
-	Ready3:
+	    SHT5 ABCD 1 A_JumpIfInventory("GoFatality", 1, "Steady")
+	Ready3:	
 	RealReady:
         TNT1 AAA 0
 		TNT1 A 0 A_SelectWeapon("Quad_SSG")
@@ -126,8 +148,6 @@ ACTOR SSG : PB_weapon Replaces SuperShotgun
 		Goto Select
 	
 	NoAmmo:
-		//TNT1 A 0 A_JumpIfInventory("Quad_SSG", 1, 1)
-		//TNT1 A 0 A_SelectWeapon("Quad_SSG")
 		TNT1 A 0 A_PlaySound("weapons/empty")
 		TNT1 A 0 A_TakeInventory("SSGAlt", 1)
 		SHT2 AAAA 1 A_WeaponReady(WRF_ALLOWRELOAD)
@@ -148,24 +168,25 @@ ACTOR SSG : PB_weapon Replaces SuperShotgun
         TNT1 AAAAAAAAAAA 0 A_FireCustomMissile("Tracer", Random(-7, 7), 0, -1, Random(-7, 7))
 		TNT1 AA 0 A_FireCustomMissile("YellowFlareSpawn", 15, 0, 0, 0)
 		TNT1 AA 0 A_FireCustomMissile("YellowFlareSpawn", -15, 0, 0, 0)
-        SHO9 B 1 BRIGHT //A_FireBullets(11, 6, 22, 7, "ShotgunPuff")
-		TNT1 A 0 A_FireBullets (12, 6, 10, 7, "ShotgunPuff") //V20B
-		TNT1 A 0 A_FireBullets (12, 6, 10, 7, "ShotgunPuff")
+        SHO9 B 1 BRIGHT 
+		TNT1 A 0 A_FireBullets (12, 6, 10, 15, "ShotgunPuff",FBF_NORANDOM)
+		TNT1 A 0 A_FireBullets (12, 6, 10, 15, "ShotgunPuff",FBF_NORANDOM)
 		
 		RIFF AA 0 A_FireCustomMissile("GunFireSmokE", 0, 0, 2, 0, 0, 0)
 		RIFF AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, -2, 0, 0, 0)
 		TNT1 A 0 A_ZoomFactor(0.950)
-        TNT1 A 0 ACS_NamedExecute("Recoil375", 0, 0, 0, 0)
         SHO9 B 1 BRIGHT
 		TNT1 A 0 A_ZoomFactor(0.965)
 		SHO8 C 1 
 		TNT1 A 0 A_ZoomFactor(0.985)
 		SHO8 D 1 
 		TNT1 A 0 A_ZoomFactor(0.995)
-		SHO8 EFGG 1 
+		TNT1 A 0 A_SetPitch(-1.0 + pitch)
+		SHO8 EFGG 1
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_TakeInventory("Reloading", 1)
-        SHO8 HIJ 1 
+        TNT1 A 0 A_SetPitch(+1.0 + pitch)
+		SHO8 HIJ 1 
 		TNT1 A 0 A_WeaponReady(WRF_NOFIRE)
 		TNT1 A 0 A_JumpIfInventory("NewShell", 1, 1)
 		Goto RealReady
@@ -185,18 +206,19 @@ ACTOR SSG : PB_weapon Replaces SuperShotgun
         SHTA A 1 BRIGHT A_PlaySound("weapons/shh2", 8)
 		TNT1 A 0 A_ZoomFactor(0.950)
 		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn", -5, 0, 0, 0)
-        SHTA A 1 BRIGHT A_FireBullets(9, 6, 10, 7, "ShotgunPuff")
+        SHTA A 1 BRIGHT A_FireBullets(9, 6, 10, 15, "ShotgunPuff",FBF_NORANDOM)
 		RIFF AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 2, 0, 0, 0)
 		TNT1 A 0 A_ZoomFactor(0.975)
         TNT1 AAAAA 0 A_FireCustomMissile("Tracer", Random(-5, 5), 0, -1, Random(-5, 5))
-        TNT1 A 0 ACS_NamedExecute("Recoil374", 0, 0, 0, 0)
 	    SHO8 C 1 //Offset(0,55)
 		TNT1 A 0 A_ZoomFactor(0.985)
-	    SHO8 C 1 //Offset(0,60) 
+	    TNT1 A 0 A_SetPitch(-0.5 + pitch)
+		SHO8 C 1 //Offset(0,60) 
 		TNT1 A 0 A_ZoomFactor(0.995)
 	    SHO8 D 1 //Offset(0,55)
+		TNT1 A 0 A_SetPitch(+0.5 + pitch)
 		TNT1 A 0 A_ZoomFactor(1.0)
-	    SHO8 D 1 Offset(0,45) 
+		SHO8 D 1 Offset(0,45) 
 	    SHO8 C 1 Offset(0,40) 
 	    SHO8 C 1 Offset(0,35) 
         Goto RealReady
@@ -204,66 +226,33 @@ ACTOR SSG : PB_weapon Replaces SuperShotgun
 	AltFire2:
 		TNT1 A 0 A_TakeInventory("Reloading", 1)
 		TNT1 A 0 A_JumpIfInventory("SSGAmmoCounter", 1, 1)
-		Goto QuickReload
+		Goto Reload
 		TNT1 A 0 A_TakeInventory("SSGAmmoCounter", 1)
 		TNT1 A 0 A_TakeInventory("DualSSGAmmo", 1)
 		TNT1 A 0 A_TakeInventory("RightSSGAmmo", 1)
         TNT1 A 0 A_Recoil(1)
         TNT1 A 0 A_AlertMonsters
 		TNT1 A 0 A_PlaySound("weapons/shh2", 8)
-        SHTA B 1 BRIGHT A_FireBullets(9, 6, 10, 7, "ShotgunPuff")
+        SHTA B 1 BRIGHT A_FireBullets(7, 5, 10, 14, "ShotgunPuff",FBF_NORANDOM)
 		TNT1 A 0 A_ZoomFactor(0.950)
 		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn", 5, 0, 0, 0)
 		RIFF AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, -2, 0, 0, 0)
         TNT1 AAAAA 0 A_FireCustomMissile("Tracer", Random(-5, 5), 0, -1, Random(-5, 5))
-        TNT1 A 0 ACS_NamedExecute("Recoil374", 0, 0, 0, 0)
 	    SHO8 C 1 //Offset(0,55)
 		TNT1 A 0 A_ZoomFactor(0.985)
-	    SHO8 C 1 //Offset(0,60) 
+	    TNT1 A 0 A_SetPitch(-0.5 + pitch)
+		SHO8 C 1 //Offset(0,60) 
 		TNT1 A 0 A_ZoomFactor(0.995)
 	    SHO8 D 1 //Offset(0,55)
 		TNT1 A 0 A_ZoomFactor(0.995)
+		TNT1 A 0 A_SetPitch(+0.5 + pitch)
 	    SHO8 D 1 Offset(0,45) 
 		TNT1 A 0 A_ZoomFactor(1.0)
 	    SHO8 C 1 Offset(0,40) 
 	    SHO8 C 1 Offset(0,35) 
-		Goto QuickReload
-	QuickReload:
-		TNT1 A 0 A_JumpIfInventory("NewShell", 1, 1)
-		Goto NoAmmo
-        SHT2 AA 2
-        SHT2 BCDEFGHIJK 1
-		TNT1 A 0 A_GiveInventory("Pumping", 1)
-        TNT1 A 0 A_PlaySound("weapons/ssg/open", 8)
-		TNT1 AA 0 A_FireCustomMissile("SSGCaseSpawner", 0, 0, -10)
-        SHT2 L 3
-		SHT2 MMNNOOPPQQ 1
-	QLoadSSG:
-		TNT1 A 0 A_JumpIfInventory("NewShell", 2, 1)
-		Goto QLoadSSG1
-		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 2)
-		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 2)
-		TNT1 A 0 A_GiveInventory("RightSSGAmmo", 2)
-		TNT1 A 0 A_TakeInventory("NewShell", 2)
-		TNT1 A 0
-		Goto QContinueReload
-	QLoadSSG1:
-		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 1)
-		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 1)
-		TNT1 A 0 A_GiveInventory("RightSSGAmmo", 1)
-		TNT1 A 0 A_TakeInventory("NewShell", 1)
-		TNT1 A 0
-	QContinueReload:
-		TNT1 A 0 A_GiveInventory("Pumping", 1)
-		SHT2 RTUV 1 
-		TNT1 A 0 A_GiveInventory("Pumping", 1)
-        TNT1 A 0 A_PlaySound("weapons/ssg/close", 8)
-        SHT2 WXYZ 1
-		TNT1 A 0 A_GiveInventory("Pumping", 1)
-        SHO9 DEFG 1
-        SHT2 A 4
-        Goto RealReady
+		Goto Reload
 	Reload:
+		TNT1 A 0 A_WeaponOffset(0,32)
 		TNT1 A 0 A_TakeInventory("Reloading",1)
 		TNT1 A 0 A_JumpIfInventory("SSGAmmoCounter", 2, "RealReady")
 		TNT1 A 0 A_JumpIfInventory("NewShell", 1, 1)
@@ -271,38 +260,35 @@ ACTOR SSG : PB_weapon Replaces SuperShotgun
 		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 2)
 		TNT1 A 0 A_JumpIfInventory("SSGAmmoCounter", 1, 1)
 		Goto FullReload
-        SHT2 BCDEFGHIJK 1
+		SHT2 BDFHJKLMOPQRS 1
         TNT1 A 0 A_PlaySound("weapons/ssg/open", 8)
 		TNT1 A 0 A_FireCustomMissile("SSGCaseSpawner",0,0,-10)
-        SHT7 L 5
-        SHT7 MMNNOOPP 1
-        SHT2 QQ 1
+        SHT7 AB 1
+		SHT7 C 3
+		SHT7 DEFF 1
+		SHT2 Z 1
         TNT1 A 0 A_PlaySound("weapons/ssg/in", 9)
 		TNT1 A 0 A_GiveInventory("SSGAmmoCounter", 1)
 		TNT1 A 0 A_GiveInventory("DualSSGAmmo", 1)
 		TNT1 A 0 A_GiveInventory("RightSSGAmmo", 1)
 		TNT1 A 0 A_TakeInventory("NewShell", 1)
 		TNT1 A 0 A_GiveInventory("Pumping", 1)
-		SHT2 RTUV 1 
-		
+		SHT3 ABCDE 1 
 		TNT1 A 0 A_GiveInventory("Pumping", 1)
         TNT1 A 0 A_PlaySound("weapons/ssg/close", 8)
-        SHT2 WXYZ 1
-		TNT1 A 0 A_GiveInventory("Pumping", 1)
-        SHO9 DEFG 1
+		SHT3 FGHIJLMNOPQ 1
+		TNT1 A 0 A_TakeInventory("Pumping", 1)
         SHT2 AAAA 1 A_Refire
         Goto RealReady
 	FullReload:
-		SHT2 A 3
-		SHT2 B 2 Offset(20, 48)
-        SHT2 B 2 Offset(10, 36)
-		SHT2 BCDEFGHIJK 1 Offset(-1, 33)
+		SHT2 BDFHJKLMOPQRS 1
 		TNT1 A 0 A_GiveInventory("Pumping", 1)
         TNT1 A 0 A_PlaySound("weapons/ssg/open", 8)
 		TNT1 A 0 A_JumpIfInventory("PBSSGHasUnloaded", 1, 3)
 		TNT1 AA 0 A_FireCustomMissile("SSGCaseSpawner", 0, 0, -10)
-        SHT2 L 10
-		SHT2 MMNNOO 1
+        SHT2 TU 1
+		SHT2 V 5
+		SHT2 WXYYZ 1
 		TNT1 A 0 A_TakeInventory("PBSSGHasUnloaded", 1)
         TNT1 A 0 A_PlaySound("weapons/ssg/in", 9)
 	LoadSSG:
@@ -321,22 +307,12 @@ ACTOR SSG : PB_weapon Replaces SuperShotgun
 		TNT1 A 0 A_TakeInventory("NewShell", 1)
 		TNT1 A 0
 	ContinueReload:
-		SHT2 P 1 Offset(10,36)
-		SHT2 P 1 Offset(20,46)
-		SHT2 Q 1 Offset(30,56)
-		SHT2 Q 1 Offset(40,66)
-		SHT2 R 1 Offset(50,76)
-		TNT1 A 4
-		TNT1 A 0 A_GiveInventory("Pumping", 1)
-		SHT2 T 1 Offset(30,56)
-		SHT2 U 1 Offset(20,46)
-		SHT2 V 1 Offset(1,33)
+		SHT3 ABCDE 1
 		TNT1 A 0 A_GiveInventory("Pumping", 1)
         TNT1 A 0 A_PlaySound("weapons/ssg/close", 8)
-        SHT2 WXYZ 1
-		TNT1 A 0 A_GiveInventory("Pumping", 1)
-        SHO9 DEFG 1
-        SHT2 AA 1 A_Refire
+		SHT3 FGHIJLMNOPQ 1
+		TNT1 A 0 A_TakeInventory("Pumping", 1)
+        SHT2 A 1 A_Refire
 		Goto RealReady
 		
 		
@@ -346,7 +322,7 @@ ACTOR SSG : PB_weapon Replaces SuperShotgun
 	
 	Unload:
 		TNT1 A 0 A_JumpIfInventory("PBSSGHasUnloaded", 1, "AlreadyUnloaded")
-		SHT5 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
+		SHT2 A 1 A_WeaponReady(WRF_ALLOWRELOAD)
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		TNT1 A 0 A_Takeinventory("ADSmode",1)
@@ -370,80 +346,69 @@ ACTOR SSG : PB_weapon Replaces SuperShotgun
 		Goto RemoveBullets
 	
 	FInishUnload:
-		SHT2 B 2 Offset(20,48) //A_FireCustomMissile("SmokeSpawner",0,0,0,5)
-        SHT2 B 2 Offset(10,36) //A_FireCustomMissile("SmokeSpawner",0,0,0,5)
-		SHT2 BCDEF 1
-		SHT2 GH 1
+		SHT2 BCDEFGHIJKLMNOPQ 1
 		TNT1 A 0 A_PlaySound("weapons/sshotc")
-		SHT2 IJ 1
-        SHT2 K 2
-		TNT1 A 20
+		SHT2 R 1
+		SHT2 S 20 
 		TNT1 A 0 A_GiveInventory("PBSSGHasUnloaded", 1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
-	//	SHT2 U 1 Offset(20,46)
-	//	SHT2 V 1 Offset(1,33)
         
         TNT1 A 0 A_PlaySound("weapons/sshotc")
-        SHT2 KJIHGFEDCB 1
-		SHT2 AA 2
-		TNT1 A 0 A_GiveInventory ("Pumping", 1)
-      //  SHT2 WX 1
-	//	SHT2 YZ 1
-		//TNT1 A 0 A_PlaySound("CLIPINSS")
-		TNT1 A 0 A_GiveInventory ("Pumping", 1)
-      //  SHO9 DE 1
-	//	SHO9 FG 1
+        SHT2 R 1
+		SHT3 FGHIJKLMNOPQ 1
+		SHT2 A 1
+		TNT1 A 0 A_TakeInventory ("Pumping", 1)
 		Goto RealReady
 	
 
 	FlashKicking:
-		SHT2 B 1 
-		SHT2 C 1 
-		SHT2 D 1 
-		SHT2 E 3 
-		SHT2 F 3
-		SHT2 E 3 
-		SHT2 D 1 
-		SHT2 C 1 
-		SHT2 B 1 
-		SHT2 AAA 1 
+	    TNT1 A 0 A_WeaponOffset(0,32)
+		SHT2 D 1
+		SHT2 F 1 
+		SHT2 H 1 
+		SHT2 I 1 
+		SHT2 J 6 
+		SHT2 I 1 
+		SHT2 H 1 
+		SHT2 F 1
+		SHT2 D 1
+		SHT2 A 1 
 		Stop
 		
 	
 	FlashPunching:
-		SHT2 B 1 
-		SHT2 C 1 
-		SHT2 D 1 
-		SHT2 E 3 
-		SHT2 F 3
-		SHT2 E 3 
-		SHT2 D 1 
-		SHT2 C 1 
-		SHT2 B 1 
-		SHT2 AA 1 
+	    TNT1 A 0 A_WeaponOffset(0,32)
+		SHT2 H 1
+		SHT2 I 1 
+		SHT2 J 10 
+		SHT2 I 1 
+		SHT2 H 1 
+		SHT2 A 1 
 		Stop
 		
 	FlashAirKicking:
-		SHT2 B 1 
-		SHT2 C 1 
+	    TNT1 A 0 A_WeaponOffset(0,32)
 		SHT2 D 1 
-		SHT2 E 3 
-		SHT2 F 3
-		SHT2 E 3 
-		SHT2 D 1 
-		SHT2 C 1 
-		SHT2 B 1
-		SHT2 AAAA 1
+		SHT2 F 1 
+		SHT2 H 1 
+		SHT2 I 1
+		SHT2 J 8 
+		SHT2 I 1 
+		SHT2 H 1 
+		SHT2 F 1
+		SHT2 D 1
+		SHT2 A 1
 		Stop
 		
 	FlashSlideKicking:
-		SHT2 BC 2 
-		SHT2 DEEFFFFFFEE 2  
+	    TNT1 A 0 A_WeaponOffset(0,32)
+		SHT2 DFHIJM 1 
+		SHT2 NNNNNNNNNM 2  
 		Stop
 		
 	FlashSlideKickingStop:
-		//TNT1 A 0
-		SHT2 EDCBA 1 
+		TNT1 A 0 A_WeaponOffset(0,32)
+		SHT2 JHFDB 1 
 		SHT2 A 1 
 		Stop
 	}
