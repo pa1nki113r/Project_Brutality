@@ -215,12 +215,31 @@ class CameraRunner : Inventory
 		Actor a = CheckForCameraActor("ChaseCam2",C_TID + PlayerPawn(owner).PlayerNumber());
 		if (a != NULL) a.Destroy();
 	}
+	static void WarpCamera(int tid, int plrnum = 1)
+	{
+		ActorIterator ai = ActorIterator.Create(tid);
+		Actor a = ai.Next();
+		if (a != NULL)
+		{
+			actor cameraactor;
+			if ((cameraactor = ActorIterator.Create(6400 + plrnum,"WarpCamera").Next()) != NULL)
+			{
+				Players[plrnum].mo.SetCamera(cameraactor);
+				cameraactor.Warp(a,flags: WARPF_INTERPOLATE | WARPF_COPYPITCH);
+				cameraactor.SetOrigin(Players[plrnum].mo.vel + cameraactor.pos,true);
+			}
+		}
+		else
+		{
+			players[consoleplayer].mo.SetCamera(null);
+		}
+	}
 	Vector3, double, double, actor ReturnCamPos(Actor a)
 	{
 		Actor linepuff = a.LineAttack(a.angle - 180,128 + (a.radius*2),-a.pitch,0,'None',"InvisiblePuffAlways",LAF_NOINTERACT|LAF_NORANDOMPUFFZ,null,-(a.height/2) + a.player.viewheight);
 		if (linepuff)
 		{
-			let vec3 = linepuff.pos;
+			let vec3 = linepuff.pos + a.vel;
 			let anglevalue = linepuff.angle;
 			let pitchvalue = linepuff.pitch;
 			linepuff.bINVISIBLE = true;
@@ -229,9 +248,10 @@ class CameraRunner : Inventory
 		}
 		return a.pos, a.angle, a.pitch, null;
 	}
+	//ACS Prefab chasecam script ported to ZScript with changes by Cacodemon345.
 	void RunCameraNew()
 	{
-		if (!owner.player || !owner) return; //Don't start camera if the owner isn't a player.
+		if (!owner.player || !owner) return; //Don't start camera if the owner isn't a player or is null.
 		Double anglevalue;
 		Double pitchvalue;
 		Double actualpitch = owner.pitch;
@@ -255,7 +275,8 @@ class CameraRunner : Inventory
 		else
 		{
 			Actor cameraactor = CheckForCameraActor("ChaseCam2",C_TID + plrnum);
-			cameraactor.SetOrigin(campos + owner.vel,true);
+			cameraactor.SetOrigin(campos,true);
+			//cameraactor.Warp(owner,0,0,0,0,WARPF_INTERPOLATE);
 			self.SetActorAngle (C_TID + plrnum, anglevalue);
 			self.SetActorPitch (C_TID + plrnum, actualpitch);
 			self.SetActorRoll  (C_TID + plrnum, owner.roll);
@@ -351,11 +372,17 @@ class PlayerPawnBase : PlayerPawn
 	int tankspritecounter;
 	TankBaseNotReal TankBaseSprite; //tank's fake sprite as the actor.
 	Actor TankTurretSprite;
+	string TankTurretSpriteActor;
+	Property TankTurretSpriteActor: TankTurretSpriteActor;
+	Default
+	{
+		PlayerPawnBase.TankTurretSpriteActor "TankTurretNotReal";
+	}
 	void SpawnTankSprite()
 	{
 		if (TankBaseSprite) return;
 		TankBaseSprite = TankBaseNotReal(Spawn("TankBaseNotReal",self.pos + self.vel,ALLOW_REPLACE));
-		TankTurretSprite = Spawn("TankTurretNotReal",self.pos + self.vel,ALLOW_REPLACE);
+		TankTurretSprite = Spawn(TankTurretSpriteActor,self.pos + self.vel,ALLOW_REPLACE);
 	}
 	void DestroyTankSprites()
 	{
