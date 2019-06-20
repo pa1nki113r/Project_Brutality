@@ -1,10 +1,20 @@
-version "2.4.0"
+version "3.1.0"
 const C_TID	= 1000;	//Default camera tid
 const  MAX_R	= 56+32;	//Maximum radius (or distance from the player)
 const  ADJUST_R = 8;	//Amount to adjust the camera by
 const  VIEW_HEIGHT = 61.0;	//The approximate hight of the player's view
-class PB_EventHandler : StaticEventHandler
+class PB_PDAUi_Object ui
 {
+	int ObjectX, ObjectY, ObjectWidth, ObjectHeight;
+	TextureID DialogPicture;
+}
+
+class PB_EventHandler : EventHandler
+{
+	int MouseX;
+	int MouseY;
+	bool MousePositionSet;
+	bool PDAMode;
 	override void WorldThingDied(WorldEvent e)
 	{
 		if (e.thing && e.thing.target
@@ -14,6 +24,60 @@ class PB_EventHandler : StaticEventHandler
 		{
 			//e.thing.target.player.mo.A_SetBlend("RoyalBlue",0.1,17);
 		}
+	}
+	override void NetworkProcess(ConsoleEvent e)
+	{
+		if (e.Name ~== "input")
+		{
+			if (players[e.Player].cmd.buttons & BT_USER1) PDAMode = true;
+			if (PDAMode == true && MousePositionSet == true)
+			{
+				MouseX += e.Args[0] / 2;
+				MouseY -= e.Args[1];
+			}
+			if (players[e.Player].cmd.buttons & BT_USER2)
+			{
+				PDAMode = false;
+				MouseX = 1;
+				MouseY = 1;
+				MousePositionSet = false;
+			}
+		}
+		if (e.Name ~== "modifymousepos")
+		{
+			MouseX = e.Args[0];
+			MouseY = e.Args[1];
+			MousePositionSet = true;
+		}
+	}
+	override void OnRegister()
+	{
+		MouseX = 1;
+		MouseY = 1;
+		PDAMode = false;
+	}
+	override void RenderOverlay(RenderEvent e)
+	{
+		//if (PDAMode == true) Screen.DrawFrame(Screen.GetWidth()/2,Screen.GetHeight()/2,320,200);
+		if (MouseX == 1 && MouseY == 1 && !MousePositionSet)
+		{
+			SendNetworkEvent("modifymousepos",Screen.GetWidth() / 2,Screen.GetHeight() / 2);
+		}
+		if (PDAMode == true)
+		{
+			TextureID cursortex = Texman.CheckForTexture("ZCURSOR",TexMan.Type_Any);
+			/*TextureID cursortex1 = Texman.CheckForTexture("FLAT20",TexMan.Type_Any);
+			Vector2 xy = TexMan.GetScaledSize(cursortex1);
+			let x = xy.x / 2;
+			let y = xy.y / 2;
+			Screen.DrawTexture(cursortex1,false,(Screen.GetWidth() / 2)-x,(Screen.GetHeight() / 2)-y);*/
+			Screen.DrawTexture(cursortex,false,MouseX,MouseY);
+		}
+	}
+	override bool InputProcess(InputEvent e)
+	{
+		SendNetworkEvent("input",e.mouseX, e.mouseY);
+		return false;
 	}
 }
 class DoNotDoubleJump : Inventory {}
