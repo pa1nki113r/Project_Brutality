@@ -3,18 +3,24 @@ const C_TID	= 1000;	//Default camera tid
 const  MAX_R	= 56+32;	//Maximum radius (or distance from the player)
 const  ADJUST_R = 8;	//Amount to adjust the camera by
 const  VIEW_HEIGHT = 61.0;	//The approximate hight of the player's view
-class PB_PDAUi_Object ui
+class PB_PDAUi_Object
 {
-	int ObjectX, ObjectY, ObjectWidth, ObjectHeight;
 	TextureID DialogPicture;
+	Vector2 ImagePos,ImageSize;
+	bool objectHeldDown;
+	bool unmovable;
+	virtual void UiFunction()
+	{
+		
+	}
 }
 
 class PB_EventHandler : EventHandler
 {
-	int MouseX;
-	int MouseY;
-	bool MousePositionSet;
-	bool PDAMode;
+	int MouseX,MouseY,DeltaMouseX,DeltaMouseY;
+	bool MouseClicked,MousePositionSet,PDAMode;
+	double dimAmount;
+	ui Array<PB_PDAUi_Object> UiObjects;
 	override void WorldThingDied(WorldEvent e)
 	{
 		if (e.thing && e.thing.target
@@ -25,18 +31,47 @@ class PB_EventHandler : EventHandler
 			//e.thing.target.player.mo.A_SetBlend("RoyalBlue",0.1,17);
 		}
 	}
+	override void UiTick()
+	{
+		if (MouseClicked == true) 
+		{
+			for (int i = 0;i < uiObjects.Size();i++)
+			{
+				if (MouseX >= uiObjects[i].ImagePos.x
+					&& MouseX <= (uiObjects[i].ImageSize.x + uiObjects[i].ImagePos.x)
+					&& MouseY >= uiObjects[i].ImagePos.y
+					&& MouseY <= (uiObjects[i].ImagePos.y + uiObjects[i].ImageSize.x))
+				{
+					uiObjects[i].UiFunction();
+				}
+			}
+		}
+	}
 	override void NetworkProcess(ConsoleEvent e)
 	{
 		if (e.Name ~== "input")
 		{
-			if (players[e.Player].cmd.buttons & BT_USER1) PDAMode = true;
+			if (e.Args[2] == 1)
+			{
+				Console.Printf("Mouse Event Detected");
+				MouseClicked = true;
+			}
+			else if (e.Args[2] == 2) mouseclicked = false;
+			if (players[e.Player].cmd.buttons & BT_USER1)
+			{
+				SetPlayerProperty(1,1,4);
+				PDAMode = true;
+			}
 			if (PDAMode == true && MousePositionSet == true)
 			{
-				MouseX += e.Args[0] / 2;
-				MouseY -= e.Args[1];
+				DeltaMouseX = e.Args[0] / 2;
+				DeltaMouseY = e.Args[1];
+				MouseX += DeltaMouseX;
+				MouseY -= DeltaMouseY;
 			}
-			if (players[e.Player].cmd.buttons & BT_USER2)
+			if (players[e.Player].cmd.buttons & BT_USE)
 			{
+				SetPlayerProperty(1,0,4);
 				PDAMode = false;
 				MouseX = 1;
 				MouseY = 1;
@@ -54,29 +89,52 @@ class PB_EventHandler : EventHandler
 	{
 		MouseX = 1;
 		MouseY = 1;
+		dimAmount = 1.00;
 		PDAMode = false;
+	}
+	clearscope Vector2 GetTextureCenterPosition(TextureID tex)
+	{
+		if (!tex) return (0,0);
+		return TexMan.GetScaledSize(tex) / 2;
 	}
 	override void RenderOverlay(RenderEvent e)
 	{
-		//if (PDAMode == true) Screen.DrawFrame(Screen.GetWidth()/2,Screen.GetHeight()/2,320,200);
 		if (MouseX == 1 && MouseY == 1 && !MousePositionSet)
 		{
 			SendNetworkEvent("modifymousepos",Screen.GetWidth() / 2,Screen.GetHeight() / 2);
 		}
+		//Screen.Dim("Black",dimamount,0,0,Screen.GetWidth(),Screen.GetHeight());
+		//DimAmount -= 0.05;
 		if (PDAMode == true)
 		{
 			TextureID cursortex = Texman.CheckForTexture("ZCURSOR",TexMan.Type_Any);
-			/*TextureID cursortex1 = Texman.CheckForTexture("FLAT20",TexMan.Type_Any);
-			Vector2 xy = TexMan.GetScaledSize(cursortex1);
-			let x = xy.x / 2;
-			let y = xy.y / 2;
-			Screen.DrawTexture(cursortex1,false,(Screen.GetWidth() / 2)-x,(Screen.GetHeight() / 2)-y);*/
+			Screen.Dim("Black",0.50,0,0,Screen.GetWidth(),Screen.GetHeight());
+			if (UiObjects.Size() >= 1)
+			{
+				for (int i = 0; i < UiObjects.Size(); i++)
+				{
+					Screen.DrawTexture(UiObjects[i].DialogPicture,false,UiObjects[i].ImagePos.x,UiObjects[i].ImagePos.y);
+				}
+			}
 			Screen.DrawTexture(cursortex,false,MouseX,MouseY);
+			/*if (UiObjects.Size() >= 1) return;
+			TextureID cursortex1 = Texman.CheckForTexture("FLAT20",TexMan.Type_Any);
+			Vector2 xy = GetTextureCenterPosition(cursortex1);
+			Vector2 ImagePos = ((Screen.GetWidth() / 2)-xy.x,(Screen.GetHeight() / 2)-xy.y);
+			Screen.DrawTexture(cursortex1,false,(Screen.GetWidth() / 2)-xy.x,(Screen.GetHeight() / 2)-xy.y);
+			let UiObjectClass = new("PB_PDAUi_Object");
+			UiObjectClass.DialogPicture = Cursortex1;
+			UiObjectClass.ImageSize = TexMan.GetScaledSize(cursortex1);
+			UiObjectClass.ImagePos = ImagePos;
+			UiObjects.Push(UiObjectClass);*/
 		}
 	}
 	override bool InputProcess(InputEvent e)
 	{
-		SendNetworkEvent("input",e.mouseX, e.mouseY);
+		int mouseinput = 0;
+		if (e.KeyScan == InputEvent.Key_Mouse1 && e.Type == InputEvent.Type_KeyDown) mouseinput = 1;
+		if (e.KeyScan == InputEvent.Key_Mouse1 && e.Type == InputEvent.Type_KeyUp) mouseinput = 2;
+		SendNetworkEvent("input",e.mouseX, e.mouseY,int(mouseinput));
 		return false;
 	}
 }
