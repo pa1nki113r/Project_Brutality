@@ -7,11 +7,26 @@ class PB_PDAUi_Object
 {
 	TextureID DialogPicture;
 	Vector2 ImagePos,ImageSize;
+	//Color ColorOverlay;
+	int fontcolor;
+	string toDraw;
+	font usefont;
 	bool objectHeldDown;
 	bool unmovable;
+	virtual string GetString()
+	{
+		return "Exit";
+	}
+	virtual bool ExitButton()
+	{
+		return true;
+	}
 	virtual void UiFunction()
 	{
-		
+		if (!toDraw)
+		{
+			toDraw = GetString();
+		}
 	}
 }
 
@@ -39,10 +54,27 @@ class PB_EventHandler : EventHandler
 				if (MouseX >= uiObjects[i].ImagePos.x
 					&& MouseX <= (uiObjects[i].ImageSize.x + uiObjects[i].ImagePos.x)
 					&& MouseY >= uiObjects[i].ImagePos.y
-					&& MouseY <= (uiObjects[i].ImagePos.y + uiObjects[i].ImageSize.x))
+					&& MouseY <= (uiObjects[i].ImagePos.y + uiObjects[i].ImageSize.y))
 				{
-					uiObjects[i].UiFunction();
+					if (uiObjects[i].ExitButton() == true) SendNetworkEvent("exitPDA");
+					else uiObjects[i].UiFunction();
 				}
+			}
+		}
+		for (int i = 0;i < uiObjects.Size();i++)
+		{
+			if (MouseX >= uiObjects[i].ImagePos.x
+				&& MouseX <= (uiObjects[i].ImageSize.x + uiObjects[i].ImagePos.x)
+				&& MouseY >= uiObjects[i].ImagePos.y
+				&& MouseY <= (uiObjects[i].ImagePos.y + uiObjects[i].ImageSize.y))
+			{
+				//uiObjects[i].ColorOverlay = "Red";
+				uiObjects[i].fontcolor = Font.CR_RED;
+			}
+			else 
+			{
+				//uiObjects[i].ColorOverlay = "White";
+				uiObjects[i].fontcolor = Font.CR_UNTRANSLATED;
 			}
 		}
 	}
@@ -77,6 +109,14 @@ class PB_EventHandler : EventHandler
 				MousePositionSet = false;
 			}
 		}
+		if (e.Name ~== "exitpda")
+		{
+			SetPlayerProperty(1,0,4);
+			PDAMode = false;
+			MouseX = 1;
+			MouseY = 1;
+			MousePositionSet = false;
+		}
 		if (e.Name ~== "modifymousepos")
 		{
 			MouseX = e.Args[0];
@@ -109,10 +149,21 @@ class PB_EventHandler : EventHandler
 			{
 				for (int i = 0; i < UiObjects.Size(); i++)
 				{
-					Screen.DrawTexture(UiObjects[i].DialogPicture,false,UiObjects[i].ImagePos.x,UiObjects[i].ImagePos.y);
+					if (UiObjects[i].todraw) Screen.DrawText(UiObjects[i].usefont,UiObjects[i].fontcolor,UiObjects[i].ImagePos.x,UiObjects[i].ImagePos.y,UiObjects[i].toDraw,DTA_CleanNoMove_1,true);
+					else Screen.DrawTexture(UiObjects[i].DialogPicture,false,UiObjects[i].ImagePos.x,UiObjects[i].ImagePos.y);
 				}
 			}
 			Screen.DrawTexture(cursortex,false,MouseX,MouseY);
+			if (UiObjects.Size() >= 1) return;
+			let dialog = new("PB_PDAUi_Object");
+			dialog.toDraw = "Exit";
+			dialog.usefont = BigFont;
+			//dialog.colorOverlay = "White";
+			dialog.fontcolor = Font.CR_UNTRANSLATED;
+			dialog.ImageSize.X = BigFont.StringWidth(dialog.toDraw) * CleanXFac_1;
+			dialog.ImageSize.Y = BigFont.GetHeight() * CleanYFac;
+			dialog.ImagePos = ((Screen.GetWidth() ) - Screen.GetWidth()/4, (Screen.GetHeight() ) - Screen.GetHeight()/4);
+			UiObjects.Push(dialog);
 		}
 	}
 	override bool InputProcess(InputEvent e)
