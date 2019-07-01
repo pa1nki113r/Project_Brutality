@@ -7,19 +7,26 @@ class PB_PDAUi_Object
 {
 	TextureID DialogPicture;
 	Vector2 ImagePos,ImageSize;
+	bool ExitButtonTrue;
+	bool BackButtonTrue;
+	bool MonsterMenuOnly;
 	//Color ColorOverlay;
 	int fontcolor;
 	string toDraw;
 	font usefont;
+	bool notdrawn;
 	bool objectHeldDown;
 	bool unmovable;
+	bool MouseOvered;
+	bool Clicked;
+	bool UnSelectable;
 	virtual string GetString()
 	{
 		return "Exit";
 	}
 	virtual bool ExitButton()
 	{
-		return true;
+		return ExitButtonTrue;
 	}
 	virtual void UiFunction()
 	{
@@ -28,13 +35,43 @@ class PB_PDAUi_Object
 			toDraw = GetString();
 		}
 	}
+	void InitializeTexturedUiObject(TextureID tex)
+	{
+		let xy = TexMan.GetScaledSize(Tex);
+		ImageSize = xy;
+		DialogPicture = tex;
+	}
+	void InitializeUiObject()
+	{
+		let dialog = self;
+		dialog.usefont = BigFont;
+		//dialog.colorOverlay = "White";
+		dialog.fontcolor = Font.CR_UNTRANSLATED;
+		dialog.ImageSize.X = BigFont.StringWidth(dialog.toDraw) * CleanXFac_1;
+		dialog.ImageSize.Y = BigFont.GetHeight() * CleanYFac_1;
+	}
 }
-
+class PB_PDAUi_Object_MonsterMenu : PB_PDAUi_Object
+{
+	override string GetString()
+	{
+		return "Monsters";
+	}
+	override bool ExitButton()
+	{
+		return false;
+	}
+}
 class PB_EventHandler : EventHandler
 {
 	int MouseX,MouseY,DeltaMouseX,DeltaMouseY;
-	bool MouseClicked,MousePositionSet,PDAMode;
+	uint HeldDownTics;
+	int PDAMode;
+	bool MonsterMenuOpened,MonsterMenuOnly;
+	bool MouseClicked,MousePositionSet,MouseHeldDown;
+	Array<String> PDAMonsterStrings;
 	ui Array<PB_PDAUi_Object> UiObjects;
+	ui PB_PDAUi_Object_MonsterMenu MonsterMenuButton;
 	override void WorldThingDied(WorldEvent e)
 	{
 		if (e.thing && e.thing.target
@@ -47,47 +84,127 @@ class PB_EventHandler : EventHandler
 	}
 	override void UiTick()
 	{
-		if (MouseClicked == true) 
+		if (MonsterMenuButton != NULL)
 		{
-			for (int i = 0;i < uiObjects.Size();i++)
+			if (MouseX >= MonsterMenuButton.ImagePos.x
+				&& MouseX <= (MonsterMenuButton.ImageSize.x + MonsterMenuButton.ImagePos.x)
+				&& MouseY >= MonsterMenuButton.ImagePos.y
+				&& MouseY <= (MonsterMenuButton.ImagePos.y + MonsterMenuButton.ImageSize.y))
 			{
-				if (MouseX >= uiObjects[i].ImagePos.x
-					&& MouseX <= (uiObjects[i].ImageSize.x + uiObjects[i].ImagePos.x)
-					&& MouseY >= uiObjects[i].ImagePos.y
-					&& MouseY <= (uiObjects[i].ImagePos.y + uiObjects[i].ImageSize.y))
+				if (MouseClicked == true && MouseHeldDown != false) SendNetworkEvent("openmonstermenu");
+				if (MouseHeldDown == true)
 				{
-					if (uiObjects[i].ExitButton() == true) SendNetworkEvent("exitPDA");
-					else uiObjects[i].UiFunction();
+					MonsterMenuButton.fontcolor = Font.CR_CYAN;
 				}
+				else MonsterMenuButton.fontcolor = Font.CR_RED;
+				if (!MonsterMenuButton.MouseOvered)
+				{
+					MonsterMenuButton.MouseOvered = true;
+					S_Sound("PDAMOUSEOVER",CHAN_AUTO);
+				}
+			}
+			else 
+			{
+				MonsterMenuButton.fontcolor = Font.CR_UNTRANSLATED;
+				MonsterMenuButton.MouseOvered = false;
+				//SendNetworkEvent("releasemouse");
 			}
 		}
 		for (int i = 0;i < uiObjects.Size();i++)
 		{
+			if (uiObjects[i].Clicked)
+			{
+				//SendNetworkEvent("ReleaseMouse");
+			}
 			if (MouseX >= uiObjects[i].ImagePos.x
 				&& MouseX <= (uiObjects[i].ImageSize.x + uiObjects[i].ImagePos.x)
 				&& MouseY >= uiObjects[i].ImagePos.y
-				&& MouseY <= (uiObjects[i].ImagePos.y + uiObjects[i].ImageSize.y))
-			{
-				//uiObjects[i].ColorOverlay = "Red";
-				uiObjects[i].fontcolor = Font.CR_RED;
+				&& MouseY <= (uiObjects[i].ImagePos.y + uiObjects[i].ImageSize.y)
+				&& (!uiObjects[i].UnSelectable == true) && !uiObjects[i].notdrawn)
+			{	
+				if (MouseClicked == true && MouseHeldDown != true)
+				{
+					if (uiObjects[i].ExitButton() == true) SendNetworkEvent("exitPDA");
+					else if (uiObjects[i].BackButtonTrue) SendNetworkEvent("closemonstermenu");
+					else if (MouseHeldDown != true)
+					{
+						uiObjects[i].UiFunction();
+						uiObjects[i].Clicked = true;
+						//SendNetworkEvent("releasemouse");
+					}
+					//else SendNetworkEvent("ReleaseMouse");
+				}
+				if (uiObjects[i].usefont != NULL)
+				{
+					if (MouseHeldDown == true)
+					{
+						uiObjects[i].fontcolor = Font.CR_CYAN;
+					}
+					else
+					{
+						uiObjects[i].fontcolor = Font.CR_RED;
+					}
+				}
+				if (!uiObjects[i].MouseOvered)
+				{
+					uiObjects[i].MouseOvered = true;
+					S_Sound("PDAMOUSEOVER",CHAN_AUTO);
+				}
 			}
 			else 
 			{
-				//uiObjects[i].ColorOverlay = "White";
+				uiObjects[i].MouseOvered = false;
 				uiObjects[i].fontcolor = Font.CR_UNTRANSLATED;
+				//SendNetworkEvent("releasemouse");
+				//self.MouseHeldDown = false;
 			}
+		}
+	}
+	override void WorldTick()
+	{
+		if (MouseClicked == false)
+		{
+			MouseHeldDown = false;
 		}
 	}
 	override void NetworkProcess(ConsoleEvent e)
 	{
+		if (HeldDownTics <= 0) mouseclicked = false;
+		if (e.Name ~== "releasemouse")
+		{
+			self.MouseHeldDown = false;
+			self.MouseClicked = false;
+			//HeldDownTics = 0;
+		}
+		if (e.Name ~== "openmonstermenu") MonsterMenuOpened = true;
+		if (e.Name ~== "closemonstermenu")
+		{
+			MonsterMenuOpened = false;
+			S_Sound("PDABACK",CHAN_AUTO);
+		}
+		if (MouseHeldDown == false && MouseClicked == true && !(HeldDownTics <= 0) ) HeldDownTics--;
 		if (e.Name ~== "input")
 		{
 			if (e.Args[2] == 1)
 			{
-				Console.Printf("Mouse Event Detected");
-				MouseClicked = true;
+				//Console.Printf("Mouse Event Detected");
+				if (MouseClicked == true && !MouseHeldDown)
+				{
+					MouseHeldDown = true;
+					HeldDownTics++;
+				}
+				else
+				{
+					MouseClicked = true;
+					MouseHeldDown = true;
+					if (HeldDownTics < 2) HeldDownTics++;
+				}
 			}
-			else if (e.Args[2] == 2) mouseclicked = false;
+			else if (e.Args[2] == 2)
+			{
+				if (HeldDownTics <= 0) mouseclicked = false;
+				MouseHeldDown = false;
+			}
 			if (players[e.Player].cmd.buttons & BT_USER1)
 			{
 				SetPlayerProperty(1,1,4);
@@ -116,6 +233,8 @@ class PB_EventHandler : EventHandler
 			MouseX = 1;
 			MouseY = 1;
 			MousePositionSet = false;
+			MouseClicked = false;
+			MonsterMenuOpened = false;
 		}
 		if (e.Name ~== "modifymousepos")
 		{
@@ -145,23 +264,66 @@ class PB_EventHandler : EventHandler
 		{
 			TextureID cursortex = Texman.CheckForTexture("ZCURSOR",TexMan.Type_Any);
 			Screen.Dim("Black",0.50,0,0,Screen.GetWidth(),Screen.GetHeight());
+			for (int ii = 0; ii < Screen.GetHeight(); ii += Screen.GetHeight() / 20)
+			{
+				Screen.DrawLine(0,ii,Screen.GetWidth(),ii,"Cyan",255/2);
+			}
+			for (int iii = 0; iii < Screen.GetWidth(); iii += Screen.GetWidth() / 20)
+			{
+				Screen.DrawLine(iii,0,iii,Screen.GetHeight(),"Cyan",255/2);
+			}
 			if (UiObjects.Size() >= 1)
 			{
 				for (int i = 0; i < UiObjects.Size(); i++)
 				{
-					if (UiObjects[i].todraw) Screen.DrawText(UiObjects[i].usefont,UiObjects[i].fontcolor,UiObjects[i].ImagePos.x,UiObjects[i].ImagePos.y,UiObjects[i].toDraw,DTA_CleanNoMove_1,true);
-					else Screen.DrawTexture(UiObjects[i].DialogPicture,false,UiObjects[i].ImagePos.x,UiObjects[i].ImagePos.y);
+					if (UiObjects[i].todraw && ((UiObjects[i].MonsterMenuOnly == true && MonsterMenuOpened == true) || (UiObjects[i].MonsterMenuOnly == false)))
+					{
+						Screen.DrawText(UiObjects[i].usefont,UiObjects[i].fontcolor,UiObjects[i].ImagePos.x,UiObjects[i].ImagePos.y,UiObjects[i].toDraw,DTA_CleanNoMove_1,true);
+						uiObjects[i].notdrawn = false;
+					}
+					else if (UiObjects[i].DialogPicture)
+					{
+						Screen.DrawTexture(UiObjects[i].DialogPicture,false,UiObjects[i].ImagePos.x,UiObjects[i].ImagePos.y);
+						UiObjects[i].notdrawn = false;
+					}
+					else UiObjects[i].notdrawn = true;
 				}
 			}
+			if (MonsterMenuButton != null && !MonsterMenuOpened) Screen.DrawText(MonsterMenuButton.usefont,MonsterMenuButton.fontcolor,MonsterMenuButton.ImagePos.x,MonsterMenuButton.ImagePos.y,MonsterMenuButton.toDraw,DTA_CleanNoMove_1,true);
+			
 			Screen.DrawTexture(cursortex,false,MouseX,MouseY);
 			if (UiObjects.Size() >= 1) return;
+			//Initialize the objects.
+			int lump = Wads.FindLump("PDAMONST");
+			string stuff = Wads.ReadLump(lump);
+			stuff.Split(PDAMonsterStrings,",");
+			Vector2 monstertextpos = (Screen.GetWidth() / 5,Screen.GetHeight() / 5);
+			for (int i = 0; i < PDAMonsterStrings.Size(); ++i)
+			{
+				let monstertext = new("PB_PDAUi_Object");
+				//monstertext.Unselectable = true;
+				monstertext.MonsterMenuOnly = true;
+				monstertext.toDraw = PDAMonsterStrings[i];
+				monstertext.ImagePos.y = (monstertextpos.y * 0.25) * (i);
+				monstertext.InitializeUiObject();
+				UiObjects.Push(monstertext);
+			}
+			let BackDialog = new("PB_PDAUi_Object");
+			BackDialog.todraw = "Back";
+			BackDialog.InitializeUiObject();
+			BackDialog.BackButtonTrue = true;
+			BackDialog.MonsterMenuOnly = true;
+			BackDialog.ImagePos = (0,Screen.GetHeight() - BackDialog.ImageSize.y);
+			uiObjects.Push(BackDialog);
 			let dialog = new("PB_PDAUi_Object");
 			dialog.toDraw = "Exit";
-			dialog.usefont = BigFont;
-			//dialog.colorOverlay = "White";
-			dialog.fontcolor = Font.CR_UNTRANSLATED;
-			dialog.ImageSize.X = BigFont.StringWidth(dialog.toDraw) * CleanXFac_1;
-			dialog.ImageSize.Y = BigFont.GetHeight() * CleanYFac;
+			dialog.InitializeUiObject();
+			dialog.exitbuttontrue = True;
+			let monsterdialog = new("PB_PDAUi_Object_MonsterMenu");
+			monsterdialog.toDraw = monsterDialog.GetString();
+			monsterdialog.InitializeUiObject();
+			monsterdialog.ImagePos = (Screen.GetWidth() / 4, Screen.GetHeight() / 2);
+			self.MonsterMenuButton = monsterDialog;
 			dialog.ImagePos = ((Screen.GetWidth() ) - Screen.GetWidth()/4, (Screen.GetHeight() ) - Screen.GetHeight()/4);
 			UiObjects.Push(dialog);
 		}
