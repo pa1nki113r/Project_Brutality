@@ -230,11 +230,10 @@ ACTOR M2PlasmaRifle : PB_Weapon //12222
 		
 	SelectAnimation:
 	TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1, "SelectAnimationDualWield")
-	TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1, "SelectAnimationDualWield")
 	TNT1 A 0 A_PlaySoundEx("PLSDRAW", "Auto")
-	M233 ABCDE 0
+	M293 ABCDE 0
 	M230 ABCDE 1 {
-		if (CountInv("HasLightningGunUpgrade") >= 1 ) { A_SetWeaponSprite("M233");}
+		if (CountInv("HasLightningGunUpgrade") >= 1 ) { A_SetWeaponSprite("M293");}
 	}
 	Goto ReallyReady3
 	
@@ -261,14 +260,26 @@ ACTOR M2PlasmaRifle : PB_Weapon //12222
 			}
 		TNT1 A 0 A_JumpIfInventory("HasLightningGunUpgrade", 1,"SwitchToLightningMode")	
 	DualWield:
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1,"SwitchFromDualWield")
 		TNT1 A 0 A_JumpIfInventory("M2PlasmaRifle", 2,"SwitchToDualWield")
 		TNT1 A 0 A_Print("You need two M2 Plasma rifles to dual wield!")
 		Goto Ready3
 	SwitchToDualWield:
-		TNT1 A 0 A_Giveinventory("DualWieldingM2Plasma",1)
+		TNT1 A 0 {
+			A_PlaySoundEx("Ironsights", "Auto");
+			A_Giveinventory("DualWieldingM2Plasma",1);
+			}
 		M231 ABCD 1 A_Setroll(roll-0.2, SPF_INTERPOLATE)
 		M231 EG 1 A_Setroll(roll+0.4, SPF_INTERPOLATE)
 		Goto ReadyDualWield
+	SwitchFromDualWield:
+		TNT1 A 0 {
+			A_PlaySoundEx("Ironsights", "Auto");
+			A_Takeinventory("DualWieldingM2Plasma",1);
+			}
+		M231 EGDC 1 A_Setroll(roll-0.2, SPF_INTERPOLATE)
+		M231 BA 1 A_Setroll(roll+0.4, SPF_INTERPOLATE)
+		Goto Ready3
 	SwitchToLightningMode:
 		TNT1 A 0 A_JumpIfInventory("LightningGunMode", 1,"SwitchToRegularMode")
 		TNT1 A 0 {
@@ -979,9 +990,18 @@ ACTOR M2PlasmaRifle : PB_Weapon //12222
 		M230 BA 1 A_Setroll(roll+1.0)
 		TNT1 A 1 A_Setroll(roll+1.0)
 		TNT1 A 9
-		M222 ABCDEFGHIJKLMNOPQRSTUVWXYZ 1
+		TNT1 A 0 A_PlaySoundEx("weapons/m2plasma/reload", "Auto")
+		M222 AAABC 1 
+		M222 D 1 {
+			A_FireCustomMissile("GunFireSmoke", 40, 0, 6, -9, 0, 0);
+			A_PlaysoundEx("Weapons/CellEject","Auto");
+			}
+		M222 EF 1 
+		TNT1 A 0 A_FireCustomMissile ("PlasmaCaseSpawn", 192, 0, -20, 2, random (0, 160))
+		M222 GGGGHIJKLMMMMNOPQRSTUUVWXYZ 1
+		M231 DEFG 1
 	InsertBullets4:
-		TNT1 A 0 A_JumpIfInventory("PlasmaAmmo",50,"FinishInsertBullets")
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",50,"FinishInsertBullets")
 		TNT1 A 0 A_JumpIfInventory("Cell",1,1)
 		Goto FinishInsertBullets
 		TNT1 A 0 {
@@ -989,7 +1009,9 @@ ACTOR M2PlasmaRifle : PB_Weapon //12222
 			{
 				A_Takeinventory("Cell",1);
 			}
-			A_Giveinventory("PlasmaAmmo",1);
+			A_Giveinventory("M2PlasmaAmmo",1);
+			A_Giveinventory("RightM2PlasmagunAmmo", 1);
+			A_Giveinventory("DoubleM2PlasmagunAmmo", 1);
 			A_Takeinventory("Cell",1);
 		}
 		Goto InsertBullets4
