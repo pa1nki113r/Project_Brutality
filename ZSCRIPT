@@ -10,13 +10,13 @@ class PB_PDAUi_Object
 	bool ExitButtonTrue;
 	bool BackButtonTrue;
 	int descClipX,descClipY,descClipW,descClipH;
-	Vector2 a,b,c; // For Triangle drawing.
 	bool MonsterMenuOnly;
 	bool WeaponMenuOnly;
 	bool NonMainMenuOnly;
 	//Color ColorOverlay;
 	int fontcolor;
 	int objecttype;
+	int entrynumber;
 	string toDraw;
 	font usefont;
 	bool notdrawn;
@@ -70,17 +70,6 @@ class PB_PDAUi_Object
 		dialog.ImageSize.Y = usefont.GetHeight() * CleanYFac;
 	}
 }
-class PB_PDAUi_Object_MonsterMenu : PB_PDAUi_Object
-{
-	override string GetString()
-	{
-		return "Monsters";
-	}
-	override bool ExitButton()
-	{
-		return false;
-	}
-}
 class PB_EventHandler : EventHandler
 {
 	int MouseX,MouseY,DeltaMouseX,DeltaMouseY;
@@ -94,11 +83,12 @@ class PB_EventHandler : EventHandler
 	bool MouseClicked,MousePositionSet,MouseHeldDown;
 	Array<String> PDAMonsterStrings;
 	Array<String> PDAWeaponStrings;
-	ui Array<String> PDAWeaponHeaders;
-	ui Array<String> PDAWeaponTexts;
-	ui Array<Double> PDAWeaponTextVSize,PDAWeaponTextHSize;
-	ui Array<PB_PDAUi_Object> UiObjects;
-	ui PB_PDAUi_Object descriptiondialog;
+	Array<String> PBWeapons;
+	transient ui Array<String> PDAWeaponHeaders;
+	transient ui Array<String> PDAWeaponTexts;
+	transient ui Array<Double> PDAWeaponTextVSize,PDAWeaponTextHSize;
+	transient ui Array<PB_PDAUi_Object> UiObjects;
+	transient ui PB_PDAUi_Object descriptiondialog;
 	override void WorldThingDied(WorldEvent e)
 	{
 		if (e.thing && e.thing.target
@@ -133,7 +123,8 @@ class PB_EventHandler : EventHandler
 					{
 						for (int counter = 0; counter < PDAWeaponHeaders.Size(); ++counter)
 						{
-							if (uiObjects[i].todraw == PDAWeaponHeaders[counter])
+							//Console.Printf(PDAWeaponHeaders[counter]);
+							if (uiObjects[i].entrynumber == counter)
 							{
 								descriptiondialog.todraw = PDAWeaponTexts[counter];
 							}
@@ -278,6 +269,13 @@ class PB_EventHandler : EventHandler
 			MouseY = e.Args[1];
 			MousePositionSet = true;
 		}
+		Array<String> splittedStrings;
+		e.Name.Split(splittedStrings,":");
+		if (SplittedStrings.Size() == 0) return;
+		if (splittedStrings[0] == "addweaponclass")
+		{
+			PBWeapons.Push(splittedStrings[1]);
+		}
 	}
 	override void WorldLoaded(WorldEvent e)
 	{
@@ -392,15 +390,24 @@ class PB_EventHandler : EventHandler
 			int weaptlump = Wads.FindLump("PDAWEAPT");
 			string weaptstuff = Wads.ReadLump(weaptlump);
 			Array<String> weaptstrings;
-			weaptstuff.Split(weaptstrings,"$");
+			Array<String> initialweaptstrings;
+			weaptstuff.Split(initialweaptstrings,"#");
+			for (int splitCounter = 0; splitcounter < initialweaptstrings.Size(); splitcounter++)
+			{
+				initialweaptstrings[splitCounter].Split(weaptstrings,"$");
+			}
 			int forcounter = 1;
 			int iii = 0;
 			for (iii = 0; iii < weaptstrings.Size(); ++iii)
 			{
-				if (forcounter == 2)
+				if (forcounter == 3)
+				{
+					SendNetworkEvent("addweaponclass:"..weaptstrings[iii]);
+					forcounter = 0;
+				}
+				else if (forcounter == 2)
 				{
 					PDAWeaponTexts.Push(weaptstrings[iii]);
-					forcounter = 0;
 				}
 				else if (forcounter == 1) PDAWeaponHeaders.Push(weaptstrings[iii]);
 				++forcounter;
@@ -409,8 +416,10 @@ class PB_EventHandler : EventHandler
 			string NewWeaponText;
 			font breaklinefont = SmallFont;
 			int largestStringWidth = 0;
-			for (iii = 0; iii < PDAWeaponTexts.Size(); ++iii)
+			
+			for (iii = 0; iii < PDAWeaponTexts.Size(); iii++)
 			{
+				NewWeaponText = "";
 				WeaponTextLines = breaklinefont.BreakLines(PDAWeaponTexts[iii],200);
 				for (int linecounter = 0; linecounter < WeaponTextLines.Count(); ++linecounter)
 				{
@@ -452,6 +461,7 @@ class PB_EventHandler : EventHandler
 			for (int ii = 0; ii < PDAWeaponStrings.Size(); ++ii)
 			{
 				let weapontext = new("PB_PDAUi_Object");
+				weapontext.entrynumber = ii;
 				weapontext.WeaponMenuOnly = true;
 				weapontext.toDraw = PDAWeaponStrings[ii];
 				weapontext.ImagePos.y = (MonsterTextPos.y * 0.25) * (ii);
@@ -857,6 +867,7 @@ class PlayerPawnBase : PlayerPawn
 {
 	bool IsTank;
 	Property IsTank : IsTank;
+	Array<String> WeaponsAvailable;
 	int tankdeathcounter;
 	int tankspritecounter;
 	TankBaseNotReal TankBaseSprite; //tank's fake sprite as the actor.
