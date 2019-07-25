@@ -1,7 +1,7 @@
 
 void main()
 {
-	vec4 C	;
+	vec4 C = vec4(0);
 	int i ;
 	
 	if( blendmode == 1 )
