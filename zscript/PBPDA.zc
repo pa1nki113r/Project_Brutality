@@ -87,6 +87,7 @@ class PB_EventHandler : EventHandler
 	Array<String> PBWeapons;
 	transient ui Array<String> PDAWeaponHeaders;
 	transient ui Array<String> PDAWeaponTexts;
+	transient ui Array<String> PDAMonsterTexts;
 	transient ui Array<Double> PDAWeaponTextVSize,PDAWeaponTextHSize;
 	transient ui Array<PB_PDAUi_Object> UiObjects;
 	transient ui PB_PDAUi_Object descriptiondialog;
@@ -139,20 +140,40 @@ class PB_EventHandler : EventHandler
 						descriptiondialog.todraw = "Select a entry to \nview its description";
 						descriptiondialog.ImagePos = descriptiondialog.InitialImagePos;
 					}
-					else if (uiObjects[i].objecttype == 1) SendNetworkEvent("OpenMonsterMenu");
-					else if (uiObjects[i].objecttype == 2) SendNetworkEvent("OpenWeaponMenu");
-					else if (uiObjects[i].objecttype == 3) 
+					else
 					{
-						for (int counter = 0; counter < PDAWeaponHeaders.Size(); ++counter)
+						switch(uiObjects[i].objecttype)
 						{
-							//Console.Printf(PDAWeaponHeaders[counter]);
-							if (uiObjects[i].entrynumber == counter)
+						Default:
+							break;
+						case 1:
+							SendNetworkEvent("OpenMonsterMenu");
+							break;
+						case 2:
+							SendNetworkEvent("OpenWeaponMenu");
+							break;
+						case 3:
+							for (int counter = 0; counter < PDAWeaponHeaders.Size(); ++counter)
 							{
-								descriptiondialog.todraw = PDAWeaponTexts[counter];
+								//Console.Printf(PDAWeaponHeaders[counter]);
+								if (uiObjects[i].entrynumber == counter)
+								{
+									descriptiondialog.todraw = PDAWeaponTexts[counter];
+								}
 							}
+							break;
+						case 6:
+							for (int counter = 0; counter < PDAMonsterStrings.Size(); ++counter)
+							{
+								if (uiObjects[i].entrynumber == counter)
+								{
+									descriptiondialog.todraw = PDAMonsterTexts[counter];
+								}
+							}
+							break;
 						}
 					}
-					else if (uiObjects[i].BackButtonTrue)
+					if (uiObjects[i].BackButtonTrue)
 					{
 						SendNetworkEvent("closemonstermenu");
 						descriptiondialog.todraw = "Select a entry to \nview its description";
@@ -564,12 +585,15 @@ class PB_EventHandler : EventHandler
 			weapontext.objecttype = 3;
 			UiObjects.Push(weapontext);
 		}
+		prevtextpos = (0,0);
 		for (int i = 0; i < PDAMonsterStrings.Size(); ++i)
 		{
 			let monstertext = new("PB_PDAUi_Object");
 			monstertext.MonsterMenuOnly = true;
+			monstertext.dontdraw = true;
 			monstertext.toDraw = PDAMonsterStrings[i];
-			monstertext.ImagePos.y = (monstertextpos.y * 0.25) * (i);
+			monstertext.ImagePos = prevtextpos;
+			prevtextpos.y += SmallFont.GetHeight() * CleanYFac_1;
 			monstertext.InitializeUiObject();
 			UiObjects.Push(monstertext);
 		}
