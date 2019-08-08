@@ -71,12 +71,17 @@ class PB_EventHandler : EventHandler
 	int MouseX,MouseY,DeltaMouseX,DeltaMouseY;
 	uint HeldDownTics;
 	int PDAMode;
+	bool isnetgame;
 	ui Vector2 UpArrowPos,DownArrowPos;
 	bool ClearArrays;
 	bool NonMainMenu;
 	bool MonsterMenuOpened,MonsterMenuOnly;
 	bool WeaponMenuOpened,WeaponMenuOnly;
 	bool MouseClicked,MousePositionSet,MouseHeldDown;
+	bool weaponFound;
+	bool DontTick;
+	int uiTics;
+	Array<string> weaponFoundName;
 	Array<String> PDAMonsterStrings;
 	Array<String> PDAWeaponStrings;
 	Array<String> PBWeapons;
@@ -97,6 +102,27 @@ class PB_EventHandler : EventHandler
 	}
 	override void UiTick()
 	{
+		if (netgame == true)
+		{
+			SendNetworkEvent("NetgameTrue");
+		}
+		if (weaponFound == true)
+		{
+			for (int ii = 0; ii < PBWeapons.Size(); ii++)
+			{
+				for (int iii = 0; iii < weaponFoundName.Size(); ++iii) if (weaponFoundName[iii] == PBWeapons[ii])
+				for (int i = 0;i < uiObjects.Size();i++)
+				{
+					if (uiObjects[i].todraw == PDAWeaponHeaders[ii] && uiObjects[i].dontdraw == true)
+					{
+						S_Sound("PDAOPEN",CHAN_AUTO,2);
+						Console.PrintF("New PDA Entry:"..PDAWeaponHeaders[ii]);
+						uiObjects[i].dontdraw = false;
+					}
+				}
+			}
+			SendNetworkEvent("ResetWeaponName");
+		}
 		for (int i = 0;i < uiObjects.Size();i++)
 		{
 			if (MouseX >= uiObjects[i].ImagePos.x
@@ -179,10 +205,43 @@ class PB_EventHandler : EventHandler
 		{
 			MouseHeldDown = false;
 		}
+		if (!DontTick) uiTics++;
+		if (uiTics >= 5)
+		{
+			if (players[consoleplayer].mo is "PlayerPawnBase")
+			{
+				if (PlayerPawnBase(players[consoleplayer].mo).baseweaponpda == true)
+				{
+					DontTick = true;
+					uiTics = 0;
+					return;
+				}
+				for (int slot = 0; slot <= 10; slot++)
+				{
+					for (int index = 0; index < players[consoleplayer].weapons.SlotSize(slot); index++)
+					{
+						let type = players[consoleplayer].weapons.GetWeapon(slot,index);
+						Weapon weap = Weapon(players[consoleplayer].mo.FindInventory(type));
+						if (weap != Null)
+						{
+							self.WeaponFound = true;
+							self.WeaponFoundName.Push(weap.GetClassName());
+						}
+					}
+				}
+				PlayerPawnBase(players[consoleplayer].mo).baseweaponpda = true;
+				DontTick = true;
+				uiTics = 0;
+			}
+		}
 	}
 	override void NetworkProcess(ConsoleEvent e)
 	{
 		if (HeldDownTics <= 0) mouseclicked = false;
+		if (e.Name ~== "netgametrue")
+		{
+			isnetgame = true;
+		}
 		if (e.Name ~== "releasemouse")
 		{
 			self.MouseHeldDown = false;
@@ -207,6 +266,15 @@ class PB_EventHandler : EventHandler
 			WeaponMenuOpened = true;
 			NonMainMenu = true;
 			S_Sound("PDAOPEN",CHAN_AUTO);
+		}
+		if (e.Name ~== "resetweaponname")
+		{
+			self.WeaponFound = false;
+			self.WeaponFoundName.Clear();
+		}
+		if (e.Name ~== "weaponname")
+		{
+			self.WeaponFound = true;
 		}
 		if (MouseHeldDown == false && MouseClicked == true && !(HeldDownTics <= 0) ) HeldDownTics--;
 		if (e.Name ~== "input")
@@ -233,6 +301,7 @@ class PB_EventHandler : EventHandler
 			}
 			if (players[e.Player].cmd.buttons & BT_USER1)
 			{
+				if (isnetgame) return;
 				SetPlayerProperty(1,1,4);
 				int freezemask = 1 << e.Player;
 				players[e.Player].timefreezer |= freezemask;
@@ -314,6 +383,10 @@ class PB_EventHandler : EventHandler
 			DescriptionDialog.Destroy();
 			DescriptionDialog = null;
 		}
+		if (uiObjects.Size() < 1)
+		{
+			InitializeUiObjects();
+		}
 		if (PDAMode == true)
 		{
 			TextureID cursortex = Texman.CheckForTexture("ZCURSOR",TexMan.Type_Any);
@@ -379,139 +452,156 @@ class PB_EventHandler : EventHandler
 				}
 			}
 			//if (MonsterMenuButton != null && !MonsterMenuOpened) Screen.DrawText(MonsterMenuButton.usefont,MonsterMenuButton.fontcolor,MonsterMenuButton.ImagePos.x,MonsterMenuButton.ImagePos.y,MonsterMenuButton.toDraw,DTA_CleanNoMove_1,true);
-			if (descriptiondialog != null && NonMainMenu == true) Screen.DrawText(descriptiondialog.usefont,Font.CR_UNTRANSLATED,descriptiondialog.ImagePos.x,descriptiondialog.ImagePos.y,descriptiondialog.todraw,DTA_CleanNoMove_1,true,DTA_ClipTop,descriptiondialog.descClipY,DTA_ClipBottom,descriptiondialog.descClipH);
+			if (descriptiondialog != null && NonMainMenu == true)
+			{
+				Screen.Clear(descriptiondialog.ImagePos.X,descriptiondialog.descClipY,UpArrowPos.X,descriptiondialog.descClipH,"DarkSlateGray");
+				Screen.DrawText(descriptiondialog.usefont,Font.CR_UNTRANSLATED,descriptiondialog.ImagePos.x,descriptiondialog.ImagePos.y,descriptiondialog.todraw,DTA_CleanNoMove_1,true,DTA_ClipTop,descriptiondialog.descClipY,DTA_ClipBottom,descriptiondialog.descClipH);
+			}
 			//Screen.DrawShape(TexMan.CheckForTexture("BLOOD1",TexMan.Type_Any),false,UpArrow);
 			Screen.DrawTexture(cursortex,false,MouseX,MouseY);
 			//Screen.DrawText(SmallFont,Font.CR_YELLOW,MouseX+12,MouseY+12,""..MouseX.."/"..MouseY);
 			if (UiObjects.Size() >= 1) return;
 			//Initialize the objects.
-			
-			int lump = Wads.FindLump("PDAMONST");
-			string stuff = Wads.ReadLump(lump);
-			stuff.Split(PDAMonsterStrings,",");
-			int weaplump = Wads.FindLump("PDAWEAP");
-			string weapstuff = Wads.ReadLump(weaplump);
-			weapstuff.Split(PDAWeaponStrings,",");
-			int weaptlump = Wads.FindLump("PDAWEAPT");
-			string weaptstuff = Wads.ReadLump(weaptlump);
-			Array<String> weaptstrings;
-			Array<String> initialweaptstrings;
-			weaptstuff.Split(initialweaptstrings,"#");
-			for (int splitCounter = 0; splitcounter < initialweaptstrings.Size(); splitcounter++)
-			{
-				initialweaptstrings[splitCounter].Split(weaptstrings,"$");
-			}
-			int forcounter = 1;
-			int iii = 0;
-			for (iii = 0; iii < weaptstrings.Size(); ++iii)
-			{
-				if (forcounter == 3)
-				{
-					SendNetworkEvent("addweaponclass:"..weaptstrings[iii]);
-					forcounter = 0;
-				}
-				else if (forcounter == 2)
-				{
-					PDAWeaponTexts.Push(weaptstrings[iii]);
-				}
-				else if (forcounter == 1) PDAWeaponHeaders.Push(weaptstrings[iii]);
-				++forcounter;
-			}
-			BrokenLines WeaponTextLines;
-			string NewWeaponText;
-			font breaklinefont = SmallFont;
-			int largestStringWidth = 0;
-			
-			for (iii = 0; iii < PDAWeaponTexts.Size(); iii++)
-			{
-				NewWeaponText = "";
-				WeaponTextLines = breaklinefont.BreakLines(PDAWeaponTexts[iii],200);
-				for (int linecounter = 0; linecounter < WeaponTextLines.Count(); ++linecounter)
-				{
-					string linestring = WeaponTextLines.StringAt(lineCounter);
-					if (LargestStringWidth < SmallFont.StringWidth(WeaponTextLines.StringAt(lineCounter))*CleanYFac) largestStringWidth = WeaponTextLines.StringWidth(linecounter) * CleanXFac;
-					linestring.AppendCharacter(10);
-					NewWeaponText = NewWeaponText..Linestring;
-				}
-				PDAWeaponTexts[iii] = NewWeaponText;
-				PDAWeaponTextVSize.Push(breaklinefont.GetHeight() * CleanYFac_1 * WeaponTextLines.Count());
-				PDAWeaponTextHSize.Push(largestStringWidth * CleanXFac_1);
-			}
-			let descdialog = new("PB_PDAUi_Object");
-			descdialog.todraw = "Select a entry to \nview its description";
-			descdialog.UnSelectable = true;
-			descdialog.InitializeUiObject();
-			descdialog.ImagePos = (Screen.GetWidth() / 2,Screen.GetHeight() / 10);
-			descdialog.InitialImagePos = descdialog.ImagePos;
-			descdialog.descClipY = descdialog.ImagePos.Y;
-			descdialog.descClipH = descdialog.ImagePos.Y + 240;
-			descriptiondialog = descdialog;
-			UpArrowPos = (LargestStringWidth + DescriptionDialog.ImagePos.X,descdialog.ImagePos.Y);
-			DownArrowPos = (UpArrowPos.x,descdialog.descClipH);
-			let UpArrowDialog = new("PB_PDAUi_Object");
-			UpArrowDialog.Objecttype = 4;
-			UpArrowDialog.ImagePos = UpArrowPos;
-			UpArrowDialog.todraw = "\x1a";
-			UpArrowDialog.NonMainMenuOnly = true;
-			UpArrowDialog.InitializeUiObject(confont);
-			UiObjects.Push(UpArrowDialog);
-			PB_PDAUi_Object DownArrowDialog = new("PB_PDAUi_Object");
-			DownArrowDialog.ImagePos = DownArrowPos;
-			DownArrowDialog.todraw = "\x1b";
-			DownArrowDialog.ObjectType = 5;
-			DownArrowDialog.NonMainMenuOnly = true;
-			DownArrowDialog.InitializeUiObject(confont);
-			UiObjects.Push(DownArrowDialog);
-			Vector2 monstertextpos = (Screen.GetWidth() / 5,Screen.GetHeight() / 5);
-			for (int ii = 0; ii < PDAWeaponStrings.Size(); ++ii)
-			{
-				let weapontext = new("PB_PDAUi_Object");
-				weapontext.entrynumber = ii;
-				weapontext.WeaponMenuOnly = true;
-				weapontext.toDraw = PDAWeaponStrings[ii];
-				weapontext.ImagePos.y = (MonsterTextPos.y * 0.25) * (ii);
-				weapontext.InitializeUiObject();
-				weapontext.objecttype = 3;
-				UiObjects.Push(weapontext);
-			}
-			for (int i = 0; i < PDAMonsterStrings.Size(); ++i)
-			{
-				let monstertext = new("PB_PDAUi_Object");
-				monstertext.MonsterMenuOnly = true;
-				monstertext.toDraw = PDAMonsterStrings[i];
-				monstertext.ImagePos.y = (monstertextpos.y * 0.25) * (i);
-				monstertext.InitializeUiObject();
-				UiObjects.Push(monstertext);
-			}
-			let BackDialog = new("PB_PDAUi_Object");
-			BackDialog.todraw = "Back";
-			BackDialog.InitializeUiObject();
-			BackDialog.BackButtonTrue = true;
-			BackDialog.NonMainMenuOnly = true;
-			BackDialog.ImagePos = (0,Screen.GetHeight() - BackDialog.ImageSize.y);
-			uiObjects.Push(BackDialog);
-			let dialog = new("PB_PDAUi_Object");
-			dialog.toDraw = "Exit";
-			dialog.InitializeUiObject();
-			dialog.exitbuttontrue = True;
-			let monsterdialog = new("PB_PDAUi_Object");
-			monsterdialog.objecttype = 1;
-			monsterdialog.toDraw = monsterDialog.GetString();
-			monsterdialog.InitializeUiObject();
-			monsterdialog.ImagePos = (Screen.GetWidth() / 4, Screen.GetHeight() / 2);
-			monsterdialog.dontdraw = true;
-			uiObjects.Push(monsterdialog);
-			let weapondialog = new("PB_PDAUi_Object");
-			weapondialog.objecttype = 2;
-			weapondialog.toDraw = "Weapons";
-			weapondialog.InitializeUiObject();
-			weapondialog.ImagePos = (MonsterDialog.ImagePos.x,MonsterDialog.ImagePos.y + MonsterDialog.ImageSize.y);
-			uiObjects.Push(weapondialog);
-			//self.MonsterMenuButton = monsterDialog;
-			dialog.ImagePos = ((Screen.GetWidth() ) - Screen.GetWidth()/4, (Screen.GetHeight() ) - Screen.GetHeight()/4);
-			UiObjects.Push(dialog);
+			InitializeUiObjects();
 		}
 	}
+	ui void InitializeUiObjects()
+	{
+		int lump = Wads.FindLump("PDAMONST");
+		string stuff = Wads.ReadLump(lump);
+		stuff.Split(PDAMonsterStrings,",");
+		int weaplump = Wads.FindLump("PDAWEAP");
+		string weapstuff = Wads.ReadLump(weaplump);
+		weapstuff.Split(PDAWeaponStrings,",");
+		int weaptlump = Wads.FindLump("PDAWEAPT");
+		string weaptstuff = Wads.ReadLump(weaptlump);
+		Array<String> weaptstrings;
+		Array<String> initialweaptstrings;
+		weaptstuff.Split(initialweaptstrings,"#");
+		for (int splitCounter = 0; splitcounter < initialweaptstrings.Size(); splitcounter++)
+		{
+			initialweaptstrings[splitCounter].Split(weaptstrings,"$");
+		}
+		int forcounter = 1;
+		int iii = 0;
+		for (iii = 0; iii < weaptstrings.Size(); ++iii)
+		{
+			if (forcounter == 3)
+			{
+				weaptstrings[iii].Replace("\n","");
+				SendNetworkEvent("addweaponclass:"..weaptstrings[iii]);
+				forcounter = 0;
+			}
+			else if (forcounter == 2)
+			{
+				PDAWeaponTexts.Push(weaptstrings[iii]);
+			}
+			else if (forcounter == 1)
+			{
+				weaptstrings[iii].Replace("\n","");
+				PDAWeaponHeaders.Push(weaptstrings[iii]);
+			}
+			++forcounter;
+		}
+		BrokenLines WeaponTextLines;
+		string NewWeaponText;
+		font breaklinefont = SmallFont;
+		int largestStringWidth = 0;
+		
+		for (iii = 0; iii < PDAWeaponTexts.Size(); iii++)
+		{
+			NewWeaponText = "";
+			WeaponTextLines = breaklinefont.BreakLines(PDAWeaponTexts[iii],200);
+			for (int linecounter = 0; linecounter < WeaponTextLines.Count(); ++linecounter)
+			{
+				string linestring = WeaponTextLines.StringAt(lineCounter);
+				if (LargestStringWidth < SmallFont.StringWidth(WeaponTextLines.StringAt(lineCounter))*CleanYFac) largestStringWidth = WeaponTextLines.StringWidth(linecounter) * CleanXFac;
+				//linestring.AppendCharacter(10);
+				linestring.AppendFormat("\n");
+				NewWeaponText = NewWeaponText..Linestring;
+			}
+			PDAWeaponTexts[iii] = NewWeaponText;
+			PDAWeaponTextVSize.Push(breaklinefont.GetHeight() * CleanYFac_1 * WeaponTextLines.Count());
+			PDAWeaponTextHSize.Push(largestStringWidth * CleanXFac_1);
+		}
+		let descdialog = new("PB_PDAUi_Object");
+		descdialog.todraw = "Select a entry to \nview its description";
+		descdialog.UnSelectable = true;
+		descdialog.InitializeUiObject();
+		descdialog.ImagePos = (Screen.GetWidth() / 2,Screen.GetHeight() / 10);
+		descdialog.InitialImagePos = descdialog.ImagePos;
+		descdialog.descClipY = descdialog.ImagePos.Y;
+		descdialog.descClipH = descdialog.ImagePos.Y + 240;
+		descriptiondialog = descdialog;
+		UpArrowPos = (LargestStringWidth + DescriptionDialog.ImagePos.X,descdialog.ImagePos.Y);
+		DownArrowPos = (UpArrowPos.x,descdialog.descClipH);
+		let UpArrowDialog = new("PB_PDAUi_Object");
+		UpArrowDialog.Objecttype = 4;
+		UpArrowDialog.ImagePos = UpArrowPos;
+		UpArrowDialog.todraw = "\x1a";
+		UpArrowDialog.NonMainMenuOnly = true;
+		UpArrowDialog.InitializeUiObject(confont);
+		UiObjects.Push(UpArrowDialog);
+		PB_PDAUi_Object DownArrowDialog = new("PB_PDAUi_Object");
+		DownArrowDialog.ImagePos = DownArrowPos;
+		DownArrowDialog.todraw = "\x1b";
+		DownArrowDialog.ObjectType = 5;
+		DownArrowDialog.NonMainMenuOnly = true;
+		DownArrowDialog.InitializeUiObject(confont);
+		UiObjects.Push(DownArrowDialog);
+		Vector2 monstertextpos = (Screen.GetWidth() / 5,Screen.GetHeight() / 5);
+		Vector2 prevtextpos = (0,0);
+		for (int ii = 0; ii < PDAWeaponHeaders.Size(); ++ii)
+		{
+			let weapontext = new("PB_PDAUi_Object");
+			weapontext.entrynumber = ii;
+			weapontext.WeaponMenuOnly = true;
+			weapontext.dontdraw = true;
+			weapontext.toDraw = PDAWeaponHeaders[ii];
+			weapontext.ImagePos = prevtextpos;
+			prevtextpos.y += SmallFont.GetHeight() * CleanYFac_1;
+			weapontext.InitializeUiObject();
+			weapontext.objecttype = 3;
+			UiObjects.Push(weapontext);
+		}
+		for (int i = 0; i < PDAMonsterStrings.Size(); ++i)
+		{
+			let monstertext = new("PB_PDAUi_Object");
+			monstertext.MonsterMenuOnly = true;
+			monstertext.toDraw = PDAMonsterStrings[i];
+			monstertext.ImagePos.y = (monstertextpos.y * 0.25) * (i);
+			monstertext.InitializeUiObject();
+			UiObjects.Push(monstertext);
+		}
+		let BackDialog = new("PB_PDAUi_Object");
+		BackDialog.todraw = "Back";
+		BackDialog.InitializeUiObject();
+		BackDialog.BackButtonTrue = true;
+		BackDialog.NonMainMenuOnly = true;
+		BackDialog.ImagePos = (0,Screen.GetHeight() - BackDialog.ImageSize.y);
+		uiObjects.Push(BackDialog);
+		let dialog = new("PB_PDAUi_Object");
+		dialog.toDraw = "Exit";
+		dialog.InitializeUiObject();
+		dialog.exitbuttontrue = True;
+		let monsterdialog = new("PB_PDAUi_Object");
+		monsterdialog.objecttype = 1;
+		monsterdialog.toDraw = monsterDialog.GetString();
+		monsterdialog.InitializeUiObject();
+		monsterdialog.ImagePos = (Screen.GetWidth() / 4, Screen.GetHeight() / 2);
+		monsterdialog.dontdraw = true;
+		uiObjects.Push(monsterdialog);
+		let weapondialog = new("PB_PDAUi_Object");
+		weapondialog.objecttype = 2;
+		weapondialog.toDraw = "Weapons";
+		weapondialog.InitializeUiObject();
+		weapondialog.ImagePos = (MonsterDialog.ImagePos.x,MonsterDialog.ImagePos.y + MonsterDialog.ImageSize.y);
+		uiObjects.Push(weapondialog);
+		//self.MonsterMenuButton = monsterDialog;
+		dialog.ImagePos = ((Screen.GetWidth() ) - Screen.GetWidth()/4, (Screen.GetHeight() ) - Screen.GetHeight()/4);
+		UiObjects.Push(dialog);
+	}
+
 	override bool InputProcess(InputEvent e)
 	{
 		int mouseinput = 0;
