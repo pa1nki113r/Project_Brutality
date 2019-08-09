@@ -70,7 +70,7 @@ class PB_EventHandler : EventHandler
 {
 	int MouseX,MouseY,DeltaMouseX,DeltaMouseY;
 	uint HeldDownTics;
-	int PDAMode;
+	transient int PDAMode;
 	bool isnetgame;
 	ui Vector2 UpArrowPos,DownArrowPos;
 	bool ClearArrays;
@@ -85,6 +85,9 @@ class PB_EventHandler : EventHandler
 	Array<String> PDAMonsterStrings;
 	Array<String> PDAWeaponStrings;
 	Array<String> PBWeapons;
+	transient ui bool WeaponTextMode;
+	transient ui int currentindex;
+	transient ui Array<String> PDAWeaponExtraTexts;
 	transient ui Array<String> PDAWeaponHeaders;
 	transient ui Array<String> PDAWeaponTexts;
 	transient ui Array<String> PDAMonsterTexts;
@@ -100,6 +103,11 @@ class PB_EventHandler : EventHandler
 		{
 			//e.thing.target.player.mo.A_SetBlend("RoyalBlue",0.1,17);
 		}
+	}
+	ui void UpdateDesc()
+	{
+		if (WeaponTextMode == 1) descriptiondialog.todraw = PDAWeaponExtraTexts[currentindex];
+		else descriptiondialog.todraw = PDAWeaponTexts[currentindex];
 	}
 	override void UiTick()
 	{
@@ -139,6 +147,7 @@ class PB_EventHandler : EventHandler
 						SendNetworkEvent("exitPDA");
 						descriptiondialog.todraw = "Select a entry to \nview its description";
 						descriptiondialog.ImagePos = descriptiondialog.InitialImagePos;
+						WeaponTextMode = 0;
 					}
 					else
 					{
@@ -158,7 +167,9 @@ class PB_EventHandler : EventHandler
 								//Console.Printf(PDAWeaponHeaders[counter]);
 								if (uiObjects[i].entrynumber == counter)
 								{
-									descriptiondialog.todraw = PDAWeaponTexts[counter];
+									currentindex = uiObjects[i].entrynumber;
+									if (WeaponTextMode == 1) descriptiondialog.todraw = PDAWeaponExtraTexts[counter];
+									else descriptiondialog.todraw = PDAWeaponTexts[counter];
 								}
 							}
 							break;
@@ -171,6 +182,14 @@ class PB_EventHandler : EventHandler
 								}
 							}
 							break;
+						case 13:
+							WeaponTextMode = 1;
+							UpdateDesc();
+							break;
+						case 12:
+							WeaponTextMode = 0;
+							UpdateDesc();
+							break;
 						}
 					}
 					if (uiObjects[i].BackButtonTrue)
@@ -178,6 +197,7 @@ class PB_EventHandler : EventHandler
 						SendNetworkEvent("closemonstermenu");
 						descriptiondialog.todraw = "Select a entry to \nview its description";
 						descriptiondialog.ImagePos = descriptiondialog.InitialImagePos;
+						WeaponTextMode = 0;
 					}
 					else if (MouseHeldDown != true)
 					{
@@ -406,6 +426,7 @@ class PB_EventHandler : EventHandler
 		}
 		if (uiObjects.Size() < 1)
 		{
+			WeaponTextMode = 0;
 			InitializeUiObjects();
 		}
 		if (PDAMode == true)
@@ -475,7 +496,7 @@ class PB_EventHandler : EventHandler
 			//if (MonsterMenuButton != null && !MonsterMenuOpened) Screen.DrawText(MonsterMenuButton.usefont,MonsterMenuButton.fontcolor,MonsterMenuButton.ImagePos.x,MonsterMenuButton.ImagePos.y,MonsterMenuButton.toDraw,DTA_CleanNoMove_1,true);
 			if (descriptiondialog != null && NonMainMenu == true)
 			{
-				Screen.Clear(descriptiondialog.ImagePos.X,descriptiondialog.descClipY,UpArrowPos.X,descriptiondialog.descClipH,"DarkSlateGray");
+				Screen.Clear(descriptiondialog.ImagePos.X,descriptiondialog.descClipY,UpArrowPos.X,descriptiondialog.descClipH,color(75,75,75));
 				Screen.DrawText(descriptiondialog.usefont,Font.CR_UNTRANSLATED,descriptiondialog.ImagePos.x,descriptiondialog.ImagePos.y,descriptiondialog.todraw,DTA_CleanNoMove_1,true,DTA_ClipTop,descriptiondialog.descClipY,DTA_ClipBottom,descriptiondialog.descClipH);
 			}
 			//Screen.DrawShape(TexMan.CheckForTexture("BLOOD1",TexMan.Type_Any),false,UpArrow);
@@ -507,11 +528,15 @@ class PB_EventHandler : EventHandler
 		int iii = 0;
 		for (iii = 0; iii < weaptstrings.Size(); ++iii)
 		{
-			if (forcounter == 3)
+			if (forcounter == 4)
+			{
+				PDAWeaponExtraTexts.Push(weaptstrings[iii]);
+				forcounter = 0;
+			}
+			else if (forcounter == 3)
 			{
 				weaptstrings[iii].Replace("\n","");
 				SendNetworkEvent("addweaponclass:"..weaptstrings[iii]);
-				forcounter = 0;
 			}
 			else if (forcounter == 2)
 			{
@@ -524,11 +549,11 @@ class PB_EventHandler : EventHandler
 			}
 			++forcounter;
 		}
-		BrokenLines WeaponTextLines;
+		BrokenLines WeaponTextLines, WeaponExtraTextLines;
 		string NewWeaponText;
 		font breaklinefont = SmallFont;
 		int largestStringWidth = 0;
-		
+		string NewWeaponExtraText;
 		for (iii = 0; iii < PDAWeaponTexts.Size(); iii++)
 		{
 			NewWeaponText = "";
@@ -544,6 +569,10 @@ class PB_EventHandler : EventHandler
 			PDAWeaponTexts[iii] = NewWeaponText;
 			PDAWeaponTextVSize.Push(breaklinefont.GetHeight() * CleanYFac_1 * WeaponTextLines.Count());
 			PDAWeaponTextHSize.Push(largestStringWidth * CleanXFac_1);
+		}
+		for (int extraindex = 0; extraindex < PDAWeaponExtraTexts.Size(); extraindex++)
+		{
+			NewWeaponExtraText = "";
 		}
 		let descdialog = new("PB_PDAUi_Object");
 		descdialog.todraw = "Select a entry to \nview its description";
@@ -570,6 +599,20 @@ class PB_EventHandler : EventHandler
 		DownArrowDialog.NonMainMenuOnly = true;
 		DownArrowDialog.InitializeUiObject(confont);
 		UiObjects.Push(DownArrowDialog);
+		PB_PDAUi_Object LeftArrowDialog = new("PB_PDAUi_Object");
+		LeftArrowDialog.ImagePos = (descdialog.imagepos.x,descdialog.descClipH + (SmallFont.GetHeight()*cleanyfac_1));
+		LeftArrowDialog.todraw = "<";
+		LeftArrowDialog.ObjectType = 12;
+		LeftArrowDialog.NonMainMenuOnly = true;
+		LeftArrowDialog.InitializeUiObject();
+		UiObjects.Push(LeftArrowDialog);
+		PB_PDAUi_Object RightArrowDialog = new("PB_PDAUi_Object");
+		RightArrowDialog.ImagePos = (descdialog.imagepos.x + LargestStringWidth,descdialog.descClipH + (SmallFont.GetHeight()*cleanyfac_1));
+		RightArrowDialog.todraw = ">";
+		RightArrowDialog.ObjectType = 13;
+		RightArrowDialog.NonMainMenuOnly = true;
+		RightArrowDialog.InitializeUiObject();
+		UiObjects.Push(RightArrowDialog);
 		Vector2 monstertextpos = (Screen.GetWidth() / 5,Screen.GetHeight() / 5);
 		Vector2 prevtextpos = (0,0);
 		for (int ii = 0; ii < PDAWeaponHeaders.Size(); ++ii)
