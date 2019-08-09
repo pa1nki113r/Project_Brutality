@@ -80,6 +80,7 @@ class PB_EventHandler : EventHandler
 	bool MouseClicked,MousePositionSet,MouseHeldDown;
 	bool weaponFound;
 	bool DontTick;
+	bool NewGameStarted;
 	int uiTics;
 	Array<string> weaponFoundName;
 	Array<String> PDAMonsterStrings;
@@ -109,6 +110,17 @@ class PB_EventHandler : EventHandler
 		if (WeaponTextMode == 1) descriptiondialog.todraw = PDAWeaponExtraTexts[currentindex];
 		else descriptiondialog.todraw = PDAWeaponTexts[currentindex];
 	}
+	ui bool CheckBaseWeapon(string weapname)
+	{
+		for (uint i = 0; i < PlayerPawnBase(players[consoleplayer].mo).baseWeapons.Size(); i++)
+		{
+			if (weapname == PlayerPawnBase(players[consoleplayer].mo).baseWeapons[i])
+			{
+				return true;
+			}
+		}
+		return false;
+	}
 	override void UiTick()
 	{
 		if (netgame == true)
@@ -124,8 +136,11 @@ class PB_EventHandler : EventHandler
 				{
 					if (uiObjects[i].todraw == PDAWeaponHeaders[ii] && uiObjects[i].dontdraw == true)
 					{
-						S_Sound("PDAOPEN",CHAN_AUTO,2);
-						Console.PrintF("New PDA Entry:"..PDAWeaponHeaders[ii]);
+						if (!CheckBaseWeapon(weaponFoundName[iii]))
+						{
+							S_Sound("PDAOPEN",CHAN_AUTO,2);
+							Console.PrintF("New PDA Entry:"..PDAWeaponHeaders[ii]);
+						}
 						uiObjects[i].dontdraw = false;
 					}
 				}
@@ -236,8 +251,13 @@ class PB_EventHandler : EventHandler
 			
 		}
 	}
+	override void NewGame()
+	{
+		NewGameStarted = true;
+	}
 	override void PlayerEntered(PlayerEvent e)
 	{
+		PlayerPawnBase(players[e.Playernumber].mo).baseweaponpda = false;
 		players[e.Playernumber].mo.A_SetBlend("black",1.0,35);
 	}
 	override void WorldTick()
@@ -247,16 +267,10 @@ class PB_EventHandler : EventHandler
 			MouseHeldDown = false;
 		}
 		if (!DontTick) uiTics++;
-		if (uiTics >= 5)
+		if (uiTics >= 2 && players[consoleplayer].mo.CheckInventory("Rifle",1))
 		{
 			if (players[consoleplayer].mo is "PlayerPawnBase")
 			{
-				if (PlayerPawnBase(players[consoleplayer].mo).baseweaponpda == true)
-				{
-					DontTick = true;
-					uiTics = 0;
-					return;
-				}
 				for (int slot = 0; slot <= 10; slot++)
 				{
 					for (int index = 0; index < players[consoleplayer].weapons.SlotSize(slot); index++)
@@ -270,7 +284,11 @@ class PB_EventHandler : EventHandler
 						}
 					}
 				}
-				PlayerPawnBase(players[consoleplayer].mo).baseweaponpda = true;
+				if (!PlayerPawnBase(players[consoleplayer].mo).baseweaponpda)
+				{
+					PlayerPawnBase(players[consoleplayer].mo).baseweaponpda = true;
+					PlayerPawnBase(players[consoleplayer].mo).BaseWeapons.Copy(self.WeaponFoundName);
+				}
 				DontTick = true;
 				uiTics = 0;
 			}
