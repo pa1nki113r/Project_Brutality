@@ -73,6 +73,7 @@ class PB_EventHandler : EventHandler
 	transient int PDAMode;
 	bool isnetgame;
 	ui Vector2 UpArrowPos,DownArrowPos;
+	ui double globalPDAAlpha;
 	bool ClearArrays;
 	bool NonMainMenu;
 	bool MonsterMenuOpened,MonsterMenuOnly;
@@ -123,6 +124,7 @@ class PB_EventHandler : EventHandler
 	}
 	override void UiTick()
 	{
+		globalPDAAlpha = clamp(globalPDAAlpha,0.,1.0);
 		if (netgame == true)
 		{
 			SendNetworkEvent("NetgameTrue");
@@ -160,6 +162,7 @@ class PB_EventHandler : EventHandler
 					if (uiObjects[i].ExitButton() == true)
 					{
 						SendNetworkEvent("exitPDA");
+						globalPDAAlpha = 0;
 						descriptiondialog.todraw = "Select a entry to \nview its description";
 						descriptiondialog.ImagePos = descriptiondialog.InitialImagePos;
 						WeaponTextMode = 0;
@@ -171,9 +174,11 @@ class PB_EventHandler : EventHandler
 						Default:
 							break;
 						case 1:
+							globalPDAAlpha = 0;
 							SendNetworkEvent("OpenMonsterMenu");
 							break;
 						case 2:
+							globalPDAAlpha = 0;
 							SendNetworkEvent("OpenWeaponMenu");
 							break;
 						case 3:
@@ -210,6 +215,7 @@ class PB_EventHandler : EventHandler
 					if (uiObjects[i].BackButtonTrue)
 					{
 						SendNetworkEvent("closemonstermenu");
+						globalPDAAlpha = 0;
 						descriptiondialog.todraw = "Select a entry to \nview its description";
 						descriptiondialog.ImagePos = descriptiondialog.InitialImagePos;
 						WeaponTextMode = 0;
@@ -449,6 +455,7 @@ class PB_EventHandler : EventHandler
 		}
 		if (PDAMode == true)
 		{
+			globalPDAAlpha += 0.1;
 			TextureID cursortex = Texman.CheckForTexture("ZCURSOR",TexMan.Type_Any);
 			Screen.Dim("Black",0.50,0,0,Screen.GetWidth(),Screen.GetHeight());
 			for (int ii = 0; ii < Screen.GetHeight(); ii += Screen.GetHeight() / 20)
@@ -500,12 +507,12 @@ class PB_EventHandler : EventHandler
 					}
 					if (UiObjects[i].todraw)
 					{
-						Screen.DrawText(UiObjects[i].usefont,UiObjects[i].fontcolor,UiObjects[i].ImagePos.x,UiObjects[i].ImagePos.y,UiObjects[i].toDraw,DTA_CleanNoMove_1,true);
+						Screen.DrawText(UiObjects[i].usefont,UiObjects[i].fontcolor,UiObjects[i].ImagePos.x,UiObjects[i].ImagePos.y,UiObjects[i].toDraw,DTA_CleanNoMove_1,true,DTA_Alpha,globalPDAAlpha);
 						uiObjects[i].notdrawn = false;
 					}
 					else if (UiObjects[i].DialogPicture)
 					{
-						Screen.DrawTexture(UiObjects[i].DialogPicture,false,UiObjects[i].ImagePos.x,UiObjects[i].ImagePos.y);
+						Screen.DrawTexture(UiObjects[i].DialogPicture,false,UiObjects[i].ImagePos.x,UiObjects[i].ImagePos.y,DTA_CleanNoMove_1,true,DTA_Alpha,globalPDAAlpha);
 						UiObjects[i].notdrawn = false;
 					}
 					else UiObjects[i].notdrawn = true;
@@ -514,8 +521,8 @@ class PB_EventHandler : EventHandler
 			//if (MonsterMenuButton != null && !MonsterMenuOpened) Screen.DrawText(MonsterMenuButton.usefont,MonsterMenuButton.fontcolor,MonsterMenuButton.ImagePos.x,MonsterMenuButton.ImagePos.y,MonsterMenuButton.toDraw,DTA_CleanNoMove_1,true);
 			if (descriptiondialog != null && NonMainMenu == true)
 			{
-				Screen.Clear(descriptiondialog.ImagePos.X,descriptiondialog.descClipY,UpArrowPos.X,descriptiondialog.descClipH,color(75,75,75));
-				Screen.DrawText(descriptiondialog.usefont,Font.CR_UNTRANSLATED,descriptiondialog.ImagePos.x,descriptiondialog.ImagePos.y,descriptiondialog.todraw,DTA_CleanNoMove_1,true,DTA_ClipTop,descriptiondialog.descClipY,DTA_ClipBottom,descriptiondialog.descClipH);
+				Screen.dim(color(75,75,75),globalPDAAlpha,descriptiondialog.ImagePos.X,descriptiondialog.descClipY,UpArrowPos.X - descriptiondialog.ImagePos.X,DownArrowPos.Y - UpArrowPos.Y);
+				Screen.DrawText(descriptiondialog.usefont,Font.CR_UNTRANSLATED,descriptiondialog.ImagePos.x,descriptiondialog.ImagePos.y,descriptiondialog.todraw,DTA_CleanNoMove_1,true,DTA_ClipTop,descriptiondialog.descClipY,DTA_ClipBottom,descriptiondialog.descClipH,DTA_Alpha,globalPDAAlpha);
 			}
 			//Screen.DrawShape(TexMan.CheckForTexture("BLOOD1",TexMan.Type_Any),false,UpArrow);
 			Screen.DrawTexture(cursortex,false,MouseX,MouseY);
