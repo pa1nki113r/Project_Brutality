@@ -1,0 +1,280 @@
+// Copyright 2006-2019 Nash Muhandes
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+// 3. The name of the author may not be used to endorse or promote products
+//    derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+// IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+// OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+// IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+// NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+// THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+//===========================================================================
+//
+// Modified by PA1NKI113R for Project Brutality 3.0
+//
+//===========================================================================
+
+class NashGoreHandler : EventHandler
+{
+	int maxgore;
+	int maxgore_old, maxgore_new;
+
+	Array<String> bloodTypes;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	override void PlayerEntered(PlayerEvent e)
+	{
+		PlayerPawn plr = players[e.PlayerNumber].mo;
+		if (!plr.CountInv("NashGoreActor"))
+		{
+			plr.A_GiveInventory("NashGoreActor", 1);
+		}
+	}
+
+	override void PlayerRespawned(PlayerEvent e)
+	{
+		PlayerPawn plr = players[e.PlayerNumber].mo;
+		DoThingRevive(plr);
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	override void WorldLoaded(WorldEvent e)
+	{
+		BuildBloodTypes();
+	}
+
+	override void WorldTick(void)
+	{
+		// update gore queue
+		maxgore_new = nashgore_maxgore;
+		if (maxgore_old != maxgore_new)
+		{
+			maxgore = maxgore_new;
+			maxgore_old = maxgore_new;
+		}
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	override void WorldThingSpawned(WorldEvent e)
+	{
+		if (!e.Thing) return;
+
+		// monster?
+		bool isMonster = e.Thing.bIsMonster;
+		
+		// plug in generic monster behaviour
+		if ((e.Thing is "PB_Monster") && isMonster && !e.Thing.CountInv("NashGoreActor"))
+		{
+			e.Thing.A_GiveInventory("NashGoreActor", 1);
+
+			let a = NashGoreActor(e.Thing.FindInventory("NashGoreActor", true));
+			if (a)
+			{
+				a.bCanBleed = !e.Thing.bNoBlood;
+			}
+		}
+	}
+
+	/*
+	override void WorldThingDamaged(WorldEvent e)
+	{
+		if (!e.Thing) return;
+
+		if (!e.Thing.bNoBlood && e.DamageSource)
+		{
+			let diffVec = Level.Vec3Diff(e.DamageSource.Pos, e.Thing.Pos);
+			double angle = VectorAngle(diffVec.X, diffVec.Y);
+			double pitch = -VectorAngle(diffVec.Length(), diffVec.Z);
+			NashGoreStatics.TraceWallBleed(e.Damage, e.Thing.Pos, e.Thing, angle, pitch);
+		}
+	}
+	*/
+
+	override void WorldThingDied(WorldEvent e)
+	{
+		if (!e.Thing) return;
+
+		DoThingDie(e.Thing);
+	}
+
+	override void WorldThingRevived(WorldEvent e)
+	{
+		if (!e.Thing) return;
+		DoThingRevive(e.Thing);
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	override void CheckReplacement(ReplaceEvent e)
+	{
+		// blood stuff
+		for (int i = 0; i < bloodTypes.Size(); i++)
+		{
+			// find all known blood types from the BLUDTYPE lump
+			class<Actor> miscBloodCls;
+			miscBloodCls = String.Format("%s", bloodTypes[i]);
+
+			if (e.Replacee == "Blood" || e.Replacee == "BloodSplatter" || e.Replacee == "AxeBlood"
+				|| (miscBloodCls != NULL && e.Replacee == miscBloodCls))
+			{
+				class<Actor> bloodCls;
+
+				switch(nashgore_bloodtype)
+				{
+					default:
+					case 0:
+						bloodCls = "NashGoreBlood";
+						break;
+					case 1:
+						bloodCls = "NashGoreClassicBlood";
+						break;
+					case 2:
+						bloodCls = "Blood";
+						break;
+				}
+
+				e.Replacement = bloodCls;
+			}
+		}
+
+		// other stuff
+		if (e.Replacee == "RealGibs") e.Replacement = "NashGoreRealGibs";
+		if (nashgore_icedeath == true && e.replacee == "IceChunk") e.Replacement = "NashGoreIceChunk";
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	override void NetworkProcess(ConsoleEvent e)
+	{
+		//let p = players[e.Player].mo;
+		//if (!p) return;
+
+		if (e.Name == 'EV_ClearGore')
+		{
+			NashGoreStatics.ClearGore();
+		}
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	void BuildBloodTypes(void)
+	{
+		bloodTypes.Clear();
+
+		int lump = -1;
+		while (-1 != (lump = Wads.FindLump('BLUDTYPE', lump + 1)))
+		{
+			String data = Wads.ReadLump(lump);
+
+			// split lines
+			Array<String> lines;
+			lines.Clear();
+			data.Split(lines, "\n", TOK_KEEPEMPTY);
+
+			// strip comments
+			for (int i = 0; i < lines.Size(); i++)
+			{
+				if (lines[i].IndexOf("//") == 0)
+				{
+					continue;
+				}
+				else
+				{
+					bloodTypes.Push(lines[i]);
+				}
+			}
+
+			// [lolhack] remove the last line because it's usually blank
+			//bloodTypes.Delete(bloodTypes.Size() - 1, 1);
+		}
+
+		//Console.Printf("size: %d", bloodTypes.Size());
+		for (int i = 0; i < bloodTypes.Size(); i++)
+		{
+			// delete that weird character that gets added at the end
+			bloodTypes[i].Truncate(bloodTypes[i].Length() - 1);
+
+			/*
+			if (bloodTypes[i])
+			{
+				Console.Printf("%s\n", bloodTypes[i]);
+			}
+			*/
+		}
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	void DoThingDie(Actor mo)
+	{
+		bool isMonster = mo.bIsMonster;
+		bool isPlayer = (mo is "PlayerPawn");
+
+		if (isMonster || isPlayer)
+		{
+			let a = NashGoreActor(mo.FindInventory("NashGoreActor", true));
+			if (a)
+			{
+				// mark actor as dead
+				a.bIsDead = true;
+			}
+		}
+	}
+
+	void DoThingRevive(Actor mo)
+	{
+		//Console.Printf("%s lives again!", mo.GetClassName());
+		let a = NashGoreActor(mo.FindInventory("NashGoreActor", true));
+		if (a)
+		{
+			a.ResetActor();
+		}
+	}
+}
