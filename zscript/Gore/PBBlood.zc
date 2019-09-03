@@ -1,0 +1,668 @@
+/*
+class PB_BloodSpot : NashGoreBloodSpot replaces Brutal_BloodSpot//This uses GZDoom's Flatsprite flag instead of using flattened 3D models
+{ 
+	
+}
+*/
+
+class PB_SquirtingBloodSpawner : NashGoreClassicBloodTrailSpawner {
+	
+	Default
+	{
+		Radius 8;
+		Height 2;
+		Gravity 0.535;
+		+NOFRICTION
+		+NOCLIP
+		+CORPSE
+	}
+	
+	States
+	{
+	Spawn:
+		TNT1 A 1
+		{
+			A_SpawnItemEx("PB_SquirtingBloodTrail", flags: SXF_TRANSFERTRANSLATION);
+		}
+		Loop;
+	Crash:
+		TNT1 A 0
+		{
+			A_PlaySound("blooddrop");
+			A_SpawnItemEx("NashGoreBloodSpot");
+		}
+		Stop;
+	}
+	
+}
+
+class PB_SquirtingBloodTrail : NashGoreClassicBloodTrail
+{
+	Default
+	{
+		Radius 1;
+		Height 1;
+		Gravity 0.535;
+		Scale 0.64;
+		+CORPSE
+	}
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	override void Tick(void)
+	{
+		Super.Tick();
+		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
+
+		if (waterlevel > 0)
+		{
+			A_FadeOut(0.01);
+			Vel.Z = -1;
+		}
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	States
+	{
+	Spawn:
+		BL8D ABCDEEEEE 2;
+		Loop;
+	Crash:
+		TNT1 AAAAA 1
+		{
+			A_SpawnItemEx("NashGoreBloodFloorSplash",
+				frandom(-32, 32), frandom(-32, 32),
+				flags: SXF_TRANSFERTRANSLATION | SXF_ABSOLUTEPOSITION | SXF_NOCHECKPOSITION, 220);
+
+			A_SpawnItemEx("NashGoreBloodSpotClassic",
+				frandom(-32, 32), frandom(-32, 32),
+				flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 254);
+		}
+		Stop;
+	}
+}
+
+class PB_WallRedBlood : NashGoreBloodBase {
+	
+	Default
+	{
+	 scale 0.6;
+	 speed 7;
+	 health 1;
+	 radius 8;
+	 height 1;
+	 Gravity 0.7;
+	 damage 0;
+	 DamageType "Blood";
+	 Decal "BrutalBloodSplat";
+	+MISSILE;
+	+CLIENTSIDEONLY;
+	+NOTELEPORT;
+	+NOBLOCKMAP;
+	+THRUACTORS;
+	+FLATSPRITE;
+	}
+    States
+    {
+     Spawn:
+		TNT1 ABCDE 4 A_JumpIf(waterlevel > 1, "Splash");
+		loop;
+	Splash:
+        BLOD A 0;
+		stop;
+     Death:
+  	    TNT1 A 1;
+		stop;
+    }
+}
+
+
+class PB_SuperWallRedBlood: PB_WallRedBlood
+{
+	Default
+	{
+	Decal "BrutalBloodSuper";
+	speed 32;
+	Gravity 0.1;
+	}
+    States
+    {
+     Spawn:
+		TNT1 ABCDEF 1 A_JumpIf(waterlevel > 1, "Splash");
+		Loop;
+     Death:
+  	    TNT1 A 1;
+		stop;
+	
+}
+}
+
+class PB_ShortWallRedBlood: PB_WallRedBlood
+{
+	Default 
+	{
+	Decal "BrutalBloodSmear";
+	speed 2;
+	Gravity 1;
+	Radius 24;
+	Height 12;
+	}
+	States
+    {
+	Spawn:
+		TNT1 AB 3 A_JumpIf(waterlevel > 1, "Splash");
+		Loop;
+	Death:
+		TNT1 A 0 {
+			for (int i = 0; i < 10; i++)
+			{
+				A_SpawnItemEx("NashGoreBloodParticle1",
+					frandom(-8, 8), frandom(-8, 8), frandom(-8, 8),
+					frandom(-2.0, 2.0), frandom(-2.0, 2.0), frandom(0.0, 4.0),
+					frandom(0, 360));
+			}
+			A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			A_PlaySound("HEDBON");
+		}
+	    TNT1 A 20;
+		Stop;
+}
+}
+
+class PB_MuchBlood : NashGoreBloodBase
+{
+	states
+	{
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
+			TNT1 AAAAAA 0 A_CustomMissile ("NashGoreBloodSpurt", 0, 0, random (0, 360), 2, random (0, 360));
+			TNT1 AAAAAAAAA 0 A_CustomMissile("PB_SquirtingBloodTrail", 0, 0, 180);
+			TNT1 AAA 0 A_CustomMissile ("NashGoreBloodParticle_Large", 0, 0, random (0, 360), 2, random (0, 160));
+			TNT1 A 0 A_RadiusGive("BloodSplasherZ", 155, RGF_PLAYERS , 1);
+			stop;
+		Splash:
+			BLOD A 0;
+			stop;
+	}
+}
+
+class PB_MuchBlood2 : NashGoreBloodBase
+{
+	states
+	{
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
+			TNT1 A 0 A_PlaySound("misc/xdeath4");
+			TNT1 AAAAAAA 0 A_CustomMissile ("NashGoreBloodSpurt", 15, 0, random (0, 360), 2, random (0, 160));
+			TNT1 AAAAAA 0 A_CustomMissile ("PB_SquirtingBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			TNT1 AAAAA 0 A_CustomMissile("NashGoreBlood", 0, 0, 180);
+			TNT1 AAA 0 A_CustomMissile ("NashGoreBloodParticle_Large", 0, 0, random (0, 360), 2, random (0, 160));
+			TNT1 A 0 A_RadiusGive("BloodsplasherZ", 100, RGF_PLAYERS, 1);
+			stop;
+		Splash:
+			BLOD A 0;
+			stop;
+	}
+}
+
+class PB_MuchBlood3 : NashGoreBloodBase
+{
+	states
+	{
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
+			TNT1 A 0 A_PlaySound("misc/xdeath4");
+			TNT1 AAAAAAAA 0 A_CustomMissile ("NashGoreBloodSpurt", 15, 0, random (0, 360), 2, random (0, 160));
+			TNT1 AAAAAA 0 A_CustomMissile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			TNT1 AAAAAAAAA 0 A_CustomMissile("PB_SquirtingBloodTrail", 0, 0, 180);
+			TNT1 AAA 0 A_CustomMissile ("NashGoreBloodParticle_Large", 0, 0, random (0, 360), 2, random (0, 160));
+			TNT1 AAAA 0 A_CustomMissile ("NashGoreBloodParticle2", 20, 0, random (0, 360), 2, random (30, 90));
+			stop;
+		Splash:
+			BLOD A 0;
+			stop;
+	}
+}
+
+
+class PB_Bloodmist : NashGoreBloodBase
+{
+	Default
+	{
+		decal "BrutalBloodSuper";
+		+MISSILE;
+		+NOTELEPORT;
+		+NOBLOCKMAP;
+		+NOBLOCKMONST;
+		+DONTSPLASH;
+		+CLIENTSIDEONLY;
+		+THRUACTORS;
+		scale 0.55;
+		radius 2;
+		height 2;
+		speed 8;
+		Gravity 0.4;
+		RenderStyle "Translucent";
+		alpha 0.9;
+	}
+	states
+	{
+		Spawn:
+			TNT1 A 0 A_Jump(128, "Spawn2", "Spawn3");
+			MSBL ABCDEFGH 2;
+			MSBL HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH 1 A_FadeOut(0.005);
+			Stop;
+		Spawn2:
+			MSBU ABCDEFGH 2;
+			MSBU HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH 1 A_FadeOut(0.005);
+			Stop;
+		Spawn3:
+			MSBZ ABCDEFGH 2;
+			MSBZ HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH 1 A_FadeOut(0.005);
+			Stop;
+		Death:
+			TNT1 A 0 A_Playsound("blooddrop");
+			TNT1 A 0 A_CheckFloor("Disappear");
+			MSBL HHHHHHHHHH 1 A_FadeOut(0.1);
+			Stop;
+		Disappear:
+			TNT1 A 2;
+			Stop;
+	}
+}
+
+
+class PB_BloodmistBig : PB_Bloodmist
+{
+	Default
+	{
+		scale 0.55;
+		speed 4;
+		GRAVITY 0.4;
+	}
+}
+
+class PB_BloodmistExtraSmall : PB_Bloodmist
+{
+	Default
+	{
+		scale 0.21;
+		Gravity 0.8;
+	}
+}
+
+class PB_BloodmistSmall : PB_Bloodmist
+{
+	Default
+	{
+		scale 0.31;
+		Gravity 0.8;
+	}
+}
+
+class PB_BloodmistExtraBig : PB_Bloodmist
+{
+	Default
+	{
+		scale 0.75;
+	}
+}
+
+
+class PB_BloodmistLarge : PB_Bloodmist
+{
+	Default
+	{
+		scale 0.53;
+	}
+}
+
+class PB_BloodmistXXBig : PB_Bloodmist
+{
+	Default
+	{
+		scale 0.92;
+		GRAVITY 0.2;
+	}
+}
+
+class GrowingBloodPool: NashGoreBloodPlane
+{
+	Default
+	{
+		radius 1;
+		height 1;
+		mass 1;
+		Health 600;
+		Alpha 0.99;
+		+NOTELEPORT;
+		+CLIENTSIDEONLY;
+		+FORCEXYBILLBOARD;
+		+MOVEWITHSECTOR;
+		+FLOORCLIP;
+		+MISSILE;
+		-DONTSPLASH;
+		+NEVERTARGET;
+		Scale 0.55;
+		Decal "BrutalBloodSplat";
+	}
+	states
+	{
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
+			TNT1 A 1 A_GiveInventory("TargetIsAMarine");
+			TNT1 A 0 ACS_ExecuteAlways(798, 0, 0, 0, 0);
+			TNT1 A 0 A_JumpIfInventory("IsOverWater", 1, "SpawnLiquid");
+			TNT1 A 0 A_JumpIfInventory("IsOverSlime", 1, "SpawnLiquid");
+			TNT1 A 0 A_JumpIfInventory("IsOverBlood", 1, "SpawnLiquid");
+			TNT1 A 0 A_JumpIfInventory("IsOverSludge", 1, "SpawnLiquid");
+			TNT1 A 0 A_JumpIfInventory("IsOverLava", 1, "Splash");
+			BPDL A 1;
+			BPDL ABCDEFGHIJKLMNOP 2;
+			BPDL QRSTUVWXYZ 2;
+			BPDL Z -1;
+			Stop;
+
+		Splash:
+			BLOD A 0;
+			stop;
+		
+		SpawnLiquid:
+			TNT1 A 0 A_SpawnItemEx ("WaterBloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			Stop;
+	}
+}
+
+
+class PB_BloodSpot : NashGoreBloodPlane replaces Brutal_BloodSpot // Temporary, until all monsters have the new PB_ classes
+{
+	Default
+	{
+		radius 1;
+		height 1;
+		mass 1;
+		Health 300;
+		+NOTELEPORT;
+		+CLIENTSIDEONLY;
+		+FORCEXYBILLBOARD;
+		+MOVEWITHSECTOR;
+		+FLOORCLIP;
+		+NOTARGET;
+		-SHOOTABLE;
+		+NOBLOOD;
+		+DONTSPLASH;
+		-SOLID;
+		+THRUACTORS;
+		+FlatSprite;
+		Alpha 0.9;
+		Mass 99999999;
+		Scale 0.5;
+		Decal "BrutalBloodSplat";
+		Renderstyle "Normal";
+		DamageFactor "TeleportRemover", 100.0;
+	}
+		states
+		{
+			Spawn:
+				TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
+				TNT1 A 1;
+				TNT1 A 0 ACS_ExecuteAlways(798, 0, 0, 0, 0);//Check Effects
+				TNT1 A 0 A_CheckFloor("SpawnNormally");
+				Goto Splash;
+
+			SpawnNormally:
+				TNT1 A 0 A_Jump(255, "SpawnBFrameOnly", "SpawnCFrameOnly", "SpawnDFrameOnly");
+			SpawnAFrameOnly:
+				BPDL A -1;
+				Stop;
+			SpawnBFrameOnly:
+				BPDL B -1;
+				Stop;
+
+			FadeA:
+				BPDL AAAA 1 A_FadeOut(0.05);
+				Stop;
+			FadeB:
+				BPDL BBBB 1 A_FadeOut(0.05);
+				Stop;
+
+			SpawnCFrameOnly:
+				BPDL C -1;
+				Stop;
+
+			SpawnDFrameOnly:
+				BPDL D -1;
+				Stop;
+
+			FadeC:
+				BPDL CCCC 1 A_FadeOut(0.05);
+				Stop;
+
+			FadeD:
+			BPDL DDDD 1 A_FadeOut(0.05);
+			Stop;
+
+			Splash:
+				BLOD A 0;
+				stop;
+				
+			Death:
+				TNT1 A 0 A_NoBlocking();
+				Stop;
+
+			IsOverLiquid:
+				BPDL E 1 A_FadeOut(0.9);
+				BPDL EEEEEEEEEEEEEEEEEEEE 4 A_FadeIn(0.05);
+				BPDL E 400;
+				BPDL EEEEEEEEEEEEEEEEEEEE 4 A_FadeOut(0.05);
+				Stop;
+		}
+}
+
+class PB_GiantBloodSpot: PB_BloodSpot
+{
+	Default
+	{
+	Scale 1.1;
+	}
+	States
+	{
+		SpawnNormally:
+			TNT1 A 1 ACS_ExecuteAlways(374);//Check Floortype
+			TNT1 A 0 A_JumpIfInventory("IsOverSlimy", 1, "Disappear");
+			TNT1 A 0 A_JumpIfInventory("IsOverWater", 1, "Disappear");
+			TNT1 A 0 A_JumpIfInventory("IsOverNukage", 1, "Disappear");
+			TNT1 A 0 A_JumpIfInventory("IsOverLava", 1, "Disappear");
+			TNT1 A 0 A_SetAngle(random(0,360));
+			TNT1 A 0 A_SetScale(frandom(1.05,1.11),frandom(1.05,1.1));
+			TNT1 A 0 A_Jump(255, "Spawn1", "Spawn2");
+			Spawn1:
+				BBSP D -1;
+				Stop;
+			Spawn2:
+				BBSP E -1;
+				Stop;
+	}
+}
+
+
+class PB_VeryGiantBloodSpot: PB_GiantBloodSpot
+{
+	Default
+	{
+		Scale 1.5;
+	}
+}
+
+class PB_BigBloodSpot: PB_BloodSpot
+{
+	Default
+	{
+		Scale 0.7;
+	}
+	States
+	{
+		SpawnNormally:
+				TNT1 A 1 ACS_ExecuteAlways(374);//Check Floortype
+				TNT1 A 0 A_JumpIfInventory("IsOverSlimy", 1, "Disappear");
+				TNT1 A 0 A_JumpIfInventory("IsOverWater", 1, "Disappear");
+				TNT1 A 0 A_JumpIfInventory("IsOverNukage", 1, "Disappear");
+				TNT1 A 0 A_JumpIfInventory("IsOverLava", 1, "Disappear");
+				TNT1 A 0 A_SetAngle(random(0,360));
+				TNT1 A 0 A_SetScale(frandom(0.66,0.72),frandom(0.66,0.72));
+				TNT1 A 0 A_Jump(255, "Spawn1", "Spawn2");
+			Spawn1:
+				BBSP D -1;
+				Stop;
+			Spawn2:
+				BBSP E -1;
+				Stop;
+	}
+}
+
+class PB_MediumBloodSpot: PB_GiantBloodSpot
+{
+	Default
+	{
+		Scale 0.4;
+	}
+	States
+	{
+		SpawnNormally:
+				TNT1 A 1 ACS_ExecuteAlways(374);//Check Floortype
+				TNT1 A 0 A_JumpIfInventory("IsOverSlimy", 1, "Disappear");
+				TNT1 A 0 A_JumpIfInventory("IsOverWater", 1, "Disappear");
+				TNT1 A 0 A_JumpIfInventory("IsOverNukage", 1, "Disappear");
+				TNT1 A 0 A_JumpIfInventory("IsOverLava", 1, "Disappear");
+				TNT1 A 0 A_SetAngle(random(0,360));
+				TNT1 A 0 A_SetScale(frandom(0.36,0.42),frandom(0.36,0.42));
+				TNT1 A 0 A_Jump(255, "Spawn1", "Spawn2");
+			Spawn1:
+				BBSP F -1;
+				Stop;
+			Spawn2:
+				BBSP G -1;
+				Stop;
+	}
+}
+
+class PB_MediumBloodSpot2: PB_GiantBloodSpot
+{
+	Default
+	{
+		Scale 0.41;
+	}
+ States
+ {
+	SpawnNormally:
+			TNT1 A 1 ACS_ExecuteAlways(374);//Check Floortype
+			TNT1 A 0 A_JumpIfInventory("IsOverSlimy", 1, "Disappear");
+			TNT1 A 0 A_JumpIfInventory("IsOverWater", 1, "Disappear");
+			TNT1 A 0 A_JumpIfInventory("IsOverNukage", 1, "Disappear");
+			TNT1 A 0 A_JumpIfInventory("IsOverLava", 1, "Disappear");
+			TNT1 A 0 A_SetAngle(random(0,360));
+			TNT1 A 0 A_SetScale(frandom(0.32,0.42),frandom(0.36,0.42));
+			TNT1 A 0 A_Jump(255, "Spawn1", "Spawn2");
+			TNT1 A 1;
+			Spawn1:
+				BBSP F -1;
+				Stop;
+			Spawn2:
+				BBSP G -1;
+				Stop;
+	}
+}
+
+Class PB_SplatteredSmall: PB_BloodSpot
+{
+	Default
+	{
+		scale 0.35;
+	}
+	states
+	{
+			SpawnNormally:
+				TNT1 A 1 ACS_ExecuteAlways(374);//Check Floortype
+				TNT1 A 0 A_JumpIfInventory("IsOverSlimy", 1, "Disappear");
+				TNT1 A 0 A_JumpIfInventory("IsOverWater", 1, "Disappear");
+				TNT1 A 0 A_JumpIfInventory("IsOverNukage", 1, "Disappear");
+				TNT1 A 0 A_JumpIfInventory("IsOverLava", 1, "Disappear");
+				TNT1 A 0 A_SetAngle(random(0,360));
+				TNT1 A 0 A_SetScale(frandom(0.33,0.42),frandom(0.33,0.42));
+				TNT1 A 0 A_Jump(255, "Spawn1", "Spawn2");
+				TNT1 A 1;
+			Spawn1:
+				BBSP D -1;
+				Stop;
+			Spawn2:
+				BBSP G -1;
+				Stop;
+
+	}
+}
+
+
+Class PB_SplatteredLarge: PB_BloodSpot
+{
+	Default
+	{
+		scale 0.72;
+	}
+	states
+	{
+				TNT1 A 1 ACS_ExecuteAlways(374);
+				TNT1 A 0 A_JumpIfInventory("IsOverSlimy", 1, "Disappear");
+				TNT1 A 0 A_JumpIfInventory("IsOverWater", 1, "Disappear");
+				TNT1 A 0 A_JumpIfInventory("IsOverNukage", 1, "Disappear");
+				TNT1 A 0 A_JumpIfInventory("IsOverLava", 1, "Disappear");
+				TNT1 A 0 A_SetAngle(random(0,360));
+				TNT1 A 0 A_SetScale(frandom(0.72,0.81),frandom(0.72,0.81));
+				TNT1 A 0 A_Jump(255, "Spawn1", "Spawn2");
+				TNT1 A 1;
+			Spawn1:
+				BBSP D -1;
+				Stop;
+			Spawn2:
+				BBSP G -1;
+				Stop;
+	}
+}
+
+
+Class PB_MinuscleBloodSpot: PB_BloodSpot
+{
+	Default
+	{
+		Scale 0.25;
+	}
+	States
+	{
+		SpawnNormally:
+			TNT1 A 1 ACS_ExecuteAlways(374);//Check Floortype
+			TNT1 A 0 A_JumpIfInventory("IsOverSlimy", 1, "Disappear");
+			TNT1 A 0 A_JumpIfInventory("IsOverWater", 1, "Disappear");
+			TNT1 A 0 A_JumpIfInventory("IsOverNukage", 1, "Disappear");
+			TNT1 A 0 A_JumpIfInventory("IsOverLava", 1, "Disappear");
+			TNT1 A 0 A_SetAngle(random(0,360));
+			TNT1 A 0 A_SetScale(frandom(0.22,0.26),frandom(0.22,0.26));
+			TNT1 A 0 A_Jump(255, "Spawn1", "Spawn2", "Spawn3");
+			TNT1 A 1;
+		Spawn1:
+			BBSP A -1;
+			Stop;
+		Spawn2:
+			BBSP B -1;
+			Stop;
+		Spawn3:
+			BBSP C -1;
+			Stop;
+	}
+}

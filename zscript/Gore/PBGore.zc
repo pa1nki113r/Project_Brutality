@@ -1,0 +1,2113 @@
+class PB_GibBase : Actor 
+{
+	Default 
+	{
+		Radius 10;
+		Height 10;
+		+CLIENTSIDEONLY;
+		+NOTELEPORT;
+		+MOVEWITHSECTOR;
+		+DONTSPLASH;
+		+NOBLOCKMONST;
+		-NOBLOCKMAP
+		+GHOST;
+		+THRUACTORS;
+		+FLOORCLIP;
+		+SLIDESONWALLS;
+		+FORCEXYBILLBOARD;
+		+NOTAUTOAIMED;
+		-SOLID;
+		+SHOOTABLE;
+		DamageFactor "CauseObjectsToSplash", 0.0;
+		DamageFactor "GibRemoving", 0.5;
+		damagefactor "Crush", 50.0;
+		damagefactor "Shrapnel", 100.0;
+		damagefactor "Plasma", 20.0;
+		damagefactor "Fire", 0.0;
+		damagefactor "TeleportRemover", 1000.0;
+		damagefactor "Blood", 0.0; 
+		damagefactor "GreenBlood", 0.0; 
+		damagefactor "BlueBlood", 0.0; 
+		damagefactor "Taunt", 0.0; 
+		damagefactor "KillMe", 0.0;
+		damagefactor "Avoid", 0.0; 
+		damagefactor "Taunt", 0.0;
+		damagefactor "Trample", 5000.0;
+		painchance 255;
+		Mass 1000;
+		Health 100;
+		BloodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
+	}
+	
+	override void BeginPlay(void)
+	{
+		ChangeStatNum(STAT_NashGore_Gore);
+		NashGoreStatics.QueueGore();
+		NashGoreStatics.RandomXFlip(self);
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay(void)
+	{
+		if (random() < (255 - nashgore_gibamount)) { Destroy(); return; }
+		Super.PostBeginPlay();
+	}
+
+	override void Tick(void)
+	{
+		Super.Tick();
+		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
+		if (NashGoreStatics.CheckSky(self)) { Destroy(); return; }
+	}
+	
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			Stop;
+		Death:
+			TNT1 AAAAAAA 0 A_SpawnProjectile ("PB_XDeathSkinPiece2", 5, 0, random (0, 360), 2, random (0, 160));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_XDeathSkinPiece1", 5, 0, random (0, 360), 2, random (0, 160));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SmallGib", 10, 0, random (0, 360), 2, random (10, 170));
+			TNT1 AA 0 A_SpawnProjectile ("NashGoreBlood", 10, 0, random (0, 360), 2, random (30, 90));
+			TNT1 AA 0 A_SpawnProjectile ("PB_XDeath1", 0, 0, random (0, 360), 2, random (0, 160));
+			Stop;
+		Death.plasma:
+			TNT1 A 0;
+			TNT1 A 0 A_XScream();
+			TNT1 A 0 A_NoBlocking();
+			TNT1 AAA 0 A_SpawnProjectile ("NashGoreBloodParticle_Large", 50, 0, random (0, 360), 2, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat", 32, 0, random (0, 360), 2, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat3", 32, 0, random (0, 360), 2, random (0, 160));
+			EXPL AAA 0 A_SpawnProjectile ("ExplosionSmoke", 32, 0, random (0, 360), 2, random (0, 360));
+			TNT1 A 0;
+			Stop;
+		Death.Trample:
+		Death.Crush:
+		Death.Stomp:
+		Death.SuperPunch:
+		Death.ExtremePunches:
+			 TNT1 AAA 0 A_SpawnProjectile ("PB_XDeath1", 5, 0, random (0, 360), 2, random (0, 30));
+			 TNT1 AAAA 0 A_SpawnProjectile ("NashGoreBlood", 5, 0, random (0, 360), 2, random (0, 30));
+			 TNT1 AAAAAAA 0 A_SpawnProjectile ("PB_XDeathSkinPiece2", 5, 0, random (0, 360), 2, random (10, 30));
+			 TNT1 AAAA 0 A_SpawnProjectile ("PB_XDeathSkinPiece1", 5, 0, random (0, 360), 2, random (10, 130));
+			 TNT1 AAAA 0 A_SpawnProjectile ("PB_SmallGib", 10, 0, random (0, 360), 2, random (10, 30));
+			 XME2 L 1;
+			 XME2 L -1;
+			 Stop;
+		Death.GibRemoving:
+		Death.TeleportRemover:
+			TNT1 A 0 {
+				A_ChangeFlag("NOCLIP", 1);
+				A_ChangeFlag("SHOOTABLE", 0);
+				A_ChangeFlag("NOBLOCKMAP", 1);
+				A_NoBlocking();
+			}
+			Stop;	 
+		Death.Desintegrate:
+			TNT1 A 0;
+			TNT1 AAAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 90));
+			TNT1 AA 0 A_SpawnProjectile ("PB_XDeath1", 0, 0, random (0, 360), 2, random (0, 160));
+			TNT1 AA 0 A_SpawnProjectile ("NashGoreBlood", 10, 0, random (0, 360), 2, random (30, 90));
+			Stop;
+		
+    }
+}
+
+class PB_TinyGibBase : Actor
+{
+	Default
+	{
+		Radius 2;
+		Height 8;
+		Speed 6;
+		Mass 1;
+		gravity 0.5;
+		Scale 0.8;
+		Decal "BrutalBloodSplat";
+		+MOVEWITHSECTOR;
+		+CLIENTSIDEONLY;
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+		+MISSILE;
+		+FORCEXYBILLBOARD;
+		+DONTSPLASH;
+		+NOBLOCKMONST;
+		seesound "bloood";
+		deathsound "bloood";
+		BloodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
+	}
+	
+	override void BeginPlay(void)
+	{
+		ChangeStatNum(STAT_NashGore_Gore);
+		NashGoreStatics.QueueGore();
+		NashGoreStatics.RandomXFlip(self);
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay(void)
+	{
+		if (random() < (255 - nashgore_gibamount)) { Destroy(); return; }
+		Super.PostBeginPlay();
+	}
+
+	override void Tick(void)
+	{
+		Super.Tick();
+		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
+		if (NashGoreStatics.CheckSky(self)) { Destroy(); return; }
+	}
+	
+    States
+    {
+    Spawn:
+        TNT1 A 1;
+		Loop;
+    }
+}
+
+class PB_LimbBase: PB_GibBase
+{   
+	Default
+	{
+		Radius 6;
+		Height 10;
+		Mass 1000;
+		Painchance 256;
+		Health 35;
+		+FORCEXYBILLBOARD;
+		+DONTSPLASH;
+		+SHOOTABLE;
+		-CLIENTSIDEONLY;
+		+NOBLOCKMONST;
+		+THRUACTORS;
+		+FLOORCLIP;
+		BloodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
+		damagefactor "Crush", 50.0;
+		DeathSound "misc/xdeath4";
+		damagefactor "Blood", 0.0;
+		damagefactor "GreenBlood", 0.0;
+		damagefactor "BlueBlood", 0.0;
+		damagefactor "Taunt", 0.0;
+		damagefactor "KillMe", 0.0;
+		damagefactor "Avoid", 0.0;
+		damagefactor "Taunt", 0.0;
+		damagefactor "Trample", 2.0;
+		damagefactor "Kick", 9.0;
+		damagefactor "Explosive", 0.1;
+		damagefactor "ExplosiveImpact", 9.1;
+		damagefactor "Shrapnel", 100.0;
+		damagefactor "Melee", 9.0;
+		damagefactor "SuperPunch", 9.0;
+		damagefactor "Plasma", 20.0;
+		painchance 255;
+	}
+	States    
+	{
+		Spawn:
+			TNT1 A 1900 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			Loop ;
+		Death:
+			TNT1 AAAAAAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+			TNT1 A 0 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			XDT3 BCDEFGH 3;
+		Death.Crush:
+			 TNT1 A 1 A_SpawnProjectile ("PB_XDeath1", 5, 5, random (0, 360), 2, random (0, 160));
+			 TNT1 A 0 A_SpawnProjectile ("PB_XDeath2", 5, 0, random (0, 360), 2, random (0, 160));
+			 TNT1 A 0 A_SpawnProjectile ("PB_XDeath3", 5, -5, random (0, 360), 2, random (0, 160));
+			 CRSB A 9009;
+			 Stop;
+	}
+}
+
+class PB_XDeath1 : Actor
+{
+	Default
+	{
+		Radius 8;
+		Height 8;
+		Speed 10;
+		Scale 1.2;
+		Mass 1;
+		+NOBLOCKMAP;
+		+MISSILE;
+		+NOTELEPORT;
+		+MOVEWITHSECTOR;
+		+CLIENTSIDEONLY;
+		+RIPPER;
+		+BLOODLESSIMPACT ;
+		-DONTSPLASH;
+		+THRUGHOST;
+		+THRUACTORS;
+		+FLOORCLIP;
+		damagetype "Blood";
+		SeeSound "misc/xdeath4";
+		DeathSound "misc/xdeath1";
+		Decal "BrutalBloodSuper";
+	}
+	
+	
+	override void BeginPlay(void)
+	{
+		ChangeStatNum(STAT_NashGore_Gore);
+		NashGoreStatics.QueueGore();
+		NashGoreStatics.RandomXFlip(self);
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay(void)
+	{
+		if (random() < (255 - nashgore_gibamount)) { Destroy(); return; }
+		Super.PostBeginPlay();
+	}
+
+	override void Tick(void)
+	{
+		Super.Tick();
+		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
+		if (NashGoreStatics.CheckSky(self)) { Destroy(); return; }
+	}
+	
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Underwater");
+			BLOD A 4 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			Loop;
+		Death:
+			TNT1 A 0 A_SpawnItem ("NashGoreBloodSpot", 0, 1);
+			TNT1 A 0 ACS_EXecuteAlways(373, 0, 0, 0, 0);
+			XDT1 EF 3;
+			TNT1 A 0 A_JumpIfInventory("IsOverWater", 1, "IsOverLiquid");
+			TNT1 A 0 A_JumpIfInventory("IsOverSlime", 1, "IsOverLiquid");
+			XDT1 GHIJKL 3;
+			
+			Stop;
+		 Underwater:
+		 Splash:
+			TNT1 A 0 ThrustThingZ (0,35,1,0);
+			XDT1 AB 3 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			TNT1 A 0 ThrustThingZ (0,35,1,0);
+			XDT1 CD 3 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			Loop;
+			
+		IsOverLiquid:
+		SpawnOnWater:
+			TNT1 A 1 A_SpawnItem ("WaterBloodSpot", 5);
+			Stop;
+    }
+}
+
+
+class PB_XDeath2: PB_XDeath1
+{
+	Default
+	{
+		Speed 10;
+		Gravity 0.4;
+		Scale 1.1;
+		DeathSound "misc/xdeath2";
+		Decal "BrutalBloodSuper";
+		+CLIENTSIDEONLY;
+		+DONTSPLASH;
+	}
+    States
+    {
+    Spawn:
+	    TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
+        XME1 ABCD 3 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+        Loop;
+    Death:
+        TNT1 AAAAAAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+	    TNT1 A 0 {
+			A_CheckFloor("SpawnFloor");
+			//A_SpawnItemEx ("DetectCeilBloodSimplerLarge",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			A_SpawnItemEx ("PB_DetectCeilXDeath2",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+		}
+		Stop;
+	SpawnFloor:
+		XME1 E 0 {
+			class<Actor> cls;
+			if (nashgore_bloodtype == 0)		cls = "NashGoreBloodSpot";
+			else if (nashgore_bloodtype == 1)	cls = "NashGoreBloodSpotClassic";
+			A_SpawnItemEx(cls, flags: (NashGoreBloodBase.BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 150);
+		}
+		XME1 EEEEEEEEEE 1 {
+			A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
+				0, 0, 0,
+				frandom(-4.0, 4.0), frandom(-4.0, 4.0), frandom(1.0, 4.0),
+				frandom(0, 360), NashGoreBlood.BLOOD_FLAGS, 175);
+		}
+		XME1 E -1;
+		Stop;
+    }
+}
+
+class PB_XDeath3: PB_XDeath2
+{
+	Default
+	{
+		SeeSound "misc/xdeath4";
+		DeathSound "misc/xdeath3";
+		Decal "BrutalBloodSuper";
+		Scale 1.1;
+		Speed 10;
+		Gravity 1.2;
+	}
+    States
+    {
+    Spawn:
+	    TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
+        XME2 ABCD 3 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+        Loop;
+    Death:
+        TNT1 AAAAAAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+	    TNT1 A 0 {
+			A_CheckFloor("SpawnFloor");
+			//A_SpawnItemEx ("DetectCeilBloodSimplerLarge",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			A_SpawnItemEx ("PB_DetectCeilXDeath2",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+		}
+		Stop;
+	SpawnFloor:
+		XME2 E 0 {
+			class<Actor> cls;
+			if (nashgore_bloodtype == 0)		cls = "NashGoreBloodSpot";
+			else if (nashgore_bloodtype == 1)	cls = "NashGoreBloodSpotClassic";
+			A_SpawnItemEx(cls, flags: (NashGoreBloodBase.BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 150);
+		}
+		XME2 EEEEEEEEEE 1 {
+			A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
+				0, 0, 0,
+				frandom(-4.0, 4.0), frandom(-4.0, 4.0), frandom(1.0, 4.0),
+				frandom(0, 360), NashGoreBlood.BLOOD_FLAGS, 175);
+		}
+		XME2 E -1;
+		Stop;
+    }
+}
+
+class PB_XDeath4: PB_XDeath2
+{
+	Default
+	{
+		SeeSound "misc/xdeath4";
+		DeathSound "misc/xdeath3";
+		Scale 1.1;
+		+DOOMBOUNCE;
+		BounceFactor 0.3;
+	}
+	
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
+			XME3 ABCDEFGH 3 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			Loop;
+		Death:
+			TNT1 A 0 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			TNT1 A 0 A_Jump(255, "Death1", "Death2");
+			GOto Death1;
+		
+		Death1:
+			XME3 GH 3;
+			XME3 A -1;
+			Stop;
+		Death2:
+			XME3 I 1;
+			XME3 I -1;
+			Stop;
+    }
+}
+
+// Smaller Gibs from Nash's base giblets
+class PB_SmallGib : PB_XDeath1
+{
+	Default
+	{
+		Radius 8;
+		Height 4;
+		Gravity 0.875;
+		BounceType 'Doom';
+		BounceFactor 0.5;
+		BounceSound "misc/xdeath1";
+		SeeSound "misc/xdeath4";
+		+MISSILE
+		+NOBLOCKMAP
+		+THRUACTORS
+		+NOTELEPORT
+		+CANBOUNCEWATER
+		+FLOORCLIP
+		+MOVEWITHSECTOR
+		+FORCEXYBILLBOARD
+		-SOLID
+	}
+
+	States
+	{
+		Spawn:
+			TNT1 A 0 NoDelay A_Jump(256, "Gib2", "Gib3", "Gib7", "Gib8", "Gib9");
+			Stop;
+		Gib2:
+			GIB2 A 0;
+			Goto SpawnLoop;
+		Gib3:
+			GIB3 A 0;
+			Goto SpawnLoop;
+		Gib7:
+			GIB7 A 0;
+			Goto SpawnLoop;
+		Gib8:
+			GIB8 A 0;
+			Goto SpawnLoop;
+		Gib9:
+			GIB9 A 0;
+			Goto SpawnLoop;
+		SpawnLoop:
+			"####" ABCD 3;
+			Loop;
+		Death:
+			"####" E 0 {
+				class<Actor> cls;
+				if (nashgore_bloodtype == 0)		cls = "NashGoreBloodSpot";
+				else if (nashgore_bloodtype == 1)	cls = "NashGoreBloodSpotClassic";
+				A_SpawnItemEx(cls, flags: (NashGoreBloodBase.BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 150);
+			}
+			"####" EEEEEEEEEE 1 {
+				A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
+					0, 0, 0,
+					frandom(-4.0, 4.0), frandom(-4.0, 4.0), frandom(1.0, 4.0),
+					frandom(0, 360), NashGoreBlood.BLOOD_FLAGS, 175);
+			}
+			"####" E -1;
+			Stop;
+	}
+}
+
+
+class PB_XDeathOrgan1: PB_XDeath1
+{
+	Default
+	{
+		SeeSound "misc/xdeath4";
+		DeathSound "misc/xdeath3";
+		Scale 0.9;
+		Speed 4;
+	}
+    States
+    {
+		Spawn:
+			XME8 A 4 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			Loop;
+		Death:
+			XME8 A -1;
+			Stop;
+    }
+}
+
+class PB_XDeathOrgan1b: PB_XDeathOrgan1
+{
+	Default
+	{
+		XScale -0.7;
+		YScale 0.5;
+	}
+}
+
+class PB_XDeathOrgan2: PB_XDeathOrgan1
+{
+	States
+	{
+		Spawn:
+			XME8 B 4 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			Loop;
+		Death:
+			XME8 B -1;
+			Stop;
+	}
+}
+
+class PB_XDeathGuts: PB_XDeath1
+{
+	Default
+	{
+		Scale 1.1;
+		SeeSound "misc/xdeath4";
+		DeathSound "misc/xdeath3";
+	}
+    States
+    {
+    Spawn:
+	    TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
+        XME4 AAAABBBBCCCCDDDD 2;
+        Loop;
+    Death:
+        TNT1 AAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+        XME4 E -1;
+        Stop;
+    }
+}
+
+class PB_XDeathSkinPiece1: PB_XDeath1
+{
+	Default
+	{
+		Radius 2;
+		Height 2;
+		Speed 10;
+		Scale 1.0;
+		Mass 1;
+		SeeSound "none";
+		DeathSound "none";
+		Mass 1;
+	}
+	
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			XSKI A 4;
+			Loop;
+		Death:
+			XSKI B 0 {
+				A_QueueCorpse();
+				class<Actor> cls;
+				if (nashgore_bloodtype == 0)		cls = "NashGoreBloodSpot";
+				else if (nashgore_bloodtype == 1)	cls = "NashGoreBloodSpotClassic";
+				A_SpawnItemEx(cls, flags: (NashGoreBloodBase.BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 150);
+			}
+			XSKI B 1 {
+				A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
+					0, 0, 0,
+					frandom(-4.0, 4.0), frandom(-4.0, 4.0), frandom(1.0, 4.0),
+					frandom(0, 360), NashGoreBlood.BLOOD_FLAGS, 175);
+			}
+			XSKI B -1;
+			Stop;
+    }
+}	
+
+
+class PB_XDeathSkinPiece2: PB_XDeath1
+{
+	Default
+	{
+		Radius 2;
+		Height 2;
+		Speed 10;
+		Scale 1.0;
+		Mass 1;
+		SeeSound "none";
+		DeathSound "none";
+		Mass 1;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			XSKI C 4;
+			Loop;
+		Death:
+			XSKI D 0 {
+				A_QueueCorpse();
+				class<Actor> cls;
+				if (nashgore_bloodtype == 0)		cls = "NashGoreBloodSpot";
+				else if (nashgore_bloodtype == 1)	cls = "NashGoreBloodSpotClassic";
+				A_SpawnItemEx(cls, flags: (NashGoreBloodBase.BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 150);
+			}
+			XSKI D 1 {
+				A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
+					0, 0, 0,
+					frandom(-4.0, 4.0), frandom(-4.0, 4.0), frandom(1.0, 4.0),
+					frandom(0, 360), NashGoreBlood.BLOOD_FLAGS, 175);
+			}
+			XSKI D -1;
+			Stop;
+	}
+}
+
+class PB_XDeathBurnedMeat : Actor
+{
+	Default
+	{
+		Radius 8;
+		Height 8;
+		Speed 5;
+		Mass 6;
+		BounceFactor 0.5;
+		+DOOMBOUNCE;
+		+NOBLOCKMAP;
+		+MISSILE;
+		+NOTELEPORT;
+		+DONTSPLASH;
+		+MOVEWITHSECTOR;
+	}
+	
+	override void BeginPlay(void)
+	{
+		ChangeStatNum(STAT_NashGore_Gore);
+		NashGoreStatics.QueueGore();
+		NashGoreStatics.RandomXFlip(self);
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay(void)
+	{
+		if (random() < (255 - nashgore_gibamount)) { Destroy(); return; }
+		Super.PostBeginPlay();
+	}
+
+	override void Tick(void)
+	{
+		Super.Tick();
+		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
+		if (NashGoreStatics.CheckSky(self)) { Destroy(); return; }
+	}
+	
+    States
+    {
+		Spawn:
+			CARB A 10 A_SpawnProjectile("PlasmaSmoke",0,0,180,2);
+			Loop;
+		Death:
+			CARB A 1 A_SpawnItem ("MicroSmokeColumnWide", 0, 1);
+			CARB A -1;
+			Stop;
+    }
+}
+
+class PB_XDeathBurnedMeat2 : PB_XDeathBurnedMeat
+{
+    States
+    {
+		Spawn:
+			CARB B 10 A_SpawnProjectile("PlasmaSmoke",0,0,180,2);
+			Loop;
+		Death:
+			CARB B 1 A_SpawnItem ("MicroSmokeColumnWide", 0, 1);
+			CARB B -1;
+			Stop;
+    }
+}
+
+class PB_XDeathBurnedMeat3 : PB_XDeathBurnedMeat
+{
+    States
+    {
+		Spawn:
+			CARB C 10 A_SpawnProjectile("PlasmaSmoke",0,0,180,2);
+			Loop;
+		Death:
+			CARB C 1 A_SpawnItem ("MicroSmokeColumnWide", 0, 1);
+			CARB C -1;
+			Stop;
+    }
+}
+
+class PB_XDeathBurnedArm : PB_XDeathBurnedMeat
+{
+    States
+    {
+		Spawn:
+			CARB D 10 A_SpawnProjectile("PlasmaSmoke",0,0,180,2);
+			Loop;
+		Death:
+			CARB D 1 A_SpawnItem ("MicroSmokeColumnWide", 0, 1);
+			CARB D -1;
+			Stop;
+    }
+}
+
+class PB_XDeathBurnedLeg : PB_XDeathBurnedMeat
+{
+    States
+    {
+		Spawn:
+			CARB E 10 A_SpawnProjectile("PlasmaSmoke",0,0,180,2);
+			Loop;
+		Death:
+			CARB E 1 A_SpawnItem ("MicroSmokeColumnWide", 0, 1);
+			CARB E -1;
+			Stop;
+    }
+}
+
+class PB_XDeathBurnedSkull : PB_XDeathBurnedMeat
+{
+    States
+    {
+		Spawn:
+			BURN B 10 A_SpawnProjectile("PlasmaSmoke",0,0,180,2);
+			Loop;
+		Death:
+			BURN B 1 A_SpawnItem ("MicroSmokeColumnWide", 0, 1);
+			BURN B -1;
+			Stop;
+    }
+}
+
+
+/////////////////
+//ARMS
+/////////////////
+
+
+class PB_XDeathArm1 : FlyingGibBase
+{
+	Default
+	{
+		Radius 8;
+		Height 8;
+		Scale 1.2;
+		Speed 8;
+		Mass 1;
+		gravity 0.5;
+		Decal "BrutalBloodSplat";
+		BounceFactor 0.4;
+		BounceCount 3;
+		+DOOMBOUNCE;
+		+MOVEWITHSECTOR;
+		+CLIENTSIDEONLY;
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+		+MISSILE;
+		+EXPLODEONWATER;
+		+SKYEXPLODE;
+		-DONTSPLASH;
+		seesound "bloood";
+		deathsound "bloood";
+	}
+	
+	override void BeginPlay(void)
+	{
+		ChangeStatNum(STAT_NashGore_Gore);
+		NashGoreStatics.QueueGore();
+		NashGoreStatics.RandomXFlip(self);
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay(void)
+	{
+		if (random() < (255 - nashgore_gibamount)) { Destroy(); return; }
+		Super.PostBeginPlay();
+	}
+
+	override void Tick(void)
+	{
+		Super.Tick();
+		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
+		if (NashGoreStatics.CheckSky(self)) { Destroy(); return; }
+	}
+	
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+		Fly:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			XARM AEBCFDG 5 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			Loop;
+		Death:
+			XDT5 I 1 {
+				A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+				A_SpawnItem("PB_GibArm");
+			}
+			Stop;
+    }
+}
+
+class PB_XDeathArm1Kicked: PB_XDeathArm1
+{
+	Default
+	{
+		+ACTIVATEMCROSS;
+		+ACTIVATEIMPACT;
+		+CANUSEWALLS;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_ChangeFlag("NOCLIP", 1);
+			XARM A 2 {
+				A_ChangeFlag("NOCLIP", 0);
+				A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			}
+		Flying:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			XARM ABCD 6 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			Loop;
+	}
+}
+
+class PB_GibArm: PB_LimbBase
+{
+	Default
+	{
+		Scale 1.2;
+	}
+    States
+    {
+		Spawn:
+			XDT5 I 1 A_SpawnItem ("NashGoreBloodSpot", 0, 1);
+		Rest:
+			XDT5 I -1;
+			Stop;
+		Death.plasma: 
+		Death.Burn: 
+		Death.Flames:	    
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-15, 15), random (-15, 15));
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-15, 15), random (-15, 15));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedArm", 2, 0, random (0, 360), 2, 270);  
+			Stop;
+		Death:    
+			TNT1 AAAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			TNT1 A 0 A_SpawnProjectile ("PB_GibHand", 0, 0, random (0, 180), 2, random (0, 180));
+			TNT1 A 0 A_SpawnProjectile ("PB_GibArmPart", 0, 0, random (0, 180), 2, random (0, 180));
+			Stop;
+		Death.Kick:
+		Death.Melee:
+		Death.SuperPunch:
+			XDT5 II 1 A_FaceTarget();
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathArm1Kicked", 5, 0, random (170, 190), 2, random (20, 40));
+			Stop;
+		Pain:
+			TNT1 A 0 ThrustThingZ(0,20,0,1);
+			XARM ABCD 3;
+			Goto Spawn;
+	
+		Death.ExplosiveImpact:
+			TNT1 A 0 {	
+				A_ChangeFlag("NOBLOCKMAP", 0);
+				ThrustThingZ(0,50,0,1);
+			}
+			XARM A 6;
+			XARM ABCDABCDABCD 6 A_CheckFloor("Landz");
+			Goto Landz;
+		Landz:
+			XDT5 I 0 A_SpawnItem("PB_GibArm");
+			Stop;
+	}
+}
+
+class PB_GibArmPart: PB_TinyGibBase
+{
+	Default
+	{
+		Scale 1.0;
+    }
+	States
+    {
+		Spawn:
+			XDT5 Z 1;
+		Death:
+			XDT5 Z -1;
+			Stop;
+	}
+}
+
+class PB_GibHand: PB_TinyGibBase
+{
+	Default
+	{
+		Scale 1.0;
+    }
+	States
+    {
+		Spawn:
+			XDT5 Y 1;
+		Death:
+			XDT5 Y -1;
+			Stop;
+	}
+}
+
+
+/////////////////////
+//LEGS
+/////////////////////
+
+class PB_XDeathZombieLeg: PB_XDeathArm1
+{
+	Default
+	{
+		Scale 1.1;
+		Speed 8;
+		Gravity 0.4;
+		BounceFactor 0.4;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+		Fly:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			LEG1 ABCDEFGH 5 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			Loop;
+		Death:
+			LEG1 E 1 A_SpawnItem("PB_GibZombieLeg1");
+			Stop;
+    }
+}
+
+class PB_GibZombieLeg1: PB_LimbBase
+{
+	Default
+	{
+		Scale 1.1;
+	}
+    States
+    {
+		Spawn:
+			LEG1 E 1 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			LEG1 E -1;
+			Stop;
+		Death.plasma:	    
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedLeg", 32, 0, random (0, 360), 2, random (0, 160));   
+			Stop;
+		Death:    
+			TNT1 AAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			TNT1 A 0 A_SpawnProjectile ("PB_GibZombieLegPart", 0, 0, random (0, 180), 2, random (0, 180));
+			TNT1 A 0 A_SpawnProjectile ("PB_GibZombieBoot", 0, 0, random (0, 180), 2, random (0, 180));
+			Stop;
+		Death.Kick:
+		Death.Melee:
+		Death.SuperPunch:
+			LEG1 E 1 {
+				A_FaceTarget();
+				A_SpawnProjectile ("PB_XDeathZombieLeg", 5, 0, random (170, 190), 2, random (20, 40));
+				}
+			Stop;
+		
+		Pain:
+			TNT1 A 0 ThrustThingZ(0,20,0,1);
+			LEG1 ABCDEFGH 2;
+			Goto Spawn;
+		
+		Death.ExplosiveImpact:
+			TNT1 A 0 A_ChangeFlag("NOBLOCKMAP", 0);
+			TNT1 A 0 ThrustThingZ(0,50,0,1);
+			LEG1 A 5;
+			LEG1 ABCDEFGHABCDEFGHABCDEFGH 5 A_CheckFloor("Landz");
+			Goto Landz;
+		Landz:
+			XDT5 I 0 A_SpawnItem("Gib_ZombieLeg2");
+			Stop;
+	}
+}
+
+class PB_GibZombieLegPart: PB_TinyGibBase
+{
+	Default
+	{
+		Scale 1.1;
+    }
+	States
+    {
+		Spawn:
+			LEG1 Z 1;
+		Death:
+			LEG1 Z -1;
+			Stop;
+	}
+}
+
+class PB_GibZombieBoot: PB_TinyGibBase
+{
+	Default
+	{
+		Scale 1.1;
+    }
+	States
+    {
+		Spawn:
+			LEG1 Y 1;
+		Death:
+			LEG1 Y -1;
+			Stop;
+	}
+}
+
+class PB_SmallBrainPiece : PB_TinyGibBase
+{
+	Default
+	{
+		Radius 2;
+		Height 2;
+		Speed 10;
+		Mass 1;
+		Scale 0.5;
+		Decal "BrutalBloodSuper";
+		+MISSILE;
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+		+THRUGHOST;
+		+THRUACTORS;
+		+CLIENTSIDEONLY;
+		+DONTSPLASH;
+		+MOVEWITHSECTOR;
+		-DONTSPLASH;
+		+FORCEXYBILLBOARD;
+		+FLOORCLIP;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0;
+			TNT1 A 0 A_Jump(32, "DoNothing");
+			TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0);
+		See:
+			XDB5 ABCD 3;
+			Loop;
+		Death:
+			TNT1 A 0;
+			TNT1 A 0 A_CheckFloor("Rest");
+			TNT1 A 0 A_SpawnItem("PB_DetectCeilBrain");
+			TNT1 A 2;
+			Stop;
+		
+		Rest:
+			TNT1 A 0 A_Jump(255, "Rest1", "Rest2");
+		Rest1:
+			XDT5 B -1;
+			Stop;
+		Rest2:
+			XDT5 O -1;
+			Stop;
+    }
+}
+class PB_SmallBrainPieceFast : PB_SmallBrainPiece
+{
+	Default
+	{
+		Speed 16;
+		Scale 0.65;
+	}
+}
+
+
+Class PB_DetectCeilBrain : PB_TinyGibBase
+{
+	Default
+	{
+		scale 0.4;
+		speed 0;
+		health 1;
+		radius 1;
+		height 1;
+		Gravity 0.0;
+		damage 0;
+		Renderstyle "Translucent";
+		Alpha 0.95;
+		DamageType "Blood";
+		+MISSILE;
+		+CLIENTSIDEONLY;
+		+NOTELEPORT;
+		+NOBLOCKMAP;
+		+FORCEXYBILLBOARD;
+		+NODAMAGETHRUST;
+		-DONTSPLASH;
+		+NOGRAVITY;
+   }
+	States
+	{
+		Spawn:
+			TNT1 A 0 ThrustThingZ(0,35,0,1);
+			TNT1 A 2;
+			TNT1 A 0 A_SpawnItem("PB_SmearingBrain");
+			Stop;
+		Death:
+			TNT1 A 0 A_CustomMissile ("PB_SmallBrainPiece", -15, 0, 90, 2, 90);
+			Stop;
+    }
+}
+
+Class PB_SmearingBrain : PB_TinyGibBase
+{
+	Default
+	{
+		Radius 2;
+		Height 2;
+		Speed 10;
+		Mass 1;
+		Scale 0.5;
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+		+THRUGHOST;
+		+CLIENTSIDEONLY;
+		+DONTSPLASH;
+		+MOVEWITHSECTOR;
+		-DONTSPLASH;
+		+FORCEXYBILLBOARD;
+		+QUARTERGRAVITY;
+	}
+    States
+    {
+	Spawn:
+		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 1);
+		TNT1 A 0 A_Jump(255, "Spawn1", "Spawn2", "Spawn3", "Spawn4");
+	Spawn1:
+		XDB5 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 A_CheckFloor("Rest");
+		Goto Death;
+	Spawn2:
+		XDB5 BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB 1 A_CheckFloor("Rest");
+		Goto Death;
+	
+	Spawn3:
+		XDB5 CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC 1 A_CheckFloor("Rest");
+		Goto Death;
+	
+	Spawn4:
+		XDB5 DDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD 1 A_CheckFloor("Rest");
+		Goto Death;
+	
+	Death:
+	Rest:
+	    TNT1 A 0 A_ChangeFlag("QUARTERGRAVITY", 0);
+		XDB5 A 2 ThrustThingZ(0,-2,0,1);
+		TNT1 A 0 A_CheckFloor("Sleep");
+		Loop;
+	Sleep:	
+	    XDT5 BBBBBBBBBBBBBBBBBB 2 ThrustThingZ(0,-2,0,1);
+        XDT5 B -1;
+        Stop;
+    }
+}
+
+class PB_Brains1 : PB_TinyGIbBase//Random bloody piece
+{
+	Default
+	{
+		Radius 2;
+		Height 2;
+		Speed 6;
+		Mass 1;
+		BounceFactor 0.4;
+		Scale 0.5;
+		+MISSILE;
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+		+CLIENTSIDEONLY;
+		+DONTSPLASH;
+		+MOVEWITHSECTOR;
+		+FLOORCLIP;
+	}
+    States
+    {
+		Spawn:
+			XDB5 DCBA 4;
+			Loop;
+		Death:
+			XDT5 C -1;
+			Stop;
+    }
+}
+
+class PB_Brains2 : PB_TinyGIbBase
+{
+	Default
+	{
+		Radius 2;
+		Height 2;
+		Speed 6;
+		Mass 1;
+		Decal "BrutalBloodSplat";
+		+CLIENTSIDEONLY;
+		BounceFactor 0.4;
+		Scale 0.9;
+		+DOOMBOUNCE;
+		+MISSILE;
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+		+DONTSPLASH;
+		+MOVEWITHSECTOR;
+		+FLOORCLIP;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BRIB ABCD 4;
+			Loop;
+		Death:
+		Rest:
+			TNT1 A 0 A_Jump(255, "Rest1", "Rest2");
+		Rest1:
+			BRIB A -1;
+			Stop;
+		Rest2:
+			BRIB C -1;
+			Stop;
+    }
+}
+
+class PB_Brains3 : PB_TinyGibBase //Eyeballs
+{
+	Default
+	{
+		Radius 2;
+		Height 2;
+		Speed 6;
+		Mass 1;
+		Decal "BrutalBloodSplat";
+		+CLIENTSIDEONLY;
+		BounceFactor 0.5;
+		+DOOMBOUNCE;
+		+MISSILE;
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+		+DONTSPLASH;
+		+MOVEWITHSECTOR;
+		+FLOORCLIP;
+		Scale 0.8;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			BRIB EFGH 4;
+			Loop;
+		Death:
+			BRIB E 1 A_Jump(255, "Rest1", "Rest2", "Rest3", "Rest4");
+		Rest1:
+			BRIB E -1;
+			Stop;
+		Rest2:
+			BRIB F -1;
+			Stop;
+		Rest3:
+			BRIB G -1;
+			Stop;
+		Rest4:
+			BRIB H -1;
+			Stop;
+    }
+}
+
+class PB_Brains4 : PB_TinyGibBase //White skinned piece 1
+{
+	Default
+	{
+		Radius 2;
+		Height 2;
+		Speed 6;
+		Mass 1;
+		Scale 0.9;
+		Decal "BrutalBloodSplat";
+		+CLIENTSIDEONLY;
+		BounceFactor 0.2;
+		+DOOMBOUNCE;
+		+NOBLOCKMAP;
+		+MISSILE;
+		+NOTELEPORT;
+		+DONTSPLASH;
+		+MOVEWITHSECTOR;
+		+FLOORCLIP;
+	}
+	
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BRIB IJKL 4;
+			Loop;
+		Death:
+			BRIN D -1;
+			Stop;
+    }
+}
+
+class PB_Brains4Blonde: PB_Brains4 //White skinned piece 1
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BR8B IJKL 4;
+			Loop;
+		Death:
+			BR8B I -1;
+			Stop;
+    }
+}
+
+class PB_Brains4BlondeBig: PB_Brains4 //White skinned piece 1
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BR8B ABCD 4;
+			Loop;
+		Death:
+			BR8B A -1;
+			Stop;
+    }
+}
+
+class PB_Brains5: PB_Brains4 //White skinned piece 2
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BRIB IJKL 4;
+			Loop;
+		Death:
+			BRIN E -1;
+			Stop;
+    }
+}
+
+class PB_Brains6: PB_Brains4 //White skinned piece 2
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BRIB MNOP 4;
+			Loop;
+		Death:
+			BRIN F -1;
+			Stop;
+    }
+}
+
+class PB_Brains6Big: PB_Brains6 //White skinned piece 2
+{
+	Default
+	{
+		Scale 1.8;
+	}
+}
+
+class PB_Brains7: PB_Brains4 //White skinned piece 2
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BRIB QRST 4;
+			Loop;
+		Death:
+			BRIN G -1;
+			Stop;
+    }
+}
+
+class PB_Brains7Big: PB_Brains7 //White skinned piece 2
+{
+	Default
+	{
+		Scale 1.8;
+	}
+}
+
+class PB_Brains4Green: PB_Brains4 //White skinned piece 1
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BR7B IJKL 4;
+			Loop;
+		Death:
+			BR7N D -1;
+			Stop;
+    }
+}
+
+class PB_Brains4GreenBig: PB_Brains4 //White skinned piece 1
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BR7B ABCD 4;
+			Loop;
+		Death:
+			BR7B A -1;
+			Stop;
+    }
+}
+
+class PB_Brains4Blue: PB_Brains4 //White skinned piece 1
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BR9B IJKL 4;
+			Loop;
+		Death:
+			BR9B I -1;
+			Stop;
+    }
+}
+
+class PB_Brains4BlueBig: PB_Brains4 //White skinned piece 1
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BR9B ABCD 4;
+			Loop;
+		Death:
+			BR9B A -1;
+			Stop;
+    }
+}
+
+class PB_Brains4Orange: PB_Brains4
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BR0B IJKL 4;
+			Loop;
+		Death:
+			BR0B I -1;
+			Stop;
+    }
+}
+
+class PB_Brains4OrangeBig: PB_Brains4 //White skinned piece 1
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BR0B ABCD 4;
+			Loop;
+		Death:
+			BR0B A -1;
+			Stop;
+    }
+}
+
+class PB_BrainsSergeantHeadPiece: PB_Brains4 //White skinned piece 1
+{
+	Default
+	{
+		Scale 1.0;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			BR7B EFGH 4;
+			Loop;
+		Death:
+			BR7B A -1;
+			Stop;
+    }
+}
+
+class PB_BrainsImpHeadPiece: PB_Brains4 //White skinned piece 1
+{
+	Default
+	{
+		Speed 2;
+		-DOOMBOUNCE;
+		Scale 1.0;
+	}
+    States
+    {
+    Spawn:
+	    TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+		TNT1 A 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+		BR7N E 4;
+		Loop;
+	Death:
+        BR7N E -1;
+        Stop;
+    }
+}
+
+class PB_BrainsSavageImpHeadPiece: PB_BrainsImpHeadPiece //White skinned piece 1
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			1HED AA 4 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			Loop;
+		Death:
+			1HED A -1;
+			Stop;
+    }
+}
+
+class PB_XDeathZombieManHead: PB_XDeathArm1
+{
+	Default
+	{
+		Radius 10;
+		Scale 1.0;
+	}
+    States
+    {
+		Spawn:
+		Spawn1:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_JumpIf(momz == 0, "Death");
+			TNT1 A 0 A_ChangeFlag("THRUSPECIES", 0);
+			XHE2 ABCDEFGH 3 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
+			Loop;
+		Death:
+			XHE2 E 1;
+			XHE2 E 1 A_SpawnItem("PB_ZombieManHead",0,0,0,1);
+			Stop;
+	}
+}
+
+class PB_ZombiemanHead: PB_LimbBase
+{
+	default
+	{
+		damagefactor "Kick", 99.0;
+		damagefactor "Melee", 99.0;
+		damagefactor "SuperPunch", 99.0;
+		damagefactor "Crush", 50.0;
+		Radius 10;
+		Mass 12;
+		Health 40;
+		Scale 1.1;
+		+SHOOTABLE;
+		+THRUACTORS;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0;
+			TNT1 A 0 A_Jump(256, "Spawn1", "Spawn2", "Spawn3");
+		Spawn1:
+			XHE2 C -1;
+			Stop;
+		Spawn2:
+			XHE2 G -1;
+			Stop;
+		Spawn3:
+			XHE2 H -1;
+			Stop;
+	
+		Death.Trample:
+		Death.Stomp:
+			TNT1 A 0; //A_GiveToTarget("BootsSmearedWithRedBlood", 6)
+			Goto Death;
+		Death:
+			TNT1 A 0;
+			TNT1 A 0 A_SpawnItem("ZombiemanHeadExplode");
+			Stop;
+		Crush:
+			TNT1 AAAAAAAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), 2, random (60, 140));
+			TNT1 A 0 A_PlaySound("misc/xdeath4");
+			CRS1 B 5;
+			CRS1 B -1;
+			Stop;
+		Death.plasma:
+			TNT1 A 0 A_SpawnProjectile ("XDeathBurnedSkull", 32, 0, random (0, 360), 2, random (0, 160));
+			EXPL A 0 A_SpawnProjectile ("ExplosionSmoke", 32, 0, random (0, 360), 2, random (0, 360));
+			Stop;
+		Death.Melee:
+		Death.SuperPunch:
+		Death.Kick:
+			XHE2 EE 1 A_FaceTarget();
+			TNT1 AAAA 0 A_SpawnItemEx("NashGoreBlood", 0, 0, 10);
+			TNT1 A 0 A_SpawnProjectile ("XDeathZombieManHeadKicked", 5, 0, random (170, 190), 2, random (20, 30));
+			TNT1 A 0 A_PlaySound("misc/xdeath4", 1);
+			TNT1 A 0 A_PlaySound("player/cyborg/fist", 3);
+			TNT1 A 20;
+			Stop;
+		
+		Pain:
+			TNT1 A 0;
+			TNT1 A 0 ThrustThingZ(0,20,0,1);
+			XHE2 ABCDEFGH 2;
+			Goto Spawn;
+		
+		Death.ExplosiveImpact:
+			TNT1 A 0;
+			TNT1 A 0 A_ChangeFlag("NOBLOCKMAP", 0);
+			TNT1 A 0 ThrustThingZ(0,50,0,1);
+			XHE2 ABCD 6;
+			XDT5 I 0 A_SpawnItem("ZombiemanHead");
+			Stop;
+	}
+}
+
+
+class PB_XDeathZombiemanHeadOnXDeath: PB_XDeathZombieManHead
+{
+	States
+	{
+		Spawn:
+			TNT1 A 1 A_jump(96, "ExplodeOnAir");
+			Goto Spawn1;
+		ExplodeOnAir:
+			TNT1 A 0 A_SpawnItem("PB_ZombiemanHeadExplode");
+			Stop;
+	}
+}
+
+
+class PB_Teeth : PB_TinyGibBase
+{
+	Default
+	{
+		Height 2;
+		Radius 2;
+		Speed 6;
+		Scale 0.15;
+		+DOOMBOUNCE;
+		-NOGRAVITY;
+		+WINDTHRUST;
+		+CLIENTSIDEONLY;
+		+MOVEWITHSECTOR;
+		+MISSILE;
+		+NOBLOCKMAP;
+		-DROPOFF;
+		+NOTELEPORT;
+		+FORCEXYBILLBOARD;
+		+NOTDMATCH;
+		+THRUACTORS;
+		+GHOST;
+   }
+   States
+   {
+	   Spawn:
+		  XTET ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 3;
+		  Stop;
+	   Death:
+			LCPJ A 0 A_Jump(256,"Rest1","Rest2");
+			Goto Rest1;
+		Rest1:
+			XTET C -1;
+			Stop;
+		Rest2:
+			XTET G -1;
+			Stop;
+   }
+}
+
+
+class PB_TeethNoBounce: PB_Teeth
+{
+	Default
+	{
+		-DOOMBOUNCE;
+	}
+}
+
+
+Class PB_Intestine : PB_TinyGibBase
+{
+	Default
+	{
+		Radius 8;
+		Height 12;
+		Speed 6;
+		Mass 1;
+		BounceFactor 0.4;
+		Renderstyle "Translucent";
+		Alpha 0.9;
+		+DOOMBOUNCE;
+		+NOBLOCKMAP;
+		+MISSILE;
+		+NOTELEPORT;
+		+MOVEWITHSECTOR;
+		+CLIENTSIDEONLY;
+		+FORCEXYBILLBOARD;
+		-EXPLODEONWATER;
+		DeathSound "misc/xdeath2";
+		Decal "BrutalBloodSplat";
+		Scale 0.8;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_Jump(256, "Spawn1", "Spawn2", "Spawn3", "Spawn4");
+		Spawn1:
+			GUTS A 4;
+			Loop;
+			
+		Spawn2:
+			GUTS B 4;
+			Loop;
+			
+		Spawn3:
+			GUTS C 4;
+			Loop;
+			
+		Spawn4:
+			GUTS D 4;
+			Loop;	
+	
+		Death:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Water");
+		Rest:
+			TNT1 A 0 A_SetAngle(random(0,360));
+			TNT1 A 0 A_ChangeFlag("FLATSPRITE", 1);
+			TNT1 A 0 A_Jump(255, "Rest1", "Rest2");
+		Rest1:
+			GUTS Y -1;
+			Stop;
+		Rest2:
+			GUTS Z -1;
+			Stop;
+		
+		Water:
+			TNT1 A 0 A_Jump(128, "Water2");
+		Water1:
+			GUTS GH 10;
+			Loop;
+		Water2:
+			GUTS IJ 10;
+			Loop;
+    }
+}
+
+class PB_Intestine2: PB_Intestine
+{
+	Default
+	{
+		Speed 3;
+	}
+}
+
+class PB_XDeathHalfZombieman : PB_GibBase
+{
+	Default
+	{
+		Radius 8;
+		Height 8;
+		Scale 1.0;
+		Speed 6;
+		Mass 4;
+		Decal "BrutalBloodSplat";
+		BounceFactor 0.2;
+		+DOOMBOUNCE;
+		+MISSILE;
+		+MOVEWITHSECTOR;
+		+CLIENTSIDEONLY;
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_SpawnItem("NashgoreBloodSpot",0,0,0,1);
+			POSX F 12;
+			Loop;
+		Death:
+			TNT1 A 0 A_SpawnItem("NashgoreBloodSpot",0,0,0,1);
+			POSX F 1 A_SpawnItem("PB_Gib_HalfZombieMan",0,0,0,1);
+			Stop;
+    }
+}
+
+Class PB_Gib_HalfZombieMan: PB_GibBase
+{
+    States
+    {
+		Spawn:
+			POSX F 1 A_SpawnItem("NashgoreBloodSpot",0,0,0,1);
+			POSX F -1;
+			Stop;
+	}
+}
+
+
+Class PB_RipZombieMan : PB_GibBase
+{
+	Default
+	{
+		Radius 1;
+		Height 1;
+		Scale 0.8;
+		Speed 0;
+		Mass 1;
+		Decal "BloodSuper";
+		BounceFactor 0.5;
+		+DOOMBOUNCE;
+		+MISSILE;
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+		+MOVEWITHSECTOR;
+		+NOGRAVITY;
+		+NOCLIP;
+		+DONTSPLASH;
+	}
+    States
+    {
+    Spawn:
+		TNT1 AAA 0 A_CustomMissile ("PB_BloodMist", 40, 0, random (0, 360), 2, random (0, 160));
+		TNT1 A 0 A_CustomMissile ("PB_XDeathHalfZombieMan", 32, 0, random (0, 360), 2, random (0, 160));
+		TNT1 AAAAAAAA 0 A_CustomMissile ("PB_Intestine", 32, 0, random (0, 360), 2, random (0, 160));
+	Death:
+	    TNT1 A 0;
+        Stop;
+    }
+}
+
+Class PB_DetectCeilXDeath2 : Actor
+{
+	Default
+	{
+		scale 0.4;
+		speed 0;
+		health 1;
+		radius 1;
+		height 1;
+		Gravity 0.0;
+		damage 0;
+		Renderstyle "Translucent";
+		Alpha 0.95;
+		DamageType "Blood";
+		+MISSILE;
+		+CLIENTSIDEONLY;
+		+NOTELEPORT;
+		+NOBLOCKMAP;
+		+FORCEXYBILLBOARD;
+		+NODAMAGETHRUST;
+		-DONTSPLASH;
+		+NOGRAVITY;
+   }
+	States
+    {
+		Spawn:
+			TNT1 A 0 ThrustThingZ(0,25,0,1);
+			TNT1 A 2;
+			TNT1 A 0 A_SpawnItem("PB_SmearingXDeath2", 0, -25);
+			Stop;
+		Death:
+			TNT1 A 0 A_CustomMissile ("PB_CeilXDeath2Checker", -15, 0, 90, 2, 90);
+			Stop;
+    }
+}
+
+
+class PB_SmearingXDeath2 : PB_GibBase
+{
+	Default
+	{
+		Radius 2;
+		Height 2;
+		Speed 10;
+		Mass 1;
+		Scale 1.0;
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+		+THRUGHOST;
+		+CLIENTSIDEONLY;
+		+DONTSPLASH;
+		+MOVEWITHSECTOR;
+		-DONTSPLASH;
+		+FORCEXYBILLBOARD;
+		+QUARTERGRAVITY;
+	}
+    States
+    {
+		Spawn:
+		TNT1 A 0 {
+			A_ChangeFlag("NOGRAVITY", 1);
+			A_Recoil(-25);
+		}
+		TNT1 A 0 A_Jump(255, "Spawn1", "Spawn2", "Spawn3", "Spawn4");
+		Goto Spawn1;
+		
+		Spawn1:
+			XME1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 1 A_CheckFloor("Rest");
+			Goto Death;
+		
+		Spawn2:
+			XME1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 1 A_CheckFloor("Rest");
+			Goto Death;
+		
+		Spawn3:
+			XME1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGG 1 A_CheckFloor("Rest");
+			Goto Death;
+		
+		Spawn4:
+			XME1 GGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGGgg 1 A_CheckFloor("Rest");
+			Goto Death;
+		
+		Death:
+			TNT1 A 0 A_SpawnItem("PB_XDeath2NoStick");
+			Stop;
+		Rest:
+			XME1 E 3 A_SpawnItem("NashgoreBloodSpot",0,0,0,1);
+			XME1 E -1;
+			Stop;
+    }
+}
+
+
+Class PB_XDeathHalfZombiemanNoArmNoHead : PB_GibBase
+{
+	Default
+	{
+		Radius 8;
+		Height 8;
+		Speed 10;
+		Gravity 0.7;
+		Mass 4;
+		Decal "BrutalBloodSplat";
+		BounceFactor 0.01;
+		+DOOMBOUNCE;
+		+MISSILE;
+		+MOVEWITHSECTOR;
+		+CLIENTSIDEONLY;
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+		Scale 1.3;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			POSX GHIJKLMN 4;
+			Loop;
+		Death:
+			TNT1 A 0 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			TNT1 AAA 0 A_SpawnItem("NashgoreBlood", 0, 5);
+			TNT1 A 0 A_SpawnItem("PB_Gib_HalfZombiemanNoArmNoHead",0,0,0,1);
+			Stop;
+    }
+}
+
+Class PB_Gib_HalfZombieManNoArmNoHead: PB_GibBase
+{
+	Default
+	{
+		Scale 1.3;
+	}
+    States
+    {
+		Spawn:
+			POSX O -1;
+			Stop;
+	}
+}
+	   
+
+
+
+Class PB_CeilXDeath2Checker: PB_GibBase
+{
+	Default
+	{
+		damagetype "Blood";
+		damage 0;
+		Radius 0;
+		Height 0;
+		Speed 400;
+		Gravity 0.0;
+		Decal "BrutalBloodSuper";
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
+			TNT1 A 4;
+			Stop;
+		Splash:
+			BLOD A 0;
+			stop;
+		Death:
+			TNT1 A 1 A_SpawnItem("PB_CeilXDeath2",0,0,0,1);
+			TNT1 A 5;
+			stop;
+		Xdeath:
+			TNT1 A 1;
+			Stop;
+    }
+}
+
+class PB_CeilXDeath2: PB_GibBase
+{
+	Default
+	{
+		+SPAWNCEILING;
+		+MOVEWITHSECTOR;
+		-DOOMBOUNCE;
+		+NOGRAVITY;
+		+DontSplash;
+		+MISSILE;
+		Scale 1.1;
+		Renderstyle "Normal";
+	}
+	states
+	{
+		Spawn:
+			Goto Crash;
+		Death:
+		Crash:
+			TNT1 A 0 A_Jump (255, "Live1", "Live2", "Live3");
+			Goto Live1;
+
+		Live1:
+			XME1 FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF 3 ThrustThingZ(0,35,0,1);
+			Goto Fall;
+
+		Live2:
+			XME1 FFFFFFFFFFFFFFFFFFFFFFFFFFFF 3 ThrustThingZ(0,35,0,1);
+			Goto Fall;
+
+		Live3:
+			XME1 FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF 3 ThrustThingZ(0,35,0,1);
+			Goto Fall;
+
+		Fall:
+			TNT1 A 0 A_SpawnItem("PB_XDeath2NoStick");
+			stop;
+		Splash:
+			BLOD A 0;
+			stop;
+	}
+}
+
+
+Class PB_XDeath2NoStick: PB_XDeath1
+{
+	Default
+	{
+		+CLIENTSIDEONLY;
+		+DONTSPLASH;
+		Speed 0;
+		Gravity 0.4;
+		DeathSound "misc/xdeath2";
+		Decal "BrutalBloodSplat";
+		Scale 1.1;
+		Radius 1;
+		Height 0;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
+			TNT1 A 0 A_CheckFloor("Death");
+			XME1 H 3;
+			Loop;
+		Death:
+			TNT1 AAAAAAA 0 A_CustomMissile ("NashGoreClassicBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+			XME1 E 1 A_SpawnItem("NashgoreBloodSpot",0,0,0,1);
+			XME1 E -1;
+			Stop;
+    }
+}
