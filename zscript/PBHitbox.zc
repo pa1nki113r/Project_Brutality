@@ -6,8 +6,8 @@ Class PB_HeadshotHitbox : Actor
 		{
 		Health 	0x7FFFFFFF;
 		Mass 	0x7FFFFFFF;
-		Renderstyle "Add";
-		Translation "t_hitbox";
+		//Renderstyle "Add";
+		//Translation "t_hitbox";
 		
 		
 		damagefactor "Taunt", 0.0;
@@ -35,9 +35,21 @@ Class PB_HeadshotHitbox : Actor
 		Radius 8;
 		Height 18;
 		BloodType "Brutal_Blood", "SawBlood", "SawBlood";
-		-COUNTKILL +NOTARGET +MISSILE
-		+NOGRAVITY +SHOOTABLE +NOTELEPORT -SOLID +NODAMAGETHRUST
-		+THRUGHOST +NORADIUSDMG +GHOST -COUNTKILL +NOTAUTOAIMED +DONTTHRUST
+		-COUNTKILL;
+		+NOTARGET;
+		+MISSILE;
+		+NOGRAVITY;
+		+SHOOTABLE;
+		+NOTELEPORT;
+		-SOLID;
+		+NODAMAGETHRUST;
+		+THRUGHOST;
+		+NORADIUSDMG;
+		+GHOST;
+		-COUNTKILL;
+		+NOTAUTOAIMED;
+		+DONTTHRUST;
+		+NEVERTARGET;
 
 		}
 	
@@ -62,14 +74,14 @@ Class PB_HeadshotHitbox : Actor
 				{
 				if(master.bNOBLOOD)
 					{ return; } 
-					master.A_SpawnItemEx("Blood",zofs: master.height * 0.8, xvel: frandom(2.0,3.0),zvel: frandom(4.0,8.0),angle: random(0,359),SXF_USEBLOODCOLOR);
+					master.A_SpawnItemEx("NashgoreBlood",zofs: master.height * 0.8, xvel: frandom(2.0,3.0),zvel: frandom(4.0,8.0),angle: random(0,359),SXF_USEBLOODCOLOR);
 					amount--;
 				}
 			}
 		}
 	
 	override void Tick()
-		{
+	{
 		
 		Super.Tick();
 													// special cvars control behaviour of the hitbox
@@ -86,27 +98,40 @@ Class PB_HeadshotHitbox : Actor
 			
 			
 		if (master)									// sets the hitbox radius to be just a fraction bigger 
-			{					
+		{					
 			if(radius != master.radius || height != master.height)
 				{ A_SetSize(master.radius+2, master.height/8);  } 
-				
-			A_Warp(AAPTR_MASTER,1,0,master.height - self.height,0,WARPF_INTERPOLATE|WARPF_COPYINTERPOLATION|WARPF_NOCHECKPOSITION);
 			
-			if(master.health < 1)
-				{ Destroy(); } 
+			A_Warp(AAPTR_MASTER,1,0,master.height - self.height,0,WARPF_INTERPOLATE|WARPF_COPYINTERPOLATION|WARPF_NOCHECKPOSITION);
 		
-			if(self.health < self.lastHealth)
-				{ 
-				hs_SpawnBlood(1);
-				A_DamageMaster((self.lastHealth - self.Health)*hsfactor,"head"); self.lasthealth = self.health;
+			if(master.health < 1) { Destroy(); } 
+		
+			if(self.health < self.lastHealth) { 
+				if (CheckInventory("HasCutingWeapon", 1, AAPTR_TARGET)){
+					hs_SpawnBlood(1);
+					A_DamageMaster((self.lastHealth - self.Health)*hsfactor,"Decapitate"); self.lasthealth = self.health;
+				}
+				if (CheckInventory("HasIncendiaryWeapon", 1, AAPTR_TARGET)){
+					hs_SpawnBlood(1);
+					A_DamageMaster((self.lastHealth - self.Health)*hsfactor,"Incinerate"); self.lasthealth = self.health;
+				}
+				if (CheckInventory("HasPlasmaWeapon", 1, AAPTR_TARGET)){
+					hs_SpawnBlood(1);
+					A_DamageMaster((self.lastHealth - self.Health)*hsfactor,"plasma"); self.lasthealth = self.health;
+				}
+				else {
+					hs_SpawnBlood(1);
+					A_DamageMaster((self.lastHealth - self.Health)*hsfactor,"head"); self.lasthealth = self.health;
 				}
 			}
 		}
+	}
 	
 	States
 		{
 		Spawn:
-			AMRK A 1;
+			//AMRK A 1;
+			TNT1 A 1;
 			loop;
 		Death:
 			TNT1 A 1;
@@ -122,8 +147,8 @@ Default
 	{
 	Health 	0x7FFFFFFF;
 	Mass 	0x7FFFFFFF;
-	Renderstyle "Add";
-	Translation "t_leghitbox";
+//	Renderstyle "Add";
+//	Translation "t_leghitbox";
 	
 	
 	damagefactor "Taunt", 0.0;
@@ -225,7 +250,8 @@ override void Tick()
 States
 	{
 	Spawn:
-		AMRK A 1;
+	//	AMRK A 1;
+		TNT1 A 1;
 		loop;
 	Death:
 		TNT1 A 1;
