@@ -1,0 +1,1732 @@
+class PlayerPawnBase : PlayerPawn
+{
+	bool IsTank;
+	Property IsTank : IsTank;
+	int tankdeathcounter;
+	int tankspritecounter;
+	TankBaseNotReal TankBaseSprite; //tank's fake sprite as the actor.
+	Actor TankTurretSprite;
+	string TankTurretSpriteActor;
+	Property TankTurretSpriteActor: TankTurretSpriteActor;
+	
+	
+	//////////////ZMovement 1.02/////////////////////
+	//Common
+	int		MovementType;
+	
+	//Movement vector
+	vector2	MoveVec;
+	vector2	PredictedVel;
+	int		MoveVecAngle;
+	double	StoredVelLength;
+	double	UserSpeedModifier;
+	
+	//Strafing
+	bool	StrafeRunning;
+	double 	MaximumGroundSpeed;
+	
+	//////////////////
+	
+	//Jumping
+	bool	Jumping;
+	bool 	BlockJump;
+	
+	//Double Jump
+	bool	CanDoubleJump;
+	bool	BlockDoubleJump;
+	
+	//Ramp Jumps
+	int		LastJumpTic;
+	double	OldFloor;
+	
+	//Elevator Jumps
+	int		OldSecIndex;
+	double	OldSecZ;
+	double	ElevatorJumpBoost;
+	bool	BoostGone;
+	
+	//////////////////
+	
+	//Dashing
+	bool	CanDash;
+	double	DashAngle;
+	bool	DashStarted;
+	int		DashCooler;
+	int		DashStartTime;
+	
+	//Crouch Slide
+	bool	CanSlide;
+	int		CSlideStartTime;
+	int		SlideCooler;
+	bool	CSlideStarted;
+	
+	//Vertical Flip
+	bool	NoJumpingWhileFlipping;
+	bool	SickFlipDude;
+	int		FlipSwitch;
+	bool	JustFlipped;
+	bool	NotRadicalBro;
+	bool	Realigned;
+	bool	RealignSwitch;
+	
+	//Bobbing
+	int		BobType;
+	bool	NoBob;
+	double	XBob;
+	double	YBob;
+	double	WalkBobMulti;
+	double	BobFactor;
+	double	XBobOffset;
+	bool	CenterAligned;
+	double	MoveFakeTime;
+	int		StillFakeTime;
+	
+	///////////////////////////////////
+	//Dusk Only
+	
+	//Movement Vector
+	double	RecoveryVelLength;
+	int		OldMoveVecAngle;
+	int		Penalizer;
+	int		PenalizerCounter;
+	double	FakeFriction;
+	int		OldInputTime;
+	
+	//Strafing
+	double	StrafeMulti;
+	
+	///////////////////////////////////
+	//Painkiller only
+	
+	//Movement Vector
+	vector2	StoredMoveVec;
+	int		GroundMoveVecAngle;
+	bool	WasHopping;
+	uint	SlowDowner;
+	double	VelToSlow;
+	bool	NoAirControl;
+	
+	//Jumping
+	bool 	FirstJump;
+	bool	SmallerJumpHeight;
+	double	TrickJumpAngle;
+	int		TrickJumpMoveAngle;
+	
+	///////////////////////////////////
+	//UT2004 only
+	
+	//Bobbing
+	bool	UTHoppingBob;
+	int		UTHoppingBobDeCounter;
+	bool	YAligned;
+	
+	Override void PlayerThink()
+	{
+		let player = self.player;
+		UserCmd cmd = player.cmd;
+			
+		Player.OnGround = Pos.Z <= FloorZ || bONMOBJ || bMBFBOUNCER || (Player.Cheats & CF_NOCLIP2);
+		
+		//Set some basic parameters
+		MovementType = sv_acceltype;
+		Jumping = (cmd.buttons & BT_JUMP) && !BlockJump;
+		Gravity = sv_setgravity;
+		
+		//Dashing cooler
+		if(DashCooler && DashCooler < sv_dashcooler)
+		{
+			DashCooler++;
+		}
+		else
+		{
+			DashCooler = 0;
+		}
+		
+		//Crouch slide cooler
+		if(SlideCooler && SlideCooler < sv_cslidecooler)
+		{
+			SlideCooler++;
+		}
+		else
+		{
+			SlideCooler = 0;
+		}
+		
+		//////////////////////////////////////////
+		//Painkiller / UT2004 bobbing counter
+		
+		if(BobType >= 2)
+		{
+			if(NoBob)
+			{
+				MoveFakeTime = 0;
+				StillFakeTime = 0;
+				XBob = 0;
+				YBob = 0;
+			}
+			else if((Player.OnGround && !Jumping) || (!player.jumptics && Pos.Z - GetZAt(0,0) <= 16))
+			{
+				if(UTHoppingBob)
+				{
+					if(!UTHoppingBobDeCounter) { UTHoppingBobDeCounter = CVar.GetCVar("ut_hopbobcooler", Player).GetInt(); }
+					UTHoppingBobDeCounter--;
+					
+					if(UTHoppingBobDeCounter == 0)
+					{
+						UTHoppingBob = False;
+						YAligned = False;
+					}
+				}
+				
+				if(cmd.sidemove || cmd.forwardmove)
+				{
+					if(!MoveFakeTime)
+						MoveFakeTime = randompick(9,25); //random chance to start bobbing left or right
+					else
+						MoveFakeTime += 1 * WalkBobMulti / MaximumGroundSpeed;	//no weird weapon warp when going from walking to running and viceversa
+					
+					StillFakeTime = 0;
+				}
+				else if(!cmd.sidemove && !cmd.forwardmove)
+				{
+					if(!StillFakeTime)
+						StillFakeTime = randompick(61,121); //random chance to start bobbing up or down
+					else
+						StillFakeTime++;
+						
+					MoveFakeTime = 0;
+				}
+			}
+			else
+			{
+				MoveFakeTime = 0;
+				StillFakeTime = 0;
+				UTHoppingBob = True;
+			}
+		}
+		
+		//////////////////////////////////////////
+		
+		CheckFOV();
+		
+		if (player.inventorytics)
+		{
+			player.inventorytics--;
+		}
+		CheckCheats();
+
+		if (bJustAttacked)
+		{
+			cmd.yaw = 0;
+			cmd.forwardmove = 0xc800/2;
+			cmd.sidemove = 0;
+			bJustAttacked = false;
+		}
+
+		bool totallyfrozen = CheckFrozen();
+		
+		CheckCrouch(totallyfrozen);
+		CheckMusicChange();
+
+		if (player.playerstate == PST_DEAD)
+		{
+			DeathThink ();
+			return;
+		}
+		
+		/////////////////////////////////////
+		//Jump Stuff
+		
+		//Double Jump
+		if(Player.OnGround) { CanDoubleJump = True; }
+		
+		//Regular Jumping && Ramp Jumps
+		if(player.jumpTics != 0)
+        {
+			if(WaterLevel || bNOGRAVITY)
+			{
+				player.jumpTics = 0;
+			}
+			else
+			{
+				player.jumpTics++;
+				
+				if(player.jumpTics > sv_rjumptics) { OldFloor = Pos.Z; }
+				
+				if(Player.OnGround)
+				{
+					LastJumpTic = player.jumpTics;
+					player.jumpTics = 0;
+				}
+			}
+		}
+		
+		//Elevators Jump Boost
+		
+		Sector 	Sec = CurSector;
+		int 	SecIndex = Sec.Index();
+		double	SecZ = GetZAt(0,0);
+		
+		if(Player.OnGround && SecIndex == OldSecIndex && SecZ > OldSecZ)
+		{
+			if(sv_elevatorjump)
+			{
+				ElevatorJumpBoost = (SecZ - OldSecZ) * sv_ejumpmultiplier;
+			}
+			else
+			{
+				BlockJump = True;
+			}
+		}
+		else
+		{
+			if(sv_elevatorjump)
+			{
+				ElevatorJumpBoost = 0;
+			}
+			else
+			{
+				BlockJump = False;
+			}
+		}
+			
+		OldSecZ = SecZ;
+		OldSecIndex = SecIndex;
+		
+		/////////////////////////////////////
+		
+		if (player.morphTics && !(player.cheats & CF_PREDICTING))
+		{
+			MorphPlayerThink ();
+		}
+
+		CheckPitch();
+		HandleMovement();
+		CalcHeight ();
+
+		if (!(player.cheats & CF_PREDICTING))
+		{
+			CheckEnvironment();
+
+			player.mo.CheckUse();
+			player.mo.CheckUndoMorph();
+			
+			player.mo.TickPSprites();
+			
+			if (player.damagecount)	player.damagecount--;
+			if (player.bonuscount) player.bonuscount--;
+
+			if (player.hazardcount)
+			{
+				player.hazardcount--;
+				if (!(Level.maptime % player.hazardinterval) && player.hazardcount > 16*TICRATE)
+					player.mo.DamageMobj (NULL, NULL, 5, player.hazardtype);
+			}
+			player.mo.CheckPoison();
+			player.mo.CheckDegeneration();
+			player.mo.CheckAirSupply();
+		}
+	}
+	
+	Override void CalcHeight()
+	{
+		let player = self.player;
+		UserCmd cmd = player.cmd;
+		double angle;
+		double bob;
+		bool still = false;
+
+		if (player.cheats & CF_NOCLIP2)
+		{
+			player.bob = 0;
+		}
+		else if (bNoGravity && !player.onground)
+		{
+			player.bob = 0.5;
+		}
+		else
+		{
+			if(BobType != 2 || (BobType == 2 && (cmd.sidemove || cmd.forwardmove || cmd.buttons && BT_CROUCH)))
+			{
+				player.bob = player.Vel dot player.Vel;
+			}
+			else if(BobType == 2)
+			{
+				player.bob *= 0.97 * (abs(player.bob) > 1);
+			}
+			
+			if (player.bob == 0)
+			{
+				still = true;
+			}
+			else
+			{
+				player.bob *= player.GetMoveBob();
+
+				if (player.bob > MAXBOB)
+					player.bob = MAXBOB;
+			}
+		}
+
+		double defaultviewheight = ViewHeight + player.crouchviewdelta;
+
+		if (player.cheats & CF_NOVELOCITY)
+		{
+			player.viewz = pos.Z + defaultviewheight;
+
+			if (player.viewz > ceilingz-4)
+				player.viewz = ceilingz-4;
+
+			return;
+		}
+
+		if (still)
+		{
+			if (player.health > 0)
+			{
+				angle = Level.maptime / (120 * TICRATE / 35.) * 360.;
+				bob = (!Waterlevel ? player.GetStillBob() * sin(angle) : 0);
+			}
+			else
+			{
+				bob = 0;
+			}
+		}
+		else
+		{
+			angle = Level.maptime / (20 * TICRATE / 35.) * 360.;
+			bob = player.bob * sin(angle) * (waterlevel > 1 ? 0.25f : 0.5f);
+		}
+
+		if (player.playerstate == PST_LIVE)
+		{
+			player.viewheight += player.deltaviewheight;
+
+			if (player.viewheight > defaultviewheight)
+			{
+				player.viewheight = defaultviewheight;
+				player.deltaviewheight = 0;
+			}
+			else if (player.viewheight < (defaultviewheight/2))
+			{
+				player.viewheight = defaultviewheight/2;
+				if (player.deltaviewheight <= 0)
+					player.deltaviewheight = 1 / 65536.;
+			}
+			
+			if (player.deltaviewheight)	
+			{
+				player.deltaviewheight += 0.25;
+				if (!player.deltaviewheight)
+					player.deltaviewheight = 1/65536.;
+			}
+		}
+
+		if (player.morphTics)
+		{
+			bob = 0;
+		}
+		
+		player.viewz = pos.Z + player.viewheight + (Player.OnGround && !Jumping ? bob * clamp(ViewBob, 0. , 1.5) : 0);
+			
+		if (Floorclip && player.playerstate != PST_DEAD
+			&& pos.Z <= floorz)
+		{
+			player.viewz -= Floorclip;
+		}
+		if (player.viewz > ceilingz - 4)
+		{
+			player.viewz = ceilingz - 4;
+		}
+		if (player.viewz < floorz + 4)
+		{
+			player.viewz = floorz + 4;
+		}
+	}
+	
+	Override void CheckJump()
+	{
+		let player = self.player;
+		
+		if(player.cmd.buttons & BT_JUMP)
+		{
+			if(FirstJump) { SmallerJumpHeight = True; }
+			
+			if (player.crouchoffset != 0)
+			{
+				player.crouching = 1;
+			}
+			else if(bNOGRAVITY || WaterLevel >= 2)
+			{
+				Vel.Z = clamp(Vel.Z + (12800 * GetFriction() * Speed / 256), 0, MaximumGroundSpeed * (bNOGRAVITY ? 1 : 0.5));
+			}
+			else if(!BlockJump && player.onground && !NoJumpingWhileFlipping)
+			{	
+				double jumpvelz = sv_jumpheight * 35 / TICRATE + ElevatorJumpBoost;
+				double jumpfac = 0;
+				
+				for (let p = Inv; p != null; p = p.Inv)
+				{
+					let pp = PowerHighJump(p);
+					if (pp)
+					{
+						double f = pp.Strength;
+						if (f > jumpfac) jumpfac = f;
+					}
+				}
+				if (jumpfac > 0) jumpvelz *= jumpfac;
+				
+				if(sv_rampjump && Pos.Z > OldFloor && LastJumpTic <= sv_rjumptics)
+				{
+					OldFloor = Pos.Z;
+					
+					if(MovementType)
+					{
+						Vel.Z += sv_rjumpmultiplier * (SmallerJumpHeight ? jumpvelz * pk_bhopjumpheight : jumpvelz);
+					}
+					else
+					{
+						Vel.Z += sv_rjumpmultiplier * jumpvelz;
+					}
+				}
+				else
+				{
+					if(MovementType)
+					{
+						Vel.Z = SmallerJumpHeight ? jumpvelz * pk_bhopjumpheight : jumpvelz;
+					}
+					else
+					{
+						Vel.Z = jumpvelz;
+					}
+				}
+				
+				bOnMobj = false;
+				Player.JumpTics = 1;
+				
+				if (!(player.cheats & CF_PREDICTING) && !WaterLevel)
+				{
+					if(CVar.GetCVar("cl_jumpsound", Player).GetInt())
+						A_PlaySound("PKJump", CHAN_BODY);
+					else
+						A_PlaySound("DSKJump", CHAN_BODY);
+				}
+				
+				if(!FirstJump) { FirstJump = True; }
+				
+				//If autojump is on set Blockjump false while jump key is pressed
+				BlockJump = sv_autojump ? False : True;
+				BlockDoubleJump = True;
+			}
+			else if(!Player.OnGround && CanDoubleJump && !BlockDoubleJump && ((sv_doublejump == 1 && Vel.Z > 0) || sv_doublejump == 2) && !bNOGRAVITY && !WaterLevel)
+			{
+				double doublejumpvelz = sv_jumpheight * sv_doublejumpheight * 35 / TICRATE ;
+				double jumpfac = 0;
+
+				for (let p = Inv; p != null; p = p.Inv)
+				{
+					let pp = PowerHighJump(p);
+					if (pp)
+					{
+						double f = pp.Strength;
+						if (f > jumpfac) jumpfac = f;
+					}
+				}
+				if (jumpfac > 0) doublejumpvelz *= jumpfac;
+				
+				Vel.Z = doublejumpvelz;
+				
+				bOnMobj = false;
+				player.jumpTics = 1;
+				
+				if (!(player.cheats & CF_PREDICTING))
+				{
+						A_PlaySound("JMPBOOT", CHAN_BODY);
+				}
+				
+				CanDoubleJump = False;
+			}
+		}
+		else
+		{
+			BlockJump = False;
+			BlockDoubleJump = False;
+		}
+	}
+	
+	Override void HandleMovement()
+	{
+		let player = self.player;
+		
+		// [RH] Check for fast turn around
+		if (player.cmd.buttons & BT_TURN180 && !(player.oldbuttons & BT_TURN180))
+		{
+			player.turnticks = TURN180_TICKS;
+		}
+
+		// Handle movement
+		if (reactiontime)
+		{ // Player is frozen
+			reactiontime--;
+		}
+		else
+		{
+			if(!MovementType)
+				DuskMovePlayer();
+			else
+				PainkillerMovePlayer();
+			
+			CheckJump();
+			CheckMoveUpDown();
+		}
+	}
+	
+	Override void CheckPitch()
+	{
+		let player = self.player;
+		
+		Bool FlipsEnabled = CVar.FindCvar("cl_flipsenabled").GetBool();
+		
+		if(JustFlipped) { JustFlipped = False; }
+
+		if(!Player.OnGround && FlipsEnabled && abs(Pitch) == 90)
+		{
+			Pitch == 90 ? 89 : -89;
+
+			Roll += 180;
+			Angle += 180;
+			
+			SickFlipDude = !SickFlipDude;
+			
+			JustFlipped = True;
+			
+			NoJumpingWhileFlipping = !NoJumpingWhileFlipping;
+		}
+		else if(Player.OnGround && SickFlipDude)
+		{
+			if(NotRadicalBro && Realigned)
+			{
+				SickFlipDude = False;
+				NotRadicalBro = False;
+				Realigned = False;
+				NoJumpingWhileFlipping = False;
+			}
+			else
+			{
+				if(!NotRadicalBro)
+				{
+					Pitch = Pitch <= 0 ? -90 : 90;
+					
+					RealignSwitch = Pitch < 0 ? True : False;
+					
+					Roll += 180;
+					Angle += 180;
+				}
+				
+				NotRadicalBro = True;
+				
+				if((RealignSwitch && Pitch >= -2) || (!RealignSwitch && Pitch <= 2))
+				Realigned = True;
+				
+				A_SetPitch(Pitch + 16 * (- Pitch / 90), SPF_INTERPOLATE);
+			}
+		}
+		
+		if(!NotRadicalBro)
+		FlipSwitch = SickFlipDude ? -1 : 1;
+		else
+		FlipSwitch = 1;
+		
+		Double FlipPitchMultiplier = SickFlipDude && !NotRadicalBro ? CVar.FindCvar("cl_flippitchmultiplier").GetFloat() : 1;
+		
+		Int clook = FlipPitchMultiplier * player.cmd.pitch;
+		if (clook != 0)
+		{
+			if (clook == -32768)
+			{
+				player.centering = true;
+			}
+			else if (!player.centering)
+			{
+				if(!NotRadicalBro)
+				{
+					if(!JustFlipped)
+						A_SetPitch(Pitch - FlipSwitch * clook * (360. / 65536.), SPF_INTERPOLATE);
+					else
+						A_SetPitch(Pitch - FlipSwitch * clook * (360. / 65536.));
+				}
+			}
+		}
+		
+		if (player.centering)
+		{
+			if (abs(Pitch) > 2.)
+			{
+				Pitch *= (2. / 3.);
+			}
+			else
+			{
+				Pitch = 0.;
+				player.centering = false;
+				if (PlayerNumber() == consoleplayer)
+				{
+					LocalViewPitch = 0;
+				}
+			}
+		}
+	}
+	
+	Override void CheckCrouch(bool totallyfrozen)
+	{
+		let player = self.player;
+		UserCmd cmd = player.cmd;
+
+		if (cmd.buttons & BT_JUMP)
+		{
+			cmd.buttons &= ~BT_CROUCH;
+		}
+		
+		if (CanCrouch() && player.health > 0)
+		{
+			if (!totallyfrozen)
+			{
+				int crouchdir = player.crouching;
+
+				if (crouchdir == 0)
+				{
+					crouchdir = (cmd.buttons & BT_CROUCH) ? -1 : 1;
+				}
+				else if (cmd.buttons & BT_CROUCH)
+				{
+					player.crouching = 0;
+				}
+					
+				if (crouchdir == 1 && player.crouchfactor < 1 && pos.Z + height < ceilingz)
+				{
+					CrouchMove(1);
+				}
+				else if (crouchdir == -1 && player.crouchfactor > 0.5)
+				{
+					CrouchMove(-1);
+				}
+			}
+		}
+		else
+		{
+			player.Uncrouch();
+		}
+
+		player.crouchoffset = -(ViewHeight) * (1 - player.crouchfactor);
+	}
+	
+	/*
+	Virtual void DuskMovePlayer()
+	{
+		Let Player = Self.Player;
+		UserCmd cmd = Player.cmd;
+		
+		if(Player.TurnTicks)
+		{
+			Player.TurnTicks--;
+			A_SetAngle(Angle + (180.0 / TURN180_TICKS), SPF_INTERPOLATE);
+		}
+		else if(!JustFlipped)
+		A_SetAngle(Angle + FlipSwitch * cmd.Yaw * (360.0 / 65536.0), SPF_INTERPOLATE);
+		else
+		A_SetAngle(Angle + FlipSwitch * cmd.Yaw * (360.0 / 65536.0));
+		
+		Double 	Friction, MoveFactor;
+		[Friction, MoveFactor] = GetFriction();
+
+		Bool	StrafeRunning = cmd.forwardmove && cmd.sidemove;
+		
+		Double	fm, sm;
+		[fm, sm] = TweakSpeeds(cmd.forwardmove, cmd.sidemove);
+		
+		MoveVec = (sm, fm);
+		
+		BobFactor = Friction < ORIG_FRICTION ? MoveFactor : ORIG_FRICTION_FACTOR;
+		
+		MaximumGroundSpeed = (sv_uspeedmodifier * 3) / 4 + 12;
+		
+		if(cmd.forwardmove || cmd.sidemove) { MoveVecAngle = atan2(MoveVec.X,MoveVec.Y); }
+		
+		////////////////////////////////////////////
+		
+		if((Player.OnGround && !Jumping) || Waterlevel || WasInWater || bNOGRAVITY || Dashed)
+		{
+			//Values Reset
+			StoredVelLength = MaximumGroundSpeed;
+			RecoveryVelLength = 0;
+			FakeFriction = 0;
+			
+			//Ground Speed and Strafing adjustements
+			UserSpeedModifier = (sv_uspeedmodifier * 0.9) / 10;
+			MoveVec *= 1.41 + UserSpeedModifier;
+			
+			Double StrafeModifier = dsk_strafemodifier / 100;
+			StrafeMulti = 0.81 + StrafeModifier;
+			
+			//Dashing
+			if(Dashed) { Dash(); }
+			
+			//Friction
+			if(bNOGRAVITY)
+				Vel *= 0.96; 
+			else
+				Vel.XY *= 0.92;
+		}
+		else if(!CrouchTimeHeld && !ContinueSlide)
+		{
+			StrafeMulti = 0.7072;
+			Int	HighSpeedLimiter = sv_topspeedlimiter;
+			
+			////////////////////////////////////////////
+			// Sudden mouse turns penalization
+				
+			if(!Penalizer)
+			{
+				if(abs(OldMoveVecAngle - MoveVecAngle) == 180)
+					Penalizer = 8;
+				else if(abs(cmd.Yaw) > 3640) //Angle variation of 20 in one tic
+					Penalizer = Vel.XY.Length() / 3;
+			}
+			else
+			{
+				if(PenalizerCounter < Penalizer)
+				{
+					PenalizerCounter++;
+				}
+				else
+				{
+					PenalizerCounter = 0;
+					Penalizer = 0;
+				}
+			}
+			
+			////////////////////////////////////////////
+			// Fake Friction
+			
+			if(Vel.XY.Length() > MaximumGroundSpeed)
+			{
+				if(MoveVecAngle != OldMoveVecAngle)
+				{
+					int NewInputTime = Level.MapTime;
+					Int AngleDifferential = OldMoveVecAngle - MoveVecAngle;
+					
+					if(AngleDifferential == 180)
+					{
+						FakeFriction = 0; //Player is already punished for its poor decision
+					}
+					else if((MoveVecAngle < -90 && OldMoveVecAngle > 90) || (MoveVecAngle > 90 && OldMoveVecAngle < -90))
+					{
+						Int TweakedMoveVecAngle;
+						Int TweakedAngleDifferential;
+						
+						TweakedMoveVecAngle = - MoveVecAngle;
+						TweakedAngleDifferential = OldMoveVecAngle - TweakedMoveVecAngle;
+						FakeFriction -= TweakedAngleDifferential;
+					}
+					else
+					{
+						if(abs(NewInputTime - OldInputTime) > 5)
+							FakeFriction += AngleDifferential;
+						else
+							FakeFriction = AngleDifferential;
+					}
+					
+					if(MoveVecAngle == 180 && OldMoveVecAngle < 0)
+					{
+						FakeFriction = abs(FakeFriction);
+					}
+					
+					OldInputTime = NewInputTime;
+				}
+			}
+			
+			////////////////////////////////////////////
+			// Speed Lock
+			
+			if(!Penalizer)
+			{
+				if(cmd.forwardmove && cmd.sidemove) { StoredVelLength += dsk_acceleration / 100 * (Vel.XY.Length() >= dsk_escapespeed ? dsk_accelbonus : 1); }
+				StoredVelLength = RecoveryVelLength ? RecoveryVelLength : clamp(StoredVelLength, MaximumGroundSpeed, HighSpeedLimiter - 2);
+				
+				PredictedVel = StoredVelLength * (cos(Angle - MoveVecAngle - FakeFriction), sin(Angle - MoveVecAngle - FakeFriction));
+				
+				if(FakeFriction)
+					FakeFriction *= 0.8 * (abs(FakeFriction) > 1); //fades away over time to simulate ground friction
+			}
+			
+			////////////////////////////////////////////
+			
+			if(Penalizer || (!cmd.forwardmove && !cmd.sidemove))
+			{
+				Vel.XY *= Penalizer ? 0.5 : 0.8;
+				if(!RecoveryVelLength) { RecoveryVelLength = (StoredVelLength * 3) / 4; }
+			}
+			else if(cmd.forwardmove || cmd.sidemove)
+			{
+				RecoveryVelLength = 0;
+				
+				if(Vel.XY.Length() < StoredVelLength - 4) { Vel.XY *= 1.1; }
+				else { Vel.XY = PredictedVel; }
+			}
+		}
+		
+		if((cmd.sidemove || cmd.forwardmove) && !Penalizer) { OldMoveVecAngle = MoveVecAngle; }
+		
+		///////////////////////////////////////////
+		//Crouch Slide
+		
+		CrouchSlide();
+		
+		///////////////////////////////////////////
+		
+		MoveVec *= MoveFactor * Speed / 256;
+		
+		///////////////////////////////////////////
+		// Water / Flying Code
+
+		if((WaterLevel || bNOGRAVITY) && Pitch != 0 && !Player.GetClassicFlight())
+		{
+			Double ZPush = MoveVec.Y * sin(-Pitch);
+			
+			If (!(WaterLevel != 0 && WaterLevel < 2 && ZPush > 0))
+			{
+				Vel.Z += ZPush;
+			}
+			
+			MoveVec.Y *= cos(Pitch);
+			
+			WasInWater = True;
+		}
+		
+		///////////////////////////////////////////
+		// Add to Velocity
+		
+		if(!Dashed && !((WaterLevel > 2 || bNOGRAVITY) && (cmd.buttons & BT_JUMP)))
+		{
+			Vel.XY +=  RotateVector(MoveVec * (Straferunning ? StrafeMulti : 1), Angle - 90);
+		}
+		
+		///////////////////////////////////////////
+		// Misc
+		
+		//Bobbing
+		if(cmd.forwardmove)
+		{
+			Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
+		}
+		if(cmd.sidemove)
+		{
+			Bob(Angle - 90, cmd.sidemove * bobfactor / 256., false);
+		}
+		
+		//Cheats Stuff
+		If (Player.Cheats & CF_PREDICTING == 0 && MoveVec.Length() != 0)
+		PlayRunning();
+		
+		If (Player.Cheats & CF_REVERTPLEASE != 0)
+		{
+			Player.Cheats &= ~CF_REVERTPLEASE;
+			Player.Camera = Player.Mo;
+		}
+	}
+	*/
+	
+	Virtual void DuskMovePlayer()
+	{
+		Let Player = Self.Player;
+		UserCmd cmd = Player.cmd;
+		
+		if(Player.TurnTicks)
+		{
+			Player.TurnTicks--;
+			A_SetAngle(Angle + (180.0 / TURN180_TICKS), SPF_INTERPOLATE);
+		}
+		else if(!JustFlipped)
+		A_SetAngle(Angle + FlipSwitch * cmd.Yaw * (360.0 / 65536.0), SPF_INTERPOLATE);
+		else
+		A_SetAngle(Angle + FlipSwitch * cmd.Yaw * (360.0 / 65536.0));
+		
+		Double 	Friction, MoveFactor;
+		[Friction, MoveFactor] = GetFriction();
+
+		Bool	StrafeRunning = cmd.forwardmove && cmd.sidemove;
+		
+		Double	fm, sm;
+		[fm, sm] = TweakSpeeds(cmd.forwardmove, cmd.sidemove);
+		
+		MoveVec = (sm, fm);
+		
+		BobFactor = Friction < ORIG_FRICTION ? MoveFactor : ORIG_FRICTION_FACTOR;
+		
+		MaximumGroundSpeed = (sv_uspeedmodifier * 3) / 4 + 12;
+		
+		if(cmd.forwardmove || cmd.sidemove) { MoveVecAngle = atan2(MoveVec.X,MoveVec.Y); }
+		
+		////////////////////////////////////////////
+		
+		if((!Player.OnGround || (Player.OnGround && Jumping)) && !DashStarted && !CSlideStarted && !WaterLevel)
+		{
+			StrafeMulti = 0.7072;
+			Int	HighSpeedLimiter = sv_topspeedlimiter;
+			
+			////////////////////////////////////////////
+			// Sudden mouse turns penalization
+				
+			if(!Penalizer)
+			{
+				if(abs(OldMoveVecAngle - MoveVecAngle) == 180)
+					Penalizer = 8;
+				else if(abs(cmd.Yaw) > 3640) //Angle variation of 20 in one tic
+					Penalizer = Vel.XY.Length() / 3;
+			}
+			else
+			{
+				if(PenalizerCounter < Penalizer)
+				{
+					PenalizerCounter++;
+				}
+				else
+				{
+					PenalizerCounter = 0;
+					Penalizer = 0;
+				}
+			}
+			
+			////////////////////////////////////////////
+			// Fake Friction
+			
+			if(Vel.XY.Length() > MaximumGroundSpeed)
+			{
+				if(MoveVecAngle != OldMoveVecAngle)
+				{
+					int NewInputTime = Level.MapTime;
+					Int AngleDifferential = OldMoveVecAngle - MoveVecAngle;
+					
+					if(AngleDifferential == 180)
+					{
+						FakeFriction = 0; //Player is already punished for its poor decision
+					}
+					else if((MoveVecAngle < -90 && OldMoveVecAngle > 90) || (MoveVecAngle > 90 && OldMoveVecAngle < -90))
+					{
+						Int TweakedMoveVecAngle;
+						Int TweakedAngleDifferential;
+						
+						TweakedMoveVecAngle = - MoveVecAngle;
+						TweakedAngleDifferential = OldMoveVecAngle - TweakedMoveVecAngle;
+						FakeFriction -= TweakedAngleDifferential;
+					}
+					else
+					{
+						if(abs(NewInputTime - OldInputTime) > 5)
+							FakeFriction += AngleDifferential;
+						else
+							FakeFriction = AngleDifferential;
+					}
+					
+					if(MoveVecAngle == 180 && OldMoveVecAngle < 0)
+					{
+						FakeFriction = abs(FakeFriction);
+					}
+					
+					OldInputTime = NewInputTime;
+				}
+			}
+			
+			////////////////////////////////////////////
+			// Speed Lock
+			
+			if(!Penalizer)
+			{
+				if(WaterLevel)
+				{
+					StoredVelLength = Vel.XY.Length();
+				}
+				else if(cmd.forwardmove && cmd.sidemove)
+				{
+					StoredVelLength += dsk_acceleration / 100 * (Vel.XY.Length() >= dsk_escapespeed ? dsk_accelbonus : 1);
+				}
+				
+				StoredVelLength = RecoveryVelLength ? RecoveryVelLength : clamp(StoredVelLength, MaximumGroundSpeed, HighSpeedLimiter - 2);
+				
+				PredictedVel = StoredVelLength * (cos(Angle - MoveVecAngle - FakeFriction), sin(Angle - MoveVecAngle - FakeFriction));
+				
+				if(FakeFriction)
+					FakeFriction *= 0.8 * (abs(FakeFriction) > 1); //fades away over time to simulate ground friction
+			}
+			
+			////////////////////////////////////////////
+			
+			if(Penalizer || (!cmd.forwardmove && !cmd.sidemove))
+			{
+				Vel.XY *= Penalizer ? 0.5 : 0.8;
+				if(!RecoveryVelLength) { RecoveryVelLength = (StoredVelLength * 3) / 4; }
+			}
+			else if(cmd.forwardmove || cmd.sidemove)
+			{
+				RecoveryVelLength = 0;
+				
+				if(Vel.XY.Length() < StoredVelLength - 4) { Vel.XY *= 1.1; }
+				else { Vel.XY = PredictedVel; }
+			}
+		}
+		else
+		{
+			//Values Reset
+			StoredVelLength = MaximumGroundSpeed;
+			RecoveryVelLength = 0;
+			FakeFriction = 0;
+			
+			//Ground Speed and Strafing adjustements
+			UserSpeedModifier = (sv_uspeedmodifier * 0.9) / 10;
+			MoveVec *= 1.41 + UserSpeedModifier;
+			
+			Double StrafeModifier = dsk_strafemodifier / 100;
+			StrafeMulti = 0.81 + StrafeModifier;
+			
+			//Dashing
+			if(CanDash) { Dash(); }
+			
+			//Friction
+			if(bNOGRAVITY)
+				Vel *= 0.96; 
+			else
+				Vel.XY *= 0.92;
+		}
+		
+		if((cmd.sidemove || cmd.forwardmove) && !Penalizer) { OldMoveVecAngle = MoveVecAngle; }
+		
+		///////////////////////////////////////////
+		//Crouch Slide
+		
+		if(sv_crouchslide) { CrouchSlide(); }
+		
+		///////////////////////////////////////////
+		
+		MoveVec *= MoveFactor * Speed / 256;
+		
+		///////////////////////////////////////////
+		// Water / Flying Code
+
+		if((WaterLevel || bNOGRAVITY) && Pitch != 0 && !Player.GetClassicFlight())
+		{
+			Double ZPush = MoveVec.Y * sin(-Pitch);
+			
+			If (!(WaterLevel != 0 && WaterLevel < 2 && ZPush > 0))
+			{
+				Vel.Z += ZPush;
+			}
+			
+			MoveVec.Y *= cos(Pitch);
+		}
+		
+		///////////////////////////////////////////
+		// Add to Velocity
+		
+		if(!CanDash && !((WaterLevel > 2 || bNOGRAVITY) && (cmd.buttons & BT_JUMP)))
+		{
+			Vel.XY +=  RotateVector(MoveVec * (Straferunning ? StrafeMulti : 1), Angle - 90);
+		}
+		
+		///////////////////////////////////////////
+		// Misc
+		
+		//Bobbing
+		if(cmd.forwardmove)
+		{
+			Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
+		}
+		if(cmd.sidemove)
+		{
+			Bob(Angle - 90, cmd.sidemove * bobfactor / 256., false);
+		}
+		
+		//Cheats Stuff
+		If (Player.Cheats & CF_PREDICTING == 0 && MoveVec.Length() != 0)
+		PlayRunning();
+		
+		If (Player.Cheats & CF_REVERTPLEASE != 0)
+		{
+			Player.Cheats &= ~CF_REVERTPLEASE;
+			Player.Camera = Player.Mo;
+		}
+	}
+	
+	Virtual void PainkillerMovePlayer()
+	{
+		Let Player = Self.Player;
+		UserCmd cmd = Player.cmd;
+		
+		if(Player.TurnTicks)
+		{
+			Player.TurnTicks--;
+			A_SetAngle(Angle + (180.0 / TURN180_TICKS), SPF_INTERPOLATE);
+		}
+		else if(!JustFlipped)
+		A_SetAngle(Angle + FlipSwitch * cmd.Yaw * (360.0 / 65536.0), SPF_INTERPOLATE);
+		else
+		A_SetAngle(Angle + FlipSwitch * cmd.Yaw * (360.0 / 65536.0));
+		
+		Double 	Friction, MoveFactor;
+		[Friction, MoveFactor] = GetFriction();
+		
+		Double	fm, sm;
+		[fm, sm] = TweakSpeeds(cmd.forwardmove, cmd.sidemove);
+		
+		if(cmd.forwardmove || cmd.sidemove) { MoveVecAngle = atan2(sm,fm); }
+		
+		if(Player.OnGround || WaterLevel || WaterLevel || bNOGRAVITY)
+		{
+			StoredMoveVec = (sm, fm);
+			GroundMoveVecAngle = MoveVecAngle;
+			StrafeRunning = cmd.forwardmove && cmd.sidemove;
+		}
+		
+		MoveVec = StoredMoveVec;
+		
+		BobFactor = Friction < ORIG_FRICTION ? MoveFactor : ORIG_FRICTION_FACTOR;
+		
+		MaximumGroundSpeed = (sv_uspeedmodifier * 3) / 4 + 12;
+		
+		/////////////////////////////////////////////////////////////////////////
+		
+		if((!Player.OnGround || (Player.OnGround && Jumping)) && !DashStarted && !CSlideStarted && !WaterLevel)
+		{
+			Int	HighSpeedLimiter = sv_topspeedlimiter;
+			
+			if(Player.OnGround) { NoAirControl = !cmd.sidemove && !cmd.forwardmove ? True : False; }
+			
+			if(Vel.XY.Length() > MaximumGroundSpeed) { WasHopping = True; }
+			
+			///////////////////////////////////////////
+			//Speed Lock
+			
+			if(!NoAirControl)
+			{
+				PredictedVel = StoredVelLength * (cos(Angle - GroundMoveVecAngle), sin(Angle - GroundMoveVecAngle));
+				
+				if(Player.OnGround && Jumping)
+				{
+					if(cmd.forwardmove && !cmd.sidemove)
+					{
+						//Trick jump failure penalty
+						if(abs(GroundMoveVecAngle - TrickJumpMoveAngle) == 180 && abs(Angle - TrickJumpAngle) < 90)
+						{
+							Vel.XY *= 0.5;
+							
+							StoredVelLength = Vel.XY.Length();
+							TrickJumpAngle = 0;
+						}
+						else //Regular forward movement
+						{
+							Vel.XY += (pk_acceleration - 1.0) * (cos(Angle - GroundMoveVecAngle), sin(Angle - GroundMoveVecAngle));
+							StoredVelLength = clamp(Vel.XY.length(), MaximumGroundSpeed, HighSpeedLimiter);
+						}
+					}
+					else if(cmd.sidemove) //when sidemove is pressed no speed gain
+					{
+						Vel.XY = PredictedVel;
+					}
+				}
+				else
+				{
+					if(Vel.Z > 0 && Vel.Z < 1) //Set the comparisons parameters for the trickjumps
+					{
+						TrickJumpAngle = Angle;
+						TrickJumpMoveAngle = MoveVecAngle;
+					}
+					
+					if(abs(GroundMoveVecAngle - MoveVecAngle) == 180) //if you try to 180 with directional keys you slow down
+					{
+						Vel.XY *= 0.5;
+						StoredVelLength = Vel.XY.Length();
+					}
+					else //All good keep going
+					{
+						Vel.XY = PredictedVel;
+					}
+				}
+			}
+			else //You let go the directional keys, you hopelessly hop into slow speed valley
+			{
+				MoveVec *= Level.AirControl;
+				Vel.XY *= 0.96;
+				StoredVelLength = Vel.XY.Length();
+			}
+		}
+		else
+		{
+			//Values Reset
+			if(FirstJump)
+			{
+				VelToSlow = Vel.XY.Length();
+				SmallerJumpHeight = False;
+				TrickJumpMoveAngle = 1000;	//impossible movement vector angle to avoid accidental failed trick jumps triggers
+				FirstJump = False;
+			}
+			
+			StoredVelLength = MaximumGroundSpeed;
+			
+			//Set Ground Speed
+			UserSpeedModifier = (sv_uspeedmodifier * 2.5) / 10;
+			MoveVec *= 3.86 + UserSpeedModifier;
+			
+			//Dashing
+			if(CanDash) { Dash(); }
+			
+			//Friction
+			if(WasHopping)
+			{
+				PKSlowDown();
+			}
+			else
+			{
+				if(bNOGRAVITY)
+					Vel *= 0.8;
+				else if(WaterLevel)
+					Vel *= 0.7; 
+				else
+					Vel.XY *= 0.6;
+			}
+		}
+		
+		///////////////////////////////////////////
+		
+		if(sv_crouchslide) { CrouchSlide(); }
+		
+		///////////////////////////////////////////
+		
+		MoveVec *= MoveFactor * Speed / 256;
+		
+		///////////////////////////////////////////
+		// Water / Flying Code
+		if((WaterLevel || bNOGRAVITY) && Pitch != 0 && !Player.GetClassicFlight())
+		{
+			Double ZPush = MoveVec.Y * sin(-Pitch);
+			
+			If (!(WaterLevel != 0 && WaterLevel < 2 && ZPush > 0))
+			{
+				Vel.Z += ZPush;
+			}
+			
+			MoveVec.Y *= cos(Pitch);
+		}
+		
+		///////////////////////////////////////////
+		// Add to Velocity
+		
+		if(!CanDash && !((WaterLevel > 2 || bNOGRAVITY) && (cmd.buttons & BT_JUMP)))
+		{
+			Vel.XY +=  RotateVector(MoveVec * (Straferunning ? 0.7072 : 1), Angle - 90);
+		}
+		
+		///////////////////////////////////////////
+		// Misc
+		
+		//Bobbing
+		if(cmd.forwardmove)
+		{
+			Bob(Angle, cmd.forwardmove * bobfactor / 256., true);
+		}
+		if(cmd.sidemove)
+		{
+			Bob(Angle - 90, cmd.sidemove * bobfactor / 256., false);
+		}
+		
+		//Cheats Stuff
+		If (Player.Cheats & CF_PREDICTING == 0 && MoveVec.Length() != 0)
+		PlayRunning();
+		
+		If (Player.Cheats & CF_REVERTPLEASE != 0)
+		{
+			Player.Cheats &= ~CF_REVERTPLEASE;
+			Player.Camera = Player.Mo;
+		}
+	}
+	
+	Virtual Void PKSlowDown()
+	{
+		UserCmd cmd = player.cmd;
+		
+		if(!cmd.forwardmove && !cmd.sidemove)
+		{
+			SlowDowner++;
+					
+			Double Slowdown = 0.6 + (VelToSlow - MaximumGroundSpeed - SlowDowner) / 50;
+			Vel.XY *= Slowdown;
+					
+			if(SlowDown <= 0.6) { WasHopping = False; SlowDowner = 0; }
+		}
+		else
+		{
+			WasHopping = False;
+		}
+	}
+	
+	Override double, double TweakSpeeds (double forward, double side)
+	{
+		Let Player = self.Player;
+		UserCmd cmd = player.cmd;
+		
+		// Strife's player can't run when its health is below 10
+		if (health <= RunHealth)
+		{
+			forward = clamp(forward, -gameinfo.normforwardmove[0]*256, gameinfo.normforwardmove[0]*256);
+			side = clamp(side, -gameinfo.normsidemove[0]*256, gameinfo.normsidemove[0]*256);
+		}
+
+		// [GRB]
+		if (abs(forward) < 0x3200)
+		{
+			forward *= ForwardMove1;
+		}
+		else
+		{
+			forward *= ForwardMove2;
+		}
+
+		if (abs(side) < 0x2800)
+		{
+			side *= Flipswitch * SideMove1;
+		}
+		else
+		{
+			side *= Flipswitch * SideMove2;
+		}
+		
+		Bool IsWalking = (CVar.GetCVar("cl_run", Player).GetBool() && (cmd.buttons & BT_SPEED)) || (!CVar.GetCVar("cl_run", Player).GetBool() && !(cmd.buttons & BT_SPEED));
+		
+		if(IsWalking && !(cmd.buttons & BT_CROUCH))
+		{
+			forward *= sv_walkspeed;
+			side *= sv_walkspeed;
+		}
+		else if(((cmd.buttons & BT_CROUCH) || CSlideStarted) && Level.MapTime > CSlideStartTime + sv_cslideduration)
+		{
+			forward *= min(sv_crouchspeed, sv_walkspeed);
+			side *= min(sv_crouchspeed, sv_walkspeed);
+			
+			BobFactor *= min(sv_crouchspeed, sv_walkspeed);
+		}
+
+		if (!player.morphTics)
+		{
+			double factor = 1.;
+			for(let it = Inv; it != null; it = it.Inv)
+			{
+				factor *= it.GetSpeedFactor ();
+			}
+			forward *= factor;
+			side *= factor;
+		}
+		return forward, side;
+	}
+	Virtual Void Dash()
+	{
+		Let Player = Self.Player;
+		UserCmd cmd = player.cmd;
+		
+		If(sv_dashenable && !DashCooler && !NoJumpingWhileFlipping && Player.OnGround && !CanDash && !Jumping && (cmd.forwardmove || cmd.sidemove) && !WaterLevel) { CanDash = True; }
+		
+		if(CanDash)
+		{
+			if(Player.OnGround && DashStarted && Level.MapTime > DashStartTime)
+			{
+				CanDash = False;
+				DashCooler = 1;
+				DashStarted = False;
+				A_TakeInventory("PlayerDashed");
+			}
+			else
+			{
+				if(!DashStarted)
+				{
+					double jumpvelz = sv_jumpheight * sv_dashjump * 35 / TICRATE;
+					double jumpfac = 0;
+					
+					DashAngle = Angle - atan2(MoveVec.X, MoveVec.Y);
+					
+					Vel.Z = jumpvelz;
+					
+					Player.JumpTics = 1;
+					bOnMobj = false;
+					
+					if (!(player.cheats & CF_PREDICTING))
+					{
+						A_PlaySound("JMPBOOT", CHAN_BODY);
+					}
+					
+					DashStarted = True;
+					
+					DashStartTime = Level.MapTime;
+				}
+				
+				A_GiveInventory("PlayerDashed");
+				Vel.XY = (MovementType ? 1.5 : 1) * sv_dashboost * MaximumGroundSpeed * (cos(DashAngle), sin(DashAngle));
+			}
+		}
+	}
+	
+	Virtual Void CrouchSlide()
+	{
+		Let Player = Self.Player;
+		UserCmd cmd = Player.cmd;
+			
+		if(WaterLevel)
+		{
+			CanSlide = False;
+		}
+		else if(Player.OnGround && Player.CrouchFactor == 1)
+		{
+			if(CSlideStarted)
+			{
+				CanSlide = False;
+				SlideCooler = 1;
+				CSlideStarted = False;
+				A_TakeInventory("CanSlideKick");
+			}
+			else if(!(cmd.buttons & BT_CROUCH) && !SlideCooler)
+			{
+				CanSlide = cmd.forwardmove || cmd.sidemove ? True : False;
+			}
+		}
+		
+		if(!Player.OnGround && CSlideStarted)
+		{
+			Vel.XY *= sv_cslideairpenalty;
+		}
+		else if(Player.OnGround && Player.CrouchFactor != 1 && CanSlide && CheckInventory("Kicking",1))
+		{
+			if(!CSlideStarted)
+			{
+				A_PlaySound("SlideKick/Start", 6);
+				A_GiveInventory("CanSlideKick");
+				CSlideStartTime = Level.MapTime;
+				CSlideStarted = True;
+			}
+			
+			if(Level.MapTime <= CSlideStartTime + sv_cslideduration)
+			{
+				MoveVec *= sv_cslidestrength;
+			}
+			else
+			{
+				CanSlide = False;
+			}
+		}
+	}
+	
+	// The rest of Project Brutality player class
+	Default
+	{
+		PlayerPawnBase.TankTurretSpriteActor "TankTurretNotReal";
+	}
+	void SpawnTankSprite()
+	{
+		if (TankBaseSprite) return;
+		TankBaseSprite = TankBaseNotReal(Spawn("TankBaseNotReal",self.pos + self.vel,ALLOW_REPLACE));
+		TankTurretSprite = Spawn(TankTurretSpriteActor,self.pos + self.vel,ALLOW_REPLACE);
+	}
+	void DestroyTankSprites()
+	{
+		TankBaseSprite.Destroy();
+		TankTurretSprite.Destroy();
+		TankBaseSprite = NULL;
+		TankTurretSprite = NULL;
+	}
+	void SetTankSpritePosition(int spritestate,double angle = 0)
+	{
+		if (TankBaseSprite != NULL)
+		{
+			TankBaseSprite.SetOrigin(self.pos + self.vel,true);
+			TankBaseSprite.spritestate = spritestate;
+			TankBaseSprite.angle = angle;
+		}
+	}
+	
+	void CheckTargetHitRegistration()
+	{
+		// Check the parent class the monster is derived from
+		//let target_ptr = AAPTR_PLAYER_GETTARGET;
+		if (CheckClass("PB_Monster", AAPTR_PLAYER_GETTARGET, TRUE)){
+			//A_Print("This is a PB Monster!!!"); // Debug code
+			A_GiveInventory("HeadshotToken", 1, AAPTR_PLAYER_GETTARGET);
+		}
+	}
+	
+	
+	
+	override void Die(Actor source, Actor inflictor, int dmgflags)
+	{
+		A_TakeInventory("CameraRunner",1);
+		Super.Die(source, inflictor, dmgflags);
+	}
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		if (!level.IsJumpingAllowed() || (player && player.mo && player.mo.JumpZ == 0)) A_GiveInventory("DoNotDoubleJump",1);
+	}
+	override void Tick()
+	{
+		Super.Tick();
+		
+		CheckTargetHitRegistration();
+		
+		//Screen Overlay Handlers
+		if (CheckInventory("RedBloodSplatterz",1)) {
+			A_TakeInventory("RedBloodSplatterz", 1);
+			A_Giveinventory("BloodOnVisor",1);
+			int selector = (random(0,1));
+			if (selector == 0){ACS_NamedExecute("RedBloodSplatter580", 0);}
+			if (selector == 1){ACS_NamedExecute("RedBloodSplatter580", 1);}
+		}
+		
+		if (CheckInventory("BlueBloodSplatterz",1)) {
+			A_TakeInventory("BlueBloodSplatterz", 1);
+			A_Giveinventory("BlueBloodOnVisor",1);
+			int selector = (random(0,1));
+			if (selector == 0){ACS_NamedExecute("BlueBloodSplatter583", 0);}
+		}
+		if (CheckInventory("GreenBloodSplatterz",1)) {
+			A_TakeInventory("GreenBloodSplatterz", 1);
+			A_Giveinventory("GreenBloodOnVisor",1);
+			int selector = (random(0,1));
+			if (selector == 0){ACS_NamedExecute("GreenBloodSplatter582", 0);}
+		}
+		if (CheckInventory("BloodSplasherz",1)) {
+			A_TakeInventory("BloodSplasherz", 1);
+			A_Giveinventory("BloodOnVisor",1);
+			int selector = (random(0,5));
+			if (selector == 0){ACS_Execute(580, 0, 0, 0, 0);}
+			if (selector == 1){ACS_Execute(581, 0, 0, 0, 0);}
+			if (selector == 2){ACS_Execute(582, 0, 0, 0, 0);}
+			if (selector == 3){ACS_Execute(583, 0, 0, 0, 0);}
+			if (selector == 4){ACS_Execute(584, 0, 0, 0, 0);}
+			if (selector == 5){ACS_Execute(585, 0, 0, 0, 0);}
+		}
+		if (CheckInventory("WaterSplasherz",1)) {
+			A_TakeInventory("WaterSplasherz", 1);
+			A_Giveinventory("WaterOnVisor",1);
+			int selector = (random(0,4));
+			if (selector == 0){ACS_Execute(550, 0, 0, 0, 0);}
+			if (selector == 1){ACS_Execute(551, 0, 0, 0, 0);}
+			if (selector == 2){ACS_Execute(552, 0, 0, 0, 0);}
+			if (selector == 3){ACS_Execute(554, 0, 0, 0, 0);}
+			if (selector == 4){ACS_Execute(555, 0, 0, 0, 0);}
+		}
+		if (CheckInventory("SlimeSplasherz",1)) {
+			A_TakeInventory("SlimeSplasherz", 1);
+			A_Giveinventory("SlimeOnVisor",1);
+			int selector = (random(0,5));
+			if (selector == 0){ACS_Execute(540, 0, 0, 0, 0);}
+			if (selector == 1){ACS_Execute(541, 0, 0, 0, 0);}
+			if (selector == 2){ACS_Execute(542, 0, 0, 0, 0);}
+			if (selector == 3){ACS_Execute(543, 0, 0, 0, 0);}
+			if (selector == 4){ACS_Execute(544, 0, 0, 0, 0);}
+			if (selector == 5){ACS_Execute(545, 0, 0, 0, 0);}
+		}
+		if (CheckInventory("SludgeSplasherz",1)) {
+			A_TakeInventory("SludgeSplasherz", 1);
+			A_Giveinventory("SludgeOnVisor",1);
+			int selector = (random(0,5));
+			if (selector == 0){ACS_Execute(5530, 0, 0, 0, 0);}
+			if (selector == 1){ACS_Execute(5531, 0, 0, 0, 0);}
+			if (selector == 2){ACS_Execute(5532, 0, 0, 0, 0);}
+			if (selector == 3){ACS_Execute(5533, 0, 0, 0, 0);}
+			if (selector == 4){ACS_Execute(5534, 0, 0, 0, 0);}
+			if (selector == 5){ACS_Execute(5535, 0, 0, 0, 0);}
+		}
+		
+		if (CheckInventory("LavaSplasherz",1)) {
+			A_TakeInventory("LavaSplasherz", 1);
+			A_Giveinventory("LavaOnVisor",1);
+			int selector = (random(0,5));
+			if (selector == 0){ACS_NamedExecute("LavaScreenSplash550", 0);}
+			if (selector == 1){ACS_NamedExecute("LavaScreenSplash551", 0);}
+			if (selector == 2){ACS_NamedExecute("LavaScreenSplash552", 0);}
+			if (selector == 3){ACS_NamedExecute("LavaScreenSplash553", 0);}
+			if (selector == 4){ACS_NamedExecute("LavaScreenSplash554", 0);}
+			if (selector == 5){ACS_NamedExecute("LavaScreenSplash555", 0);}
+		}
+		
+		if (IsTank && !(health <= 0))
+		{
+			if (TankTurretSprite != NULL)
+			{
+				//TankTurretSprite.Tics = -1;
+				TankTurretSprite.A_Setangle(self.angle,SPF_INTERPOLATE);
+				TankTurretSprite.SetOrigin(self.pos + self.vel,true);
+				TankTurretSprite.bINVISIBLE = false;
+			}
+			if (health < 500)
+			{
+				A_SpawnProjectile ("BigNeoSmoke", 0, 0, random (0, 360), 2, -random (0, 360));
+				A_SpawnProjectile ("ExplosionSmoke", 0, 0, random (0, 360), 2, -random (0, 360));
+			}
+			if (health < 350)
+			{
+				A_SpawnProjectile ("BigNeoSmoke", 0, 0, random (0, 360), 2, -random (0, 360));
+				A_SpawnProjectile ("ExplosionSmoke", 0, 0, random (0, 360), 2, -random (0, 360));
+			}
+			if (Health < 200)
+			{
+				A_SpawnProjectile ("BigBlackSmoke", 40, 0, random (0, 360), 2, -random (40, 160));
+			}
+			if (health < 30)
+			{
+				A_SpawnProjectile ("FlameThrowerFireParticles", 0, 0, random (0, 360), 2, -random (0, 360));
+				A_Playsound("BDFireplace2", 1, 1, 1);
+				tankdeathcounter += 1;
+				if (tankdeathcounter >= (35 * 5))
+				{
+					tankdeathcounter = 0;
+					A_Die();
+				}
+			}
+		}
+	}
+}
+
+
+
+//Edit of a SpeedOMeter from Gutawer
+Class Speedometer : EventHandler
+{
+	override void renderOverlay(RenderEvent e)
+	{
+		if(CVar.FindCVar("cl_speedometer").GetBool())
+		{
+			let scalevec = statusbar.GetHUDScale();
+			Vector2 scaler = (1 / scalevec.x, 1 / scalevec.y);
+			Vector2 screenSize = (Screen.GetWidth() * scaler.x, Screen.GetHeight() * scaler.y);
+		
+			Vector2 drawPos = (-12 * (screenSize.x / 320), 106 * (screenSize.y / 200));
+		
+			Actor mo = players[consoleplayer].mo;
+		
+			if (mo != NULL)
+			Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y, String.format("%f", mo.Vel.XY.length()), DTA_HUDRules, true);
+		}
+	}
+}
+
+Class DashHandler : EventHandler
+{
+    Override Void NetworkProcess(ConsoleEvent e)
+    {
+        If(e.Player >= 0 && PlayerInGame[e.Player] && Players[e.Player].Mo)
+        {
+            If (e.Name == "Dash")
+            {
+                Let DashPlayer = PlayerPawnBase(Players[e.Player].Mo);
+                If(DashPlayer)
+                {
+                    DashPlayer.Dash();
+                }
+            }
+        }
+    }
+}
