@@ -1,3 +1,128 @@
+class PB_PDAWeapTextContainer
+{
+	string PDAWeaponText;
+	string PDAWeaponHeader;
+	string PDAWeaponExtraText;
+	string PDAWeaponTextVSize, PDAWeaponTextHSize;
+	string PDAWeapClassName;
+	bool found;
+}
+class PB_PDAWeaponContainer : Inventory
+{
+	Array<String> PDAWeaponExtraTexts;
+	Array<String> PDAWeaponHeaders;
+	Array<String> PDAWeaponTexts;
+	Array<String> PDAMonsterTexts;
+	Array<String> PDAMonsterStrings;
+	Array<String> PDAWeaponStrings;
+	Array<Double> PDAWeaponTextVSize,PDAWeaponTextHSize;
+	Array<String> CollectedWeapons;
+	Array<PB_PDAWeapTextContainer> pdaWeapTextArray;
+	int largestStringWidth;
+	Default
+	{
+		+INVENTORY.UNDROPPABLE
+		Inventory.PickupMessage "You got the PDA!";
+	}
+	override void AttachToOwner(Actor other)
+	{
+		Super.AttachToOwner(other);
+		InitializePDATexts();
+	}
+	void InitializePDATexts()
+	{
+		int lump = Wads.FindLump("PDAMONST");
+		string stuff = Wads.ReadLump(lump);
+		stuff.Split(PDAMonsterStrings,",");
+		int weaplump = Wads.FindLump("PDAWEAP");
+		string weapstuff = Wads.ReadLump(weaplump);
+		weapstuff.Split(PDAWeaponStrings,",");
+		int weaptlump = Wads.FindLump("PDAWEAPT");
+		string weaptstuff = Wads.ReadLump(weaptlump);
+		Array<String> weaptstrings;
+		Array<String> initialweaptstrings;
+		weaptstuff.Split(initialweaptstrings,"#");
+		for (int splitCounter = 0; splitcounter < initialweaptstrings.Size(); splitcounter++)
+		{
+			initialweaptstrings[splitCounter].Split(weaptstrings,"$");
+		}
+		int forcounter = 1;
+		int iii = 0;
+		string PDAWeaponHeader;
+		string PDAWeaponText;
+		string PDAWeapClassName;
+		string PDAWeapExtraText;
+		for (iii = 0; iii < weaptstrings.Size(); iii++)
+		{
+			if (forcounter == 4)
+			{
+				PDAWeaponExtraTexts.Push(weaptstrings[iii]);
+				PDAWeapExtraText = weaptstrings[iii];
+				forcounter = 0;
+				let pdaTextContainer = new("PB_PDAWeapTextContainer");
+				pdaTextContainer.PDAWeaponExtraText = PDAWeapExtraText;
+				pdaTextContainer.PDAWeaponText = PDAWeaponText;
+				pdaTextContainer.PDAWeapClassName = PDAWeapClassName;
+				pdaTextContainer.PDAWeaponHeader = PDAWeaponHeader;
+				pdaTextContainer.found = false;
+				pdaWeapTextArray.Push(pdaTextContainer);
+			}
+			else if (forcounter == 3)
+			{
+				PDAWeapClassName = weaptstrings[iii];
+				weaptstrings[iii].Replace("\n","");
+				EventHandler.SendNetworkEvent("addweaponclass:"..weaptstrings[iii]);
+			}
+			else if (forcounter == 2)
+			{
+				PDAWeaponText = weaptstrings[iii];
+				PDAWeaponTexts.Push(weaptstrings[iii]);
+			}
+			else if (forcounter == 1)
+			{
+				weaptstrings[iii].Replace("\n","");
+				PDAWeaponHeader = weaptstrings[iii];
+				PDAWeaponHeaders.Push(weaptstrings[iii]);
+			}
+			++forcounter;
+		}
+		BrokenLines WeaponTextLines, WeaponExtraTextLines;
+		string NewWeaponText;
+		font breaklinefont = SmallFont;
+		largestStringWidth = 0;
+		string NewWeaponExtraText;
+		for (iii = 0; iii < PDAWeaponTexts.Size(); iii++)
+		{
+			NewWeaponText = "";
+			WeaponTextLines = breaklinefont.BreakLines(PDAWeaponTexts[iii],240);
+			for (int linecounter = 0; linecounter < WeaponTextLines.Count(); ++linecounter)
+			{
+				string linestring = WeaponTextLines.StringAt(lineCounter);
+				if (LargestStringWidth < SmallFont.StringWidth(WeaponTextLines.StringAt(lineCounter))*CleanYFac) largestStringWidth = WeaponTextLines.StringWidth(linecounter) * CleanXFac;
+				//linestring.AppendCharacter(10);
+				linestring.AppendFormat("\n");
+				NewWeaponText = NewWeaponText..Linestring;
+			}
+			PDAWeaponTexts[iii] = NewWeaponText;
+			PDAWeaponTextVSize.Push(breaklinefont.GetHeight() * CleanYFac_1 * WeaponTextLines.Count());
+			PDAWeaponTextHSize.Push(largestStringWidth * CleanXFac_1);
+		}
+		for (int extraindex = 0; extraindex < PDAWeaponExtraTexts.Size(); extraindex++)
+		{
+			NewWeaponExtraText = "";
+		}
+		ThinkerIterator ti = ThinkerIterator.Create("Weapon");
+		Weapon a;
+		while (a = Weapon(ti.Next()))
+		{
+			if (a.owner && a.owner is "PlayerPawnBase"
+				&& a.owner.FindInventory(self.GetClassName()) == self)
+			{
+				EventHandler.SendNetworkEvent("FoundWeapon:"..a.GetClassName());
+			}
+		}
+	}
+}
 class PB_PDAUi_Object
 {
 	TextureID DialogPicture;
@@ -9,6 +134,7 @@ class PB_PDAUi_Object
 	bool WeaponMenuOnly;
 	bool NonMainMenuOnly;
 	//Color ColorOverlay;
+	PB_PDAWeapTextContainer pdaWeapTextArray;
 	int fontcolor;
 	int objecttype;
 	int entrynumber;
@@ -87,6 +213,7 @@ class PB_EventHandler : EventHandler
 	Array<String> PDAMonsterStrings;
 	Array<String> PDAWeaponStrings;
 	Array<String> PBWeapons;
+	ui Array<PB_PDAWeapTextContainer> pdaWeapTextArray;
 	transient ui bool WeaponTextMode;
 	transient ui int currentindex;
 	transient ui Array<String> PDAWeaponExtraTexts;
@@ -96,6 +223,7 @@ class PB_EventHandler : EventHandler
 	transient ui Array<Double> PDAWeaponTextVSize,PDAWeaponTextHSize;
 	transient ui Array<PB_PDAUi_Object> UiObjects;
 	transient ui PB_PDAUi_Object descriptiondialog;
+	transient ui PB_PDAWeaponContainer weaptextcontainer;
 	override void WorldThingDied(WorldEvent e)
 	{
 		if (e.thing && e.thing.target
@@ -131,22 +259,28 @@ class PB_EventHandler : EventHandler
 		}
 		if (weaponFound == true)
 		{
-			for (int ii = 0; ii < PBWeapons.Size(); ii++)
+			if (uiObjects.Size() < 1) InitializeUiObjects();
+			for (int foundWeapIndex = 0; foundWeapIndex < WeaponFoundName.size(); foundWeapIndex++)
+			for (int weapIndex = 0; weapIndex < pdaWeapTextArray.size(); weapIndex++)
 			{
-				for (int iii = 0; iii < weaponFoundName.Size(); ++iii) if (weaponFoundName[iii] == PBWeapons[ii])
 				for (int i = 0;i < uiObjects.Size();i++)
 				{
-					if (uiObjects[i] && PDAWeaponHeaders[ii] && uiObjects[i].todraw == PDAWeaponHeaders[ii] && uiObjects[i].dontdraw == true)
+					if (uiObjects[i]
+					&& WeaponFoundName[foundWeapIndex] == pdaWeapTextArray[weapIndex].PDAWeapClassName
+					&& uiObjects[i].pdaWeapTextArray
+					&& uiObjects[i].pdaWeapTextArray.PDAWeapClassName == pdaWeapTextArray[weapIndex].PDAWeapClassName
+					&& uiObjects[i].dontdraw == true)
 					{
-						if (!CheckBaseWeapon(weaponFoundName[iii]))
+						if (!uiObjects[i].pdaWeapTextArray.found)
 						{
 							S_Sound("PDAOPEN",CHAN_AUTO,2);
-							Console.PrintF("New PDA Entry:"..PDAWeaponHeaders[ii]);
+							Console.PrintF("New PDA Entry:"..uiObjects[i].pdaWeapTextArray.PDAWeaponHeader);
+							uiObjects[i].pdaWeapTextArray.found = true;
 						}
 						uiObjects[i].dontdraw = false;
 					}
 				}
-			}
+			}		
 			SendNetworkEvent("ResetWeaponName");
 		}
 		for (int i = 0;i < uiObjects.Size();i++)
@@ -273,33 +407,6 @@ class PB_EventHandler : EventHandler
 			MouseHeldDown = false;
 		}
 		if (!DontTick) uiTics++;
-		if (uiTics >= 2 && players[consoleplayer].mo.CheckInventory("Rifle",1))
-		{
-			self.WeaponFoundName.Clear();
-			if (players[consoleplayer].mo is "PlayerPawnBase")
-			{
-				for (int slot = 0; slot <= 10; slot++)
-				{
-					for (int index = 0; index < players[consoleplayer].weapons.SlotSize(slot); index++)
-					{
-						let type = players[consoleplayer].weapons.GetWeapon(slot,index);
-						Weapon weap = Weapon(players[consoleplayer].mo.FindInventory(type));
-						if (weap != Null)
-						{
-							self.WeaponFound = true;
-							self.WeaponFoundName.Push(weap.GetClassName());
-						}
-					}
-				}
-				if (!PlayerPawnBase(players[consoleplayer].mo).baseweaponpda)
-				{
-					PlayerPawnBase(players[consoleplayer].mo).baseweaponpda = true;
-					PlayerPawnBase(players[consoleplayer].mo).BaseWeapons.Copy(self.WeaponFoundName);
-				}
-				DontTick = true;
-				uiTics = 0;
-			}
-		}
 	}
 	override void NetworkProcess(ConsoleEvent e)
 	{
@@ -414,12 +521,27 @@ class PB_EventHandler : EventHandler
 			MouseY = e.Args[1];
 			MousePositionSet = true;
 		}
+		if (e.Name ~== "foundweapon")
+		{
+			weaponFound = true;
+		}
+		if (e.Name ~== "addbaseweapons")
+		{
+			weaponFoundName.push("Rifle");
+			weaponFoundName.push("BDPistol");
+			weaponFoundName.push("Melee_Attacks");
+		}
 		Array<String> splittedStrings;
 		e.Name.Split(splittedStrings,":");
 		if (SplittedStrings.Size() == 0) return;
 		if (splittedStrings[0] == "addweaponclass")
 		{
 			PBWeapons.Push(splittedStrings[1]);
+		}
+		if (splittedStrings[0] ~== "foundweapon")
+		{
+			weaponFound = true;
+			weaponFoundName.push(splittedStrings[1]);
 		}
 	}
 	override void WorldLoaded(WorldEvent e)
@@ -558,71 +680,15 @@ class PB_EventHandler : EventHandler
 	}
 	ui void InitializeUiObjects()
 	{
-		int lump = Wads.FindLump("PDAMONST");
-		string stuff = Wads.ReadLump(lump);
-		stuff.Split(PDAMonsterStrings,",");
-		int weaplump = Wads.FindLump("PDAWEAP");
-		string weapstuff = Wads.ReadLump(weaplump);
-		weapstuff.Split(PDAWeaponStrings,",");
-		int weaptlump = Wads.FindLump("PDAWEAPT");
-		string weaptstuff = Wads.ReadLump(weaptlump);
-		Array<String> weaptstrings;
-		Array<String> initialweaptstrings;
-		weaptstuff.Split(initialweaptstrings,"#");
-		for (int splitCounter = 0; splitcounter < initialweaptstrings.Size(); splitcounter++)
-		{
-			initialweaptstrings[splitCounter].Split(weaptstrings,"$");
-		}
-		int forcounter = 1;
-		int iii = 0;
-		for (iii = 0; iii < weaptstrings.Size(); ++iii)
-		{
-			if (forcounter == 4)
-			{
-				PDAWeaponExtraTexts.Push(weaptstrings[iii]);
-				forcounter = 0;
-			}
-			else if (forcounter == 3)
-			{
-				weaptstrings[iii].Replace("\n","");
-				SendNetworkEvent("addweaponclass:"..weaptstrings[iii]);
-			}
-			else if (forcounter == 2)
-			{
-				PDAWeaponTexts.Push(weaptstrings[iii]);
-			}
-			else if (forcounter == 1)
-			{
-				weaptstrings[iii].Replace("\n","");
-				PDAWeaponHeaders.Push(weaptstrings[iii]);
-			}
-			++forcounter;
-		}
-		BrokenLines WeaponTextLines, WeaponExtraTextLines;
-		string NewWeaponText;
-		font breaklinefont = SmallFont;
-		int largestStringWidth = 0;
-		string NewWeaponExtraText;
-		for (iii = 0; iii < PDAWeaponTexts.Size(); iii++)
-		{
-			NewWeaponText = "";
-			WeaponTextLines = breaklinefont.BreakLines(PDAWeaponTexts[iii],240);
-			for (int linecounter = 0; linecounter < WeaponTextLines.Count(); ++linecounter)
-			{
-				string linestring = WeaponTextLines.StringAt(lineCounter);
-				if (LargestStringWidth < SmallFont.StringWidth(WeaponTextLines.StringAt(lineCounter))*CleanYFac) largestStringWidth = WeaponTextLines.StringWidth(linecounter) * CleanXFac;
-				//linestring.AppendCharacter(10);
-				linestring.AppendFormat("\n");
-				NewWeaponText = NewWeaponText..Linestring;
-			}
-			PDAWeaponTexts[iii] = NewWeaponText;
-			PDAWeaponTextVSize.Push(breaklinefont.GetHeight() * CleanYFac_1 * WeaponTextLines.Count());
-			PDAWeaponTextHSize.Push(largestStringWidth * CleanXFac_1);
-		}
-		for (int extraindex = 0; extraindex < PDAWeaponExtraTexts.Size(); extraindex++)
-		{
-			NewWeaponExtraText = "";
-		}
+		PB_PDAWeaponContainer weaptextcontainer = PB_PDAWeaponContainer(players[consoleplayer].mo.FindInventory("PB_PDAWeaponContainer",true));
+		PDAWeaponExtraTexts.Copy(weaptextcontainer.PDAWeaponExtraTexts);
+		PDAWeaponHeaders.Copy(weaptextcontainer.PDAWeaponHeaders);
+		PDAWeaponTexts.Copy(weaptextcontainer.PDAWeaponTexts);
+		PDAMonsterTexts.Copy(weaptextcontainer.PDAWeaponTexts);
+		PDAWeaponTextVSize.Copy(weaptextcontainer.PDAWeaponTextVSize);
+		PDAWeaponTextHSize.Copy(weaptextcontainer.PDAWeaponTextHSize);
+		pdaWeapTextArray.Copy(weaptextcontainer.pdaWeapTextArray);
+		int largeststringwidth = weaptextcontainer.largeststringwidth;
 		let descdialog = new("PB_PDAUi_Object");
 		descdialog.todraw = "Select a entry to \nview its description";
 		descdialog.UnSelectable = true;
@@ -664,13 +730,14 @@ class PB_EventHandler : EventHandler
 		UiObjects.Push(RightArrowDialog);
 		Vector2 monstertextpos = (Screen.GetWidth() / 5,Screen.GetHeight() / 5);
 		Vector2 prevtextpos = (0,0);
-		for (int ii = 0; ii < PDAWeaponHeaders.Size(); ++ii)
+		for (int ii = 0; ii < pdaWeapTextArray.Size(); ++ii)
 		{
 			let weapontext = new("PB_PDAUi_Object");
 			weapontext.entrynumber = ii;
 			weapontext.WeaponMenuOnly = true;
-			weapontext.dontdraw = true;
-			weapontext.toDraw = PDAWeaponHeaders[ii];
+			weapontext.dontdraw = !pdaWeapTextArray[ii].found;
+			weapontext.pdaWeapTextArray = pdaWeapTextArray[ii];
+			weapontext.toDraw = pdaWeapTextArray[ii].PDAWeaponHeader;
 			weapontext.ImagePos = prevtextpos;
 			prevtextpos.y += SmallFont.GetHeight() * CleanYFac_1;
 			weapontext.InitializeUiObject();
@@ -716,6 +783,7 @@ class PB_EventHandler : EventHandler
 		//self.MonsterMenuButton = monsterDialog;
 		dialog.ImagePos = ((Screen.GetWidth() ) - Screen.GetWidth()/4, (Screen.GetHeight() ) - Screen.GetHeight()/4);
 		UiObjects.Push(dialog);
+		SendNetworkEvent("addbaseweapons");
 	}
 
 	override bool InputProcess(InputEvent e)
