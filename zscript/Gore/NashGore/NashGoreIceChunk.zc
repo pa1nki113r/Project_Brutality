@@ -1,0 +1,129 @@
+// Copyright 2006-2019 Nash Muhandes
+// All rights reserved.
+//
+// Redistribution and use in source and binary forms, with or without
+// modification, are permitted provided that the following conditions
+// are met:
+//
+// 1. Redistributions of source code must retain the above copyright
+//    notice, this list of conditions and the following disclaimer.
+// 2. Redistributions in binary form must reproduce the above copyright
+//    notice, this list of conditions and the following disclaimer in the
+//    documentation and/or other materials provided with the distribution.
+// 3. The name of the author may not be used to endorse or promote products
+//    derived from this software without specific prior written permission.
+//
+// THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
+// IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
+// OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
+// IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
+// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
+// NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
+// THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+//===========================================================================
+//
+//
+//
+//===========================================================================
+
+class NashGoreIceChunk : IceChunk
+{
+	Default
+	{
+		Radius 5;
+		Height 10;
+		BounceType 'Doom';
+		BounceFactor 0.545;
+		Gravity 0.784;
+		+ROLLSPRITE
+		+ROLLCENTER
+		+MISSILE
+		+NOTELEPORT
+		+FLOORCLIP
+		+FORCEXYBILLBOARD
+	}
+
+	int rollDir;
+	double rollSpeed;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	override void BeginPlay(void)
+	{
+		ChangeStatNum(STAT_NashGore_Gore);
+		NashGoreStatics.QueueGore();
+		NashGoreStatics.RandomXFlip(self);
+
+		rollDir = RandomPick(-1, 1);
+		rollSpeed = frandom(1.0, 5.0);
+
+		Gravity *= frandom(0.75, 1.0);
+		bouncefactor *= frandom(0.5, 1.0);
+
+		Super.BeginPlay();
+	}
+
+	override void Tick(void)
+	{
+		Super.Tick();
+		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
+
+		state DeathState = FindState('Death');
+		if (!InStateSequence(CurState, DeathState))
+		{
+			A_SetRoll(Roll + (rollSpeed * rollDir), SPF_INTERPOLATE);
+		}
+
+		if (Vel ~== (0, 0, 0))
+		{
+			A_SetRoll(0);
+		}
+
+		if (Vel.Z ~== 0 && (Vel.X > 0 || Vel.Y > 0))
+		{
+			Destroy();
+			return;
+		}
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	States
+	{
+	Spawn:
+		TNT1 A 0 NoDelay A_Jump(256, "Ice1", "Ice2", "Ice3", "Ice4");
+		Stop;
+	Ice1:
+		ICEN A 0;
+		Goto SpawnLoop;
+	Ice2:
+		ICEN B 0;
+		Goto SpawnLoop;
+	Ice3:
+		ICEN C 0;
+		Goto SpawnLoop;
+	Ice4:
+		ICEN D 0;
+		Goto SpawnLoop;
+	SpawnLoop:
+		// yo, idk why the fucc this needs at least 3 states
+		// otherwise the damn game just crashes wtf
+		"####" "###" -1;
+		Stop;
+	Death:
+		"####" "#" -1;
+		Stop;
+	}
+}

@@ -1,0 +1,131 @@
+Class PB_Monster : Actor abstract
+{
+	int	HitBoxTimerNew;
+	int HitBoxTimerOld;
+	int EnemySightedOld;
+	int EnemySightedNew;
+	
+	
+	bool HitBoxSpawned;
+	bool Wandering;
+	
+	void HitboxerHandler() {
+		
+		if (HitBoxSpawned == True){
+			HitBoxTimerNew = Level.MapTime;
+			if(abs(HitBoxTimerNew - HitBoxTimerOld) > 350) {
+				A_TakeInventory("HeadshotToken",1);
+				HitBoxSpawned = False;
+				Wandering = False;
+			}
+		}
+		
+		if (CheckInventory("HeadshotToken",1) && HitBoxSpawned == False) {
+			A_SpawnItem("PB_HeadshotHitbox");
+			A_SpawnItem("PB_LegHitbox");
+			HitBoxSpawned = True;
+			HitBoxTimerOld = Level.MapTime;
+		}
+		
+	}
+
+	void A_SmartChase() {
+		if (target == NULL) return;
+		
+		EnemySightedNew = Level.MapTime;
+		if (CheckSight(target) == true) {
+			EnemySightedOld = Level.MapTime;
+			A_TakeInventory("Wandering",1);
+			A_Chase();	
+		}
+		else if (abs(EnemySightedNew - EnemySightedOld) < 180) {
+			A_Chase();	
+		}
+		else {
+			A_GiveInventory("Wandering",1);
+			A_Wander();
+		}
+	}
+
+
+	override void Tick()
+	{
+		Super.Tick();
+		
+		//Handle Hitbox system
+		HitboxerHandler();
+	}
+
+	override void PostBeginPlay() {
+		Super.PostBeginPlay(); // call the super function for virtual functions so we don't break shit if GZdoom update.
+		HitBoxSpawned = False;
+	
+	}
+	
+	double A_PrepairDrop()
+	{
+		vector2 aimbak =(self.angle,self.pitch);
+		self.A_FaceTarget(0,0);
+		self.angle=aimbak.x;
+		self.pitch=aimbak.y;
+		
+		double targdist=(self.target?distance3d(self.target):4096);
+		vector2 leadoffset;
+		if(targdist>2000) leadoffset=(frandom(-2.,2),frandom(-1.,1.));
+		else leadoffset=(
+			deltaangle(aimbak.x,aimbak.x),
+			deltaangle(aimbak.y,aimbak.y)
+		)*targdist*frandom(0.055,0.067);
+
+		self.angle += leadoffset.x;
+		self.pitch += leadoffset.y;
+		return targdist;
+	}
+
+	void A_DropAdjust(class<actor> missiletype, class<actor> missiletype2,double offX, double offY, double offZ,double PredAngle=0,
+						double dist=0,double speedmult=1.,double gravity=0,actor target=null)
+	{
+		PredAngle = ACS_NamedExecuteWithResult("PredictAim", 1, 20, 32);	//(int retAngle, int projectileSpeed, int projectileZ)
+			
+		if(!target)target=self.target;
+		if(!target)return;
+		double ceil = self.CeilingZ - self.pos.z;
+		
+		double tarDist = self.A_PrepairDrop();
+		if(ceil < 80 || tarDist > 1000)
+		{
+			self.A_SpawnProjectile(missiletype2,offZ);
+			return;
+		}
+		if(dist<1) dist=max(1,(target?self.distance2d(target):1));
+		if(!gravity)gravity=getdefaultbytype(missiletype).gravity;
+		double spd=getdefaultbytype(missiletype).speed*speedmult;
+		if(getdefaultbytype(missiletype).gravity&&dist>spd)
+		{
+			
+			int ticstotake=dist/spd;
+            int dropamt=0;
+            for(int i=1;i<=ticstotake;i++)
+			{
+                dropamt+=i;
+            }
+            self.pitch -= min(atan(dropamt*gravity/dist),30);
+        }
+
+        //because we don't shoot from height 32 but 42
+        if(dist>0) self.pitch += atan(10/dist);
+		
+		self.A_DropProjectile(missiletype,offX,offY,offZ,tarDist,PredAngle);
+    }
+	
+	void A_DropProjectile(class<actor> missiletype, double offX, double offY, double offZ, double targdist, double PredictAngle)
+	{
+			self.A_SpawnItemEx(
+				missiletype,offX,offY,offZ,
+				cos(pitch)*offY,0,-sin(pitch)*offY,
+				PredictAngle*360/65536,												// atan(offY/targdist)
+				flags:SXF_NOCHECKPOSITION|SXF_SETTARGET|SXF_TRANSFERPITCH
+			);
+	}
+	
+}
