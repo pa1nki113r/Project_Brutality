@@ -2,8 +2,7 @@ Class PB_Monster : Actor abstract
 {
 	int	HitBoxTimerNew;
 	int HitBoxTimerOld;
-	int EnemySightedOld;
-	int EnemySightedNew;
+	int EnemyLastSighted;
 	
 	
 	bool HitBoxSpawned;
@@ -30,21 +29,26 @@ Class PB_Monster : Actor abstract
 	}
 
 	void A_SmartChase() {
-		if (target == NULL) return;
-		
-		EnemySightedNew = Level.MapTime;
-		if (CheckSight(target) == true) {
-			EnemySightedOld = Level.MapTime;
-			A_TakeInventory("Wandering",1);
-			A_Chase();	
-		}
-		else if (abs(EnemySightedNew - EnemySightedOld) < 180) {
-			A_Chase();	
-		}
-		else {
-			A_GiveInventory("Wandering",1);
-			A_Wander();
-		}
+			if (target == NULL) {
+				A_GiveInventory("Wandering",1);
+				A_Wander();
+			}
+			
+			if (CheckIfCloser(target, 200)) {
+				SetStateLabel("Fallback");
+			}
+			if (CheckSight(target) == true) {
+				EnemyLastSighted = Level.MapTime;
+				A_TakeInventory("Wandering",1);
+				A_Chase();
+			}
+			else if (CheckSight(target) == false && abs(Level.MapTime - EnemyLastSighted) < 360) {
+				A_Chase();
+			}
+			else {
+				A_GiveInventory("Wandering",1);
+				A_Wander();
+			}
 	}
 
 
