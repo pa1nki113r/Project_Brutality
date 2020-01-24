@@ -2,7 +2,7 @@ Class PB_CarbineZombieman: PB_Zombieman //Replaces ZombieMan
 {
 	Default
 	{
-		Health 90;
+		Health 100;
 		DropItem "DropedCarbine";
 		DropItem "DropedGrenade", 15;
 	}
@@ -24,13 +24,15 @@ Class PB_CarbineZombieman: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_PlaySound("humans/step");
 			RFTR CCDD 2 A_SmartChase();
 			TNT1 A 0 A_PlaySound("humans/step");
-			TNT1 A 0 A_JumpIfInventory("Wandering",1,"LookAround");
+			TNT1 A 0 A_JumpIfInventory("Wandering",16,"LookAround");
 			Loop;
 		LookAround:
 			TNT1 A 0 A_ClearTarget();
-			RFTR ABACAD 10 A_Look();
-			RFTR ABCD 4 A_SmartChase();
-			Goto See+2;
+			TNT1 A 0 A_TakeInventory("Wandering", 36);
+			TNT1 A 0 A_Jump(200, 2);
+			TNT1 A 0 A_PlaysoundEx("monsters/zombie/searching", "Auto");
+			RFTR AAA 10 A_Look();
+			Goto See;
 		FallBack:
 			RFTR D 4 {
 				A_FaceTarget();
@@ -89,7 +91,14 @@ Class PB_CarbineZombieman: PB_Zombieman //Replaces ZombieMan
 			Goto See;
 
 		
+		DialogueCheck:
+			TNT1 A 0 A_Jump(240, "MissileContinue");
+			TNT1 A 0 A_CombatDialogueHandler();
+			Goto MissileContinue;
 		Missile:
+			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "DialogueCheck");
+			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "DialogueCheck");
+		MissileContinue:
 			RFTR E 6 {
 				A_Stop();
 				A_FaceTarget();
@@ -237,6 +246,7 @@ Class PB_CarbineZombieman: PB_Zombieman //Replaces ZombieMan
 			Goto Attack1;
 			TNT1 A 0 A_JumpIfCloser(90, "Attack1");
 		ThrowGrenade:
+			TNT1 A 0 A_PlaysoundEx("monsters/zombie/special","Auto");
 			RFG1 A 6 {
 				A_FaceTarget(90,45);
 				A_PlaySound("OPNGRN", 1);
@@ -252,6 +262,7 @@ Class PB_CarbineZombieman: PB_Zombieman //Replaces ZombieMan
         Goto See;
 		
 		Reload:
+			TNT1 A 0 A_PlaysoundEx("monsters/zombie/reload","Auto");
 			RFTR E 4 {
 				A_TakeInventory("ZombieManAmmo", 20);
 				A_CustomMissile("EmptyClipSpawn", 38, 0, random(-11, 11), 0);
@@ -267,6 +278,10 @@ Class PB_CarbineZombieman: PB_Zombieman //Replaces ZombieMan
 		Pain:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
 			RFTR G 6 A_Pain();
+			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
+			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+			TNT1 A 0 A_Jump(180, "See");
+			TNT1 A 0 A_PlaysoundEx("monsters/zombie/infight","Auto");
 			Goto See;
         Downed:
 			ID31 F 6 A_Pain();
@@ -312,7 +327,7 @@ Class PB_CarbineZombieman: PB_Zombieman //Replaces ZombieMan
 		
 		GetUp:
 			TNT1 A 0 A_SpawnItem("LargeMassWaterImpact");
-			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 5, "FallingDie");
+			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 16, "FallingDie");
 			TNT1 A 0 {
 				A_TakeInventory("FallingHeight", 100);
 				A_Stop();
@@ -326,6 +341,10 @@ Class PB_CarbineZombieman: PB_Zombieman //Replaces ZombieMan
 				A_ChangeFlag("FORCEXYBILLBOARD", 0);
 				A_ChangeFlag("SOLID", 1);
 			}
+			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
+			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+			TNT1 A 0 A_Jump(180, "See");
+			TNT1 A 0 A_PlaysoundEx("monsters/zombie/infight","Auto");
 			Goto See;
 		 
 		FallingDie:
@@ -334,9 +353,9 @@ Class PB_CarbineZombieman: PB_Zombieman //Replaces ZombieMan
 				A_ChangeFlag("SHOOTABLE", 0);
 				A_SpawnItem("SplatteredSmall");
 			}
-			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 15, "Death.Stomp");
-			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 10, "FallingSuperDeath");
-			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 5, "FallingDeath");
+			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 32, "Death.Stomp");
+			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 25, "FallingSuperDeath");
+			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 16, "FallingDeath");
 		FallingDeath:
 			TNT1 A 0 {
 				A_Scream();
@@ -404,6 +423,53 @@ Class PB_CarbineZombieman: PB_Zombieman //Replaces ZombieMan
 			RFTR GGGGGGGGGG 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0);
 			RFTR G 1 A_Pain();
 			Goto See;
+			
+		
+		//New Evade Animation
+		DiveLeft:
+			RFTR A 1 A_FaceTarget();
+			RFTR A 1 A_SetAngle(angle+90, SPF_INTERPOLATE);
+			//POSS A 1 A_SetAngle(angle*256/360+192, SPF_INTERPOLATE);
+			Goto DivingBegin;
+		DiveRight:
+			RFTR A 1 A_FaceTarget();
+			RFTR A 1 A_SetAngle(angle-90, SPF_INTERPOLATE);
+		//	POSS A 1 A_SetAngle(angle*256/360+64, SPF_INTERPOLATE);
+			Goto DivingBegin;
+		DiveBack:
+			RFTR A 1 A_FaceTarget();
+			RFTR A 1 A_SetAngle(angle-180, SPF_INTERPOLATE);
+			//POSS A 1 A_SetAngle(angle*256/360+128, SPF_INTERPOLATE);
+			Goto DivingBegin;
+		DiveFront:
+			RFTR A 1 A_FaceTarget();
+			Goto DivingBegin;
+		DivingBegin:
+			ZDE2 A 5 A_SetAngle(angle, SPF_INTERPOLATE);
+			TNT1 A 0 {
+				ThrustThingZ(0,30,0,0);
+				ThrustThing(angle, 15, 0, 0);
+			}
+			ZDE2 B 8 A_SetAngle(angle, SPF_INTERPOLATE);
+		DivingLoop:
+			ZDE2 B 1 A_CheckFloor ("DiveStop");
+			ZDE2 B 1 A_JumpIf (momz == 0, "DiveStop");
+			Loop;
+		DiveStop:
+			TNT1 A 0 A_PlaySoundEx("BODYF", "Auto");
+			ZDE2 C 25 A_Stop();
+			ZDE2 D 6;
+			P066 F 6;
+			POSS E 6;
+			Goto Missile;
+		
+		//Avoid damage
+		Pain.Avoid:
+			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "PlayerActionDialogue");
+		Avoid:
+			TNT1 A 0 A_Jump(256, "DiveLeft", "DiveRight", "DiveLeft", "DiveRight", "DiveFront");
+			Goto DiveFront;
+			
 			
 		Death.Shrink:
 			TNT1 A 1 {
@@ -676,7 +742,6 @@ Class PB_CarbineZombieman: PB_Zombieman //Replaces ZombieMan
 			
 			TNT1 AAAA 0 A_CustomMissile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), 2, random (0, 40));
 			POSX AAAAAA 2 A_CustomMissile ("PB_SquirtingBloodTrail", 36, 0, random (0, 360), 2, random (0, 40));
-			//TNT1 A 0 A_SpawnItem ("DeadARZombieman_Half");
 			POSX BCDE 9 A_CustomMissile ("PB_SquirtingBloodTrail", 28, 0, random (0, 360), 2, random (0, 40));
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
 			POSX EEEEEEEEEEEEEEEEEEEEEE 1 A_CustomMissile ("PB_SquirtingBloodTrail", 12, 0, random (0, 360), 2, random (0, 90));
