@@ -22,13 +22,15 @@ Class PB_PistolZombieman1: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_PlaySound("humans/step");
 			PSPO CCDD 2 A_SmartChase();
 			TNT1 A 0 A_PlaySound("humans/step");
-			TNT1 A 0 A_JumpIfInventory("Wandering",1,"LookAround");
+			TNT1 A 0 A_JumpIfInventory("Wandering",16,"LookAround");
 			Loop;
 		LookAround:
 			TNT1 A 0 A_ClearTarget();
-			PSPO ABACAD 10 A_Look();
-			PSPO ABCD 4 A_SmartChase();
-			Goto See+2;
+			TNT1 A 0 A_TakeInventory("Wandering", 36);
+			TNT1 A 0 A_Jump(200, 2);
+			TNT1 A 0 A_PlaysoundEx("monsters/zombie/searching", "Auto");
+			PSPO AAA 10 A_Look();
+			Goto See;
 		FallBack:
 			PSPO D 4 {
 				A_FaceTarget();
@@ -78,7 +80,42 @@ Class PB_PistolZombieman1: PB_Zombieman //Replaces ZombieMan
 		////////////////
 		//Attack Logic// 
 		////////////////
+		Grenade:
+			TNT1 A 0 A_JumpIfCloser(500, 1);
+			Goto Attack1;
+			TNT1 A 0 A_JumpIfCloser(90, "Attack1");
+		ThrowGrenade:
+			TNT1 A 0 A_PlaysoundEx("monsters/zombie/special","Auto");
+			P15G A 6 {
+				A_FaceTarget(90,45);
+				A_PlaySound("OPNGRN", 1);
+			}
+			P15G BC 6;
+			P15G D 6 {
+				A_FaceTarget(90,45);
+				A_DropAdjust("EnemyThrownGrenade","EnemyThrownGrenade",0,18,28);
+				A_GiveInventory("ZombieManGrenadeCount", 1);
+				A_PlaySound("THRGRN", 1);
+			}
+			P15G E 6;
+			Goto See;
+		Melee:
+			TNT1 A 0 A_Jump(224, 2);
+			TNT1 A 0 A_CombatDialogueHandler();
+			ZBS3 A 6 A_FaceTarget();
+			TNT1 A 0 A_PlaySound("skeleton/swing");
+			TNT1 A 0 A_CustomMissile("ZombieBashAttack",10,0,0,0);
+			ZBS3 B 6 A_FaceTarget();
+			ZBS3 A 6;
+			Goto See;
+		DialogueCheck:
+			TNT1 A 0 A_Jump(240, "MissileContinue");
+			TNT1 A 0 A_CombatDialogueHandler();
+			Goto MissileContinue;
 		Missile:
+			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "DialogueCheck");
+			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "DialogueCheck");
+		MissileContinue:
 			PSPO E 6 {
 				A_Stop();
 				A_FaceTarget();
@@ -86,7 +123,12 @@ Class PB_PistolZombieman1: PB_Zombieman //Replaces ZombieMan
 				}
 			Goto See;
 		AttackHandler:
-			TNT1 A 0 A_Jump(256, "Attack", "Attack1", "Attack1", "Attack2", "Attack2", "Attack3");
+			TNT1 A 0 {
+				int chance = (random(1,256));
+				
+				if((chance > 232) && (CountInv("ZombieManGrenadeCount") < 3)) {return A_Jump(256, "Grenade");}
+				return A_Jump(256, "Attack", "Attack1", "Attack1", "Attack2", "Attack2", "Attack3");
+			}
 		//Standard, 1 round attack
 		Attack:
 			PSPO E 2 A_FaceTarget();
@@ -204,6 +246,7 @@ Class PB_PistolZombieman1: PB_Zombieman //Replaces ZombieMan
 			PSPO JE 4 A_FaceTarget();
 			Goto See;
 		Reload:
+			TNT1 A 0 A_PlaysoundEx("monsters/zombie/reload","Auto");
 			PSPO E 4 {
 				A_TakeInventory("ZombieManAmmo", 20);
 				A_CustomMissile("EmptyClipMP40", 38, 0, random(-11, 11), 0);
@@ -221,6 +264,10 @@ Class PB_PistolZombieman1: PB_Zombieman //Replaces ZombieMan
 		Pain:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
 			PSPO G 6 A_Pain();
+			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
+			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+			TNT1 A 0 A_Jump(180, "See");
+			TNT1 A 0 A_PlaysoundEx("monsters/zombie/infight","Auto");
 			Goto See;
         Downed:
 			ID31 F 6 A_Pain();
@@ -251,7 +298,7 @@ Class PB_PistolZombieman1: PB_Zombieman //Replaces ZombieMan
 		
 		GetUp:
 			TNT1 A 0 A_SpawnItem("LargeMassWaterImpact");
-			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 5, "FallingDie");
+			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 16, "FallingDie");
 			TNT1 A 0 {
 				A_TakeInventory("FallingHeight", 100);
 				A_Stop();
@@ -265,6 +312,10 @@ Class PB_PistolZombieman1: PB_Zombieman //Replaces ZombieMan
 				A_ChangeFlag("FORCEXYBILLBOARD", 0);
 				A_ChangeFlag("SOLID", 1);
 			}
+			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
+			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+			TNT1 A 0 A_Jump(180, "See");
+			TNT1 A 0 A_PlaysoundEx("monsters/zombie/infight","Auto");
 			Goto See;
 		 
 		FallingDie:
@@ -273,9 +324,9 @@ Class PB_PistolZombieman1: PB_Zombieman //Replaces ZombieMan
 				A_ChangeFlag("SHOOTABLE", 0);
 				A_SpawnItem("SplatteredSmall");
 			}
-			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 15, "Death.Stomp");
-			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 10, "FallingSuperDeath");
-			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 5, "FallingDeath");
+			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 32, "Death.Stomp");
+			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 25, "FallingSuperDeath");
+			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 16, "FallingDeath");
 		FallingDeath:
 			TNT1 A 0 {
 				A_Scream();
@@ -343,5 +394,58 @@ Class PB_PistolZombieman1: PB_Zombieman //Replaces ZombieMan
 			PSPO GGGGGGGGGG 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0);
 			PSPO G 1 A_Pain();
 			Goto See;
+			
+		//New Evade Animation
+		DiveLeft:
+			PSPO A 1 A_FaceTarget();
+			PSPO A 1 A_SetAngle(angle+90, SPF_INTERPOLATE);
+			//POSS A 1 A_SetAngle(angle*256/360+192, SPF_INTERPOLATE);
+			Goto DivingBegin;
+		DiveRight:
+			PSPO A 1 A_FaceTarget();
+			PSPO A 1 A_SetAngle(angle-90, SPF_INTERPOLATE);
+		//	POSS A 1 A_SetAngle(angle*256/360+64, SPF_INTERPOLATE);
+			Goto DivingBegin;
+		DiveBack:
+			PSPO A 1 A_FaceTarget();
+			PSPO A 1 A_SetAngle(angle-180, SPF_INTERPOLATE);
+			//POSS A 1 A_SetAngle(angle*256/360+128, SPF_INTERPOLATE);
+			Goto DivingBegin;
+		DiveFront:
+			PSPO A 1 A_FaceTarget();
+			Goto DivingBegin;
+		DivingBegin:
+			ZDE4 A 5 A_SetAngle(angle, SPF_INTERPOLATE);
+			TNT1 A 0 {
+				ThrustThingZ(0,30,0,0);
+				ThrustThing(angle, 15, 0, 0);
+			}
+			ZDE4 B 8 A_SetAngle(angle, SPF_INTERPOLATE);
+		DivingLoop:
+			ZDE4 B 1 A_CheckFloor ("DiveStop");
+			ZDE4 B 1 A_JumpIf (momz == 0, "DiveStop");
+			Loop;
+		DiveStop:
+			TNT1 A 0 A_PlaySoundEx("BODYF", "Auto");
+			ZDE4 C 25 A_Stop();
+			ZDE4 D 6;
+			PSPO F 6;
+			PSPO E 6;
+			Goto Missile;
+		
+		//Avoid damage
+		Pain.Avoid:
+			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "PlayerActionDialogue");
+		Avoid:
+			TNT1 A 0 A_Jump(256, "DiveLeft", "DiveRight", "DiveLeft", "DiveRight", "DiveFront");
+			Goto DiveFront;
+			
+		Death.Ice:
+		Death.Freeze:
+		Death.Frost:
+			TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0);
+			TNT1 A 0 A_ChangeFlag("SOLID", 0);
+			TNT1 A 0 A_SpawnItem("FrozenPistolZombieman");
+			Stop;
 	}
 }
