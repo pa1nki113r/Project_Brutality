@@ -7,36 +7,49 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 	}
 	States
 	{
-		
+		Death.KillMe:
+		Death.Taunt:
+		Death.Avoid:
+			TNT1 A 0;
+			TNT1 A 0 {
+				bTHRUACTORS = true;
+				bCOUNTKILL = false;
+			}
+			TNT1 A 0 A_SpawnItemEx ("PB_HelmetZombieman",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION |SXF_TRANSFERSPECIAL| SXF_TRANSFERAMBUSHFLAG ,0);
+			Stop;
+			
 		Spawn:
+			ZIV1 A 1;
 			TNT1 A 0 {
 				A_TakeInventory("ZombiemanAmmo", 20);
 				A_GiveInventory("ZombieManAmmo", random(1,10));
-				A_GiveInventory("SKZombieman", 1);
+				A_GiveInventory("SKHelmetZombie1", 1);
 				A_GiveInventory("TypeZombieMan", 1);
 			}
 		Stand:
 			ZIV1 AB 10 A_Look();
 			Loop;
 		See:
+			TNT1 A 0 A_TakeInventory("SKHelmetZombie1", 1);
+		SeeContinue:
 			ZMV1 AABB 2 A_SmartChase();
-			TNT1 A 0 A_PlaySound("humans/step");
+			TNT1 A 0 A_StartSound("humans/step");
 			ZMV1 CCDD 2 A_SmartChase();
-			TNT1 A 0 A_PlaySound("humans/step");
+			TNT1 A 0 A_StartSound("humans/step");
 			TNT1 A 0 A_JumpIfInventory("Wandering",16,"LookAround");
 			Loop;
 		LookAround:
 			TNT1 A 0 A_ClearTarget();
 			TNT1 A 0 A_TakeInventory("Wandering", 36);
 			TNT1 A 0 A_Jump(200, 2);
-			TNT1 A 0 A_PlaysoundEx("monsters/zombie/searching", "Auto");
+			TNT1 A 0 A_StartSound("monsters/zombie/searching", CHAN_AUTO);
 			ZMV1 AAAA 10 A_Look();
 			Goto See;
 		FallBack:
 			ZMV1 D 4 {
 				A_FaceTarget();
 				A_Recoil(2);
-				A_PlaySound("humans/step",3);
+				A_StartSound("humans/step",3);
 				return A_Jump(64,"Missile");
 			}
 			ZMV1 C 4 {
@@ -47,7 +60,7 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			ZMV1 B 4 {
 				A_FaceTarget();
 				A_Recoil(2);
-				A_PlaySound("humans/step",3);
+				A_StartSound("humans/step",3);
 				return A_Jump(64,"Missile");
 			}
 			ZMV1 A 2 {
@@ -58,7 +71,7 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			ZMV1 D 4 {
 				A_FaceTarget();
 				A_Recoil(2);
-				A_PlaySound("humans/step",3);
+				A_StartSound("humans/step",3);
 				return A_Jump(64,"Missile");
 			}
 			ZMV1 C 4 {
@@ -69,7 +82,7 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			ZMV1 B 4 {
 				A_FaceTarget();
 				A_Recoil(2);
-				A_PlaySound("humans/step",3);
+				A_StartSound("humans/step",3);
 				return A_Jump(64,"Missile");
 			}
 			ZMV1 A 4 {
@@ -83,17 +96,17 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			Goto Attack1;
 			TNT1 A 0 A_JumpIfCloser(90, "Attack1");
 		ThrowGrenade:
-			TNT1 A 0 A_PlaysoundEx("monsters/zombie/special","Auto");
+			TNT1 A 0 A_StartSound("monsters/zombie/special",CHAN_AUTO);
 			P05G A 6 {
 				A_FaceTarget(90,45);
-				A_PlaySound("OPNGRN", 1);
+				A_StartSound("OPNGRN", 1);
 			}
 			P05G BC 6;
 			P05G D 6 {
 				A_FaceTarget(90,45);
 				A_DropAdjust("EnemyThrownGrenade","EnemyThrownGrenade",0,18,28);
 				A_GiveInventory("ZombieManGrenadeCount", 1);
-				A_PlaySound("THRGRN", 1);
+				A_StartSound("THRGRN", 1);
 			}
 			P05G E 6;
 			Goto See;
@@ -102,8 +115,8 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_Jump(224, 2);
 			TNT1 A 0 A_CombatDialogueHandler();
 			ZBS2 A 6 A_FaceTarget();
-			TNT1 A 0 A_PlaySound("skeleton/swing");
-			TNT1 A 0 A_CustomMissile("ZombieBashAttack",10,0,0,0);
+			TNT1 A 0 A_StartSound("skeleton/swing");
+			TNT1 A 0 A_SpawnProjectile("ZombieBashAttack",10,0,0,0);
 			ZBS2 B 6 A_FaceTarget();
 			ZBS2 A 6;
 			Goto See;
@@ -114,6 +127,7 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 		Missile:
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "DialogueCheck");
 			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "DialogueCheck");
+			Goto AttackHandler;
 		MissileContinue:
 			ZIV1 E 6 {
 				A_Stop();
@@ -134,20 +148,20 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 		Attack1:
 			ZSV1 E 6 A_FaceTarget();
 			ZSV1 F 2 BRIGHT {
-				A_CustomMissile("ZombieManTracer", 32, 0, random(-8, 8), 1, random(-3, 3));
-				A_PlaySound("weapons/rifle");
+				A_SpawnProjectile("ZombieManTracer", 32, 0, random(-8, 8), 1, random(-3, 3));
+				A_StartSound("weapons/rifle");
 				A_SpawnItem ("RifleCaseSpawn", 0, 30,0);
 				}
 			ZSV1 E 2 A_FaceTarget();
 			ZSV1 F 2 BRIGHT {
-				A_CustomMissile("ZombieManTracer", 32, 0, random(-8, 8), 1, random(-3, 3));
-				A_PlaySound("weapons/rifle");
+				A_SpawnProjectile("ZombieManTracer", 32, 0, random(-8, 8), 1, random(-3, 3));
+				A_StartSound("weapons/rifle");
 				A_SpawnItem ("RifleCaseSpawn", 0, 30,0);
 				}
 			ZSV1 E 2 A_FaceTarget();
 			ZSV1 F 2 BRIGHT {
-				A_CustomMissile("ZombieManTracer", 32, 0, random(-8, 8), 1, random(-3, 3));
-				A_PlaySound("weapons/rifle");
+				A_SpawnProjectile("ZombieManTracer", 32, 0, random(-8, 8), 1, random(-3, 3));
+				A_StartSound("weapons/rifle");
 				A_SpawnItem ("RifleCaseSpawn", 0, 30,0);
 				}
 			ZSV1 E 2 {
@@ -161,38 +175,38 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			P056 E 6 A_FaceTarget();
 			P056 E 2 BRIGHT {
 				A_FaceTarget();
-				A_CustomMissile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
-				A_CustomMissile("OrangeLensFlareAlt", 42, 16, 15, 0);
-				A_CustomMissile("MarineMuzzle1", 39, 4);
+				A_SpawnProjectile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
+				A_SpawnProjectile("OrangeLensFlareAlt", 42, 16, 15, 0);
+				A_SpawnProjectile("MarineMuzzle1", 39, 4);
 				A_SpawnItem ("RifleCaseSpawn", 0, 36,0);
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 			}
 			P056 E 4 A_FaceTarget();
 			P056 E 2 BRIGHT {
 				A_FaceTarget();
-				A_CustomMissile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
-				A_CustomMissile("OrangeLensFlareAlt", 42, 16, 15, 0);
-				A_CustomMissile("MarineMuzzle1", 39, 4);
+				A_SpawnProjectile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
+				A_SpawnProjectile("OrangeLensFlareAlt", 42, 16, 15, 0);
+				A_SpawnProjectile("MarineMuzzle1", 39, 4);
 				A_SpawnItem ("RifleCaseSpawn", 0, 36,0);
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 			}
 			P056 E 4 A_FaceTarget();
 			P056 E 2 BRIGHT {
 				A_FaceTarget();
-				A_CustomMissile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
-				A_CustomMissile("OrangeLensFlareAlt", 42, 16, 15, 0);
-				A_CustomMissile("MarineMuzzle1", 39, 4);
+				A_SpawnProjectile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
+				A_SpawnProjectile("OrangeLensFlareAlt", 42, 16, 15, 0);
+				A_SpawnProjectile("MarineMuzzle1", 39, 4);
 				A_SpawnItem ("RifleCaseSpawn", 0, 36,0);
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 			}
 			P056 E 4 A_FaceTarget();
 			P056 E 2 BRIGHT {
 				A_FaceTarget();
-				A_CustomMissile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
-				A_CustomMissile("OrangeLensFlareAlt", 42, 16, 15, 0);
-				A_CustomMissile("MarineMuzzle1", 39, 4);
+				A_SpawnProjectile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
+				A_SpawnProjectile("OrangeLensFlareAlt", 42, 16, 15, 0);
+				A_SpawnProjectile("MarineMuzzle1", 39, 4);
 				A_SpawnItem ("RifleCaseSpawn", 0, 36,0);
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 			}
 			P056 E 2 {
 				A_GiveInventory("ZombieManAmmo", 3);
@@ -206,35 +220,35 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			Crouching:
 			P056 F 6 A_FaceTarget();
 			P056 F 2 BRIGHT {
-				A_CustomMissile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
-				A_CustomMissile("OrangeLensFlareAlt", 32, 16, 15, 0);
-				A_CustomMissile("MarineMuzzle1", 32, 4) ;
+				A_SpawnProjectile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
+				A_SpawnProjectile("OrangeLensFlareAlt", 32, 16, 15, 0);
+				A_SpawnProjectile("MarineMuzzle1", 32, 4) ;
 				A_SpawnItem ("RifleCaseSpawn", 0, 36,0);
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 			}
 			P056 F 3 A_FaceTarget();
 			P056 F 2 BRIGHT {
-				A_CustomMissile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
-				A_CustomMissile("OrangeLensFlareAlt", 32, 16, 15, 0);
-				A_CustomMissile("MarineMuzzle1", 32, 4) ;
+				A_SpawnProjectile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
+				A_SpawnProjectile("OrangeLensFlareAlt", 32, 16, 15, 0);
+				A_SpawnProjectile("MarineMuzzle1", 32, 4) ;
 				A_SpawnItem ("RifleCaseSpawn", 0, 36,0);
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 			}
 			P056 F 3 A_FaceTarget();
 			P056 F 2 BRIGHT {
-				A_CustomMissile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
-				A_CustomMissile("OrangeLensFlareAlt", 32, 16, 15, 0);
-				A_CustomMissile("MarineMuzzle1", 32, 4) ;
+				A_SpawnProjectile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
+				A_SpawnProjectile("OrangeLensFlareAlt", 32, 16, 15, 0);
+				A_SpawnProjectile("MarineMuzzle1", 32, 4) ;
 				A_SpawnItem ("RifleCaseSpawn", 0, 36,0);
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 			}
 			P056 F 3 A_FaceTarget();
 			P056 F 2 BRIGHT {
-				A_CustomMissile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
-				A_CustomMissile("OrangeLensFlareAlt", 32, 16, 15, 0);
-				A_CustomMissile("MarineMuzzle1", 32, 4) ;
+				A_SpawnProjectile("ZombieManTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
+				A_SpawnProjectile("OrangeLensFlareAlt", 32, 16, 15, 0);
+				A_SpawnProjectile("MarineMuzzle1", 32, 4) ;
 				A_SpawnItem ("RifleCaseSpawn", 0, 36,0);
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 			}
 			P056 F 4 {
 				A_FaceTarget();
@@ -259,11 +273,11 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			}
 			P056 B 3 BRIGHT {
 				A_FaceTarget();
-				A_CustomMissile("ZombieManTracer", 42, 0, 0, 0);
-				A_CustomMissile("OrangeLensFlareAlt", 42, 16, 15, 0);
-				A_CustomMissile("MarineMuzzle1", 34, 6);
+				A_SpawnProjectile("ZombieManTracer", 42, 0, 0, 0);
+				A_SpawnProjectile("OrangeLensFlareAlt", 42, 16, 15, 0);
+				A_SpawnProjectile("MarineMuzzle1", 34, 6);
 				A_SpawnItem ("RifleCaseSpawn", 0, 30,0);
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 				ThrustThing(angle*256/360+movement_direction, 1, 0, 0);
 			}
 			P056 CC 2 {
@@ -272,11 +286,11 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			}
 			P056 D 3 BRIGHT {
 				A_FaceTarget();
-				A_CustomMissile("ZombieManTracer", 42, 0, 0, 0);
-				A_CustomMissile("OrangeLensFlareAlt", 42, 16, 15, 0);
-				A_CustomMissile("MarineMuzzle1", 34, 6);
+				A_SpawnProjectile("ZombieManTracer", 42, 0, 0, 0);
+				A_SpawnProjectile("OrangeLensFlareAlt", 42, 16, 15, 0);
+				A_SpawnProjectile("MarineMuzzle1", 34, 6);
 				A_SpawnItem ("RifleCaseSpawn", 0, 30,0);
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 				ThrustThing(angle*256/360+movement_direction, 1, 0, 0);
 			}
 			P056 AA 2 {
@@ -285,11 +299,11 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			}
 			P056 B 3 BRIGHT {
 				A_FaceTarget();
-				A_CustomMissile("ZombieManTracer", 42, 0, 0, 0);
-				A_CustomMissile("OrangeLensFlareAlt", 42, 16, 15, 0);
-				A_CustomMissile("MarineMuzzle1", 34, 6);
+				A_SpawnProjectile("ZombieManTracer", 42, 0, 0, 0);
+				A_SpawnProjectile("OrangeLensFlareAlt", 42, 16, 15, 0);
+				A_SpawnProjectile("MarineMuzzle1", 34, 6);
 				A_SpawnItem ("RifleCaseSpawn", 0, 30,0);
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 				ThrustThing(angle*256/360+movement_direction, 1, 0, 0);
 			}
 			P056 CC 2 {
@@ -298,11 +312,11 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			}
 			P056 D 3 BRIGHT {
 				A_FaceTarget();
-				A_CustomMissile("ZombieManTracer", 42, 0, 0, 0);
-				A_CustomMissile("OrangeLensFlareAlt", 42, 16, 15, 0);
-				A_CustomMissile("MarineMuzzle1", 34, 6);
+				A_SpawnProjectile("ZombieManTracer", 42, 0, 0, 0);
+				A_SpawnProjectile("OrangeLensFlareAlt", 42, 16, 15, 0);
+				A_SpawnProjectile("MarineMuzzle1", 34, 6);
 				A_SpawnItem ("RifleCaseSpawn", 0, 30,0);
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 				ThrustThing(angle*256/360+movement_direction, 1, 0, 0);
 			}
 			P056 E 4 {
@@ -313,14 +327,14 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			}
 			Goto See;
 		Reload:
-			TNT1 A 0 A_PlaysoundEx("monsters/zombie/reload","Auto");
+			TNT1 A 0 A_StartSound("monsters/zombie/reload",CHAN_AUTO);
 			ZSV1 E 4 {
 				A_TakeInventory("ZombieManAmmo", 20);
-				A_CustomMissile("EmptyClipMP40", 38, 0, random(-11, 11), 0);
-				A_PlaySound("PSRLOUT");
+				A_SpawnProjectile("EmptyClipMP40", 38, 0, random(-11, 11), 0);
+				A_StartSound("PSRLOUT");
 				}
 			P05R AAB 6;
-			P05R C 6 A_PlaySound("PSRLFIN");
+			P05R C 6 A_StartSound("PSRLFIN");
 			P05R A 6;
 			ZSV1 E 6;
 			Goto See;
@@ -328,14 +342,32 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 		////////////////
 		//Pain Logic// 
 		////////////////
+		Pain.Melee:
+			TNT1 A 0 A_JumpIfInventory ("SKZombieMan", 1, "StealthKill");
 		Pain:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
 			ZPV1 A 6 A_Pain();
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
 			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
 			TNT1 A 0 A_Jump(180, "See");
-			TNT1 A 0 A_PlaysoundEx("monsters/zombie/infight","Auto");
+			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 			Goto See;
+		StealthKill:
+			TNT1 A 0 A_TakeInventory("SKHelmetZombie1", 1);
+			ZPV1 A 1 A_FaceTarget();
+			TNT1 A 0 A_JumpIfInTargetInventory("FistsSelected", 1, 2);
+			ZPV1 A 1;
+			Goto Pain;
+			TNT1 A 0 A_GiveToTarget("GoFatality", 1);
+			TNT1 A 0 A_GiveToTarget("SKHelmetZombie1", 1);
+			TNT1 A 0 A_NoBlocking();
+			TNT1 A 0 A_Die("Stealthy");
+			TNT1 A 1;
+			Stop;
+		Death.Stealthy:
+			TNT1 A 0;
+			Stop;
+		
         Downed:
 			ID31 F 6 A_Pain();
 			Goto GetUp;
@@ -343,9 +375,9 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 		Pain.ExtremePunches:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Pain");
 			9OS4 U 1 {
-					A_ChangeFLag("NODROPOFF", 0);
-					A_ChangeFlag("FORCEXYBILLBOARD", 1);
-					A_TakeInventory("SKZombieman", 1);
+					bNODROPOFF = false;
+					bFORCEXYBILLBOARD = true;
+					A_TakeInventory("SKHelmetZombie1", 1);
 					A_GiveInventory("IsDown", 1);
 					A_Pain();
 					A_facetarget();
@@ -359,9 +391,9 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 		Pain.Explosive:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Pain");
 			9OS4 U 1 {
-					A_ChangeFLag("NODROPOFF", 0);
-					A_ChangeFlag("FORCEXYBILLBOARD", 1);
-					A_TakeInventory("SKZombieman", 1);
+					bNODROPOFF = false;
+					bFORCEXYBILLBOARD = true;
+					A_TakeInventory("SKHelmetZombie1", 1);
 					A_GiveInventory("IsDown", 1);
 					A_Pain();
 					ThrustThingZ(0,30,0,1);
@@ -375,7 +407,7 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 				A_GiveInventory ("FallingHeight", 1);
 				A_CheckFloor ("GetUp");
 			}
-			NULL A 0 A_JumpIf (momz == 0, "GetUp");
+			NULL A 0 A_JumpIf (Vel.Z == 0, "GetUp");
 			Loop;
 		
 		GetUp:
@@ -384,26 +416,25 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 {
 				A_TakeInventory("FallingHeight", 100);
 				A_Stop();
-				A_ChangeFlag("SOLID", 0);
-				A_ChangeFlag("GHOST", 1);
-				A_PlaySound("BODYF",6);
+				bSOLID = false;
+				A_StartSound("BODYF",6);
 			}
-			P05K AAAAAAAAAA 5 A_JumpIf(momz < 0, "FallingAfterImpact");
+			P05K AAAAAAAAAA 5 A_JumpIf(Vel.Z < 0, "FallingAfterImpact");
 			P05K B 10 {
 				A_TakeInventory("IsDown", 1);
-				A_ChangeFlag("FORCEXYBILLBOARD", 0);
-				A_ChangeFlag("SOLID", 1);
+				bFORCEXYBILLBOARD = false;
+				bSOLID = true;
 			}
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
 			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
 			TNT1 A 0 A_Jump(180, "See");
-			TNT1 A 0 A_PlaysoundEx("monsters/zombie/infight","Auto");
+			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 			Goto See;
 		 
 		FallingDie:
 			TNT1 A 0 {
-				A_ChangeFlag("COUNTKILL", 0);
-				A_ChangeFlag("SHOOTABLE", 0);
+				bCOUNTKILL = false;
+				bSHOOTABLE = false;
 				A_SpawnItem("SplatteredSmall");
 			}
 			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 32, "Death.Stomp");
@@ -412,14 +443,14 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 		FallingDeath:
 			TNT1 A 0 {
 				A_Scream();
-				A_CustomMissile ("PB_XDeath1", 32, 0, random (0, 360), 2, random (50, 130));
-				A_CustomMissile ("PB_XDeath1", 32, 0, random (0, 360), 2, random (50, 130));
-				A_CustomMissile ("PB_XDeath1", 32, 0, random (0, 360), 2, random (50, 130));
-				A_CustomMissile ("PB_XDeath1", 32, 0, random (0, 360), 2, random (50, 130));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 				}
 			9OS4 Y 2;
 			9OS4 Y 2 {
-				A_PlaySound("BODYF",6);
+				A_StartSound("BODYF",6);
 				A_SpawnItem ("GrowingBloodPool");
 				A_SpawnItem ("DeadZombieman1");
 			}
@@ -432,10 +463,9 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_JumpIfInventory("Enraged", 1, "Missile");
 			9OS4 B 1 {
 				A_Pain();
-				A_ChangeFlag("FASTER", 1);
-				A_ChangeFlag("MISSILEMORE", 1);
-				A_ChangeFlag("MISSILEEVENMORE", 1);
-				A_PlaySound("grunt/sight");
+				bMISSILEMORE = true;
+				bMISSILEEVENMORE = true;
+				A_StartSound("grunt/sight");
 				A_FaceTarget();
 				A_GiveInventory("Enraged", 1);
 				}
@@ -486,38 +516,38 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			POSS K 5;
 			POSS L 1;
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem ("DeadZombieman1");
 			Stop;
 		Death.Rare:
 			TNT1 A 0 A_FaceTarget();
 			Z6Z8 A 5 A_Scream();
 			Z6Z8 B 5 BRIGHT {
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 				A_SpawnItem ("RifleCaseSpawn", 0, 30,0);
-				A_CustomMissile ("ZombieManTracer", 24, 5, -20, 2, -20);
+				A_SpawnProjectile ("ZombieManTracer", 24, 5, -20, 2, -20);
 			}
 			Z6Z8 C 5;
 			Z6Z8 D 5 {
-				A_PlaySound("weapons/rifle");
+				A_StartSound("weapons/rifle");
 				A_SpawnItem ("RifleCaseSpawn", 0, 30,0);
-				A_CustomMissile ("ZombieManTracer", 24, -5, 20, 2, 30);
+				A_SpawnProjectile ("ZombieManTracer", 24, -5, 20, 2, 30);
 			}
 			Z6Z8 E 5 BRIGHT A_NoBlocking();
 			Z6Z8 FGHI 5;
 			TNT1 A 0 {
 				A_SpawnItem ("GrowingBloodPool");
-				A_PlaySound("BODYF",6);
+				A_StartSound("BODYF",6);
 				A_SpawnItem("DeadHelmetZombiemanLikeInActionMovie");
 			}
 			Stop;
 			
 		Death.Arm:
 			TNT1 A 0 {
-				A_CustomMissile ("PB_XDeathArm1", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallGib", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallGib", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_MuchBlood2", 35, 0, random (0, 360), 2, random (0, 160));
+				A_SpawnProjectile ("PB_XDeathArm1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_MuchBlood2", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_NoBlocking();
 				A_Scream();
 				}
@@ -532,11 +562,11 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 		Saw2:
 			TNT1 A 0 A_Scream();
 			TNT1 A 0 A_NoBlocking();
-			TNT1 AAAA 0 A_CustomMissile("PB_Intestine", 24, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AAA 0 A_CustomMissile ("PB_XDeath1", 42, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AAA 0 A_CustomMissile ("PB_SmallGib", 42, 0, random (0, 360), 2, random (0, 160));
+			TNT1 AAAA 0 A_SpawnProjectile("PB_Intestine", 24, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_XDeath1", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_SmallGib", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			ZBLD ABCDE 5;
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			ZBLD F 1 A_SpawnItem("DeadZombiemanZBLDF");
 			Stop;
 		Death.cut:
@@ -544,28 +574,28 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0;
 			TNT1 A 0 A_XScream();
 			TNT1 O 0 A_NoBlocking();
-			TNT1 A 0 A_CustomMissile ("PB_MuchBlood2", 35, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_RipHelmetZombieMan", 0, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AAAA 0 A_CustomMissile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), 2, random (0, 40));
-			POSX AABCDE 9 A_CustomMissile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), 2, random (0, 40));
+			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood2", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_RipHelmetZombieMan", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			POSX AABCDE 9 A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			POSX EEEEEEEEEEEEEEEEEEEEEE 1 A_CustomMissile ("PB_SquirtingBloodTrail", 12, 0, random (0, 360), 2, random (0, 90));
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			POSX EEEEEEEEEEEEEEEEEEEEEE 1 A_SpawnProjectile ("PB_SquirtingBloodTrail", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 90));
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem("DeadZombiemanJustLegsAreLeft");
 			Stop;
 		
 		Death.Tear:
 			TNT1 A 0 A_XScream();
 			TNT1 O 0 A_NoBlocking();
-			TNT1 A 0 A_CustomMissile ("PB_MuchBlood", 1, 0, random (0, 360), 2, random (0, 160));
-			4P2X AA 8 A_CustomMissile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_CustomMissile ("PB_XDeath4", 40, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AAA 0 A_CustomMissile ("PB_SmallGib", 42, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_RipHelmetZombieMan2", 0, 0, random (0, 360), 2, random (0, 160));
-			PP2X BBCD 8 A_CustomMissile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), 2, random (0, 40));
+			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood", 1, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			4P2X AA 8 A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeath4", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_SmallGib", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_RipHelmetZombieMan2", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			PP2X BBCD 8 A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
-			PP2X EEEEEEEEEEEEEEEEEEEE 2 A_CustomMissile("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 90));
+			TNT1 A 0 A_StartSound("BODYF",6);
+			PP2X EEEEEEEEEEEEEEEEEEEE 2 A_SpawnProjectile("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 90));
 			TNT1 A 0 A_SpawnItem("DeadZombieman_TearedInHalf");
 			Stop;
 			
@@ -583,7 +613,7 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			Stop;
 			
 		 Death.LegMassacre:
-			TNT1 A 0 A_CustomMissile ("PB_MuchBlood2", 15, 0, random (0, 360), 2, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood2", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItem ("ZombieLegOnFoot");
 			POS7 B 1 A_Scream();
 			TNT1 A 0 A_NoBlocking();
@@ -596,7 +626,7 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 				A_FaceTarget();
 				A_NoBlocking();
 				A_SpawnItemEx ("PB_XDeathHelmetZombieHead",0,0,50,random(-2,2),random(-2,2),12,0,SXF_NOCHECKPOSITION,0);
-				A_CustomMissile ("PB_MuchBlood", 40, 0, random (0, 360), 2, random (0, 160));
+				A_SpawnProjectile ("PB_MuchBlood", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			}
 			//TNT1 A 0 A_Jump(64, "Deathchickenhead"); // This is causing crashes for some reason....
 			ZMAD GGGGGGFFFFFF 1 {
@@ -605,35 +635,24 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 					frandom(-2, 2), frandom(-2, 2), frandom(4, 8),
 					frandom(0, 360));
 				}
-			ZMAD AAAAABBBBBBBBBBCCCCC 2 A_CustomMissile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), 2, random (60, 120));
+			ZMAD AAAAABBBBBBBBBBCCCCC 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (60, 120));
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
-			ZMAD DDDDEEEEEEEEEEEEEEEE 2 A_CustomMissile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), 2, random (10, 40));
+			TNT1 A 0 A_StartSound("BODYF",6);
+			ZMAD DDDDEEEEEEEEEEEEEEEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
 			ZMAD E 1 A_SpawnItem ("DeadZombieman_NoHeadFront");
 			Stop;
 						
 		 Death.Leg:
 			TNT1 A 0 A_JumpIfHealthLower(-20, "LegRemove");
-			TNT1 A 0 {
-				A_Scream();
-				A_NoBlocking();
-				}
-			POSL MO 6;
-			POSS K 6 ;
-			TNT1 A 0 {
-				A_PlaySound("BODYF",6);
-				A_SpawnItem("DeadZombieman1");
-				A_SpawnItem ("GrowingBloodPool");
-				}
-			Stop;
+			Goto Death.MinorLeg;
 		LegRemove:
 			TNT1 A 0 A_Jump(64, "LegRemoveRare");
 			TNT1 A 0 {
-				A_CustomMissile ("PB_MuchBlood2", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeathZombieLeg", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallGib", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallGib", 15, 0, random (0, 360), 2, random (0, 160));
+				A_SpawnProjectile ("PB_MuchBlood2", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeathZombieLeg", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnItem ("GrowingBloodPool");
 				A_NoBlocking();
 				A_Scream();
@@ -642,9 +661,9 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			Stop;
 		LegRemoveRare:
 			TNT1 A 0 {
-				A_CustomMissile ("PB_MuchBlood2", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeathZombieLeg", 35, 0, random (0, 360), 2, random (0, 160));
+				A_SpawnProjectile ("PB_MuchBlood2", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeathZombieLeg", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnItem ("GrowingBloodPool");
 				A_NoBlocking();
 				A_Scream();
@@ -654,11 +673,11 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			
 		Death.Melee:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down");
-			TNT1 A 0 A_JumpIfInventory ("SKZombieMan", 1, "StealthKill");
+			TNT1 A 0 A_JumpIfInventory ("SKHelmetZombie1", 1, "StealthKill");
         Death.Kick:
 			TNT1 A 0 {
-				A_ChangeFLag("NODROPOFF", 0);
-				A_ChangeFLag("SLIDESONWALLS", 1);
+				bNODROPOFF = false;
+				bSLIDESONWALLS = true;
 				ThrustThingZ(0,30,0,1);
 				A_Scream();
 				A_NoBlocking();
@@ -666,7 +685,7 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 				A_Recoil (10);
 			}
 			9OS4 UUVWXY 5;
-			TNT1 A 0 A_PlaySound("BODYF");
+			TNT1 A 0 A_StartSound("BODYF");
 			TNT1 A 0 A_SpawnItem("DeadZombieman1");
 			Stop;
 		StealthKill:
@@ -684,39 +703,39 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 {
 				A_Stop();
 				A_NoBlocking();
-				A_Playsound("MELT");
+				A_StartSound("MELT");
 			}
-			TNT1 AAAA 0 A_CustomMissile ("ExplosionParticleHeavy", 32, 0, random (0, 360), 2, random (0, 360));
-			TNT1 AAAA 0 A_CustomMissile ("ExplosionParticleVeryFast", 32, 0, random (0, 360), 2, random (0, 360));
+			TNT1 AAAA 0 A_SpawnProjectile ("ExplosionParticleHeavy", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 AAAA 0 A_SpawnProjectile ("ExplosionParticleVeryFast", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
 			TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,32,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15));
 			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35));
 			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),32,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN KKKKK 1 BRIGHT Light("IncinerationGlow") A_CustomMissile ("BurningEmberParticlesFloating_Bigger", 36, 0, random (0, 360), 2, random (0, 160));
+			Z8RN KKKKK 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),28,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN LLLLL 1 BRIGHT Light("IncinerationGlow") A_CustomMissile ("BurningEmberParticlesFloating_Bigger", 28, 0, random (0, 360), 2, random (0, 160));
+			Z8RN LLLLL 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 28, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),24,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN CCCCC 1 BRIGHT Light("IncinerationGlow") A_CustomMissile ("BurningEmberParticlesFloating_Bigger", 36, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_Playsound("SZZLL", 3);
+			Z8RN CCCCC 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_StartSound("SZZLL", 3);
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),20,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN DDDDD 1 BRIGHT Light("IncinerationGlow") A_CustomMissile ("BurningEmberParticlesFloating_Bigger", 20, 0, random (0, 360), 2, random (0, 160));
+			Z8RN DDDDD 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 20, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),16,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN EEEEE 1 BRIGHT Light("IncinerationGlow") A_CustomMissile ("BurningEmberParticlesFloating_Bigger", 12, 0, random (0, 360), 2, random (0, 160));
+			Z8RN EEEEE 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),12,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN FFFFF 1 BRIGHT Light("IncinerationGlow") A_CustomMissile ("BurningEmberParticlesFloating_Bigger", 10, 0, random (0, 360), 2, random (0, 160));
+			Z8RN FFFFF 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
 			TNT1 A 0 A_SpawnItem("BarrelExplosionSmokeColumn");
 			Z8RN GGGG 2 Light("IncinerationGlow");
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN HHHH 2 Light("IncinerationGlow") A_CustomMissile ("PlasmaSmoke", 14, 0, random (0, 360), 2, random (0, 160));
+			Z8RN HHHH 2 Light("IncinerationGlow") A_SpawnProjectile ("PlasmaSmoke", 14, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN HHHHHH 12 A_CustomMissile ("PlasmaSmoke", 14, 0, random (0, 360), 2, random (0, 160));
+			Z8RN HHHHHH 12 A_SpawnProjectile ("PlasmaSmoke", 14, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			Z8RN H -1;
 			Stop;
 		Death.Shrink:
 			TNT1 A 1 {
-				A_PlaySound("Shrink", 3);
+				A_StartSound("Shrink", 3);
 				A_SpawnItemEx ("PistolZombieman2ShrinkFX1", 0, 0,  5, 0, 0);
 				}
 			TNT1 A 1 A_SpawnItemEx ("PistolZombieman2ShrinkFX1", 0, 0, 5, 0, 0);
@@ -736,8 +755,8 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			
 		Death.Shotgunontheface:	
 			TNT1 A 0 {
-				A_ChangeFlag("SLIDESONWALLS", 0);
-				A_ChangeFlag("NOBLOCKMONST", 1);
+				bSLIDESONWALLS = false;
+				bNOBLOCKMONST = true;
 			}
 			TNT1 A 0 A_Jump(160, "DeathShotgunFly");
 			
@@ -748,43 +767,43 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 				A_Recoil(13);
 				ThrustThingZ(0,20,0,1);
 				}
-			TNT1 A 0 A_JumpIf(momy == 0, "DeathShotgunFly");
+			TNT1 A 0 A_JumpIf(Vel.Y == 0, "DeathShotgunFly");
 			TNT1 A 0 A_Jump(128, "DeathShotgunontheface2");
 			TNT1 A 0 {
 				A_Scream();
-				A_CustomMissile ("PB_XDeath1", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 35, 0, random (0, 360), 2, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_NoBlocking();
 				}
-			Z6Z7 AAAABBBBCCCCDDDD 1 A_CustomMissile ("Brutal_LiquidBlood3", 15, 0, random (0, 360), 2, random (0, 40));
-			Z6Z7 EFGHIJ 4 A_JumpIf((MomY == 0), "DSFStop");
+			Z6Z7 AAAABBBBCCCCDDDD 1 A_SpawnProjectile ("Brutal_LiquidBlood3", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			Z6Z7 EFGHIJ 4 A_JumpIf((Vel.Y == 0), "DSFStop");
 			Goto DSFStop;
 		DSFStop:
 			TNT1 A 0{
 				A_Stop();
 				A_SpawnItem ("GrowingBloodPool");
-				A_CustomMissile ("PB_SuperWallRedBlood", 2, 0, random (170, 190), 2, random (0, 0));
-				A_PlaySound("BODYF",6);
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 2, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 0));
+				A_StartSound("BODYF",6);
 				A_SpawnItem("DeadHelmetZombiemanShotguntotheFace1");
 				}
 			Stop;
 		DeathShotgunontheface2:	
 			TNT1 A 0 {
 				A_Scream();
-				A_CustomMissile ("PB_XDeath1", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 35, 0, random (0, 360), 2, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_NoBlocking();
 				}
-			Z6Z7 KKKKLLLLMMMMNNNN 1 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			Z6Z7 OPQRST 4 A_JumpIf((MomY == 0), "DSFStop2");
+			Z6Z7 KKKKLLLLMMMMNNNN 1 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			Z6Z7 OPQRST 4 A_JumpIf((Vel.Y == 0), "DSFStop2");
 			Goto DSFStop2;
 			
 		DSFStop2:
 			TNT1 A 0 {
 				A_Stop();
 				A_SpawnItem ("GrowingBloodPool");
-				A_CustomMissile ("PB_SuperWallRedBlood", 2, 0, random (170, 190), 2, random (0, 0));
-				A_PlaySound("BODYF",6);
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 2, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 0));
+				A_StartSound("BODYF",6);
 				A_SpawnItem("DeadHelmetZombiemanShotguntotheFace2");
 			}
 			Stop;
@@ -792,30 +811,30 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 		
 		DeathShotgunFly:
 			TNT1 A 0 {
-				A_ChangeFLag("NODROPOFF", 0);
-				A_ChangeFLag("SLIDESONWALLS", 0);
+				bNODROPOFF = false;
+				bSLIDESONWALLS = false;
 				ThrustThingZ(0,30,0,1);
 				A_Scream();
 				A_NoBlocking();
 				A_FaceTarget();
 				A_Recoil (6);
 			}
-			9OS4 U 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_JumpIf((MomY == 0), "TakeASit");
-			9OS4 U 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_JumpIf((MomY == 0), "TakeASit");
-			9OS4 V 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_JumpIf((MomY == 0), "TakeASit");
-			9OS4 W 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			9OS4 X 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			9OS4 Y 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			9OS4 U 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			9OS4 U 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			9OS4 V 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			9OS4 W 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			9OS4 X 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			9OS4 Y 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItem("DeadZombieman1");
 			Stop;
 		TakeASit:
-			TNT1 AAAA 0 A_CustomMissile ("PB_SuperWallRedBlood", 6, 0, random (170, 190), 2, random (0, 40));
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 6, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_StartSound("BODYF",6);
 			9OS4 U 5;
 			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItemEx("DeadHelmetZombieman_Slumped", 10);
@@ -831,23 +850,23 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_JumpIfHealthLower(-600, "HeavyHead");
 			TNT1 A 0 A_JumpIfHealthLower(-90, "HeadExplode");
 		HeadMinor:
-			TNT1 A 0 A_Playsound("MinorHeadshot");
+			TNT1 A 0 A_StartSound("MinorHeadshot");
 			TNT1 A 0 A_Jump (256, "DeathMinorhead1", "DeathMinorhead2", "DeathMinorhead3", "DeathMinorhead4", "DeathMinorhead5");
 		DeathMinorHead1:
 			TNT1 A 0 A_Pain();
 			TNT1 A 0 A_FaceTarget();
-			TNT1 A 0 A_CustomMissile ("PB_Brains4Green", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-			TNT1 AA 0 A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-			TNT1 A 0 A_CustomMissile ("PB_SmallBrainPiece", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40));
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains4Green", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 AA 0 A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 A 0 A_SpawnProjectile ("PB_SmallBrainPiece", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			
-			U4M7 A 6 A_CustomMissile ("PB_MuchBlood2", 40, 0, random (0, 360), 2, random (0, 160));
+			U4M7 A 6 A_SpawnProjectile ("PB_MuchBlood2", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			U4M7 BC 8;
 			
 			TNT1 A 0 A_Scream();
 			U4M7 D 6 A_NoBlocking();
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			U4M7 E 1;
 			TNT1 A 0 A_SpawnItem ("DeadZombieman_U4M7");
 			Stop;
@@ -855,33 +874,33 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 		DeathMinorHead2:
 			TNT1 A 0 A_Pain();
 			TNT1 A 0 A_FaceTarget();
-			TNT1 A 0 A_CustomMissile ("PB_Brains4Green", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-			TNT1 AA 0 A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-			TNT1 A 0 A_CustomMissile ("PB_SmallBrainPiece", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40));
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains4Green", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 AA 0 A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 A 0 A_SpawnProjectile ("PB_SmallBrainPiece", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			
-			U4M7 F 6 A_CustomMissile ("PB_MuchBlood2", 40, 0, random (0, 360), 2, random (0, 160));
+			U4M7 F 6 A_SpawnProjectile ("PB_MuchBlood2", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			U4M7 GH 8;
 			
 			TNT1 A 0 A_Scream();
 			U4M7 I 6 A_NoBlocking();
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			U4M7 J 1;
 			TNT1 A 0 A_SpawnItem ("DeadZombieman_U4M7J");
 			Stop;
 		DeathMinorhead3:
 			TNT1 A 0 A_Scream();
-			U4M9 A 5 A_CustomMissile ("PB_MuchBlood2", 40, 0, random (0, 360), 2, random (0, 160));
+			U4M9 A 5 A_SpawnProjectile ("PB_MuchBlood2", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			U4M9 B 5;
-			TNT1 A 0 A_CustomMissile ("PB_Brains2", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-			TNT1 A 0 A_CustomMissile ("PB_Brains4", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-			TNT1 A 0 A_CustomMissile ("PB_SmallBrainPiece", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AAA 0 A_CustomMissile ("PB_Teeth", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40));
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains2", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains4", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 A 0 A_SpawnProjectile ("PB_SmallBrainPiece", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_Teeth", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			U4M9 C 5 A_NoBlocking();
 			U4M9 DE 5;
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			U4M9 F 1;
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItem ("DeadZombieman_U4M9");
@@ -889,19 +908,19 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 		DeathMinorhead4:
 			TNT1 A 0 A_Pain();
 			TNT1 A 0 A_FaceTarget();
-			TNT1 A 0 A_CustomMissile ("PB_Brains4Green", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-			TNT1 AA 0 A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-			TNT1 A 0 A_CustomMissile ("PB_SmallBrainPiece", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40));
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains4Green", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 AA 0 A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 A 0 A_SpawnProjectile ("PB_SmallBrainPiece", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			
-			PXS4 A 6 A_CustomMissile ("PB_MuchBlood2", 40, 0, random (0, 360), 2, random (0, 160));
+			PXS4 A 6 A_SpawnProjectile ("PB_MuchBlood2", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			PXS4 BC 7;
 			
 			TNT1 A 0 A_Scream();
 			PXS4 D 6 A_NoBlocking();
 			PXS4 EF 6;
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem ("DeadZombieman_PXS4");
 			Stop;
 		
@@ -914,16 +933,16 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG");
 			TNT1 A 0 { 
 				NashGoreGibs.SpawnGibs(self);
-				A_CustomMissile ("PB_XDeath1", 42, 0, random (0, 290), 2, random (10, 60));
-				A_CustomMissile ("PB_XDeath3", 42, 0, random (0, 290), 2, random (10, 60));
-				A_CustomMissile ("PB_XDeath3", 42, 0, random (0, 290), 2, random (10, 60));
-				A_CustomMissile ("PB_XDeath3", 42, 0, random (0, 290), 2, random (10, 60));
-				A_CustomMissile ("PB_XDeath2", 42, 0, random (0, 190), 2, random (10, 60));
-				A_CustomMissile ("PB_XDeath4", 42, 0, random (0, 190), 2, random (10, 60));
+				A_SpawnProjectile ("PB_XDeath1", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+				A_SpawnProjectile ("PB_XDeath3", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+				A_SpawnProjectile ("PB_XDeath3", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+				A_SpawnProjectile ("PB_XDeath3", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+				A_SpawnProjectile ("PB_XDeath2", 42, 0, random (0, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+				A_SpawnProjectile ("PB_XDeath4", 42, 0, random (0, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
 				}
-			TNT1 AAAAAA 0 A_CustomMissile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
+			TNT1 AAAAAA 0 A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
 			TNT1 A 1 {
-				A_SpawnItemEx("PB_HelmetZombieXDeath",0,0,2,velx,vely,velz,angle,SXF_ABSOLUTEVELOCITY|SXF_ABSOLUTEANGLE|SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx("PB_HelmetZombieXDeath",0,0,2,Vel.X,Vel.Y,Vel.Z,angle,SXF_ABSOLUTEVELOCITY|SXF_ABSOLUTEANGLE|SXF_NOCHECKPOSITION,0);
 				A_Recoil(2);
 				A_XScream();
 				A_NoBlocking();
@@ -936,22 +955,22 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 					A_FaceTarget();
 					NashGoreGibs.SpawnGibs(self);
 					for (int i = 0; i < 5; i++) {	
-						A_CustomMissile ("PB_BloodmistLarge", 32, 0, random (170, 190), 2, random (0, 40));
-						A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
+						A_SpawnProjectile ("PB_BloodmistLarge", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+						A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 					}
 					
-					A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2,  random (0, 40));
-					A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-					A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-					A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-					A_CustomMissile ("PB_XDeathArm1", 32, 0, random (180, 190), 2, random (0, 80));
-					A_CustomMissile ("PB_XDeathArm1", 32, 0, random (160, 170), 2, random (0, 80));
-					A_CustomMissile ("PB_XDeathHelmetZombieHead", 32, 0, random (170, 190), 2, random (0, 80));
+					A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH,  random (0, 40));
+					A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_XDeathArm1", 32, 0, random (180, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 80));
+					A_SpawnProjectile ("PB_XDeathArm1", 32, 0, random (160, 170), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 80));
+					A_SpawnProjectile ("PB_XDeathHelmetZombieHead", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 80));
 					A_XScream();
 					A_NoBlocking();
 				}
 			ZZD1 EEFFGH 6;
-			ZZD1 H 1 A_PlaySound("BODYF");
+			ZZD1 H 1 A_StartSound("BODYF");
 			ZZD1 HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH 2 {
 				A_SpawnItemEx("PB_SquirtingBloodTrail", 
 				0, 0, frandom(3, 4),
@@ -973,35 +992,35 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_Jump(128, "Death.Blast2");
 			TNT1 A 0 {
 				A_Scream();
-				A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-				A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-				A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-				A_CustomMissile ("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40));
-				A_CustomMissile ("PB_SmallGib", 32, 0, random (150, 210), 2, random (0, 40));
-				A_CustomMissile ("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40));
-				A_CustomMissile ("PB_XDeath3", 16, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("PB_SmallGib", 16, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("PB_XDeath3", 16, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
-				A_CustomMissile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
-				A_CustomMissile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SmallGib", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SmallGib", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+				A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+				A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
 				}
 			Z4Z7 A 6 {
 				A_Stop();
 				A_SpawnItem ("GrowingBloodPool");
 				}
-			Z4Z7 BBBBBBBBBB 3 A_CustomMissile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), 2, random (30, 60));
-			Z4Z7 CCC 3 A_CustomMissile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), 2, random (10, 40));
-			Z4Z7 DD 3 A_CustomMissile ("PB_SquirtingBloodTrail", 6, 0, random (0, 360), 2, random (30, 60));
-			TNT1 A 0 A_PlaySound("BODYF");
+			Z4Z7 BBBBBBBBBB 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 60));
+			Z4Z7 CCC 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
+			Z4Z7 DD 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 6, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 60));
+			TNT1 A 0 A_StartSound("BODYF");
 			TNT1 A 0 A_SpawnItem("DeadZombieMan_Z4Z7");
 			Stop;
 			
@@ -1013,32 +1032,32 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 				"Death.Blast", "Death.Blast2");
 		Naildeath1:
 			TNT1 A 0 {
-				A_ChangeFLag("NODROPOFF", 0);
-				A_ChangeFLag("SLIDESONWALLS", 0);
+				bNODROPOFF = false;
+				bSLIDESONWALLS = false;
 				ThrustThingZ(0,random(20,30),0,1);
 				A_Scream();
 				A_NoBlocking();
 				A_FaceTarget();
 				A_Recoil(30);
 			}
-			9OS4 U 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_JumpIf((MomY == 0), "PinToWall");
-			9OS4 U 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_JumpIf((MomY == 0), "PinToWall");
-			9OS4 V 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_JumpIf((MomY == 0), "PinToWall");
-			9OS4 W 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			9OS4 X 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			9OS4 Y 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			9OS4 U 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			9OS4 U 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			9OS4 V 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			9OS4 W 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			9OS4 X 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			9OS4 Y 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItem("DeadZombieman1");
 			Stop;
 		PinToWall:
-			TNT1 A 0 A_CustomMissile ("PB_MuchBlood2", 35, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AA 0 A_CustomMissile ("PB_XDeath1", 35, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AAAA 0 A_CustomMissile ("PB_SuperWallRedBlood", 6, 0, random (170, 190), 2, random (0, 40));
-			TNT1 A 0 A_PlaySound("Weapons/NailHitBleed");
+			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood2", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AA 0 A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 6, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_StartSound("Weapons/NailHitBleed");
 			PIN3 A 5;
 			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItemEx("Dead_Helmet_Zombieman_Pinned", 10);
@@ -1048,21 +1067,21 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_XScream();
 			TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 A_FaceTarget();
-			TNT1 AAA 0 A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-			TNT1 AAA 0 A_CustomMissile ("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40));
-			TNT1 AAA 0 A_CustomMissile ("PB_Xdeath3", 16, 0, random (170, 190), 2, random (0, 40));
-			TNT1 AA 0 A_CustomMissile ("PB_Xdeath2", 16, 0, random (130, 210), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("PB_BloodMistBig", 40, 0, random (0, 360), 2, random (30, 90));
-			TNT1 A 0 A_CustomMissile ("PinnedHelmetZombiemanTorso", 32, 0, 180, 2, random (-2, 2));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_Xdeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AA 0 A_SpawnProjectile ("PB_Xdeath2", 16, 0, random (130, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_BloodMistBig", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+			TNT1 A 0 A_SpawnProjectile ("PinnedHelmetZombiemanTorso", 32, 0, 180, 2, random (-2, 2));
 			
-			TNT1 AAAA 0 A_CustomMissile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), 2, random (0, 40));
-			POSX AAAAAA 2 A_CustomMissile ("PB_SquirtingBloodTrail", 36, 0, random (0, 360), 2, random (0, 40));
-			POSX BCDE 9 A_CustomMissile ("PB_SquirtingBloodTrail", 28, 0, random (0, 360), 2, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			POSX AAAAAA 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			POSX BCDE 9 A_SpawnProjectile ("PB_SquirtingBloodTrail", 28, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			POSX EEEEEEEEEEEEEEEEEEEEEE 1 A_CustomMissile ("PB_SquirtingBloodTrail", 12, 0, random (0, 360), 2, random (0, 90));
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			POSX EEEEEEEEEEEEEEEEEEEEEE 1 A_SpawnProjectile ("PB_SquirtingBloodTrail", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 90));
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem("DeadZombiemanJustLegsAreLeft");
 			Stop;
 			
@@ -1070,16 +1089,16 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_XScream();
 			TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 A_FaceTarget();
-			TNT1 AAA 0 A_CustomMissile ("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40));
-			TNT1 AA 0 A_CustomMissile ("PB_Xdeath2", 16, 0, random (130, 210), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("PB_BloodMistBig", 40, 0, random (0, 360), 2, random (30, 90));
-			TNT1 A 0 A_CustomMissile ("PinnedHelmetZombiemanTorso2", 32, 0, 180, 2, random (-2, 2));
-			PP2X BBCD 6 A_CustomMissile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), 2, random (0, 40));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AA 0 A_SpawnProjectile ("PB_Xdeath2", 16, 0, random (130, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_BloodMistBig", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+			TNT1 A 0 A_SpawnProjectile ("PinnedHelmetZombiemanTorso2", 32, 0, 180, 2, random (-2, 2));
+			PP2X BBCD 6 A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
-			PP2X EEEEEEEEEEEEEEEEEEEE 2 A_CustomMissile("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 90));
+			TNT1 A 0 A_StartSound("BODYF",6);
+			PP2X EEEEEEEEEEEEEEEEEEEE 2 A_SpawnProjectile("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 90));
 			TNT1 A 0 A_SpawnItem("DeadZombieman_TearedInHalf");
 			Stop;
 			
@@ -1112,10 +1131,10 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			ZDE5 B 8 A_SetAngle(angle, SPF_INTERPOLATE);
 		DivingLoop:
 			ZDE5 B 1 A_CheckFloor ("DiveStop");
-			ZDE5 B 1 A_JumpIf (momz == 0, "DiveStop");
+			ZDE5 B 1 A_JumpIf (Vel.Z == 0, "DiveStop");
 			Loop;
 		DiveStop:
-			TNT1 A 0 A_PlaySoundEx("BODYF", "Auto");
+			TNT1 A 0 A_StartSound("BODYF", CHAN_AUTO);
 			ZDE5 C 25 A_Stop();
 			ZDE5 D 6;
 			P056 F 6;
@@ -1132,9 +1151,11 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 		Death.Ice:
 		Death.Freeze:
 		Death.Frost:
-			TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0);
-			TNT1 A 0 A_ChangeFlag("SOLID", 0);
-			TNT1 A 0 A_SpawnItem("FrozenHelmetRifleZombieman");
+			TNT1 A 0 {
+				bSHOOTABLE = false;
+				bSOLID = false;
+				A_SpawnItem("FrozenHelmetRifleZombieman");
+			}
 			Stop;
 	}
 }
