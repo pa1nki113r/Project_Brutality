@@ -1,0 +1,117 @@
+Extend Class Py_WeaponWheelEventHandler
+{
+	override void RenderOverlay(RenderEvent e)
+	{
+		int circleX = 640*0.75;
+		int circleY = 480/2;
+		let circleTex = TexMan.CheckForTexture("graphics/pywheel/wheel_bg.png",TexMan.Type_MiscPatch);
+		let selTex = TexMan.CheckForTexture("graphics/pywheel/sel_bg.png",TexMan.Type_MiscPatch);
+		
+		if(!searchedWeps||wheelShow.Size()==0)
+		{
+			return;
+		}
+		if(alphaFade==0)
+		{
+			return;
+		}
+		
+		if(wheelShow.Size()<=0)
+		{
+			return;
+		}
+		
+		int curSelMod = wheelShow[currentSelection];
+			screen.DrawTexture (circleTex, true, circleX/2, circleY/2, DTA_VirtualWidth, 320, DTA_VirtualHeight, 240, DTA_Alpha, 0.25*alphaFade);
+		for(int i = 0;i<wheelShow.Size();i++)
+		{
+			Vector2 textPos = (cos(((double(i+1)/wheelShow.Size())*360)+180)*128, sin((double(i+1)/wheelShow.Size())*360)*128);
+			//Console.Printf(""..);
+			TextureID wepIcon = wheelWeapons[wheelShow[i]].weaponIcon;
+			int screenPosX = (circleX+textPos.x);//wheelScaleX[i];
+			int screenPosY = (circleY+textPos.y);//wheelScaleY[i];
+			Vector2 imageScale = TexMan.GetScaledSize(wepIcon);
+			imageScale.x *= wheelWeapons[wheelShow[i]].weaponScale.x;
+			imageScale.y *= wheelWeapons[wheelShow[i]].weaponScale.y*1.2;
+			bool actuallyHas = players[0].mo.FindInventory(wheelWeapons[wheelShow[i]].weaponClass);
+			bool noIcon = wepIcon==crowbarTex;
+			string wepName = GetDefaultByType(wheelWeapons[wheelShow[i]].weaponClass).GetTag();
+			
+				// Draw base graphic
+				screen.DrawTexture(wepIcon, true, screenPosX, screenPosY,
+					DTA_VirtualWidth, 640, DTA_VirtualHeight, 480,
+					DTA_DestWidth, int(imageScale.x), DTA_DestHeight, int(imageScale.y),
+					DTA_CenterOffset, true, DTA_TranslationIndex, actuallyHas ? 0 : ( icons_renderstyle==Style_Translucent ? Translation.GetID('darkenwep') : 0 ),
+					DTA_Alpha, actuallyHas ? icons_alpha[APS_Normal]*alphaFade : icons_alpha[APS_Inactive]*alphaFade, DTA_LegacyRenderStyle, icons_renderstyle);
+					
+				if(noIcon)
+				{
+					screen.DrawText (SmallFont, Font.CR_UNTRANSLATED, screenPosX-SmallFont.StringWidth(wepName)/2, screenPosY, wepName, DTA_VirtualWidth, 640, DTA_VirtualHeight, 480, DTA_Alpha, actuallyHas ? 1.0*alphaFade : 0.0);
+				}
+				if(i==currentSelection)
+				{
+					screen.DrawTexture(wepIcon, true, screenPosX, screenPosY,
+					DTA_VirtualWidth, 640, DTA_VirtualHeight, 480,
+					DTA_DestWidth, int(imageScale.x), DTA_DestHeight, int(imageScale.y),
+					DTA_CenterOffset, true, DTA_TranslationIndex, icons_renderstyle==Style_Translucent ? Translation.GetID('lightenwep') : 0,
+					DTA_Alpha, 0.75*alphaFade, DTA_LegacyRenderStyle, icons_renderstyle);
+					screen.DrawText (SmallFont, Font.CR_WHITE, screenPosX-SmallFont.StringWidth(wepName)/2, screenPosY, wepName, DTA_VirtualWidth, 640, DTA_VirtualHeight, 480, DTA_Alpha, actuallyHas&&noIcon ? 1.0*alphaFade : 0.0);
+				}
+			
+			//screen.DrawText (SmallFont, Font.CR_UNTRANSLATED, circleX+textPos.x-SmallFont.StringWidth(wepName)/2, circleY+textPos.y, wepName, DTA_VirtualWidth, 640, DTA_VirtualHeight, 480);
+			
+		}
+		circleX/=2;
+		circleY/=2;
+		//int curSelMod = wheelShow[currentSelection];
+		Font fnt = "SmallFont";
+		if( players[0].mo.FindInventory(wheelWeapons[curSelMod].weaponClass) )
+		{
+			let a1 = GetDefaultByType(wheelWeapons[curSelMod].weaponClass).ammotype1;
+			let a2 = GetDefaultByType(wheelWeapons[curSelMod].weaponClass).ammotype2;
+			string wepName = StringTable.Localize(wheelWeapons[curSelMod].weaponTag);
+			if(a1!=null)
+			{
+				let ba1 = players[0].mo.FindInventory(a1);
+				let ba2 = players[0].mo.FindInventory(a2);
+				string ammoPrint;
+				if(ba1!=null)
+				{
+					ammoPrint = ""..ba1.Amount;//..a1.Amount;
+				}
+				wepName = wepName.."\n\n\cb"..ba1.Amount;
+			}
+			BrokenLines mMessage = fnt.BreakLines(wepName, 90);//.GetTag();
+			if(mMessage!=NULL)
+			{
+				int c = mMessage.Count();
+				int y = 0-(fnt.GetHeight()*c)/2;
+				for (int i = 0; i < c; i++)
+				{
+					if(mMessage.StringAt(i).Length()<1)
+					{
+						y+=fnt.GetHeight()/2;
+					}
+				}
+				for (int i = 0; i < c; i++)
+				{
+					screen.DrawText (fnt, Font.CR_UNTRANSLATED, circleX-fnt.StringWidth(mMessage.StringAt(i))/2, y+circleY, mMessage.StringAt(i), DTA_VirtualWidth,320,DTA_VirtualHeight,240, DTA_Alpha, 1.0*alphaFade);
+					y += fnt.GetHeight();
+					if(mMessage.StringAt(i).Length()<1)
+					{
+						y-=fnt.GetHeight()/2;
+					}
+				}
+			}
+		}
+		else
+		{
+			screen.DrawText (SmallFont, Font.CR_BLACK, circleX-SmallFont.StringWidth("???")/2, circleY-fnt.GetHeight()/2, "???", DTA_VirtualWidth, 320, DTA_VirtualHeight, 240, DTA_Alpha, 1.0*alphaFade);
+		}
+		
+		//screen.DrawTexture(TexMan.CheckForTexture("UNKNA0",TexMan.Type_MiscPatch), true, circleX+realMouse.x*0.8, circleY+realMouse.y*0.8, DTA_VirtualWidth, 320, DTA_VirtualHeight, 240, DTA_CenterOffset, true, DTA_Alpha, 0.5);
+		screen.DrawTexture (selTex, true, circleX+realMouse.x*0.8, circleY+realMouse.y*0.8, DTA_VirtualWidth, 320, DTA_VirtualHeight, 240, DTA_Alpha, 0.5*alphaFade);//, DTA_DestWidth, 32, DTA_DestHeight, 32);
+		screen.DrawTexture (selTex, true, circleX+fakeMouse.x*0.8, circleY+fakeMouse.y*0.8, DTA_VirtualWidth, 320, DTA_VirtualHeight, 240, DTA_Alpha, 0.5*alphaFade/*, DTA_DestWidth, 32, DTA_DestHeight, 32*/, DTA_TranslationIndex, Translation.GetID('reddenwep'));
+		//screen.DrawText (SmallFont, Font.CR_BLUE, 0, 0, fakeMouse.x.."", DTA_VirtualWidth, 320, DTA_VirtualHeight, 240);
+	}
+}
