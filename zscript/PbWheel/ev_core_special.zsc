@@ -1,0 +1,762 @@
+Class PB_SpecialWheelHandler : EventHandler
+{
+	bool searchedSpecials;
+	array<PB_SpecialWheel_Mode> wheelSpecials;
+	array<string> useTheseSpecials;
+	array<string> avoidTheseSpecials;
+	
+	array<bool > wheelShow;
+	int wheelIt;
+	int currentSelection;
+	int oldSelection;
+	array<int > actualList;
+	Vector2 fakeMouse;
+	Vector2 realMouse;
+	int angleSave;
+	Vector2 selectionMouse;
+	int selAngle;
+	TextureID crowbarTex;
+	int oldPitch;
+	int oldYaw;
+	double alphaFade;
+	bool nCY;
+	
+	bool wheelIsOpen;
+	bool wheelSort;
+	bool inclusiveSort;
+	
+	int icons_renderstyle;
+	double icons_alpha[10];
+	
+	bool noWheel;
+	
+	enum E_WeaponSortMode
+	{
+		WSM_Nothing,
+		WSM_Excluding,
+		WSM_Including,
+		WSM_Validating,
+		WSM_Hiding,
+		WSM_Merging,
+		WSM_ForcingIcon,
+		WSM_Renaming,
+		WSM_RenderStyle,
+		WSM_SetAlpha,
+	}
+	
+	enum E_AlphaSet
+	{
+		APS_Normal,
+		APS_Inactive,
+	}
+	
+	int point_distance(int x1,int y1,int x2,int y2)
+	{
+		return ((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
+	}
+	int point_direction(int x1,int y1,int x2,int y2)
+	{
+		return atan2(y2-y1, x2-x1);
+	}
+	Vector2 iconScale;
+	
+	
+	void initializeSpecialWheel()
+	{
+		icons_renderstyle = Style_Translucent;
+		icons_alpha[APS_Normal] = 1.0;
+		icons_alpha[APS_Inactive] = 0.5;
+		
+		crowbarTex = TexMan.CheckForTexture("graphics/pywheel/crowbar.png",TexMan.Type_Any);
+			bool ret1;
+			int ret2;
+			int ret3;
+			//Console.Printf("\ctbegin the search...");
+			
+			// if Grenade launcher selected
+				iconScale = (0.5, 0.5);
+				PB_SpecialWheel_Mode grenade_impact = new ("PB_SpecialWheel_Mode");
+				grenade_impact.specialIcon = TexMan.CheckForTexture("graphics/pywheel/grenade_impact.png",TexMan.Type_Any);
+				grenade_impact.specialName = "GrenadeTypeImpact";
+				grenade_impact.specialAlias = "Frag Grenade";
+				grenade_impact.specialPriority = 1;
+				grenade_impact.iconScale = iconScale;
+				PB_SpecialWheel_Mode grenade_sticky = new ("PB_SpecialWheel_Mode");
+				grenade_sticky.specialIcon = TexMan.CheckForTexture("graphics/pywheel/grenade_sticky.png",TexMan.Type_Any);
+				grenade_sticky.specialName = "GrenadeTypeSticky";
+				grenade_sticky.specialAlias = "Sticky Bomb";
+				grenade_sticky.specialPriority = 2;
+				grenade_sticky.iconScale = iconScale;
+				PB_SpecialWheel_Mode grenade_incendiary = new ("PB_SpecialWheel_Mode");
+				grenade_incendiary.specialIcon = TexMan.CheckForTexture("graphics/pywheel/grenade_incendiary.png",TexMan.Type_Any);
+				grenade_incendiary.specialName = "GrenadeTypeIncendiary";
+				grenade_incendiary.specialAlias = "Incendiary Grenade";
+				grenade_incendiary.specialPriority = 3;
+				grenade_incendiary.iconScale = iconScale;
+				PB_SpecialWheel_Mode grenade_cryo = new ("PB_SpecialWheel_Mode");
+				grenade_cryo.specialIcon = TexMan.CheckForTexture("graphics/pywheel/grenade_cryo.png",TexMan.Type_Any);
+				grenade_cryo.specialName = "GrenadeTypeCryo";
+				grenade_cryo.specialAlias = "Cryogenic Grenade";
+				grenade_cryo.specialPriority = 4;
+				grenade_cryo.iconScale = iconScale;
+				PB_SpecialWheel_Mode grenade_acid = new ("PB_SpecialWheel_Mode");
+				grenade_acid.specialIcon = TexMan.CheckForTexture("graphics/pywheel/grenade_acid.png",TexMan.Type_Any);
+				grenade_acid.specialName = "GrenadeTypeAcid";
+				grenade_acid.specialAlias = "Acid Grenade";
+				grenade_acid.specialPriority = 5;
+				grenade_acid.iconScale = iconScale;
+				
+				wheelSpecials.Push(grenade_impact);
+				wheelSpecials.Push(grenade_sticky);
+				wheelSpecials.Push(grenade_incendiary);
+				wheelSpecials.Push(grenade_cryo);
+				wheelSpecials.Push(grenade_acid);
+				
+		array<string > mergeTheseSpecials1;
+		array<string > mergeTheseSpecials2;
+	
+		string lumpy = "";
+		for(int lump = -1; (lump = Wads.FindLump("PYWHEEL", lump + 1)) != -1;)
+		{
+			lumpy.AppendFormat("%s", Wads.ReadLump(lump));
+			lumpy.AppendFormat("\n");
+		}
+		
+		PyWheel_Tokenizer tokenitup = PyWheel_Tokenizer.Create(lumpy);
+		PyWheel_Token tokenboy = tokenitup.GoThru();
+		int safetyNet = 0;
+		bool gotoit;
+		bool removingSpecs = false;
+		int sortMode = 0;
+		string stringHold1 = "";
+		string stringHold2 = "";
+		int inthold = 0;
+		double doubleHold = 0; 
+		bool jesusChristItsHim = true;
+		while(tokenboy.type!=PTK_EOF&&safetyNet<MAXITERATIONS)
+		{
+			if(tokenboy.type==PTK_Slash)
+			{
+				tokenboy = tokenitup.GoThru();
+				safetyNet++;
+				continue;
+			}
+			else if(removingSpecs)
+			{
+				if(tokenboy.type==PTK_Semicolon)
+				{
+						if(sortMode==WSM_Merging)
+						{
+							mergeTheseSpecials1.Push(stringHold1);
+							mergeTheseSpecials2.Push(stringHold2);
+						}
+						else if (sortMode==WSM_ForcingIcon)
+						{
+							for(int i = 0;i<wheelSpecials.Size();i++)
+							{
+								if(wheelSpecials[i].specialName==stringHold1)
+								{
+									if(stringHold2!="*") //special :)
+									{
+										wheelSpecials[i].specialIcon = TexMan.CheckForTexture(stringHold2,TexMan.Type_Any);
+									}
+									if(doubleHold!=0)
+									{
+										wheelSpecials[i].iconScale *= doubleHold;
+									}
+									//Console.Printf(""..doubleHold);
+								}
+							}
+						}
+						else if (sortMode==WSM_Renaming)
+						{
+							for(int i = 0;i<wheelSpecials.Size();i++)
+							{
+								if(wheelSpecials[i].specialName==stringHold1)
+								{
+									wheelSpecials[i].specialName = stringHold2;
+								}
+							}
+						}
+						else if (sortMode==WSM_RenderStyle)
+						{
+							if(stringHold1~=="Style_Add")
+							{
+								icons_renderstyle = Style_Add;
+							}
+						}
+						else if (sortMode==WSM_SetAlpha)
+						{
+							icons_alpha[inthold] = doublehold;
+						}
+					sortMode=WSM_Nothing;
+					stringHold1 = "";stringHold2 = "";
+					doubleHold = 0;
+					intHold = 0;
+				}
+				else if(tokenboy.type==PTK_Number)
+				{
+					if(sortMode==WSM_ForcingIcon)
+					{
+						doubleHold = double(tokenboy.value.ToDouble());
+					}
+					else if(sortMode==WSM_SetAlpha)
+					{
+						doubleHold = double(tokenboy.value.ToDouble());
+					}
+				}
+				else if(tokenboy.type==PTK_Identifier)
+				{
+					if(sortMode!=WSM_Nothing)
+					{
+						ThrowAbortException("Unexpected identifier "..tokenboy.value);
+					}
+					if(tokenboy.value=="exclude")
+					{
+						sortMode=WSM_Excluding;
+					}
+					else if (tokenboy.value=="include")
+					{
+						sortMode=WSM_Including;
+					}
+					else if(tokenboy.value=="merge")
+					{
+						sortMode=WSM_Merging;
+					}
+					else if(tokenboy.value=="forceicon")
+					{
+						sortMode=WSM_ForcingIcon;
+					}
+					else if(tokenboy.value=="rename")
+					{
+						sortMode=WSM_Renaming;
+					}
+					else if(tokenboy.value=="validate")
+					{
+						sortMode=WSM_Validating;
+					}
+					
+					// 3.0
+					
+					else if (tokenboy.value=="renderstyle")
+					{
+						sortMode = WSM_RenderStyle;
+					}
+					else if (tokenboy.value=="alpha_normal")
+					{
+						sortMode = WSM_SetAlpha;
+						inthold = APS_Normal;
+					}
+					else if (tokenboy.value=="alpha_inactive")
+					{
+						sortMode = WSM_SetAlpha;
+						inthold = APS_Inactive;
+					}
+					else if (tokenboy.value=="hide")
+					{
+						sortMode = WSM_Hiding;
+					}
+				}
+				else if(tokenboy.type==PTK_String)
+				{
+					switch(sortMode)
+					{
+						case WSM_Validating:
+							Class<Inventory> chungus = tokenboy.value;
+							if(chungus!=null && !players[0].mo.FindInventory(chungus))
+							{
+								jesusChristItsHim = false;
+							}
+						break;
+						case WSM_Excluding:
+							if(jesusChristItsHim)
+							{
+								avoidTheseSpecials.Push(tokenboy.value);
+							}
+						break;
+						case WSM_Including:
+							if(jesusChristItsHim)
+							{
+								useTheseSpecials.Push(tokenboy.value);
+							}
+						break;
+						case WSM_Merging:
+							if(stringHold1=="")
+							{
+								stringHold1 = tokenboy.value;
+							}
+							else
+							{
+								stringHold2 = tokenboy.value;
+							}
+						break;
+						case WSM_ForcingIcon:
+							if(stringHold1=="")
+							{
+								stringHold1 = tokenboy.value;
+							}
+							else
+							{
+								stringHold2 = tokenboy.value;
+							}
+						break;
+						case WSM_Renaming:
+							if(stringHold1=="")
+							{
+								stringHold1 = tokenboy.value;
+							}
+							else
+							{
+								stringHold2 = tokenboy.value;
+							}
+						break;
+						
+						case WSM_RenderStyle: //renderstyle
+							stringHold1 = tokenboy.value;
+							break;
+						case WSM_Hiding: //kill it if you have to
+							stringHold1 = tokenboy.value;
+							break;
+					}
+				}
+				else if (tokenboy.type==PTK_BraceC)
+				{
+					removingSpecs=false;
+				}
+			}
+			else if(tokenboy.type==PTK_Identifier)
+			{
+				class<Actor> cls = tokenboy.value;
+				if(cls!=null&&players[0].mo is cls)
+				{
+					removingSpecs = true;
+				}
+			}
+			tokenboy = tokenitup.GoThru();
+			safetyNet++;
+		}
+		
+		inclusiveSort = useTheseSpecials.Size()>0;
+		
+		for(int i = 0;i<wheelSpecials.Size();i++)
+		{
+			bool fuckThisOneInParticular = false;
+			if(inclusiveSort)
+			{
+				bool foundMySon = false;
+				for(int v = 0;v<useTheseSpecials.Size();v++)
+				{
+					if(useTheseSpecials[v] == wheelSpecials[i].specialName)
+					{
+						foundMySon = true;
+						break;
+					}
+				}
+				if(!foundMySon)
+				{
+					wheelSpecials.Delete(i);
+					i--;
+					continue;
+				}
+			}
+			
+			for(int v = 0;v<avoidTheseSpecials.Size();v++)
+			{
+				//Console.Printf("\crIs "..avoidTheseWeapons[v].." replacing "..wheelWeapons[i].specialName.."?");
+				//Console.Printf("\crRemove "..avoidTheseWeapons[v]);
+				if(avoidTheseSpecials[v] == wheelSpecials[i].specialName)
+				{
+					//Console.Printf("\cxThat's right, Jay! (Removed \ck"..wheelWeapons[i].specialName.."\cx)");
+					wheelSpecials.Delete(i);
+					i--;
+					fuckThisOneInParticular = true;
+					break;
+				}
+			}
+			
+			if(fuckThisOneInParticular)
+			{
+				continue;
+			}
+		}
+		
+		//=====================================
+		// Now sort thme fuckerr
+		//=====================================
+			
+				int i;
+				int j;
+				int flag = 1;
+				PB_SpecialWheel_Mode temp;
+				int temp2;
+				int temp3;
+				int numLength = maxplayers; 
+				for(i = 1; (i <= wheelSpecials.Size()) && flag; i++)
+				{
+					flag = 0;
+					for (j=0; j < (wheelSpecials.Size() -1); j++)
+					{
+						if (wheelSpecials[j+1].specialPriority > wheelSpecials[j].specialPriority)
+						{ 
+							temp = wheelSpecials[j];  
+							wheelSpecials[j] = wheelSpecials[j+1];
+							wheelSpecials[j+1] = temp;
+							flag = 1;
+						}
+					}
+				}
+				
+				flag = 1;
+				
+				for(i = 1; (i <= wheelSpecials.Size()) && flag; i++)
+				{
+					flag = 0;
+					for (j=0; j < (wheelSpecials.Size() -1); j++)
+					{
+						if (wheelSpecials[j+1].specialPriority > wheelSpecials[j].specialPriority)
+						{ 
+							temp = wheelSpecials[j];  
+							wheelSpecials[j] = wheelSpecials[j+1];
+							wheelSpecials[j+1] = temp;
+							flag = 1;
+						}
+					}
+				}
+				
+				flag = 1;
+				
+				
+				for(i = 1; (i < wheelSpecials.Size()) && flag; i++)
+				{
+					for (j=0; j < (wheelSpecials.Size()); j++)
+					{
+						//if(i!=j) Console.Printf("comparing "..wheelWeapons[i].specialName.." and "..wheelWeapons[j].specialName);
+						if (i!=j && wheelSpecials[i].specialName==wheelSpecials[j].specialName)
+						{ 
+							//Console.Printf("they are same");
+							wheelSpecials.Delete(j);
+							if(i>j)
+							{
+								i--;
+							}
+							j=0;
+						}
+					}
+				}
+		
+		for(int i = 0;i<wheelSpecials.Size();i++)
+		{
+			int foundMerge=-1;
+			for(int v = 0;v<mergeTheseSpecials1.Size();v++)
+			{
+				if(wheelSpecials[i].specialName==mergeTheseSpecials1[v])
+				{
+					foundMerge=v;
+					wheelSpecials[i].mergeDir = false;
+				}
+				else if (wheelSpecials[i].specialName==mergeTheseSpecials2[v])
+				{
+					foundMerge=v;
+					wheelSpecials[i].mergeDir = true;
+				}
+			}
+		}
+		
+		//Console.Printf("\n\n\n\cxHere are the final results:");
+		//for(int i = 0;i<wheelSpecials.Size();i++)
+		//{
+			//Console.Printf("\cg"..wheelSpecials[i].specialName);
+		//}
+			
+		avoidTheseSpecials.Clear();
+		searchedSpecials=true;
+	}
+	
+	
+	
+	bool musicFadeEnabled;
+	
+	override void WorldLoaded(WorldEvent e)
+	{
+		currentSelection = 1;
+		musicFadeEnabled = CVar.GetCVar("py_weaponwheel_musicfade", players[0]).GetBool();
+	}
+	
+	double outQuad(int t, double b, double c, double d)
+	{
+		t = t / d;
+		return -c * t * (t - 2) + b;
+	}
+	
+	//============================================================
+	//
+	// WorldTick()
+	//
+	//============================================================
+	
+	const fadeSpeed = 0.2;
+	double musicFade;
+	int invertControls;
+	
+	enum E_InvertedControls
+	{
+		PY_INVERTNO = 0,
+		PY_INVERTX = 1,
+		PY_INVERTY = 2,
+		PY_INVERTXY = 3,
+	}
+	
+	array<int > oldPTics;
+	array<int > oldPUTics;
+	
+	override void WorldTick()
+	{
+		if(players[0].mo.FindInventory("CantWeaponSpecial"))
+		{
+			oldPitch = players[0].mo.pitch;
+			oldYaw = players[0].mo.angle;
+			wheelShow.Clear();
+			wheelIsOpen = false;
+			noWheel = true;
+			return;
+		}
+		
+		if(!searchedSpecials&&level.maptime>12)
+		{
+			initializeSpecialWheel();
+		}
+		if(!searchedSpecials)
+		{
+			return;
+		}
+		
+		if(CVar.GetCVar("py_weaponwheel_freeze", players[0]).GetInt()==true)
+		{
+			level.frozen = wheelIsOpen;
+		}
+		invertControls = CVar.GetCVar("py_weaponwheel_invert", players[0]).GetInt();
+		if(musicFadeEnabled&&musicFade>0)
+		{
+			SetMusicVolume(1.0-musicFade/2);
+		}
+		if(wheelIsOpen)
+		{
+			if(alphaFade<1.0)
+			{
+				alphaFade+=fadeSpeed;
+			}
+			if(musicFade<1.0)
+			{
+				musicFade+=fadeSpeed;
+			}
+			if(level.frozen)
+			{
+				players[0].viewz = players[0].mo.pos.z+players[0].viewheight;
+				players[0].bob = 0;
+			}
+			if(oldSelection!=currentSelection)
+			{
+				S_Sound("menu/change",5);
+			}
+			
+			if(!wheelSort)
+			{
+				for(int i = 0;i<wheelSpecials.Size();i++)
+				{
+					bool fucked = false;
+					
+					if((wheelSpecials[i].hidden))
+					{
+						fucked = true;
+					}
+					if(!fucked)
+					{
+						wheelShow.Push(i);
+					}
+				}
+				
+				wheelSort = true;
+			}
+			
+			oldSelection = currentSelection;
+			
+			double pitchMod = 1.6;
+			double yawMod = 1.2;
+			if(invertControls==PY_INVERTX||invertControls==PY_INVERTXY) yawMod *=-1;
+			if(invertControls==PY_INVERTY||invertControls==PY_INVERTXY) pitchMod *=-1;
+			
+			realMouse.x-=players[0].original_cmd.yaw * (360./65536.)*yawMod;
+			realMouse.y-=players[0].original_cmd.pitch * (360./65536.)*pitchMod;
+			if(point_distance(0,0,realMouse.x,realMouse.y)>6000)
+			{
+				int angler = point_direction(0,0,realMouse.x,realMouse.y);
+				realMouse = (cos(angler)*80,sin(angler)*80);
+			}
+			fakeMouse.x = realMouse.x;
+			fakeMouse.y = realMouse.y;
+			if(point_distance(0,0,fakeMouse.x,fakeMouse.y)<5900)
+			{
+				int angler = point_direction(0,0,fakeMouse.x,fakeMouse.y);
+				fakeMouse = (cos(angler)*78,sin(angler)*78);
+			}
+			int chooseAngle = point_direction(0,0,fakeMouse.x,-fakeMouse.y)+180;
+			int averageAngles = 360/max(1,wheelShow.Size());
+			int halfAngle = averageAngles/2;
+			for(int i = 0;i<wheelShow.Size();i++)
+			{
+				int pointyAngle = ((double(i+1)/wheelShow.Size())*360);
+				if(abs(Actor.DeltaAngle(chooseAngle,pointyAngle))<halfAngle)
+				{
+					currentSelection=i;
+					break;
+				}
+			}
+			if(players[0].mo!=null)
+			{
+				players[0].mo.pitch = oldPitch;
+				players[0].mo.angle = oldYaw;
+				players[0].mo.angle -= 1;
+				players[0].mo.pitch -= 1;
+				players[0].mo.A_SetAngle(players[0].mo.angle + 1, SPF_INTERPOLATE);
+				players[0].mo.A_SetPitch(players[0].mo.pitch + 1, SPF_INTERPOLATE);
+				
+				if(level.frozen&&oldPTics.Size()==0)
+				{
+					let pspr = players[0].psprites;
+					while (pspr)
+					{
+						oldPTics.Push(pspr.Tics);
+						pspr.Tics = -1;
+						pspr = pspr.Next;
+					}
+				}
+				
+				if(level.frozen)
+				{
+					if(oldPUTics.Size()==0)
+					{
+						for (int i = 0; i < AllActorClasses.Size(); i++)
+						{
+							let type = (Class<Powerup>)(AllActorClasses[i]);
+							let item = Powerup(players[0].mo.FindInventory(type));
+								
+							if (item)
+							{
+								oldPUTics.Push(item.EffectTics);
+							}
+						}
+					}
+					else
+					{
+						int fuckIt = 0;
+						for (int i = 0; i < AllActorClasses.Size(); i++)
+						{
+							let type = (Class<Powerup>)(AllActorClasses[i]);
+							let item = Powerup(players[0].mo.FindInventory(type));
+								
+							if (item)
+							{
+								item.EffectTics = oldPUTics[fuckIt];
+								fuckIt++;
+							}
+						}
+					}
+				}
+				
+			}
+		}
+		else
+		{
+			if(players[0].mo!=null)
+			{
+				if(oldPTics.Size()>0)
+				{
+					let pspr = players[0].psprites;
+					while (pspr&&oldPTics.Size()>0)
+					{
+						pspr.Tics = oldPTics[0];
+						oldPTics.Delete(0);
+						pspr = pspr.Next;
+					}
+				}
+				if(oldPUTics.Size()>0)
+				{
+					for (int i = 0; i < AllActorClasses.Size(); i++)
+					{
+						let type = (Class<Powerup>)(AllActorClasses[i]);
+						let item = Powerup(players[0].mo.FindInventory(type));
+								
+						if (item && oldPUTics.Size()>0)
+						{
+							item.EffectTics = oldPUTics[0];
+							oldPUTics.Delete(0);
+						}
+					}
+				}
+			}
+			if(alphaFade>fadeSpeed)
+			{
+				alphaFade-=fadeSpeed;
+			}
+			if(musicFade>fadeSpeed)
+			{
+				musicFade-=fadeSpeed;
+			}
+		}
+	}
+	
+	Override Void NetworkProcess(ConsoleEvent e)
+	{
+		if(e.name == 'PBWeaponSpecialOn')
+		{
+			if(!players[0].mo.FindInventory("SGLSelected"))
+			{
+				players[0].mo.A_GiveInventory("GoWeaponSpecialAbility");
+				noWheel = true;
+				return;
+			}
+			else if (players[0].mo.FindInventory("CantWeaponSpecial"))
+			{
+				wheelShow.Clear();
+				wheelIsOpen = false;
+				noWheel = true;
+				return;
+			}
+			else
+				noWheel = false;
+		
+            if (wheelIsOpen) { return; }
+			wheelShow.Clear();
+			players[0].mo.A_GiveInventory("PlayerWheelOpen");
+			wheelIsOpen = true;
+			S_Sound("menu/clear",5);
+			if(point_distance(0,0,realMouse.x,realMouse.y)>32)
+			{
+				realMouse = (0,0)+realMouse*0.1;
+			}
+			fakeMouse = realMouse;
+			if(players[0].mo!=null)
+			{
+				oldPitch = players[0].mo.pitch;
+				oldYaw = players[0].mo.angle;
+			}
+		}
+		else if(!noWheel && e.name == 'PBWeaponSpecialOff')
+		{
+			if(players[0].mo!=null)
+			{
+				if(wheelShow.Size()>0)
+				{
+					int curSelMod = wheelShow[currentSelection];
+					players[0].mo.A_GiveInventory(wheelSpecials[curSelMod].specialName);
+					players[0].mo.A_GiveInventory("GoWeaponSpecialAbility");
+					S_Sound("menu/choose",5);
+					//Console.Printf(""..wheelSpecials[curSelMod].specialName);
+				}
+			}
+			players[0].mo.A_TakeInventory("PlayerWheelOpen");
+			wheelSort = false;
+			wheelIsOpen = false;
+		}
+	}
+}
