@@ -7,6 +7,7 @@ Class PB_Monster : Actor abstract
 	
 	bool HitBoxSpawned;
 	bool Wandering;
+	int heardOpponent;
 	
 	void HitboxerHandler() {
 		
@@ -29,20 +30,24 @@ Class PB_Monster : Actor abstract
 		}
 		
 	}
-
+	
+	
+	
 	void A_SmartChase() {
+	
 			if (target == NULL) {
 				A_GiveInventory("Wandering",1);
+				A_LookEx();
 				A_Wander();
 				return;
 			}
-			
+					
 			if (CheckIfCloser(target, 150) && !CheckIfCloser(target, 50) && CheckInventory("IsPlayer", 1, AAPTR_TARGET)) {
 				SetStateLabel("Fallback");
 			}
-			if (CheckSight(target) == true) {
+			if (CheckSight(target) == true || CheckIfCloser(target, 500)) {
 				EnemyLastSighted = Level.MapTime;
-				A_TakeInventory("Wandering",1);
+				A_TakeInventory("Wandering",36);
 				A_Chase();
 			}
 			else if (CheckSight(target) == false && abs(Level.MapTime - EnemyLastSighted) < 360) {
@@ -65,6 +70,7 @@ Class PB_Monster : Actor abstract
 
 	override void PostBeginPlay() {
 		Super.PostBeginPlay(); // call the super function for virtual functions so we don't break shit if GZdoom update.
+		heardOpponent = 0;
 		HitBoxSpawned = False;
 	
 	}

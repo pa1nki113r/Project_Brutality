@@ -1,0 +1,854 @@
+Class Py_WeaponWheelEventHandler : EventHandler
+{
+	bool searchedWeps;
+	array<string > avoidTheseWeapons;
+	array<string > useTheseWeapons;
+	
+	array<Py_WeaponWheel_Weapon > wheelWeapons;
+	
+	array<bool > wheelShow;
+	int wheelIt;
+	int currentSelection;
+	int oldSelection;
+	array<int > actualList;
+	Vector2 fakeMouse;
+	Vector2 realMouse;
+	int angleSave;
+	Vector2 selectionMouse;
+	int selAngle;
+	TextureID crowbarTex;
+	int oldPitch;
+	int oldYaw;
+	double alphaFade;
+	bool nCY;
+	
+	bool wheelIsOpen;
+	bool wheelSort;
+	bool inclusiveSort;
+	
+	int icons_renderstyle;
+	double icons_alpha[10];
+	
+	bool manyWeapon;
+	
+	enum E_WeaponSortMode
+	{
+		WSM_Nothing,
+		WSM_Excluding,
+		WSM_Including,
+		WSM_Validating,
+		WSM_Hiding,
+		WSM_Merging,
+		WSM_ForcingIcon,
+		WSM_Renaming,
+		WSM_RenderStyle,
+		WSM_SetAlpha,
+	}
+	
+	enum E_AlphaSet
+	{
+		APS_Normal,
+		APS_Inactive,
+	}
+	
+	int point_distance(int x1,int y1,int x2,int y2)
+	{
+		return ((x1-x2)*(x1-x2)+(y1-y2)*(y1-y2));
+	}
+	int point_direction(int x1,int y1,int x2,int y2)
+	{
+		return atan2(y2-y1, x2-x1);
+	}
+	
+	//============================================================
+	//
+	// initializeWheel()
+	//
+	//============================================================
+	
+	void initializeWheel()
+	{
+		// THIS IS WHERE THE FUN BEGINS
+		
+		icons_renderstyle = Style_Translucent;
+		icons_alpha[APS_Normal] = 1.0;
+		icons_alpha[APS_Inactive] = 0.5;
+		
+		crowbarTex = TexMan.CheckForTexture("graphics/pywheel/crowbar.png",TexMan.Type_Any);
+			bool ret1;//is this a wepon in slottt???
+			int ret2;//second return is slot
+			int ret3;
+			Console.Printf("\ctbegin the search...");
+			for(int i = 0;i<AllActorClasses.Size();i++)
+			{
+				let type = (class<Weapon>)(AllActorClasses[i]);
+				if(type!=null)
+				{
+					Class<Actor> testtype = Actor.GetReplacement(type);
+					if(testtype is "Weapon"&&players[0].weapons.LocateWeapon((class<Weapon>)(testtype)))
+					{
+						Console.Printf("\ch today we will be examining "..type.GetClassName());
+						type = (class<Weapon>)(testtype);
+						bool isMine = false;
+						int restrictSize = GetDefaultByType(type).RestrictedToPlayerClass.Size();
+						if(restrictSize>0)
+						{
+							for(int b = 0;b<restrictSize;b++)
+							{
+								Class<Actor> nameCheck = GetDefaultByType(type).RestrictedToPlayerClass[b];
+								Console.Printf(nameCheck.GetClassName().." "..players[0].mo.GetClassName());
+								if(nameCheck is players[0].mo.GetClass())
+								{
+									isMine=true;
+								}
+							}
+							Console.Printf("restrictSize is "..restrictSize);
+						}
+						else
+						{
+							isMine=true;
+						}
+						if(isMine)
+						{
+							[ret1, ret2, ret3] = players[0].weapons.LocateWeapon(type);
+							Console.Printf("\ck"..type.GetClassName().." is weapon for me "..ret3);
+							Py_WeaponWheel_Weapon pushItIn = new("Py_WeaponWheel_Weapon");
+							pushItIn.weaponClass = type;
+							pushItIn.weaponSlot = ret2;
+							pushItIn.weaponPriority = ret3;
+							pushItIn.weaponScale = (1,1);
+							pushItIn.weaponTag = GetDefaultByType(type).GetTag();
+							wheelWeapons.Push(pushitIn);
+						}
+					}
+				}
+			}
+			
+			State weaponSpawnState;
+			for(int i = 0;i<wheelWeapons.Size();i++)
+			{
+				TextureID wepIcon = GetDefaultByType(wheelWeapons[i].weaponClass).Icon;
+				Vector2 weaponScaled = (1,1);
+				weaponSpawnState = GetDefaultByType(wheelWeapons[i].weaponClass).SpawnState;
+				
+				if(TexMan.GetName(wepIcon)==""||TexMan.GetName(wepIcon)~=="ALTHUDCF") //wtf
+				{
+					weaponScaled = GetDefaultByType(wheelWeapons[i].weaponClass).scale;
+					wepIcon = weaponSpawnState.GetSpriteTexture(1,0);
+				}
+				
+				int overflowProtection = 0;
+				while(overflowProtection<25&&(TexMan.GetName(wepIcon)=="TNT1A0"||TexMan.GetName(wepIcon)=="NULLA0")&&weaponSpawnState.NextState!=null)
+				{
+					weaponSpawnState = weaponSpawnState.NextState;
+					wepIcon = weaponSpawnState.GetSpriteTexture(1,0);
+					overflowProtection++;
+				}
+				
+				if(TexMan.GetName(wepIcon)=="TNT1A0"||TexMan.GetName(wepIcon)=="NULLA0")
+				{
+					weaponScaled = (0.3,0.3);
+					weaponSpawnState = GetDefaultByType(wheelWeapons[i].weaponClass).ResolveState("Ready");
+					wepIcon = weaponSpawnState.GetSpriteTexture(1,0);
+				}
+				
+				//ready state
+				
+				overflowProtection = 0;
+				while(overflowProtection<25&&(TexMan.GetName(wepIcon)=="TNT1A0"||TexMan.GetName(wepIcon)=="NULLA0")&&weaponSpawnState.NextState!=null)
+				{
+					weaponSpawnState = weaponSpawnState.NextState;
+					wepIcon = weaponSpawnState.GetSpriteTexture(1,0);
+					overflowProtection++;
+				}
+				
+				if(TexMan.GetName(wepIcon)=="TNT1A0"||TexMan.GetName(wepIcon)=="NULLA0")
+				{
+					weaponScaled = (0.75,0.75*0.8);
+					wepIcon = crowbarTex;
+				}
+				wheelWeapons[i].weaponIcon = wepIcon;
+				wheelWeapons[i].weaponScale = (weaponScaled.x,weaponScaled.y);
+			}
+		
+		//=====================================
+		// begin the tokenization my friend
+		//=====================================
+
+		array<string > mergeTheseWeapons1;
+		array<string > mergeTheseWeapons2;
+	
+		string lumpy = "";
+		for(int lump = -1; (lump = Wads.FindLump("PYWHEEL", lump + 1)) != -1;)
+		{
+			lumpy.AppendFormat("%s", Wads.ReadLump(lump));
+			lumpy.AppendFormat("\n");
+		}
+		
+		//Console.Printf(""..lumpy);
+		
+		PyWheel_Tokenizer tokenitup = PyWheel_Tokenizer.Create(lumpy);
+		PyWheel_Token tokenboy = tokenitup.GoThru();
+		int safetyNet = 0;
+		bool gotoit;
+		bool removingWeps = false;
+		int sortMode = 0;
+		string stringHold1 = "";
+		string stringHold2 = "";
+		int inthold = 0;
+		double doubleHold = 0; //watch your motherfuckin tone boy
+		bool jesusChristItsHim = true;
+		while(tokenboy.type!=PTK_EOF&&safetyNet<MAXITERATIONS)
+		{
+			//Console.Printf("\ck"..tokenboy.value);
+			if(tokenboy.type==PTK_Slash)
+			{
+				tokenboy = tokenitup.GoThru();
+				safetyNet++;
+				continue;
+			}
+			else if(removingWeps)
+			{
+				if(tokenboy.type==PTK_Semicolon)
+				{
+						if(sortMode==WSM_Merging)//Infinity War is the most amitious crossover event-
+						{
+							mergeTheseWeapons1.Push(stringHold1);
+							mergeTheseWeapons2.Push(stringHold2);
+						}
+						else if (sortMode==WSM_ForcingIcon)
+						{
+							for(int i = 0;i<wheelWeapons.Size();i++)
+							{
+								if(wheelWeapons[i].weaponClass.GetClassName()==stringHold1)
+								{
+									if(stringHold2!="*") //special :)
+									{
+										wheelWeapons[i].weaponIcon = TexMan.CheckForTexture(stringHold2,TexMan.Type_Any);
+									}
+									wheelWeapons[i].weaponScale = GetDefaultByType(wheelWeapons[i].weaponClass).scale;
+									if(doubleHold!=0)
+									{
+										wheelWeapons[i].weaponScale *= doubleHold;
+									}
+									//Console.Printf(""..doubleHold);
+								}
+							}
+						}
+						else if (sortMode==WSM_Renaming)
+						{
+							for(int i = 0;i<wheelWeapons.Size();i++)
+							{
+								if(wheelWeapons[i].weaponClass.GetClassName()==stringHold1)
+								{
+									wheelWeapons[i].weaponTag = stringHold2;
+								}
+							}
+						}
+						else if (sortMode==WSM_RenderStyle)
+						{
+							if(stringHold1~=="Style_Add")
+							{
+								icons_renderstyle = Style_Add;
+							}
+						}
+						else if (sortMode==WSM_SetAlpha)
+						{
+							icons_alpha[inthold] = doublehold;
+						}
+						else if (sortMode==WSM_Hiding)
+						{
+							for(int i = 0;i<wheelWeapons.Size();i++)
+							{
+								if(wheelWeapons[i].weaponClass.GetClassName()==stringHold1)
+								{
+									wheelWeapons[i].hidden = true;
+								}
+							}
+						}
+					sortMode=WSM_Nothing;
+					stringHold1 = "";stringHold2 = "";
+					doubleHold = 0;
+					intHold = 0;
+				}
+				else if(tokenboy.type==PTK_Number)
+				{
+					if(sortMode==WSM_ForcingIcon)
+					{
+						//Console.Printf(""..tokenboy.value);
+						doubleHold = double(tokenboy.value.ToDouble());
+					}
+					else if(sortMode==WSM_SetAlpha)
+					{
+						doubleHold = double(tokenboy.value.ToDouble());
+					}
+				}
+				else if(tokenboy.type==PTK_Identifier)
+				{
+					if(sortMode!=WSM_Nothing)
+					{
+						ThrowAbortException("Unexpected identifier "..tokenboy.value);
+					}
+					if(tokenboy.value=="exclude")
+					{
+						sortMode=WSM_Excluding;
+					}
+					else if (tokenboy.value=="include")
+					{
+						sortMode=WSM_Including;
+					}
+					else if(tokenboy.value=="merge")
+					{
+						sortMode=WSM_Merging;
+					}
+					else if(tokenboy.value=="forceicon")
+					{
+						sortMode=WSM_ForcingIcon;
+					}
+					else if(tokenboy.value=="rename")
+					{
+						sortMode=WSM_Renaming;
+					}
+					else if(tokenboy.value=="validate")
+					{
+						sortMode=WSM_Validating;
+					}
+					
+					// 3.0
+					
+					else if (tokenboy.value=="renderstyle")
+					{
+						sortMode = WSM_RenderStyle;
+					}
+					else if (tokenboy.value=="alpha_normal")
+					{
+						sortMode = WSM_SetAlpha;
+						inthold = APS_Normal;
+					}
+					else if (tokenboy.value=="alpha_inactive")
+					{
+						sortMode = WSM_SetAlpha;
+						inthold = APS_Inactive;
+					}
+					else if (tokenboy.value=="hide")
+					{
+						sortMode = WSM_Hiding;
+					}
+				}
+				else if(tokenboy.type==PTK_String)
+				{
+					switch(sortMode)
+					{
+						case WSM_Validating:
+							Class<Inventory> chungus = tokenboy.value;
+							if(chungus!=null && !players[0].mo.FindInventory(chungus))
+							{
+								jesusChristItsHim = false;
+							}
+						break;
+						case WSM_Excluding:
+							if(jesusChristItsHim)
+							{
+								avoidTheseWeapons.Push(tokenboy.value);
+							}
+						break;
+						case WSM_Including:
+							if(jesusChristItsHim)
+							{
+								useTheseWeapons.Push(tokenboy.value);
+							}
+						break;
+						case WSM_Merging:
+							if(stringHold1=="")
+							{
+								stringHold1 = tokenboy.value;
+							}
+							else
+							{
+								stringHold2 = tokenboy.value;
+							}
+						break;
+						case WSM_ForcingIcon:
+							if(stringHold1=="")
+							{
+								stringHold1 = tokenboy.value;
+							}
+							else
+							{
+								stringHold2 = tokenboy.value;
+							}
+						break;
+						case WSM_Renaming:
+							if(stringHold1=="")
+							{
+								stringHold1 = tokenboy.value;
+							}
+							else
+							{
+								stringHold2 = tokenboy.value;
+							}
+						break;
+						
+						case WSM_RenderStyle: //renderstyle
+							stringHold1 = tokenboy.value;
+							break;
+						case WSM_Hiding: //kill it if you have to
+							stringHold1 = tokenboy.value;
+							break;
+					}
+				}
+				else if (tokenboy.type==PTK_BraceC)
+				{
+					removingweps=false;
+				}
+			}
+			else if(tokenboy.type==PTK_Identifier)
+			{
+				class<Actor> cls = tokenboy.value;
+				if(cls!=null&&players[0].mo is cls)
+				{
+					removingWeps = true;
+				}
+			}
+			tokenboy = tokenitup.GoThru();
+			safetyNet++;
+		}
+		
+		//if the inclusion array is not empty then make us do the inclusive sort thing
+		inclusiveSort = useTheseWeapons.Size()>0;
+		
+		/*for(int i = 0;i<avoidTheseWeapons.Size();i++)
+		{
+			//Console.Printf("\ckavoid adding "..avoidTheseWeapons[i]);
+		}
+		
+		for(int i = 0;i<mergeTheseWeapons1.Size();i++)
+		{
+			//Console.Printf("\ck"..mergeTheseWeapons1[i].." will merge into "..mergeTheseWeapons2[i]);
+		}*/
+		
+		for(int i = 0;i<wheelWeapons.Size();i++)
+		{
+			bool fuckThisOneInParticular = false;
+			if(inclusiveSort)
+			{
+				bool foundMySon = false;
+				for(int v = 0;v<useTheseWeapons.Size();v++)
+				{
+					if(useTheseWeapons[v] == wheelWeapons[i].weaponClass.GetClassName())
+					{
+						foundMySon = true;
+						break;
+					}
+				}
+				if(!foundMySon)
+				{
+					wheelWeapons.Delete(i);
+					i--;
+					continue;
+				}
+			}
+			
+				for(int v = 0;v<avoidTheseWeapons.Size();v++)
+				{
+					//Console.Printf("\crIs "..avoidTheseWeapons[v].." replacing "..wheelWeapons[i].weaponClass.GetClassName().."?");
+					//Console.Printf("\crRemove "..avoidTheseWeapons[v]);
+					if(avoidTheseWeapons[v] == wheelWeapons[i].weaponClass.GetClassName())
+					{
+						//Console.Printf("\cxThat's right, Jay! (Removed \ck"..wheelWeapons[i].weaponClass.GetClassName().."\cx)");
+						wheelWeapons.Delete(i);
+						i--;
+						fuckThisOneInParticular = true;
+						break;
+					}
+				}
+				
+			if(fuckThisOneInParticular)
+			{
+				continue;
+			}
+		}
+		
+		//=====================================
+		// Now sort thme fuckerr
+		//=====================================
+			
+				int i;
+				int j;
+				int flag = 1;
+				Py_WeaponWheel_Weapon temp;
+				int temp2;
+				int temp3;
+				int numLength = maxplayers; 
+				for(i = 1; (i <= wheelWeapons.Size()) && flag; i++)
+				{
+					flag = 0;
+					for (j=0; j < (wheelWeapons.Size() -1); j++)
+					{
+						if (wheelWeapons[j+1].weaponPriority > wheelWeapons[j].weaponPriority)
+						{ 
+							temp = wheelWeapons[j];  
+							wheelWeapons[j] = wheelWeapons[j+1];
+							wheelWeapons[j+1] = temp;
+							flag = 1;
+						}
+					}
+				}
+				
+				flag = 1;
+				
+				for(i = 1; (i <= wheelWeapons.Size()) && flag; i++)
+				{
+					flag = 0;
+					for (j=0; j < (wheelWeapons.Size() -1); j++)
+					{
+						if (wheelWeapons[j+1].weaponSlot > wheelWeapons[j].weaponSlot)
+						{ 
+							temp = wheelWeapons[j];  
+							wheelWeapons[j] = wheelWeapons[j+1];
+							wheelWeapons[j+1] = temp;
+							flag = 1;
+						}
+					}
+				}
+				
+				flag = 1;
+				
+				for(i = 1; (i < wheelWeapons.Size()) && flag; i++)
+				{
+					for (j=0; j < (wheelWeapons.Size()); j++)
+					{
+						//if(i!=j) Console.Printf("comparing "..wheelWeapons[i].weaponClass.GetClassName().." and "..wheelWeapons[j].weaponClass.GetClassName());
+						if (i!=j && wheelWeapons[i].weaponClass.GetClassName()==wheelWeapons[j].weaponClass.GetClassName())
+						{ 
+							//Console.Printf("they are same");
+							wheelWeapons.Delete(j);
+							if(i>j)
+							{
+								i--;
+							}
+							j=0;
+						}
+					}
+				}
+				
+		/*for(int i = 0;i<wheelWeapons.Size();i++)
+		{
+			arrayMergeDir.Push(false);
+		}*/
+				
+		for(int i = 0;i<wheelWeapons.Size();i++)
+		{
+			int foundMerge=-1;
+			for(int v = 0;v<mergeTheseWeapons1.Size();v++)
+			{
+				//Console.Printf("\ckFUACK"..wheelWeapons.Size());
+				if(wheelWeapons[i].weaponClass.GetClassName()==mergeTheseWeapons1[v])
+				{
+					foundMerge=v;
+					wheelWeapons[i].mergeDir = false;
+				}
+				else if (wheelWeapons[i].weaponClass.GetClassName()==mergeTheseWeapons2[v])
+				{
+					foundMerge=v;
+					wheelWeapons[i].mergeDir = true;
+				}
+			}
+			if(foundMerge>-1)
+			{
+				wheelWeapons[i].weaponOrig = ((class<weapon>)(mergeTheseWeapons1[foundMerge]));
+				wheelWeapons[i].weaponMerge = ((class<weapon>)(mergeTheseWeapons2[foundMerge]));
+			}
+			else
+			{
+				wheelWeapons[i].weaponOrig = (null);
+				wheelWeapons[i].weaponMerge = (null);
+			}
+		}
+		
+		Console.Printf("\n\n\n\cxHere are the final results:");
+		for(int i = 0;i<wheelWeapons.Size();i++)
+		{
+			Console.Printf("\cg"..wheelWeapons[i].weaponClass.GetClassName());
+		}
+		
+		if(wheelWeapons.Size()>20)
+		{
+			manyWeapon = true;//too many to show good...
+		}
+			
+		avoidTheseWeapons.Clear();
+		mergeTheseWeapons1.Clear();
+		mergeTheseWeapons2.Clear();
+		searchedWeps=true;
+	}
+	
+	bool musicFadeEnabled;
+	
+	override void WorldLoaded(WorldEvent e)
+	{
+		currentSelection = 1;
+		//oldPTics = -2;
+		musicFadeEnabled = CVar.GetCVar("py_weaponwheel_musicfade", players[0]).GetBool();
+	}
+	
+	double outQuad(int t, double b, double c, double d)
+	{
+		t = t / d;
+		return -c * t * (t - 2) + b;
+	}
+	
+	//============================================================
+	//
+	// WorldTick()
+	//
+	//============================================================
+	
+	const fadeSpeed = 0.2;
+	double musicFade;
+	int invertControls;
+	
+	enum E_InvertedControls
+	{
+		PY_INVERTNO = 0,
+		PY_INVERTX = 1,
+		PY_INVERTY = 2,
+		PY_INVERTXY = 3,
+	}
+	
+	array<int > oldPTics;
+	array<int > oldPUTics;
+	
+	override void WorldTick()
+	{
+		if(!searchedWeps&&level.maptime>12)
+		{
+			initializeWheel();
+		}
+		if(!searchedWeps)
+		{
+			return;
+		}
+		//wheelIsOpen = (players[0].mo.GetPlayerInput(INPUT_BUTTONS) & BT_JUMP);
+		if(CVar.GetCVar("py_weaponwheel_freeze", players[0]).GetInt()==true)
+		{
+			level.frozen = wheelIsOpen;//&&level.maptime%3!=0;
+		}
+		invertControls = CVar.GetCVar("py_weaponwheel_invert", players[0]).GetInt();
+		if(musicFadeEnabled&&musicFade>0)
+		{
+			SetMusicVolume(1.0-musicFade/2);
+		}
+		if(wheelIsOpen)
+		{
+			if(alphaFade<1.0)
+			{
+				alphaFade+=fadeSpeed;
+			}
+			if(musicFade<1.0)
+			{
+				musicFade+=fadeSpeed;
+			}
+			if(level.frozen)
+			{
+				players[0].viewz = players[0].mo.pos.z+players[0].viewheight;
+				players[0].bob = 0;
+			}
+			if(oldSelection!=currentSelection)
+			{
+				S_Sound("menu/change",5);
+			}
+			if(!wheelSort)
+			{
+				for(int i = 0;i<wheelWeapons.Size();i++)
+				{
+					bool fucked = false;
+					
+					// If there are too many weapons, or it is supposed to be hidden until the player has it, hide it
+					if((manyweapon||wheelWeapons[i].hidden) && !players[0].mo.FindInventory(wheelWeapons[i].weaponClass))
+					{
+						fucked = true;
+					}
+					if( (!wheelWeapons[i].mergeDir && wheelWeapons[i].weaponMerge!=null && players[0].mo.FindInventory(wheelWeapons[i].weaponMerge))
+					||
+					(wheelWeapons[i].mergeDir && wheelWeapons[i].weaponMerge!=null && !players[0].mo.FindInventory(wheelWeapons[i].weaponMerge)) )
+					{
+						fucked = true;
+					}
+					/*Console.Printf("getgetgetget "..wheelOrig[i]);
+					Console.Printf("gotgotgotgot "..wheelWeapons[i].GetClassName().." is "..fucked);*/
+					if(!fucked)
+					{
+						wheelShow.Push(i);
+					}
+				}
+				
+				wheelSort = true;
+			}
+			oldSelection = currentSelection;
+			
+			double pitchMod = 1.6;
+			double yawMod = 1.2;
+			if(invertControls==PY_INVERTX||invertControls==PY_INVERTXY) yawMod *=-1;
+			if(invertControls==PY_INVERTY||invertControls==PY_INVERTXY) pitchMod *=-1;
+			
+			realMouse.x-=players[0].original_cmd.yaw * (360./65536.)*yawMod;
+			realMouse.y-=players[0].original_cmd.pitch * (360./65536.)*pitchMod;
+			if(point_distance(0,0,realMouse.x,realMouse.y)>6000)
+			{
+				int angler = point_direction(0,0,realMouse.x,realMouse.y);
+				realMouse = (cos(angler)*80,sin(angler)*80);
+			}
+			fakeMouse.x = realMouse.x;
+			fakeMouse.y = realMouse.y;
+			if(point_distance(0,0,fakeMouse.x,fakeMouse.y)<5900)
+			{
+				int angler = point_direction(0,0,fakeMouse.x,fakeMouse.y);
+				fakeMouse = (cos(angler)*78,sin(angler)*78);
+			}
+			//Console.Printf(""..point_distance(0,0,realMouse.x,realMouse.y));
+			int chooseAngle = point_direction(0,0,fakeMouse.x,-fakeMouse.y)+180;
+			int averageAngles = 360/max(1,wheelShow.Size());
+			int halfAngle = averageAngles/2;
+			for(int i = 0;i<wheelShow.Size();i++)
+			{
+				int pointyAngle = ((double(i+1)/wheelShow.Size())*360);
+				if(abs(Actor.DeltaAngle(chooseAngle,pointyAngle))<halfAngle)
+				{
+					currentSelection=i;
+					break;
+				}
+			}
+			if(players[0].mo!=null)
+			{
+				players[0].mo.pitch = oldPitch;
+				players[0].mo.angle = oldYaw;
+				players[0].mo.angle -= 1;
+				players[0].mo.pitch -= 1;
+				players[0].mo.A_SetAngle(players[0].mo.angle + 1, SPF_INTERPOLATE);
+				players[0].mo.A_SetPitch(players[0].mo.pitch + 1, SPF_INTERPOLATE);
+				
+				if(level.frozen&&oldPTics.Size()==0)
+				{
+					let pspr = players[0].psprites;
+					while (pspr)
+					{
+						oldPTics.Push(pspr.Tics);
+						pspr.Tics = -1;
+						pspr = pspr.Next;
+					}
+				}
+				
+				if(level.frozen)
+				{
+					if(oldPUTics.Size()==0)
+					{
+						for (int i = 0; i < AllActorClasses.Size(); i++)
+						{
+							let type = (Class<Powerup>)(AllActorClasses[i]);
+							let item = Powerup(players[0].mo.FindInventory(type));
+								
+							if (item)
+							{
+								oldPUTics.Push(item.EffectTics);
+							}
+						}
+					}
+					else
+					{
+						int fuckIt = 0;
+						for (int i = 0; i < AllActorClasses.Size(); i++)
+						{
+							let type = (Class<Powerup>)(AllActorClasses[i]);
+							let item = Powerup(players[0].mo.FindInventory(type));
+								
+							if (item)
+							{
+								item.EffectTics = oldPUTics[fuckIt];
+								fuckIt++;
+							}
+						}
+					}
+				}
+				
+			}
+		}
+		else
+		{
+			if(players[0].mo!=null)
+			{
+				if(oldPTics.Size()>0)
+				{
+					let pspr = players[0].psprites;
+					while (pspr&&oldPTics.Size()>0)
+					{
+						pspr.Tics = oldPTics[0];
+						oldPTics.Delete(0);
+						pspr = pspr.Next;
+					}
+				}
+				if(oldPUTics.Size()>0)
+				{
+					for (int i = 0; i < AllActorClasses.Size(); i++)
+					{
+						let type = (Class<Powerup>)(AllActorClasses[i]);
+						let item = Powerup(players[0].mo.FindInventory(type));
+								
+						if (item && oldPUTics.Size()>0)
+						{
+							item.EffectTics = oldPUTics[0];
+							oldPUTics.Delete(0);
+						}
+					}
+				}
+			}
+			if(alphaFade>fadeSpeed)
+			{
+				alphaFade-=fadeSpeed;
+			}
+			if(musicFade>fadeSpeed)
+			{
+				musicFade-=fadeSpeed;
+			}
+		}
+	}
+	
+	Override Void NetworkProcess(ConsoleEvent e)
+	{
+		if(e.name == 'pyweaponwheelon')
+		{
+            if (wheelIsOpen) { return; }
+			wheelShow.Clear();
+			wheelIsOpen = true;
+			S_Sound("menu/back",5);
+			if(point_distance(0,0,realMouse.x,realMouse.y)>32)
+			{
+				realMouse = (0,0)+realMouse*0.1;
+			}
+			fakeMouse = realMouse;
+			if(players[0].mo!=null)
+			{
+				oldPitch = players[0].mo.pitch;
+				oldYaw = players[0].mo.angle;
+			}
+		}
+		else if(e.name == 'pyweaponwheeloff')
+		{
+			if(players[0].mo!=null)
+			{
+				if(wheelShow.Size()>0)
+				{
+					int curSelMod = wheelShow[currentSelection];
+					if(players[0].mo.FindInventory(wheelWeapons[curSelMod].weaponClass))
+					{
+						players[0].mo.A_SelectWeapon(wheelWeapons[curSelMod].weaponClass);
+						S_Sound("menu/choose",5);
+					}
+				}
+				//players[0].mo.TakeInventory("Py_WeaponWheelInvuln",1);
+			}
+			wheelSort = false;
+			wheelIsOpen = false;
+		}
+	}
+}
