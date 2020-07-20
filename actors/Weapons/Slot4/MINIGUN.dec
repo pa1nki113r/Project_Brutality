@@ -13,11 +13,6 @@ Actor MinigunCounter: Inventory
 Inventory.MaxAmount 6
 }
 
-Actor EquipDeathDealer: Inventory
-{
-Inventory.MaxAmount 1
-}
-
 Actor RandomHeadExploder: Inventory
 {
 inventory.maxamount 1
@@ -44,16 +39,45 @@ Actor MinigunUpgrade: Custominventory
 	+COUNTITEM
 	Inventory.Pickupsound "CHGNPKUP"
 	Inventory.PickupMessage "You got the Minigun Upgrade!!!"
+	Scale 0.52
 	States
 	{
 	Spawn:
-		8GUN ABCDEDCB 2 BRIGHT Light("WeaponUpgradeSpawner")
+		8GUN A 2 BRIGHT Light("WeaponUpgradeSpawner")
 		Loop
 	
     Pickup:
 	  TNT1 A 0 A_GiveInventory("MinigunUpgraded", 1)
+	  TNT1 A 0 A_GiveInventory("Mini_Gun", 3)
       Stop
 	}
+}
+
+
+Actor SelectMinigun_Chaingun: Inventory
+{
+inventory.maxamount 1
+}
+
+Actor SelectMinigun_Triple: Inventory
+{
+inventory.maxamount 1
+}
+
+
+Actor SelectMinigun_Gatling: Inventory
+{
+inventory.maxamount 1
+}
+
+Actor ChainGunMode: Inventory
+{
+inventory.maxamount 1
+}
+
+Actor TripleBarrelMode: Inventory
+{
+inventory.maxamount 1
 }
 
 // --------------------------------------------------------------------------
@@ -82,15 +106,16 @@ ACTOR Mini_Gun : PB_Weapon Replaces Chaingun
 	Obituary "%o became Swiss Cheese by %k's Gatling Gun"
 	AttackSound "none"
 	Tag "Mach-3 Minigun"
+	Scale 0.4
 States
 {
 	Steady:
 		TNT1 A 1
-		TNT1 A 0 A_JumpIfInventory("EquipDeathDealer", 5, "ReadyDeathDealer")
+		TNT1 A 0 A_JumpIfInventory("TripleBarrelMode", 5, "ReadyDeathDealer")
 		Goto Ready
 		
 		Spawn:
-			MGUN A -1
+			MG0Z A -1
 			Stop
 		Ready:
 			TNT1 A 0 A_JumpIfInventory("RespectMiniGun", 1,"SelectAnimation")
@@ -102,6 +127,7 @@ States
 			A_Giveinventory("PB_LockScreenTilt",1);
 			A_PlaySoundEx("Ironsights", "Auto");
 		}
+		TNT1 A 0 A_JumpIfInventory("MinigunUpgraded", 1, "Ready3")
 		TNT1 A 0 A_PlaySoundEx("weapons/minigun/respect1", "Auto")
 		MG00 ABCDEFGH 1 {
 			A_SetRoll(roll-0.2);
@@ -165,100 +191,212 @@ States
 		
 		SelectAnimation:
 			TNT1 A 0 A_PlaySoundEx("weapons/minigun/respect1", "Auto")
-			MG03 GDCB 1
+			MG23 ABCD 0 
+			MG04 ABCD 1 {
+				if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("MG23");}
+			}
+		Ready3:
 		RealReady:
 			TNT1 A 0 {
 				A_SetRoll(0);
 				A_SetCrosshair(0);
 				A_TakeInventory("PB_LockScreenTilt",1);
 				}
+			TNT1 A 0 A_JumpIfInventory("TripleBarrelMode", 1, "Ready_DeathDealer")
+			TNT1 A 0 A_JumpIfInventory("MinigunUpgraded", 1, "RealReady_Upgraded")
             TNT1 A 0 A_JumpIfInventory("Spin",1,"Ready2")
-			TNT1 A 0 A_JumpIfInventory("EquipDeathDealer", 1, "ReadyDeathDealer")
 		ReadyToFire:
-			CHAG A 1 {
-				if (CountInv("NewClip") == 0 ) { A_SetWeaponSprite("CHEG"); }
+			//Not Upgraded, Idle
+			TNT1 A 0 A_JumpIfInventory("MinigunUpgraded", 1, "RealReady_Upgraded")
+			CHAG D 1 {
+				if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle"); }
 				A_Overlay(3,"AmmoMeterOverlayIdle");
 				A_GunFlash("Glow");
 				A_TakeInventory("Overheating", 1);
 				return A_DoPBWeaponAction;
 				}
 			Loop
+		RealReady_Upgraded:
+            TNT1 A 0 A_JumpIfInventory("Spin",1,"Ready2_Upgraded")
+			TNT1 A 0 A_JumpIfInventory("TripleBarrelMode", 1, "Ready_DeathDealer")
+		ReadyToFire_Upgraded:
+			//Upgraded, Idle
+			UCHG A 1 {
+				if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+				A_Overlay(3,"AmmoMeterOverlayIdle");
+				A_GunFlash("Glow");
+				A_TakeInventory("Overheating", 1);
+				return A_DoPBWeaponAction;
+				}
+			Loop
+		
 		Ready2:
+			//Not Upgrade, Spinning
 			CHAG ABCD 1 
 			{
-				if (CountInv("NewClip") == 0 ) { A_SetWeaponSprite("CHEG"); }
+				if (CountInv("MinigunUpgraded") == 1) {return state("Ready2_Upgraded");}
+				if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle"); }
 				A_Overlay(3,"AmmoMeterOverlayIdle");
 				A_GunFlash("AltfireGlow");
-				if (CountInv("EquipDeathDealer") == 1) {return state("ReadyDeathDealer");}
 				return A_DoPBWeaponAction;
 			}
 			TNT1 A 0 A_TakeInventory("Overheating", 1)
 			Loop
-		Ready3:
-			TNT1 A 0 A_JumpIfInventory("EquipDeathDealer",1,1)
-			Goto RealReady
+		Ready2_Upgraded:
+			// Upgrade, Spinning
+			UCHG ABCDEFGH 1 
+			{
+				if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+				A_Overlay(3,"AmmoMeterOverlayIdle");
+				A_GunFlash("AltfireGlow");
+				if (CountInv("TripleBarrelMode") == 1) {return state("Ready2_DeathDealer");}
+				return A_DoPBWeaponAction;
+			}
+			TNT1 A 0 A_TakeInventory("Overheating", 1)
+			Loop
+			
+		Ready_DeathDealer:
 			TNT1 A 0 {
 				A_SetRoll(0);
 				A_SetCrosshair(0);
 				A_TakeInventory("PB_LockScreenTilt",1);
 				}
-            TNT1 A 0 A_JumpIfInventory("Spin",1,"ReadyDeathDealer2")
-		ReadyDeathDealer:
-			8HAG A 1 {
-				A_GunFlash("Null");
+            TNT1 A 0 A_JumpIfInventory("Spin",1,"Ready2_DeathDealer")
+		ReadyToFire_DeathDealer:
+			8HAF A 1 {
+				if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Triple"); }
+				A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
 				return A_DoPBWeaponAction;
 			}
 			Loop
-		ReadyDeathDealer2:
-			8HAG ABCD 1 A_DoPBWeaponAction
+			
+		Ready2_DeathDealer:
+			8HAF ABCDEFGH 1 
+			{
+				if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Triple"); }
+				A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+				return A_DoPBWeaponAction;
+			}
+			TNT1 A 0 A_TakeInventory("Overheating", 1)
 			Loop
 			
-	Prompt1:
-		TNT1 A 0 A_Print("You need a Minigun Upgrade!")
-		goto RealReady
 	WeaponSpecial:
-		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
-		TNT1 A 0 A_JumpIfInventory("MinigunUpgraded", 1, "SwitchToDeathDealer")
-		Goto Prompt1
-	SwitchToDeathDealer:
-	 TNT1 A 0 {
-		A_StopSoundEx("SoundSlot5");
-		A_StopSoundEx("Weapon");
-		A_TakeInventory("Spin",1);
+		TNT1 A 0 {
+			A_Takeinventory("GoWeaponSpecialAbility",1);
+			A_ClearOverlays(3,4);
 		}
-		TNT1 A 0 A_JumpIfInventory("EquipDeathDealer", 1, "SwitchToMinigun")
+		TNT1 A 0 A_JumpIfInventory("SelectMinigun_Chaingun", 1, "SwitchToChaingun")
+		TNT1 A 0 A_JumpIfInventory("SelectMinigun_Gatling", 1, "SwitchToGatling")
+		TNT1 A 0 A_JumpIfInventory("SelectMinigun_Triple", 1, "ToggleSuppressor")
+		TNT1 A 0 A_JumpIfInventory("MinigunUpgraded", 1, "SwitchToDeathDealer")
+		Goto SwitchToChaingun
+		
+	SwitchToChaingun:
 		TNT1 A 0 {
-			A_Print("Triple Rotary Mode Activated");
-			A_GiveInventory("EquipDeathDealer", 1);
-			A_PlaySoundEx("8HAINSW1", "Auto");
-			}
-		DDSW AABBCCDDD 1
-		DDSW EFG 2
-		TNT1 A 0 A_PlaySoundEx("8HAINSW2", "Auto")
-		DDSW JIII 2
-		8HWS AABCD 1
-		Goto Ready3
-	SwitchToMinigun:
+			A_TakeInventory("SelectMinigun_Chaingun",1);
+			A_TakeInventory("SelectMinigun_Gatling",1);
+			A_TakeInventory("SelectMinigun_Triple",1);
+		}
+		TNT1 A 0 A_JumpIfInventory("TripleBarrelMode", 1, "SwitchToChaingun_Upgraded")
+		TNT1 A 0 A_JumpIfInventory("ChainGunMode", 1, "RealReady")
 		TNT1 A 0 {
-			A_Print("Single Rotary Mode Activated");
-			A_TakeInventory("EquipDeathDealer", 1);
-			A_PlaySoundEx("8HAINSW1", "Auto");
-			}
-		8HWS DDCCBBAAA 1
-		DDSW IJGFED 2
-		TNT1 A 0 A_PlaySoundEx("8HAINSW3", "Auto")
-		DDSW DDCBA 1
+			A_StopSoundEx("SoundSlot5");
+			A_StopSoundEx("Weapon");
+			A_TakeInventory("Spin",1);
+			A_TakeInventory("Overheating", 1000);
+			A_GiveInventory("ChainGunMode",1);
+			A_PlaySoundEx("weapons/minigun/respect3", "Auto");
+		}
+		Goto RealReady
+	SwitchToChaingun_Upgraded:
+		TNT1 A 0 {
+			A_StopSoundEx("SoundSlot5");
+			A_StopSoundEx("Weapon");
+			A_TakeInventory("Spin",1);
+			A_TakeInventory("TripleBarrelMode",1);
+			A_TakeInventory("Overheating", 1000);
+			A_GiveInventory("ChainGunMode",1);
+			A_PlaySoundEx("8HAINSW3", "Auto");
+			A_SetSpeed(1.0);
+		}
+		8HAF ABCDE 1 {
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Triple"); }
+		}
+		1CHT LKJIHGFEDCBA 1
+		UCHG EDCBA 1 {
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+		}
 		Goto RealReady
 		
+	SwitchToGatling:
+		TNT1 A 0 {
+			A_TakeInventory("SelectMinigun_Chaingun",1);
+			A_TakeInventory("SelectMinigun_Gatling",1);
+			A_TakeInventory("SelectMinigun_Triple",1);
+		}
+		TNT1 A 0 A_JumpIfInventory("TripleBarrelMode", 1, "SwitchToGatling_Upgraded")
+		TNT1 A 0 A_JumpIf(CountInv("ChainGunMode") == 0 && CountInv("TripleBarrelMode") == 0, "RealReady")
+		TNT1 A 0 {
+			A_TakeInventory("Overheating", 1000);
+			A_TakeInventory("ChainGunMode",1);
+			A_PlaySoundEx("weapons/minigun/respect3", "Auto");
+		}
+		Goto RealReady
+	SwitchToGatling_Upgraded:
+		TNT1 A 0 {
+			A_StopSoundEx("SoundSlot5");
+			A_StopSoundEx("Weapon");
+			A_TakeInventory("Spin",1);
+			A_TakeInventory("TripleBarrelMode",1);
+			A_TakeInventory("ChainGunMode",1);
+			A_TakeInventory("Overheating", 1000);
+			A_PlaySoundEx("8HAINSW3", "Auto");
+			A_SetSpeed(1.0);
+		}
+		8HAF ABCDE 1 {
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Triple"); }
+		}
+		1CHT LKJIHGFEDCBA 1
+		UCHG EDCBA 1 {
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+		}
+		Goto RealReady
+	
+	SwitchToDeathDealer:
+		TNT1 A 0 {
+			A_TakeInventory("SelectMinigun_Chaingun",1);
+			A_TakeInventory("SelectMinigun_Gatling",1);
+			A_TakeInventory("SelectMinigun_Triple",1);
+		}
+		TNT1 A 0 A_JumpIfInventory("TripleBarrelMode", 1, "Ready3")
+		TNT1 A 0 {
+			A_StopSoundEx("SoundSlot5");
+			A_StopSoundEx("Weapon");
+			A_TakeInventory("Spin",1);
+			A_TakeInventory("ChainGunMode",1);
+			A_TakeInventory("Overheating", 1000);
+		}
+		TNT1 A 0 {
+			A_GiveInventory("TripleBarrelMode", 1);
+			A_SetSpeed(0.75);
+			A_PlaySoundEx("8HAINSW2", "Auto");
+		}
+		UCHG ABCDE 1 {
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+		}
+		1CHT ABCDEFGHIJKL 1
+		8HAF EDCBA 1 {
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Triple"); }
+		}
+		Goto Ready3
 
 	Deselect:
 		TNT1 A 0 {
+			A_ClearOverlays(3,4);
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			A_SetCrosshair(0);
 			A_TakeInventory("PB_LockScreenTilt",1);
-		}
-		TNT1 A 0 {
 			A_ZoomFactor(1.0);
 			A_StopSoundEx("SoundSlot5");
 			A_StopSoundEx("Weapon");
@@ -267,10 +405,14 @@ States
 			A_TakeInventory("Overheating", 100);
 			A_Takeinventory("RandomHeadExploder",1);
 			SetPlayerProperty(0,0,0);
-			}
-		TNT1 A 0 A_JumpIfInventory("EquipDeathDealer", 1, "DeselectDeathDealer")
+			A_SetSpeed(1.0);
+		}
+		TNT1 A 0 A_JumpIfInventory("TripleBarrelMode", 1, "DeselectDeathDealer")
 		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
-        MG03 BCDG 1
+		MG23 DCBA 0 
+        MG04 DCBA 1 {
+				if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("MG23");}
+		}
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
 	DeselectDeathDealer:
@@ -279,17 +421,17 @@ States
 			A_StopSoundEx("SoundSlot5");
 			A_StopSoundEx("Weapon");
 			A_GunFlash("Null");
-			A_TakeInventory ("EquipDeathDealer",1);
+			A_TakeInventory ("TripleBarrelMode",1);
 			A_TakeInventory ("Spin",1);
 			A_TakeInventory("Overheating", 100);
 			A_Takeinventory("RandomHeadExploder",1);
 			SetPlayerProperty(0,0,0);
-			}
-		8HWS DDCCBBAAA 1
-		DDSW IJGFED 2
-		TNT1 A 0 A_PlaySoundEx("8HAINSW3", "Auto")
-		DDSW DDCBA 1
-        8HWS DCBA 1
+			A_PlaySoundEx("8HAINSW3", "Auto");
+			A_SetSpeed(1.0);
+		}
+		8HAF ABCDE 1
+		1CHT LKJIHGFEDCBA 1
+		UCHG EDCBA 1
         MG03 BCDG 1
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
@@ -370,55 +512,96 @@ States
 			A_SetCrosshair(0);
 			A_TakeInventory("PB_LockScreenTilt",1);
 		}
-		TNT1 A 0 A_JumpIfInventory("EquipDeathDealer", 1, "FireDeathDealer")
+		UCHG ABCDEFGH 0
+		UCHF ABCDEFG 0
 		TNT1 A 0 A_JumpIfInventory("Spin",1,"Fire2")
+		TNT1 A 0 A_JumpIfInventory("TripleBarrelMode", 1, "FireDeathDealer")
+		TNT1 A 0 A_JumpIfInventory("ChainGunMode", 1, "Fire_ChainGun")
 		TNT1 A 0 {
 			A_PlaySoundEx("CHAINSTA", "Auto");
 			A_FireCustomMissile("Alerter", 0, 0, 0, 0);
 			A_GunFlash("PreGlow");
+			
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
 			}
-		CHAG B 1 {
+		CHAG A 1 {
 			A_ZoomFactor(0.995);
 			A_Overlay(3,"AmmoMeterOverlayIdle");
+			
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
 			}
-		CHAG B 1 {
+		CHAG A 1 {
 			A_ZoomFactor(0.990);
 			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
 			}
-		CHAG C 1 {
+		CHAG B 1 {
 			A_ZoomFactor(0.985);
 			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
 			}
-		CHAG C 1 {
+		CHAG B 1 {
 			A_ZoomFactor(0.980);
 			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
 			}
 		TNT1 A 0 A_GunFlash("PreGlow")
-		CHAG DDAA 1 A_Overlay(3,"AmmoMeterOverlayIdle")
+		CHAG CCDD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+		}
 		TNT1 A 0 A_GunFlash("PreGlow")
-		CHAG BBCD 1 A_Overlay(3,"AmmoMeterOverlayIdle")
+		CHAG EEFF 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+			}
 		TNT1 A 0 A_GunFlash("PreGlow")
-		CHAG ABCD 1 A_Overlay(3,"AmmoMeterOverlayIdle")
+		CHAG GABC 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+		}
 		TNT1 A 0 A_GunFlash("PreGlow")
 	LateHolding:
-		CHAG ABCD 1 A_Overlay(3,"AmmoMeterOverlayIdle")
+		CHAG ABCD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+		}
     Hold:
 		TNT1 A 0 {
 			A_PlaySoundEx("weapons/minigunfire", "Weapon", 1);
-			A_Overlay(4,"AmmoBeltAnimation");
 			A_ZoomFactor(0.980);
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltAnimation_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltAnimation");}
 			}
 	Holding1:
 		TNT1 A 0 A_GunFlash("FireGlow")
         CHAF A 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
 			A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
 			A_Giveinventory("OverHeating",1);
-			}
-        CHAF B 1 {
+		}
+        CHAF B 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			if (CountInv("PowerStrength") >= 1 ) {
 					A_SetAngle(frandom(0.8, -0.8) + angle, SPF_INTERPOLATE);
@@ -430,6 +613,7 @@ States
 				}
 			}
         CHAF C 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
@@ -438,7 +622,8 @@ States
 			A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
 			A_Giveinventory("OverHeating",1);
 		}
-        CHAF D 1 {
+        CHAF D 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			if (CountInv("PowerStrength") >= 1 ) {
 					A_SetAngle(frandom(0.8, -0.8) + angle, SPF_INTERPOLATE);
@@ -450,6 +635,7 @@ States
 				}
 			}
         CHAF E 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
@@ -457,7 +643,8 @@ States
 			A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
 			A_Giveinventory("OverHeating",1);
 		}
-        CHAF F 1 {
+        CHAF F 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			if (CountInv("PowerStrength") >= 1 ) {
 					A_SetAngle(frandom(0.8, -0.8) + angle, SPF_INTERPOLATE);
@@ -469,6 +656,7 @@ States
 				}
 			}
         CHAF G 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
@@ -476,19 +664,8 @@ States
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
 			A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
 			A_Giveinventory("OverHeating",1);
-		}
-        CHAF H 1 {
-			A_Overlay(3,"AmmoMeterOverlayFire");
-			if (CountInv("PowerStrength") >= 1 ) {
-					A_SetAngle(frandom(0.8, -0.8) + angle, SPF_INTERPOLATE);
-					A_SetPitch(pitch-0.12, SPF_INTERPOLATE);
-				}
-			else {
-					A_SetAngle(frandom(1.6, -1.6) + angle, SPF_INTERPOLATE);
-					A_SetPitch(pitch-0.6, SPF_INTERPOLATE);
-				}
 			A_ReFire("Holding1");
-			}
+		}
 		TNT1 A 0 {
 			A_ClearOverlays(4,4);
 			A_StopSoundEx("SoundSlot5");
@@ -497,25 +674,37 @@ States
 			A_GunFlash("PostGlow");
 		}
         CHAG ABCD 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
 			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
 			A_ReFire("Hold");
 			}
 		TNT1 A 0 A_GunFlash("PostGlow")
-        CHAG ABCD 1 {
+        CHAG EFGG 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
 			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
 			A_Refire("Hold");
 			}
 		TNT1 A 0 A_GunFlash("PostGlow")
 		CHAG AA 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
 			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
 			A_ZoomFactor(0.98);
 			A_Refire("LateHolding");
 			}
         CHAG BB 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
 			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
 			A_ZoomFactor(0.99);
 			A_Refire("LateHolding");
@@ -523,26 +712,310 @@ States
 		TNT1 A 0 A_GunFlash("PostGlow")
 		
 		CHAG CC 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
 			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
 			A_ZoomFactor(1.0);
 			A_Refire("LateHolding");
 			}
 		CHAG DD 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
 			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
 			A_Refire("LateHolding");
 			}
         goto RealReady
+		
+		
+	Fire_Chaingun:
+		TNT1 A 0 {
+			A_WeaponOffset(0,32);
+			A_SetRoll(0);
+			A_SetCrosshair(0);
+			A_TakeInventory("PB_LockScreenTilt",1);
+		}
+		TNT1 A 0 {
+			A_PlaySoundEx("weapons/minigun/chaingunmode/start", "SoundSlot5");
+			A_FireCustomMissile("Alerter", 0, 0, 0, 0);
+			A_GunFlash("PreGlow");
+			}
+		CHAG A 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			A_ZoomFactor(0.995);
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+		}
+		CHAG A 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			A_ZoomFactor(0.990);
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+		}
+		CHAG B 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			A_ZoomFactor(0.985);
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+		}
+		CHAG B 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			A_ZoomFactor(0.980);
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+		}
+		TNT1 A 0 A_GunFlash("PreGlow")
+		CHAG CC 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+		}
+		CHAF A 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
+			A_Overlay(3,"AmmoMeterOverlayFire");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
+			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
+			A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
+			A_Giveinventory("OverHeating",1);
+			A_StartSound("weapons/minigun/chaingunmode/fire");
+		}
+		TNT1 A 0 A_GunFlash("PreGlow")
+		CHAG EFGA 1 {
+			A_Overlay(3,"AmmoMeterOverlayFire");
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+		}
+		TNT1 A 0 A_GunFlash("PreGlow")
+		CHAF G 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
+			A_Overlay(3,"AmmoMeterOverlayFire");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
+			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
+			A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
+			A_Giveinventory("OverHeating",1);
+			A_StartSound("weapons/minigun/chaingunmode/fire");
+		}
+		TNT1 A 0 A_GunFlash("PreGlow")
+		CHAG CDE 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+		}
+		CHAF D 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
+			A_Overlay(3,"AmmoMeterOverlayFire");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
+			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
+			A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
+			A_Giveinventory("OverHeating",1);
+			A_StartSound("weapons/minigun/chaingunmode/fire");
+		}
+	LateHolding_Chaingun:
+		CHAG ABC 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+		}
+    Hold_Chaingun:
+		TNT1 A 0 {
+			//A_PlaySoundEx("weapons/minigunfire", "Weapon", 1);
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltAnimation_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltAnimation");}
+			A_ZoomFactor(0.980);
+			}
+	Holding1_Chaingun:
+		TNT1 A 0 A_GunFlash("FireGlow")
+        CHAF A 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
+			A_Overlay(3,"AmmoMeterOverlayFire");
+			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
+			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
+			A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
+			A_Giveinventory("OverHeating",1);
+			A_StartSound("weapons/minigun/chaingunmode/fire");
+			}
+        CHAF B 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
+			A_Overlay(3,"AmmoMeterOverlayFire");
+			if (CountInv("PowerStrength") >= 1 ) {
+					A_SetAngle(frandom(0.6, -0.6) + angle, SPF_INTERPOLATE);
+					A_SetPitch(pitch-0.2, SPF_INTERPOLATE);
+				}
+			else {
+					A_SetAngle(frandom(1.2, -1.2) + angle, SPF_INTERPOLATE);
+					A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
+				}
+			}
+		TNT1 A 0 A_GunFlash("FireGlow")
+		CHAF C 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
+			A_Overlay(3,"AmmoMeterOverlayFire");
+		}
+		//CHAG C 1
+        CHAF D 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
+			A_Overlay(3,"AmmoMeterOverlayFire");
+			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
+			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
+			A_Firecustommissile("MiniBeltPieceSpawn",0,0,-12,-18);
+			A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
+			A_Giveinventory("OverHeating",1);
+			A_StartSound("weapons/minigun/chaingunmode/fire");
+			}
+		TNT1 A 0 A_GunFlash("FireGlow")
+        CHAF E 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
+			A_Overlay(3,"AmmoMeterOverlayFire");
+			if (CountInv("PowerStrength") >= 1 ) {
+					A_SetAngle(frandom(0.6, -0.6) + angle, SPF_INTERPOLATE);
+					A_SetPitch(pitch-0.2, SPF_INTERPOLATE);
+				}
+			else {
+					A_SetAngle(frandom(1.2, -1.2) + angle, SPF_INTERPOLATE);
+					A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
+				}
+			}
+		CHAF F 1 {
+			A_Overlay(3,"AmmoMeterOverlayFire");
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
+			}
+		//CHAG C 1
+		TNT1 A 0 A_GunFlash("FireGlow")
+        CHAF G 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
+			A_Overlay(3,"AmmoMeterOverlayFire");
+			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
+			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
+			A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
+			A_Giveinventory("OverHeating",1);
+			A_StartSound("weapons/minigun/chaingunmode/fire");
+			}
+        CHAF H 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
+			A_Overlay(3,"AmmoMeterOverlayFire");
+			if (CountInv("PowerStrength") >= 1 ) {
+					A_SetAngle(frandom(0.6, -0.6) + angle, SPF_INTERPOLATE);
+					A_SetPitch(pitch-0.2, SPF_INTERPOLATE);
+				}
+			else {
+					A_SetAngle(frandom(1.2, -1.2) + angle, SPF_INTERPOLATE);
+					A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
+				}
+			}
+		TNT1 A 0 A_GunFlash("FireGlow")
+		CHAF I 1 {
+			A_Overlay(3,"AmmoMeterOverlayFire");
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
+		}
+		//CHAG C 1 A_Overlay(3,"AmmoMeterOverlayFire")
+		
+        TNT1 A 0 A_ReFire("Holding1_Chaingun")
+		TNT1 A 0 A_JumpIfInventory("Spin",1,"Ready2")
+		TNT1 A 0 {
+			A_ClearOverlays(4,4);
+			A_StopSoundEx("SoundSlot5");
+			A_StopSoundEx("Weapon");
+			A_PlaySoundEx("weapons/minigun/chaingunmode/stop", "SoundSlot5");
+			A_GunFlash("PostGlow");
+		}
+        CHAG ABCD 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
+			A_ReFire("Hold_Chaingun");
+			}
+		TNT1 A 0 A_GunFlash("PostGlow")
+        CHAG ABCD 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
+			A_Refire("Hold_Chaingun");
+			}
+		TNT1 A 0 A_GunFlash("PostGlow")
+        CHAG ABCD 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
+			A_Refire("Hold_Chaingun");
+			}
+		TNT1 A 0 A_GunFlash("PostGlow")
+		CHAG AA 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
+			A_ZoomFactor(0.98);
+			A_Refire("LateHolding_Chaingun");
+			}
+        CHAG BB 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
+			A_ZoomFactor(0.99);
+			A_Refire("LateHolding_Chaingun");
+			}
+		TNT1 A 0 A_GunFlash("PostGlow")
+		
+		CHAG CC 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
+			A_ZoomFactor(1.0);
+			A_Refire("LateHolding_Chaingun");
+			}
+		CHAG DD 1 {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
+			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
+			A_Refire("LateHolding_Chaingun");
+			}
+        goto RealReady
+		
+		
 	
 	Fire2:
+		TNT1 A 0 A_JumpIfInventory("TripleBarrelMode", 1, "HoldDeathDealer")
+		TNT1 A 0 A_JumpIfInventory("ChainGunMode", 1, "Hold_Chaingun")
         TNT1 A 0 {
 			A_PlaySoundEx("weapons/minigunfirefast", "Weapon", 1 );
-			A_Overlay(4,"AmmoBeltAnimation");
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltAnimation_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltAnimation");}
 			}
+			
 	FiringFast:
 		TNT1 A 0 A_GunFlash("PostGlow")
 		CHAF A 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 3, -1, 10, "MachineGunBulletPuff", 1);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
@@ -559,6 +1032,7 @@ States
 				}
 			}
         CHAF C 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 3, -1, 10, "MachineGunBulletPuff", 1);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
@@ -568,6 +1042,7 @@ States
 			A_Giveinventory("OverHeating",1);
 			}
         CHAF D 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 3, -1, 10, "MachineGunBulletPuff", 1);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
@@ -584,6 +1059,7 @@ States
 				}
 			}
         CHAF F 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 3, -1, 10, "MachineGunBulletPuff", 1);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
@@ -593,6 +1069,7 @@ States
 			A_Giveinventory("OverHeating",1);
 			}
         CHAF G 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 3, -1, 10, "MachineGunBulletPuff", 1);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
@@ -609,6 +1086,7 @@ States
 				}
 			}
         CHAF H 1 BRIGHT {
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 3, -1, 10, "MachineGunBulletPuff", 1);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
@@ -625,40 +1103,66 @@ States
 			}
 		CHAG ABCD 1 {
 			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
+			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
+			else {A_Overlay(4,"AmmoBeltIdle");}
 			A_ReFire("Fire2");
 			A_FireCustomMissile("SmokeSpawner",0,0,0,0);
 		}
         goto RealReady
 		
 	FireDeathDealer:
-	    TNT1 A 0 A_JumpIfInventory("Spin",1,"DeathDealerFire2") 
+	    TNT1 A 0 A_JumpIfInventory("Spin",1,"HoldDeathDealer") 
 		TNT1 A 0 {
 			A_PlaySoundEx("CHAINSTA","Auto");
 			A_PlaySoundEx("DTHDLRST","Auto");
 			A_FireCustomMissile("Alerter", 0, 0, 0, 0);
 		}
-		8HAG B 1 A_ZoomFactor(0.995)
-		8HAG B 1 A_ZoomFactor(0.990)
-		8HAG C 1 A_ZoomFactor(0.985)
-		8HAG C 1 A_ZoomFactor(0.980)
-		8HAG D 1 
+		8HAF B 1 { 
+			A_ZoomFactor(0.995);
+			A_Overlay(4,"AmmoBeltIdle_Triple");
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+		}
+		8HAF B 1  { 
+			A_ZoomFactor(0.990);
+			A_Overlay(4,"AmmoBeltIdle_Triple");
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+		}
+		8HAF C 1 {
+			A_ZoomFactor(0.985);
+			A_Overlay(4,"AmmoBeltIdle_Triple");
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+		}
+		8HAF C 1 {
+			A_ZoomFactor(0.980);
+			A_Overlay(4,"AmmoBeltIdle_Triple");
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+		}
+		8HAF D 1 {
+			A_Overlay(4,"AmmoBeltIdle_Triple");
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+		}
     HoldDeathDealer:
+		//TNT1 A 0 A_JumpIf(CountInv("NewClip") < 1, "HoldingDeathDealer_Stop")
         TNT1 A 0 {
 			A_PlaySoundEx("8HAINFIR", "Weapon", 1);
+			A_Overlay(4,"AmmoBeltAnimation_Triple");
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
 			A_ZoomFactor(0.98);
 			}
 	HoldingDeathDealer:
-        8HAF A 1 BRIGHT {
+		//TNT1 A 0 A_JumpIf(CountInv("NewClip") < 1, "HoldingDeathDealer_Stop")
+        8HBF A 1 BRIGHT {
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			A_FireCustomMissile("MinigunTracer", random(-6,6), 0, -1, random(-4,4));
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
 			A_Firecustommissile("MiniBeltPieceSpawn",0,0,-12,-18);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_TakeInventory("NewClip", 2);
+			A_FireBullets(7, 7, 1, 9, "MachineGunBulletPuff", 1);
+			A_FireBullets(7, 7, 1, 9, "MachineGunBulletPuff", 1);
+			A_FireBullets(7, 7, 0, 9, "MachineGunBulletPuff", 1);
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
 			if (CountInv("PowerStrength") >= 1 ) {
 					A_SetAngle(frandom(1.2, -1.2) + angle, SPF_INTERPOLATE);
 					A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
@@ -668,18 +1172,18 @@ States
 					A_SetPitch(pitch-0.8, SPF_INTERPOLATE);
 				}
 			}
-        8HAF BC 1 
-        8HAF D 1 BRIGHT {
+        8HBF BC 1 A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer")
+        8HBF D 1 BRIGHT {
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			A_FireCustomMissile("MinigunTracer", random(-6,6), 0, -1, random(-4,4));
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
 			A_Firecustommissile("MiniBeltPieceSpawn",0,0,-12,-18);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_TakeInventory("NewClip", 2);
+			A_FireBullets(7, 7, 1, 9, "MachineGunBulletPuff", 1);
+			A_FireBullets(7, 7, 1, 9, "MachineGunBulletPuff", 1);
+			A_FireBullets(7, 7, 0, 9, "MachineGunBulletPuff", 1);
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
 			if (CountInv("PowerStrength") >= 1 ) {
 					A_SetAngle(frandom(1.2, -1.2) + angle, SPF_INTERPOLATE);
 					A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
@@ -689,18 +1193,18 @@ States
 					A_SetPitch(pitch-0.8, SPF_INTERPOLATE);
 				}
 			}
-        8HAF EF 1
-        8HAF G 1 BRIGHT {
+        8HBF EF 1 A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer")
+        8HBF G 1 BRIGHT {
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			A_FireCustomMissile("MinigunTracer", random(-6,6), 0, -1, random(-4,4));
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
 			A_Firecustommissile("MiniBeltPieceSpawn",0,0,-12,-18);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_TakeInventory("NewClip", 2);
+			A_FireBullets(7, 7, 1, 9, "MachineGunBulletPuff", 1);
+			A_FireBullets(7, 7, 1, 9, "MachineGunBulletPuff", 1);
+			A_FireBullets(7, 7, 0, 9, "MachineGunBulletPuff", 1);
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
 			if (CountInv("PowerStrength") >= 1 ) {
 					A_SetAngle(frandom(1.2, -1.2) + angle, SPF_INTERPOLATE);
 					A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
@@ -710,132 +1214,193 @@ States
 					A_SetPitch(pitch-0.8, SPF_INTERPOLATE);
 				}
 			}
-        8HAF H 1 A_ReFire("HoldingDeathDealer")
+        8HBF H 1 A_ReFire("HoldingDeathDealer")
+	HoldingDeathDealer_Stop:
+		TNT1 A 0 A_StopSoundEx("Weapon")
+		TNT1 A 0 A_JumpIfInventory("Spin",1,"Ready2_DeathDealer")
 		TNT1 A 0 {
-			A_StopSoundEx("Weapon");
 			A_PlaySoundEx("CHAINSTO", "Auto");
 			A_PlaySoundEx("DTHDLRSP", "Auto");
 			}
-        8HAG A 1 {
+        8HAF A 1 {
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
 			A_ZoomFactor(0.98);
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+			A_Overlay(4,"AmmoBeltIdle_Triple");
 			A_Refire("HoldDeathDealer");
 			}
-        8HAG B 1 {
+        8HAF B 1 {
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
 			A_ZoomFactor(0.99);
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+			A_Overlay(4,"AmmoBeltIdle_Triple");
 			A_Refire("HoldDeathDealer");
 			}
-		8HAG C 1 {
+		8HAF C 1 {
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
 			A_ZoomFactor(0.995);
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+			A_Overlay(4,"AmmoBeltIdle_Triple");
 			A_Refire("HoldDeathDealer");
 			}
-		8HAG D 1 {
+		8HAF D 1 {
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
 			A_ZoomFactor(1.0);
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+			A_Overlay(4,"AmmoBeltIdle_Triple");
 			A_Refire("HoldDeathDealer");
 			}
-        8HAG AABBCCDD 1 {
+        8HAF AABBCCDD 1 {
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+			A_Overlay(4,"AmmoBeltIdle_Triple");
 			A_Refire("HoldDeathDealer");
 			}
-        8HAG AABBCCDD 1 {
+        8HAF AABBCCDD 1 {
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+			A_Overlay(4,"AmmoBeltIdle_Triple");
 			A_Refire("HoldDeathDealer");
 			}
-		8HAG AAABBBCCCDDD 1 {
+		8HAF AAABBBCCCDDD 1 {
 			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
+			A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer");
+			A_Overlay(4,"AmmoBeltIdle_Triple");
 			A_Refire("HoldDeathDealer");
 			}
         goto Ready3
-		
-	DeathDealerFire2:
-        TNT1 A 0 {
-			A_PlaySoundEx("8HAINFIR", "Weapon", 1);
-			A_ZoomFactor(0.98);
-			}
-	HoldingDeathDealerFire2:
-		8HAF A 1 BRIGHT {
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
-			A_FireCustomMissile("MinigunTracer", random(-6,6), 0, -1, random(-4,4));
-			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
-			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
-			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
-			A_Firecustommissile("MiniBeltPieceSpawn",0,0,-12,-18);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_TakeInventory("NewClip", 2);
-			}
-        8HAF B 1 {
-			if (CountInv("PowerStrength") >= 1 ) {
-					A_SetAngle(frandom(1.2, -1.2) + angle, SPF_INTERPOLATE);
-					A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
-			}
-			else {
-					A_SetAngle(frandom(2.4, -2.4) + angle, SPF_INTERPOLATE);
-					A_SetPitch(pitch-0.8, SPF_INTERPOLATE);
-			}
-		}
-        8HAF G 1 BRIGHT {
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
-			A_FireCustomMissile("MinigunTracer", random(-6,6), 0, -1, random(-4,4));
-			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
-			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
-			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
-			A_Firecustommissile("MiniBeltPieceSpawn",0,0,-12,-18);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_FireBullets(7, 7, 3, 9, "MachineGunBulletPuff", 1);
-			A_TakeInventory("NewClip", 2);
-			}
-        8HAF H 1 A_ReFire("HoldingDeathDealerFire2")
-		TNT1 A 0 {
-			A_StopSoundEx("Weapon");
-			A_ZoomFactor(1.0);
-			}
-		8HAG ABCD 1 {
-			A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
-			A_Refire("DeathDealerFire2");
-			}
-        goto ReadyDeathDealer2
-
+	
 	  AltFire:
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			A_SetCrosshair(0);
 			A_TakeInventory("PB_LockScreenTilt",1);
+			A_StopSoundEx("Weapon");
 		}
-		 TNT1 A 0 A_JumpIfInventory("EquipDeathDealer",1,"DeathDealerAltFire")
-		 TNT1 A 0 A_JumpIfInventory("Spin",1,"StopAlt")
-		 TNT1 A 0 {
+		TNT1 A 0 A_JumpIfInventory("TripleBarrelMode",1,"DeathDealerAltFire")
+		TNT1 A 0 A_JumpIfInventory("Spin",1,"StopAlt")
+		TNT1 A 0 {
 			A_GiveInventory ("Spin",1);
-			A_PlaySoundEx("CHAINSTA", "Auto");
 			A_GunFlash("AltfireGlow");
+			if(CountInv("ChainGunMode") == 1) {
+				A_PlaySoundEx("weapons/minigun/chaingunmode/spinup", "Auto");
+			}	
+			else {
+				A_PlaySoundEx("CHAINSTA", "Auto");
 			}
-		 CHAG AAAABBBBCCCCDDDD 1 A_Overlay(3,"AmmoMeterOverlayIdle")
-		 CHAG AAABBBCCCDDD 1 A_Overlay(3,"AmmoMeterOverlayIdle")
-		 TNT1 A 0 A_PlaySoundEx("CHAINSPI", "SoundSlot5", 1)
-		 CHAG AABBCCDD 1 A_Overlay(3,"AmmoMeterOverlayIdle")
-		 CHAG ABCD 1 A_Overlay(3,"AmmoMeterOverlayIdle")
-		 Goto Ready2
+			
+		}
+		
+		TNT1 A 0 A_JumpIfInventory("MinigunUpgraded", 1, "SpinUp_Upgraded")
+		CHAG AAAABBBBCCCCDDDD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle"); }
+		}
+		CHAG AAABBBCCCDDD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle"); }
+		}
+		TNT1 A 0 {
+			if(CountInv("ChainGunMode") == 1) {
+				A_PlaySoundEx("weapons/minigun/chaingunmode/spin", "SoundSlot5", 1);
+			}	
+			else {
+				A_PlaySoundEx("CHAINSPI", "SoundSlot5", 1);
+			}
+			
+		}
+		CHAG AABBCCDD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle"); }
+		}
+		CHAG ABCD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle"); }
+		}
+		Goto Ready2
+		
+	SpinUp_Upgraded:
+		UCHG AAAABBBBCCCCDDDD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+		}
+		UCHG EEEFFFGGGHHH 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+		}
+		TNT1 A 0 {
+			if(CountInv("ChainGunMode") == 1) {
+				A_PlaySoundEx("weapons/minigun/chaingunmode/spin", "SoundSlot5", 1);
+			}	
+			else {
+				A_PlaySoundEx("CHAINSPI", "SoundSlot5", 1);
+			}
+			
+		}
+		UCHG AABBCCDD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+		}
+		UCHG EFGH 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+		}
+		Goto Ready2
 
 	StopAlt:
 		 TNT1 A 0 {
 			A_StopSoundEx("SoundSlot5");
 			A_StopSoundEx("Weapon");
 			A_TakeInventory("Spin",1);
-			A_PlaySoundEx("CHAINSTO", "Auto");
 			A_GunFlash("PostGlow");
+			
+			if(CountInv("ChainGunMode") == 1) {
+				A_PlaySoundEx("weapons/minigun/chaingunmode/spindown", "Auto");
+			}	
+			else {
+				A_PlaySoundEx("CHAINSTO", "Auto");
+			}
+			
 		}
-		CHAG ABCD 1 A_Overlay(3,"AmmoMeterOverlayIdle")
-		CHAG AABBCCDD 1 A_Overlay(3,"AmmoMeterOverlayIdle")
-		CHAG AAABBBCCCDDD 1 A_Overlay(3,"AmmoMeterOverlayIdle")
-		CHAG AAAABBBBCCCCDDDD 1 A_Overlay(3,"AmmoMeterOverlayIdle")
+		
+		TNT1 A 0 A_JumpIfInventory("MinigunUpgraded", 1 , "SpinDown_Upgraded")
+		CHAG ABCD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle"); }
+		}
+		CHAG AABBCCDD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle"); }
+		}
+		CHAG AAABBBCCCDDD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle"); }
+		}
+		CHAG AAAABBBBCCCCDDDD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle"); }
+		}
 		goto RealReady
-	 
+	SpinDown_Upgraded:
+		UCHG ABCD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+		}
+		UCHG EEFFGGHH 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+		}
+		UCHG AAABBBCCCDDD 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+		}
+		UCHG EEEFFFFGGGGHHHH 1 {
+			A_Overlay(3,"AmmoMeterOverlayIdle");
+			if (CountInv("NewClip") > 0 ) { A_Overlay(4,"AmmoBeltIdle_Upgraded"); }
+		}
+		goto RealReady
+		
 	DeathDealerAltFire:
 		 TNT1 A 0 A_JumpIfInventory("Spin",1,"DeathDealerStopAlt")
 		 TNT1 A 0 {
@@ -843,11 +1408,11 @@ States
 			A_PlaySoundEx("CHAINSTA", "Auto");
 			A_PlaySoundEx("DTHDLRST", "Auto");
 			}
-		 8HAG AAAABBBBCCCCDDDD 1
-		 8HAG AAABBBCCCDDD 1
+		 8HAF AAAABBBBCCCCDDDD 1
+		 8HAF AAABBBCCCDDD 1
 		 TNT1 A 0 A_PlaySoundEx("DTHDRSN", "SoundSlot5", 1)
-		 8HAG AABBCCDD 1
-		 Goto ReadyDeathDealer2
+		 8HAF AABBCCDD 1
+		 Goto Ready2_DeathDealer
 		 
 	DeathDealerStopAlt:
 		 TNT1 A 0 {
@@ -857,71 +1422,71 @@ States
 			A_PlaySoundEx("CHAINSTO", "Auto");
 			A_PlaySoundEx("DTHDLRSP", "Auto");
 		 }
-		 8HAG ABCD 1
-		 8HAG AABBCCDD 1
-		 8HAG AAABBBCCCDDD 1
-		 8HAG AAABBB 1
-		 8HAG CCCCDDDD 1
+		 8HAF ABCD 1
+		 8HAF AABBCCDD 1
+		 8HAF AAABBBCCCDDD 1
+		 8HAF AAABBB 1
+		 8HAF CCCCDDDD 1
 		 Goto Ready3
 	 
 	FlashKicking:
 	FlashPunching:
-		TNT1 A 0 A_JumpIfInventory("EquipDeathDealer", 1, "FlashKickingDD")
-		MG03 ABCDEFGGGFEDCBA 1 
+		TNT1 A 0 A_ClearOverlays(3,4)
+		MG33 ABCDEFGHIJKLMN 0
+		MG35 ABCDEFGHIJKLMN 0
+		MG03 ABCDEFGHIJKLMN 1 {
+				if (CountInv("MinigunUpgraded") == 1) {A_SetFlashWeaponSprite("MG33");}
+				if (CountInv("TripleBarrelMode") == 1) {A_SetFlashWeaponSprite("MG35");}
+			}
 		Stop
 		
-	FlashKickingDD:
-		8HAG E 1 
-		8HAG E 1 
-		8HAG F 1 
-		8HAG G 3 
-		8HAG H 3
-		8HAG G 3 
-		8HAG E 1 
-		8HAG F 1 
-		8HAG AAAAA 1
-		Stop
-	
 	FlashAirKicking:
-		TNT1 A 0 A_JumpIfInventory("EquipDeathDealer", 1, "FlashAirKickingDD")
-		MG03 ABCDEFGGGFEDCBAAA 1 
-		Stop
-		
-	FlashAirKickingDD:
-		8HAG E 1 
-		8HAG E 1 
-		8HAG F 1 
-		8HAG G 3 
-		8HAG H 3
-		8HAG G 3 
-		8HAG F 1 
-		8HAG E 1 
-		8HAG AAAA 1
+		TNT1 A 0 A_ClearOverlays(3,4)
+		MG33 ABCDEFGHIJKLMN 0
+		MG35 ABCDEFGHIJKLMN 0
+		MG03 ABCDEFGGGGHIJKLMN 1 {
+				if (CountInv("MinigunUpgraded") == 1) {A_SetFlashWeaponSprite("MG33");}
+				if (CountInv("TripleBarrelMode") == 1) {A_SetFlashWeaponSprite("MG35");}
+		}
 		Stop
 		
 	FlashSlideKicking:
-		TNT1 A 0 A_JumpIfInventory("EquipDeathDealer", 1, "FlashSlideKickingDD")
-		MG03 ABCDEFGGGGGGGGGGGGGFEDCBAA 1 
+		TNT1 A 0 A_ClearOverlays(3,4)
+		MG34 ABCDEFGHIJKLMNOPQRSTU 0
+		MG36 ABCDEFGHIJKLMNOPQRSTU 0
+		MG13 ABCDEFGHHHHHHIJKLMNOPQRSTU 1 {
+				if (CountInv("MinigunUpgraded") == 1) {A_SetFlashWeaponSprite("MG34");}
+				if (CountInv("TripleBarrelMode") == 1) {A_SetFlashWeaponSprite("MG36");}
+		}
 		Stop
 		
-	FlashSlideKickingDD:
-		8HAG EF 2 
-		8HAG GGGGHHHGGGG 2  
-		Stop
 		
 	FlashSlideKickingStop:
-		TNT1 A 0 A_JumpIfInventory("EquipDeathDealer", 1, "FlashSlideKickingStopDD")
-		MG03 GFEDCBA 1 
+		TNT1 A 0 A_ClearOverlays(3,4)
+		MG13 OPQRSTU 1 {
+				if (CountInv("MinigunUpgraded") == 1) {A_SetFlashWeaponSprite("MG34");}
+				if (CountInv("TripleBarrelMode") == 1) {A_SetFlashWeaponSprite("MG36");}
+		}
 		Stop
 		
-	FlashSlideKickingStopDD:
-		8HAG GFEEA 1 
-		8HAG A 1 
-		Stop
-
 		// Overlay/Flash States defined below
 		AmmoBeltAnimation:
-			MG07 ABCDEFGHIJIHGFEDCBA 1
+			MG07 ABCDEFGHIJKLMN 1 BRIGHT
+			Loop
+		AmmoBeltIdle:
+			MG07 O 1
+			Loop
+		AmmoBeltAnimation_Upgraded:
+			MG08 ABCD 1 BRIGHT
+			Loop
+		AmmoBeltIdle_Upgraded:
+			MG08 E 1
+			Loop
+		AmmoBeltAnimation_Triple:
+			MG09 ABCD 1 BRIGHT
+			Loop
+		AmmoBeltIdle_Triple:
+			MG09 E 1
 			Loop
 		
 		PreGlow:
@@ -1092,6 +1657,47 @@ States
 			Ammo60:
 				MG05 I 1 BRIGHT
 				Stop
+		AmmoMeterOverlayIdle_DeathDealer:
+				TNT1 A 0 A_JumpIfInventory("NewClip",540, "Ammo540DeathDealer")
+				TNT1 A 0 A_JumpIfInventory("NewClip",480, "Ammo480DeathDealer")
+				TNT1 A 0 A_JumpIfInventory("NewClip",420, "Ammo420DeathDealer")
+				TNT1 A 0 A_JumpIfInventory("NewClip",360, "Ammo360DeathDealer")
+				TNT1 A 0 A_JumpIfInventory("NewClip",300, "Ammo300DeathDealer")
+				TNT1 A 0 A_JumpIfInventory("NewClip",240, "Ammo240DeathDealer")
+				TNT1 A 0 A_JumpIfInventory("NewClip",180, "Ammo180DeathDealer")
+				TNT1 A 0 A_JumpIfInventory("NewClip",120, "Ammo120DeathDealer")
+				TNT1 A 0 A_JumpIfInventory("NewClip",60, "Ammo60DeathDealer")
+				MG17 J 1 BRIGHT
+				Stop
+			Ammo600DeathDealer:
+				MG17 A 1 BRIGHT
+				Stop
+			Ammo540DeathDealer:
+				MG17 B 1 BRIGHT
+				Stop
+			Ammo480DeathDealer:
+				MG17 C 1 BRIGHT
+				Stop
+			Ammo420DeathDealer:
+				MG17 D 1 BRIGHT
+				Stop
+			Ammo360DeathDealer:
+				MG17 E 1 BRIGHT
+				Stop
+			Ammo300DeathDealer:
+				MG17 F 1 BRIGHT
+				Stop
+			Ammo240DeathDealer:
+				MG17 G 1 BRIGHT
+				Stop
+			Ammo180DeathDealer:
+			Ammo120DeathDealer:
+				MG17 H 1 BRIGHT
+				Stop
+			Ammo60DeathDealer:
+				MG17 I 1 BRIGHT
+				Stop
+				
 		AmmoMeterOverlayFire:
 			TNT1 A 0 A_JumpIfInventory("NewClip",540, "Ammo540Fire")
 			TNT1 A 0 A_JumpIfInventory("NewClip",480, "Ammo480Fire")
