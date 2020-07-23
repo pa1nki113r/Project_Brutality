@@ -1,3 +1,12 @@
+Actor SelectShotgun_Buckshot : Inventory
+{Inventory.MaxAmount 1}
+
+Actor SelectShotgun_Slugshot : Inventory
+{Inventory.MaxAmount 1}
+
+Actor SelectShotgun_Dragonsbreath : Inventory
+{Inventory.MaxAmount 1}
+
 Actor Pumping : Inventory
 {
 Inventory.MaxAmount 1
@@ -63,10 +72,11 @@ Actor PumpshotgunUpgrade: Custominventory
 	+COUNTITEM
 	Inventory.Pickupsound "SHOTPICK"
 	Inventory.PickupMessage "You got the Pump shotgun Magazine Upgrade!!!"
+	Scale 0.45
 	States
 	{
 	Spawn:
-		9SMU ABCDEDCB 2 BRIGHT
+		9SMU A 1 BRIGHT Light("WeaponUpgradeSpawner")
 		Loop
 	
     Pickup:
@@ -224,7 +234,7 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
     +WEAPON.NOAUTOAIM
 	+WEAPON.NOAUTOFIRE
 	PB_WeaponBase.UnloaderToken "PBPumpShotgunHasUnloaded"
-	Scale 1.15
+	Scale 0.45
 	States
 	{
 	
@@ -369,11 +379,18 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 	ReadyToFire:
 		SHTG A 1
 		{
-	     if (CountInv("HasSlugs") >= 1 )                  { A_SetWeaponSprite("SHTS"); }
-		 if (CountInv("HasDragonBreath") >= 1 )           { A_SetWeaponSprite("SHTD"); }
-		 // This token is given upon picking up the magazine upgrade.
-		 if (CountInv("PumpshotgunMagNotInserted") >= 1 ) { return state("InsertMagShotgunRespectAlreadyRespected"); } // Insert magazine upon picking it up
-		 return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBPumpShotgunHasUnloaded"));
+			if (CountInv("HasSlugs") >= 1 )                  { A_SetWeaponSprite("SHTS"); }
+			if (CountInv("HasDragonBreath") >= 1 )           { A_SetWeaponSprite("SHTD"); }
+			// This token is given upon picking up the magazine upgrade.
+			if (CountInv("PumpshotgunMagNotInserted") >= 1 ) { return state("InsertMagShotgunRespectAlreadyRespected"); } // Insert magazine upon picking it up
+			
+			if (PressingFire() && PressingAltfire() && CountInv("ShotgunAmmo") > 0){
+					return state("Fire");
+			}
+			if (PressingFire() && CountInv("ShotgunAmmo") > 0){
+					return state("Fire");
+			}
+			return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBPumpShotgunHasUnloaded"));	 
 		}
 		Loop
 			 
@@ -382,22 +399,48 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 			A_SetRoll(0);
 			A_SetCrosshair(5);
 			A_TakeInventory("PB_LockScreenTilt",1);
-			}
+		}
 	ReadyToFire2:
 		SHT8 A 1
 		{		
-		 if (CountInv("HasSlugs") >= 1 )        { A_SetWeaponSprite("SHT6"); }
-		 if (CountInv("HasDragonBreath") >= 1 ) { A_SetWeaponSprite("SHT4"); }
-		 if (CountInv("PumpshotgunMagNotInserted") >= 1 ) { return state("InsertMagShotgunRespectAlreadyRespected"); }
-		 return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBPumpShotgunHasUnloaded"));
+			if (CountInv("HasSlugs") >= 1 )        { A_SetWeaponSprite("SHT6"); }
+			if (CountInv("HasDragonBreath") >= 1 ) { A_SetWeaponSprite("SHT4"); }
+			if (CountInv("PumpshotgunMagNotInserted") >= 1 ) { return state("InsertMagShotgunRespectAlreadyRespected"); }
+						
+			//Updated code for far superior smooth gameplay
+			if(GetCvar("pb_toggle_aim_hold")) {
+				if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){
+					return state("Zoomout");
+				}
+				if (PressingFire() && PressingAltfire() && CountInv("ShotgunAmmo") > 0){
+						return state("Fire2");
+				}
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY, CheckUnloaded("PBPumpShotgunHasUnloaded"));
+			}
+			else {
+				if (PressingFire() && CountInv("ShotgunAmmo") > 0 ){
+					return state("Fire2");
+				}
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBPumpShotgunHasUnloaded"));
+			}
+			return state("");
 	    }
 		Loop
 				
 	WeaponSpecial:
+		
+		SHZA ABCDEFGHIJKLMNOP 0
+		SHZB ABCDEFGHIJKLMNOP 0
 		TNT1 A 0 
 		{
+			 A_TakeInventory("Zoomed",1);
+			 A_ZoomFactor(1.0);
+			 A_SetCrosshair(0);
 			A_Takeinventory("GoWeaponSpecialAbility",1);
 			A_PlaySoundEx("Ironsights", "Auto");
+			
+			if (CountInv("DragonBreathUpgrade") == 1) { return state("HandleUpgradeSpecial");}
+			
 			if (CountInv("HasSlugs") >= 1 )        {return state("SwitchToDragonBreath");}
 			if (CountInv("HasDragonBreath") >= 1 ) {return state("SwitchToBuckshot");}
 			return state("");
@@ -408,6 +451,76 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
          A_GiveInventory("HasSlugs",1);
 		}
 		Goto AlternateWeaponSpecialAnimationSwitch
+		
+		
+	HandleUpgradeSpecial:
+		TNT1 A 0 {
+			 if (CountInv("HasSlugs") >= 1 && CountInv("SelectShotgun_Slugshot") >= 1 ) { 
+				A_TakeInventory("SelectShotgun_Buckshot", 1);
+				A_TakeInventory("SelectShotgun_Slugshot", 1);
+				A_TakeInventory("SelectShotgun_Dragonsbreath", 1);
+				return state("Ready3"); 
+			 }
+			 if (CountInv("HasDragonBreath") >= 1 && CountInv("SelectShotgun_Dragonsbreath") >= 1) { 
+				A_TakeInventory("SelectShotgun_Buckshot", 1);
+				A_TakeInventory("SelectShotgun_Slugshot", 1);
+				A_TakeInventory("SelectShotgun_Dragonsbreath", 1);
+				return state("Ready3"); 
+			 }
+			 if (CountInv("HasDragonBreath") < 1 && CountInv("HasSlugs") < 1 && CountInv("SelectShotgun_Buckshot") >= 1) { 
+				A_TakeInventory("SelectShotgun_Buckshot", 1);
+				A_TakeInventory("SelectShotgun_Slugshot", 1);
+				A_TakeInventory("SelectShotgun_Dragonsbreath", 1);
+				return state("Ready3"); 
+			 }
+			 
+			 return state("");
+		}
+		SHTZ PON 1 {
+			 if (CountInv("HasSlugs") >= 1 )        { A_SetWeaponSprite("SHZA"); }
+			 if (CountInv("HasDragonBreath") >= 1 ) { A_SetWeaponSprite("SHZB"); }
+			}
+		SHTZ M 1
+		TNT1 A 0 A_PlaySoundEx("weapons/shotgun/detach", "Auto")
+		SHTZ LKJIHGFED 1{
+			 if (CountInv("HasSlugs") >= 1 )        { A_SetWeaponSprite("SHZA"); }
+			 if (CountInv("HasDragonBreath") >= 1 ) { A_SetWeaponSprite("SHZB"); }
+			}
+		SHTZ CBAABC 1
+		SHTZ DEFGHIJKL 1{
+			 if (CountInv("SelectShotgun_Slugshot") >= 1 )        { A_SetWeaponSprite("SHZA"); }
+			 if (CountInv("SelectShotgun_Dragonsbreath") >= 1 ) { A_SetWeaponSprite("SHZB"); }
+			}
+		SHTZ M 1
+		TNT1 A 0 A_PlaySoundEx("weapons/shotgun/attach", "Auto")
+		SHTZ NOP 1
+			{
+			 if (CountInv("SelectShotgun_Slugshot") >= 1 )        { A_SetWeaponSprite("SHZA"); }
+			 if (CountInv("SelectShotgun_Dragonsbreath") >= 1 ) { A_SetWeaponSprite("SHZB"); }
+			}
+		SHTG A 1 {	
+			 if (CountInv("SelectShotgun_Slugshot") >= 1 )        { A_SetWeaponSprite("SHTS"); }
+			 if (CountInv("SelectShotgun_Dragonsbreath") >= 1 ) { A_SetWeaponSprite("SHTD"); }
+			}
+		TNT1 A 0 {
+			 if (CountInv("SelectShotgun_Buckshot") >= 1 ) { 
+				A_TakeInventory("HasSlugs", 1);
+				A_TakeInventory("HasDragonBreath", 1);
+			 }
+			 if (CountInv("SelectShotgun_Slugshot") >= 1 ) { 
+				A_GiveInventory("HasSlugs", 1);
+				A_TakeInventory("HasDragonBreath", 1);
+			 }
+			 if (CountInv("SelectShotgun_Dragonsbreath") >= 1 ) { 
+				A_TakeInventory("HasSlugs", 1);
+				A_GiveInventory("HasDragonBreath", 1);
+			 }
+			A_TakeInventory("SelectShotgun_Buckshot", 1);
+			A_TakeInventory("SelectShotgun_Slugshot", 1);
+			A_TakeInventory("SelectShotgun_Dragonsbreath", 1);
+		}
+		Goto Ready3
+		
 	SwitchToDragonBreath:
 		TNT1 A 0 A_JumpIfInventory("DragonBreathUpgrade", 1, 1)
 		Goto SwitchToBuckshot
@@ -750,7 +863,7 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 		    return state("AltFireAnimBegin");
 			}
 		 else {
-		  A_PlaySoundEx("weapons/sg", "Weapon");    
+			  A_PlaySoundEx("weapons/sg", "Weapon");    
 			  A_FireBullets(1.25, 1.25,10,16,"ShotgunPuff",FBF_NORANDOM);
 		  return state("");
 		  }
@@ -774,6 +887,18 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 		 If (CountInv("HasDragonBreath") >=1 ) {A_SetWeaponSprite("SHT4");A_SetPitch(pitch-1);}
 		 else {A_SetPitch(pitch-1);}
 		 return state("");
+		}
+		TNT1 A 0 {
+			
+			if(GetCvar("pb_toggle_aim_hold")) {
+				if (!PressingAltfire() && CountInv("ShotgunAmmo") > 1){
+						A_TakeInventory("Zoomed",1);
+						A_ZoomFactor(1.0);
+						A_SetCrosshair(0);
+						return state("Pump1");
+				}
+			}
+			return state("");
 		}
 		Goto AltPump1
 	
@@ -826,10 +951,35 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 		 {A_SetWeaponSprite("SHT6");} 
 		 If(CountInv("HasDragonBreath") >=1 )        
 		 {A_SetWeaponSprite("SHT4");} 
-		 A_WeaponReady(WRF_ALLOWRELOAD);
-		 A_ReFire;
-		 return state("");
+		 
+		 
+		 
+		if(GetCvar("pb_toggle_aim_hold")) {
+			if(JustReleased(BT_ALTATTACK)){
+				return state("Zoomout");
+			}
+	
+			if (JustPressed(BT_ATTACK) && PressingAltfire()){
+					return state("Fire2");
+			}
 		}
+		else {
+			if(PressingAltfire()){
+				return state("Zoomout");
+			}
+			
+			if (JustPressed(BT_ATTACK)){
+					return state("Fire2");
+			}
+			A_Refire("Fire2");
+		}
+		return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+		 
+		 
+// 		 A_WeaponReady(WRF_ALLOWRELOAD);
+// 		 A_ReFire;
+// 		 return state("");
+	}
 		 Goto Ready2
 							
 	AltFire:
@@ -855,17 +1005,17 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 		}
         Goto Ready2
 	Zoomout:	
+		TNT1 A 0 {
+			A_TakeInventory("Zoomed",1);
+			A_ZoomFactor(1.0);
+			A_SetCrosshair(0);
+		}
 		SHT8 KDEE 1 {
 		 If(CountInv("HasSlugs") >=1 )        
 		 {A_SetWeaponSprite("SHT6");} 
 		 If(CountInv("HasDragonBreath") >=1 )        
 		 {A_SetWeaponSprite("SHT4");} 
 		 return state("");
-		}
-		TNT1 A 0 {
-		 A_TakeInventory("Zoomed",1);
-         A_ZoomFactor(1.0);
-		 A_SetCrosshair(0);
 		}
         Goto Ready3
 					
@@ -1124,28 +1274,24 @@ ACTOR Shot_Gun : PB_Weapon Replaces Shotgun
 	FlashSlideKicking:
 	    TNT1 A 0 A_WeaponOffset(0,32)
 		TNT1 A 0 A_JumpIfInventory("PumpshotgunMagazine", 1, "MagFlashSlideKicking")
-		SHTG CDFGHI 1
-		SHTG J 14
-		SHTG IHGEDB 1
+		SHTG CDFGHIJJJJJJJJJJJJJIHGEDB 1
 		Stop
 	
 	MagFlashSlideKicking:
 	    SHTG CD 1
-		SHMG FGHI 1
-		SHMG J 14
-		SHMG IHG 1
-		SHTG EDB 1
+		SHMG FGHIJJJJJJJJJJJJJIHGE 1
+	    SHTG DC 1
 		Stop
 
 	FlashSlideKickingStop:
 	    TNT1 A 0 A_WeaponOffset(0,32)
 		TNT1 A 0 A_JumpIfInventory("PumpshotgunMagazine", 1, "MagFlashSlideKickingStop")
-		SHTG HGEDBBB 1
+		SHTG JIHGEDB 1
 		Stop
 	
 	MagFlashSlideKickingStop:
-	    SHMG HGF 1
-		SHTG DBBB 1
+	    SHMG JIHGF 1
+		SHTG DC 1
 		Stop
 		
 	FlashPunching:
