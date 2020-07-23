@@ -459,6 +459,7 @@ Class PB_SpecialWheelHandler : EventHandler
 	
 	override void WorldTick()
 	{
+
 		
 		if(level.mapname=="TITLEMAP") {
 			return;
@@ -466,6 +467,7 @@ Class PB_SpecialWheelHandler : EventHandler
 		
 		if(players[consoleplayer].mo.FindInventory("CantWeaponSpecial") || 
 			players[consoleplayer].readyweapon.InStateSequence(players[consoleplayer].readyweapon.curstate, players[consoleplayer].readyweapon.resolvestate("Deselect")))
+
 		{
 			oldPitch = players[consoleplayer].mo.pitch;
 			oldYaw = players[consoleplayer].mo.angle;
@@ -663,8 +665,10 @@ Class PB_SpecialWheelHandler : EventHandler
 	void specialWheel_handleMouse()
 	{
 			wheelShow.Clear();
+
 			players[consoleplayer].mo.A_GiveInventory("PlayerWheelOpen");
 			selectedWeapon = players[consoleplayer].ReadyWeapon.GetClassName();
+    
 			//Console.Printf(""..selectedWeapon);
 			wheelIsOpen = true;
 			S_Sound("menu/clear",5);
@@ -673,13 +677,15 @@ Class PB_SpecialWheelHandler : EventHandler
 				realMouse = (0,0)+realMouse*0.1;
 			}
 			fakeMouse = realMouse;
-			if(players[consoleplayer].mo!=null)
+
+			if(players[0].mo!=null)
 			{
-				oldPitch = players[consoleplayer].mo.pitch;
-				oldYaw = players[consoleplayer].mo.angle;
+				oldPitch = players[0].mo.pitch;
+				oldYaw = players[0].mo.angle;
 			}
 	}
 	
+
 	void specialWheel_SGL()
 	{
 			
@@ -753,10 +759,50 @@ Class PB_SpecialWheelHandler : EventHandler
 				wheelSpecials.Push(rifle_grenade);
 				wheelSpecials.Push(rifle_dual);
 				
-				
 				specialWheel_handleMouse();
 	}
 	
+
+	void specialWheel_Eqipment() {
+				wheelSpecials.Clear();
+				iconScale = (1.3, 1.3);
+				PB_SpecialWheel_Mode equip_frag = new ("PB_SpecialWheel_Mode");
+				equip_frag.specialIcon = TexMan.CheckForTexture("graphics/pywheel/Equip_Frag.png",TexMan.Type_Any);
+				equip_frag.specialName = "WW_FragGrenadeSelected";
+				equip_frag.specialAlias = "Frag Grenade";
+				equip_frag.specialPriority = 1;
+				equip_frag.iconScale = iconScale;
+				PB_SpecialWheel_Mode equip_mine = new ("PB_SpecialWheel_Mode");
+				equip_mine.specialIcon = TexMan.CheckForTexture("graphics/pywheel/Equip_Mine.png",TexMan.Type_Any);
+				equip_mine.specialName = "WW_ProximityMineSelected";
+				equip_mine.specialAlias = "Prox. Mine";
+				equip_mine.specialPriority = 2;
+				equip_mine.iconScale = iconScale;
+				PB_SpecialWheel_Mode equip_stun = new ("PB_SpecialWheel_Mode");
+				equip_stun.specialIcon = TexMan.CheckForTexture("graphics/pywheel/Equip_Stun.png",TexMan.Type_Any);
+				equip_stun.specialName = "WW_StunGrenadeSelected";
+				equip_stun.specialAlias = "Stun Grenade";
+				equip_stun.specialPriority = 3;
+				equip_stun.iconScale = iconScale;
+				PB_SpecialWheel_Mode equip_leech = new ("PB_SpecialWheel_Mode");
+				equip_leech.specialIcon = TexMan.CheckForTexture("graphics/pywheel/Equip_Leech.png",TexMan.Type_Any);
+				equip_leech.specialName = "WW_LeechSelected";
+				equip_leech.specialAlias = "Leech";
+				equip_leech.specialPriority = 4;
+				equip_leech.iconScale = iconScale;
+				//PB_SpecialWheel_Mode equip_health = new ("PB_SpecialWheel_Mode");
+				//equip_health.specialIcon = TexMan.CheckForTexture("graphics/pywheel/grenade_acid.png",TexMan.Type_Any);
+				//equip_health.specialName = "WW_HealthBackPackSelected";
+				//equip_health.specialAlias = "Health Backpack";
+				//equip_health.specialPriority = 5;
+				//equip_health.iconScale = iconScale;
+				
+				wheelSpecials.Push(equip_frag);
+				wheelSpecials.Push(equip_mine);
+				wheelSpecials.Push(equip_stun);
+				wheelSpecials.Push(equip_leech);
+				//wheelSpecials.Push(equip_health);
+  }
 	
 	void specialWheel_Pistol()
 	{
@@ -826,16 +872,14 @@ Class PB_SpecialWheelHandler : EventHandler
 					pistol_burst.specialPriority = 4;
 					pistol_burst.iconScale = iconScale;
 					wheelSpecials.Push(pistol_burst);
-				
-				
 				}
-				
+
 				
 				specialWheel_handleMouse();
 	}
 	
 	
-	
+
 	void specialWheel_Carbine()
 	{
 				wheelSpecials.Clear();
@@ -956,12 +1000,59 @@ Class PB_SpecialWheelHandler : EventHandler
 	}
 	
 	
+
 	
 	Override Void NetworkProcess(ConsoleEvent e)
 	{
-		if(e.name == 'PBWeaponSpecialOn')
+			if(e.name == 'PBEquipSpecialOn')
 		{
+
+			if (players[0].mo.FindInventory("CantWeaponSpecial"))
+			{
+				wheelShow.Clear();
+				wheelIsOpen = false;
+				noWheel = true;
+				return;
+			}
+			else
+				noWheel = false;
+		
+            if (wheelIsOpen) { return; }
+			
+
+			if (players[0].mo.FindInventory("Melee_Attacks")){
+				specialWheel_Eqipment();
+				return;
+			}
+			
+
+			else { return; }
+		}
+		
+		else if(!noWheel && e.name == 'PBEquipSpecialOff' || players[0].ReadyWeapon.GetClassName() != selectedWeapon)
+		{
+			if(players[0].mo!=null && !(players[0].ReadyWeapon.GetClassName() != selectedWeapon))
+			{
+				if(wheelShow.Size()>0)
+				{
+					int curSelMod = wheelShow[currentSelection];
+					players[0].mo.A_GiveInventory(wheelSpecials[curSelMod].specialName);
+					players[0].mo.A_GiveInventory("ToggleEquipment");
+					S_Sound("menu/choose",5);
+					//Console.Printf(""..wheelSpecials[curSelMod].specialName);
+				}
+			}
+			players[0].mo.A_TakeInventory("PlayerWheelOpen");
+			wheelSort = false;
+			wheelIsOpen = false;
+		}
+
+	if(e.name == 'PBWeaponSpecialOn')
+		{
+			if (players[0].mo.FindInventory("CantWeaponSpecial"))
+
 			if (players[consoleplayer].mo.FindInventory("CantWeaponSpecial"))
+
 			{
 				wheelShow.Clear();
 				wheelIsOpen = false;
@@ -974,6 +1065,7 @@ Class PB_SpecialWheelHandler : EventHandler
             if (wheelIsOpen) { return; }
 			
 			//Check if equipped valid wheel-based weapon
+
 			if (players[consoleplayer].ReadyWeapon.GetClassName() == "Super_Grenade_Launcher"){
 				specialWheel_SGL();
 				return;
@@ -1000,14 +1092,17 @@ Class PB_SpecialWheelHandler : EventHandler
 			else {
 				players[consoleplayer].mo.A_GiveInventory("GoWeaponSpecialAbility");
 				selectedWeapon = players[consoleplayer].ReadyWeapon.GetClassName();
+
 				noWheel = true;
 				return;
 			}
 		}
 		
+
 		else if(!noWheel && e.name == 'PBWeaponSpecialOff' || players[consoleplayer].ReadyWeapon.GetClassName() != selectedWeapon)
 		{
 			if(players[consoleplayer].mo!=null && !(players[consoleplayer].ReadyWeapon.GetClassName() != selectedWeapon))
+
 			{
 				if(wheelShow.Size()>0)
 				{
