@@ -9,7 +9,6 @@ Actor AutoshotgunDrumMag: Inventory
 inventory.maxamount 1
 }
 
-
 Actor PBAutoShotgunHasUnloaded: Inventory
 {
 Inventory.maxamount 1
@@ -20,6 +19,36 @@ Actor PBAutoShotgunWasEmpty: Inventory
 Inventory.maxamount 1
 }
 
+Actor RespectAutoShotgun: Inventory
+{
+Inventory.maxamount 1
+}
+
+Actor PumpAutoShotgun: Inventory
+{
+Inventory.maxamount 1
+}
+
+Actor JustFiredAutoshotgun: Inventory
+{
+Inventory.maxamount 200
+}
+
+Actor DualWieldingAutoshotguns: Inventory
+{
+Inventory.maxamount 1
+}
+
+
+Actor PB_ASGFireAnimation1: Inventory
+{
+	Inventory.maxamount 1
+}
+
+Actor PB_ASGFireAnimation2: Inventory
+{
+	Inventory.maxamount 1
+}
 
 Actor AutoshotgunUpgrade: Custominventory
 {
@@ -32,10 +61,11 @@ Actor AutoshotgunUpgrade: Custominventory
 	+COUNTITEM
 	Inventory.Pickupsound "H4SGCOCK"
 	Inventory.PickupMessage "You got the Autoshotgun Upgrade!!!"
+	Scale 0.52
 	States
 	{
 	Spawn:
-		A9SC ABCDEDCB 2 BRIGHT Light("WeaponUpgradeSpawner")
+		A9SC A 1 BRIGHT Light("WeaponUpgradeSpawner")
 		Loop
 	
     Pickup:
@@ -62,589 +92,1898 @@ ACTOR AutoShotgun : PB_Weapon
 	Weapon.AmmoGive2 0
 	+FLOORCLIP
 	+DONTGIB
-	Scale 1.0
+	Scale 0.52
 	Weapon.AmmoType1 "NewShell"
 	Weapon.AmmoType2 "AutoShotgunAmmo"
 	Inventory.PickupMessage "$You've found the Auto Shotgun! (Slot 3)"
-    Inventory.PickupSound "weapons/sgpump"
+	Inventory.PickupSound "weapons/sgpump"
+	Inventory.Amount 1
+	Inventory.MaxAmount 3
 	Obituary "$OB_MPSHOTGUN"
-    AttackSound "None"
-	Tag "Autoshotgun"
-    +WEAPON.NOALERT
-    +WEAPON.NOAUTOAIM
+	AttackSound "None"
+	Tag "Auto-Shotgun"
+	+WEAPON.NOALERT
+	+WEAPON.NOAUTOAIM
 	+WEAPON.NOAUTOFIRE
-	Weapon.SisterWeapon DualAutoShotguns
 	PB_WeaponBase.UnloaderToken "PBAutoShotgunHasUnloaded"
 	States
 	{
-	Steady:
-		TNT1 A 1
-	Goto Ready
-	
-	GoToPurist:
-		TNT1 A 0 A_SelectWeapon("Shot_gun")
-		Goto Select
-	
-
-	Ready:
-		TNT1 A 0 A_JumpIfInventory("IsPlayingAsPurist", 1, "GoToPurist")
-		TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumReady")
-        AUSS ABC 1 
-        AUSS D 1 A_PlaySound("H4SGCOCK")
-	Ready3:
-        TNT1 AAAAAAAAAAAAAAA 0
-		TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumReady3")
-		AUSG A 1 
-			{
-				ACS_NamedExecuteAlways("ToggleShotgunUpgraded",0); //For people who want this weapon to replace another
-				if (CountInv("AutoshotgunDrumMag") == 1 && CountInv("PBAutoShotgunHasUnloaded") != 1) {return state("DrumReady3");}
-				return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBAutoShotgunHasUnloaded"));
+		Steady:
+			TNT1 A 1
+			Goto Ready
+			
+		Ready:
+			AU10 ABCDEFGH 0 
+			TNT1 A 0 A_JumpIfInventory("RespectAutoShotgun", 1, "SelectAnimation")
+		Respect:
+			TNT1 A 0 {
+				A_SetCrosshair(5);
+				A_GiveInventory("RespectAutoShotgun");
+				A_Giveinventory("PB_LockScreenTilt",1);
+				A_PlaySoundEx("weapons/autoshotgun/respect1", "Auto");
 			}
-		Goto Ready+14
-		
-	DrumReady:
-		TNT1 A 0 A_JumpIfInventory("PBAutoShotgunHasUnloaded",1,"EmptyDrumReady")
-        A9SS ABCD 1 
-        TNT1 A 0 A_PlaySound("H4SGCOCK")
-	DrumReady3:
-        TNT1 AAAAAAAAAAAAAAA 0
-		TNT1 A 0 ACS_NamedExecuteAlways("ToggleShotgunUpgraded",0) //For people who want this weapon to replace another
-		TNT1 A 0 A_JumpIfInventory("PBAutoShotgunHasUnloaded",1,"Ready3")
-		A9SG A 1 A_DoPBWeaponAction
-		Goto DrumReady+14
-		
-		
-	WeaponSpecial:
-		TNT1 AAAAA 0
-		TNT1 A 0 A_JumpIfInventory("DualASGChecker", 3,"SwitchToDualWield")
-		TNT1 A 0 A_Print("You need two autoshotguns to dual wield!")
-		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
-		TNT1 A 0 A_JumpIfInventory("AutoShotgunDrumMag",1,1)
-		Goto Ready+9
-		TNT1 AA 0 
-		Goto DrumReady+9
-		
-	SwitchToDualWield:
-		TNT1 A 0 A_SelectWeapon("DualAutoShotguns")
-		Goto Select
-		
-		
-	Deselect:
-		TNT1 A 0 A_JumpIfInventory("AutoShotgunDrumMag",1,"DrumDeselect")
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		TNT1 A 0 A_Takeinventory("RandomHeadExploder",1)
-        TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_Takeinventory("ADSmode",1)
-		TNT1 A 0 ACS_NamedExecuteAlways("ToggleShotgunUpgraded",0) //For people who want this weapon to replace another
-		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
-		AUSS DCBA 1 
-		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
-		Wait
-	DrumDeselect:
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		TNT1 A 0 A_Takeinventory("RandomHeadExploder",1)
-        TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_Takeinventory("ADSmode",1)
-		TNT1 A 0 ACS_NamedExecuteAlways("ToggleShotgunUpgraded",0) //For people who want this weapon to replace another
-		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
-		A9SS DCBA 1 
-		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
-		Wait
+			AG10 ABC 1 {
+				A_SetRoll(roll-1.5,SPF_INTERPOLATE);
+				A_DoPBWeaponAction;
+			}
+			AG10 DEF 1 {
+				A_SetRoll(roll+1.5,SPF_INTERPOLATE);
+				A_DoPBWeaponAction;
+			}
+			AG10 F 1 A_PlaySoundEx("Ironsights", "Auto")
+			AG00 ABCDEFGHIJKL 1 {
+				A_SetRoll(roll-0.5,SPF_INTERPOLATE);
+				A_DoPBWeaponAction;
+			}
+			AG00 LLL 1 {
+				A_SetRoll(roll+2.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction;
+			}
+			AG00 LLLL 1 A_DoPBWeaponAction
+			AG00 MNOPQ 1 
+			TNT1 A 0 A_PlaySoundEx("insertshell", "Auto")
+			AG00 R 1{
+				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction;
+			}
+			AG00 STT 1{
+				A_SetRoll(roll+2.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction;
+			}
+			AG00 UUUU 1 {
+				A_SetRoll(roll+0.5,SPF_INTERPOLATE);
+				A_DoPBWeaponAction;
+			}
+			AG00 UUUU 1 A_DoPBWeaponAction
+			TNT1 A 0 A_PlaySoundEx("H4SGCOCK", "Auto")
+			AG00 V 1 {
+				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction;
+			}
+			AG00 VWXYZZ 1 {
+				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction;
+			}
+			AG00 ZZZZ 1 A_DoPBWeaponAction 
+			AG01 ABCDE 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction;
+			}
 
-	Select:
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
-		TNT1 A 0 A_Giveinventory("RandomHeadExploder",1)
-		TNT1 A 0 A_TakeInventory("RifleSelected",1)
-		TNT1 A 0 A_TakeInventory("CarbineSelected",1)
-		TNT1 A 0 A_TakeInventory("FistsSelected",1)
-		TNT1 A 0 A_TakeInventory("SawSelected",1)
-		TNT1 A 0 A_TakeInventory("SledgeSelected",1)
-		TNT1 A 0 A_TakeInventory("HandgunSelected",1)
-		TNT1 A 0 A_TakeInventory("DualHandgunSelected",1)
-		TNT1 A 0 A_TakeInventory("RevolverSelected",1)
-		TNT1 A 0 A_TakeInventory("ShotgunSelected",1)
-		TNT1 A 0 A_TakeInventory("SSGSelected",1)
-		TNT1 A 0 A_TakeInventory("QSGSelected",1)
-		TNT1 A 0 A_TakeInventory("MinigunSelected",1)
-		TNT1 A 0 A_TakeInventory("NewChaingunSelected",1)	
-		TNT1 A 0 A_TakeInventory("RocketLauncherSelected",1)
-		TNT1 A 0 A_TakeInventory("GrenadeLauncherSelected",1)
-		TNT1 A 0 A_TakeInventory("SGLSelected",1)
-		TNT1 A 0 A_TakeInventory("PlasmaGunSelected",1)
-		TNT1 A 0 A_TakeInventory("M2Selected",1)	
-		TNT1 A 0 A_TakeInventory("FreezerSelected",1)
-		TNT1 A 0 A_TakeInventory("RailGunSelected",1)
-		TNT1 A 0 A_TakeInventory("BFGSelected",1)
-		TNT1 A 0 A_TakeInventory("BFGBeamSelected",1)
-		TNT1 A 0 A_TakeInventory("BHCSelected",1)
-		TNT1 A 0 A_TakeInventory("RevenantLauncherSelected",1)
-		TNT1 A 0 A_TakeInventory("FlameCannonSelected",1)
-		TNT1 A 0 A_TakeInventory("HellRifleSelected",1)
-		TNT1 A 0 A_TakeInventory("LandMineSelected",1)
-		TNT1 A 0 A_TakeInventory("UACSMGSelected",1)
-		TNT1 A 0 A_TakeInventory("SubMachineGunSelected",1)
-		TNT1 A 0 A_TakeInventory("LostSoulSelected",1)
-		TNT1 A 0 A_TakeInventory("HasBarrel",1)
-		TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
-		//TNT1 A 0 A_JumpIfInventory("IsPlayingAsPurist", 1, 4)
-		TNT1 A 0 A_GiveInventory("ASGSelected",1)
-		TNT1 A 0 ACS_NamedExecuteAlways("ToggleShotgunUpgraded",0) //For people who want this weapon to replace another
-		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
-		TNT1 AAAAAAAA 1 A_Raise
-		Wait
-	GoToPurist:
-		TNT1 AAA 0
-		//TNT1 A 0 A_Print("Classic v20 Weapons Only!")
-		TNT1 A 0 A_SelectWeapon("SSG")
-		TNT1 A 0 A_Raise
-		Wait
-		
-    Fire:
-		TNT1 A 0 A_WeaponOffset(0,32)
-        TNT1 A 0 A_Takeinventory("Reloading",1)
-        TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1,2)
-        Goto Reload
-        TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumFire")
-		TNT1 A 0 A_JumpIfInventory("PBAutoShotgunWasEmpty", 1, "Pump2")
-        TNT1 A 0 A_AlertMonsters
-        TNT1 A 0 A_PlaySound("Weapons/AutoShotgun", 1)
-        TNT1 A 0
-        TNT1 A 0 //A_Recoil(1)
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
-		TNT1 AAAAA 0 A_FireCustomMissile("Tracer", Random(-5, 5), 0, -1, Random(-5, 5))
-		AUSF A 1 BRIGHT A_FireBullets (frandom(5.84,6.45), frandom(5.2,6.75), 4, random(7,8), "ShotgunPuff")
-		TNT1 A 0 A_FireBullets (frandom(5.85,6.65), frandom(5.32,6.75), 4, random(7,8), "MachineGunBulletPuff")
-		AUSF B 1 BRIGHT
-		TNT1 A 0 A_ZoomFactor(0.935)
-		TNT1 A 0 A_SetAngle(frandom(-0.65, 0.5) + Angle)
-		TNT1 A 0 A_SetPitch(pitch - 0.45)
-		TNT1 AAAAAAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
-		TNT1 AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
-		TNT1 A 0 A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0)
-		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
-		TNT1 A 0 A_Takeinventory("AutoShotgunAmmo",1)
-		TNT1 A 0 A_TakeInventory("DoubleASGAmmo", 1)//Removes 1 ammo from magazine
-        AUSF C 1 BRIGHT
-		TNT1 A 0 A_ZoomFactor(0.955)
-		TNT1 A 0 A_FireCustomMissile("ShotCaseSpawn",0,0,-4,-4)
-		AUSF DE 1
-		TNT1 A 0 A_ZoomFactor(0.975)
-		TNT1 A 0 A_ZoomFactor(0.985)
-        AUSF F 1 //Offset(2,38) // Commented these out because the jerkiness actually
-		TNT1 A 0 A_ZoomFactor(0.995)
-        AUSG A 1 //Offset(1,36) // appears to be a little more realisitic in this
-		TNT1 A 0 A_ZoomFactor(1.0)
-        AUSG A 1 //Offset(0,34) // circumstance, but also for the state changes below.
-        AUSG A 1 A_Refire
-		Goto Ready+14
-		
-	DrumFire:
-		TNT1 A 0 A_JumpIfInventory("PBAutoShotgunWasEmpty", 1, "Pump2")
-        TNT1 A 0 A_AlertMonsters
-        TNT1 A 0 A_PlaySound("Weapons/AutoShotgun", 1)
-        TNT1 A 0
-        TNT1 A 0 A_Recoil(1)
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
-		A9SF A 1 BRIGHT A_FireBullets (frandom(5.84,6.45), frandom(5.2,6.75), 4, random(7,8), "ShotgunPuff")
-		TNT1 A 0 A_FireBullets (frandom(5.85,6.65), frandom(5.32,6.75), 4, random(7,8), "MachineGunBulletPuff")
-		A9SF B 1 BRIGHT
-		TNT1 A 0 A_ZoomFactor(0.935)
-		TNT1 A 0 A_SetAngle(frandom(-0.65, 0.5) + Angle)
-		TNT1 A 0 A_SetPitch(pitch - 0.45)
-		TNT1 AAAAAAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
-		TNT1 AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
-		TNT1 A 0 A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0)
-		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
-		TNT1 A 0 A_Takeinventory("AutoShotgunAmmo",1)
-		TNT1 A 0 A_TakeInventory("DoubleASGAmmo", 1)//Removes 1 ammo from magazine
-        A9SF C 1 BRIGHT
-		TNT1 A 0 A_ZoomFactor(0.955)
-		TNT1 A 0 A_FireCustomMissile("ShotCaseSpawn",0,0,-4,-4)
-		A9SF DE 1
-		TNT1 A 0 A_ZoomFactor(0.975)
-		TNT1 A 0 A_ZoomFactor(0.985)
-        A9SF F 1 //Offset(3,40) // New frames added here to convey the appearance
-		TNT1 A 0 A_ZoomFactor(0.995)
-        A9SF G 1 //Offset(2,42) // of an actual cylindrical drum with spinning shells.
-		TNT1 A 0 A_ZoomFactor(1.0)
-        A9SF H 1 //Offset(1,40) // Offsets break this illusion by jerking the motion around.
-        A9SG A 1 A_Refire
-		Goto DrumReady+14
-		
-	AltFire:
-		TNT1 A 0 A_WeaponOffset(0,32)
-        TNT1 A 0 A_Takeinventory("Reloading",1)
-        TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",2,2)
-        Goto Reload
-        TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumAltFire")
-		TNT1 A 0 A_JumpIfInventory("PBAutoShotgunWasEmpty", 1, "Pump2")
-        TNT1 A 0 A_AlertMonsters
-        TNT1 A 0 A_PlaySound("FLAKFIRE", 1)
-        TNT1 A 0
-        TNT1 A 0 A_Recoil(1)
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
-		AUSF A 1 BRIGHT
-		FLAK B 0 A_FireCustomMissile("Chunk1",0,1,15,-18)
-		FLAK B 0 A_FireCustomMissile("Chunk2",0,1,18,13)
-		FLAK B 0 A_FireCustomMissile("Chunk3",0,1,13,5)
-		FLAK B 0 A_FireCustomMissile("Chunk3",0,1,0,-15)
-		FLAK B 0 A_FireCustomMissile("Chunk4",0,1,0,-15)
-		FLAK B 0 A_FireCustomMissile("Chunk2",0,1,-18,12)
-		FLAK B 0 A_FireCustomMissile("Chunk1",0,0,-13,8)
-		AUSF B 1 BRIGHT
-		TNT1 A 0 A_ZoomFactor(0.935)
-		TNT1 A 0 A_SetAngle(frandom(-0.65, 0.5) + Angle)
-		TNT1 A 0 A_SetPitch(pitch - 0.45)
-		TNT1 AAAAAAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
-		TNT1 AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
-		TNT1 A 0 A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0)
-		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
-		TNT1 A 0 A_Takeinventory("AutoShotgunAmmo",2)
-		TNT1 A 0 A_TakeInventory("DoubleASGAmmo", 2)//Removes 1 ammo from magazine
-        AUSF C 1 BRIGHT
-		TNT1 A 0 A_ZoomFactor(0.955)
-		TNT1 A 0 A_FireCustomMissile("ShotCaseSpawn",0,0,-4,-4)
-		AUSF DE 1
-		TNT1 A 0 A_ZoomFactor(0.975)
-		AUSG A 1 Offset(5,36) // <-- New frames
-		TNT1 A 0 A_ZoomFactor(0.985)
-        AUSG A 1 Offset(3,40) //
-		TNT1 A 0 A_ZoomFactor(0.995)
-        AUSG A 1 Offset(2,42) //
-		TNT1 A 0 A_ZoomFactor(1.0)
-        AUSG A 1 Offset(1,40) //
-		AUSR RST 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-		AUSR U 1 A_PlaySound("H4SGCOCK", 2)
-		AUSR VWXYXWV 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-        AUSR V 1 //A_PlaySound("weapons/sgpump", 1)
-		AUSR UTCBA 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-        AUSG A 1 A_Refire
-        AUSG A 0 
-        Goto Ready+6
-		
-	DrumAltFire:
-		TNT1 A 0 A_JumpIfInventory("PBAutoShotgunWasEmpty", 1, "Pump2")
-        TNT1 A 0 A_AlertMonsters
-        TNT1 A 0 A_PlaySound("FLAKFIRE", 1)
-        TNT1 A 0
-        TNT1 A 0 A_Recoil(1)
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
-		A9SF A 1 BRIGHT
-		FLAK B 0 A_FireCustomMissile("Chunk1",0,1,15,-18)
-		FLAK B 0 A_FireCustomMissile("Chunk2",0,1,18,13)
-		FLAK B 0 A_FireCustomMissile("Chunk3",0,1,13,5)
-		FLAK B 0 A_FireCustomMissile("Chunk3",0,1,0,-15)
-		FLAK B 0 A_FireCustomMissile("Chunk4",0,1,0,-15)
-		FLAK B 0 A_FireCustomMissile("Chunk2",0,1,-18,12)
-		FLAK B 0 A_FireCustomMissile("Chunk1",0,0,-13,8)
-		A9SF B 1 BRIGHT
-		TNT1 A 0 A_ZoomFactor(0.935)
-		TNT1 A 0 A_SetAngle(frandom(-0.65, 0.5) + Angle)
-		TNT1 A 0 A_SetPitch(pitch - 0.45)
-		TNT1 AAAAAAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
-		TNT1 AA 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
-		TNT1 A 0 A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0)
-		TNT1 A 0 ACS_NamedExecute("Recoil282", 0, 0, 0, 0)
-		TNT1 A 0 A_Takeinventory("AutoShotgunAmmo",2)
-		TNT1 A 0 A_TakeInventory("DoubleASGAmmo", 2)//Removes 1 ammo from magazine
-        A9SF C 1 BRIGHT
-		TNT1 A 0 A_ZoomFactor(0.955)
-		TNT1 A 0 A_FireCustomMissile("ShotCaseSpawn",0,0,-4,-4)
-		A9SF DE 1
-		TNT1 A 0 A_ZoomFactor(0.975)
-		A9SG A 1 Offset(5,36) // <-- New frames
-		TNT1 A 0 A_ZoomFactor(0.985)
-        A9SG A 1 Offset(3,40) //
-		TNT1 A 0 A_ZoomFactor(0.995)
-        A9SG A 1 Offset(2,42) //
-		TNT1 A 0 A_ZoomFactor(1.0)
-        A9SG A 1 Offset(1,40) //
-		AUSR RST 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-		AUSR U 1 A_PlaySound("H4SGCOCK", 2)
-		AUSR VWXYXWV 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-        AUSR V 1 //A_PlaySound("weapons/sgpump", 1)
-		AUSR UTCBA 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-        A9SG A 1 A_Refire
-        Goto DrumReady+6
-		
-	Reload:
-		TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumReload")
-		TNT1 A 0 A_TakeInventory("Zoomed", 1)
-        TNT1 A 0 A_ZoomFactor(1.0)
-		AUSG A 0 A_WeaponReady
-        TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo", 12, "SeriouslyOkToFire")
-        TNT1 A 0 A_JumpIfInventory("NewShell", 1, 3)
-        Goto NoAmmo
-        TNT1 AAAA 0 
-		AUSR A 1
-		TNT1 A 0 A_GiveInventory("IsCocking", 1)
-		AUSR BCDEFG 1 A_WeaponReady
-        TNT1 A 0 A_JumpIfInventory("NewShell", 1, 2)
-        Goto OkToFire
-	CheckAmmo:
-        TNT1 A 0
-		TNT1 A 0 A_GiveInventory("IsCocking", 1)
-        TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo", 12, "OkToFire")
-		TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo", 1, "ReloadNormally")
-		TNT1 A 0 A_GiveInventory("PBAutoShotgunWasEmpty", 1)
-	ReloadNormally:	
-        TNT1 A 0 A_JumpIfInventory("NewShell", 1, 2)
-		Goto OkToFire
-		TNT1 AA 0
-        TNT1 A 0 A_GiveInventory("AutoShotgunAmmo", 1)
-		TNT1 A 0 A_GiveInventory("DoubleASGAmmo", 1)
-		TNT1 A 0 A_TakeInventory("NewShell", 1)
-        AUSR IJK 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-		TNT1 A 0 A_PlaySound("insertshell")
-		AUSR L 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-		TNT1 A 0 A_WeaponReady
-        AUSR H 0 A_ReFire
-        AUSR M 1 
-		TNT1 A 0 A_WeaponReady
-        AUSR H 0 A_ReFire
-        AUSR NOP 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-		TNT1 A 0 A_WeaponReady
-        AUSR H 0 A_ReFire
-        TNT1 A 0 A_JumpIfInventory("Kicking", 1, "DoKick")
-        Goto CheckAmmo
-        TNT1 AAA 0
-		TNT1 A 0 A_TakeInventory("Reloading", 1)
-	OkToFire:
-		TNT1 A 0 A_JumpIfInventory("PBAutoShotgunWasEmpty", 1, "Pump2")
-		AUSR CBA 1 A_WeaponReady
-	SeriouslyOkToFire:
-		TNT1 A 0 A_TakeInventory("Reloading", 1)
-		AUSG A 1 A_WeaponReady
-		Goto Ready+14
-		
-	Pump2:
-		AUSR GGGGGGGGGGGGGG 0
-		AUSR QRST 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-		AUSR U 1 A_PlaySound("H4SGCOCK", 1)
-		AUSR VWXYXWV 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-        AUSR V 1 //A_PlaySound("weapons/sgpump", 1)
-		AUSR UTCBA 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-		TNT1 A 0 A_TakeInventory("Reloading", 1)
-		TNT1 A 0 A_Takeinventory("PBAutoShotgunWasEmpty",1)
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAA 0
-		TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, 2)
-		Goto Ready3
-		TNT1 AAAA 0
-		Goto DrumReady3
-	
-	NoAmmo:
-		TNT1 A 0 A_PlaySound("weapons/empty")
-		TNT1 A 0 A_TakeInventory("Zoomed", 1)
-		TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_TakeInventory("ADSmode", 1)
-		TNT1 A 0 A_TakeInventory("Reloading", 1)
-		AUSG A 1 A_WeaponReady
-		Goto Ready3
-		
-		
-	 DrumReload:
-		A9SG A 1 A_WeaponReady
-		TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-		TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",20,"ReadyToKillShit")
-        TNT1 A 0 A_JumpIfInventory("NewShell",1,3)
-        Goto DrumReady3
-        TNT1 AAA 0
-		TNT1 A 0 A_Takeinventory("Zoomed",1)
-		TNT1 A 0 A_GiveInventory ("Pumping", 1)
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-		TNT1 A 0 A_Takeinventory("PBAutoShotgunHasUnloaded",1)
-		TNT1 A 0 A_GiveInventory("IsCocking", 1)
-		TNT1 A 0 A_PlaySound("ASGOUT", 2)
-		TNT1 A 0 A_FireCustomMissile("EmptyASGDrum",-5,0,8,-4)
-		AUSR ABCDEFG 1 //A_WeaponReady
-		AUSR HHHHHHHH 1 
-		TNT1 A 0 A_PlaySound("Ironsights", 3)
-		A9SR HHIIJKLMNO 1
-		A9SR PPPQQ 1
-		TNT1 A 0 A_PlaySound("ASGIN", 4)
-		A9SR QQ 1
-		AUSR HH 1
-		TNT1 A 0 A_Takeinventory("PBAutoShotgunHasUnloaded",1)
-		TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1, 2)//30+1 effect
-		TNT1 A 0 A_GiveInventory("PBAutoShotgunWasEmpty", 1)
-	DrumInsertBullets:
-		TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",20,20)
-		TNT1 A 0 A_JumpIfInventory("NewShell",1,7)
-		TNT1 A 0 A_JumpIfInventory("PBAutoShotgunWasEmpty", 1, "Pump2")
-		AUSR CBA 1
-		Goto DrumReady3
-        TNT1 AAAAAA 0
-		TNT1 A 0 A_Giveinventory("AutoShotgunAmmo",1)
-		TNT1 A 0 A_Giveinventory("DoubleASGAmmo",1)
-		TNT1 A 0 A_Takeinventory("NewShell",1)
-		Goto DrumInsertBullets
-		
-		TNT1 AAAAAAAAAA 0
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-		TNT1 A 0 A_JumpIfInventory("PBAutoShotgunWasEmpty", 1, "Pump2")
-		AUSR CBA 1
-        Goto DrumReady3
-		TNT1 AAAA 0
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-		TNT1 A 0 A_JumpIfInventory("PBAutoShotgunWasEmpty", 1, "Pump2")
-		AUSR CBA 1
-	ReadyToKillShit:
-		TNT1 A 0
-        Goto DrumReady3	
-	
-	
-	
-	Unload:
-		TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumUnload")
-		AUSG A 1
-		TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		TNT1 A 0 A_Takeinventory("ADSmode",1)
-		TNT1 A 0 A_Takeinventory("Zoomed",1)
-		TNT1 A 0 A_GiveInventory("PBAutoShotgunWasEmpty", 1)
-        TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1,3)
-        Goto OkToFire
-        TNT1 AAA 0
-		TNT1 A 0 A_Takeinventory("Zoomed",1)
-		TNT1 A 0 A_GiveInventory ("Pumping", 1)
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		AUSR CDEFG 1
-	RemoveBullets:
-		TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1,3)
-		Goto FinishUnload
-        TNT1 AAAAAA 0
-		TNT1 A 0 A_Takeinventory("AutoShotgunAmmo",1)
-		TNT1 A 0 A_Takeinventory("DoubleASGAmmo", 1)
-		TNT1 A 0 A_Giveinventory("NewShell",1)
-		
-		//AUSR QRST 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-		AUSR U 1 A_PlaySound("H4SGCOCK", 1)
-		AUSR VWXYXWV 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-        AUSR V 1
-		AUSR U 1 A_JumpIfInventory("Kicking", 1, "DoKick")
-		
-		Goto RemoveBullets
-	FInishUnload:
-		AUSR CBA 1 //A_JumpIfInventory("Kicking", 1, "DoKick")
-		AUSG A 1
-	    TNT1 A 0 A_Giveinventory("PBAutoShotgunWasEmpty",1)
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		Goto OkToFire
-		
-		
-		
-		
-	DrumUnload:
-		A9SG A 1
-		TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		TNT1 A 0 A_Takeinventory("ADSmode",1)
-		TNT1 A 0 A_Takeinventory("Zoomed",1)
-		TNT1 A 0 A_GiveInventory("PBAutoShotgunWasEmpty", 1)
-		TNT1 A 0 A_Giveinventory("PBAutoShotgunHasUnloaded",1)
-        TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1,3)
-        Goto OkToFire
-        TNT1 AAA 0
-		TNT1 A 0 A_Takeinventory("Zoomed",1)
-		TNT1 A 0 A_GiveInventory ("Pumping", 1)
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		TNT1 A 0 A_PlaySound("Ironsights", 3)
-		AUSR ABCDEF 1
-		TNT1 A 0 A_PlaySound("ASGOUT", 2)
-		A9SR RQPONMLKJIH 1
-		TNT1 A 0 A_PlaySound("Ironsights", 1)
-		AUSR FEDCBA 1
-	DrumRemoveBullets:
-		TNT1 AAAA 0
-		TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1,3)
-		Goto FinishDrumUnload
-        TNT1 AAAAAA 0
-		TNT1 A 0 A_Takeinventory("AutoShotgunAmmo",1)
-		TNT1 A 0 A_Takeinventory("DoubleASGAmmo", 1)
-		TNT1 A 0 A_Giveinventory("NewShell",1)
-		Goto DrumRemoveBullets
-	FinishDrumUnload:
-		TNT1 AAAA 0
-		TNT1 A 0 A_Giveinventory("PBAutoShotgunWasEmpty",1)
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-        Goto Ready3
-		
-	Spawn:
-		//TNT1 A 1 A_SPawnItem("DropedASG")
-        AUSC A -1
-		Stop
-		
-   FlashKicking:
-		AUSK A 1 
-		AUSK B 1 
-		AUSK C 1 
-		AUSK D 3 
-		AUSK E 3
-		AUSK D 3 
-		AUSK C 1 
-		AUSK B 1 
-		AUSK A 1 
-		TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, 5)
-		AUSG AAA 1 
-		Stop
-		TNT1 AAAA 0
-		A9SG AAA 1 
-		Stop
-		
-	FlashAirKicking:
-		AUSK A 1 
-		AUSK B 1 
-		AUSK C 1 
-		AUSK D 3 
-		AUSK E 3
-		AUSK D 3 
-		AUSK C 1 
-		AUSK B 1 
-		AUSK A 1 
-		TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, 6)
-		AUSG AAAA 1 
-		Stop
-		TNT1 AAAA 0
-		A9SG AAA 1 
-		Stop
-		
-	FlashSlideKicking:
-		AUSK AA 2 
-		AUSK BBBCCCDDEEE 2  
-		Stop
-		
-	FlashSlideKickingStop:
-		//TNT1 A 0
-		AUSK EDCBA 1 
-		TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, 3)
-		AUSG A 1 
-		Stop
-		TNT1 AAA 0
-		A9SG A 1 
-		Stop
+			TNT1 A 0 {
+					if(CountInv("AutoshotgunDrumMag")>=1){
+					A_SetRoll(0);
+					A_SetCrosshair(0);
+					A_TakeInventory("PB_LockScreenTilt",1);
+					Return State("ASGDrumRespect");
+					}
+					Return State("");}
+			AG01 FGHIJ 1 {
+			A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction;
+			}
+			AG01 KL 1{
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction;
+			}
+			AG01 MN 1
+			Goto Ready3
+		SelectAnimationDrum:
+			AU24 EFG 0
+			AU23 EFG 0
+			AU02 EFG 0
+			AU01 EFG 0
+			AU10 ABCD 1 //{if (CountInv("AutoshotgunDrumMag") == 1 ) { A_SetWeaponSprite("AU10");}}
+			AU2M EFGH 1 {
+				if (CountInv("AutoShotgunAmmo") == 24 ) { A_SetWeaponSprite("AU24");}
+				if (CountInv("AutoShotgunAmmo") == 23 ) { A_SetWeaponSprite("AU23");}
+				if (CountInv("AutoShotgunAmmo") == 2 )  { A_SetWeaponSprite("AU02");}
+				if (CountInv("AutoShotgunAmmo") == 1 )  { A_SetWeaponSprite("AU01");}
+				if (CountInv("AutoShotgunAmmo") == 0 )  { A_SetWeaponSprite("AU01");}
+				}
+			goto ReadyToFireDrum
+		SelectAnimation:
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "SelectAnimationDualWield")	
+			TNT1 A 0 A_PlaySoundEx("weapons/autoshotgun/respect1", "Auto")
 
-	FlashPunching:
-		AUSK A 1 
-		AUSK B 1 
-		AUSK C 1 
-		AUSK D 3 
-		AUSK E 3
-		AUSK D 3 
-		AUSK C 1 
-		AUSK B 1 
-		AUSK A 1
-		TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, 5)
-		AUSG AAA 1 
-		Stop
-		TNT1 AAAA 0
-		A9SG AAA 1 
-		Stop
+			TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "SelectAnimationDrum") //Is this even a thing anymore?  Let's make it a thing
+			AG10 ABCDEFG 1 //{if (CountInv("AutoshotgunDrumMag") == 1 ) { A_SetWeaponSprite("AU10");}}
+
+		Ready3:
+			TNT1 A 0 {
+				A_SetRoll(0);
+				A_SetCrosshair(0);
+				A_TakeInventory("PB_LockScreenTilt",1);
+			}
+
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "ReadyToFireDualWield")
+			TNT1 A 0 {if (CountInv("AutoshotgunDrumMag") == 1 && CountInv("PBAutoShotgunHasUnloaded") != 1) {Return State("ReadyToFireDrum");}Return State("");}
+
+		ReadyToFire:
+			
+			AG10 H 1 {
+					if (CountInv("JustFiredAutoshotgun") >= 60) { A_Gunflash("BarrelSmoke1");}
+					if (CountInv("PumpAutoShotgun") == 1 && CountInv("AutoShotgunAmmo") >= 1) {return state("Pump");}
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBAutoShotgunHasUnloaded"));
+			}
+			Loop
+		ReadyToFireDrum:
+			AU01 H 0
+			AU02 H 0
+			AU03 H 0
+			AU22 H 0
+			AU23 H 0
+			AU24 H 0
+			AU2M H 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AU24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AU23");}
+					if (CountInv("AutoShotgunAmmo") == 22 ) {A_SetWeaponSprite("AU22");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AU03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AU02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AU01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AU01");}
+					if (CountInv("JustFiredAutoshotgun") >= 60) {A_Gunflash("BarrelSmoke1");}
+					if (CountInv("PumpAutoShotgun") == 1 && CountInv("AutoShotgunAmmo") >= 1) {return state("Pump");}
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBAutoShotgunHasUnloaded"));
+			}
+			Loop
+		
+		
+		
+		BarrelSmoke1:
+			TNT1 A 1 {
+				A_FireCustomMissile("GunBarrelSmoke", 0, 0, 0, 0, 0, 0);
+				A_Takeinventory("JustFiredAutoshotgun",1);
+			}
+			Stop
+			
+		SelectAnimationDualWield:
+			TNT1 A 0 A_PlaySoundEx("weapons/autoshotgun/respect1", "Auto")
+			AG60 IJKLMN 1
+			TNT1 A 0 A_PlaySoundEx("weapons/autoshotgun/respect1", "Auto")
+		ReadyDualWield:
+			TNT1 A 0 {
+				A_SetRoll(0);
+				A_SetCrosshair(0);
+				A_TakeInventory("PB_LockScreenTilt",1);
+				A_SetFiringRightWeapon(False);
+				A_SetFiringLeftWeapon(False);
+				A_Overlay(10, "IdleLeft_Overlay", true);
+				A_Overlay(11, "IdleRight_Overlay", true);
+			}
+		ReadyToFireDualWield:
+			TNT1 A 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOFIRE)
+			Loop
+		IdleLeft_Overlay:
+			AG61 J 1 {
+				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()){
+					if(CountInv("LeftASGAmmo") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+				return state("");
+			}
+			Loop
+		IdleRight_Overlay:
+			AG61 I 1 {
+				if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon()){
+					if(CountInv("AutoShotgunAmmo") > 0){
+						return state("FireRight_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+				return state("");
+			}
+			Loop
+			
+		FireLeft_Overlay:
+				TNT1 A 0 A_FireBullets (frandom(5.84,6.45), frandom(5.2,6.75), 4, 10, "ShotgunPuff")
+				AG62 A 1 BRIGHT {
+					A_FireBullets (frandom(5.85,6.65), frandom(5.32,6.75), 4, 8, "MachineGunBulletPuff");
+					A_AlertMonsters;
+					A_Takeinventory("LeftASGAmmo",1);
+					A_PlaySoundeX("Weapons/AutoShotgun", "Weapon");
+					A_FireCustomMissile("GunFireSmoke", 0, 0, -2, 1, 0, 0);
+					A_FireCustomMissile("YellowFlareSpawn",0,0,-3,0);
+					A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0);
+					A_Giveinventory("JustFiredAutoshotgun",20);
+					
+					A_ZoomFactor(0.98);
+					if (CountInv("PowerStrength") >= 1 ) {
+						A_SetPitch(pitch-1.15, SPF_INTERPOLATE);
+						A_SetAngle(angle+0.94, SPF_INTERPOLATE);
+					}
+					else {
+						A_SetPitch(pitch-2.30, SPF_INTERPOLATE);
+						A_SetAngle(angle+1.88, SPF_INTERPOLATE);
+					}
+				}
+				AG62 B 1 BRIGHT {
+					A_ZoomFactor(0.99);
+					if (CountInv("PowerStrength") >= 1 ) {
+						A_SetPitch(pitch-1.15, SPF_INTERPOLATE);
+						A_SetAngle(angle+0.94, SPF_INTERPOLATE);
+					}
+					else {
+						A_SetPitch(pitch-2.30, SPF_INTERPOLATE);
+						A_SetAngle(angle+1.88, SPF_INTERPOLATE);
+					}
+				}
+				AG62 C 1 {
+					A_ZoomFactor(1.0);
+					A_FireCustomMissile("ShotCaseSpawn",0,0,-8,-8);
+				}
+				AG62 DEFGH 1
+				Goto IdleLeft_Overlay
+			
+		FireRight_Overlay:
+				TNT1 A 0 A_FireBullets (frandom(5.84,6.45), frandom(5.2,6.75), 4, 10, "ShotgunPuff")
+				AG61 A 1 BRIGHT {
+					A_FireBullets (frandom(5.85,6.65), frandom(5.32,6.75), 4, 8, "MachineGunBulletPuff");
+					A_Takeinventory("AutoShotgunAmmo",1);
+					A_AlertMonsters;
+					A_PlaySoundeX("Weapons/AutoShotgun", "Weapon");
+					A_FireCustomMissile("GunFireSmoke", 0, 0, 2, 1, 0, 0);
+					A_FireCustomMissile("YellowFlareSpawn",0,0,3,0);
+					A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0);
+					A_Giveinventory("JustFiredAutoshotgun",20);
+					
+					A_ZoomFactor(0.98);
+					if (CountInv("PowerStrength") >= 1 ) {
+						A_SetPitch(pitch-1.15, SPF_INTERPOLATE);
+						A_SetAngle(angle-0.94, SPF_INTERPOLATE);
+					}
+					else {
+						A_SetPitch(pitch-2.30, SPF_INTERPOLATE);
+						A_SetAngle(angle-1.88, SPF_INTERPOLATE);
+					}
+				}
+				AG61 B 1 BRIGHT {
+					A_ZoomFactor(0.99);
+					if (CountInv("PowerStrength") >= 1 ) {
+						A_SetPitch(pitch-1.15, SPF_INTERPOLATE);
+						A_SetAngle(angle-0.94, SPF_INTERPOLATE);
+					}
+					else {
+						A_SetPitch(pitch-2.30, SPF_INTERPOLATE);
+						A_SetAngle(angle-1.88, SPF_INTERPOLATE);
+					}
+				}
+				AG61 C 1 {
+					A_ZoomFactor(1.0);
+					A_FireCustomMissile("ShotCaseSpawn",0,0,8,-8);
+				}
+				AG61 DEFGH 1
+				Goto IdleRight_Overlay
+			
+		WeaponSpecial:
+			TNT1 A 0 {
+				A_Takeinventory("GoWeaponSpecialAbility",1);
+				A_GiveInventory("PB_LockScreenTilt",1);
+				A_SetCrosshair(0);
+			A_ClearOverlays(10,11);
+			}
+			TNT1 A 0 A_JumpIfInventory("AutoShotgun", 2,"SwitchToDualWield")
+			Goto Ready3
+				
+		SwitchToDualWield:
+			TNT1 A 0 {
+				A_PlaySoundEx("weapons/autoshotgun/respect1", "Auto");
+				if (A_CheckAkimbo()) {
+					A_TakeInventory("DualWieldingAutoshotguns", 1);
+					A_SetAkimbo(False);
+					return state("SwitchFromDualWield");
+				}
+				else {
+					A_GiveInventory("DualWieldingAutoshotguns", 1);
+					A_SetAkimbo(True);
+					return state("");
+				}
+				
+				}
+			AG60 ABCDEFGH 1 A_Setroll(roll-0.5, SPF_INTERPOLATE)
+			AG60 IJK 1 A_Setroll(roll+2.0, SPF_INTERPOLATE)
+			AG60 LM 1 A_Setroll(roll+1.0, SPF_INTERPOLATE)
+			AG60 N 1 A_Setroll(0, SPF_INTERPOLATE)
+			Goto ReadyDualWield
+		SwitchFromDualWield:
+			AG60 NMLKJI 1 A_Setroll(roll-1.0, SPF_INTERPOLATE)
+			AG60 HGF 1 A_Setroll(roll+2.0, SPF_INTERPOLATE)
+			AG60 EDCB 1 
+			AG60 A 1 A_Setroll(0, SPF_INTERPOLATE)
+			Goto Ready3
+		
+		Deselect:
+			TNT1 A 0 {
+				A_WeaponOffset(0,32);
+				A_SetRoll(0);
+				A_SetCrosshair(0);
+				A_ClearOverlays(10,11);
+				A_TakeInventory("PB_LockScreenTilt",1);
+			}
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DualWieldDeselect")
+			TNT1 A 0 A_Takeinventory("Unloading",1)
+			TNT1 A 0 A_Takeinventory("RandomHeadExploder",1)
+			TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
+			AG10 FEDCBA 1
+			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+			Wait
+
+		DrumDeselect:
+			TNT1 A 0 A_Takeinventory("Unloading",1)
+			TNT1 A 0 A_Takeinventory("RandomHeadExploder",1)
+			TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
+			AU24 EFG 0
+			AU23 EFG 0
+			AU02 EFG 0
+			AU01 EFG 0
+			AU2M HGFE 1 {
+				if (CountInv("AutoShotgunAmmo") == 24 ) { A_SetWeaponSprite("AU24");}
+				if (CountInv("AutoShotgunAmmo") == 23 ) { A_SetWeaponSprite("AU23");}
+				if (CountInv("AutoShotgunAmmo") == 2 )  { A_SetWeaponSprite("AU02");}
+				if (CountInv("AutoShotgunAmmo") == 1 )  { A_SetWeaponSprite("AU01");}
+				if (CountInv("AutoShotgunAmmo") == 0 )  { A_SetWeaponSprite("AU01");}
+				}
+			AU10 DCBA 1 //{if (CountInv("AutoshotgunDrumMag") == 1 ) { A_SetWeaponSprite("AU10");}}
+			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+			Wait
+
+		DualWieldDeselect:
+			TNT1 A 0 A_Takeinventory("Unloading",1)
+			TNT1 A 0 A_Takeinventory("RandomHeadExploder",1)
+			TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
+			AG60 NMLKJI 1 
+			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+			Wait
+
+		Select:
+			TNT1 A 0 {
+				A_WeaponOffset(0,32);
+				A_SetRoll(0);
+				A_SetCrosshair(0);
+				A_TakeInventory("PB_LockScreenTilt",1);
+				A_ClearOverlays(10,11);
+			}
+			TNT1 A 0 A_Takeinventory("Unloading",1)
+			TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
+			TNT1 A 0 A_Giveinventory("RandomHeadExploder",1)
+			TNT1 A 0 A_TakeInventory("RifleSelected",1)
+			TNT1 A 0 A_TakeInventory("CarbineSelected",1)
+			TNT1 A 0 A_TakeInventory("FistsSelected",1)
+			TNT1 A 0 A_TakeInventory("SawSelected",1)
+			TNT1 A 0 A_TakeInventory("SledgeSelected",1)
+			TNT1 A 0 A_TakeInventory("HandgunSelected",1)
+			TNT1 A 0 A_TakeInventory("DualHandgunSelected",1)
+			TNT1 A 0 A_TakeInventory("RevolverSelected",1)
+			TNT1 A 0 A_TakeInventory("ShotgunSelected",1)
+			TNT1 A 0 A_TakeInventory("SSGSelected",1)
+			TNT1 A 0 A_TakeInventory("QSGSelected",1)
+			TNT1 A 0 A_TakeInventory("MinigunSelected",1)
+			TNT1 A 0 A_TakeInventory("NewChaingunSelected",1)	
+			TNT1 A 0 A_TakeInventory("RocketLauncherSelected",1)
+			TNT1 A 0 A_TakeInventory("GrenadeLauncherSelected",1)
+			TNT1 A 0 A_TakeInventory("SGLSelected",1)
+			TNT1 A 0 A_TakeInventory("PlasmaGunSelected",1)
+			TNT1 A 0 A_TakeInventory("M2Selected",1)	
+			TNT1 A 0 A_TakeInventory("FreezerSelected",1)
+			TNT1 A 0 A_TakeInventory("RailGunSelected",1)
+			TNT1 A 0 A_TakeInventory("BFGSelected",1)
+			TNT1 A 0 A_TakeInventory("BFGBeamSelected",1)
+			TNT1 A 0 A_TakeInventory("BHCSelected",1)
+			TNT1 A 0 A_TakeInventory("RevenantLauncherSelected",1)
+			TNT1 A 0 A_TakeInventory("FlameCannonSelected",1)
+			TNT1 A 0 A_TakeInventory("HellRifleSelected",1)
+			TNT1 A 0 A_TakeInventory("LandMineSelected",1)
+			TNT1 A 0 A_TakeInventory("UACSMGSelected",1)
+			TNT1 A 0 A_TakeInventory("SubMachineGunSelected",1)
+			TNT1 A 0 A_TakeInventory("LostSoulSelected",1)
+			TNT1 A 0 A_TakeInventory("HasBarrel",1)
+			TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
+			TNT1 A 0 A_GiveInventory("ASGSelected",1)
+			TNT1 A 0 ACS_NamedExecuteAlways("ToggleShotgunUpgraded",0) //For people who want this weapon to replace another
+			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
+			TNT1 AAAAAAAA 1 A_Raise
+			Wait
+		
+		Fire:
+			TNT1 A 0 {
+				A_WeaponOffset(0,32);
+				A_SetRoll(0);
+				A_SetCrosshair(0);
+				A_TakeInventory("PB_LockScreenTilt",1);
+				A_ClearOverlays(10,11);
+			}
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1,1)
+			Goto Reload
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "FireDualWield")	
+			TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumFire")
+			TNT1 A 0 A_JumpIfInventory("PBAutoShotgunWasEmpty", 1, "Pump")
+			TNT1 A 0 A_FireBullets (frandom(5.84,6.45), frandom(5.2,6.75), 4, 10, "ShotgunPuff")
+			AG20 A 1 BRIGHT {
+				A_FireBullets (frandom(5.85,6.65), frandom(5.32,6.75), 4, 8, "MachineGunBulletPuff");
+				A_Takeinventory("AutoShotgunAmmo",1);
+				A_AlertMonsters;
+				A_PlaySoundeX("Weapons/AutoShotgun", "Weapon");
+				A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0);
+				A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0);
+				A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
+				A_Giveinventory("JustFiredAutoshotgun",20);
+				
+				A_ZoomFactor(0.98);
+				if (CountInv("PowerStrength") >= 1 ) {
+					A_SetPitch(pitch-0.82, SPF_INTERPOLATE);
+					A_SetAngle(angle+0.44, SPF_INTERPOLATE);
+				}
+				else {
+					A_SetPitch(pitch-1.64, SPF_INTERPOLATE);
+					A_SetAngle(angle+0.88, SPF_INTERPOLATE);
+				}
+			}
+			AG20 B 1 BRIGHT {
+				
+				A_ZoomFactor(0.99);
+				if (CountInv("PowerStrength") >= 1 ) {
+					A_SetPitch(pitch-0.82, SPF_INTERPOLATE);
+					A_SetAngle(angle+0.44, SPF_INTERPOLATE);
+				}
+				else {
+					A_SetPitch(pitch-1.64, SPF_INTERPOLATE);
+					A_SetAngle(angle+0.88, SPF_INTERPOLATE);
+				}
+			}
+			AG20 C 1 {
+				A_ZoomFactor(1.0);
+				A_FireCustomMissile("ShotCaseSpawn",0,0,4,-8);
+			}
+			AG20 DEFGH 1 A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB)
+			AG20 I 1 
+			TNT1 A 0 A_Refire
+			Goto Ready3
+		
+		DrumFire:
+				AU24 ABCD 0
+				AU23 ABC 0
+				AU02 ABC 0
+				AU01 ABCD 0
+				AF24 EFGHI 0
+				AF23 EFGHI 0
+				AF22 G 0
+				AF03 GHI 0
+				AF02 EFGHI 0
+				AF01 EFGHI 0
+				TNT1 A 0 A_JumpIfInventory("PBAutoShotgunWasEmpty", 1, "Pump")
+				TNT1 A 0 A_FireBullets (frandom(5.84,6.45), frandom(5.2,6.75), 4, 10, "ShotgunPuff")
+				AUMD A 1 BRIGHT {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AU24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AU23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AU02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AU01");}
+					
+					A_FireBullets (frandom(5.85,6.65), frandom(5.32,6.75), 4, 8, "MachineGunBulletPuff");
+					A_AlertMonsters;
+					A_PlaySoundeX("Weapons/AutoShotgun", "Weapon");
+					A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0);
+					A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0);
+					A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
+					A_Giveinventory("JustFiredAutoshotgun",20);
+					A_ZoomFactor(0.98);
+					if (CountInv("PowerStrength") >= 1 ) {
+						A_SetPitch(pitch-0.82, SPF_INTERPOLATE);
+						A_SetAngle(angle+0.44, SPF_INTERPOLATE);
+					}
+					else {
+						A_SetPitch(pitch-1.64, SPF_INTERPOLATE);
+						A_SetAngle(angle+0.88, SPF_INTERPOLATE);
+					}
+				}
+				AUMD B 1 BRIGHT {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AU24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AU23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AU02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AU01");}
+					
+					A_ZoomFactor(0.99);
+					if (CountInv("PowerStrength") >= 1 ) {
+						A_SetPitch(pitch-0.82, SPF_INTERPOLATE);
+						A_SetAngle(angle+0.44, SPF_INTERPOLATE);
+					}
+					else {
+						A_SetPitch(pitch-1.64, SPF_INTERPOLATE);
+						A_SetAngle(angle+0.88, SPF_INTERPOLATE);
+					}
+				}
+				AUMD C 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AU24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AU23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AU02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AU01");}
+					A_ZoomFactor(1.0);
+					A_FireCustomMissile("ShotCaseSpawn",0,0,4,-8);
+					}
+				AUMD D 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AU24");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AU01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				AUMD EF 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AF24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AF23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AF02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AF01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				AUMD G 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AF24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AF23");}
+					if (CountInv("AutoShotgunAmmo") == 22 ) {A_SetWeaponSprite("AF22");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AF03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AF02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AF01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				AUMD H 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AF24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AF23");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AF03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AF02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AF01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				AUMD I 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AF24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AF23");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AF03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AF02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AF01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				TNT1 A 0 A_Takeinventory("AutoShotgunAmmo",1)
+				TNT1 A 0 A_Refire
+				Goto Ready3
+		
+		AltFire:
+			TNT1 A 0 {
+				A_WeaponOffset(0,32);
+				A_SetRoll(0);
+				A_SetCrosshair(0);
+				A_TakeInventory("PB_LockScreenTilt",1);
+				A_ClearOverlays(10,11);
+			}
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",2,1)
+			Goto Reload
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "FireDualWield")	
+			TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumAltFire")
+			TNT1 A 0 A_JumpIfInventory("PBAutoShotgunWasEmpty", 1, "Pump")
+			TNT1 A 0 A_JumpIfInventory("PumpAutoShotgun", 1, "Pump")
+			AG20 A 1 BRIGHT {
+				A_FireCustomMissile("Chunk2",random(-2,2),0,18,13);
+				A_FireCustomMissile("Chunk1",random(-2,2),0,15,-18);
+				A_FireCustomMissile("Chunk3",random(-2,2),0,13,5);
+				A_FireCustomMissile("Chunk3",random(-2,2),0,0,-15);
+				A_FireCustomMissile("Chunk4",random(-2,2),0,0,-15);
+				A_FireCustomMissile("Chunk1",random(-2,2),0,-13,8);
+				A_FireCustomMissile("Chunk2",random(-2,2),0,-18,12);
+				A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
+				A_PlaySoundEx("FLAKFIRE", "Weapon");
+				A_AlertMonsters;
+				A_ZoomFactor(0.98);
+				A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0);
+				A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0);
+				A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0);
+				A_Takeinventory("AutoShotgunAmmo",2);
+				A_GiveInventory("PumpAutoShotgun", 1);
+				A_Giveinventory("JustFiredAutoshotgun",140);
+				
+				if (CountInv("PowerStrength") >= 1 ) {
+					A_SetPitch(pitch-1.02, SPF_INTERPOLATE);
+					A_SetAngle(angle+0.55, SPF_INTERPOLATE);
+				}
+				else {
+					A_SetPitch(pitch-2.04, SPF_INTERPOLATE);
+					A_SetAngle(angle+1.1, SPF_INTERPOLATE);
+				}
+			}
+			TNT1 AAAAAAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
+			AG20 B 1 BRIGHT { 
+				A_ZoomFactor(0.99);
+				if (CountInv("PowerStrength") >= 1 ) {
+					A_SetPitch(pitch-1.02, SPF_INTERPOLATE);
+					A_SetAngle(angle+0.55, SPF_INTERPOLATE);
+				}
+				else {
+					A_SetPitch(pitch-2.04, SPF_INTERPOLATE);
+					A_SetAngle(angle+1.1, SPF_INTERPOLATE);
+				}
+			}
+			AG20 C 1 {
+				A_ZoomFactor(1.0);
+				A_FireCustomMissile("ShotCaseSpawn",0,0,4,-8);
+				A_FireCustomMissile("ShotCaseSpawn",0,0,-4,-8);
+			}
+			AG20 DEFGHI 1 A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB)
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1,"Pump")
+			Goto Ready3
+			
+			
+		BarrelSmoke2:
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, 0, 0, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -1, 0, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -2, 0, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -3, 2, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -4, 5, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -5, 6, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -6, 8, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -8, 10, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -9, 8, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -10, 7, 0, 0) //I
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -10, 6, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -10, 5, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -10, 4, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -10, 5, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -9, 8, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -8, 10, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -6, 8, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -5, 6, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -4, 5, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -3, 2, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -2, 0, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -1, 0, 0, 0)
+			Stop
+			
+		Pump:
+			TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumPump")
+			TNT1 A 0 {
+				A_Giveinventory("PB_LockScreenTilt",1);
+				A_WeaponOffset(0,32);
+				A_PlaysoundEx("Ironsights", "Auto");
+				
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke2");
+				}
+			}
+			AG40 ABCDEFGH 1 {
+				A_SetRoll(roll-0.1,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOFIRE);
+			}
+			TNT1 A 0 {
+				A_PlaysoundEx("H4SGCOCK", "Auto");
+				A_TakeInventory("PumpAutoShotgun", 1);
+			}
+			AG40 IJKL 1 {
+				A_SetRoll(roll-0.3,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOFIRE);
+			}
+			
+			AG40 MNI 1{
+				A_SetRoll(roll+0.4,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOFIRE);
+			}
+			
+			AG40 HGFEDCBA 1 {
+				A_SetRoll(roll+0.1,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOFIRE);
+			}
+			TNT1 A 0 A_Refire
+			Goto Ready3
+			
+		DrumPump:
+			AS24 DEFG 0
+			AS23 DEFG 0
+			AS22 G 0
+			AS03 FG 0
+			AS02 DEFG 0
+			AS01 DEFG 0
+			TNT1 A 0 {
+				A_Giveinventory("PB_LockScreenTilt",1);
+				A_WeaponOffset(0,32);
+				A_PlaysoundEx("Ironsights", "Auto");
+				
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke2");
+				}
+			}
+			ASMD G 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AS24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AS23");}
+					if (CountInv("AutoShotgunAmmo") == 22 ) {A_SetWeaponSprite("AS22");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AS03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AS02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AS01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AS01");}
+					Return A_DoPBWeaponAction(WRF_NOFIRE);
+					}
+			ASMD F 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AS24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AS23");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AS03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AS02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AS01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AS01");}
+					Return A_DoPBWeaponAction(WRF_NOFIRE);
+					}
+			ASMD ED 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AS24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AS23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AS02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AS01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AS01");}
+					Return A_DoPBWeaponAction(WRF_NOFIRE);
+					}
+			
+			AU33 CBA 1 A_DoPBWeaponAction(WRF_NOFIRE)
+			AU35 GFE 1 A_DoPBWeaponAction(WRF_NOFIRE)
+			TNT1 A 0 {
+				A_PlaysoundEx("H4SGCOCK", "Auto");
+				A_TakeInventory("PumpAutoShotgun", 1);
+			}
+			AU35 DCBBCDEFG 1 A_DoPBWeaponAction(WRF_NOFIRE)
+			AU33 ABC 1 A_DoPBWeaponAction(WRF_NOFIRE)
+			ASMD DE 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AS24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AS23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AS02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AS01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AS01");}
+					Return A_DoPBWeaponAction(WRF_NOFIRE);
+					}
+			ASMD F 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AS24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AS23");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AS03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AS02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AS01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AS01");}
+					Return A_DoPBWeaponAction(WRF_NOFIRE);
+					}
+			ASMD G 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AS24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AS23");}
+					if (CountInv("AutoShotgunAmmo") == 22 ) {A_SetWeaponSprite("AS22");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AS03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AS02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AS01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AS01");}
+					Return A_DoPBWeaponAction(WRF_NOFIRE);
+					}		
+			TNT1 A 0 A_Refire
+			Goto Ready3
+			
+		
+		DrumAltFire:
+				AU24 ABCD 0
+				AU23 ABC 0
+				AU02 ABC 0
+				AU01 ABCD 0
+				AF24 EFGHI 0
+				AF23 EFGHI 0
+				AF22 G 0
+				AF03 GHI 0
+				AF02 EFGHI 0
+				AF01 EFGHI 0
+				TNT1 A 0 A_JumpIfInventory("PumpAutoShotgun", 1, "Pump")
+				AUMD A 1 BRIGHT {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AU24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AU23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AU02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AU01");}
+					A_FireCustomMissile("Chunk2",random(-2,2),0,18,13);
+					A_FireCustomMissile("Chunk1",random(-2,2),0,15,-18);
+					A_FireCustomMissile("Chunk3",random(-2,2),0,13,5);
+					A_FireCustomMissile("Chunk3",random(-2,2),0,0,-15);
+					A_FireCustomMissile("Chunk4",random(-2,2),0,0,-15);
+					A_FireCustomMissile("Chunk1",random(-2,2),0,-13,8);
+					A_FireCustomMissile("Chunk2",random(-2,2),0,-18,12);
+					A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
+					A_PlaySoundEx("FLAKFIRE", "Weapon");
+					A_AlertMonsters;
+					A_ZoomFactor(0.98);
+					A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0);
+					A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0);
+					A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0);
+					//A_Takeinventory("AutoShotgunAmmo",2);
+					A_GiveInventory("PumpAutoShotgun", 1);
+					A_Giveinventory("JustFiredAutoshotgun",140);
+					
+					if (CountInv("PowerStrength") >= 1 ) {
+						A_SetPitch(pitch-1.02, SPF_INTERPOLATE);
+						A_SetAngle(angle+0.55, SPF_INTERPOLATE);
+					}
+					else {
+						A_SetPitch(pitch-2.04, SPF_INTERPOLATE);
+						A_SetAngle(angle+1.1, SPF_INTERPOLATE);
+					}
+				}
+				TNT1 AAAAAAAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17))
+				AUMD B 1 BRIGHT { 
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AU24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AU23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AU02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AU01");}
+					A_ZoomFactor(0.99);
+					if (CountInv("PowerStrength") >= 1 ) {
+						A_SetPitch(pitch-1.02, SPF_INTERPOLATE);
+						A_SetAngle(angle+0.55, SPF_INTERPOLATE);
+					}
+					else {
+						A_SetPitch(pitch-2.04, SPF_INTERPOLATE);
+						A_SetAngle(angle+1.1, SPF_INTERPOLATE);
+					}
+				}
+				AUMD C 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AU24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AU23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AU02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AU01");}
+					A_ZoomFactor(1.0);
+					A_FireCustomMissile("ShotCaseSpawn",0,0,4,-8);
+					A_FireCustomMissile("ShotCaseSpawn",0,0,-4,-8);
+				}
+				AUMD D 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AU24");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AU01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				AUMD EF 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AF24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AF23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AF02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AF01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				AUMD G 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AF24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AF23");}
+					if (CountInv("AutoShotgunAmmo") == 22 ) {A_SetWeaponSprite("AF22");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AF03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AF02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AF01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				AUMD H 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AF24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AF23");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AF03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AF02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AF01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				AUMD I 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AF24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AF23");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AF03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AF02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AF01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				TNT1 A 0 A_Takeinventory("AutoShotgunAmmo",1)
+				AUMD G 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AF24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AF23");}
+					if (CountInv("AutoShotgunAmmo") == 22 ) {A_SetWeaponSprite("AF22");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AF03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AF02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AF01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				AUMD H 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AF24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AF23");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AF03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AF02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AF01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				AUMD I 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AF24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AF23");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AF03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AF02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AF01");}
+					Return A_DoPBWeaponAction(WRF_NOPRIMARY, WRF_NOSECONDARY, WRF_NOBOB);
+					}
+				TNT1 A 0 A_Takeinventory("AutoShotgunAmmo",1)	
+				TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1,"Pump")
+				Goto Ready3
+		
+		
+		BarrelSmoke3:
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, 0, 0, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -1, 0, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -2, 0, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -3, 2, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -4, 5, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -5, 6, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -7, 8, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -9, 10, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -10, 12, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -12, 13, 0, 0) //I
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -14, 14, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -16, 15, 0, 0)
+			Stop
+		BarrelSmoke4:
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -14, 11, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -14, 10, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -15, 9, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -15, 9, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -14, 10, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -14, 11, 0, 0)
+			Stop
+		
+		// Let's get complicated...
+		
+		ReloadDualWieldStart:
+			TNT1 A 0 {
+				A_Giveinventory("PB_LockScreenTilt",1);
+				A_ClearOverlays(10,11);
+				A_WeaponOffset(0,32);
+				A_PlaysoundEx("Ironsights", "Auto");
+			}
+			AG60 NMLKJI 1 A_Setroll(roll-1.0, SPF_INTERPOLATE)
+			AG60 HGF 1 A_Setroll(roll+2.0, SPF_INTERPOLATE)
+			AG60 EDCB 1 
+			AG60 A 1 A_Setroll(0, SPF_INTERPOLATE)
+			TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "RightDrumReload")
+			TNT1 A 0 A_JumpIfInventory("NewShell", 1, "RightReloadStart")
+			TNT1 A 0 A_PlaySoundEx("weapons/empty", "Weapon")
+			Goto ReadyDualWield
+		
+		RightReloadStart:
+			TNT1 A 0 {
+				if (CountInv("AutoShotgunAmmo") < 1) {
+					return state("RightEmptyReload");
+				}
+				if (CountInv("AutoShotgunAmmo") == 12) {
+					return state("LeftReloadStart");
+				}
+				return state("");
+			}
+			Goto RightBeginNormalReload
+		RightEmptyReload:
+			TNT1 A 0 {
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke3");
+				}
+			}
+			AG31 ABCD 1 {
+				
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+				
+			}
+			TNT1 A 0 A_PlaySoundEx("weapons/sgmvpump","Auto")
+			AG31 EF 1 {
+				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG31 GHIJKL 1 {
+				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG31 M 1 {
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG31 N 1 {
+				A_PlaySoundEx("insertshell","Auto");
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG31 OP 1 {
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG31 Q 1 {
+				A_PlaySoundEx("weapons/sgpump","Auto");
+				A_Giveinventory("AutoShotgunAmmo",1);
+				A_Takeinventory("PBAutoShotgunWasEmpty", 1);
+				A_Takeinventory("PBAutoShotgunHasUnloaded",1);
+				A_Takeinventory("NewShell",1);
+				A_TakeInventory("PumpAutoShotgun", 1);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG31 RSTUV 1 {
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			Goto RightNormalReload
+		RightBeginNormalReload:
+			TNT1 A 0 {
+				A_Giveinventory("PB_LockScreenTilt",1);
+				A_WeaponOffset(0,32);
+				A_PlaysoundEx("Ironsights", "Auto");
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke3");
+				}
+			}
+			AG30 ABCD 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG30 EF 1 {
+				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG30 GHIJKL 1 {
+				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+		RightNormalReload:
+			TNT1 A 0 A_JumpIf(CountInv("NewShell") == 0,"RightReloadFinished")
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",12,"RightReloadFinished")
+			TNT1 A 0 {
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke4");
+				}
+			}
+			AG30 L 1 {
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG30 MN 1 {
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG30 O 1 { 
+				A_PlaySoundEx("insertshell","Auto");
+				A_Giveinventory("AutoShotgunAmmo",1);
+				A_Takeinventory("NewShell",1);
+				A_Takeinventory("PBAutoShotgunWasEmpty", 1);
+				A_SetPitch(pitch-0.2,SPF_INTERPOLATE);
+				A_SetAngle(angle+0.2, SPF_INTERPOLATE);
+				A_SetRoll(roll-0.4,SPF_INTERPOLATE);
+			}
+			AG30 PQ 1 {
+				A_SetPitch(pitch+0.1,SPF_INTERPOLATE);
+				A_SetAngle(angle-0.1, SPF_INTERPOLATE);
+				A_SetRoll(roll+0.2,SPF_INTERPOLATE);
+				
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+				
+			}
+			Loop
+		RightReloadFinished:
+			TNT1 A 0 {
+				A_Takeinventory("PB_LockScreenTilt",1);
+				A_WeaponOffset(0,32);
+				A_PlaysoundEx("Ironsights", "Auto");
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke5");
+				}
+			}
+			AG30 LKJIHG 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG30 FEDCBA 1 {
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			TNT1 A 0 {
+				if (CountInv("LeftASGAmmo") < 12 && CountInv("NewShell") >= 1) {
+					return state("LeftReloadSwitch");
+				}
+				return state("");
+			}
+			Goto ReloadDualWieldEnd
+			
+		LeftReloadSwitch:
+			AG10 FEDCBA 1
+			TNT1 A 5
+			AG10 ABCDEF 1
+		LeftReloadStart:
+			TNT1 A 0 {
+				if (CountInv("LeftASGAmmo") < 1) {
+					return state("LeftEmptyReload");
+				}
+				return state("");
+			}
+			Goto LeftBeginNormalReload
+		LeftEmptyReload:
+			TNT1 A 0 {
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke3");
+				}
+			}
+			AG31 ABCD 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			TNT1 A 0 A_PlaySoundEx("weapons/sgmvpump","Auto")
+			AG31 EF 1 {
+				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG31 GHIJKL 1 {
+				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG31 M 1 {
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG31 N 1 {
+				A_PlaySoundEx("insertshell","Auto");
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG31 OP 1 {
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG31 Q 1 {
+				A_PlaySoundEx("weapons/sgpump","Auto");
+				A_Giveinventory("LeftASGAmmo",1);
+				A_Takeinventory("PBAutoShotgunWasEmpty", 1);
+				A_Takeinventory("PBAutoShotgunHasUnloaded",1);
+				A_Takeinventory("NewShell",1);
+				A_TakeInventory("PumpAutoShotgun", 1);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG31 RSTUV 1 {
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			Goto LeftNormalReload
+			
+		LeftBeginNormalReload:
+			AG30 ABCD 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG30 EF 1 {
+				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG30 GHIJKL 1 {
+				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+		LeftNormalReload:
+			TNT1 A 0 A_JumpIf(CountInv("NewShell") == 0,"LeftReloadFinished")
+			TNT1 A 0 A_JumpIfInventory("LeftASGAmmo",12,"LeftReloadFinished")
+			TNT1 A 0 {
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke4");
+				}
+			}
+			AG30 LMN 1 {
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG30 O 1 { 
+				A_PlaySoundEx("insertshell","Auto");
+				A_Giveinventory("LeftASGAmmo",1);
+				A_Takeinventory("NewShell",1);
+				A_Takeinventory("PBAutoShotgunWasEmpty", 1);
+				A_SetPitch(pitch-0.2,SPF_INTERPOLATE);
+				A_SetAngle(angle+0.2, SPF_INTERPOLATE);
+				A_SetRoll(roll-0.4,SPF_INTERPOLATE);
+			}
+			AG30 PQ 1 {
+				A_SetPitch(pitch+0.1,SPF_INTERPOLATE);
+				A_SetAngle(angle-0.1, SPF_INTERPOLATE);
+				A_SetRoll(roll+0.2,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			Loop
+		LeftReloadFinished:
+			TNT1 A 0 {
+				A_Takeinventory("PB_LockScreenTilt",1);
+				A_WeaponOffset(0,32);
+				A_PlaysoundEx("Ironsights", "Auto");
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke5");
+				}
+			}
+			AG30 LKJIHG 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+			AG30 FEDCBA 1 {
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReadyDualWield");
+				}
+				return state("");
+			}
+		ReloadDualWieldEnd:
+			AG60 ABCDEFGH 1 A_Setroll(roll-0.5, SPF_INTERPOLATE)
+			AG60 IJK 1 A_Setroll(roll+2.0, SPF_INTERPOLATE)
+			AG60 LM 1 A_Setroll(roll+1.0, SPF_INTERPOLATE)
+			AG60 N 1 A_Setroll(0, SPF_INTERPOLATE)
+			Goto ReadyDualWield
+		
+		// Dual Drum Reload
+		RightEmptyDrumReload:
+			TNT1 A 0 A_PlaysoundEx("Ironsights", "Auto")
+			AU34 ABCD 1 
+			TNT1 A 0 A_PlaySoundEx("weapons/sgmvpump","Auto")
+			AU34 EFGHIJKLMNO 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/shotgun/detach", "Auto")
+			AU34 PQRSTUV 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/riflemagslap", "Auto")
+			AU34 WXYZ 1
+			AU35 ABCD 1 
+			TNT1 A 0 A_PlaySoundEx("weapons/sgpump","Auto")
+			AU35 EFG 1
+			Goto RightDrumReloadEnd
+		RightDrumReload:
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",24,"LeftDrumReload")
+			TNT1 A 0 A_JumpIfInventory("NewShell",1,2)
+			TNT1 A 0 A_PlaySoundEx("weapons/empty", "Weapon")
+			Goto Ready3
+		RightDrumReloadAnimation:
+			TNT1 A 0 A_JumpIfInventory("PBAutoShotgunHasUnloaded",1,"RightBeginNormalDrumReload")
+			TNT1 A 0 A_PlaysoundEx("weapons/autoshotgun/drumreload1", "Auto")
+			AU30 ABCDEFGHIJKLM 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/autoshotgun/drumreload2", "Auto")
+			AU30 NO 1
+			TNT1 A 0 {
+				A_FireCustomMissile("EmptyASGDrum",-5,0,0,-4);
+				if (CountInv("AutoShotgunAmmo") < 1) {
+					return state("RightEmptyDrumReload");
+				}
+				return state("");
+			}
+		RightBeginNormalDrumReload:
+			TNT1 A 0 A_PlaysoundEx("Ironsights", "Auto")
+			AU31 ABCDEFGHIJKLMNOP 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/shotgun/detach", "Auto")
+			AU31 QRSTUVWXY 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/riflemagslap", "Auto")
+			AU31 Z 1
+			AU32 ABCDEFGH 1
+		RightDrumReloadEnd:
+			AU33 ABCDEFG 1
+		RightDrumInsertBullets:
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",24,"LeftReloadSwitch_Dual")
+			TNT1 A 0 A_JumpIfInventory("NewShell",1,1)
+			Goto ReloadDualWieldEnd
+			TNT1 A 0 {
+				A_Giveinventory("AutoShotgunAmmo",1);
+				A_Takeinventory("NewShell",1);
+				A_Takeinventory("PBAutoShotgunWasEmpty", 1);
+				A_TakeInventory("PumpAutoShotgun", 1);
+				A_Takeinventory("PBAutoShotgunHasUnloaded",1);
+			}
+			Loop
+		
+		
+		LeftReloadSwitch_Dual:
+			AU10 HGFE 1
+			TNT1 A 5
+			AU10 EFGH 1
+			Goto LeftDrumReload
+		LeftEmptyDrumReload:
+			TNT1 A 0 A_PlaysoundEx("Ironsights", "Auto")
+			AU34 ABCD 1 
+			TNT1 A 0 A_PlaySoundEx("weapons/sgmvpump","Auto")
+			AU34 EFGHIJKLMNO 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/shotgun/detach", "Auto")
+			AU34 PQRSTUV 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/riflemagslap", "Auto")
+			AU34 WXYZ 1
+			AU35 ABCD 1 
+			TNT1 A 0 A_PlaySoundEx("weapons/sgpump","Auto")
+			AU35 EFG 1
+			Goto LeftDrumReloadEnd
+		LeftDrumReload:
+			TNT1 A 0 A_JumpIfInventory("LeftASGAmmo",24,"Ready3")
+			TNT1 A 0 A_JumpIfInventory("NewShell",1,2)
+			TNT1 A 0 A_PlaySoundEx("weapons/empty", "Weapon")
+			Goto Ready3
+		LeftDrumReloadAnimation:
+			TNT1 A 0 A_JumpIfInventory("PBAutoShotgunHasUnloaded",1,"LeftBeginNormalDrumReload")
+			TNT1 A 0 A_PlaysoundEx("weapons/autoshotgun/drumreload1", "Auto")
+			AU30 ABCDEFGHIJKLM 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/autoshotgun/drumreload2", "Auto")
+			AU30 NO 1
+			TNT1 A 0 {
+				A_FireCustomMissile("EmptyASGDrum",-5,0,0,-4);
+				if (CountInv("LeftASGAmmo") < 1) {
+					return state("LeftEmptyDrumReload");
+				}
+				return state("");
+			}
+		LeftBeginNormalDrumReload:
+			TNT1 A 0 A_PlaysoundEx("Ironsights", "Auto")
+			AU31 ABCDEFGHIJKLMNOP 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/shotgun/detach", "Auto")
+			AU31 QRSTUVWXY 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/riflemagslap", "Auto")
+			AU31 Z 1
+			AU32 ABCDEFGH 1
+		LeftDrumReloadEnd:
+			AU33 ABCDEFG 1
+		LeftDrumInsertBullets:
+			TNT1 A 0 A_JumpIfInventory("LeftASGAmmo",24,"ReloadDualWieldEnd")
+			TNT1 A 0 A_JumpIfInventory("NewShell",1,1)
+			Goto ReloadDualWieldEnd
+			TNT1 A 0 {
+				A_Giveinventory("LeftASGAmmo",1);
+				A_Takeinventory("NewShell",1);
+				A_Takeinventory("PBAutoShotgunWasEmpty", 1);
+				A_TakeInventory("PumpAutoShotgun", 1);
+				A_Takeinventory("PBAutoShotgunHasUnloaded",1);
+			}
+			Loop
+			
+			
+		
+		// End of Dual Wield
+			
+		Reload:
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "ReloadDualWieldStart")	
+			TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumReload")
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo", 12, "Ready3")
+			TNT1 A 0 A_JumpIfInventory("NewShell", 1, 2)
+			TNT1 A 0 A_PlaySoundEx("weapons/empty", "Weapon")
+			Goto Ready3
+		ReloadAnimation:
+			TNT1 A 0 {
+				if (CountInv("AutoShotgunAmmo") < 1) {
+					return state("EmptyReload");
+				}
+				return state("");
+			}
+			Goto BeginNormalReload
+		EmptyReload:
+			TNT1 A 0 {
+				A_Giveinventory("PB_LockScreenTilt",1);
+				A_WeaponOffset(0,32);
+				A_PlaysoundEx("Ironsights", "Auto");
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke3");
+				}
+			}
+			AG31 ABCD 1 {
+				A_DoPBWeaponAction(WRF_NOBOB);
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+			}
+			TNT1 A 0 A_PlaySoundEx("weapons/sgmvpump","Auto")
+			AG31 EF 1 {
+				A_DoPBWeaponAction(WRF_NOBOB);
+				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
+			}
+			AG31 GHIJKL 1 {
+				A_DoPBWeaponAction(WRF_NOBOB);
+				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
+			}
+			AG31 M 1 A_DoPBWeaponAction(WRF_NOBOB)
+			AG31 N 1 {
+				A_PlaySoundEx("insertshell","Auto");
+				A_DoPBWeaponAction(WRF_NOBOB);
+			}
+			AG31 OP 1 A_DoPBWeaponAction(WRF_NOBOB)
+			AG31 Q 1 {
+				A_PlaySoundEx("weapons/sgpump","Auto");
+				A_Giveinventory("AutoShotgunAmmo",1);
+				A_Takeinventory("PBAutoShotgunWasEmpty", 1);
+				A_Takeinventory("PBAutoShotgunHasUnloaded",1);
+				A_Takeinventory("NewShell",1);
+				A_TakeInventory("PumpAutoShotgun", 1);
+				A_DoPBWeaponAction(WRF_NOBOB);
+			}
+			AG31 RSTUV 1 A_DoPBWeaponAction(WRF_NOBOB)
+			Goto NormalReload
+		BeginNormalReload:
+			TNT1 A 0 {
+				A_Giveinventory("PB_LockScreenTilt",1);
+				A_WeaponOffset(0,32);
+				A_PlaysoundEx("Ironsights", "Auto");
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke3");
+				}
+			}
+			AG30 ABCD 1 {
+				A_DoPBWeaponAction(WRF_NOBOB);
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+			}
+			AG30 EF 1 {
+				A_DoPBWeaponAction(WRF_NOBOB);
+				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
+			}
+			AG30 GHIJKL 1 {
+				A_DoPBWeaponAction(WRF_NOBOB);
+				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
+			}
+		NormalReload:
+			TNT1 A 0 A_JumpIf(CountInv("NewShell") == 0,"ReloadFinished")
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",12,"ReloadFinished")
+			TNT1 A 0 {
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke4");
+				}
+			}
+			AG30 L 1 A_DoPBWeaponAction(WRF_NOBOB)
+			AG30 MN 1 A_DoPBWeaponAction(WRF_NOBOB)
+			AG30 O 1 { 
+				A_PlaySoundEx("insertshell","Auto");
+				A_Giveinventory("AutoShotgunAmmo",1);
+				A_Takeinventory("NewShell",1);
+				A_Takeinventory("PBAutoShotgunWasEmpty", 1);
+				A_SetPitch(pitch-0.2,SPF_INTERPOLATE);
+				A_SetAngle(angle+0.2, SPF_INTERPOLATE);
+				A_SetRoll(roll-0.4,SPF_INTERPOLATE);
+			}
+			AG30 PQ 1 {
+				A_DoPBWeaponAction(WRF_NOBOB);
+				A_SetPitch(pitch+0.1,SPF_INTERPOLATE);
+				A_SetAngle(angle-0.1, SPF_INTERPOLATE);
+				A_SetRoll(roll+0.2,SPF_INTERPOLATE);
+			}
+			Loop
+		ReloadFinished:
+			TNT1 A 0 {
+				A_Takeinventory("PB_LockScreenTilt",1);
+				A_WeaponOffset(0,32);
+				A_PlaysoundEx("Ironsights", "Auto");
+				if (CountInv("JustFiredAutoshotgun") >= 60) {
+						A_Gunflash("BarrelSmoke5");
+				}
+			}
+			AG30 LKJIHG 1 {
+				A_DoPBWeaponAction(WRF_NOBOB);
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+			}
+			AG30 FEDCBA 1 A_DoPBWeaponAction(WRF_NOBOB)
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "ReloadDualWieldEnd")	
+			Goto Ready3
+			
+			
+		
+		BarrelSmoke5:
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -11, 10, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -10, 10, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -10, 10, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -10, 12, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -9, 8, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -8, 10, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -6, 8, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -5, 6, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -4, 5, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -3, 2, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -2, 0, 0, 0)
+			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, -1, 0, 0, 0)
+			Stop
+
+		// Drum Reload
+		EmptyDrumReload:
+			AV24 LMN 0
+			AV01 LMN 0
+			AV02 N 0
+			TNT1 A 0 A_PlaysoundEx("Ironsights", "Auto")
+			AU34 ABCD 1 
+			TNT1 A 0 A_PlaySoundEx("weapons/sgmvpump","Auto")
+			AU34 EFGHIJK 1 
+			AVMD LM 1 {
+					if (CountInv("NewShell") >= 24 ) {A_SetWeaponSprite("AV24");}
+					if (CountInv("NewShell") <= 1 )  {A_SetWeaponSprite("AV01");}	
+					}
+			AVMD N 1 {
+					if (CountInv("NewShell") >= 24 ) {A_SetWeaponSprite("AV24");}
+					if (CountInv("NewShell") == 2 )  {A_SetWeaponSprite("AV02");}	
+					if (CountInv("NewShell") <= 1 )  {A_SetWeaponSprite("AV01");}	
+					}
+			AU34 O 1
+			TNT1 A 0 A_PlaysoundEx("weapons/shotgun/detach", "Auto")
+			AU34 PQRSTUV 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/riflemagslap", "Auto")
+			AU34 WXYZ 1
+			AU35 ABCD 1 
+			TNT1 A 0 A_PlaySoundEx("weapons/sgpump","Auto")
+			AU35 EFG 1
+			Goto DrumReloadEnd
+		DrumReload:
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",24,"Ready3")
+			TNT1 A 0 A_JumpIfInventory("NewShell",1,2)
+			TNT1 A 0 A_PlaySoundEx("weapons/empty", "Weapon")
+			Goto Ready3
+		DrumReloadAnimation:
+			AR24 ABCDEFGHIJ 0
+			AR23 ABCDEFGHIJ 0
+			AR22 ABCDEFGHIJ 0
+			AR03 ABCDEFGHIJ 0
+			AR02 ABCDEFGHIJ 0
+			AR01 ABCDEFGHIJ 0
+			TNT1 A 0 A_JumpIfInventory("PBAutoShotgunHasUnloaded",1,"BeginNormalDrumReload")
+			TNT1 A 0 A_PlaysoundEx("weapons/autoshotgun/drumreload1", "Auto")
+			ARMD ABCDEFGHIJ 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AR24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AR23");}
+					if (CountInv("AutoShotgunAmmo") == 22 ) {A_SetWeaponSprite("AR22");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AR03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AR02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AR01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AR01");}
+					} 
+			ARMD K 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AR24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AR23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AR01");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AR01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AR01");}
+					}
+			ARMD L 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AR24");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AR01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AR01");}
+					}
+			ARMD M 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AR24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AR23");}
+					}
+			TNT1 A 0 A_PlaysoundEx("weapons/autoshotgun/drumreload2", "Auto")
+			AU30 NO 1
+			TNT1 A 0 {
+				A_FireCustomMissile("EmptyASGDrum",-5,0,0,-4);
+				if (CountInv("AutoShotgunAmmo") < 1) {
+					return state("EmptyDrumReload");
+				}
+				return state("");
+			}
+		BeginNormalDrumReload:
+			TNT1 A 0 A_PlaysoundEx("Ironsights", "Auto")
+			AU31 ABCDEFGHI 1
+		ASGDrumRespect:
+			AT24 MNO 0
+			AT01 MNO 0
+			AT02 NO 0
+			AU31 JKL 1 
+			ATMD M 1 {
+					if (CountInv("AutoShotgunAmmo") + CountInv("NewShell") >= 24 ) {A_SetWeaponSprite("AT24");}
+					if (CountInv("AutoShotgunAmmo") + CountInv("NewShell") <= 1 )  {A_SetWeaponSprite("AT01");}	
+					}
+			ATMD NO 1 {
+					if (CountInv("AutoShotgunAmmo") + CountInv("NewShell") >= 24 ) {A_SetWeaponSprite("AT24");}
+					if (CountInv("AutoShotgunAmmo") + CountInv("NewShell") == 2 )  {A_SetWeaponSprite("AT02");}	
+					if (CountInv("AutoShotgunAmmo") + CountInv("NewShell") <= 1 )  {A_SetWeaponSprite("AT01");}	
+					}
+			AU31 P 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/shotgun/detach", "Auto")
+			AU31 QRSTUVWXY 1 
+			TNT1 A 0 A_PlaysoundEx("weapons/riflemagslap", "Auto")
+			AU31 Z 1
+			AU32 ABCDEFGH 1
+		DrumReloadEnd:
+			AU33 ABC 1
+		DrumInsertBullets:
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",24,"FinishDrumReload")
+			TNT1 A 0 A_JumpIfInventory("NewShell",1,1)
+			Goto FinishDrumReload
+			TNT1 A 0 {
+				A_Giveinventory("AutoShotgunAmmo",1);
+				A_Takeinventory("NewShell",1);
+				A_Takeinventory("PBAutoShotgunWasEmpty", 1);
+				A_TakeInventory("PumpAutoShotgun", 1);
+				A_Takeinventory("PBAutoShotgunHasUnloaded",1);
+			}
+			Loop
+		FinishDrumReload:
+			AS24 DEFG 0
+			AS23 DEFG 0
+			AS22 G 0
+			AS03 FG 0
+			AS02 DEFG 0
+			AS01 DEFG 0
+			ASMD DE 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AS24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AS23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AS02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AS01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AS01");}
+					}
+			ASMD F 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AS24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AS23");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AS03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AS02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AS01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AS01");}
+					}
+			ASMD G 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AS24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AS23");}
+					if (CountInv("AutoShotgunAmmo") == 22 ) {A_SetWeaponSprite("AS22");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AS03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AS02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AS01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AS01");}
+					}
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "ReloadDualWieldEnd")	
+			Goto Ready3
+			
+		Unload:
+			TNT1 A 0 {
+				A_Giveinventory("PB_LockScreenTilt",1);
+				A_WeaponOffset(0,32);
+				A_PlaysoundEx("Ironsights", "Auto");
+				A_Takeinventory("Unloading",1);
+				A_GiveInventory("PBAutoShotgunWasEmpty", 1);
+				A_ClearOverlays(10,11);
+			}
+			TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumUnload")
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1,1)
+			Goto Ready3
+			AG40 ABCDEFGH 1 A_DoPBWeaponAction
+		RemoveBullets:
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1,1)
+			Goto FinishUnload
+			TNT1 A 0 {
+				A_Takeinventory("AutoShotgunAmmo",1);
+				A_Giveinventory("NewShell",1);
+				A_PlaysoundEx("H4SGCOCK", "Weapon");
+			}
+			AG40 IJKLL 1 A_DoPBWeaponAction
+			AG40 MN 1 A_DoPBWeaponAction
+			Goto RemoveBullets
+		FInishUnload:
+			AG40 IHGFEDCBA 1 A_DoPBWeaponAction
+			TNT1 A 0 A_Giveinventory("PBAutoShotgunWasEmpty",1)
+			TNT1 A 0 A_Takeinventory("Unloading",1)
+			Goto Ready3
+		
+		DrumUnload:
+			AS24 DEFG 0
+			AS23 DEFG 0
+			AS22 G 0
+			AS03 FG 0
+			AS02 DEFG 0
+			AS01 DEFG 0
+			TNT1 A 0 A_GiveInventory("PBAutoShotgunWasEmpty", 1)
+			TNT1 A 0 A_Giveinventory("PBAutoShotgunHasUnloaded",1)
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1,1)
+			Goto Ready3
+			TNT1 A 0 A_PlaySound("Ironsights", 3)
+			ASMD G 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AS24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AS23");}
+					if (CountInv("AutoShotgunAmmo") == 22 ) {A_SetWeaponSprite("AS22");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AS03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AS02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AS01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AS01");}
+					}
+			ASMD F 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AS24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AS23");}
+					if (CountInv("AutoShotgunAmmo") == 3 )  {A_SetWeaponSprite("AS03");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AS02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AS01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AS01");}
+					}
+			ASMD ED 1 {
+					if (CountInv("AutoShotgunAmmo") == 24 ) {A_SetWeaponSprite("AS24");}
+					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AS23");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AS02");}
+					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AS01");}
+					if (CountInv("AutoShotgunAmmo") == 0 )  {A_SetWeaponSprite("AS01");}
+					}
+			AU33 CBA 1
+			AU32 HGFEDCBA 1
+			AU31 SR 1
+			TNT1 A 0 A_PlaySound("ASGOUT", 2)
+			AU31 QP 1
+			ATMD ON 1 {
+					if (CountInv("AutoShotgunAmmo") >= 24 ) {A_SetWeaponSprite("AT24");}
+					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AT02");}	
+					if (CountInv("AutoShotgunAmmo") <= 1 )  {A_SetWeaponSprite("AT01");}	
+					}
+			ATMD M 1 {
+					if (CountInv("AutoShotgunAmmo") >= 24 ) {A_SetWeaponSprite("AT24");}
+					if (CountInv("AutoShotgunAmmo") <= 1 )  {A_SetWeaponSprite("AT01");}	
+					}
+			AU31 LKJIHGFEDC 1
+		DrumRemoveBullets:
+			TNT1 A 0 A_JumpIfInventory("AutoShotgunAmmo",1,1)
+			Goto FinishDrumUnload
+			TNT1 A 0 {
+				A_Takeinventory("AutoShotgunAmmo",1);
+				A_Giveinventory("NewShell",1);
+			}
+			Goto DrumRemoveBullets
+		FinishDrumUnload:
+			TNT1 A 0 A_Giveinventory("PBAutoShotgunWasEmpty",1)
+			TNT1 A 0 A_Takeinventory("Unloading",1)
+			Goto Ready3
+		
+		Spawn:
+			AUSC A -1
+			Stop
+			
+		FlashPunching:
+		FlashKicking:
+			TNT1 A 0 A_ClearOverlays(10,11)
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualFlashKicking")
+			AG50 ABCDEF 1
+			AG50 G 2
+			AG50 FEDCBA 1
+			AG10 G 1
+			Stop
+		DualFlashKicking:
+			AG63 ABCDEF 1
+			AG63 G 2
+			AG63 FEDCBA 1
+			AG60 N 1
+			Stop
+			
+		FlashAirKicking:
+			TNT1 A 0 A_ClearOverlays(10,11)
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualAirFlashKicking")
+			AG50 ABCDEF 1
+			AG50 G 3
+			AG50 FEDCBA 1
+			AG10 G 1
+			Stop
+		DualAirFlashKicking:
+			AG63 ABCDEF 1
+			AG63 G 3
+			AG63 FEDCBA 1
+			AG60 N 1
+			Stop
+			
+		FlashSlideKicking:
+			TNT1 A 0 A_ClearOverlays(10,11)
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualFlashSlideKicking")
+			AG50 ABCDEF 1
+			AG50 G 14
+			AG50 FEDCBA 1
+			AG10 G 1
+			Stop
+		DualFlashSlideKicking:
+			AG63 ABCDEF 1
+			AG63 G 14
+			AG63 FEDCBA 1
+			AG60 N 1
+			Stop
+			
+		FlashSlideKickingStop:
+			TNT1 A 0 A_ClearOverlays(10,11)
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualFlashSlideKickingStop")
+			AG50 FEDCBA 1
+			AG10 G 1
+			Stop
+		DualFlashSlideKickingStop:
+			AG63 FEDCBA 1
+			AG60 N 1
+			Stop
+
 	}
 }
 
@@ -657,41 +1996,77 @@ ACTOR AutoShotgunAmmo : Ammo
    Inventory.Icon "AUSCA0"
 }
 
+ACTOR LeftASGAmmo : Ammo
+{
+   Inventory.Amount 0
+   Inventory.MaxAmount 12
+   Ammo.BackpackAmount 0
+   Ammo.BackpackMaxAmount 12
+   Inventory.Icon "AUSCA0"
+}
+
+ACTOR FlakTrail
+{ 
+    RenderStyle Add
+    Scale 0.016
+    Alpha 0.65
+    +NOINTERACTION
+    +NOGRAVITY
+    States
+    {
+    Spawn:
+	YAE4 A 0 NoDelay A_JumpIf(ScaleX <= 0, "NULL")
+	YAE4 A 0 A_SetScale(ScaleX-0.002)
+    YA36 C 1 bright A_FadeOut(0.05)
+    Loop
+    }
+}
 
 ACTOR Chunk1
 {
-   Radius 3
-   Height 4
-   Speed 35
-   Damage 8
-   Mass 200
-   Scale 0.2
-   Damagetype Cutless
-   +MISSILE
-   +DOOMBOUNCE
-   +BLOODSPLATTER
-   BounceFactor 0.65
-   SeeSound "weapon/smcasebounce"
-   States
-   {
-   Spawn:
-      FLAS A 1 Bright A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
-      loop
-   Death:
-      EXPL AAA 0 A_CustomMissile ("ExplosionSmokeSmall22", 4, 0, random (0, 360), 2, random (0, 360))
-      Stop
-   }
+	Radius 3
+	Height 4
+	Speed 45
+	Damage 8
+	Mass 200
+	Scale 0.4
+	Damagetype Cutless
+	+MISSILE
+	+DOOMBOUNCE
+	+BLOODSPLATTER
+	+ROLLSPRITE
+	BounceFactor 0.65
+	SeeSound "weapons/smcasebounce"
+	BounceSound "weapons/smcasebounce"
+	MissileType "FlakTrail"
+	States
+	{
+		Spawn:
+			FLAS A 1 Bright {
+				A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0);
+				A_SpawnItemEx("FlakTrail",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SetRoll(Roll+45);
+			}
+			loop
+		Death:
+			EXPL AAA 0 A_CustomMissile ("ExplosionSmokeSmall22", 4, 0, random (0, 360), 2, random (0, 360))
+			Stop
+	}
 }
 
 ACTOR Chunk2 : Chunk1
 {
-   Damagetype Saw
-   States
-   {
-   Spawn:
-      FLAS B 1 Bright A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
-      loop
-   }
+	Damagetype Saw
+	States
+	{
+		Spawn:
+			FLAS B 1 Bright {
+				A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0);
+				A_SpawnItemEx("FlakTrail",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SetRoll(Roll+45);
+			}
+			loop
+	}
 }
 
 ACTOR Chunk3 : Chunk1
@@ -699,9 +2074,13 @@ ACTOR Chunk3 : Chunk1
 	Damagetype Blast
     States
     {
-    Spawn:
-        FLAS C 1 Bright A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
-        loop
+		Spawn:
+			FLAS C 1 Bright {
+				A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0);
+				A_SpawnItemEx("FlakTrail",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SetRoll(Roll+45);
+			}
+			loop
     }
 }
 
@@ -710,9 +2089,12 @@ ACTOR Chunk4 : Chunk1
 	Damagetype Shotgun
     States
     {
-    Spawn:
-        FLAS D 1 Bright A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
-        loop
+		Spawn:
+			FLAS D 1 Bright {
+				A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0);
+				A_SpawnItemEx("FlakTrail",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SetRoll(Roll+45);
+			}
+			loop
     }
 }
-

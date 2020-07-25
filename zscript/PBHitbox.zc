@@ -32,7 +32,7 @@ Class PB_HeadshotHitbox : Actor
 		DamageFactor "Ice", 0.0;
 		DamageFactor "Blackhole", 0.0;
 		Speed 0;
-		Radius 8;
+		Radius 6;
 		Height 18;
 		BloodType "Brutal_Blood", "SawBlood", "SawBlood";
 		-COUNTKILL;
@@ -100,13 +100,17 @@ Class PB_HeadshotHitbox : Actor
 		if (master)									// sets the hitbox radius to be just a fraction bigger 
 		{					
 			if(radius != master.radius || height != master.height)
-				{ A_SetSize(master.radius+2, master.height/8);  } 
+				{ A_SetSize(master.radius+1, master.height/8);  } 
 			
 			A_Warp(AAPTR_MASTER,1,0,master.height - self.height,0,WARPF_INTERPOLATE|WARPF_COPYINTERPOLATION|WARPF_NOCHECKPOSITION);
 		
 			if(master.health < 1) { Destroy(); } 
 		
 			if(self.health < self.lastHealth) { 
+				if (CheckInventory("Kicking", 1, AAPTR_TARGET)){
+					hs_SpawnBlood(1);
+					A_DamageMaster((self.lastHealth - self.Health)*hsfactor,"kick"); self.lasthealth = self.health;
+				}
 				if (CheckInventory("HasCutingWeapon", 1, AAPTR_TARGET)){
 					hs_SpawnBlood(1);
 					A_DamageMaster((self.lastHealth - self.Health)*hsfactor,"Decapitate"); self.lasthealth = self.health;
@@ -174,8 +178,8 @@ Default
 	DamageFactor "Ice", 0.0;
 	DamageFactor "Blackhole", 0.0;
 	Speed 0;
-	Radius 24;
-	Height 20;
+	Radius 28;
+	Height 24;
 	BloodType "Brutal_Blood", "SawBlood", "SawBlood";
 	-COUNTKILL +NOTARGET +MISSILE
 	+NOGRAVITY +SHOOTABLE +NOTELEPORT -SOLID +NODAMAGETHRUST
@@ -185,76 +189,99 @@ Default
 	
 	}
 
-int lastHealth;
-double hsfactor;
-int	HitBoxTimerNew;
-int HitBoxTimerOld;
+	int lastHealth;
+	double hsfactor;
+	int	HitBoxTimerNew;
+	int HitBoxTimerOld;
 
-override void BeginPlay() 
-	{
-	self.lastHealth = self.health;
-	HitBoxTimerOld = Level.MapTime;
-	super.BeginPlay();
-	
-	}	
-
-action void hs_SpawnBlood(int amount)			// function to spawn the correct coloured blood
-	{											// amount is configurable, could be made to spawn more blood 
-	while(amount > 0) 							// based on enemy size or health, damage dealt etc.
+	override void BeginPlay() 
 		{
-		if(master)
+		self.lastHealth = self.health;
+		HitBoxTimerOld = Level.MapTime;
+		super.BeginPlay();
+		
+		}	
+
+	action void hs_SpawnBlood(int amount)			// function to spawn the correct coloured blood
+		{											// amount is configurable, could be made to spawn more blood 
+		while(amount > 0) 							// based on enemy size or health, damage dealt etc.
 			{
-			if(master.bNOBLOOD)
-				{ return; } 
-				master.A_SpawnItemEx("Blood",zofs: master.height/4 * 0.8, xvel: frandom(2.0,3.0),zvel: frandom(4.0,8.0),angle: random(0,359),SXF_USEBLOODCOLOR);
-				amount--;
+			if(master)
+				{
+				if(master.bNOBLOOD)
+					{ return; } 
+					master.A_SpawnItemEx("Blood",zofs: master.height/4 * 0.8, xvel: frandom(2.0,3.0),zvel: frandom(4.0,8.0),angle: random(0,359),SXF_USEBLOODCOLOR);
+					amount--;
+				}
 			}
 		}
-	}
 
-override void Tick()
-	{
-	
-	Super.Tick();
-												// special cvars control behaviour of the hitbox
-	bINVISIBLE = !hs_hitbox;					// debug visible hitbox also gives a good reference point on where to shoot
-	hsfactor = hs_factor;						// factor of which the damage is multiplied. 
-	HitBoxTimerNew = Level.MapTime;
-	
-	if(abs(HitBoxTimerNew - HitBoxTimerOld) > 350) {
-		Destroy();
-	}
-	
-	if(!master)
-		{ Destroy(); } 
+	override void Tick()
+		{
 		
+		Super.Tick();
+													// special cvars control behaviour of the hitbox
+		bINVISIBLE = !hs_hitbox;					// debug visible hitbox also gives a good reference point on where to shoot
+		hsfactor = hs_factor;						// factor of which the damage is multiplied. 
+		HitBoxTimerNew = Level.MapTime;
 		
-	if (master)									// sets the hitbox radius to be just a fraction bigger 
-		{					
-		if(radius != master.radius || height != master.height)
-			{ A_SetSize(master.radius+2, master.height/8);  } 
-			
-		A_Warp(AAPTR_MASTER,1,0,(master.height/4),0,WARPF_INTERPOLATE|WARPF_COPYINTERPOLATION|WARPF_NOCHECKPOSITION);
+		if(abs(HitBoxTimerNew - HitBoxTimerOld) > 350) {
+			Destroy();
+		}
 		
-		if(master.health < 1)
+		if(!master)
 			{ Destroy(); } 
-	
-		if(self.health < self.lastHealth)
-			{ 
-			hs_SpawnBlood(1);
-			A_DamageMaster((self.lastHealth - self.Health)*0.6,"leg"); self.lasthealth = self.health;
+			
+			
+		if (master)									// sets the hitbox radius to be just a fraction bigger 
+			{					
+			if(radius != master.radius || height != master.height)
+				{ A_SetSize(master.radius+8, master.height/4);  } 
+				
+			A_Warp(AAPTR_MASTER,1,0,(master.height/4),0,WARPF_INTERPOLATE|WARPF_COPYINTERPOLATION|WARPF_NOCHECKPOSITION);
+			
+			if(master.health < 1)
+				{ Destroy(); } 
+		
+		//	if(self.health < self.lastHealth)
+		//		{ 
+		//		hs_SpawnBlood(1);
+		//		A_DamageMaster((self.lastHealth - self.Health)*0.6,"leg"); self.lasthealth = self.health;
+		//		}
+				
+			if(self.health < self.lastHealth) { 
+					if (CheckInventory("Kicking", 1, AAPTR_TARGET)){
+						hs_SpawnBlood(1);
+						A_DamageMaster((self.lastHealth - self.Health)*0.6,"kick"); self.lasthealth = self.health;
+					}
+					if (CheckInventory("HasCutingWeapon", 1, AAPTR_TARGET)){
+						hs_SpawnBlood(1);
+						A_DamageMaster((self.lastHealth - self.Health)*0.6,"Decapitate"); self.lasthealth = self.health;
+					}
+					if (CheckInventory("HasIncendiaryWeapon", 1, AAPTR_TARGET)){
+						hs_SpawnBlood(1);
+						A_DamageMaster((self.lastHealth - self.Health)*0.6,"Incinerate"); self.lasthealth = self.health;
+					}
+					if (CheckInventory("HasPlasmaWeapon", 1, AAPTR_TARGET)){
+						hs_SpawnBlood(1);
+						A_DamageMaster((self.lastHealth - self.Health)*0.6,"plasma"); self.lasthealth = self.health;
+					}
+					else {
+						hs_SpawnBlood(1);
+						A_DamageMaster((self.lastHealth - self.Health)*0.6,"leg"); self.lasthealth = self.health;
+					}
+				}
 			}
 		}
-	}
 
-States
-	{
-	Spawn:
-	//	AMRK A 1;
-		TNT1 A 1;
-		loop;
-	Death:
-		TNT1 A 1;
-		stop;
-	}
+	States
+		{
+		Spawn:
+		//	AMRK A 1;
+			TNT1 A 1;
+			loop;
+		Death:
+			TNT1 A 1;
+			stop;
+		}
 }
