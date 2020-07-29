@@ -1,0 +1,90 @@
+// POSSITEM script originally taken from Realm667
+#library "possitem.acs"
+#include "zcommon.acs"
+
+// Causes the affected monster to quickly flicker in and out
+Script "Pos - Flicker effect" (void)
+{
+  // Preserve the monster's renderstyle and alpha
+  int renderstyle = GetActorProperty(0, APROP_RenderStyle);
+  int alpha = GetActorProperty(0, APROP_Alpha);
+
+  // Apply normal translucency on monsters that don't use 'single color' rendering
+  If(renderstyle == STYLE_Normal || renderstyle == STYLE_SoulTrans || renderstyle == STYLE_OptFuzzy)
+  {
+    SetActorProperty(0, APROP_RenderStyle, STYLE_Translucent);
+  }
+
+  // Apply stencil translucency on monsters that don't use normal translucency rendering
+  Else If(renderstyle == STYLE_Fuzzy || renderstyle == STYLE_Stencil || renderstyle == STYLE_Shaded)
+  {
+    SetActorProperty(0, APROP_RenderStyle, STYLE_TranslucentStencil);
+  }
+
+  // Do the flickery thing 5 times
+  For(int i; i < 5; i++)
+  {
+    SetActorProperty(0, APROP_Alpha, 1.0);
+    Delay(3);
+    SetActorProperty(0, APROP_Alpha, 0.45);
+    Delay(3);
+  }
+
+  // After the effect, restore monster's origianl renderstyle and alpha
+  SetActorProperty(0, APROP_RenderStyle, renderstyle);
+  SetActorProperty(0, APROP_Alpha, alpha);
+
+  // Make the monster friendly to the player
+  SetActorProperty(0, APROP_Friendly, TRUE);
+
+  // Spawn the possession indicators on the possessed monster
+  GiveInventory("SpawnPossessionWarpers", 1);
+
+  // Wait until the powerup's effect wears off
+  Do
+  {
+    Delay(1);
+  }
+  While(CheckInventory("PossessionEffect"));
+
+  // Revert the monster back to be hostile to the player, but only if it is alive, so it does not
+  // mess up the monster kill count.
+  If(GetActorProperty(0, APROP_Health) > 0)
+    SetActorProperty(0, APROP_Friendly, FALSE);
+}
+
+Script "Pos - Execute Possession state" (void)
+{
+  // Do not possess dead, friendly or boss monsters
+  If(GetActorProperty(0, APROP_Health) > 0 && !CheckFlag(0, "FRIENDLY") && !CheckFlag(0, "BOSS"))
+  {
+    // A_SkullAttack charging monsters need the SKULLFLY flag removed and their velocity set to 0
+    If(CheckFlag(0, "SKULLFLY")) GiveInventory("UnSkullFly", 1);
+
+    // Enter the "Possession" state
+    SetActorState(0, "Possession", TRUE);
+  }
+}
+
+Script "Pos - Adjust height" (void)
+{
+  // Set the monster as the activator of the script so we get its height
+  SetActivator(0, AAPTR_MASTER);
+
+  // Get and return the height value to the possession indicators so the zoffset can be adjusted
+  int masterheight = GetActorProperty(0, APROP_Height) >> 16;
+  SetResultValue(masterheight);
+}
+
+Script "Pos - Check possession state" (void)
+{
+  // Set the monster as the activator of the script so we get its health
+  SetActivator(0, AAPTR_MASTER);
+
+  // Return true if the monster had died or the effect had worn off. This is so the possession
+  // indicators are removed.
+  If(GetActorProperty(0, APROP_Health) <= 0 || !CheckInventory("PossessionEffect"))
+    SetResultValue(TRUE);
+  Else
+    SetResultValue(FALSE);
+}
