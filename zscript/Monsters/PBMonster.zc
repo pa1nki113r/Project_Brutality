@@ -35,19 +35,24 @@ Class PB_Monster : Actor abstract
 	
 	void A_SmartChase() {
 	
+			// Target must be cleared out if it is a friend of the monster, else we get infinite function recursions.
+			if (target && (target is "PossessionWarperA" || isFriend(target)))
+			{
+				A_ClearTarget();
+				target = NULL;
+			}
 			if (target == NULL) {
 				A_GiveInventory("Wandering",1);
 				A_LookEx();
 				A_Wander();
 				return;
 			}
-					
 			if (CheckIfCloser(target, 150) && !CheckIfCloser(target, 50) && CheckInventory("IsPlayer", 1, AAPTR_TARGET)) {
 				SetStateLabel("Fallback");
 			}
 			if (CheckSight(target) == true || CheckIfCloser(target, 500)) {
 				EnemyLastSighted = Level.MapTime;
-				A_TakeInventory("Wandering",36);
+				A_TakeInventory("Wandering",36);			
 				A_Chase();
 			}
 			else if (CheckSight(target) == false && abs(Level.MapTime - EnemyLastSighted) < 360) {

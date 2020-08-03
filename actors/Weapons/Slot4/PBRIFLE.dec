@@ -429,10 +429,14 @@ ACTOR Rifle : PB_Weapon
 			A_PlaySoundEx("weapons/changing", "Auto");
 			}
 		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
-        RIFG BCDE 1
+        TNT1 A 0 A_JumpIfInventory("DualWieldingDMRs",1,"DeselectAnimationDualWield")
+		RIFG BCDE 1
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
-		
+	DeselectAnimationDualWield:
+		R2F1 KJIHGFE 1
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+		Wait
 	WeaponSpecial:
 		TNT1 A 0 {
 			A_Takeinventory("GoWeaponSpecialAbility",1);
@@ -787,6 +791,9 @@ ACTOR Rifle : PB_Weapon
 	
 	ReloadGrenadeLauncher:
 		TNT1 A 0 A_WeaponReady
+		TNT1 A 0 A_JumpIfInventory("RocketAmmo",1,2)	
+		TNT1 A 0 A_PlaySoundEx("weapons/empty", "Auto")
+		Goto Ready3
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_Takeinventory("Reloading",1)
 		TNT1 A 0 A_Takeinventory("ADSmode",1)
@@ -802,6 +809,7 @@ ACTOR Rifle : PB_Weapon
 		RGLR EFG 2
 		RGLR HIJKLMMMMM 1
 		RGLR NOP 2
+		TNT1 A 0 A_TakeInventory("RocketAmmo",1)
 		TNT1 A 0 A_PlaySound("Weapons/GrenadeLoad", 2)
 		RGLR QQRRSSS 1
 		RGLR TUVWXY 1
@@ -828,7 +836,7 @@ ACTOR Rifle : PB_Weapon
 		Goto InsertBullets
 		
     Reload:
-		TNT1 A 0 A_JumpIfInventory("DualWieldingDMRs", 1, "ReloadDualWield")
+		"####" "#" 0 A_JumpIfInventory("DualWieldingDMRs", 1, "ReloadDualWield")
 		"####" "#" 0 A_JumpIfInventory("RifleAmmo",31,"Ready3")
         "####" "#" 0 A_JumpIfInventory("NewClip",1,1)
         Goto NoAmmo
@@ -879,6 +887,7 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 {
 			A_Takeinventory("Zoomed",1);
 			A_Takeinventory("ADSmode",1);
+			A_TakeInventory("HasUnloadedDMR",1);
 			A_ZoomFactor(1.0);
 			A_Giveinventory("PB_LockScreenTilt",1);
 			A_SetCrosshair(5);
@@ -1003,7 +1012,8 @@ ACTOR Rifle : PB_Weapon
 	
 	Unload:
 		TNT1 A 0 A_JumpIfInventory("HasUnloadedDMR", 1, "AlreadyUnloaded")
-        TNT1 A 0 A_JumpIfInventory("RifleAmmo",1,1)
+		TNT1 A 0 A_JumpIfInventory("DualWieldingDMRs", 1, "UnloadDualWield")
+        TNT1 A 0 A_JumpIfInventory("",1,1)
         Goto NoAmmo
 		TNT1 A 0 {
 			A_Takeinventory("Zoomed",1);
@@ -1011,7 +1021,7 @@ ACTOR Rifle : PB_Weapon
 			A_ZoomFactor(1.0);
 			A_Giveinventory("PB_LockScreenTilt",1);
 			A_SetCrosshair(5);
-			A_PlaySoundEx("Ironsights", "Auto");
+			A_PlaySoundEx("Ironsights", "Auto");			
 			}
 		R1F0 ABCDEF 1 A_Setroll(roll-1.2)
 		R1F0 GHIJKL 1 A_Setroll(roll+1.2)
@@ -1036,7 +1046,62 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 A_GiveInventory("HasUnloadedDMR", 1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		Goto Ready3
-
+	UnloadDualWield:
+		TNT1 A 0 A_JumpIfInventory("HasUnloadedDMR", 1, "AlreadyUnloaded")
+		TNT1 A 0 {
+			if (CountInv("RifleAmmo") <= 0 && CountInv("LeftRifleAmmo") <= 0) {
+				return state("ReadyDualWield");
+			}
+			return state("");
+		}
+        TNT1 A 0 A_JumpIfInventory("RifleAmmo",1,1)
+        Goto ReadyDualWield
+		TNT1 A 0 {
+			A_Takeinventory("Zoomed",1);
+			A_Takeinventory("ADSmode",1);
+			A_ZoomFactor(1.0);
+			A_Giveinventory("PB_LockScreenTilt",1);
+			A_SetCrosshair(5);
+			A_PlaySoundEx("Ironsights", "Auto");
+			A_ClearOverlays(10,11);
+			}
+		R3F0 ABCDEFGHIJKLMNOPQR 1
+		TNT1 A 0 A_PlaySoundEx("RIFCL_OU", "Auto")
+		R3F0 STUVWXYZ 1
+		R3F1 ABCDEF 1
+		R3F2 ABCDEFVWXYZ 1
+	RemoveBulletsDualWield:
+		TNT1 A 0 A_JumpIfInventory("RifleAmmo",1,1)
+		Goto UnloadDualWield2
+		TNT1 A 0 
+		{
+			A_Takeinventory("RifleAmmo",1);
+			A_Giveinventory("NewClip",1);
+		}
+		Goto RemoveBulletsDualWield
+	UnloadDualWield2:
+		TNT1 A 0 A_PlaySoundEx("Ironsights", "Auto")
+		R3F3 ABCDEFGHIJKLMNOPQR 1 
+		TNT1 A 0 A_PlaySoundEx("RIFCL_OU", "Auto")
+		R3F3 STUVWXYZ 1
+		R3F4 XYZ 1
+		R3F5 AB 1
+		TNT1 A 0 A_PlaySoundEx("Ironsights", "Auto")
+		R3F5 STUVWXYZ 1
+		R3F6 A 1
+	RemoveBulletsDualWield2:
+		TNT1 A 0 A_JumpIfInventory("LeftRifleAmmo",1,1)
+		Goto FinishUnloadDualWield
+		TNT1 A 0 
+		{
+			A_Takeinventory("LeftRifleAmmo",1);
+			A_Giveinventory("NewClip",1);
+		}
+		Goto RemoveBulletsDualWield2
+	FinishUnloadDualWield:
+		TNT1 A 0 A_GiveInventory("HasUnloadedDMR", 1)
+		TNT1 A 0 A_Takeinventory("Unloading",1)
+		Goto Ready3
  	Spawn:
 		RIFL A -1
 		Stop
