@@ -7,6 +7,7 @@ Class PB_Monster : Actor abstract
 	
 	bool HitBoxSpawned;
 	bool Wandering;
+	bool willBeLooking;
 	int heardOpponent;
 	
 	void HitboxerHandler() {
@@ -35,6 +36,11 @@ Class PB_Monster : Actor abstract
 	
 	void A_SmartChase() {
 	
+			if (willBeLooking)
+			{
+				// Terminate function immediately if called inside A_LookEx.
+				return;
+			}
 			// Target must be cleared out if it is a friend of the monster, else we get infinite function recursions.
 			if (target && (target is "PossessionWarperA" || isFriend(target)))
 			{
@@ -43,7 +49,9 @@ Class PB_Monster : Actor abstract
 			}
 			if (target == NULL) {
 				A_GiveInventory("Wandering",1);
+				willBeLooking = true;
 				A_LookEx();
+				willBeLooking = false;
 				A_Wander();
 				return;
 			}
