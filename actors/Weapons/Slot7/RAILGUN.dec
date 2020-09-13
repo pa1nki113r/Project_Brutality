@@ -46,7 +46,10 @@ Actor RespectRailgun : Inventory
 {
 inventory.maxamount 1
 }
-
+Actor OverloadedCell : Inventory
+{
+inventory.maxamount 1
+}
 
 // --------------------------------------------------------------------------
 //
@@ -683,18 +686,23 @@ ACTOR Rail_Gun : PB_Weapon 13204
 					A_StartSound("weapons/railgun/laser_huge", 5, CHANF_OVERLAP);
 					A_FireCustomMissile("RailgunLaserBlast1", 0, 0, 0, 0);
 					A_RailAttack(9*(5*CountInv("RailgunLaserCharge")), 0, 0, "Orange","Red", RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,"MicrowaveTrail", 0, 0, 2);
+					if(CountInv("Cell") >= 60 && GetCvar("bd_RLOverloadCell") >=1){Return A_Jump(128,"Overloaded");}
+				Return State("");
 				}
 				if(CountInv("RailgunLaserCharge") < 15) {
 					//Does not pierce more than 2 targets
 					A_StartSound("weapons/railgun/laser_small", 5, CHANF_OVERLAP);
 					A_RailAttack(9*(5*CountInv("RailgunLaserCharge")), 0, 0, "Orange","Red", RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,"MicrowaveTrail", 0, 0, 2);
+				Return State("");
 				}
 				else {
 					A_StartSound("weapons/railgun/laser_big", 5, CHANF_OVERLAP);
 					A_RailAttack(9*(5*CountInv("RailgunLaserCharge")), 0, 0, "Orange","Red", RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,"MicrowaveTrail", 0, 0, 0);
+				Return State("");
 				}
 				A_TakeInventory("RailgunLaserCharge", 60);
 				A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			Return State("");
 			}
 			R037 A 1 BRIGHT A_ZoomFactor(0.92)
 			R037 B 1 BRIGHT A_ZoomFactor(0.94)
@@ -704,7 +712,17 @@ ACTOR Rail_Gun : PB_Weapon 13204
 			R037 FG 1 
 			R037 HIJKLMNOPQRSTU 1 BRIGHT
 			Goto Ready3
-			
+		Overloaded:
+			R037 A 1 BRIGHT A_ZoomFactor(0.92)
+			R037 B 1 BRIGHT A_ZoomFactor(0.94)
+			R037 C 1 BRIGHT A_ZoomFactor(0.96)
+			R037 D 1 BRIGHT A_ZoomFactor(0.98)
+			R037 E 1 BRIGHT A_ZoomFactor(1.0)
+			R037 FG 1 
+			R037 HIJKLMNOPQRSTU 1 BRIGHT
+			TNT1 A 0 A_GiveInventory("OverloadedCell",1)
+			Goto Reload
+		
 		Fire_Scope:
 			TNT1 A 0 A_JumpIfInventory("RailgunLaserMode",1,"Fire_Scope_Laser")
 			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",12,1)
@@ -896,18 +914,23 @@ ACTOR Rail_Gun : PB_Weapon 13204
 					A_StartSound("weapons/railgun/laser_huge", 5, CHANF_OVERLAP);
 					A_FireCustomMissile("RailgunLaserBlast1", 0, 0, 0, 0);
 					A_RailAttack(9*(5*CountInv("RailgunLaserCharge")), 0, 0, "Orange","Red", RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,"MicrowaveTrail", 0, 0, 0);
+					if(CountInv("Cell") >= 60 && GetCvar("bd_RLOverloadCell") >=1){Return A_Jump(256,"Overloaded_Scope");}
+				Return State("");
 				}
 				if(CountInv("RailgunLaserCharge") < 15) {
 					//Does not pierce more than 2 targets
 					A_StartSound("weapons/railgun/laser_small", 5, CHANF_OVERLAP);
 					A_RailAttack(9*(5*CountInv("RailgunLaserCharge")), 0, 0, "Orange","Red", RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,"MicrowaveTrail", 0, 0, 2);
+				Return State("");
 				}
 				else {
 					A_StartSound("weapons/railgun/laser_big", 5, CHANF_OVERLAP);
 					A_RailAttack(9*(5*CountInv("RailgunLaserCharge")), 0, 0, "Orange","Red", RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,"MicrowaveTrail", 0, 0, 0);
+				Return State("");
 				}
 				A_TakeInventory("RailgunLaserCharge", 60);
 				A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			Return State("");
 			}
 			R040 BCDEFGHIJKLMNOPQRST 1 BRIGHT /*{
 				if(GetCvar("pb_toggle_aim_hold")) {
@@ -924,7 +947,24 @@ ACTOR Rail_Gun : PB_Weapon 13204
 				return state("");
 			}*/
 			Goto Ready3
+		Overloaded_Scope:
+			TNT1 A 0 A_GiveInventory("OverloadedCell")
+			R040 BCDEFGHIJKLMNOPQRST 1 BRIGHT {
+				if(GetCvar("pb_toggle_aim_hold")) {
+					
+					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){return state("Zoomout");}
 			
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+					
+					}
+				else {
+					if (PressingAltfire()){return state("Zoomout");}
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+				}
+				return state("");
+			}
+			Goto Reload
+
 		// I swear I'm not trying to code like Yandere Dev (if... if... if...)
 		// But hey its better than having 20 different states with "A_JumpIfInventory..."
 		// Also this is probably hands-down the most detailed reload animation featured in a Doom mod
@@ -962,9 +1002,10 @@ ACTOR Rail_Gun : PB_Weapon 13204
 			R049 ABCDEFGHIJKLMNOPQRSTUVWXY 0
 			R050 ABCDEFGHIJKLMNOPQRSTUVWXY 0
 			R051 ABCDEFGHIJKLMNOPQRSTUVWXY 0
+			RR51 CDEFGHIJKL 0
 			R052 ABC 0
 		
-			R047 ABC 1 BRIGHT {
+			R047 AB 1 BRIGHT {
 				//Blue
 				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
 				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
@@ -979,6 +1020,22 @@ ACTOR Rail_Gun : PB_Weapon 13204
 				
 					
 			}
+			R047 C 1 BRIGHT {
+				//Blue
+				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
+				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
+				if (CountInv("RailgunUnloaded") == 0 ) { A_SetWeaponSprite("R048");}
+				
+				
+				
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R04");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R050");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R051");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("OverloadedCell") >= 1 ) { A_SetWeaponSprite("RR51");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunUnloaded") == 0 ) { A_SetWeaponSprite("R052");}
+				
+					
+			}
 			R047 DEFGHIJK 1 BRIGHT {
 				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
 				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
@@ -987,10 +1044,22 @@ ACTOR Rail_Gun : PB_Weapon 13204
 				
 				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R049");}
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R050");}
-				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R051");}	
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R051");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("OverloadedCell") >= 1 ) { A_SetWeaponSprite("RR51");}
 			}
 			TNT1 A 0 A_StartSound("weapons/freezer/respect2", CHAN_AUTO, CHANF_OVERLAP)
-			R047 LMNOPQR 1 BRIGHT {
+			R047 L 1 BRIGHT {
+				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
+				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
+				
+				
+				
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R049");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R050");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R051");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("OverloadedCell") >= 1 ) { A_SetWeaponSprite("RR51");}
+			}
+			R047 MNOPQR 1 BRIGHT {
 				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
 				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
 				
@@ -1000,7 +1069,13 @@ ACTOR Rail_Gun : PB_Weapon 13204
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R050");}
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R051");}	
 			}
-			TNT1 A 0 A_FireCustomMissile ("PlasmaCaseSpawn", 60, 0, 30, -25, random (0, 160))
+			TNT1 A 0 {
+				if(CountInv("OverloadedCell") >= 1 ){
+					A_FireCustomMissile ("PlasmaCaseOLSpawn", 0, 0, 30, -25, random (0, 160));
+					A_SetInventory("OverloadedCell",0);
+					}
+				else{A_FireCustomMissile ("PlasmaCaseSpawn", 60, 0, 30, -25, random (0, 160));}
+				}
 			R047 STUVWXY 1 BRIGHT {
 				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
 				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
