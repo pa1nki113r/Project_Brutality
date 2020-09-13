@@ -92,7 +92,7 @@ ACTOR Rail_Gun : PB_Weapon 13204
 			TNT1 A 0 {
 				A_TakeInventory("RailgunInfrared", 1);
 				A_Takeinventory("InfraredActivated", 1);
-				A_Takeinventory("RailgunUnloaded",1);
+//				A_Takeinventory("RailgunUnloaded",1);
 				A_Takeinventory("Unloading",1);
 				A_StopSound(3);
 				A_StopSound(6);
@@ -116,7 +116,7 @@ ACTOR Rail_Gun : PB_Weapon 13204
 			
 		Select:
 			TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
-			TNT1 A 0 A_Takeinventory("RailgunUnloaded",1)
+//			TNT1 A 0 A_Takeinventory("RailgunUnloaded",1)
 			TNT1 A 0 A_Takeinventory("Unloading",1)
 			TNT1 A 0 A_TakeInventory("RifleSelected",1)
 			TNT1 A 0 A_TakeInventory("CarbineSelected",1)
@@ -369,6 +369,7 @@ ACTOR Rail_Gun : PB_Weapon 13204
 			}
 			TNT1 A 0 A_JumpIfInventory("RailgunLaserMode",1,"SwitchToRailgun")
 		SwitchToLaser:
+			TNT1 A 0 A_Print ("Firemode: Laser")
 			TNT1 A 0 A_Giveinventory("RailgunLaserMode",1)
 			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") == 0, "SwitchToLaser_Empty")
 			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") < 12, "SwitchToLaser_Partial")
@@ -404,6 +405,7 @@ ACTOR Rail_Gun : PB_Weapon 13204
 			Goto Ready3
 			
 		SwitchToRailgun:
+			TNT1 A 0 A_Print ("Firemode: Rail")
 			TNT1 A 0 A_Takeinventory("RailgunLaserMode",1)
 			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") == 0, "SwitchToRailgun_Empty")
 			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") < 12, "SwitchToRailgun_Partial")
@@ -760,7 +762,7 @@ ACTOR Rail_Gun : PB_Weapon 13204
 					A_SetAngle(angle-0.2, SPF_INTERPOLATE);
 				}
 			}
-			R038 EFGHIJKLMNOPQRSTUVWXY 1 BRIGHT {
+			R038 EFGHIJKLMNOPQRSTUVWXY 1 BRIGHT /*{
 				if(GetCvar("pb_toggle_aim_hold")) {
 					
 					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){return state("Zoomout");}
@@ -773,7 +775,7 @@ ACTOR Rail_Gun : PB_Weapon 13204
 					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
 				}
 				return state("");
-			}
+			}*/
 			Goto Ready3
 			
 		Fire_Scope_Laser:
@@ -930,7 +932,7 @@ ACTOR Rail_Gun : PB_Weapon 13204
 				A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
 			Return State("");
 			}
-			R040 BCDEFGHIJKLMNOPQRST 1 BRIGHT {
+			R040 BCDEFGHIJKLMNOPQRST 1 BRIGHT /*{
 				if(GetCvar("pb_toggle_aim_hold")) {
 					
 					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){return state("Zoomout");}
@@ -943,7 +945,7 @@ ACTOR Rail_Gun : PB_Weapon 13204
 					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
 				}
 				return state("");
-			}
+			}*/
 			Goto Ready3
 		Overloaded_Scope:
 			TNT1 A 0 A_GiveInventory("OverloadedCell")
@@ -970,7 +972,7 @@ ACTOR Rail_Gun : PB_Weapon 13204
 		Reload:
 			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",60,"Ready3")
 			TNT1 A 0 A_JumpIfInventory("Cell",1,1)
-			Goto Ready3
+			Goto NoAmmo
 				TNT1 A 0 {
 					A_SetCrosshair(0);
 					A_ZoomFactor(1.0);
@@ -1221,16 +1223,28 @@ ACTOR Rail_Gun : PB_Weapon 13204
 				A_Takeinventory("RailgunUnloaded",1);
 			}
 			Goto InsertBullets	
-
-
-
+//I had to make this NoAmmo state to fix a major bug with the game crashing when you 
+//attempted to fire the Railgun in rail mode with no reserve cell ammo.
+	NoAmmo: 
+		TNT1 A 0 A_JumpIfInventory("RailgunZoomed",1,"NoAmmoScoped")
+		R007 E 1 {
+		if(CountInv("RailgunLaserMode") == 1) {A_SetWeaponSprite("R013");}
+		}
+		Goto Ready3
+	NoAmmoScoped: // Same for the scoped mode
+		R007 G 1 {
+		a_setcrosshair(5);
+		if(CountInv("RailgunLaserMode") == 1) {A_SetWeaponSprite("R030");}
+		}
+		Goto Ready3
 	AlreadyUnloaded:
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		Goto Ready3
 	
 	Unload:
+		TNT1 A 0 A_Takeinventory("Unloading",1) //Prevents crash when unloading with no railgun ammo.
 		TNT1 A 0 A_JumpIfInventory("RailgunUnloaded", 1, "AlreadyUnloaded")
-        TNT1 A 0 A_JumpIf(CountInv("RailgunUnloaded") < 1,1)
+		TNT1 A 0 A_JumpIfInventory("RailgunAmmo", 1,1)
         Goto Ready3
 		TNT1 A 0 {
 			A_SetCrosshair(0);
@@ -1287,13 +1301,13 @@ ACTOR Rail_Gun : PB_Weapon 13204
 			}
 			R053 ZYXWVUPONMLKJIHGF 1 BRIGHT {
 				//Blue
-				if (CountInv("Cell") < 60) { A_SetWeaponSprite("R060");}
+				if (CountInv("Cell") < 60) { A_SetWeaponSprite("R059");}
 				if (CountInv("RailgunAmmo") == 0 && CountInv("Cell") >= 60) { A_SetWeaponSprite("R056");}
 				if (CountInv("RailgunAmmo") == 0 && CountInv("Cell") < 60) { A_SetWeaponSprite("R062");}
 				if (CountInv("RailgunAmmo") == 0 && CountInv("Cell") <= 30) { A_SetWeaponSprite("R058");}
 				//Red
 				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R064");}
-				if (CountInv("RailgunLaserMode") == 1 && CountInv("Cell") < 60) { A_SetWeaponSprite("R071");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("Cell") < 60) { A_SetWeaponSprite("R070");}
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("Cell") >= 60) { A_SetWeaponSprite("R067");}
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("Cell") < 60) { A_SetWeaponSprite("R073");}
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("Cell") <= 30) { A_SetWeaponSprite("R069");}
@@ -1312,13 +1326,13 @@ ACTOR Rail_Gun : PB_Weapon 13204
 			
 			R053 EDCBA 1 BRIGHT {
 				//Blue
-				if (CountInv("Cell") < 60) { A_SetWeaponSprite("R060");}
+				if (CountInv("Cell") < 60) { A_SetWeaponSprite("R059");}
 				if (CountInv("RailgunAmmo") == 0 && CountInv("Cell") >= 60) { A_SetWeaponSprite("R056");}
 				if (CountInv("RailgunAmmo") == 0 && CountInv("Cell") < 60) { A_SetWeaponSprite("R062");}
 				if (CountInv("RailgunAmmo") == 0 && CountInv("Cell") <= 30) { A_SetWeaponSprite("R058");}
 				//Red
 				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R064");}
-				if (CountInv("RailgunLaserMode") == 1 && CountInv("Cell") < 60) { A_SetWeaponSprite("R071");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("Cell") < 60) { A_SetWeaponSprite("R070");}
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("Cell") >= 60) { A_SetWeaponSprite("R067");}
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("Cell") < 60) { A_SetWeaponSprite("R073");}
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("Cell") <= 30) { A_SetWeaponSprite("R069");}
