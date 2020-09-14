@@ -7,6 +7,8 @@ Class PB_Monster : Actor abstract
 	
 	bool HitBoxSpawned;
 	bool Wandering;
+	bool willBeLooking;
+	int heardOpponent;
 	
 	void HitboxerHandler() {
 		
@@ -21,25 +23,44 @@ Class PB_Monster : Actor abstract
 		
 		if (CheckInventory("HeadshotToken",1) && HitBoxSpawned == False) {
 			A_SpawnItem("PB_HeadshotHitbox");
-			A_SpawnItem("PB_LegHitbox");
+			if (!CheckInventory("IsProning", 1)){
+				A_SpawnItem("PB_LegHitbox");
+			}
 			HitBoxSpawned = True;
 			HitBoxTimerOld = Level.MapTime;
 		}
 		
 	}
-
+	
+	
+	
 	void A_SmartChase() {
+	
+			if (willBeLooking)
+			{
+				// Terminate function immediately if called inside A_LookEx.
+				return;
+			}
+			// Target must be cleared out if it is a friend of the monster, else we get infinite function recursions.
+			if (target && (target is "PossessionWarperA" || isFriend(target)))
+			{
+				A_ClearTarget();
+				target = NULL;
+			}
 			if (target == NULL) {
 				A_GiveInventory("Wandering",1);
+				willBeLooking = true;
+				A_LookEx();
+				willBeLooking = false;
 				A_Wander();
+				return;
 			}
-			
-			if (CheckIfCloser(target, 200)) {
+			if (CheckIfCloser(target, 150) && !CheckIfCloser(target, 50) && CheckInventory("IsPlayer", 1, AAPTR_TARGET)) {
 				SetStateLabel("Fallback");
 			}
-			if (CheckSight(target) == true) {
+			if (CheckSight(target) == true || CheckIfCloser(target, 500)) {
 				EnemyLastSighted = Level.MapTime;
-				A_TakeInventory("Wandering",1);
+				A_TakeInventory("Wandering",36);			
 				A_Chase();
 			}
 			else if (CheckSight(target) == false && abs(Level.MapTime - EnemyLastSighted) < 360) {
@@ -47,7 +68,7 @@ Class PB_Monster : Actor abstract
 			}
 			else {
 				A_GiveInventory("Wandering",1);
-				A_Wander();
+				A_Wander(CHF_NORANDOMTURN);
 			}
 	}
 
@@ -62,6 +83,7 @@ Class PB_Monster : Actor abstract
 
 	override void PostBeginPlay() {
 		Super.PostBeginPlay(); // call the super function for virtual functions so we don't break shit if GZdoom update.
+		heardOpponent = 0;
 		HitBoxSpawned = False;
 	
 	}

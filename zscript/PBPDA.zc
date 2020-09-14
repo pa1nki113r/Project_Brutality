@@ -29,6 +29,10 @@ class PB_PDAWeaponContainer : Inventory
 		Super.AttachToOwner(other);
 		InitializePDATexts();
 	}
+	static clearscope double lerp(double v0, double v1, double t)
+	{
+		return (1 - t) * v0 + t * v1;
+	}
 	void InitializePDATexts()
 	{
 		int lump = Wads.FindLump("PDAMONST");
@@ -224,6 +228,24 @@ class PB_EventHandler : EventHandler
 	transient ui Array<PB_PDAUi_Object> UiObjects;
 	transient ui PB_PDAUi_Object descriptiondialog;
 	transient ui PB_PDAWeaponContainer weaptextcontainer;
+	override void WorldThingDamaged(WorldEvent e)
+	{
+		if (e.thing is "DoomImp" 
+		&& e.thing.target
+		&& e.thing.bCOUNTKILL
+		&& e.thing.bISMONSTER
+		&& e.DamageType == "Melee"
+		&& !e.thing.target.player)
+		{
+			e.thing.A_TakeInventory("SKImp",1); // Make sure it does not disappear.
+			e.thing.A_TakeInventory("SKImp2",1); 
+			e.thing.A_TakeInventory("SKImp3",1); 
+			e.thing.A_TakeInventory("SKDarkImpNami",1);
+			e.thing.A_TakeInventory("SKDarkImpNether",1);
+			e.thing.A_TakeInventory("SKDarkImpST",1);
+			e.thing.A_TakeInventory("SKDarkImpVoid",1);
+		}
+	}
 	override void WorldThingDied(WorldEvent e)
 	{
 		if (e.thing && e.thing.target
@@ -409,6 +431,19 @@ class PB_EventHandler : EventHandler
 			MouseHeldDown = false;
 		}
 		if (!DontTick) uiTics++;
+		ThinkerIterator ti = ThinkerIterator.Create("PlayerPawn");
+		PlayerPawn a;
+		while (a = PlayerPawn(ti.Next()))
+		{
+			if (a.player && a.player.morphTics <= 5)
+			{
+				switch(a.player.mo.GetClassName())
+				{
+					case 'RevenantPlayer': a.player.mo.ACS_NamedExecuteAlways("RevenantMorphModeDisable");break;
+					case 'BaronPlayer': a.player.mo.ACS_NamedExecuteAlways("BaronMorphModeDisable");break;
+				}
+			}
+		}
 	}
 	override void NetworkProcess(ConsoleEvent e)
 	{
@@ -491,6 +526,8 @@ class PB_EventHandler : EventHandler
 				DeltaMouseY = e.Args[1];
 				MouseX += DeltaMouseX;
 				MouseY -= DeltaMouseY;
+				MouseX = clamp(MouseX, 0, Screen.GetWidth());
+				MouseY = clamp(MouseY, 0, Screen.GetHeight());
 			}
 		}
 		if (e.Name ~== "exitpda")
@@ -604,19 +641,12 @@ class PB_EventHandler : EventHandler
 			{
 				Screen.DrawLine(iii,0,iii,Screen.GetHeight(),"Cyan",255/2);
 			}
-			int pdagradAlphaInc = Screen.GetHeight() / (255/2);
-			int incr, alphagrad;
+			int height = Screen.GetHeight();
 			for (int inc = 0; inc < Screen.GetHeight(); inc += 1)
 			{
-				incr += 1;
-				if (incr >= pdagradAlphaInc)
-				{
-					incr = 0;
-					alphagrad += 1;
-				}
-				Screen.DrawLine(0,inc,Screen.GetWidth(),inc,"Cyan",alphagrad);
+				Screen.DrawLine(0,inc,Screen.GetWidth(),inc,"Cyan",255 * inc / height);
 			}
-			Screen.DrawTexture(TexMan.CheckForTexture("uac_00p",TexMan.Type_Any),false,Screen.GetWidth() / 2,Screen.GetHeight() / 2,DTA_320x200,true,DTA_CleanNoMove_1,true);
+			Screen.DrawTexture(TexMan.CheckForTexture("PDAUACICO",TexMan.Type_Any),true,0,0,DTA_Clean,true);
 			if (UiObjects.Size() >= 1)
 			{
 				for (int i = 0; i < UiObjects.Size(); i++)

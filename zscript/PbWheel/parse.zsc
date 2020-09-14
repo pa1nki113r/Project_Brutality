@@ -1,0 +1,188 @@
+enum E_PyWheelTokens
+{
+	PTK_Identifier,
+	PTK_Number,
+	PTK_String,
+	PTK_EOF,
+	PTK_Comma,
+    PTK_Minus,
+    PTK_ParenO,
+    PTK_ParenC,
+    PTK_BraceO,
+    PTK_BraceC,
+	PTK_Slash,
+	PTK_Semicolon,
+    PTK_Unknown,
+}
+
+Class PyWheel_Token
+{
+    E_PyWheelTokens type;
+    string value;
+}
+
+Class PyWheel_Tokenizer
+{
+	string lumpString;
+	int currentPos;
+	
+	static PyWheel_Tokenizer Create(string input)
+    {
+        let tok = new("PyWheel_Tokenizer");
+        tok.lumpString = input;
+        return tok;
+    }
+	
+	static bool isWhitespace (int p)
+	{
+        switch(p)
+        {
+			case 9:
+			case 10:
+			case 13:
+			case 11:
+			case 12:
+			case 32:
+				 return true;
+			break;
+			default:
+				 return false;
+			break;
+        }
+		return false;
+	}
+	
+	static bool isNewline (int p)
+	{
+        switch(p)
+        {
+			case 10:
+				 return true;
+			break;
+			default:
+				 return false;
+			break;
+        }
+		return false;
+	}
+	
+	static bool IsDigit(string c)
+    {
+        int cc = c.ByteAt(0);
+        return cc <= 57 && cc >= 48;
+    }
+
+    static bool IsLetter(string c)
+    {
+        return IsLower(c) || IsUpper(c);
+    }
+
+    static bool IsLetterOrDigit(string c)
+    {
+        return IsLetter(c) || IsDigit(c);
+    }
+
+    static bool IsLower(string c)
+    {
+        int cc = c.ByteAt(0);
+        return cc <= 122 && cc >= 97;
+    }
+
+    static bool IsUpper(string c)
+    {
+        int cc = c.ByteAt(0);
+        return cc <= 90 && cc >= 65;
+    }
+	
+	virtual PyWheel_Token GoThru()
+	{
+		while(isWhitespace(lumpString.ByteAt(currentPos))&&currentPos<=lumpString.Length())
+		{
+			currentPos++;
+		}
+		let tk = new("PyWheel_Token");
+		tk.type = PTK_Unknown;
+		
+		if(currentPos>lumpString.Length())
+		{
+			tk.type = PTK_EOF;
+			//Console.Printf("~ END OF FILE ~");
+			return tk;
+		}
+		//Console.Printf("\ctRead "..lumpString.ByteAt(currentPos));
+		switch(lumpString.ByteAt(currentPos))
+		{
+			case 123:
+				tk.type = PTK_BraceO;
+				tk.value = "{";
+				break;
+			case 125:
+				tk.type = PTK_BraceC;
+				tk.value = "}";
+				break;
+			case 44:
+				tk.type = PTK_Comma;
+				tk.value = ",";
+				break;
+			case 40: // '('
+				tk.type = PTK_ParenO;
+				tk.value = "(";
+				break;
+			case 41: // ')'
+				tk.type = PTK_ParenC;
+				tk.value = ")";
+				break;
+			case 47: // '/'
+				tk.type = PTK_Slash;
+				while(!isNewline(lumpString.ByteAt(currentPos))&&currentPos<=lumpString.Length())
+				{
+					tk.value.AppendFormat("%s", lumpString.Mid(currentPos,1));
+					currentPos++;
+				}
+				break;
+			case 45: // '-'
+				tk.type = PTK_Minus;
+				tk.value = "-";
+				break;
+			case 59: // '-'
+				tk.type = PTK_Semicolon;
+				tk.value = ";";
+				break;
+			case 34: // '"'
+			case 39: // '''
+				tk.type = PTK_String;
+				currentPos++;
+				while(/* !isWhitespace(lumpString.ByteAt(currentPos))&&*/lumpString.ByteAt(currentPos)!=34&&currentPos<=lumpString.Length())
+				{
+					tk.value.AppendFormat("%s", lumpString.Mid(currentPos,1));
+					currentPos++;
+				}
+				break;
+			default:
+				if(IsLetter(lumpString.Mid(currentPos,1)))
+				{
+					tk.type = PTK_Identifier;
+					while(!isWhitespace(lumpString.ByteAt(currentPos))&&lumpString.ByteAt(currentPos)!=44/*&&IsLetterOrDigit(lumpString.Mid(currentPos,1))*/&&currentPos<=lumpString.Length())
+					{
+						tk.value.AppendFormat("%s", lumpString.Mid(currentPos,1));
+						currentPos++;
+					}
+					currentPos--;
+				}
+				else if(IsDigit(lumpString.Mid(currentPos,1)))
+				{
+					tk.type = PTK_Number;
+					while(!isWhitespace(lumpString.ByteAt(currentPos))&&lumpString.ByteAt(currentPos)!=59/*&&IsDigit(lumpString.Mid(currentPos,1))*/&&currentPos<=lumpString.Length())
+					{
+						tk.value.AppendFormat("%s", lumpString.Mid(currentPos,1));
+						currentPos++;
+					}
+					currentPos--;
+				}
+				break;
+		}
+		//Console.Printf(currentPos..". "..tk.value.." ("..tk.type..")");
+		currentPos++;
+		return tk;
+	}
+}

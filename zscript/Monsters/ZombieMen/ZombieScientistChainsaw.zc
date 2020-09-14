@@ -4,31 +4,36 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 {
 		Default 
 		{
-			Health 150;
+			Health 125;
 			MeleeRange 200;
 		}
 		States
 		{
 			Spawn:
-				TNT1 A 0 A_GiveInventory("SKLabGuy", 1);
+				5CZA A 1;
+				TNT1 A 0 A_GiveInventory("SKChainsawZombie", 1);
 			Stand:
 				5CZA A 10 A_Look();
 				Loop;
 			See:
-				TNT1 A 0 A_TakeInventory("SKLabGuy", 1);
-				TNT1 A 0 A_playsound("weapons/chainsaw/idle",7);
+				TNT1 A 0 {
+					A_TakeInventory("SKChainsawZombie", 1);
+					EnemyLastSighted = Level.MapTime;
+				}
+			SeeContinue:
+				TNT1 A 0 A_StartSound("weapons/chainsaw/idle",7);
 				5CZA AABB 2 A_SmartChase();
-				TNT1 A 0 A_PlaySound("humans/step", 3);
+				TNT1 A 0 A_StartSound("humans/step", 3);
 				5CZA CCDD 2 A_SmartChase();
-				TNT1 A 0 A_PlaySound("humans/step",3);
+				TNT1 A 0 A_StartSound("humans/step",3);
 				TNT1 A 0 A_JumpIfInventory("Wandering",16,"LookAround");
 				Loop;
 			LookAround:
 				TNT1 A 0 A_ClearTarget();
 				TNT1 A 0 A_TakeInventory("Wandering", 36);
-				TNT1 A 0 A_GiveInventory("SKLabGuy", 1);
+				TNT1 A 0 A_GiveInventory("SKChainsawZombie", 1);
 				TNT1 A 0 A_Jump(200, 2);
-				TNT1 A 0 A_PlaysoundEx("monsters/zombie/searching", "Auto");
+				TNT1 A 0 A_StartSound("monsters/zombie/searching", CHAN_AUTO);
 				5CZA AAAA 10 A_Look();
 				Goto See;
 		
@@ -38,13 +43,14 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			////////////////
 			
 			Melee:
+				TNT1 A 0 A_JumpIfInventory ("SKLabGuy", 1, "Stand");
 				TNT1 A 0 A_Jump(224, 2);
 				TNT1 A 0 A_CombatDialogueHandler();
 				
 				TNT1 A 0 A_JumpIfCloser(80, "MeleeStart");
-				TNT1 A 0 A_PlaySound("sawswing", 6,0.5);
+				TNT1 A 0 A_StartSound("sawswing", 6, CHANF_DEFAULT, 0.5);
 			MeleeRushStart:
-				TNT1 A 0 A_playsound("weapons/chainsaw/loop3", 7,0.7,1);
+				TNT1 A 0 A_StartSound("weapons/chainsaw/loop3", 7, CHANF_DEFAULT, 0.7,1);
 			MeleeRush:
 				TNT1 A 0 A_JumpIfTargetInLos(1);
 				Goto MeleeRushGiveUp;
@@ -55,50 +61,50 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 					A_FaceTarget();
 					A_Recoil(-1);
 				}
-				TNT1 A 0 A_PlaySound("humans/step", 3);
+				TNT1 A 0 A_StartSound("humans/step", 3);
 				TNT1 A 0 A_JumpIfCloser(90, "MeleeStart");
-				NULL A 0 A_JumpIf (momz < -8, "InAir");
+				NULL A 0 A_JumpIf (Vel.Z < -8, "InAir");
 				5CZC CCDD 1 {
 					A_FaceTarget();
 					A_Recoil(-1);
 				}
-				TNT1 A 0 A_PlaySound("humans/step", 3);
+				TNT1 A 0 A_StartSound("humans/step", 3);
 				TNT1 A 0 A_JumpIfCloser(90, "MeleeStart");
-				NULL A 0 A_JumpIf (momz < -8, "InAir");
+				NULL A 0 A_JumpIf (Vel.Z < -8, "InAir");
 				TNT1 A 0 A_JumpIfCloser(500, "MeleeRush");
 			MeleeRushGiveUp:
 				TNT1 A 0 A_StopSound(7);
-				TNT1 A 0 A_Playsound("CSAWSTAT", 7);
+				TNT1 A 0 A_StartSound("CSAWSTAT", 7);
 				Goto See;
 			MeleeStart:
 				TNT1 A 0 {
 					A_Stop();
-					A_PlaySound("sawswing", 1, 0.5);
+					A_StartSound("sawswing", 1, CHANF_DEFAULT, 0.5);
 				}
 				5CZC GH 3 A_FaceTarget();
 			MeleeLoop:
-				TNT1 A 0 A_playsound("weapons/chainsaw/loop", 7,0.5);
+				TNT1 A 0 A_StartSound("weapons/chainsaw/loop", 7, CHANF_DEFAULT, 0.5);
 				5CZA EFGHGF 3 { 
 					A_FaceTarget();
-					A_CustomMissile("ZombieChainsawAttack",20,0,0,0);
+					A_SpawnProjectile("ZombieChainsawAttack",20,0,0,0);
 				}
 				TNT1 A 0 A_JumpIfCloser(90, "MeleeLoop");
 				TNT1 A 0 A_StopSound(7);
-				TNT1 A 0 A_Playsound("CSAWSTAT", 7);
+				TNT1 A 0 A_StartSound("CSAWSTAT", 7);
 				Goto See;
 			
 			Jump:
-				TNT1 A 0 A_PlaySound("jump");
+				TNT1 A 0 A_StartSound("jump");
 				5CZC E 1 A_FaceTarget();
 				5CZC E 2 {
 					ThrustThingZ(0,38,0,1);
 					A_Recoil (-10);
 				}
 			InAir:
-				5CZC E 2 A_JumpIf (momz == 0, "Landing");
+				5CZC E 2 A_JumpIf (Vel.Z == 0, "Landing");
 				Loop;
 			Landing:
-				TNT1 A 0 A_PlaySound("land");
+				TNT1 A 0 A_StartSound("land");
 				5CZC F 6;
 				5CZA A 4;
 				Goto See;
@@ -110,21 +116,21 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			Pain.Head:
 				TNT1 A 0 A_StopSound(7);
 				TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
-				TNT1 A 0 A_CustomMissile ("NashGoreBloodSpurt", 52, 0, random (0, 360), 2, random (0, 160));
+				TNT1 A 0 A_SpawnProjectile ("NashGoreBloodSpurt", 52, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				5CZA I 6 {
 					A_Pain();
 					A_Stop();
 				}
-				TNT1 AA 0 A_CustomMissile ("PB_Teeth", 50, 0, random (0, 360), 2, random (0, 160));
+				TNT1 AA 0 A_SpawnProjectile ("PB_Teeth", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				5OSH ABBBA 4;
 				TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
 				TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
 				TNT1 A 0 A_Jump(180, "See");
-				TNT1 A 0 A_PlaysoundEx("monsters/zombie/infight","Auto");
+				TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 				Goto See;
 				
-			Pain.Melee:
-				TNT1 A 0 A_JumpIfInventory ("SKLabguy", 1, "StealthKill");
+		Pain.Melee:
+			TNT1 A 0 A_JumpIfInventory ("SKChainsawZombie", 1, "StealthKill");
 			Pain:
 				TNT1 A 0 A_StopSound(7);
 				TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
@@ -132,8 +138,24 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
 				TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
 				TNT1 A 0 A_Jump(180, "See");
-				TNT1 A 0 A_PlaysoundEx("monsters/zombie/infight","Auto");
+				TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 				Goto See;
+			StealthKill:
+				TNT1 A 0 A_TakeInventory("SKChainsawZombie", 1);
+				5CZA I 1 A_FaceTarget();
+				TNT1 A 0 A_JumpIfInTargetInventory("FistsSelected", 1, 2);
+				5CZA I 1;
+				Goto Pain;
+				TNT1 A 0 {
+					A_GiveToTarget("GoFatality", 1);
+					A_GiveToTarget("SKChainsawZombie", 1);
+					A_NoBlocking();
+					A_Die("Stealthy");
+				}
+				Stop;
+			Death.Stealthy:
+				TNT1 A 0;
+				Stop;
 				
 			Downed:
 				5S11 C 4;
@@ -147,8 +169,8 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Pain");
 			5CZA G 1 {
-					A_ChangeFLag("NODROPOFF", 0);
-					A_ChangeFlag("FORCEXYBILLBOARD", 1);
+					bNODROPOFF = false;
+					bFORCEXYBILLBOARD = true;
 					A_TakeInventory("SKZombieman", 1);
 					A_GiveInventory("IsDown", 1);
 					A_Pain();
@@ -165,8 +187,8 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Pain");
 			5PO4 U 1 {
-					A_ChangeFLag("NODROPOFF", 0);
-					A_ChangeFlag("FORCEXYBILLBOARD", 1);
+					bNODROPOFF = false;
+					bFORCEXYBILLBOARD = true;
 					A_TakeInventory("SKZombieman", 1);
 					A_GiveInventory("IsDown", 1);
 					A_Pain();
@@ -181,7 +203,7 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				A_GiveInventory ("FallingHeight", 1);
 				A_CheckFloor ("GetUp");
 			}
-			NULL A 0 A_JumpIf (momz == 0, "GetUp");
+			NULL A 0 A_JumpIf (Vel.Z == 0, "GetUp");
 			Loop;
 		
 		
@@ -191,26 +213,25 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 {
 				A_TakeInventory("FallingHeight", 100);
 				A_Stop();
-				A_ChangeFlag("GHOST", 1);
-				A_PlaySound("BODYF",6);
+				A_StartSound("BODYF",6);
 			}
-			5S11 AAAAAAAAAA 5 A_JumpIf(momz < 0, "FallingAfterImpact");
+			5S11 AAAAAAAAAA 5 A_JumpIf(Vel.Z < 0, "FallingAfterImpact");
 			5S11 B 8 {
 				A_FaceTarget();
 				A_TakeInventory("IsDown", 1);
-				A_ChangeFlag("FORCEXYBILLBOARD", 0);
+				bFORCEXYBILLBOARD = false;
 			}
 			5CZC F 6;
 			5CZA A 6;
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
 			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
-			TNT1 A 0 A_PlaysoundEx("monsters/zombie/infight","Auto");
+			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 			Goto See;
 		 
 		FallingDie:
 			TNT1 A 0 {
-				A_ChangeFlag("COUNTKILL", 0);
-				A_ChangeFlag("SHOOTABLE", 0);
+				bSHOOTABLE = false;
+				bCOUNTKILL = false;
 				A_SpawnItem("SplatteredSmall");
 			}
 			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 32, "Death.Stomp");
@@ -219,16 +240,16 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		FallingDeath:
 			TNT1 A 0 {
 				A_Scream();
-				A_CustomMissile ("PB_XDeath1", 32, 0, random (0, 360), 2, random (50, 130));
-				A_CustomMissile ("PB_XDeath1", 32, 0, random (0, 360), 2, random (50, 130));
-				A_CustomMissile ("PB_XDeath1", 32, 0, random (0, 360), 2, random (50, 130));
-				A_CustomMissile ("PB_XDeath1", 32, 0, random (0, 360), 2, random (50, 130));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 				}
 			5S11 C 4;
 			5SMS L 2 {
-				A_PlaySound("BODYF",6);
+				A_StartSound("BODYF",6);
 				A_SpawnItem ("GrowingBloodPool");
-				A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+				A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 				A_SpawnItem ("DeadFormerScientistChainsaw");
 			}
 			Stop;
@@ -240,10 +261,9 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_JumpIfInventory("Enraged", 1, "Missile");
 			5CZA B 1 {
 				A_Pain();
-				A_ChangeFlag("FASTER", 1);
-				A_ChangeFlag("MISSILEMORE", 1);
-				A_ChangeFlag("MISSILEEVENMORE", 1);
-				A_PlaySound("grunt/sight");
+				bMISSILEMORE = true;
+				bMISSILEEVENMORE = true;
+				A_StartSound("grunt/sight");
 				A_FaceTarget();
 				A_GiveInventory("Enraged", 1);
 				}
@@ -291,7 +311,7 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		PlayerActionDialogue:
 			TNT1 A 0 {
 				if (A_JumpIfInTargetInventory("PlayerIsThrowingAGrenade",1, 1)) {
-					A_PlaySoundEx("monsters/zombie/player_grenade", "Auto");
+					A_StartSound("monsters/zombie/player_grenade", CHAN_AUTO);
 				}
 			}
 			Goto Avoid;
@@ -324,10 +344,10 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			5CZC E 8 A_SetAngle(angle, SPF_INTERPOLATE);
 		DivingLoop:
 			5CZC E 1 A_CheckFloor ("DiveStop");
-			5CZC E 1 A_JumpIf (momz == 0, "DiveStop");
+			5CZC E 1 A_JumpIf (Vel.Z == 0, "DiveStop");
 			Loop;
 		DiveStop:
-			TNT1 A 0 A_PlaySoundEx("BODYF", "Auto");
+			TNT1 A 0 A_StartSound("BODYF", CHAN_AUTO);
 			5CZC F 12 A_Stop();
 			5CZC A 6;
 			Goto See;
@@ -348,10 +368,11 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		Death.KillMe:
 		Death.Taunt:
 		Death.Avoid:
-			TNT1 A 0;
-			TNT1 A 0 A_ChangeFlag("THRUACTORS", 1);
-			TNT1 A 0 A_ChangeFlag("COUNTKILL", 0);
-			TNT1 A 0 A_SpawnItemEx ("PB_ZombieScientistChainsaw",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION |SXF_TRANSFERSPECIAL| SXF_TRANSFERAMBUSHFLAG ,0);
+			TNT1 A 0 {
+				bTHRUACTORS = true;
+				bCOUNTKILL = false;
+				A_SpawnItemEx ("PB_ZombieScientistChainsaw",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION |SXF_TRANSFERSPECIAL| SXF_TRANSFERAMBUSHFLAG ,0);
+			}
 			Stop;
 			
 		Death:
@@ -361,64 +382,64 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_Jump(256, "DeathMirror", "Death2", "BaseDeath");
 		BaseDeath:
 			5SMS H 5;
-			TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			5SMS I 5 A_Scream();
 			5SMS J 5 A_NoBlocking();
 			5SMS K 5;
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem ("DeadFormerScientistChainsaw");
 			Stop;
 		
 		Death2:
 			5CZA J 5;
-			TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			5CZA K 5 A_Scream();
 			5CZA L 5 A_NoBlocking();
 			5CZA M 5;
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem ("DeadLabguy5CZAN");
 			Stop;
 	
 		DeathMirror:
 			5SMS M 5;
-			TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			5SMS N 5 A_Scream();
 			5SMS O 5 A_NoBlocking();
 			5SMS P 5;
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem ("DeadLabguy5SMSQ");
 			Stop;
 		
 		DeathNoGuts:
-			TNT1 A 0 A_CustomMissile ("MuchBlood", 30, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AA 0 A_CustomMissile ("XDeath1", 30, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AAA 0 A_CustomMissile ("Instestin", 28, 0, random (150, 210), 2, random (0, 40));
-			TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 A_SpawnProjectile ("MuchBlood", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AA 0 A_SpawnProjectile ("XDeath1", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAA 0 A_SpawnProjectile ("Instestin", 28, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			5SMS H 5 A_Scream();
 			TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem ("ZombieScientistChainsawDyingGuts");
 			Stop;
 			
 		DeathAccident:
 			TNT1 A 0 A_Scream();
 			TNT1 A 0 A_NoBlocking();
-			//TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			//TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			TNT1 A 0 A_SpawnItem ("DyingChainsawScientistAccident");
 			Stop;
 			
 
 		 Death.Arm:
 			TNT1 A 0 {
-				A_CustomMissile ("XDeathLabGuyArm", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallGib", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallGib", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_MuchBlood2", 35, 0, random (0, 360), 2, random (0, 160));
-				A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+				A_SpawnProjectile ("XDeathLabGuyArm", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_MuchBlood2", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 				A_NoBlocking();
 				A_Scream();
 			}
@@ -433,28 +454,28 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		Death.cut:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 A_Jump(32, "Death.arm");
-			TNT1 A 0 A_CustomMissile ("PB_MuchBlood", 35, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_RipZombieScientistChainsaw", 0, 0, random (0, 360), 2, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_RipZombieScientistChainsaw", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_XScream();
 			TNT1 O 0 A_NoBlocking();
-			TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			LP07 A 1 {
 				A_FaceTarget();
 				for (int i = 0; i < 4; i++) {	
-					A_CustomMissile ("PB_SmallGib", 32, 0, random (0, 360), 2, random (0, 40));
-					A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (0, 360), 2, random (0, 40));
+					A_SpawnProjectile ("PB_SmallGib", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 				}
 				
-				A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-				A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			}
 			LP07 AAAAAAAAA 2 {
-				A_CustomMissile ("PB_BloodmistLarge", 32, 0, random (0, 360), 2, random (0, 40));
-				A_CustomMissile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), 2, random (0, 40));
+				A_SpawnProjectile ("PB_BloodmistLarge", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			}
 			LP07 BC 8;
-			TNT1 A 0 A_PlaySound("BODYF",6);
-			LP07 DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD 2 A_CustomMissile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), 2, random (0, 40));
+			TNT1 A 0 A_StartSound("BODYF",6);
+			LP07 DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItem ("DeadScientistLP07");
 			Stop;
@@ -473,7 +494,7 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			Stop;
 			
 		 Death.LegMassacre:
-			TNT1 A 0 A_CustomMissile ("PB_MuchBlood2", 15, 0, random (0, 360), 2, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood2", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItem ("ZombieLegOnFoot");
 			POS7 B 1 A_Scream();
 			TNT1 A 0 A_NoBlocking();
@@ -484,17 +505,17 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 A_XScream();
 			TNT1 O 0 A_NoBlocking();
-			TNT1 A 0 A_CustomMissile ("PB_MuchBlood", 35, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeath4", 40, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AAA 0 A_CustomMissile ("PB_SmallGib", 42, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_RipZombieScientistChainsaw2", 0, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeath4", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_SmallGib", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_RipZombieScientistChainsaw2", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			LP06 AB 6;
-			LP06 CCCCCCCCCCCCCCCCCC 1 A_CustomMissile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), 2, random (0, 40));
+			LP06 CCCCCCCCCCCCCCCCCC 1 A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			LP06 D 8;
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
-			LP06 EEEEEEEEEEEEEEEEEEEE 2 A_CustomMissile("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 90));
+			TNT1 A 0 A_StartSound("BODYF",6);
+			LP06 EEEEEEEEEEEEEEEEEEEE 2 A_SpawnProjectile("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 90));
 			TNT1 A 0 A_SpawnItem("DeadScientistTornApart");
 			Stop;
 
@@ -509,35 +530,35 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_JumpIfHealthLower(-600, "HeavyHead");
 			TNT1 A 0 A_JumpIfHealthLower(-90, "HeadExplode");
 		HeadMinor:
-			TNT1 A 0 A_Playsound("MinorHeadshot");
+			TNT1 A 0 A_StartSound("MinorHeadshot");
 			TNT1 A 0 A_Jump (256, "DeathMinorhead1", "DeathMinorhead2", "DeathMinorHead3");
 		DeathMinorHead1:
-			TNT1 A 0 A_Playsound("MinorHeadshot", 0);
-			TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 A_StartSound("MinorHeadshot", 0);
+			TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			CSSH U 5 {
-				A_CustomMissile ("PB_MuchBlood2", 50, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPiece", 50, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_Brains4BrownHair", 52, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40));
+				A_SpawnProjectile ("PB_MuchBlood2", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains4BrownHair", 52, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			}
 			CSSH V 5 A_Scream();
 			CSSH W 5 A_NoBlocking();
 			CSSH XY 5;
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItem ("FacelessChainsawZombie");
 			Stop;
 		DeathMinorHead2:
 			TNT1 A 0 A_Pain();
-			TNT1 A 0 A_Playsound("MinorHeadshot", 0);
-			TNT1 A 0 A_CustomMissile ("PB_Brains7", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AA 0 A_CustomMissile ("PB_Teeth", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AA 0 A_CustomMissile ("PB_TeethNoBounce", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AA 0 A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-			TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 A_StartSound("MinorHeadshot", 0);
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains7", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AA 0 A_SpawnProjectile ("PB_Teeth", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AA 0 A_SpawnProjectile ("PB_TeethNoBounce", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AA 0 A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			CSD5 A 8 A_NoBlocking();
-			TNT1 A 0 A_CustomMissile ("PB_MuchBlood2", 40, 0, random (0, 360), 2, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood2", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_Jump(200, "DeathMinorHead2Short");
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItem ("DyingChainsawZombieLostTeeth");
@@ -547,24 +568,24 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_Scream();
 			CSD5 BC 7;
 			CSD5 D 6;
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItem ("DeadLabguy5CZAN");
 			Stop;
 			
 		DeathMinorHead3:
-			TNT1 A 0 A_CustomMissile ("PB_Brains4BrownHair", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-			TNT1 AA 0 A_CustomMissile ("SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-			TNT1 A 0 A_CustomMissile ("SmallBrainPiece", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40));
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains4BrownHair", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 AA 0 A_SpawnProjectile ("SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 A 0 A_SpawnProjectile ("SmallBrainPiece", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			TNT1 A 0 A_Pain();
-			TNT1 A 0 A_Playsound("MinorHeadshot", 0);
-			TNT1 A 1 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 A_StartSound("MinorHeadshot", 0);
+			TNT1 A 1 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			CZD7 AB 4;
 			CZD7 C 6 A_NoBlocking();
 			CZD7 D 8 A_Scream();
 			CZD7 EF 6;
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItem ("DeadChainsawZombieCZD7E");
 			Stop;
@@ -573,9 +594,9 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		HeadExplode:
 			TNT1 A 0 {
 				A_Stop();
-				A_PlaySound("gore/headshot", CHAN_BODY);
+				A_StartSound("gore/headshot", CHAN_BODY);
 				A_SpawnItem("ChainsawZombieHeadExplode", 0, 40);
-				A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+				A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 				A_XScream();
 				A_SpawnItem("BloodSplasher2");
 				A_NoBlocking();
@@ -588,7 +609,7 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				frandom(0, 360));
 			}
 			CZD6 DDDDDEEEEE 2 {
-				A_CustomMissile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), 2, random (60, 120));
+				A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (60, 120));
 				A_SpawnItemEx("NashGoreBloodSpurt",
 				frandom(-5, 5), frandom(-5, 5), frandom(28, 30),
 				frandom(-2, 2), frandom(-2, 2), frandom(4, 8),
@@ -596,9 +617,9 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			}
 			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
 		HeadExplodeDown:
-			CZD6 FFFFIIII 2 A_CustomMissile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), 2, random (10, 40));
-			TNT1 A 0 A_PlaySoundEx("BODYF","Auto");
-			FSAD EEEEEEEEEEEEEEEE 2 A_CustomMissile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), 2, random (10, 40));
+			CZD6 FFFFIIII 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			FSAD EEEEEEEEEEEEEEEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
 			TNT1 A 0 A_SpawnItem ("DeadLabguyFSADE");
 			Stop;
 		HeavyHead:	
@@ -606,9 +627,9 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			LZD7 A 2 {
 				A_SpawnItem("ChainsawZombieHeadExplode", 0, 40);
 				A_SpawnItem("BloodSplasher2");
-				A_ChangeFlag("NOBLOCKMONST", 1);
-				A_PlaySound("misc/PB_XDeath4");
-				A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+				bNOBLOCKMONST = true;
+				A_StartSound("misc/PB_XDeath4");
+				A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 				A_FaceTarget();
 				A_XScream();
 				A_NoBlocking();
@@ -616,25 +637,25 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				}
 			LZD7 A 2 A_FaceTarget();
 			LZD7 A 2 A_Recoil(10);
-			LZD7 BBBCCCDDDEEE 2 A_CustomMissile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), 2, random (10, 40));
-			TNT1 A 0 A_PlaySound("BODYF",6);
-			LZD7 FFFFFFFFFFFFFFFFFFF 4 A_CustomMissile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), 2, random (10, 40));
+			LZD7 BBBCCCDDDEEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
+			TNT1 A 0 A_StartSound("BODYF",6);
+			LZD7 FFFFFFFFFFFFFFFFFFF 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
 			LZD7 F 1 A_SpawnItem ("DeadScientistLZD7F");
 			Stop;
 		
 		Deathchickenhead:
-			TNT1 A 0 A_PlaySound("misc/xdeath2c");
+			TNT1 A 0 A_StartSound("misc/xdeath2c");
 			TNT1 A 0 A_SpawnItem ("HeadlessChainsawZombie");
 			Stop;
 		
 		Death.Decapitate:
 			TNT1 A 0 {
-				A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+				A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 				A_Stop();
 				A_FaceTarget();
 				A_NoBlocking();
 				A_SpawnItemEx ("PB_XDeathChainsawZombieHead",0,0,50,random(-2,2),random(-2,2),12,0,SXF_NOCHECKPOSITION,0);
-				A_CustomMissile ("PB_MuchBlood", 40, 0, random (0, 360), 2, random (0, 160));
+				A_SpawnProjectile ("PB_MuchBlood", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			}
 			LZD6 BBBBAAAA 2 {
 				A_SpawnItemEx("NashGoreBloodSpurt",
@@ -643,16 +664,16 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				frandom(0, 360));
 			}
 			FSAD AAAAABBBBBBBBBBCCCCC 2 {
-				A_CustomMissile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), 2, random (60, 120));
+				A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (60, 120));
 				A_SpawnItemEx("NashGoreBloodSpurt",
 				frandom(-5, 5), frandom(-5, 5), frandom(28, 30),
 				frandom(-2, 2), frandom(-2, 2), frandom(4, 8),
 				frandom(0, 360));
 			}
 			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
-			CZD6 FFFFIIII 2 A_CustomMissile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), 2, random (10, 40));
-			TNT1 A 0 A_PlaySoundEx("BODYF","Auto");
-			FSAD EEEEEEEEEEEEEEEE 2 A_CustomMissile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), 2, random (10, 40));
+			CZD6 FFFFIIII 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			FSAD EEEEEEEEEEEEEEEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
 			TNT1 A 0 A_SpawnItem ("DeadLabguyFSADE");
 			Stop;
 			
@@ -665,35 +686,35 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 {
 				A_Scream();
 				A_NoBlocking();
-				A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
-				A_CustomMissile ("XDeathSargeLeg1", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("XDeathSargeLeg1", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallGib", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallGib", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallGib", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 15, 0, random (0, 360), 2, random (0, 160));
+				A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+				A_SpawnProjectile ("XDeathSargeLeg1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("XDeathSargeLeg1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				ThrustThingZ(0,50,0,1);
 				}
 			LP15 ABC 3;
 			LP15 D 4;
 			TNT1 A 0 {
 				A_SpawnItem ("GrowingBloodPool");
-				A_PlaySound("BODYF",6);
+				A_StartSound("BODYF",6);
 				A_SpawnItem ("DeadScientistLP15D");
 			}
 			Stop;
 		LegRemove:
 			TNT1 A 0 {
-				A_CustomMissile ("PB_MuchBlood2", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("XDeathSargeLeg1", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallGib", 15, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallGib", 15, 0, random (0, 360), 2, random (0, 160));
+				A_SpawnProjectile ("PB_MuchBlood2", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("XDeathSargeLeg1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnItem ("GrowingBloodPool");
 				A_NoBlocking();
 				A_Scream();
-				A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+				A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 				A_SpawnItemEx ("DyingChainsawZombieNoLeg",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 				}
 			Stop;
@@ -701,18 +722,18 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		Death.ExplosiveImpact:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 {
-					A_ChangeFLag("NODROPOFF", 0);
+					bNODROPOFF = false;
 					ThrustThingZ(0,30,0,1);
 					A_FaceTarget();
-					A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+					A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			}
 			TNT1 A 0 A_JumpIf(angle < 180, "IsFacingNorth");
-			TNT1 A 0 A_JumpIf(velx < 0, "BlownAwayRight");
-			TNT1 A 0 A_JumpIf(velx > 0, "BlownAwayLeft");
+			TNT1 A 0 A_JumpIf(Vel.X < 0, "BlownAwayRight");
+			TNT1 A 0 A_JumpIf(Vel.X > 0, "BlownAwayLeft");
 			Goto XDeath;
 		IsFacingNorth:
-			TNT1 A 0 A_JumpIf(velx > 0, "BlownAwayRight");
-			TNT1 A 0 A_JumpIf(velx < 0, "BlownAwayLeft");
+			TNT1 A 0 A_JumpIf(Vel.X > 0, "BlownAwayRight");
+			TNT1 A 0 A_JumpIf(Vel.X < 0, "BlownAwayLeft");
 			Goto XDeath;
 		
 		BlownAwayLeft:	
@@ -721,32 +742,32 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				A_NoBlocking();
 				ThrustThingZ(0,30,0,1);
 				NashGoreGibs.SpawnGibs(self);
-				A_CustomMissile ("PB_XDeath1", 32, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 40, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 40, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath2", 32, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_Brains2", 50, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_Brains3", 50, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_Brains4BrownHair", 50, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_Brains5", 50, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("XDeathLabGuyArm", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath3", 40, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("XDeathSargeLeg1", 32, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_BloodMistLarge", 40, 0, random (0, 360), 2, random (20, 90));
-				A_CustomMissile ("PB_BloodMistLarge", 40, 0, random (0, 360), 2, random (20, 90));
-				A_CustomMissile ("PB_BloodMistLarge", 40, 0, random (0, 360), 2, random (20, 90));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains2", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains3", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains4BrownHair", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains5", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("XDeathLabGuyArm", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath3", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("XDeathSargeLeg1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
 			}
-			LXSX GHIJKLM 3 A_CustomMissile ("NashGoreBloodSpurt", 0, 0, 0, 2, 90);
+			LXSX GHIJKLM 3 A_SpawnProjectile ("NashGoreBloodSpurt", 0, 0, 0, 2, 90);
 			TNT1 A 0 A_CheckFloor("Land8473");
 			LXSX GHIJKLMGHIJKLM 5 A_CheckFloor("Land8473");
 		Land8473:
@@ -759,43 +780,43 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 	//Boop
 	BlownAwayRight:
 			TNT1 A 0 {
-				A_ChangeFlag("Rollsprite", 1);
+				bRollsprite = true;
 				A_Xscream();
 				A_NoBlocking();
 				ThrustThingZ(0,30,0,1);
 				NashGoreGibs.SpawnGibs(self);
-				A_CustomMissile ("PB_XDeath1", 32, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath2", 32, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_Brains2", 50, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_Brains3", 50, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_Brains4BrownHair", 50, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_Brains5", 50, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-				A_CustomMissile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("XDeathLabGuyArm", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath3", 40, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("XDeathSargeLeg1", 32, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 40, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 40, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_BloodMistLarge", 40, 0, random (0, 360), 2, random (20, 90));
-				A_CustomMissile ("PB_BloodMistLarge", 40, 0, random (0, 360), 2, random (20, 90));
-				A_CustomMissile ("PB_BloodMistLarge", 40, 0, random (0, 360), 2, random (20, 90));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains2", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains3", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains4BrownHair", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains5", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("XDeathLabGuyArm", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath3", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("XDeathSargeLeg1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
 			}
 			CXS2 GGGGGGG 3 {
-				A_CustomMissile ("NashGoreBloodSpurt", 0, 0, 0, 2, 90);
+				A_SpawnProjectile ("NashGoreBloodSpurt", 0, 0, 0, 2, 90);
 				A_Setroll(roll+45);
 				A_CheckFloor("Land8472");
 			}
 			CXS2 GGGGGGGGGGGGGG 4 {
-				A_CustomMissile ("NashGoreBloodSpurt", 0, 0, 0, 2, 90);
+				A_SpawnProjectile ("NashGoreBloodSpurt", 0, 0, 0, 2, 90);
 				A_Setroll(roll+45);
 				A_CheckFloor("Land8472");
 			}
@@ -811,35 +832,37 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		  Death.SuperPunch:
 		  Death.ExtremePunches:
 			TNT1 A 0 A_StopSound(7);
-			TNT1 A 0 A_ChangeFLag("NODROPOFF", 0);
+			TNT1 A 0 {
+				bNODROPOFF = false;
+				bNOBLOCKMONST = true;
+			}
 			TNT1 A 0 A_NoBlocking();
-			TNT1 A 0 A_ChangeFlag("NOBLOCKMONST", 1);
-			TNT1 A 0 A_CustomMissile ("PB_XDeath1", 32, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeath2", 32, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AAA 0 A_CustomMissile ("PB_SmallGib", 32, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_Brains2", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_Brains3", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AA 0 A_CustomMissile ("PB_Brains4BrownHair", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_Brains5", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AAAA 0 A_CustomMissile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), 2, random (-10, 10));
-			TNT1 AAAA 0 A_CustomMissile ("PB_SmallBrainPiece", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AA 0 A_CustomMissile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("PB_BloodmistLarge", 50, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("XDeathLabGuyArm", 35, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("XDeathSargeLeg1", 32, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeath2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_SmallGib", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains2", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains3", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AA 0 A_SpawnProjectile ("PB_Brains4BrownHair", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains5", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SmallBrainPiece", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_BloodmistLarge", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("XDeathLabGuyArm", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("XDeathSargeLeg1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			TNT1 A 0 ThrustThingZ(0,30,0,1);
 			FS14 AB 5;
 			FS14 CDEF 5 A_CheckFloor ("Dead.ExplosiveImpact");
 			FS14 FFFFFFFFFF 5 A_CheckFloor ("Dead.ExplosiveImpact");
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			FS14 G 1 A_SpawnItem("DeadLabguyFS14G");
 			Stop;
 			
 		Dead.ExplosiveImpact:
-			TNT1 AAAA 0 A_CustomMissile("NashGoreBloodSpurt", 0, 0, 0, 2, 90);
+			TNT1 AAAA 0 A_SpawnProjectile("NashGoreBloodSpurt", 0, 0, 0, 2, 90);
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_StartSound("BODYF",6);
 			FS14 G 1 A_SpawnItem("DeadLabguyFS14G");
 			Stop;
 			
@@ -871,11 +894,11 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		Death.Plasma2:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 A_Stop();
-			TNT1 A 0 A_PlaySound("plasmaflesh");
+			TNT1 A 0 A_StartSound("plasmaflesh");
 			TNT1 A 0 A_SpawnItemEx("RealisticFireSparks1Blue",random(-2,2),random(-2,2),18,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			TNT1 AAAA 0 A_CustomMissile("BluePlasmaFireNonStatic", 42, 0, random (0, 360), 2, random (0, 180));
-			TNT1 AAAA 0 A_CustomMissile("PB_BloodmistLarge", 32, 0, random (0, 360), 2, random (0, 180));
-			TNT1 AAA 0 A_CustomMissile("NashgoreBlood", 32, 0, random (0, 360), 2, random (0, 180));
+			TNT1 AAAA 0 A_SpawnProjectile("BluePlasmaFireNonStatic", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 AAAA 0 A_SpawnProjectile("PB_BloodmistLarge", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 AAA 0 A_SpawnProjectile("NashgoreBlood", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
 			PBR1 B 6 A_NoBlocking();
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1Blue",random(-2,2),random(-2,2),10,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
 			TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
@@ -883,7 +906,7 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15));
 			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35));
 			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35));
-			PBR1 CCDD 3 A_CustomMissile ("BluePlasmaFireNonStatic", 32, 0, random (0, 360), 2, random (0, 180));
+			PBR1 CCDD 3 A_SpawnProjectile ("BluePlasmaFireNonStatic", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
 			PBR1 EEFF 3;
 			PBR1 GG 3;
 			PBR1 H -1;
@@ -897,17 +920,17 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				A_NoBlocking();
 			}
 			XBRN AA 2 BRIGHT A_SpawnItem("BlueFlare",0,43);
-			TNT1 AAAA 0 A_CustomMissile ("PB_BloodmistLarge", 30, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedArm", 36, 3, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedArm", 36, -3, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedLeg", 20, 4, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedLeg", 20, -4, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedSkull", 48, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedMeat", 32, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedMeat2", 32, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedMeat3", 32, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AAAAA 0 A_CustomMissile ("PlasmaParticleX", 48, 0, random (0, 360), 2, random (0, 360));
-			TNT1 AAA 0 A_CustomMissile ("BigPlasmaParticleX", 42, 0, random (0, 360), 2, random (0, 360));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_BloodmistLarge", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedArm", 36, 3, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedArm", 36, -3, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedLeg", 20, 4, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedLeg", 20, -4, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedSkull", 48, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat3", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAAAA 0 A_SpawnProjectile ("PlasmaParticleX", 48, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 AAA 0 A_SpawnProjectile ("BigPlasmaParticleX", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
 			XBRN BBCC 2 BRIGHT A_SpawnItem("BlueFlare",0,43);
 			Stop;
 			
@@ -919,16 +942,16 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				A_XScream();
 				A_NoBlocking();
 			}
-			TNT1 AAAA 0 A_CustomMissile ("PB_BloodmistLarge", 30, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedArm", 36, 3, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedArm", 36, -3, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedLeg", 20, 4, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedLeg", 20, -4, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedSkull", 48, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedMeat", 32, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedMeat2", 32, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_CustomMissile ("PB_XDeathBurnedMeat3", 32, 0, random (0, 360), 2, random (0, 160));
-			EXPL AAAAA 0 A_CustomMissile ("GreenFlameTrails", 50, 0, random (0, 360), 2, random (0, 360));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_BloodmistLarge", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedArm", 36, 3, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedArm", 36, -3, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedLeg", 20, 4, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedLeg", 20, -4, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedSkull", 48, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat3", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			EXPL AAAAA 0 A_SpawnProjectile ("GreenFlameTrails", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
 			XBRN AAAA 2 BRIGHT {
 				A_SpawnItem("GreenFlare",0,43);
 				A_SpawnItemEx("RealisticFireSparks1Green",random(-2,2),random(-2,2),18,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
@@ -940,41 +963,41 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 {
 				A_Stop();
 				A_NoBlocking();
-				A_Playsound("MELT");
+				A_StartSound("MELT");
 			}
-			TNT1 AAAA 0 A_CustomMissile ("ExplosionParticleHeavy", 32, 0, random (0, 360), 2, random (0, 360));
-			TNT1 AAAA 0 A_CustomMissile ("ExplosionParticleVeryFast", 32, 0, random (0, 360), 2, random (0, 360));
+			TNT1 AAAA 0 A_SpawnProjectile ("ExplosionParticleHeavy", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 AAAA 0 A_SpawnProjectile ("ExplosionParticleVeryFast", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
 			TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,32,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15));
 			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35));
 			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),32,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN IIIII 1 BRIGHT Light("IncinerationGlow") A_CustomMissile ("BurningEmberParticlesFloating_Bigger", 36, 0, random (0, 360), 2, random (0, 160));
+			Z8RN IIIII 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),28,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN JJJJJ 1 BRIGHT Light("IncinerationGlow") A_CustomMissile ("BurningEmberParticlesFloating_Bigger", 28, 0, random (0, 360), 2, random (0, 160));
+			Z8RN JJJJJ 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 28, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),24,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN KKKCCC 1 BRIGHT Light("IncinerationGlow") A_CustomMissile ("BurningEmberParticlesFloating_Bigger", 36, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_Playsound("SZZLL", 3);
+			Z8RN KKKCCC 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_StartSound("SZZLL", 3);
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),20,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN DDDDD 1 BRIGHT Light("IncinerationGlow") A_CustomMissile ("BurningEmberParticlesFloating_Bigger", 20, 0, random (0, 360), 2, random (0, 160));
+			Z8RN DDDDD 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 20, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),16,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN EEEEE 1 BRIGHT Light("IncinerationGlow") A_CustomMissile ("BurningEmberParticlesFloating_Bigger", 12, 0, random (0, 360), 2, random (0, 160));
+			Z8RN EEEEE 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),12,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN FFFFF 1 BRIGHT Light("IncinerationGlow") A_CustomMissile ("BurningEmberParticlesFloating_Bigger", 10, 0, random (0, 360), 2, random (0, 160));
+			Z8RN FFFFF 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
 			TNT1 A 0 A_SpawnItem("BarrelExplosionSmokeColumn");
 			Z8RN GGGG 2 Light("IncinerationGlow");
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN HHHH 2 Light("IncinerationGlow") A_CustomMissile ("PlasmaSmoke", 14, 0, random (0, 360), 2, random (0, 160));
+			Z8RN HHHH 2 Light("IncinerationGlow") A_SpawnProjectile ("PlasmaSmoke", 14, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
-			Z8RN HHHHHH 12 A_CustomMissile ("PlasmaSmoke", 14, 0, random (0, 360), 2, random (0, 160));
+			Z8RN HHHHHH 12 A_SpawnProjectile ("PlasmaSmoke", 14, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			Z8RN H -1;
 			Stop;
 			
 		Death.Shrink:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 1 {
-				A_PlaySound("Shrink", 3);
+				A_StartSound("Shrink", 3);
 				A_SpawnItemEx ("LabguyShrinkFX1", 0, 0,  5, 0, 0);
 				}
 			TNT1 A 1 A_SpawnItemEx ("LabguyShrinkFX2", 0, 0, 5, 0, 0);
@@ -989,12 +1012,12 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		Death.Melee:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down");
-			TNT1 A 0 A_JumpIfInventory ("SKLabguy", 1, "StealthKill");
+			TNT1 A 0 A_JumpIfInventory ("SKChainsawZombie", 1, "StealthKill");
         Death.Kick:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 {
-				A_ChangeFLag("NODROPOFF", 0);
-				A_ChangeFLag("SLIDESONWALLS", 1);
+				bNODROPOFF = false;
+				bSLIDESONWALLS = true;
 				ThrustThingZ(0,30,0,1);
 				A_Scream();
 				A_NoBlocking();
@@ -1002,21 +1025,8 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				A_Recoil (10);
 			}
 			5PO4 UUVWXY 5;
-			TNT1 A 0 A_PlaySound("BODYF");
+			TNT1 A 0 A_StartSound("BODYF");
 			TNT1 A 0 A_SpawnItem("DeadFormerScientistChainsaw");
-			Stop;
-		StealthKill:
-			TNT1 A 0 A_JumpIfInTargetInventory("FistsSelected", 1, 1);
-			Goto Death;
-			TNT1 A 0 {
-				A_GiveToTarget("GoFatality", 1);
-				A_GiveToTarget("SKLabguy", 1);
-				A_NoBlocking();
-				A_Die("Stealthy");
-			}
-			Stop;
-		Death.Stealthy:
-			TNT1 A 0;
 			Stop;
 	
 	   Death.Trample:	
@@ -1028,9 +1038,9 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				A_NoBlocking();
 				}
 			TNT1 A 0 {
-				A_CustomMissile ("PB_XDeath1", 2, 0, random (0, 360), 2, random (0, 40));
-				A_CustomMissile ("PB_XDeath1", 2, 0, random (0, 360), 2, random (0, 40));
-				A_CustomMissile ("PB_XDeath1", 2, 0, random (0, 360), 2, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath1", 2, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath1", 2, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath1", 2, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 				}
 			LPO4 X 6;
 			TNT1 A 0 A_SpawnItem("DeadFormerScientist");
@@ -1044,8 +1054,8 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			
 		Death.Shotgunontheface:	
 			TNT1 A 0 {
-				A_ChangeFlag("SLIDESONWALLS", 0);
-				A_ChangeFlag("NOBLOCKMONST", 1);
+				bSLIDESONWALLS = false;
+				bNOBLOCKMONST = true;
 			}
 			TNT1 A 0 A_Jump(160, "DeathShotgunFly");
 			
@@ -1056,43 +1066,43 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				A_Recoil(13);
 				ThrustThingZ(0,20,0,1);
 				}
-			TNT1 A 0 A_JumpIf(momy == 0, "DeathShotgunFly");
+			TNT1 A 0 A_JumpIf(Vel.Y == 0, "DeathShotgunFly");
 			TNT1 A 0 A_Jump(128, "DeathShotgunontheface2");
 			TNT1 A 0 {
 				A_Scream();
-				A_CustomMissile ("PB_XDeath1", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 35, 0, random (0, 360), 2, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_NoBlocking();
 				}
-			CCZ5 AAAABBBBCCCCDDDD 1 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			CCZ5 EFGHIJ 4 A_JumpIf((MomY == 0), "DSFStop");
+			CCZ5 AAAABBBBCCCCDDDD 1 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			CCZ5 EFGHIJ 4 A_JumpIf((Vel.Y == 0), "DSFStop");
 			Goto DSFStop;
 		DSFStop:
 			TNT1 A 0{
 				A_Stop();
 				A_SpawnItem ("GrowingBloodPool");
-				A_CustomMissile ("PB_SuperWallRedBlood", 2, 0, random (170, 190), 2, random (0, 0));
-				A_PlaySound("BODYF",6);
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 2, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 0));
+				A_StartSound("BODYF",6);
 				A_SpawnItem("DeadZombieScientistCCZ5J");
 				}
 			Stop;
 		DeathShotgunontheface2:	
 			TNT1 A 0 {
 				A_Scream();
-				A_CustomMissile ("PB_XDeath1", 35, 0, random (0, 360), 2, random (0, 160));
-				A_CustomMissile ("PB_XDeath1", 35, 0, random (0, 360), 2, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_NoBlocking();
 				}
-			CCZ6 AAAABBBBCCCCDDDD 1 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			CCZ6 EFGHIJ 4 A_JumpIf((MomY == 0), "DSFStop2");
+			CCZ6 AAAABBBBCCCCDDDD 1 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			CCZ6 EFGHIJ 4 A_JumpIf((Vel.Y == 0), "DSFStop2");
 			Goto DSFStop2;
 			
 		DSFStop2:
 			TNT1 A 0 {
 				A_Stop();
 				A_SpawnItem ("GrowingBloodPool");
-				A_CustomMissile ("PB_SuperWallRedBlood", 2, 0, random (170, 190), 2, random (0, 0));
-				A_PlaySound("BODYF",6);
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 2, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 0));
+				A_StartSound("BODYF",6);
 				A_SpawnItem("DeadZombieScientistCCZ6J");
 			}
 			Stop;
@@ -1100,30 +1110,30 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		
 		DeathShotgunFly:
 			TNT1 A 0 {
-				A_ChangeFLag("NODROPOFF", 0);
-				A_ChangeFLag("SLIDESONWALLS", 0);
+				bNODROPOFF = false;
+				bSLIDESONWALLS = false;
 				ThrustThingZ(0,30,0,1);
 				A_Scream();
 				A_NoBlocking();
 				A_FaceTarget();
 				A_Recoil (6);
 			}
-			5PO4 U 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_JumpIf((MomY == 0), "TakeASit");
-			5PO4 U 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_JumpIf((MomY == 0), "TakeASit");
-			5PO4 V 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_JumpIf((MomY == 0), "TakeASit");
-			5PO4 W 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			5PO4 X 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			5PO4 Y 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			5PO4 U 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			5PO4 U 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			5PO4 V 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			5PO4 W 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			5PO4 X 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			5PO4 Y 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItem("DeadFormerScientistChainsaw");
 			Stop;
 		TakeASit:
-			TNT1 AAAA 0 A_CustomMissile ("PB_SuperWallRedBlood", 6, 0, random (170, 190), 2, random (0, 40));
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 6, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_StartSound("BODYF",6);
 			5PO4 U 5;
 			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItemEx("DeadChainsawZombie_Slumped", 10);
@@ -1138,33 +1148,33 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				"Death.Blast", "Death.Blast2");
 		Naildeath1:
 			TNT1 A 0 {
-				A_ChangeFLag("NODROPOFF", 0);
-				A_ChangeFLag("SLIDESONWALLS", 0);
+				bNODROPOFF = false;
+				bSLIDESONWALLS = false;
 				ThrustThingZ(0,random(20,30),0,1);
 				A_Scream();
 				A_NoBlocking();
 				A_FaceTarget();
 				A_Recoil(30);
 			}
-			TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
-			5PO4 U 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_JumpIf((MomY == 0), "PinToWall");
-			5PO4 U 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_JumpIf((MomY == 0), "PinToWall");
-			5PO4 V 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_JumpIf((MomY == 0), "PinToWall");
-			5PO4 W 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			5PO4 X 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			5PO4 Y 5 A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
-			TNT1 A 0 A_PlaySound("BODYF",6);
+			TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+			5PO4 U 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			5PO4 U 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			5PO4 V 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			5PO4 W 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			5PO4 X 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			5PO4 Y 5 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItem("DeadFormerScientistChainsaw");
 			Stop;
 		PinToWall:
-			TNT1 A 0 A_CustomMissile ("PB_MuchBlood2", 35, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AA 0 A_CustomMissile ("PB_XDeath1", 35, 0, random (0, 360), 2, random (0, 160));
-			TNT1 AAAA 0 A_CustomMissile ("PB_SuperWallRedBlood", 6, 0, random (170, 190), 2, random (0, 40));
-			TNT1 A 0 A_PlaySound("Weapons/NailHitBleed");
+			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood2", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AA 0 A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 6, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_StartSound("Weapons/NailHitBleed");
 			P2N1 A 5;
 			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItemEx("Dead_ChainsawZombie_Pinned", 10);
@@ -1173,26 +1183,26 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		Naildeath2:
 			TNT1 A 0 A_XScream();
 			TNT1 A 0 A_NoBlocking();
-			TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			TNT1 A 0 A_FaceTarget();
-			TNT1 AAA 0 A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-			TNT1 AAA 0 A_CustomMissile ("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40));
-			TNT1 AAA 0 A_CustomMissile ("PB_Xdeath3", 16, 0, random (170, 190), 2, random (0, 40));
-			TNT1 AA 0 A_CustomMissile ("PB_Xdeath2", 16, 0, random (130, 210), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("PB_BloodMistBig", 40, 0, random (0, 360), 2, random (30, 90));
-			TNT1 A 0 A_CustomMissile ("PinnedChainsawZombieTorso", 32, 0, 180, 2, random (-2, 2));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_Xdeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AA 0 A_SpawnProjectile ("PB_Xdeath2", 16, 0, random (130, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_BloodMistBig", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+			TNT1 A 0 A_SpawnProjectile ("PinnedChainsawZombieTorso", 32, 0, 180, 2, random (-2, 2));
 			
 			
 	
 			LP07 AAAAAAAAA 2 {
-				A_CustomMissile ("PB_BloodmistLarge", 32, 0, random (0, 360), 2, random (0, 40));
-				A_CustomMissile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), 2, random (0, 40));
+				A_SpawnProjectile ("PB_BloodmistLarge", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			}
 			LP07 BC 8;
-			TNT1 A 0 A_PlaySound("BODYF",6);
-			LP07 DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD 2 A_CustomMissile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), 2, random (0, 40));
+			TNT1 A 0 A_StartSound("BODYF",6);
+			LP07 DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
 			TNT1 A 0 A_SpawnItem ("DeadScientistLP07");
 			Stop;
@@ -1200,25 +1210,26 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		NailDeath3:
 			TNT1 A 0 A_XScream();
 			TNT1 A 0 A_NoBlocking();
-			TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			TNT1 A 0 A_FaceTarget();
-			TNT1 AAA 0 A_CustomMissile ("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40));
-			TNT1 AA 0 A_CustomMissile ("PB_Xdeath2", 16, 0, random (130, 210), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-			TNT1 AAAA 0 A_CustomMissile ("PB_BloodMistBig", 40, 0, random (0, 360), 2, random (30, 90));
-			TNT1 A 0 A_CustomMissile ("PinnedChainsawZombieTorso2", 32, 0, 180, 2, random (-2, 2));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AA 0 A_SpawnProjectile ("PB_Xdeath2", 16, 0, random (130, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_BloodMistBig", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+			TNT1 A 0 A_SpawnProjectile ("PinnedChainsawZombieTorso2", 32, 0, 180, 2, random (-2, 2));
 			LP06 AB 6;
-			LP06 CCCCCCCCCCCCCCCCCC 1 A_CustomMissile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), 2, random (0, 40));
+			LP06 CCCCCCCCCCCCCCCCCC 1 A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			LP06 D 8;
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_PlaySound("BODYF",6);
-			LP06 EEEEEEEEEEEEEEEEEEEE 2 A_CustomMissile("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 90));
+			TNT1 A 0 A_StartSound("BODYF",6);
+			LP06 EEEEEEEEEEEEEEEEEEEE 2 A_SpawnProjectile("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 90));
 			TNT1 A 0 A_SpawnItem("DeadScientistTornApart");
 			Stop;
 		
-	Death.Blast:
 	Death.Railgun:
+			TNT1 A 0 A_Jump(96, "Death.SSG");
+		Death.Blast:
 		Death.BHFT:
 		Death.RVFT:
 			TNT1 A 0 A_StopSound(7);
@@ -1228,35 +1239,35 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		TNT1 A 0 A_Jump(128, "Death.Blast2");
 		TNT1 A 0 {
 			A_Scream();
-			A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_SmallGib", 32, 0, random (150, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_XDeath3", 16, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_SmallGib", 16, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_XDeath3", 16, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
-			A_CustomMissile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
-			A_CustomMissile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
+			A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SmallGib", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_XDeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SmallGib", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_XDeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+			A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+			A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
 			}
 		SXZ1 A 6 {
 			A_Stop();
 			A_SpawnItem ("GrowingBloodPool");
 			}
-		SXZ1 BBBBBBBBBB 3 A_CustomMissile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), 2, random (30, 60));
-		SXZ1 CCC 3 A_CustomMissile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), 2, random (10, 40));
-		SXZ1 DD 3 A_CustomMissile ("PB_SquirtingBloodTrail", 6, 0, random (0, 360), 2, random (30, 60));
-		TNT1 A 0 A_PlaySound("BODYF");
+		SXZ1 BBBBBBBBBB 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 60));
+		SXZ1 CCC 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
+		SXZ1 DD 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 6, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 60));
+		TNT1 A 0 A_StartSound("BODYF");
 		TNT1 A 0 A_SpawnItem("DeadZombieScientistSXZ1E");
 	    Stop;
 		
@@ -1264,39 +1275,39 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 	    TNT1 A 0 {
 			A_XScream();
 			NashGoreGibs.SpawnGibs(self);
-			A_CustomMissile ("XDeathLabGuyArm", 42, 0, random (0, 360), 2, random (0, 40));
-			A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_SmallGib", 32, 0, random (150, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_XDeath3", 16, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_SmallGib", 16, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_XDeath2", 16, 0, random (130, 210), 2, random (0, 40));
-			A_CustomMissile ("PB_SmallGib", 16, 0, random (130, 210), 2, random (0, 40));
-			A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-			A_CustomMissile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
-			A_CustomMissile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
-			A_CustomMissile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
-			A_CustomMissile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
+			A_SpawnProjectile ("XDeathLabGuyArm", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SmallGib", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_XDeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SmallGib", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_XDeath2", 16, 0, random (130, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SmallGib", 16, 0, random (130, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+			A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+			A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+			A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
 		}
 		SXZ2 A 6 {
 			A_Stop();
 			A_SpawnItem ("GrowingBloodPool");
 			}
-		SXZ2 BBBBBBBBBBBBBBBBBBB 3 A_CustomMissile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), 2, random (30, 60));
-		SXZ2 CCC 3 A_CustomMissile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), 2, random (10, 40));
-		SXZ2 DD 3 A_CustomMissile ("PB_SquirtingBloodTrail", 6, 0, random (0, 360), 2, random (30, 60));
+		SXZ2 BBBBBBBBBBBBBBBBBBB 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 60));
+		SXZ2 CCC 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
+		SXZ2 DD 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 6, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 60));
 		TNT1 A 0 {
-			A_PlaySound("BODYF");
+			A_StartSound("BODYF");
 			A_SpawnItem("DeadZombieScientistSXZ2E");
 			}
 	    Stop;
@@ -1308,28 +1319,28 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				A_FaceTarget();
 				NashGoreGibs.SpawnGibs(self);
 				for (int i = 0; i < 5; i++) {	
-					A_CustomMissile ("PB_BloodmistLarge", 32, 0, random (170, 190), 2, random (0, 40));
-					A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
+					A_SpawnProjectile ("PB_BloodmistLarge", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 				}
 				
-				A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-				A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-				A_CustomMissile ("PB_Intestine", 32, 0, random (150, 210), 2, random (0, 40));
-				A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40));
-				A_CustomMissile ("XDeathLabGuyArm", 32, 0, random (180, 190), 2, random (0, 80));
-				A_CustomMissile ("XDeathLabGuyArm", 32, 0, random (160, 170), 2, random (0, 80));
-				A_CustomMissile ("PB_XDeathChainsawZombieHead", 32, 0, random (170, 190), 2, random (0, 80));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("XDeathLabGuyArm", 32, 0, random (180, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 80));
+				A_SpawnProjectile ("XDeathLabGuyArm", 32, 0, random (160, 170), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 80));
+				A_SpawnProjectile ("PB_XDeathChainsawZombieHead", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 80));
 				A_XScream();
 				A_NoBlocking();
 		}
 		LP07 AAAAAAAAA 2 {
-			A_CustomMissile ("PB_BloodmistLarge", 32, 0, random (0, 360), 2, random (0, 40));
-			A_CustomMissile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), 2, random (0, 40));
+			A_SpawnProjectile ("PB_BloodmistLarge", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			A_SpawnProjectile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 		}
 		LP07 BC 8;
-		TNT1 A 0 A_Custommissile("DroppedChainsaw", 32, 0, random (0, 360), 2, random (50, 130));
-		TNT1 A 0 A_PlaySound("BODYF",6);
-		LP07 DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD 2 A_CustomMissile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), 2, random (0, 40));
+		TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+		TNT1 A 0 A_StartSound("BODYF",6);
+		LP07 DDDDDDDDDDDDDDDDDDDDDDDDDDDDDD 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 		TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
 		TNT1 A 0 A_SpawnItem ("DeadScientistLP07");
 		Stop;
@@ -1339,16 +1350,16 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG");
 		TNT1 A 0 { 
 			NashGoreGibs.SpawnGibs(self);
-			A_CustomMissile ("PB_XDeath1", 42, 0, random (0, 290), 2, random (10, 60));
-			A_CustomMissile ("PB_XDeath3", 42, 0, random (0, 290), 2, random (10, 60));
-			A_CustomMissile ("PB_XDeath3", 42, 0, random (0, 290), 2, random (10, 60));
-			A_CustomMissile ("PB_XDeath3", 42, 0, random (0, 290), 2, random (10, 60));
-			A_CustomMissile ("PB_XDeath2", 42, 0, random (0, 190), 2, random (10, 60));
-			A_CustomMissile ("PB_XDeath4", 42, 0, random (0, 190), 2, random (10, 60));
+			A_SpawnProjectile ("PB_XDeath1", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+			A_SpawnProjectile ("PB_XDeath3", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+			A_SpawnProjectile ("PB_XDeath3", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+			A_SpawnProjectile ("PB_XDeath3", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+			A_SpawnProjectile ("PB_XDeath2", 42, 0, random (0, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+			A_SpawnProjectile ("PB_XDeath4", 42, 0, random (0, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
 			}
-		TNT1 AAAAAA 0 A_CustomMissile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
+		TNT1 AAAAAA 0 A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
         TNT1 A 1 {
-			A_SpawnItemEx("ChainsawZombieXDeath",0,0,2,velx,vely,velz,angle,SXF_ABSOLUTEVELOCITY|SXF_ABSOLUTEANGLE|SXF_NOCHECKPOSITION,0);
+			A_SpawnItemEx("ChainsawZombieXDeath",0,0,2,Vel.X,Vel.Y,Vel.Z,angle,SXF_ABSOLUTEVELOCITY|SXF_ABSOLUTEANGLE|SXF_NOCHECKPOSITION,0);
 			A_Recoil(2);
 			A_XScream();
 			A_NoBlocking();
@@ -1362,10 +1373,12 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		Death.Ice:
 		Death.Freeze:
 		Death.Frost:
-			TNT1 A 0 A_StopSound(7);
-			TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0);
-			TNT1 A 0 A_ChangeFlag("SOLID", 0);
-			TNT1 A 0 A_SpawnItem("FrozenLabguy");
+			TNT1 A 0 {
+				A_StopSound(7);
+				bSHOOTABLE = false;
+				bSOLID = false;
+				A_SpawnItem("FrozenLabguy");
+			}
 			Stop;
 		
 		Death.Fatality:
@@ -1398,9 +1411,9 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 {
 				NashGoreGibs.SpawnGibs(self);
 			}
-			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAA 0 A_CustomMissile ("PB_SquirtingBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
-			TNT1 AAAAAA 0 bright A_CustomMissile ("PB_XDeath1", 5, 0, random (0, 360), 2, random (30, 180));
-			TNT1 AA 0 bright A_CustomMissile ("PB_SmallGib", 55, 0, random (0, 360), 2, random (30, 180));
+			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAA 0 A_SpawnProjectile ("PB_SquirtingBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 AAAAAA 0 bright A_SpawnProjectile ("PB_XDeath1", 5, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 180));
+			TNT1 AA 0 bright A_SpawnProjectile ("PB_SmallGib", 55, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 180));
 			TNT1 AAA 0 A_SpawnItemEx("NashGoreSquishyGibs", flags: SXF_TRANSFERTRANSLATION);
 			TNT1 A 0 A_SpawnItem ("PB_CrushedRemains");
 			Stop;
@@ -1415,9 +1428,9 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 {
 				NashGoreGibs.SpawnGibs(self);
 			}
-			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAA 0 A_CustomMissile ("PB_SquirtingBloodTrail", 0, 0, random (0, 360), 2, random (0, 360));
-			TNT1 AAAAAA 0 bright A_CustomMissile ("PB_XDeath1", 5, 0, random (0, 360), 2, random (30, 180));
-			TNT1 AAAAA 0 bright A_CustomMissile ("PB_SmallGib", 55, 0, random (0, 360), 2, random (30, 180));
+			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAA 0 A_SpawnProjectile ("PB_SquirtingBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 AAAAAA 0 bright A_SpawnProjectile ("PB_XDeath1", 5, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 180));
+			TNT1 AAAAA 0 bright A_SpawnProjectile ("PB_SmallGib", 55, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 180));
 			TNT1 A 0 A_SpawnItem ("PB_CrushedRemains");
 			Stop;
 			

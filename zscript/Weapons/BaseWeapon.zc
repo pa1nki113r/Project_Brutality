@@ -1,0 +1,268 @@
+class PB_WeaponBase : DoomWeapon 
+{
+	Actor laseractor;
+	Actor InvActor;
+	Vector3 invactorpos;
+	Statelabel UnloadedState;
+	property UnloadedState: UnloadedState;
+	string UnloaderToken;
+	property UnloaderToken: UnloaderToken;
+	int integer;
+	string MidWeaponPickupMessage;
+	property MidPickupMessage: MidWeaponPickupMessage;
+	string lastGrenadeType;
+	property lastGrenadeType: lastGrenadeType;
+	string upgradedRifleMode;
+	property upgradedRifleMode: upgradedRifleMode;
+	string fireMode;
+	property fireMode: fireMode;
+	bool akimboMode;
+	property akimboMode: akimboMode;
+	
+	bool FiringLeftWeapon;
+	bool FiringRightWeapon;
+	property FiringLeftWeapon: FiringLeftWeapon;
+	property FiringRightWeapon: FiringRightWeapon;
+	
+	// Shoutout to Matt on ZDoom forums for the helpful weapon functions
+    action bool PressingFire(){return player.cmd.buttons & BT_ATTACK;}
+    action bool PressingAltfire(){return player.cmd.buttons & BT_ALTATTACK;}
+	action bool PressingReload(){return player.cmd.buttons & BT_RELOAD;}
+	
+    action bool JustPressed(int which) // "which" being any BT_* value, mentioned above or not
+    {
+        return player.cmd.buttons & which && !(player.oldbuttons & which);
+    }
+    action bool JustReleased(int which)
+    {
+        return !(player.cmd.buttons & which) && player.oldbuttons & which;
+    }
+	
+	Default
+	{
+		PB_WeaponBase.UnloaderToken "HasUnloaded";
+	}
+	override void AttachToOwner(Actor Other)
+	{
+		Super.AttachToOwner(other);
+		let toucher = other;
+		bool IsAlreadyPicked = false;
+		if (toucher.FindInventory("PB_PDAWeaponContainer",true))
+		{
+			PB_PDAWeaponContainer pdaweapContainer = PB_PDAWeaponContainer(toucher.FindInventory("PB_PDAWeaponContainer",true));
+			pdaweapContainer.CollectedWeapons.Push(self.GetClassName());
+			EventHandler.SendNetworkEvent("Foundweapon:"..self.GetClassName());
+		}
+	}
+	
+	
+	//Special Modes
+	action bool A_IsFiringLeftWeapon()
+	{
+		return invoker.FiringLeftWeapon;
+	}
+	
+	action void A_SetFiringLeftWeapon(bool type)
+	{
+		invoker.FiringLeftWeapon = type;
+	}
+	
+	action bool A_IsFiringRightWeapon()
+	{
+		return invoker.FiringRightWeapon;
+	}
+	
+	action void A_SetFiringRightWeapon(bool type)
+	{
+		invoker.FiringRightWeapon = type;
+	}
+	
+	
+	
+	action bool A_CheckAkimbo()
+	{
+		return invoker.akimboMode;
+	}
+	
+	action void A_SetAkimbo(bool type)
+	{
+		invoker.akimboMode = type;
+	}
+		
+	
+	action string A_GetCurrentFireMode()
+	{
+		return invoker.fireMode;
+	}
+	
+	action void A_SetCurrentFireMode(string type)
+	{
+		invoker.fireMode = type;
+	}
+		
+	
+	action string A_GetCurrentRifleMode()
+	{
+		return invoker.upgradedRifleMode;
+	}
+	
+	action void A_SetCurrentRifleMode(string type)
+	{
+		invoker.upgradedRifleMode = type;
+	}
+	
+	
+	action string A_GetCurrentGrenadeType()
+	{
+		return invoker.lastGrenadeType;
+	}
+	
+	action void A_SetCurrentGrenadeType(string type)
+	{
+		invoker.lastGrenadeType = type;
+	}
+	
+	action void A_DecideSpawnLaserPuff()
+	{
+			if (CountInv("LaserSightActivated")==1 && CountInv("KeepLaserDeactivated") != 1)
+			{
+				invoker.A_SpawnLaserPuff();
+			}
+			else 
+			{
+				invoker.A_DestroyLaserPuff();
+			}
+	}
+	action void A_DestroyLaserPuff()
+	{
+		if (invoker.laseractor) invoker.laseractor.Destroy();
+	}
+	action Actor A_SpawnLaserPuff()
+	{
+		int integer;
+		[invoker.InvActor, invoker.integer] = LineAttack(angle,4096,pitch,0,'None',"InvisiblePuff",LAF_NORANDOMPUFFZ|LAF_NOINTERACT);
+		if (invoker.InvActor)
+		{
+			invoker.invactorpos = invoker.InvActor.pos;
+			invoker.InvActor.Destroy();
+		}
+		if (!invoker.laseractor) invoker.laseractor = Spawn("LaserDotPerma",invoker.invactorpos);
+		else invoker.laseractor.SetOrigin(invoker.invactorpos, true);
+		
+		return invoker.laseractor;
+	}
+	action int CheckUnloaded(string token)
+	{
+		if (CountInv(token) >= 1) return PBWEAP_UNLOADED;
+		return 0;
+	}
+	
+	
+	action state A_DoPBWeaponAction(int weapflags = WRF_ALLOWRELOAD, int pbFlags = 0, string unloadtoken = "HasUnloaded")
+	{
+		static const string PBWeapEmptyToken[] = 
+		{
+			"PBPistolWasEmpty","RifleWasEmpty","UACSMGWasEmpty"
+		};
+		static const string PBWeapUnloadedToken[] =
+		{
+			"HasUnloaded","PulseCannonHasUnloaded", "HasUnloadedRG"
+		};
+		static const string PBWeapUnloadableClasses [] =
+		{
+			"PB_Weapon","PulseCannon"
+		};
+		static const statelabel PBWeapStatelabels[] =
+		{
+			"Steady", "LedgeClimb", "QuickPunch",
+			"DoKick", "Taunt", "Salute", "Salute",
+			"UseEquipment", "SwitchEquipment", "DualWieldBaby",
+			"NoDualWield", "WeaponSpecial", "GrabbedBarrel", "GrabbedBurningBarrel"
+		};
+		if (!(pbFlags & PBWEAP_UNLOADED)) pbFlags |= CheckUnloaded(invoker.UnloaderToken);
+		if (CountInv("GoFatality")>=1)
+		{
+			return ResolveState("Steady");
+		}
+		if (CountInv("Grabbing_A_Ledge")>=1) 
+		{
+			return ResolveState("LedgeClimb");
+		}
+		if (CountInv("DoPunch")>=1) 
+		{
+			return ResolveState("QuickPunch");
+		}
+		if (CountInv("Kicking")>=1) 
+		{
+			return ResolveState("DoKick");
+		}
+		else if (CountInv("Taunting")>=1) 
+		{
+			return ResolveState("Taunt");
+		}
+		if (CountInv("Salute1")>=1 || CountInv("Salute2")>=1) 
+		{
+			return ResolveState("Salute");
+		}
+		if (CountInv("UseEquipment")>=1) 
+		{
+			return ResolveState("UseEquipment");
+		}
+		if (CountInv("ToggleEquipment")>=1) 
+		{
+			return ResolveState("SwitchEquipment");
+		}
+		if (CountInv("GoWeaponSpecialAbility")>=1)
+		{
+			if (ResolveState("DualWieldBaby")) return ResolveState("DualWieldBaby");
+			else if (ResolveState("NoDualWield")) return ResolveState("NoDualWield");
+			else return ResolveState("WeaponSpecial");
+		}
+		if (CountInv("GrabbedBarrel")>=1 || CountInv("GrabbedBurningBarrel")>=1) 
+		{
+			return ResolveState("GrabBarrel");
+		}
+		if (CountInv("Unloading")>=1 && ResolveState("Unload") && !(pbFlags & PBWEAP_UNLOADED) && CountInv(invoker.UnloaderToken) != 1)
+		{
+			return ResolveState("Unload");
+		}
+		else A_TakeInventory("Unloading", CountInv("Unloading"));
+		if (CountInv(invoker.UnloaderToken) >= 1 && !(pbFlags & PBWEAP_UNLOADED) && !InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("GunEmpty")))
+		{
+			return ResolveState("GunEmpty");
+		}
+		if (ResolveState("LoadChamber"))
+		{
+			for (int i = 0; i < PBWeapEmptyToken.Size(); ++i)
+			{
+				if (CountInv(PBWeapEmptyToken[i]) >= 1)
+				{
+					return ResolveState("LoadChamber");
+				}
+			}
+		}
+		A_WeaponReady(weapflags);
+		//A_WeaponOffset(-CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY")-1,WOF_INTERPOLATE | (!!(pbFlags & PBWEAP_KEEPYOFFSET) ? WOF_KEEPY : 0));
+		return null;
+	}
+  
+	
+	action void A_SetOverlaySprite(int layer, String str)
+        {
+                    let psp = player.GetPSprite(layer);
+                    psp.sprite = GetSpriteIndex(str);
+        }
+  
+	action void A_SetWeaponSprite(String str)
+        {
+                    let psp = player.GetPSprite(PSP_WEAPON);
+                  //  let psp = player.GetPSprite(1);
+                    psp.sprite = GetSpriteIndex(str);
+        }
+		
+	action void A_SetFlashWeaponSprite(String str)
+        {
+                    let psp = player.GetPSprite(PSP_FLASH);
+                    psp.sprite = GetSpriteIndex(str);
+        }
+}
