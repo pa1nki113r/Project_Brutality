@@ -1,4 +1,3 @@
-
 void main()
 {
 	vec4 C = vec4(0);
@@ -18,6 +17,5 @@ void main()
 			C.rgb += texture( InputTexture, TexCoord + steps * float(i) ).rgb * increment ;
 		}
 	}
-	
-	FragColor = C ;
+		FragColor = C ;
 }
