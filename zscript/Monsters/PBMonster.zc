@@ -111,7 +111,8 @@ Class PB_Monster : Actor abstract
 	void A_DropAdjust(class<actor> missiletype, class<actor> missiletype2,double offX, double offY, double offZ,double PredAngle=0,
 						double dist=0,double speedmult=1.,double gravity=0,actor target=null)
 	{
-		PredAngle = ACS_NamedExecuteWithResult("PredictAim", 1, 20, 32);	//(int retAngle, int projectileSpeed, int projectileZ)
+		if (getdefaultbytype(missiletype).gravity != 0) { PredAngle = ACS_NamedExecuteWithResult("PredictAim", 1, 20, 32); }	//(int retAngle, int projectileSpeed, int projectileZ)
+		else {PredAngle = ACS_NamedExecuteWithResult("PredictAim", 1, getdefaultbytype(missiletype).speed, offZ);}	//(int retAngle, int projectileSpeed, int projectileZ)
 			
 		if(!target)target=self.target;
 		if(!target)return;
@@ -139,19 +140,26 @@ Class PB_Monster : Actor abstract
         }
 
         //because we don't shoot from height 32 but 42
-        if(dist>0) self.pitch += atan(10/dist);
+        if(dist>0 && gravity != 0) {self.pitch += atan(10/dist);}
+		else { self.pitch = 0;}
 		
 		self.A_DropProjectile(missiletype,offX,offY,offZ,tarDist,PredAngle);
     }
 	
 	void A_DropProjectile(class<actor> missiletype, double offX, double offY, double offZ, double targdist, double PredictAngle)
 	{
-			self.A_SpawnItemEx(
-				missiletype,offX,offY,offZ,
-				cos(pitch)*offY,0,-sin(pitch)*offY,
-				PredictAngle*360/65536,												// atan(offY/targdist)
-				flags:SXF_NOCHECKPOSITION|SXF_SETTARGET|SXF_TRANSFERPITCH
-			);
+			
+			if(!getdefaultbytype(missiletype).gravity) {
+				self.A_SpawnProjectile(missiletype,offZ, offX, PredictAngle*360/65536);
+			}
+			else {
+				self.A_SpawnItemEx(
+					missiletype,offX,offY,offZ,
+					cos(pitch)*offY,0,-sin(pitch)*offY,
+					PredictAngle*360/65536,												// atan(offY/targdist)
+					flags:SXF_NOCHECKPOSITION|SXF_SETTARGET|SXF_TRANSFERPITCH
+				);
+			}
 	}
 	
 }
