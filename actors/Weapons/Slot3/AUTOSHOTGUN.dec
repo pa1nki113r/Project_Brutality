@@ -50,7 +50,7 @@ Actor PB_ASGFireAnimation2: Inventory
 	Inventory.maxamount 1
 }
 
-Actor AutoshotgunUpgrade: Custominventory
+Actor AutoshotgunUpgrade: PB_UpgradeItem
 {
 //$Category Ammunition
 	Game Doom
@@ -64,20 +64,22 @@ Actor AutoshotgunUpgrade: Custominventory
 	Scale 0.52
 	States
 	{
-	Spawn:
-		TNT1 A 0 A_jumpif( V5_MODELS == 1 , "Spawn.V5")
-		A9SC A 10 BRIGHT Light("WeaponUpgradeSpawner")
-		Loop
+
 	Spawn.V5:
-		TNT1 A 0 A_jumpif( V5_MODELS == 0 , "Spawn")
-		PBVP A 10 BRIGHT Light("WeaponUpgradeSpawner")
+		V9SC A 10 Bright Light("WeaponUpgradeSpawner"){
+			IF( A_CHECKRANGE( V5_MDist , "NULL", TRUE) ) {A_SetSpawnSprite("A9SC");}
+			}
+	Spawn:
+		TNT1 A 0 NoDelay A_Jumpif( V5_MODELS == 1 && V5_Cull == 1, "Spawn.V5")
+		A9SC A 10 Bright Light("WeaponUpgradeSpawner"){
+			If ( GetCvar( "V5_MODELS" ) == 1 && GetCVar( "V5_Cull" ) == 0 ) {A_SetSpawnSprite("V9SC");}
+			}
 		LOOP
 	
     Pickup:
 	  TNT1 A 0 ACS_NamedExecuteAlways("AutoShotgunDrumMag", 0)
 	  TNT1 A 0 A_GiveInventory("AutoShotgun", 1)
 	  TNT1 A 0 A_GiveInventory("AutoshotgunDrumMag", 1)
-	  TNT1 A 0 A_GiveInventory("DualAutoShotguns", 1)
 	  TNT1 A 0 A_GiveInventory("HasTwoASG", 1)
       Stop
 	}
@@ -178,7 +180,7 @@ ACTOR AutoShotgun : PB_Weapon
 			TNT1 A 0 {
 					if(CountInv("AutoshotgunDrumMag")>=1){
 					A_SetRoll(0);
-					A_SetCrosshair(0);
+					PB_HandleCrosshair(70);
 					A_TakeInventory("PB_LockScreenTilt",1);
 					Return State("ASGDrumRespect");
 					}
@@ -219,7 +221,7 @@ ACTOR AutoShotgun : PB_Weapon
 			TNT1 A 0 {
 				A_ClearOverlays(10,11);
 				A_SetRoll(0);
-				A_SetCrosshair(0);
+				PB_HandleCrosshair(70);
 				A_TakeInventory("PB_LockScreenTilt",1);
 			}
 			TNT1 A 0 {if (CountInv("AutoshotgunDrumMag") == 1 && CountInv("PBAutoShotgunHasUnloaded") != 1) {Return State("ReadyToFireDrum");}Return State("");}
@@ -269,7 +271,7 @@ ACTOR AutoShotgun : PB_Weapon
 		ReadyDualWield:
 			TNT1 A 0 {
 				A_SetRoll(0);
-				A_SetCrosshair(0);
+				PB_HandleCrosshair(70);
 				A_TakeInventory("PB_LockScreenTilt",1);
 				A_SetFiringRightWeapon(False);
 				A_SetFiringLeftWeapon(False);
@@ -319,7 +321,7 @@ ACTOR AutoShotgun : PB_Weapon
 					A_FireCustomMissile("YellowFlareSpawn",0,0,-3,0);
 					A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0);
 					A_Giveinventory("JustFiredAutoshotgun",20);
-					
+					A_GunFlash;
 					A_ZoomFactor(0.98);
 					if (CountInv("PowerStrength") >= 1 ) {
 						A_SetPitch(pitch-1.15, SPF_INTERPOLATE);
@@ -359,7 +361,7 @@ ACTOR AutoShotgun : PB_Weapon
 					A_FireCustomMissile("YellowFlareSpawn",0,0,3,0);
 					A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0);
 					A_Giveinventory("JustFiredAutoshotgun",20);
-					
+					A_GunFlash;
 					A_ZoomFactor(0.98);
 					if (CountInv("PowerStrength") >= 1 ) {
 						A_SetPitch(pitch-1.15, SPF_INTERPOLATE);
@@ -392,10 +394,11 @@ ACTOR AutoShotgun : PB_Weapon
 			TNT1 A 0 {
 				A_Takeinventory("GoWeaponSpecialAbility",1);
 				A_GiveInventory("PB_LockScreenTilt",1);
-				A_SetCrosshair(0);
+				PB_HandleCrosshair(70);
 			A_ClearOverlays(10,11);
 			}
 			TNT1 A 0 A_JumpIfInventory("AutoShotgun", 2,"SwitchToDualWield")
+			TNT1 A 0 A_Print("You need two autoshotguns to dual wield!")
 			Goto Ready3
 				
 		SwitchToDualWield:
@@ -429,7 +432,7 @@ ACTOR AutoShotgun : PB_Weapon
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				A_SetRoll(0);
-				A_SetCrosshair(0);
+				PB_HandleCrosshair(70);
 				A_ClearOverlays(10,11);
 				A_TakeInventory("PB_LockScreenTilt",1);
 			}
@@ -472,7 +475,7 @@ ACTOR AutoShotgun : PB_Weapon
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				A_SetRoll(0);
-				A_SetCrosshair(0);
+				PB_HandleCrosshair(70);
 				A_TakeInventory("PB_LockScreenTilt",1);
 				A_ClearOverlays(10,11);
 			}
@@ -511,6 +514,12 @@ ACTOR AutoShotgun : PB_Weapon
 			TNT1 A 0 A_TakeInventory("LostSoulSelected",1)
 			TNT1 A 0 A_TakeInventory("HasBarrel",1)
 			TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
+
+
+            TNT1 A 0 A_TakeInventory("HasPlasmaWeapon",1)
+
+			TNT1 A 0 A_TakeInventory("HasIncendiaryWeapon", 1)
+
 			TNT1 A 0 A_GiveInventory("ASGSelected",1)
 			TNT1 A 0 ACS_NamedExecuteAlways("ToggleShotgunUpgraded",0) //For people who want this weapon to replace another
 			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
@@ -521,7 +530,7 @@ ACTOR AutoShotgun : PB_Weapon
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				A_SetRoll(0);
-				A_SetCrosshair(0);
+				PB_HandleCrosshair(70);
 				A_TakeInventory("PB_LockScreenTilt",1);
 				A_ClearOverlays(10,11);
 			}
@@ -540,7 +549,7 @@ ACTOR AutoShotgun : PB_Weapon
 				A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0);
 				A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
 				A_Giveinventory("JustFiredAutoshotgun",20);
-				
+				A_GunFlash;
 				A_ZoomFactor(0.98);
 				if (CountInv("PowerStrength") >= 1 ) {
 					A_SetPitch(pitch-0.82, SPF_INTERPOLATE);
@@ -613,7 +622,7 @@ ACTOR AutoShotgun : PB_Weapon
 					if (CountInv("AutoShotgunAmmo") == 23 ) {A_SetWeaponSprite("AU23");}
 					if (CountInv("AutoShotgunAmmo") == 2 )  {A_SetWeaponSprite("AU02");}
 					if (CountInv("AutoShotgunAmmo") == 1 )  {A_SetWeaponSprite("AU01");}
-					
+					A_GunFlash;
 					A_ZoomFactor(0.99);
 					if (CountInv("PowerStrength") >= 1 ) {
 						A_SetPitch(pitch-0.82, SPF_INTERPOLATE);
@@ -677,7 +686,7 @@ ACTOR AutoShotgun : PB_Weapon
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				A_SetRoll(0);
-				A_SetCrosshair(0);
+				PB_HandleCrosshair(70);
 				A_TakeInventory("PB_LockScreenTilt",1);
 				A_ClearOverlays(10,11);
 			}
@@ -705,7 +714,7 @@ ACTOR AutoShotgun : PB_Weapon
 				A_Takeinventory("AutoShotgunAmmo",2);
 				A_GiveInventory("PumpAutoShotgun", 1);
 				A_Giveinventory("JustFiredAutoshotgun",140);
-				
+				A_GunFlash;
 				if (CountInv("PowerStrength") >= 1 ) {
 					A_SetPitch(pitch-1.02, SPF_INTERPOLATE);
 					A_SetAngle(angle+0.55, SPF_INTERPOLATE);
@@ -915,7 +924,7 @@ ACTOR AutoShotgun : PB_Weapon
 					//A_Takeinventory("AutoShotgunAmmo",2);
 					A_GiveInventory("PumpAutoShotgun", 1);
 					A_Giveinventory("JustFiredAutoshotgun",140);
-					
+					A_GunFlash;
 					if (CountInv("PowerStrength") >= 1 ) {
 						A_SetPitch(pitch-1.02, SPF_INTERPOLATE);
 						A_SetAngle(angle+0.55, SPF_INTERPOLATE);
@@ -1928,38 +1937,71 @@ ACTOR AutoShotgun : PB_Weapon
 			TNT1 A 0 A_Takeinventory("Unloading",1)
 			Goto Ready3
 		
-		Spawn:
-			TNT1 A 0 A_jumpif( V5_MODELS == 1 , "Spawn.V5")
-			AUSC A 10
-			LOOP
+		
 		Spawn.V5:
-			TNT1 A 0 A_jumpif( V5_MODELS == 0 , "Spawn")
-			PBVP A 10
+			VUSC A 10 {
+				IF( A_CHECKRANGE( V5_MDist , "NULL", TRUE) ) {A_SetSpawnSprite("AUSC");}
+				}
+		Spawn:
+			TNT1 A 0 NoDelay A_jumpif( V5_MODELS == 1 && V5_Cull == 1, "Spawn.V5")
+			AUSC A 10 {
+				if ( GetCvar( "V5_MODELS" ) == 1 && GetCVar( "V5_Cull" ) == 0 ) {A_SetSpawnSprite("VUSC");}
+				}
 			LOOP
 			
 		FlashPunching:
+			TNT1 A 0 A_ClearOverlays(10,11)
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualFlashPunching")
+			TNT1 A 0 A_JumpIf(CountInv("AutoshotgunDrumMag") >=1 && CountInv("PBAutoShotgunHasUnloaded") != 1, "FlashPunchingDrumMag")
+			AG51 ABCDEFG 1
+			AG51 GFEDCBA 1
+			Stop
+		FlashPunchingDrumMag:
+			AU51 ABCDEFG 1
+			AU51 GFEDCBA 1
+			stop
+		DualFlashPunching:
+			TNT1 A 15
+			Stop
 		FlashKicking:
 			TNT1 A 0 A_ClearOverlays(10,11)
 			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualFlashKicking")
+			TNT1 A 0 A_JumpIf(CountInv("AutoshotgunDrumMag") >=1 && CountInv("PBAutoShotgunHasUnloaded") != 1, "FlashKickingDrumMag")
 			AG50 ABCDEF 1
 			AG50 G 2
 			AG50 FEDCBA 1
 			AG10 G 1
+			Stop
+		FlashKickingDrumMag:
+			AU50 ABC 1
+			AG50 DEF 1
+			AG50 G 2
+			AG50 FED 1
+			AU50 CBA 1
+			AU10 H 1
 			Stop
 		DualFlashKicking:
 			AG63 ABCDEF 1
 			AG63 G 2
 			AG63 FEDCBA 1
 			AG60 N 1
-			Stop
-			
+			Stop	
 		FlashAirKicking:
 			TNT1 A 0 A_ClearOverlays(10,11)
 			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualAirFlashKicking")
+			TNT1 A 0 A_JumpIf(CountInv("AutoshotgunDrumMag") >=1 && CountInv("PBAutoShotgunHasUnloaded") != 1, "FlashAirKickingDrumMag")
 			AG50 ABCDEF 1
 			AG50 G 3
 			AG50 FEDCBA 1
 			AG10 G 1
+			Stop
+		FlashAirKickingDrumMag:
+			AU50 ABC 1
+			AG50 DEF 1
+			AG50 G 3
+			AG50 FED 1
+			AU50 CBA 1
+			AU10 H 1
 			Stop
 		DualAirFlashKicking:
 			AG63 ABCDEF 1
@@ -1971,10 +2013,19 @@ ACTOR AutoShotgun : PB_Weapon
 		FlashSlideKicking:
 			TNT1 A 0 A_ClearOverlays(10,11)
 			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualFlashSlideKicking")
+			TNT1 A 0 A_JumpIf(CountInv("AutoshotgunDrumMag") >=1 && CountInv("PBAutoShotgunHasUnloaded") != 1, "FlashSlideKickingDrumMag")
 			AG50 ABCDEF 1
 			AG50 G 14
 			AG50 FEDCBA 1
 			AG10 G 1
+			Stop
+		FlashSlideKickingDrumMag:
+			AU50 ABC 1
+			AG50 DEF 1
+			AG50 G 14
+			AG50 FED 1
+			AU50 CBA 1
+			AU10 H 1
 			Stop
 		DualFlashSlideKicking:
 			AG63 ABCDEF 1
@@ -1986,8 +2037,14 @@ ACTOR AutoShotgun : PB_Weapon
 		FlashSlideKickingStop:
 			TNT1 A 0 A_ClearOverlays(10,11)
 			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualFlashSlideKickingStop")
+			TNT1 A 0 A_JumpIf(CountInv("AutoshotgunDrumMag") >=1 && CountInv("PBAutoShotgunHasUnloaded") != 1, "FlashSlideKickingStopDrumMag")
 			AG50 FEDCBA 1
 			AG10 G 1
+			Stop
+		FlashSlideKickingStopDrumMag:
+			AG50 FED 1
+			AU50 CBA 1
+			AU10 H 1
 			Stop
 		DualFlashSlideKickingStop:
 			AG63 FEDCBA 1

@@ -12,6 +12,10 @@ class PB_WeaponBase : DoomWeapon
 	property MidPickupMessage: MidWeaponPickupMessage;
 	string lastGrenadeType;
 	property lastGrenadeType: lastGrenadeType;
+	
+	string rocketLauncherMode;
+	property rocketLauncherMode: rocketLauncherMode;
+	
 	string upgradedRifleMode;
 	property upgradedRifleMode: upgradedRifleMode;
 	string fireMode;
@@ -120,6 +124,16 @@ class PB_WeaponBase : DoomWeapon
 	action void A_SetCurrentGrenadeType(string type)
 	{
 		invoker.lastGrenadeType = type;
+	}
+	
+	action string PB_GetCurrentRocketMode()
+	{
+		return invoker.rocketLauncherMode;
+	}
+	
+	action void PB_SetCurrentRocketMode(string type)
+	{
+		invoker.rocketLauncherMode = type;
 	}
 	
 	action void A_DecideSpawnLaserPuff()
@@ -245,6 +259,18 @@ class PB_WeaponBase : DoomWeapon
 		//A_WeaponOffset(-CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY")-1,WOF_INTERPOLATE | (!!(pbFlags & PBWEAP_KEEPYOFFSET) ? WOF_KEEPY : 0));
 		return null;
 	}
+	
+	action void PB_HandleCrosshair(int num)
+	{
+        CVar crosshair_settings = CVar.FindCVar('pb_weapon_crosshairs');
+		
+		if(crosshair_settings.GetBool()){
+			A_SetCrosshair(num); // Set crosshair to specific weapon
+		}
+		else {
+			A_SetCrosshair(0); // Set crosshair to universal user setting
+		}
+	}
   
 	
 	action void A_SetOverlaySprite(int layer, String str)
@@ -264,5 +290,25 @@ class PB_WeaponBase : DoomWeapon
         {
                     let psp = player.GetPSprite(PSP_FLASH);
                     psp.sprite = GetSpriteIndex(str);
+        }
+
+	action void A_SetSpawnSprite(String str)
+        {
+                   sprite = GetSpriteIndex(str);
+        }
+
+		states
+		{
+			Flash:
+				TNT1 A 1;
+				stop;
+		}
+}
+
+class PB_UpgradeItem : CustomInventory
+{
+	action void A_SetSpawnSprite(String str)
+        {
+                   sprite = GetSpriteIndex(str);
         }
 }
