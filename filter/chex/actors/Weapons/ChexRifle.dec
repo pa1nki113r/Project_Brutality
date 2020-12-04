@@ -1,0 +1,370 @@
+ACTOR ChexRifleAmmo : Ammo {
+Inventory.MaxAmount 50 }
+ACTOR UnloadedChexRifle : Inventory {
+Inventory.MaxAmount 1 }
+ACTOR JustGotAChexWeapon : Inventory {
+Inventory.MaxAmount 1 }
+ACTOR ChexWeaponLooked : Inventory {
+Inventory.MaxAmount 1 }
+
+Actor ChexParticleSpawn: BluePlasmaParticleSpawner
+{
+  States
+  {
+  Spawn:
+	TNT1 AA 0 A_CustomMissile ("ChexParticleS", 0, 0, random (0, 360), 2, random (50, 130))
+    TNT1 AA 0 A_CustomMissile ("PlasmaSmoke", 0, 0, random (0, 360), 2, random (0, 360))
+    TNT1 A 1
+    Stop
+  }
+}
+
+Actor ChexParticleS
+{
+  Height 0
+  Radius 0
+  Mass 0
+  +Missile
+  +NoBlockMap
+  -NoGravity
+  +LowGravity
+  +DontSplash
+  +DoomBounce
+  +FORCEXYBILLBOARD
+  BounceFactor 0.2
+  Gravity 0.8
+  RenderStyle Add
+  Scale 0.035
+  //Speed 2
+  Speed 12
+  States
+  {
+  Spawn:
+  Death:
+    CPSQ A 2 Bright A_FadeOut(0.04)
+    Loop
+  }
+}
+
+ACTOR ChexProjectile : PulseCannonBall {
+Damage 16 
+States
+	{
+	DM:
+		TNT1 A 0
+		TNT1 A 0 A_ChangeFLag("THRUSPECIES", 0)
+		TNT1 A 0 A_ChangeFLag("MTHRUSPECIES", 0)
+		Goto Spawn1
+	
+	Spawn:
+		TNT1 A 0
+		TNT1 A 0 ACS_ExecuteAlways(719, 0, 0, 0, 0)//Check if Coop
+
+	Spawn1:
+		PBAL D 2 BRIGHT A_SpawnItem("RedFlare",0,0)
+		TNT1 A 0 A_SpawnItemEx("PurpleTrailSparksSmall", 0, 0, 0, 0, 0, 0, 0, 128)
+		PBAL E 2 BRIGHT A_SpawnItem("RedFlare",0,0)
+		Loop
+
+Xdeath:
+    //TNT1 A 0 A_SpawnItem ("PlasmaPuff", 0)
+    //TNT1 A 0 A_SpawnItem ("RailPuff", 0)
+	TNT1 A 0 A_CustomMissile ("RedFlare", 0, 0, random (0, 360), 2, random (0, 360))
+	//TNT1 A 0 A_SpawnItem("BluePlasmaRife")
+	TNT1 AAAAA 0 A_CustomMissile ("RedFlare", 0, 0, random (0, 360), 2, random (0, 360))
+    TNT1 B 1 A_Explode(8,50,0)
+	TNT1 B 4
+	TNT2 AAA 9 A_CustomMissile ("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160))
+		
+		Stop
+
+
+	//TinyBlackHoleSingularity
+
+	Death:
+	TNT1 A 0 
+	TNT1 B 1 A_Explode(6,50,1)
+	TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	TNT1 A 0 A_SpawnItemEx ("DetectCeilCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	TNT1 A 0 A_CustomMissile ("PurplePlasmaFire", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 AAAAA 0 A_CustomMissile ("PurplePlasmaParticle", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 B 4	
+    TNT2 AAAAAAAAA 9 A_CustomMissile ("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160))
+		Stop
+		}}
+Actor RedFlareSmall : RedFlare {
+Scale 0.025
+}
+Actor ChexLightningModeProjectile
+{
+  Height 0
+  Radius 0
+  Mass 0
+  +Missile
+  +NoBlockMap
+  +NOGRAVITY
+  +FORCEXYBILLBOARD
+  BounceFactor 0.2
+  Damage 3
+  RenderStyle Add
+  DamageType "Saw"
+  Scale 0.04
+  //Speed 2
+  Speed 50
+  States
+  {
+  Spawn:
+    CPSQ AAAAAAAAAA 2 Bright A_CustomMissile ("RedFlareSmall", 0, 0, 0, 2, 1)
+    Stop
+Death:
+	TNT1 A 0
+	Stop
+  }
+}
+
+ACTOR ChexRifle : PB_Weapon 
+{
+	Weapon.BobRangeX 0.3
+	Weapon.BobRangeY 0.5
+	Weapon.BobStyle InverseSmooth
+	Weapon.BobSpeed 2.4
+	Weapon.SelectionOrder 1300
+	Weapon.AmmoUse1 0
+	Weapon.AmmoUse2 0
+	Weapon.AmmoGive1 4
+	Weapon.AmmoGive2 0
+	Scale 0.65
+	Weapon.AmmoType1 "Cell"
+	Weapon.AmmoType2 "ChexRifleAmmo"
+	Inventory.PickupMessage "You got the super-duper secret Chex Quest-rifle! (Slot 6)"
+    Inventory.PickupSound "PLSPICK"
+	Obituary "%k got a Chex-weapon somehow and killed %o"
+    AttackSound "None"
+	Tag "Chex Quest assault rifle"
+    +WEAPON.NOALERT
+    +WEAPON.NOAUTOAIM
+	+WEAPON.NOAUTOFIRE
+	+WEAPON.AMMO_OPTIONAL
+	States
+	{
+	Spawn:
+		CRRS A -1 
+		Loop
+	Select:
+		TNT1 A 0 {
+			A_WeaponOffset(0,32);
+			A_SetRoll(0);
+			A_SetCrosshair(0);
+			A_TakeInventory("PB_LockScreenTilt",1);
+			A_ClearOverlays(10,11);
+		}
+		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
+		TNT1 A 0 A_Takeinventory("HasUnloaded",1)
+		TNT1 A 0 A_Takeinventory("Unloading",1)
+		TNT1 A 0 A_TakeInventory("RifleSelected",1)
+		TNT1 A 0 A_TakeInventory("CarbineSelected",1)
+		TNT1 A 0 A_TakeInventory("FistsSelected",1)
+		TNT1 A 0 A_TakeInventory("SawSelected",1)
+		TNT1 A 0 A_TakeInventory("SledgeSelected",1)
+		TNT1 A 0 A_TakeInventory("HandgunSelected",1)
+		TNT1 A 0 A_TakeInventory("DualHandgunSelected",1)
+		TNT1 A 0 A_TakeInventory("RevolverSelected",1)
+		TNT1 A 0 A_TakeInventory("ShotgunSelected",1)
+		TNT1 A 0 A_TakeInventory("SSGSelected",1)
+		TNT1 A 0 A_TakeInventory("ASGSelected",1)
+		TNT1 A 0 A_TakeInventory("QSGSelected",1)
+		TNT1 A 0 A_TakeInventory("MinigunSelected",1)
+		TNT1 A 0 A_TakeInventory("NewChaingunSelected",1)	
+		TNT1 A 0 A_TakeInventory("RocketLauncherSelected",1)
+		TNT1 A 0 A_TakeInventory("GrenadeLauncherSelected",1)
+		TNT1 A 0 A_TakeInventory("SGLSelected",1)
+		TNT1 A 0 A_GiveInventory("PlasmaGunSelected",1)
+		TNT1 A 0 A_TakeInventory("M2Selected",1)	
+		TNT1 A 0 A_TakeInventory("FreezerSelected",1)
+		TNT1 A 0 A_TakeInventory("RailGunSelected",1)
+		TNT1 A 0 A_TakeInventory("BFGSelected",1)
+		TNT1 A 0 A_TakeInventory("BFGBeamSelected",1)
+		TNT1 A 0 A_TakeInventory("BHCSelected",1)
+		TNT1 A 0 A_TakeInventory("RevenantLauncherSelected",1)
+		TNT1 A 0 A_TakeInventory("FlameCannonSelected",1)
+		TNT1 A 0 A_TakeInventory("HellRifleSelected",1)
+		TNT1 A 0 A_TakeInventory("LandMineSelected",1)
+		TNT1 A 0 A_TakeInventory("UACSMGSelected",1)
+		TNT1 A 0 A_TakeInventory("SubMachineGunSelected",1)
+		TNT1 A 0 A_TakeInventory("LostSoulSelected",1)
+		TNT1 A 0 A_TakeInventory("HasBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
+		TNT1 A 0 A_GiveInventory ("JustGotAChexWeapon")
+		TNT1 A 0 A_Giveinventory("HasPlasmaWeapon",1)
+		TNT1 A 0 A_Lower
+		Wait
+	RespectAnimation:
+		TNT1 A 0 A_TakeInventory ("JustGotAChexWeapon", 1)
+		TNT1 A 0 A_JumpIfInventory("ChexWeaponLooked", 1, "RealReady")
+		TNT1 A 0 A_GiveInventory ("ChexWeaponLooked", 1)
+		CRR1 ABCDEFGHIKLMNOPQRSTVXYZ 1
+		CRR2 ABCD 1 
+		TNT1 A 0 { 
+		A_SpawnItem("PinkIonFlare",30,0);
+		A_SpawnItemEx("ChexParticleS", 10, 10, 0, 0, 0, 0, 0, 128);
+		A_SpawnItem("PurplePlasmaFlare",10,0);
+		A_SpawnItem("PinkIonFlare",40,0);
+		A_SpawnItemEx("ChexParticleS", 20, -10, 0, 0, 0, 0, 0, 128);
+		A_SpawnItem("PurplePlasmaFlare",10,-30);
+		A_SpawnItem("ChexParticleSpawn",50,0);
+		A_SpawnItemEx("ChexParticleS", 30, 10, 0, 0, 0, 0, 0, 128);
+		A_SpawnItem("ChexParticleSpawn",30,0);
+		}
+		TNT1 A 0 A_PlaySound("PLSOFF")
+		CRR2 EFGHIKLMNOPQRSTVXYZ 1 A_SetRoll (roll+1.5)
+		CRR3 ABCD 1 A_SetRoll (roll-1.5)
+		TNT1 A 0 A_PlaySound("CELLPKUP")
+		CRR3 EFGHIKLMNOPQ 1 A_SetRoll (roll-1.5)
+		TNT1 A 0 A_PlaySound("PLREADY")
+		CRR3 RSTVXYZ 1 A_SetRoll (roll+1.5)
+		CRR4 ABCDEFG 1 A_SetRoll (roll+1.5)
+		CRR4 HIKLMN 1 A_SetRoll (roll-1.5)
+		TNT1 A 0 A_SetRoll(0)
+		Goto RealReady
+	Ready3:
+	Ready:
+		TNT1 A 0 A_PlaySound("PLSDRAW")
+		TNT1 A 0 A_JumpIfInventory("JustGotAChexWeapon", 1, "RespectAnimation")
+		CHRE ABCD 1
+		Goto RealReady
+	RealReady: 
+		CRR2 N 0 A_JumpIfInventory ("UnloadedChexRifle", 1, 2)
+		CHRE E 0
+		"####" "#" 1 A_DoPBWeaponAction
+		Loop
+	AltFire:
+		TNT1 A 0 A_JumpIfInventory("ChexRifleAmmo", 1, 2)
+		Goto Reload
+		TNT1 AAA 0
+		CXXA ABCD 1
+		TNT1 A 0 A_PlaySound("PLSC_1", 1)
+		CXXA ABCD 1
+		TNT1 A 0 A_PlaySound("PLSC_2", 1)
+		CXXA ABCD 1 
+		TNT1 A 0 A_PlaySound("PLSC_3", 1)
+		CXXA ABCD 1
+		TNT1 A 0 A_PlaySound("PLSC_4", 1)
+	AltHold:
+		TNT1 A 0 A_JumpIfInventory("ChexRifleAmmo", 1, 2)
+		Goto Reload
+		TNT1 AAA 0
+		TNT1 A 0 A_PlaySound("PAILGF2",3)
+		TNT1 A 0 A_TakeInventory("ChexRifleAmmo", 1)
+		TNT1 A 0 A_Recoil(1)
+		TNT1 A 0 A_SetPitch(pitch-3)
+		CXAF ABCD 1 Bright {
+			A_FireCustomMissile ("ChexLightningModeProjectile", 0, 0, random(-10, 10), random(20, -20));
+			A_FireCustomMissile ("ChexLightningModeProjectile", 0, 0, random(-20, 20), random(-1, 14));
+			A_FireCustomMissile ("ChexLightningModeProjectile", 0, 0, random(-6, 16), random(6, 19));
+		}
+		TNT1 A 0 A_Refire
+	Fire:
+		TNT1 A 0 A_JumpIfInventory("ChexRifleAmmo", 1, 2)
+		Goto Reload
+		TNT1 AAA 0
+		TNT1 A 0 A_PlaySound("PAILGF2",3)
+		TNT1 A 0 A_AlertMonsters
+		TNT1 A 0 A_ZoomFactor(.985)
+		PZCF A 0 A_FireCustomMissile("ChexProjectile", 0, 1, 0, 0)
+		TNT1 A 0 A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0)
+		TNT1 A 0 A_SpawnItem("PinkIonFlare",14,30,0,0)
+		CHRE G 1 BRIGHT A_ZoomFactor(.970)
+		CHRE H 1 BRIGHT A_ZoomFactor(.965)
+		PZCF B 0 BRIGHT A_ZoomFactor(.985)
+		TNT1 A 0 A_Takeinventory("ChexRifleAmmo",1)
+		CHRE I 1 BRIGHT
+		TNT1 A 0 A_ZoomFactor (1)
+		TNT1 A 0 A_Refire
+		Goto RealReady
+	Deselect:
+		TNT1 A 0 A_Lower
+		Wait
+	Reload:
+		TNT1 A 0 A_TakeInventory ("Reloading")
+		TNT1 A 0 A_JumpIfInventory ("ChexRifleAmmo", 50, "RealReady")
+		TNT1 A 0 A_JumpIfInventory ("Cell", 1, "ReloadSequence")
+		Goto RealReady
+	ReloadSequence:
+		TNT1 A 0 A_JumpIfInventory ("Cell", 1, 2)
+		Goto ReloadAnimation
+		TNT1 A 0
+		TNT1 A 0
+		TNT1 A 0 A_JumpIfInventory ("ChexRifleAmmo", 50, "ReloadAnimation")
+		TNT1 A 0 {
+			A_GiveInventory ("ChexRifleAmmo",1);
+			A_TakeInventory ("Cell",1);
+		}
+		Loop
+	ReloadAnimation:
+		TNT1 A 0 A_JumpIfInventory ("UnloadedChexRifle",1,"ReloadAnimationIfUnloaded")
+		TNT1 A 0 A_TakeInventory ("UnloadedChexRifle")
+		CXR1 ABCD 1
+		CXR6 A 1
+		CXR1 ZYMLKJ 1 A_SetRoll (roll+3)
+		TNT1 A 0 A_PlaySound ("PLSOFF", 3)
+		CXR1 IHG 1
+		TNT1 A 0 A_PlaySound ("CELLPKUP", 6)
+		CXR1 FEEEEEE 1 A_SetRoll (roll-3)
+		CXR1 FGHIJ 1
+		TNT1 A 0 A_PlaySound ("PLSRD", 5)
+		CXR1 KLMNOPQRSTUV 1
+		PZCR A 0 A_PlaySound("PLREADY", 21)
+		CXR1 WXZ 1 A_SetRoll (roll+3)
+		TNT1 A 0 A_PlaySound ("PLSCLICK", 9)
+		CXR6 A 1
+		CXR1 DCBA 1 A_SetRoll (roll-7)
+		TNT1 A 0 A_SetRoll (0)
+		Goto RealReady
+	WeaponSpecial:
+		TNT1 A 0 A_TakeInventory ("GoWeaponSpecialAbility")
+		Goto RealReady
+	ReloadAnimationIfUnloaded:
+		TNT1 A 0 A_TakeInventory ("UnloadedChexRifle")
+		CRR2 P 1
+		CRR2 QRS 1 A_SetRoll (roll+2)
+		CXUR ABCD 1 A_SetRoll (roll+2)
+		CXR1 FGHIJ 1 A_SetRoll (roll+2)
+		TNT1 A 0 A_PlaySound ("PLSRD", 5)
+		CXR1 JKLMNOPQRSTUV 1
+		PZCR A 0 A_PlaySound("PLREADY", 21)
+		CXR1 WXZ 1 A_SetRoll (roll+3)
+		TNT1 A 0 A_PlaySound ("PLSCLICK", 9)
+		CXR6 A 1
+		CXR1 DCBA 1 A_SetRoll (roll-7)
+		TNT1 A 0 A_SetRoll (0)
+		Goto RealReady
+	Unload:
+		TNT1 A 0 A_TakeInventory ("Unloading")
+		TNT1 A 0 A_JumpIfInventory("ChexRifleAmmo", 1, "UnloadSequence")
+		Goto RealReady
+	UnloadSequence:
+		TNT1 A 0 A_JumpIfInventory ("ChexRifleAmmo", 1, 2)
+		Goto UnloadAnimation
+		TNT1 A 0
+		TNT1 A 0
+		TNT1 A 0 {
+			A_GiveInventory ("Cell",1);
+			A_TakeInventory ("ChexRifleAmmo",1);
+		}
+		Loop
+	UnloadAnimation:
+		TNT1 A 0 A_TakeInventory ("Unloading")
+		TNT1 A 0 A_GiveInventory ("UnloadedChexRifle",1)
+		CXR1 ABCD 1
+		CXR1 ZYMLKJ 1 A_SetRoll (roll+3)
+		TNT1 A 0 A_PlaySound ("PLSOFF", 3)
+		CXR1 IHG 1
+		TNT1 A 0 A_PlaySound ("CELLPKUP", 6)
+		CXR1 FE 1 A_SetRoll (roll-3)
+		CXUR DCBA 1 A_SetRoll (roll+8)
+		CRR2 SRQ 1 A_SetRoll (roll+3)
+		TNT1 A 0 A_SetRoll(0)
+		Goto RealReady
+}
+}
+		
