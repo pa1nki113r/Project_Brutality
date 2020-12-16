@@ -1,5 +1,5 @@
 ACTOR ChexRifleAmmo : Ammo {
-Inventory.MaxAmount 50 }
+Inventory.MaxAmount 42 }
 ACTOR UnloadedChexRifle : Inventory {
 Inventory.MaxAmount 1 }
 ACTOR JustGotAChexWeapon : Inventory {
@@ -47,7 +47,8 @@ Actor ChexParticleS
 }
 
 ACTOR ChexProjectile : PulseCannonBall {
-Damage 16 
+Damage 20
+Speed 200
 States
 	{
 	DM:
@@ -124,14 +125,10 @@ Death:
 
 ACTOR ChexRifle : PB_Weapon 
 {
-	Weapon.BobRangeX 0.3
-	Weapon.BobRangeY 0.5
-	Weapon.BobStyle InverseSmooth
-	Weapon.BobSpeed 2.4
 	Weapon.SelectionOrder 1300
 	Weapon.AmmoUse1 0
 	Weapon.AmmoUse2 0
-	Weapon.AmmoGive1 4
+	Weapon.AmmoGive1 0
 	Weapon.AmmoGive2 0
 	Scale 0.65
 	Weapon.AmmoType1 "Cell"
@@ -150,6 +147,22 @@ ACTOR ChexRifle : PB_Weapon
 	Spawn:
 		CRRS A -1 
 		Loop
+	Pickup:
+		TNT1 A 0
+		{
+			if(CountInv("ChexRifle") < 1)
+			{
+				A_GiveInventory("ChexRifleAmmo",42);
+				A_GiveInventory("Cell",126);
+				return;
+			}
+			else
+			{
+				A_GiveInventory("Cell",42);
+				return;
+			}
+		}
+		stop
 	Select:
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
@@ -196,11 +209,11 @@ ACTOR ChexRifle : PB_Weapon
 		TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
 		TNT1 A 0 A_GiveInventory ("JustGotAChexWeapon")
 		TNT1 A 0 A_Giveinventory("HasPlasmaWeapon",1)
-		TNT1 A 0 A_Lower
+		TNT1 A 0 A_Raise
 		Wait
 	RespectAnimation:
 		TNT1 A 0 A_TakeInventory ("JustGotAChexWeapon", 1)
-		TNT1 A 0 A_JumpIfInventory("ChexWeaponLooked", 1, "RealReady")
+		TNT1 A 0 A_JumpIfInventory("ChexWeaponLooked", 1, "Ready")
 		TNT1 A 0 A_GiveInventory ("ChexWeaponLooked", 1)
 		CRR1 ABCDEFGHIKLMNOPQRSTVXYZ 1
 		CRR2 ABCD 1 
@@ -230,13 +243,14 @@ ACTOR ChexRifle : PB_Weapon
 	Ready:
 		TNT1 A 0 A_PlaySound("PLSDRAW")
 		TNT1 A 0 A_JumpIfInventory("JustGotAChexWeapon", 1, "RespectAnimation")
-		CHRE ABCD 1
+		CHRS DCBA 1
 		Goto RealReady
 	RealReady: 
 		CRR2 N 0 A_JumpIfInventory ("UnloadedChexRifle", 1, 2)
 		CHRE E 0
 		"####" "#" 1 A_DoPBWeaponAction
 		Loop
+	/*
 	AltFire:
 		TNT1 A 0 A_JumpIfInventory("ChexRifleAmmo", 1, 2)
 		Goto Reload
@@ -263,6 +277,7 @@ ACTOR ChexRifle : PB_Weapon
 			A_FireCustomMissile ("ChexLightningModeProjectile", 0, 0, random(-6, 16), random(6, 19));
 		}
 		TNT1 A 0 A_Refire
+	*/
 	Fire:
 		TNT1 A 0 A_JumpIfInventory("ChexRifleAmmo", 1, 2)
 		Goto Reload
@@ -270,23 +285,25 @@ ACTOR ChexRifle : PB_Weapon
 		TNT1 A 0 A_PlaySound("PAILGF2",3)
 		TNT1 A 0 A_AlertMonsters
 		TNT1 A 0 A_ZoomFactor(.985)
-		PZCF A 0 A_FireCustomMissile("ChexProjectile", 0, 1, 0, 0)
+		TNT1 A 0 A_FireCustomMissile("ChexProjectile", 0, 1, 0, 0)
 		TNT1 A 0 A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0)
 		TNT1 A 0 A_SpawnItem("PinkIonFlare",14,30,0,0)
 		CHRE G 1 BRIGHT A_ZoomFactor(.970)
 		CHRE H 1 BRIGHT A_ZoomFactor(.965)
-		PZCF B 0 BRIGHT A_ZoomFactor(.985)
+		TNT1 A 0 BRIGHT A_ZoomFactor(.985)
 		TNT1 A 0 A_Takeinventory("ChexRifleAmmo",1)
 		CHRE I 1 BRIGHT
 		TNT1 A 0 A_ZoomFactor (1)
 		TNT1 A 0 A_Refire
 		Goto RealReady
 	Deselect:
+		CHRS ABCD 1
+	RealDeselect:
 		TNT1 A 0 A_Lower
 		Wait
 	Reload:
 		TNT1 A 0 A_TakeInventory ("Reloading")
-		TNT1 A 0 A_JumpIfInventory ("ChexRifleAmmo", 50, "RealReady")
+		TNT1 A 0 A_JumpIfInventory ("ChexRifleAmmo", 42, "RealReady")
 		TNT1 A 0 A_JumpIfInventory ("Cell", 1, "ReloadSequence")
 		Goto RealReady
 	ReloadSequence:
@@ -294,7 +311,7 @@ ACTOR ChexRifle : PB_Weapon
 		Goto ReloadAnimation
 		TNT1 A 0
 		TNT1 A 0
-		TNT1 A 0 A_JumpIfInventory ("ChexRifleAmmo", 50, "ReloadAnimation")
+		TNT1 A 0 A_JumpIfInventory ("ChexRifleAmmo", 42, "ReloadAnimation")
 		TNT1 A 0 {
 			A_GiveInventory ("ChexRifleAmmo",1);
 			A_TakeInventory ("Cell",1);
@@ -303,21 +320,33 @@ ACTOR ChexRifle : PB_Weapon
 	ReloadAnimation:
 		TNT1 A 0 A_JumpIfInventory ("UnloadedChexRifle",1,"ReloadAnimationIfUnloaded")
 		TNT1 A 0 A_TakeInventory ("UnloadedChexRifle")
-		CXR1 ABCD 1
-		CXR6 A 1
-		CXR1 ZYMLKJ 1 A_SetRoll (roll+3)
+		CXR2 XWVUTS 1 A_SetRoll(roll-1.2)
+		CXR2 RQPO 1 A_SetRoll(roll+1.8)
+		CXR2 NML 1 A_SetRoll(roll+0.4)
+		CXR2 KJI 1
+		CXR2 H 1
+		CXR2 GFEDCB 1 A_SetRoll (roll+2.0)
 		TNT1 A 0 A_PlaySound ("PLSOFF", 3)
-		CXR1 IHG 1
+		CXR2 A 1
+		CXR1 ZY 1
+		TNT1 A 0 A_SetRoll(roll-3.0)
+		CXR1 XWVUTSRQPON 1
 		TNT1 A 0 A_PlaySound ("CELLPKUP", 6)
-		CXR1 FEEEEEE 1 A_SetRoll (roll-3)
-		CXR1 FGHIJ 1
-		TNT1 A 0 A_PlaySound ("PLSRD", 5)
-		CXR1 KLMNOPQRSTUV 1
-		PZCR A 0 A_PlaySound("PLREADY", 21)
-		CXR1 WXZ 1 A_SetRoll (roll+3)
-		TNT1 A 0 A_PlaySound ("PLSCLICK", 9)
-		CXR6 A 1
-		CXR1 DCBA 1 A_SetRoll (roll-7)
+		CXR1 N 2
+		CXR1 NOPQRSTUVWX 1
+		TNT1 A 0 A_SetRoll(roll-3.0)
+		CXR1 YZ 1
+		CXR2 A 1 A_SetRoll (roll+3)
+		/*
+		CXR2 BCDEFGHIJKLMNOPQRSTUV 1
+		CXR2 WXZ 1 A_SetRoll (roll+3)
+		CXR2 A 1
+		*/
+		CXR2 BCDEFGH 1 A_SetRoll (roll-2.0)
+		CXR2 IJK 1
+		CXR2 LMN 1 A_SetRoll(roll-0.4)
+		CXR2 OPQR 1 A_SetRoll(roll-1.8)
+		CXR2 STUVWX 1 A_SetRoll(roll+1.2)
 		TNT1 A 0 A_SetRoll (0)
 		Goto RealReady
 	WeaponSpecial:
