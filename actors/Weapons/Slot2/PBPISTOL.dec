@@ -783,25 +783,17 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
 		TNT1 A 0 A_Print ("You need two pistols to dual wield!")
 		Goto Ready3
 	SwitchToDualWield:
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"SwitchToDualWieldSilencer")
-		D2GS FG 1 A_SetRoll(roll+.5, SPF_INTERPOLATE)
-		D2GS HI 1 A_SetRoll(roll-.5, SPF_INTERPOLATE)
+		D2GT F 0 A_JumpIfInventory("SilencerEquipped",1,"2")
+		D2GS F 0
+		"####" FG 1 A_SetRoll(roll+.5, SPF_INTERPOLATE)
+		"####" HI 1 A_SetRoll(roll-.5, SPF_INTERPOLATE)
 		TNT1 A 0 A_GiveInventory("DualWieldingPistols",1)
 		Goto ReadyDualWield
 	StopDualWield:
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"StopDualWieldSilencer")
-		D2GS JK 1 A_SetRoll(roll-0.2,SPF_INTERPOLATE)
-		D2GS LM 1 A_SetRoll(roll+0.2,SPF_INTERPOLATE)
-		TNT1 A 0 A_TakeInventory("DualWieldingPistols", 1)
-		Goto Ready3
-	SwitchToDualWieldSilencer:
-		D2GT FG 1 A_SetRoll(roll+.5, SPF_INTERPOLATE)
-		D2GT HI 1 A_SetRoll(roll-.5, SPF_INTERPOLATE)
-		TNT1 A 0 A_GiveInventory("DualWieldingPistols",1)
-		Goto ReadyDualWield
-	StopDualWieldSilencer:
-		D2GT JK 1 A_SetRoll(roll-0.2,SPF_INTERPOLATE)
-		D2GT LM 1 A_SetRoll(roll+0.2,SPF_INTERPOLATE)
+		D2GT J 0 A_JumpIfInventory("SilencerEquipped",1,"2")
+		D2GS J 0
+		"####" JK 1 A_SetRoll(roll-0.2,SPF_INTERPOLATE)
+		"####" LM 1 A_SetRoll(roll+0.2,SPF_INTERPOLATE)
 		TNT1 A 0 A_TakeInventory("DualWieldingPistols", 1)
 		Goto Ready3
 		
@@ -914,19 +906,16 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
 		TNT1 A 0 A_Takeinventory("PBPistolWasEmpty", 1)
 		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
 		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols", 1, "DualWieldDeselect")
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"SilencerDeselect")
 	NormalDeselect:
-        DEGG BCDE 1		
-		Goto FinishDeselect
-	SilencerDeselect:
-        D3GG BCDE 1		
+        DEGG BCDE 1	{
+			if(CountInv("SilencerEquipped") == 1) {A_SetWeaponSprite("D3GG");}
+			}
 		Goto FinishDeselect
 	DualWieldDeselect:
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped", 1, "SilencerDualWieldDeselect")
-        D2GS EDCBA 1	
+        D2GS EDCBA 1 {
+			if(CountInv("SilencerEquipped") == 1) {A_SetWeaponSprite("D2GT");}
+			}
 		Goto FinishDeselect
-	SilencerDualWieldDeselect:
-        D2GT EDCBA 1		
 	FinishDeselect:
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait	
@@ -1884,7 +1873,6 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
 	Unload:
 		"####" "#" 0 A_Takeinventory("Unloading",1)
 		"####" "#" 0 A_JumpIfInventory("DualWieldingPistols", 1, "UnloadDualWield")
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"UnloadSilencer")
 		TNT1 A 0 A_JumpIfInventory("PBPistolHasUnloaded", 1, "AlreadyUnloaded")
         TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,1)
         Goto Ready3
@@ -1895,9 +1883,10 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
 			A_ZoomFactor(1.0);
 			A_Giveinventory("PB_LockScreenTilt",1);
 			}
-		D5GB A 1 
-		TNT1 A 0 A_PlaySound("PSRLOUT", 1)
-        D5GB BCDEFGHIJKDCBA 1
+		D5GD A 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D5GB A 0
+		"####" A 1 A_PlaySound("PSRLOUT", 1)
+        "####" BCDEFGHIJKDCBA 1
 		
 	RemoveBullets:
 		TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,1)
@@ -1913,7 +1902,7 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		Goto ReadyToFire
 		
-	UnloadSilencer:
+/*	UnloadSilencer:
 		TNT1 A 0 A_JumpIfInventory("PBPistolHasUnloaded", 1, "AlreadyUnloaded")
         TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,1)
         Goto Ready3
@@ -1942,7 +1931,7 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
 		TNT1 A 0 A_PlaySound("DryFire")
 		TNT1 A 0 A_GiveInventory("PBPistolHasUnloaded", 1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
-		Goto Ready3
+		Goto Ready3*/
 		
 	UnloadDualWield:
 		TNT1 A 0 {
@@ -1983,118 +1972,92 @@ ACTOR BDPistol : PB_Weapon //Replaces Pistol
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		Goto ReadyDualWield
 					
-/*	FinishUnload:
-		TNT1 A 0 A_PlaySound("DryFire")
-		TNT1 A 0 A_GiveInventory("PBPistolHasUnloaded", 1)
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		Goto ReadyToFire*/
-		
 	// Flash States
 		
 	FlashKicking:
 		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols",1,"FlashKickingDualWield")
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashKickingSilencer")
-		D5GU ABCDEFGHIJKLMN 1
-		DEGG AA 1 // Pause?
-		Stop
-		
-	FlashKickingSilencer:
-		D5GV ABCDEFGHIJKLMN 1
-		D3GG AA 1 // Pause?
-		Stop
+		D5GV A 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D5GU A 0
+		"####" ABCDEFGHIJKLMN 1
+		D3GG A 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		DEGG A 0
+		"####" AA 1 // Pause?
+		Stop	
 		
 	FlashAirKicking:
 		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols",1,"FlashKickingDualWield")
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashAirKickingSilencer")
-		D5GU ABCDEFGHIJKLMN 1
-		DEGG AA 1 // Pause?
-		Stop
-		
-	FlashAirKickingSilencer:
-		D5GV ABCDEFGHIJKLMN 1
-		D3GG AA 1 // Pause?
+		D5GV A 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D5GU A 0
+		"####" ABCDEFGHIJKLMN 1
+		D3GG A 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		DEGG A 0
+		"####" AA 1 // Pause?
 		Stop
 		
 	FlashSlideKicking:
 		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols",1,"FlashSlideKickingDualWield")
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashSlideKickingSilencer")
-		D5GY ABCDEFGHIJKKKKLMNOPQRSTUV 1
-		Stop
-		
-	FlashSlideKickingSilencer:
-		D5GZ ABCDEFGHIJKKKKLMNOPQRSTUV 1
+		D5GZ A 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D5GY A 0
+		"####" ABCDEFGHIJKKKKLMNOPQRSTUV 1
 		Stop
 		
 	FlashSlideKickingStop:
 		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols",1,"FlashSlideKickingDualWieldStop")
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashSlideKickingStopSilencer")
-		D5GY WXYZ 1 
-		DEGG A 3 
-		Stop
-		
-	FlashSlideKickingStopSilencer:
-		D5GZ WXYZ 1 
-		D3GG A 3 
+		D5GZ W 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D5GY W 0
+		"####" WXYZ 1 
+		D3GG A 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		DEGG A 0
+		"####" A 3 
 		Stop
 		
 	FlashPunching:
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols",1,"FlashPunchingDualWield")
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashPunchingSilencer")
-		D5GS ABCDEFGHIJKLMN 1
-		Stop
-		
-	FlashPunchingSilencer:
-		D5GT ABCDEFGHIJKLMN 1
-		Stop
+		D5GT A 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D5GS A 0
+		"####" ABCDEFGHIJKLMN 1
+		Stop	
 		
 	FlashPunchingDualWield:
 		TNT1 A 15
 		Stop
+		
 	FlashKickingDualWield:
 		TNT1 A 0 A_ClearOverlays(10,11)
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashKickingDualWieldSilencer")
-		D6GG ABCDEFGHIJKLMN 1
-		D2GS EE 1 // Pause
-		Stop
-		
-	FlashKickingDualWieldSilencer:
-		D6GH ABCDEFGHIJKLMN 1
-		D2GT EE 1 // Pause
+		D6GH A 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D6GG A 0
+		"####" ABCDEFGHIJKLMN 1
+		D2GT E 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D2GS E 0
+		"####" EE 1 // Pause
 		Stop
 		
 	FlashAirKickingDualWield:
 		TNT1 A 0 A_ClearOverlays(10,11)
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashAirKickingDualWieldSilencer")
-		D6GG ABCDEFGHIJKLMN 1
-		D2GS EE 1 // Pause
+		D6GH A 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D6GG A 0
+		"####" ABCDEFGHIJKLMN 1
+		D2GT E 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D2GS E 0
+		"####" EE 1 // Pause
 		Stop
-		
-	FlashAirKickingDualWieldSilencer:
-		D6GH ABCDEFGHIJKLMN 1
-		D2GT EE 1 // Pause
-		Stop
-		
+
 	FlashSlideKickingDualWield:
 		TNT1 A 0 A_ClearOverlays(10,11)
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashSlideKickingDualWieldSilencer")
-		D6GI ABCDEFGHIJKLMNOPQRSTUV 1
-		Stop
-		
-	FlashSlideKickingDualWieldSilencer:
-		D6GJ ABCDEFGHIJKLMNOPQRSTUV 1
+		D6GJ A 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D6GI A 0
+		"####" ABCDEFGHIJKLMNOPQRSTUV 1
 		Stop
 		
 	FlashSlideKickingDualWieldStop:
 		TNT1 A 0 A_ClearOverlays(10,11)
-		TNT1 A 0 A_JumpIfInventory("SilencerEquipped",1,"FlashSlideKickingDualWieldStopSilencer")
-		D6GI WXYZ 1
-		D2GS EEE 1 // Pause
-		Stop
-		
-	FlashSlideKickingDualWieldStopSilencer:
-		D6GJ WXYZ 1
-		D2GT EEE 1 // Pause
+		D6GJ W 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D6GI W 0
+		"####" WXYZ 1
+		D2GT E 0 A_JumpIfInventory("SilencerEquipped",1,2)
+		D2GS E 0
+		"####" EEE 1 // Pause
 		Stop
 	}
 }
