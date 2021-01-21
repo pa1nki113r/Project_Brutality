@@ -256,6 +256,15 @@ ACTOR M2PlasmaRifle : PB_Weapon //12222
 			A_TakeInventory("PB_LockScreenTilt",1);
 			A_SetFiringRightWeapon(False);
 			A_SetFiringLeftWeapon(False);
+			if(CountInv("LeftM2PlasmaAmmo") < CountInv("M2PlasmaAmmo")){
+				A_GiveInventory("DualFiring",1);
+			}
+			if(CountInv("LeftM2PlasmaAmmo")<=0){
+				A_GiveInventory("DualFireReload",1);
+			}
+			if(CountInv("M2PlasmaAmmo")<=0){
+				A_GiveInventory("DualFireReload",1);
+			}
 			A_Overlay(10, "IdleLeft_Overlay", true);
 			A_Overlay(11, "IdleRight_Overlay", true);
 			}
@@ -267,13 +276,18 @@ ACTOR M2PlasmaRifle : PB_Weapon //12222
 	IdleLeft_Overlay:
 		M242 AABBCCDDEEFFGGHHIIHHGGFFEEDDCCBBAA 1 {
 			// Full-Auto
-			if(JustPressed(BT_ATTACK)){
-				if(CountInv("LeftM2PlasmaAmmo") > 0){
-					return state("FireLeft_Overlay");
-				}
-				else {
-					A_PlaySoundEx("weapons/empty", "Auto");
-					return state("");
+			if(CountInv("LeftM2PlasmaAmmo")<=0 && CountInv("M2PlasmaAmmo")>0){
+				A_GiveInventory("DualFiring",1);
+			}
+			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("M2PlasmaAmmo")<=0) || GetCvar("SingleDualFire")==1){
+				if(JustPressed(BT_ATTACK)){
+					if(CountInv("LeftM2PlasmaAmmo") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
 				}
 			}
 			return state("");
@@ -283,7 +297,21 @@ ACTOR M2PlasmaRifle : PB_Weapon //12222
 	IdleRight_Overlay:
 		M232 AABBCCDDEEFFGGHHIIHHGGFFEEDDCCBBAA 1 {
 			// Full-Auto
-			if(JustPressed(BT_ALTATTACK)){
+			if(CountInv("LeftM2PlasmaAmmo")>0 && CountInv("M2PlasmaAmmo")<=0){
+				A_TakeInventory("DualFiring",1);
+			}
+			if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1 && CountInv("LeftM2PlasmaAmmo")<=0)){
+				if(JustPressed(BT_ATTACK) && GetCvar("SingleDualFire")==0){
+					if(CountInv("M2PlasmaAmmo") > 0){
+						return state("FireRight_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+			}
+			if(JustPressed(BT_ALTATTACK) && GetCvar("SingleDualFire")==1){
 				if(CountInv("M2PlasmaAmmo") > 0){
 					return state("FireRight_Overlay");
 				}
@@ -320,6 +348,9 @@ ACTOR M2PlasmaRifle : PB_Weapon //12222
 			A_FireCustomMissile("AltHeavyPlasmaBall",0,0,-6, -2);
 			A_Zoomfactor(0.99);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, -6, -1, 0, 0);
+			if(CountInv("LeftM2PlasmaAmmo")<=0 || CountInv("M2PlasmaAmmo")>0 ){
+				A_GiveInventory("DualFiring",1);
+			}
 			if (CountInv("PowerStrength") >= 1 ) {
 
 				A_SetPitch(pitch-0.72, SPF_INTERPOLATE);
@@ -344,6 +375,11 @@ ACTOR M2PlasmaRifle : PB_Weapon //12222
 				}
 			}
 		M234 DE 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE)
+		TNT1 A 0 {
+			if(CountInv("LeftM2PlasmaAmmo")<=0){
+				A_GiveInventory("DualFireReload",1);
+			}
+		}
 		Goto IdleLeft_Overlay
 		
 	
@@ -372,6 +408,9 @@ ACTOR M2PlasmaRifle : PB_Weapon //12222
 			A_FireCustomMissile("AltHeavyPlasmaBall",0,0,6, -2);
 			A_Zoomfactor(0.99);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 6, -1, 0, 0);
+			if(CountInv("LeftM2PlasmaAmmo")>0 || CountInv("M2PlasmaAmmo")<=0 ){
+				A_TakeInventory("DualFiring",1);
+			}
 			if (CountInv("PowerStrength") >= 1 ) {
 
 				A_SetPitch(pitch-0.72, SPF_INTERPOLATE);
@@ -396,6 +435,11 @@ ACTOR M2PlasmaRifle : PB_Weapon //12222
 				}
 			}
 		M233 DE 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE)
+		TNT1 A 0 {
+			if(CountInv("M2PlasmaAmmo")<=0){
+				A_GiveInventory("DualFireReload",1);
+			}
+		}
 		Goto IdleRight_Overlay
 		
 	WeaponSpecial:
@@ -476,7 +520,8 @@ ACTOR M2PlasmaRifle : PB_Weapon //12222
 			PB_HandleCrosshair(46);
 			A_TakeInventory("PB_LockScreenTilt",1);
 		}
-		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
+		Goto SelectFirstPersonLegs
+		SelectContinue:
 		TNT1 A 0 A_Takeinventory("M2PlasmaUnloaded",1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		TNT1 A 0 A_TakeInventory("RifleSelected",1)
