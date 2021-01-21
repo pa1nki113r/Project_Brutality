@@ -954,11 +954,44 @@ class PB_XDeathZombieLeg: PB_XDeathArm1
     }
 }
 
+
+
+class PB_XDeathPlasmaZombieLeg: PB_XDeathArm1
+{
+	Default
+	{
+		Scale 1.1;
+		Speed 8;
+		Gravity 0.4;
+		BounceFactor 0.4;
+		+RollSprite;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+		Fly:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			PZ13 A 4 {
+				A_SetRoll(roll+30);
+				A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			}
+			Loop;
+		Death:
+			PZ13 B 0 {
+				A_SetRoll(0);
+				A_SpawnItem("PB_GibPlasmaZombieLeg1");
+			}
+			Stop;
+    }
+}
+
 class PB_GibZombieLeg1: PB_LimbBase
 {
 	Default
 	{
 		Scale 1.1;
+		+RollSprite;
 	}
     States
     {
@@ -1005,6 +1038,58 @@ class PB_GibZombieLeg1: PB_LimbBase
 	}
 }
 
+class PB_GibPlasmaZombieLeg1: PB_GibZombieLeg1
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_Jump(128, "Spawn1");
+			PZ13 B 1 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			PZ13 B -1;
+			Stop;
+		Spawn1:
+			PZ13 E 1 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			PZ13 E -1;
+			Stop;
+		Death.plasma:	    
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedLeg", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));   
+			Stop;
+		Death:    
+			TNT1 AAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 A 0 A_SpawnProjectile ("PB_GibPlasmaZombieLegPart", 0, 0, random (0, 180), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 A 0 A_SpawnProjectile ("PB_GibPlasmaZombieBoot", 0, 0, random (0, 180), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			Stop;
+		Death.Kick:
+		Death.Melee:
+		Death.SuperPunch:
+			PZ13 A 1 {
+				A_FaceTarget();
+				A_SpawnProjectile ("PB_XDeathPlasmaZombieLeg", 5, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 40));
+				}
+			Stop;
+		
+		Pain:
+			TNT1 A 0 ThrustThingZ(0,20,0,1);
+			PZ13 AAAAAAAA 2 A_SetRoll(roll+30);
+			TNT1 A 0 A_SetRoll(0);
+			Goto Spawn;
+		
+		Death.ExplosiveImpact:
+			TNT1 A 0 {A_ChangeLinkFlags(False);}
+			TNT1 A 0 ThrustThingZ(0,50,0,1);
+			PZ13 A 5;
+			PZ13 ABCDEFGHABCDEFGHABCDEFGH 5 A_CheckFloor("Landz");
+			PZ13 AAAAAAAAAAAAAAAAAAAAAAAA 4 {
+				A_SetRoll(roll+30);
+				A_CheckFloor("Landz");
+			}
+			Goto Landz;
+		Landz:
+			TNT1 A 0 A_SpawnItem("PB_GibPlasmaZombieLeg1");
+			Stop;
+	}
+}
+
 class PB_GibZombieLegPart: PB_TinyGibBase
 {
 	Default
@@ -1033,6 +1118,38 @@ class PB_GibZombieBoot: PB_TinyGibBase
 			LEG1 Y 1;
 		Death:
 			LEG1 Y -1;
+			Stop;
+	}
+}
+
+class PB_GibPlasmaZombieLegPart: PB_TinyGibBase
+{
+	Default
+	{
+		Scale 1.1;
+    }
+	States
+    {
+		Spawn:
+			PZ13 C 1;
+		Death:
+			PZ13 C -1;
+			Stop;
+	}
+}
+
+class PB_GibPlasmaZombieBoot: PB_TinyGibBase
+{
+	Default
+	{
+		Scale 1.1;
+    }
+	States
+    {
+		Spawn:
+			PZ13 D 1;
+		Death:
+			PZ13 D -1;
 			Stop;
 	}
 }
