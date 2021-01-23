@@ -161,6 +161,17 @@ ACTOR Deagle : PB_Weapon
 			A_TakeInventory("PB_LockScreenTilt",1);
 			A_SetFiringRightWeapon(False);
 			A_SetFiringLeftWeapon(False);
+			if(CountInv("LeftDeagleAmmo") < CountInv("DeagleAmmo")){
+				A_GiveInventory("DualFiring",1);
+			}
+			if(CountInv("PistolBullets")>0){
+				if(CountInv("LeftDeagleAmmo")<=0){
+					A_GiveInventory("DualFireReload",1);
+				}
+				if(CountInv("DeagleAmmo")<=0){
+					A_GiveInventory("DualFireReload",1);
+				}
+			}
 			A_Overlay(10, "IdleLeft_Overlay", true);
 			A_Overlay(11, "IdleRight_Overlay", true);
 			}
@@ -171,13 +182,18 @@ ACTOR Deagle : PB_Weapon
 	
 	IdleLeft_Overlay:
 		D6E2 J 1 {
-			if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()){
-				if(CountInv("LeftDeagleAmmo") > 0){
-					return state("FireLeft_Overlay");
-				}
-				else {
-					A_PlaySoundEx("weapons/empty", "Auto");
-					return state("");
+			if(CountInv("LeftDeagleAmmo")<=0 && CountInv("DeagleAmmo")>0){
+				A_GiveInventory("DualFiring",1);
+			}
+			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("DeagleAmmo")<=0) || GetCvar("SingleDualFire")==1){
+				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()){
+					if(CountInv("LeftDeagleAmmo") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
 				}
 			}
 			return state("");
@@ -185,10 +201,22 @@ ACTOR Deagle : PB_Weapon
 		Loop
 	IdleRight_Overlay:
 		D6E2 I 1 {
-			if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon()){
+			if(CountInv("LeftDeagleAmmo")>0 && CountInv("DeagleAmmo")<=0){
+				A_TakeInventory("DualFiring",1);
+			}
+			if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1 && CountInv("LeftDeagleAmmo")<=0)){
+				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire")==0){
+					if(CountInv("DeagleAmmo") > 0){
+					return state("FireRight_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+			}
+			if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire")==1){
 				if(CountInv("DeagleAmmo") > 0){
-					//A_ClearOverlays(11,11);
-					//A_Overlay(11, "FireRight_Overlay");
 					return state("FireRight_Overlay");
 				}
 				else {
@@ -233,7 +261,12 @@ ACTOR Deagle : PB_Weapon
 				A_SetAngle(angle+0.8, SPF_INTERPOLATE);
 				}
 		}
-		D6E1 CDE 1
+		D6E1 C 1 {
+			if(CountInv("LeftDeagleAmmo")<=0 || CountInv("DeagleAmmo")>0 ){
+				A_GiveInventory("DualFiring",1);
+			}
+		}
+		D6E1 DE 1
 		TNT1 A 0 A_SetFiringLeftWeapon(False)
 		D6E2 JJJ 1 {
 			if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon()){
@@ -246,6 +279,11 @@ ACTOR Deagle : PB_Weapon
 				}
 			}
 			return state("");
+		}
+		TNT1 A 0 {
+			if(CountInv("LeftDeagleAmmo")<=0){
+				A_GiveInventory("DualFireReload",1);
+			}
 		}
 		Goto IdleLeft_Overlay
 		
@@ -281,7 +319,12 @@ ACTOR Deagle : PB_Weapon
 				A_SetAngle(angle-0.8, SPF_INTERPOLATE);
 				}
 			}
-		D6E0 CDE 1
+		D6E0 C 1 {
+			if(CountInv("LeftDeagleAmmo")>0 || CountInv("DeagleAmmo")<=0 ){
+				A_TakeInventory("DualFiring",1);
+			}
+		}
+		D6E0 DE 1
 		TNT1 A 0 A_SetFiringRightWeapon(False)
 		D6E2 III 1 {
 			if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon()){
@@ -294,6 +337,11 @@ ACTOR Deagle : PB_Weapon
 				}
 			}
 			return state("");
+		}
+		TNT1 A 0 {
+			if(CountInv("DeagleAmmo")<=0){
+				A_GiveInventory("DualFireReload",1);
+			}
 		}
 		Goto IdleRight_Overlay
 		
@@ -353,7 +401,6 @@ ACTOR Deagle : PB_Weapon
 		Wait
 
 	Select:
-		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
@@ -361,6 +408,8 @@ ACTOR Deagle : PB_Weapon
 			A_TakeInventory("PB_LockScreenTilt",1);
 			A_ClearOverlays(10,11);
 		}
+		Goto SelectFirstPersonLegs
+		SelectContinue:
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		TNT1 A 0 A_TakeInventory("RifleSelected",1)
 		TNT1 A 0 A_TakeInventory("CarbineSelected",1)
