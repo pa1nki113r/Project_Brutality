@@ -113,6 +113,7 @@ ACTOR AutoShotgun : PB_Weapon
 	+WEAPON.NOAUTOAIM
 	+WEAPON.NOAUTOFIRE
 	PB_WeaponBase.UnloaderToken "PBAutoShotgunHasUnloaded"
+	Inventory.AltHUDIcon "AUSCA0"
 	States
 	{
 		Steady:
@@ -275,6 +276,18 @@ ACTOR AutoShotgun : PB_Weapon
 				A_TakeInventory("PB_LockScreenTilt",1);
 				A_SetFiringRightWeapon(False);
 				A_SetFiringLeftWeapon(False);
+				A_TakeInventory("DualFiring",1);
+				if(CountInv("LeftASGAmmo") < CountInv("AutoShotgunAmmo")){
+					A_GiveInventory("DualFiring",1);
+				}
+				if(CountInv("NewShell")>0){
+					if(CountInv("LeftASGAmmo")<=0){
+						A_GiveInventory("DualFireReload",1);
+					}
+					if(CountInv("AutoShotgunAmmo")<=0){
+						A_GiveInventory("DualFireReload",1);
+					}
+				}
 				A_Overlay(10, "IdleLeft_Overlay", true);
 				A_Overlay(11, "IdleRight_Overlay", true);
 			}
@@ -283,13 +296,18 @@ ACTOR AutoShotgun : PB_Weapon
 			Loop
 		IdleLeft_Overlay:
 			AG61 J 1 {
-				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()){
-					if(CountInv("LeftASGAmmo") > 0){
-						return state("FireLeft_Overlay");
-					}
-					else {
-						A_PlaySoundEx("weapons/empty", "Auto");
-						return state("");
+				if(CountInv("LeftASGAmmo")<=0 && CountInv("AutoShotgunAmmo")>0){
+					A_GiveInventory("DualFiring",1);
+				}
+				if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("AutoShotgunAmmo")<=0) || GetCvar("SingleDualFire")==1){
+					if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()){
+						if(CountInv("LeftASGAmmo") > 0){
+							return state("FireLeft_Overlay");
+						}
+						else {
+							A_PlaySoundEx("weapons/empty", "Auto");
+							return state("");
+						}
 					}
 				}
 				return state("");
@@ -297,8 +315,26 @@ ACTOR AutoShotgun : PB_Weapon
 			Loop
 		IdleRight_Overlay:
 			AG61 I 1 {
+				if(CountInv("LeftASGAmmo")>0 && CountInv("AutoShotgunAmmo")<=0){
+					A_TakeInventory("DualFiring",1);
+				}
+				if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1 && CountInv("LeftASGAmmo")<=0)){
+					if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire")==0){
+						if(CountInv("AutoShotgunAmmo") > 0){
+							return state("FireRight_Overlay");
+						}
+						else {
+							A_PlaySoundEx("weapons/empty", "Auto");
+							return state("");
+						}
+					}
+				}
 				if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon()){
-					if(CountInv("AutoShotgunAmmo") > 0){
+					if(CountInv("AutoShotgunAmmo")>0 && GetCvar("SingleDualFire")==1){
+						return state("FireRight_Overlay");
+					}
+					if(CountInv("AutoShotgunAmmo")>0 && CountInv("LeftASGAmmo")>0 && GetCvar("SingleDualFire")==0){
+						A_Overlay(10, "FireLeft_Overlay", false);
 						return state("FireRight_Overlay");
 					}
 					else {
@@ -347,7 +383,17 @@ ACTOR AutoShotgun : PB_Weapon
 					A_ZoomFactor(1.0);
 					A_FireCustomMissile("ShotCaseSpawn",0,0,-8,-8);
 				}
-				AG62 DEFGH 1
+				AG62 D 1 {
+					if(CountInv("LeftASGAmmo")<=0 || CountInv("AutoShotgunAmmo")>0 ){
+						A_GiveInventory("DualFiring",1);
+					}
+				}
+				AG62 EFGH 1
+				TNT1 A 0 {
+					if(CountInv("LeftASGAmmo")<=0){
+						A_GiveInventory("DualFireReload",1);
+					}
+				}
 				Goto IdleLeft_Overlay
 			
 		FireRight_Overlay:
@@ -387,7 +433,17 @@ ACTOR AutoShotgun : PB_Weapon
 					A_ZoomFactor(1.0);
 					A_FireCustomMissile("ShotCaseSpawn",0,0,8,-8);
 				}
-				AG61 DEFGH 1
+				AG61 D 1 {
+					if(CountInv("LeftASGAmmo")>0 || CountInv("AutoShotgunAmmo")<=0 ){
+						A_TakeInventory("DualFiring",1);
+					}
+				}
+				AG61 EFGH 1
+				TNT1 A 0 {
+					if(CountInv("AutoShotgunAmmo")<=0){
+						A_GiveInventory("DualFireReload",1);
+					}
+				}
 				Goto IdleRight_Overlay
 			
 		WeaponSpecial:
@@ -479,8 +535,9 @@ ACTOR AutoShotgun : PB_Weapon
 				A_TakeInventory("PB_LockScreenTilt",1);
 				A_ClearOverlays(10,11);
 			}
+			Goto SelectFirstPersonLegs
+			SelectContinue:
 			TNT1 A 0 A_Takeinventory("Unloading",1)
-			TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
 			TNT1 A 0 A_Giveinventory("RandomHeadExploder",1)
 			TNT1 A 0 A_TakeInventory("RifleSelected",1)
 			TNT1 A 0 A_TakeInventory("CarbineSelected",1)
@@ -1089,50 +1146,26 @@ ACTOR AutoShotgun : PB_Weapon
 				
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 				
 			}
 			TNT1 A 0 A_PlaySoundEx("weapons/sgmvpump","Auto")
 			AG31 EF 1 {
 				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG31 GHIJKL 1 {
 				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG31 M 1 {
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG31 N 1 {
 				A_PlaySoundEx("insertshell","Auto");
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG31 OP 1 {
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG31 Q 1 {
 				A_PlaySoundEx("weapons/sgpump","Auto");
@@ -1142,17 +1175,9 @@ ACTOR AutoShotgun : PB_Weapon
 				A_Takeinventory("NewShell",1);
 				A_TakeInventory("PumpAutoShotgun", 1);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG31 RSTUV 1 {
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			Goto RightNormalReload
 		RightBeginNormalReload:
@@ -1166,28 +1191,15 @@ ACTOR AutoShotgun : PB_Weapon
 			}
 			AG30 ABCD 1 {
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
-				
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG30 EF 1 {
 				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG30 GHIJKL 1 {
 				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 		RightNormalReload:
 			TNT1 A 0 A_JumpIf(CountInv("NewShell") == 0,"RightReloadFinished")
@@ -1197,20 +1209,7 @@ ACTOR AutoShotgun : PB_Weapon
 						A_Gunflash("BarrelSmoke4");
 				}
 			}
-			AG30 L 1 {
-				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
-			}
-			AG30 MN 1 {
-				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
-			}
+			AG30 LMN 1
 			AG30 O 1 { 
 				A_PlaySoundEx("insertshell","Auto");
 				A_Giveinventory("AutoShotgunAmmo",1);
@@ -1224,10 +1223,9 @@ ACTOR AutoShotgun : PB_Weapon
 				A_SetPitch(pitch+0.1,SPF_INTERPOLATE);
 				A_SetAngle(angle-0.1, SPF_INTERPOLATE);
 				A_SetRoll(roll+0.2,SPF_INTERPOLATE);
-				
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
 				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
+					return state("RightReloadFinished");
 				}
 				return state("");
 				
@@ -1245,19 +1243,14 @@ ACTOR AutoShotgun : PB_Weapon
 			AG30 LKJIHG 1 {
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG30 FEDCBA 1 {
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			TNT1 A 0 {
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReloadDualWieldEnd");
+				}
 				if (CountInv("LeftASGAmmo") < 12 && CountInv("NewShell") >= 1) {
 					return state("LeftReloadSwitch");
 				}
@@ -1286,49 +1279,25 @@ ACTOR AutoShotgun : PB_Weapon
 			AG31 ABCD 1 {
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			TNT1 A 0 A_PlaySoundEx("weapons/sgmvpump","Auto")
 			AG31 EF 1 {
 				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG31 GHIJKL 1 {
 				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG31 M 1 {
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG31 N 1 {
 				A_PlaySoundEx("insertshell","Auto");
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG31 OP 1 {
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG31 Q 1 {
 				A_PlaySoundEx("weapons/sgpump","Auto");
@@ -1338,17 +1307,9 @@ ACTOR AutoShotgun : PB_Weapon
 				A_Takeinventory("NewShell",1);
 				A_TakeInventory("PumpAutoShotgun", 1);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG31 RSTUV 1 {
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			Goto LeftNormalReload
 			
@@ -1356,26 +1317,14 @@ ACTOR AutoShotgun : PB_Weapon
 			AG30 ABCD 1 {
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG30 EF 1 {
 				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG30 GHIJKL 1 {
 				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 		LeftNormalReload:
 			TNT1 A 0 A_JumpIf(CountInv("NewShell") == 0,"LeftReloadFinished")
@@ -1387,10 +1336,6 @@ ACTOR AutoShotgun : PB_Weapon
 			}
 			AG30 LMN 1 {
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG30 O 1 { 
 				A_PlaySoundEx("insertshell","Auto");
@@ -1407,7 +1352,7 @@ ACTOR AutoShotgun : PB_Weapon
 				A_SetRoll(roll+0.2,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
 				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
+					return state("LeftReloadFinished");
 				}
 				return state("");
 			}
@@ -1424,15 +1369,13 @@ ACTOR AutoShotgun : PB_Weapon
 			AG30 LKJIHG 1 {
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
-				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
-				}
-				return state("");
 			}
 			AG30 FEDCBA 1 {
 				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
+			}
+			TNT1 A 0 {
 				if (PressingFire() || PressingAltFire()) {
-					return state("ReadyDualWield");
+					return state("ReloadDualWieldEnd");
 				}
 				return state("");
 			}
@@ -1587,24 +1530,24 @@ ACTOR AutoShotgun : PB_Weapon
 				}
 			}
 			AG31 ABCD 1 {
-				A_DoPBWeaponAction(WRF_NOBOB);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
 			}
 			TNT1 A 0 A_PlaySoundEx("weapons/sgmvpump","Auto")
 			AG31 EF 1 {
-				A_DoPBWeaponAction(WRF_NOBOB);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
 				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
 			}
 			AG31 GHIJKL 1 {
-				A_DoPBWeaponAction(WRF_NOBOB);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
 				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
 			}
-			AG31 M 1 A_DoPBWeaponAction(WRF_NOBOB)
+			AG31 M 1 A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE)
 			AG31 N 1 {
 				A_PlaySoundEx("insertshell","Auto");
-				A_DoPBWeaponAction(WRF_NOBOB);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
 			}
-			AG31 OP 1 A_DoPBWeaponAction(WRF_NOBOB)
+			AG31 OP 1 A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE)
 			AG31 Q 1 {
 				A_PlaySoundEx("weapons/sgpump","Auto");
 				A_Giveinventory("AutoShotgunAmmo",1);
@@ -1612,9 +1555,9 @@ ACTOR AutoShotgun : PB_Weapon
 				A_Takeinventory("PBAutoShotgunHasUnloaded",1);
 				A_Takeinventory("NewShell",1);
 				A_TakeInventory("PumpAutoShotgun", 1);
-				A_DoPBWeaponAction(WRF_NOBOB);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
 			}
-			AG31 RSTUV 1 A_DoPBWeaponAction(WRF_NOBOB)
+			AG31 RSTUV 1 A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE)
 			Goto NormalReload
 		BeginNormalReload:
 			TNT1 A 0 {
@@ -1626,15 +1569,15 @@ ACTOR AutoShotgun : PB_Weapon
 				}
 			}
 			AG30 ABCD 1 {
-				A_DoPBWeaponAction(WRF_NOBOB);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
 			}
 			AG30 EF 1 {
-				A_DoPBWeaponAction(WRF_NOBOB);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
 				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
 			}
 			AG30 GHIJKL 1 {
-				A_DoPBWeaponAction(WRF_NOBOB);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
 				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
 			}
 		NormalReload:
@@ -1645,8 +1588,8 @@ ACTOR AutoShotgun : PB_Weapon
 						A_Gunflash("BarrelSmoke4");
 				}
 			}
-			AG30 L 1 A_DoPBWeaponAction(WRF_NOBOB)
-			AG30 MN 1 A_DoPBWeaponAction(WRF_NOBOB)
+			AG30 L 1 A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE)
+			AG30 MN 1 A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE)
 			AG30 O 1 { 
 				A_PlaySoundEx("insertshell","Auto");
 				A_Giveinventory("AutoShotgunAmmo",1);
@@ -1657,10 +1600,14 @@ ACTOR AutoShotgun : PB_Weapon
 				A_SetRoll(roll-0.4,SPF_INTERPOLATE);
 			}
 			AG30 PQ 1 {
-				A_DoPBWeaponAction(WRF_NOBOB);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
 				A_SetPitch(pitch+0.1,SPF_INTERPOLATE);
 				A_SetAngle(angle-0.1, SPF_INTERPOLATE);
 				A_SetRoll(roll+0.2,SPF_INTERPOLATE);
+				if (PressingFire() || PressingAltFire()) {
+					return state("ReloadFinished");
+				}
+				return state("");
 			}
 			Loop
 		ReloadFinished:
@@ -1673,10 +1620,10 @@ ACTOR AutoShotgun : PB_Weapon
 				}
 			}
 			AG30 LKJIHG 1 {
-				A_DoPBWeaponAction(WRF_NOBOB);
+				A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE);
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
 			}
-			AG30 FEDCBA 1 A_DoPBWeaponAction(WRF_NOBOB)
+			AG30 FEDCBA 1 A_DoPBWeaponAction(WRF_NOBOB|WRF_NOFIRE)
 			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "ReloadDualWieldEnd")	
 			Goto Ready3
 			
