@@ -124,13 +124,13 @@ ACTOR Carbine : PB_Weapon
 			TNT1 A 0 A_PlaySoundEx("weapons/carbine/up", "Auto")
 			4A1S ABCDE 1 A_JumpIfInventory("GoFatality", 1, "Steady")
 		Ready3:
-			TNT1 A 0 A_JumpIfInventory("RifleWasEmpty",1,"LoadChamber")
 			TNT1 A 0 {
 				A_TakeInventory("PB_LockScreenTilt",1);
 				PB_HandleCrosshair(59);
 				}
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReadyDualWield")
 		ReadyToFire:
+		TNT1 A 0 A_JumpIfInventory("RifleWasEmpty",1,"LoadChamber")
 		4AFG A 1 
 		{
 			A_SetInventory("CarbineBurstCounter",0);
@@ -428,6 +428,7 @@ ACTOR Carbine : PB_Weapon
 			A_Takeinventory("ADSmode",1);
 		}
 		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
+		TNT1 A 0 A_JumpIfInventory("LMG",1,"DeselectUpgrade")
 		TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DeselectAkimbo")
         4A1S EDCBA 1
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
@@ -436,7 +437,9 @@ ACTOR Carbine : PB_Weapon
 		CB01 ABCDE 1
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
-
+	DeselectUpgrade:
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+		Wait
 	WheelCancel:
 		TNT1 A 0 {
 			A_SetInventory("SelectCarbine_DualWield",0);
@@ -486,6 +489,11 @@ ACTOR Carbine : PB_Weapon
 	//	TNT1 A 0 A_JumpIfInventory("Carbine", 2, "SwitchToDualWield")
 	//	Goto Ready3
 	SwitchToDualWield:
+		TNT1 A 0 {
+			if(CountInv("Carbine") < 2) {
+			A_Print("You need two carbines to dual wield!"); Return State("Ready3");}
+			Return State("");
+			}
 		TNT1 A 0 {
 			if (A_CheckAkimbo()) {
 				A_Takeinventory("DualWieldingCarbines",1);
@@ -743,11 +751,9 @@ ACTOR Carbine : PB_Weapon
 				A_SetAngle(angle-0.12, SPF_INTERPOLATE);
 				}
 			}
-		4A2F C 1 
+		4A2F C 1 A_ZoomFactor(1.5)
+		TNT1 A 0
 		{
-			//A_WeaponReady(WRF_NOPRIMARY);
-			A_ZoomFactor(1.5);
-			
 			if(GetCvar("pb_toggle_aim_hold")) 
 			{
 				if(JustReleased(BT_ALTATTACK))
