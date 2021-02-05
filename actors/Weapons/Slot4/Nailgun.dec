@@ -3,12 +3,11 @@ Actor NailgunFiringAnimation: Inventory
 Inventory.maxamount 1
 }
 
-
 Actor JavelinMode: Inventory
 {
 Inventory.maxamount 1
 }
-Actor NailgunHasUnloaded : Inventory {}
+
 Actor OverHeating: Inventory
 {
 Inventory.maxamount 140
@@ -24,7 +23,7 @@ Actor RespectNailgun : Inventory
 Inventory.MaxAmount 1
 }
 
-Actor NailgunUnloaded : Inventory
+Actor NailgunHasUnloaded : Inventory
 {
 Inventory.MaxAmount 1
 }
@@ -261,12 +260,17 @@ Steady:
 	SelectAnimation:
 		J0N0 ABCD 0 //Initialize Frames into virtual memory
 		J0N1 ABCD 0 //Initialize Frames into virtual memory
+		J0N2 ABCD 0
 		N1N1 ABCD 0 //Initialize Frames into virtual memory
+		N1N2 ABCD 0
 		
 		TNT1 A 0 A_PlaySoundEx("weapons/nailgun/up", "Auto")
         N1N0 ABCD 1 {
 			if (CountInv("JavelinMode") == 1 ) {A_SetWeaponSprite("J0N0");}
 			if (CountInv("HMGAmmo") == 0 ) {A_SetWeaponSprite("N1N1");}
+			if (CountInv("HMGAmmo") < 20 && CountInv("JavelinMode") == 1) {A_SetWeaponSprite("J0N1");}
+			if (CountInv("NailgunHasUnloaded") == 1) {A_SetWeaponSprite("N1N2");}
+			if (CountInv("NailgunHasUnloaded") ==1 && CountInv("JavelinMode") == 1) { A_SetWeaponSprite("J0N2"); }
 			}
 	
 	//Nailgun
@@ -278,7 +282,7 @@ Steady:
 			A_SetRoll(0);
 			}
 		TNT1 A 0 {
-			if (CountInv("NailgunUnloaded") == 1) { return state("ReadyToFireUnloaded"); }
+			if (CountInv("NailgunHasUnloaded") == 1) { return state("ReadyToFireUnloaded"); }
 			if (CountInv("HMGAmmo") == 0) { return state("ReadyToFireEmpty"); }
 			return state("");
 			}
@@ -394,6 +398,7 @@ Steady:
 			PB_HandleCrosshair(76);
 			A_SetRoll(0);
 			}
+		TNT1 A 0 A_JumpIfInventory("NailgunHasUnloaded",1,"JavelinReadyUnloaded")
 		TNT1 A 0 A_JumpIf(CountInv("HMGAmmo") < 20 ,"JavelinReadyEmpty")
 	JavelinReadyToFire:
 		J0N0 D 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD)
@@ -418,8 +423,8 @@ Steady:
 			PB_HandleCrosshair(76);
 			A_TakeInventory("PB_LockScreenTilt",1);
 		}
-		TNT1 A 0 A_Takeinventory("NailgunHasUnloaded",1)
-		TNT1 A 0 A_Takeinventory("Unloading",1)
+//		TNT1 A 0 A_Takeinventory("NailgunHasUnloaded",1)
+//		TNT1 A 0 A_Takeinventory("Unloading",1)
 		TNT1 A 0 A_Takeinventory("RandomHeadExploder",1)
 		TNT1 A 0 A_TakeInventory("NailgunOverHeating", 240)
 		TNT1 A 0 A_StopSound(6)
@@ -428,10 +433,11 @@ Steady:
 	    TNT1 A 0 A_PlaySound("weapons/changing", 1)
 		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
         N1N0 CEFG 1 {
-			if ((CountInv("HMGAmmo") < 20) && (CountInv("JavelinMode") == 1)) { A_SetWeaponSprite("J0N1"); }
 			if (CountInv("JavelinMode") == 1) { A_SetWeaponSprite("J0N0"); }
-			if (CountInv("NailgunUnloaded") == 1) { A_SetWeaponSprite("N1N2"); }
 			if (CountInv("HMGAmmo") == 0) { A_SetWeaponSprite("N1N1"); }
+			if (CountInv("HMGAmmo") < 20 && CountInv("JavelinMode") == 1) {A_SetWeaponSprite("J0N1");}
+			if (CountInv("NailgunHasUnloaded") == 1) { A_SetWeaponSprite("N1N2"); }
+			if (CountInv("NailgunHasUnloaded") ==1 && CountInv("JavelinMode") == 1) { A_SetWeaponSprite("J0N2"); }
 		}
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 	    Wait
@@ -716,7 +722,7 @@ Steady:
 				}
 		}
 		N8N0 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 {
-			A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOFIRE);
+			A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOFIRE | WRF_NOSWITCH);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, -2, -8, 0, 0);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 2, -8, 0, 0);
 			}
