@@ -33,6 +33,39 @@ class PB_WeaponBase : DoomWeapon
     action bool PressingAltfire(){return player.cmd.buttons & BT_ALTATTACK;}
 	action bool PressingReload(){return player.cmd.buttons & BT_RELOAD;}
 	
+	//Set weapon recoil, factoring in the recoil multiplier cvar
+	//Normally you want to use PB_WeaponRecoil instead, because it accounts for the berserk powerup
+	action void PB_WeaponRecoilBasic(float pitchDelta, float angleDelta = 0)
+	{
+        A_SetPitch(self.pitch+(pitchDelta * pb_weapon_recoil_mod_vertical), SPF_INTERPOLATE);
+        A_SetAngle(self.angle+(angleDelta * pb_weapon_recoil_mod_horizontal), SPF_INTERPOLATE);
+	}
+	
+	//Adds weapon recoil, modifying it if the owner has a berserk powerup
+	action void PB_WeaponRecoil(float pitchDelta, float angleDelta, float powerMod = 0.5)
+	{
+        if (invoker.OwnerHasBerserk())
+            PB_WeaponRecoilBasic(pitchDelta * powerMod, angleDelta * powerMod);
+        else
+            PB_WeaponRecoilBasic(pitchDelta, angleDelta);
+	}
+	
+	//Checks if the owner has a berserk
+	bool OwnerHasBerserk()
+	{
+        return (owner.CountInv("PowerStrength") >= 1);
+	}
+	
+	//Allows us to specify pitch and angle manually for berserk and non-berserk owners.
+	//Used occasionally where berserk recoil numbers aren't exactly half/double in a few cases, such as the pistol
+	action void PB_WeaponRecoilSpecial(float pitchDelta, float angleDelta, float pitchDeltaBerserk, float angleDeltaBerserk)
+	{
+        if (invoker.OwnerHasBerserk())
+            PB_WeaponRecoilBasic(pitchDeltaBerserk, angleDeltaBerserk);
+        else
+            PB_WeaponRecoilBasic(pitchDelta, angleDelta);
+	}
+	
     action bool JustPressed(int which) // "which" being any BT_* value, mentioned above or not
     {
         return player.cmd.buttons & which && !(player.oldbuttons & which);
