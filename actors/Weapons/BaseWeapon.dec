@@ -15,6 +15,7 @@ Actor WW_LeechSelected : Inventory {inventory.maxamount 1}
 Actor WW_HealthBackPackSelected : Inventory {inventory.maxamount 1}
 
 Actor DualFiring: Inventory {Inventory.maxamount 1}
+Actor DualFireReload: Inventory {Inventory.maxamount 2}
 
 //Actions observed by the AI!
 Actor PlayerIsThrowingAGrenade : Inventory {inventory.maxamount 1}
@@ -40,7 +41,6 @@ States
 	Fire:
 	Ready:
 		Goto GoingToReady
-		
 	Deselect:
 		TNT1 A 1 A_Lower
 		Wait
@@ -69,15 +69,23 @@ States
 		FinishClimb:
 			TNT1 A 0 A_SetPitch(0, SPF_INTERPOLATE)
 			CL1M KLM 1
-			TNT1 A 0 A_Overlay(-9, "LedgeGrabCheck")
-			Goto GoingToReady2
+			TNT1 A 0 {
+				A_ClearOverlays(12);
+				A_Overlay(-9, "LedgeGrabCheck");
+				A_TakeInventory("CantWeaponSpecial" ,1 );
+				if (CountInv("RevenantLauncherSelected") >= 1) {
+					return state("Ready3");
+				}
+				return state("");
+			}
+			Goto GoingToReady2 //Select
 		
 	LedgeGrabCheck:
 		TNT1 A 1
 		TNT1 A 0 A_JumpIfInventory("Grabbing_A_Ledge",1,"LedgeGrabOverlay")
 		Goto LedgeGrabCheck
 	LedgeGrabOverlay:
-		TNT1 A 0 A_GunFlash("LedgeGrabFlash")
+		TNT1 A 0 A_Overlay(12, "LedgeGrabFlash")
 		TNT1 A 0 A_ClearOverlays(-1,1)
 		TNT1 A 0 A_OverlayFlags(-9, PSPF_ADDWEAPON, False)
 		TNT1 A 0 A_Overlay(1,"LedgeClimb")
@@ -87,6 +95,7 @@ States
 		
 	GoingToReady:
 	SelectingAnimation:
+		//TNT1 A 0 A_ClearOverlays(2)
 		TNT1 A 0 A_TakeInventory("KeepLaserDeactivated",1)
 		TNT1 A 0 A_JumpIfInventory("ASGSelected", 1, "SelectingAnimationAutoSG")
 		TNT1 A 0 A_JumpIfInventory("CarbineSelected", 1, "TryToSelectDrum")
@@ -104,6 +113,7 @@ States
 	
 	SelectFirstPersonLegs:
 		//TNT1 A 0 A_Overlay(10, "Flash")
+		TNT1 A 0 A_TakeInventory("DualFireReload",2)
 		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
 		TNT1 A 0 A_Overlay(-9, "LedgeGrabCheck")
 		TNT1 A 0 A_Jump(255, "SelectContinue")
@@ -214,7 +224,8 @@ States
 		Loop
 		"####" P 1
 		{
-			A_OverlayFlags(-10, PSPF_ADDWEAPON|PSPF_PLAYERTRANSLATED, False);
+			A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
+			A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
 			A_OverlayOffset(-10, 0, (-pitch*2)+230);
 		}
 		Loop
@@ -1038,6 +1049,7 @@ States
 		KIC1 A 1 {
 			A_PlaySoundEx("KICK", "Auto");
 			SetPlayerProperty(0,1,0);
+			//A_Overlay(2,"FlashKicking");
 			A_GunFlash("FlashKicking");
 			A_SetAngle(-0.5 + angle, SPF_INTERPOLATE);
 			A_SetPitch(+0.5 + pitch, SPF_INTERPOLATE);
@@ -1104,6 +1116,7 @@ States
 		TNT1 A 0 {
 			A_GiveInventory("KeepLaserDeactivated",1);
 			A_GiveInventory("IsSlideKicking", 1);
+			//A_Overlay(2,"FlashSlideKicking");
 			A_GunFlash("FlashSlideKicking");
 			A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, true);
 			}
@@ -1123,6 +1136,7 @@ States
 		}
 	LowerKick:
 		TNT1 A 0 {
+			//A_Overlay(2,"FlashSlideKickingStop");
 			A_GunFlash("FlashSlideKickingStop");
 			A_ZoomFactor(1.0);
 			A_PlaySoundEx("SlideKick/End", "Auto");
@@ -1156,6 +1170,7 @@ States
 		KIC1 A 1 {
 			A_PlaySoundEx("KICK", "Auto");
 			SetPlayerProperty(0,1,0);
+			//A_Overlay(2,"FlashKicking");
 			A_GunFlash("FlashKicking");
 			A_SetAngle(-0.5 + angle, SPF_INTERPOLATE);
 			A_SetPitch(+0.5 + pitch, SPF_INTERPOLATE);
@@ -1223,6 +1238,7 @@ States
 		TNT1 A 0 {
 			A_PlaySound("KICK", 6);
 			A_Recoil (-6);
+			//A_Overlay(2,"FlashAirKicking");
 			A_GunFlash("FlashAirKicking");
 			A_ZoomFactor(0.95);
 			A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, true);
