@@ -17,9 +17,105 @@ Actor WW_HealthBackPackSelected : Inventory {inventory.maxamount 1}
 Actor DualFiring: Inventory {Inventory.maxamount 1}
 Actor DualFireReload: Inventory {Inventory.maxamount 2}
 
+//to trigger a resolve state to get that weapon in your hands
+Actor StartingWeaponSelect : Inventory {inventory.maxamount 1}
+
 //Actions observed by the AI!
 Actor PlayerIsThrowingAGrenade : Inventory {inventory.maxamount 1}
 Actor CantWeaponSpecial : Inventory {inventory.maxamount 1}
+
+Actor StartingWeapons : Custominventory
+{
+//$Category Ammunition
+	Game Doom
+	//SpawnID 9410
+	Height 24
+	Inventory.MaxAmount 1
+	+INVENTORY.ALWAYSPICKUP
+	+COUNTITEM
+	Inventory.Pickupsound "misc/rockboxa"
+	Inventory.PickupMessage "Starting Loadout Placeholder"
+	States
+	{
+	Spawn:
+		TNT1 A 35
+	Pickup:
+		TNT1 A 35
+		TNT1 A 0 {
+			if(GetCVar("pb_StartingWeapons") ==0)
+				{
+					A_Log("Starting Weapon Loadout: Infantry");
+					A_GiveInventory("BDPistol",1);
+					A_GiveInventory("Rifle",1);
+				}
+			if(GetCVar("pb_StartingWeapons") ==1)
+				{
+					A_Log("Starting Weapon Loadout: Fire Support");
+					A_GiveInventory("Deagle",1);
+					A_GiveInventory("Mini_Gun",1);
+				}
+			if(GetCVar("pb_StartingWeapons") ==2)
+				{
+					A_Log("Starting Weapon Loadout: Commando");
+					A_GiveInventory("BDPistol",1);
+					A_GiveInventory("Carbine",1);
+				}
+			if(GetCVar("pb_StartingWeapons") ==3)
+				{
+					A_Log("Starting Weapon Loadout: Sniper");
+					A_GiveInventory("Revolver",1);
+					A_GiveInventory("Rifle",1);
+				}
+			if(GetCVar("pb_StartingWeapons") ==4)
+				{
+					A_Log("Starting Weapon Loadout: Grenadier");
+					A_GiveInventory("CompactSMG",1);
+					A_GiveInventory("Super_Grenade_Launcher",1);
+				}
+			if(GetCVar("pb_StartingWeapons") ==5)
+				{
+					A_Log("Starting Weapon Loadout: Anti-Vehicle");
+					A_GiveInventory("CompactSMG",1);
+					A_GiveInventory("Rocket_Launcher",1);
+				}
+			if(GetCVar("pb_StartingWeapons") ==6)
+				{
+					A_Log("Starting Weapon Loadout: Close-Quarters");
+					A_GiveInventory("Revolver",1);
+					A_GiveInventory("Shot_Gun",1);
+				}
+			if(GetCVar("pb_StartingWeapons") ==7)
+				{
+					A_Log("Starting Weapon Loadout: Psychopath");
+					A_GiveInventory("BrutalAxe",1);
+					A_GiveInventory("Chain_Saw",1);
+				}
+			if(GetCVar("pb_StartingWeapons") ==7)
+				{
+					A_Log("Starting Weapon Loadout: Splinter Cell (Pistol Only)");
+					A_GiveInventory("BDPistol",1);
+				}
+			if(GetCVar("pb_StartingWeapons") ==8)
+				{
+					A_Log("Starting Weapon Loadout: Deathwish (Fists Only)");
+				}
+			if(GetCVar("pb_StartingWeapons") ==9)
+				{
+					A_Log("Starting Weapon Loadout: Helljumper");
+					A_GiveInventory("Plasma_Gun",1);
+					A_GiveInventory("StunGrenadeAmmo",5);
+				}
+			if(GetCVar("pb_StartingWeapons") ==9)
+				{
+					A_Log("Starting Weapon Loadout: Biohazard Cleanup");
+					A_GiveInventory("M2PlasmaRifle",1);
+					A_GiveInventory("FlameCannon",1);
+				}
+		}
+		TNT1 A 0 A_GiveInventory("StartingWeaponSelect",1)
+		Stop
+	}
+}
 
 Actor PB_Weapon : PB_WeaponBase
 {
@@ -44,7 +140,29 @@ States
 	Deselect:
 		TNT1 A 1 A_Lower
 		Wait
-		
+	
+	StartingWeaponSelect:
+		TNT1 A 0 {
+			A_SetInventory("StartingWeaponSelect",0);
+			A_SetInventory("StartingWeapons",0);
+			}
+		TNT1 A 0 {
+			if(GetCVar("pb_StartingWeapons") ==0){A_SelectWeapon("Rifle"); Return State("GoingToReady");}
+			if(GetCVar("pb_StartingWeapons") ==1){A_SelectWeapon("Mini_Gun"); Return State("GoingToReady");}
+			if(GetCVar("pb_StartingWeapons") ==2){A_SelectWeapon("Carbine"); Return State("GoingToReady");}
+			if(GetCVar("pb_StartingWeapons") ==3){A_SelectWeapon("Rifle"); Return State("GoingToReady");}
+			if(GetCVar("pb_StartingWeapons") ==4){A_SelectWeapon("Super_Grenade_Launcher"); Return State("GoingToReady");}
+			if(GetCVar("pb_StartingWeapons") ==5){A_SelectWeapon("Rocket_Launcher"); Return State("GoingToReady");}
+			if(GetCVar("pb_StartingWeapons") ==6){A_SelectWeapon("Shot_Gun"); Return State("GoingToReady");}
+			if(GetCVar("pb_StartingWeapons") ==7){A_SelectWeapon("Chain_Saw"); Return State("GoingToReady");}
+			if(GetCVar("pb_StartingWeapons") ==7){A_SelectWeapon("BDPistol"); Return State("GoingToReady");}
+			if(GetCVar("pb_StartingWeapons") ==8){Return State("GoingToReady");}
+			if(GetCVar("pb_StartingWeapons") ==9){A_SelectWeapon("Plasma_Gun"); Return State("GoingToReady");}
+			if(GetCVar("pb_StartingWeapons") ==9){A_SelectWeapon("M2PlasmaRifle"); Return State("GoingToReady");}
+		Return State("");
+		}
+		goto GoingToReady
+	
 	LedgeClimb:
 		TNT1 A 0 {
 			A_WeaponReady(WRF_ALLOWRELOAD|WRF_NOFIRE);
