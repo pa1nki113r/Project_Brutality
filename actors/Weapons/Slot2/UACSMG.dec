@@ -79,6 +79,17 @@ Actor LaserDotPerma : LaserDot
 		Loop
 	}
 }
+Actor LaserDotPermaGreen : LaserDot
+{
+	States
+	{
+	Melee:
+	Spawn:
+		LEYS G 2 BRIGHT
+		TNT1 A 0 A_SpawnItemEx("LaserAlertNearbyMonsters",0,0,0,0,0,0,0,288)
+		Loop
+	}
+}
 ACTOR LaserAlertNearbyMonsters : CustomInventory
 {	
 	Radius 600
@@ -137,14 +148,15 @@ ACTOR CompactSMG : PB_Weapon
 		{
 				if (CountInv("LaserSightActivated")==1 && CountInv("KeepLaserDeactivated") != 1)
 				{
-					A_SpawnLaserPuff;
+					A_SpawnLaserPuff(0.1,0.1,"LaserDotPerma");
 				}
 				else 
 				{
 					A_DestroyLaserPuff;
 				}
 		}
-		Loop
+		TNT1 A 0 A_DestroyLaserPuff()
+		Stop
 		
 	Ready:
 		TNT1 A 0
@@ -190,6 +202,7 @@ ACTOR CompactSMG : PB_Weapon
 		TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded", 1, "UnloadedReady")
 	ReadyToFire:
 		A1F1 E 1 {
+			A_Overlay(-16,"LaserOverlay");
 			if (PressingFire() && PressingAltfire() && CountInv("SMGAmmo") > 0){
 					return state("Fire");
 			}
@@ -260,8 +273,6 @@ ACTOR CompactSMG : PB_Weapon
 	ReadyToFireDualWield:
 		TNT1 A 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE)
 		Loop
-		
-		
 		
 	IdleLeft_Overlay:
 		A2F2 I 1 {
@@ -396,8 +407,6 @@ ACTOR CompactSMG : PB_Weapon
 		}
 		Goto IdleRight_Overlay
 		
-		
-		
 	UnloadedReadyDualWield:
 		A2F3 Z 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD, PBWEAP_UNLOADED)
 		Loop
@@ -414,10 +423,18 @@ ACTOR CompactSMG : PB_Weapon
 			}
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "StopDualWield")
 		TNT1 A 0 A_JumpIfInventory("CompactSMG", 2,"SwitchToDualWield")
-		TNT1 A 0 A_Print("You need two submachine guns to dual wield!")
+		TNT1 A 0 
+			{
+				A_PlaySoundEx("LIGHTON", "Auto");
+				if(CountInv("LaserSightActivated")){A_SetInventory("LaserSightActivated",0); A_Log("Laser Deactivated");}
+				else{A_GiveInventory("LaserSightActivated",1); A_Log("Laser Activated");}
+			}
+		TNT1 A 0 A_Log("You need two submachine guns to dual wield!")
 		Goto Ready3
 	SwitchToDualWield:
 		TNT1 A 0 {
+			A_DestroyLaserPuff();
+			A_SetInventory("LaserSightActivated",0);
 			A_GiveInventory("DualWieldingSMGs", 1);
 			A_PlaySoundEx("weapons/smg_up", "Auto");
 			}
@@ -435,6 +452,7 @@ ACTOR CompactSMG : PB_Weapon
 	
 	Deselect:
 		TNT1 A 0 {
+			A_DestroyLaserPuff();
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			PB_HandleCrosshair(44);
@@ -725,6 +743,7 @@ ACTOR CompactSMG : PB_Weapon
 		
 	Reload:
 		TNT1 A 0 {
+			A_DestroyLaserPuff();
 			A_ZoomFactor(1.0);
 			A_Takeinventory("ADSmode",1);
 			A_Takeinventory("Zoomed",1);
