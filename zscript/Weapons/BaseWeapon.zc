@@ -12,6 +12,10 @@ class PB_WeaponBase : DoomWeapon
 	property MidPickupMessage: MidWeaponPickupMessage;
 	string lastGrenadeType;
 	property lastGrenadeType: lastGrenadeType;
+	
+	string rocketLauncherMode;
+	property rocketLauncherMode: rocketLauncherMode;
+	
 	string upgradedRifleMode;
 	property upgradedRifleMode: upgradedRifleMode;
 	string fireMode;
@@ -28,6 +32,39 @@ class PB_WeaponBase : DoomWeapon
     action bool PressingFire(){return player.cmd.buttons & BT_ATTACK;}
     action bool PressingAltfire(){return player.cmd.buttons & BT_ALTATTACK;}
 	action bool PressingReload(){return player.cmd.buttons & BT_RELOAD;}
+	
+	//Set weapon recoil, factoring in the recoil multiplier cvar
+	//Normally you want to use PB_WeaponRecoil instead, because it accounts for the berserk powerup
+	action void PB_WeaponRecoilBasic(float pitchDelta, float angleDelta = 0)
+	{
+        A_SetPitch(self.pitch+(pitchDelta * pb_weapon_recoil_mod_vertical), SPF_INTERPOLATE);
+        A_SetAngle(self.angle+(angleDelta * pb_weapon_recoil_mod_horizontal), SPF_INTERPOLATE);
+	}
+	
+	//Adds weapon recoil, modifying it if the owner has a berserk powerup
+	action void PB_WeaponRecoil(float pitchDelta, float angleDelta, float powerMod = 0.5)
+	{
+        if (invoker.OwnerHasBerserk())
+            PB_WeaponRecoilBasic(pitchDelta * powerMod, angleDelta * powerMod);
+        else
+            PB_WeaponRecoilBasic(pitchDelta, angleDelta);
+	}
+	
+	//Checks if the owner has a berserk
+	bool OwnerHasBerserk()
+	{
+        return (owner.CountInv("PowerStrength") >= 1);
+	}
+	
+	//Allows us to specify pitch and angle manually for berserk and non-berserk owners.
+	//Used occasionally where berserk recoil numbers aren't exactly half/double in a few cases, such as the pistol
+	action void PB_WeaponRecoilSpecial(float pitchDelta, float angleDelta, float pitchDeltaBerserk, float angleDeltaBerserk)
+	{
+        if (invoker.OwnerHasBerserk())
+            PB_WeaponRecoilBasic(pitchDeltaBerserk, angleDeltaBerserk);
+        else
+            PB_WeaponRecoilBasic(pitchDelta, angleDelta);
+	}
 	
     action bool JustPressed(int which) // "which" being any BT_* value, mentioned above or not
     {
@@ -122,6 +159,16 @@ class PB_WeaponBase : DoomWeapon
 		invoker.lastGrenadeType = type;
 	}
 	
+	action string PB_GetCurrentRocketMode()
+	{
+		return invoker.rocketLauncherMode;
+	}
+	
+	action void PB_SetCurrentRocketMode(string type)
+	{
+		invoker.rocketLauncherMode = type;
+	}
+	
 	action void A_DecideSpawnLaserPuff()
 	{
 			if (CountInv("LaserSightActivated")==1 && CountInv("KeepLaserDeactivated") != 1)
@@ -174,7 +221,7 @@ class PB_WeaponBase : DoomWeapon
 		};
 		static const statelabel PBWeapStatelabels[] =
 		{
-			"Steady", "LedgeClimb", "QuickPunch",
+			"Steady", "QuickPunch", //"LedgeClimb",
 			"DoKick", "Taunt", "Salute", "Salute",
 			"UseEquipment", "SwitchEquipment", "DualWieldBaby",
 			"NoDualWield", "WeaponSpecial", "GrabbedBarrel", "GrabbedBurningBarrel"
@@ -184,9 +231,17 @@ class PB_WeaponBase : DoomWeapon
 		{
 			return ResolveState("Steady");
 		}
+		/*
 		if (CountInv("Grabbing_A_Ledge")>=1) 
 		{
 			return ResolveState("LedgeClimb");
+		}
+		*/
+		if(((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()) || ((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon())){
+			if(CountInv("DualFireReload") >= 2){
+				A_TakeInventory("DualFireReload",2);
+				return ResolveState("Reload");
+			}
 		}
 		if (CountInv("DoPunch")>=1) 
 		{
@@ -245,6 +300,18 @@ class PB_WeaponBase : DoomWeapon
 		//A_WeaponOffset(-CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY")-1,WOF_INTERPOLATE | (!!(pbFlags & PBWEAP_KEEPYOFFSET) ? WOF_KEEPY : 0));
 		return null;
 	}
+	
+	action void PB_HandleCrosshair(int num)
+	{
+        CVar crosshair_settings = CVar.FindCVar('pb_weapon_crosshairs');
+		
+		if(crosshair_settings.GetBool()){
+			A_SetCrosshair(num); // Set crosshair to specific weapon
+		}
+		else {
+			A_SetCrosshair(0); // Set crosshair to universal user setting
+		}
+	}
   
 	
 	action void A_SetOverlaySprite(int layer, String str)
@@ -264,5 +331,25 @@ class PB_WeaponBase : DoomWeapon
         {
                     let psp = player.GetPSprite(PSP_FLASH);
                     psp.sprite = GetSpriteIndex(str);
+        }
+
+	action void A_SetSpawnSprite(String str)
+        {
+                   sprite = GetSpriteIndex(str);
+        }
+
+		states
+		{
+			Flash:
+				TNT1 A 1;
+				stop;
+		}
+}
+
+class PB_UpgradeItem : CustomInventory
+{
+	action void A_SetSpawnSprite(String str)
+        {
+                   sprite = GetSpriteIndex(str);
         }
 }

@@ -4,6 +4,12 @@ Actor SemiFire : Inventory
 Actor BurstFire : Inventory
 {Inventory.MaxAmount 1}
 
+Actor CarbineBurstCounter : Inventory
+{Inventory.MaxAmount 2}
+
+Actor CarbineFullAuto : Inventory
+{Inventory.MaxAmount 1}
+
 Actor CarbineHasUnloaded : Inventory
 {Inventory.MaxAmount 1}
 
@@ -24,7 +30,6 @@ Actor CarbineBarrelHeat: Inventory
 
 Actor SelectCarbine_DualWield : Inventory
 {Inventory.MaxAmount 1}
-
 Actor SelectCarbine_FullAutoFire : Inventory
 {Inventory.MaxAmount 1}
 Actor SelectCarbine_SemiFire : Inventory
@@ -66,6 +71,7 @@ ACTOR Carbine : PB_Weapon
     +WEAPON.NOAUTOFIRE
     Scale 0.51
 	PB_WeaponBase.UnloaderToken "CarbineHasUnloaded"
+	Inventory.AltHUDIcon "CB00Z0"
 	States
 	{
 		Steady:
@@ -120,32 +126,56 @@ ACTOR Carbine : PB_Weapon
 		Ready3:
 			TNT1 A 0 {
 				A_TakeInventory("PB_LockScreenTilt",1);
-				A_SetCrosshair(0);
+				PB_HandleCrosshair(59);
 				}
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReadyDualWield")
 		ReadyToFire:
-			4AFG A 1 {
-				if (CountInv("CarbineBarrelHeat") >= 60) {
-					A_Gunflash("BarrelSmoke1");
-				}
+		TNT1 A 0 A_JumpIfInventory("RifleWasEmpty",1,"LoadChamber")
+		4AFG A 1 
+		{
+			A_SetInventory("CarbineBurstCounter",0);
+			if (CountInv("CarbineBarrelHeat") >= 60) {A_Gunflash("BarrelSmoke1");}
 				
-				if(GetCvar("pb_toggle_aim_hold")) {
-// 					if ((PressingFire() && PressingAltfire() && CountInv("XRifleAmmo") > 0)){
-// 							return state("Fire2");
-// 					}
-					if (PressingFire() && CountInv("XRifleAmmo") > 0){
-						return state("Fire");
+			if(GetCvar("pb_toggle_aim_hold")) 
+			{
+					if ((PressingFire() && PressingAltfire() && CountInv("XRifleAmmo") > 0))
+					{
+						if(CountInv("CarbineFullAuto") >= 1) 
+							{Return State("Fire2");}
 					}
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
-				}
-				else {
-					if (PressingFire() && CountInv("XRifleAmmo") > 0){
-						return state("Fire");
+					if (PressingFire() && CountInv("XRifleAmmo") > 0)
+					{
+						if(CountInv("CarbineFullAuto") >= 1) 
+							{Return State("Fire");}
+						if(CountInv("BurstFire") >= 1) 
+							{
+								if(CountInv("CarbineBurstCounter") >= 2) 
+								{A_SetInventory("CarbineBurstCounter",0);Return State("Ready3");}
+							}
+						//if (!PressingFire())
+						//	{A_SetInventory("CarbineBurstCounter",0);}
 					}
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
-				}
-				return state("");
 			}
+			else 
+			{
+				if (PressingFire() && CountInv("XRifleAmmo") > 0 )
+					{
+						if(CountInv("CarbineFullAuto") >= 1) 
+							{Return State("Fire");}
+						
+						if(CountInv("BurstFire") >= 1) 
+							{
+								if(CountInv("CarbineBurstCounter") >= 2) 
+								{A_SetInventory("CarbineBurstCounter",0); Return State("Ready3");}
+							}
+					}
+				//if (!PressingFire())
+				//	{A_SetInventory("CarbineBurstCounter",0);}
+				
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+			}
+			return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+		}
 			Loop
 		
 	SelectAnimationDualWield:
@@ -156,10 +186,22 @@ ACTOR Carbine : PB_Weapon
 	ReadyDualWield:	
 		TNT1 A 0 {
 			A_SetRoll(0);
-			A_SetCrosshair(0);
+			PB_HandleCrosshair(59);
 			A_TakeInventory("PB_LockScreenTilt",1);
 			A_SetFiringRightWeapon(False);
 			A_SetFiringLeftWeapon(False);
+			A_TakeInventory("DualFiring",1);
+			if(CountInv("LeftXRifleAmmo") < CountInv("XRifleAmmo")){
+				A_GiveInventory("DualFiring",1);
+			}
+			if(CountInv("NewClip")>0){
+				if(CountInv("LeftXRifleAmmo")<=0){
+					A_GiveInventory("DualFireReload",1);
+				}
+				if(CountInv("XRifleAmmo")<=0){
+					A_GiveInventory("DualFireReload",1);
+				}
+			}
 			A_Overlay(10, "IdleLeft_Overlay", true);
 			A_Overlay(11, "IdleRight_Overlay", true);
 			}
@@ -170,13 +212,18 @@ ACTOR Carbine : PB_Weapon
 	IdleLeft_Overlay:
 		CB01 F 1 {
 			// Full-Auto
-			if(PressingFire() || JustPressed(BT_ATTACK)){
-				if(CountInv("LeftXRifleAmmo") > 0){
-					return state("FireLeft_Overlay");
-				}
-				else {
-					A_StartSound("weapons/empty", CHAN_AUTO);
-					return state("");
+			if(CountInv("LeftXRifleAmmo")<=0 && CountInv("XRifleAmmo")>0){
+				A_GiveInventory("DualFiring",1);
+			}
+			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("XRifleAmmo")<=0) || GetCvar("SingleDualFire")==1){
+				if(PressingFire() || JustPressed(BT_ATTACK)){
+					if(CountInv("LeftXRifleAmmo") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_StartSound("weapons/empty", CHAN_AUTO);
+						return state("");
+					}
 				}
 			}
 			return state("");
@@ -185,7 +232,21 @@ ACTOR Carbine : PB_Weapon
 	IdleRight_Overlay:
 		CB01 G 1 {
 			// Full-Auto
-			if(PressingAltFire() || JustPressed(BT_ALTATTACK)){
+			if(CountInv("LeftXRifleAmmo")>0 && CountInv("XRifleAmmo")<=0){
+				A_TakeInventory("DualFiring",1);
+			}
+			if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1 && CountInv("LeftXRifleAmmo")<=0) || GetCvar("SingleDualFire")==1){
+				if((PressingFire() || JustPressed(BT_ATTACK)) && GetCvar("SingleDualFire")==0){
+					if(CountInv("XRifleAmmo") > 0){
+						return state("FireRight_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+			}
+			if((PressingAltFire() || JustPressed(BT_ALTATTACK)) && GetCvar("SingleDualFire")==1){
 				if(CountInv("XRifleAmmo") > 0){
 					return state("FireRight_Overlay");
 				}
@@ -202,46 +263,30 @@ ACTOR Carbine : PB_Weapon
 		CB02 A 1 BRIGHT {
 			A_AlertMonsters;
 			A_StartSound("Weapons/Rifle/SFire", CHAN_7);
-			A_FireBullets (0.1, 0.1, -1, 12, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
+			A_FireBullets (0.1, 0.1, -1, 19, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
 			A_FireCustomMissile("YellowFlareSpawn",0,0,-4,0);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
 			A_FireCustomMissile("RifleCaseSpawn",5,0,-14,-6);
 			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
 			A_Takeinventory("LeftXRifleAmmo",1);
 			A_ZoomFactor(0.985);
-			
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.8, SPF_INTERPOLATE);
-				A_SetAngle(angle+0.6, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-1.6, SPF_INTERPOLATE);
-				A_SetAngle(angle+1.2, SPF_INTERPOLATE);
-				}
+			A_GunFlash;
+            PB_WeaponRecoil(-1.6,+1.2);
 			}
 		CB02 B 1 {
 			A_ZoomFactor(0.99);
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.8, SPF_INTERPOLATE);
-				A_SetAngle(angle+0.6, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-1.6, SPF_INTERPOLATE);
-				A_SetAngle(angle+1.2, SPF_INTERPOLATE);
-				}
+            PB_WeaponRecoil(-1.6,+1.2);
 			}
-		CB02 C 1 {
-			A_ZoomFactor(1.0);
-			if(JustPressed(BT_ATTACK)){
-				if(CountInv("LeftXRifleAmmo") > 0){
-					return state("FireLeft_Overlay");
-				}
-				else {
-					A_StartSound("weapons/empty", CHAN_AUTO);
-					return state("");
-				}
+		TNT1 A 0 {
+			if(CountInv("LeftXRifleAmmo")<=0 || CountInv("XRifleAmmo")>0 ){
+				A_GiveInventory("DualFiring",1);
 			}
-			return state("");
+		}
+		CB02 C 1
+		TNT1 A 0 {
+			if(CountInv("LeftXRifleAmmo")<=0){
+				A_GiveInventory("DualFireReload",1);
+			}
 		}
 		Goto IdleLeft_Overlay
 		
@@ -249,46 +294,30 @@ ACTOR Carbine : PB_Weapon
 		CB03 A 1 BRIGHT {
 			A_AlertMonsters;
 			A_StartSound("Weapons/Rifle/SFire", CHAN_6);
-			A_FireBullets (0.1, 0.1, -1, 12, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
+			A_FireBullets (0.1, 0.1, -1, 19, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
 			A_FireCustomMissile("YellowFlareSpawn",0,0,4,0);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
 			A_FireCustomMissile("RifleCaseSpawn",5,0,16,-5);
 			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
 			A_Takeinventory("XRifleAmmo",1);
 			A_ZoomFactor(0.985);
-			
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.8);
-				A_SetAngle(angle-0.6);
-				}
-			else {
-				A_SetPitch(pitch-1.6);
-				A_SetAngle(angle-1.2);
-				}
+			A_GunFlash;
+            PB_WeaponRecoil(-1.6,-1.2);
 			}
 		CB03 B 1 {
 			A_ZoomFactor(0.99);
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.8);
-				A_SetAngle(angle-0.6);
-				}
-			else {
-				A_SetPitch(pitch-1.6);
-				A_SetAngle(angle-1.2);
-				}
+            PB_WeaponRecoil(-1.6,-1.2);
 			}
-		CB03 C 1 {
-			A_ZoomFactor(1.0);
-			if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon()){
-				if(CountInv("XRifleAmmo") > 0){
-					return state("FireRight_Overlay");
-				}
-				else {
-					A_StartSound("weapons/empty", CHAN_AUTO);
-					return state("");
-				}
+		TNT1 A 0 {
+			if(CountInv("LeftXRifleAmmo")>0 || CountInv("XRifleAmmo")<=0 ){
+				A_TakeInventory("DualFiring",1);
 			}
-			return state("");
+		}
+		CB03 C 1
+		TNT1 A 0 {
+			if(CountInv("XRifleAmmo")<=0){
+				A_GiveInventory("DualFireReload",1);
+			}
 		}
 		Goto IdleRight_Overlay
 	
@@ -315,6 +344,7 @@ ACTOR Carbine : PB_Weapon
 	ReadyToFire2:
 		4A2G A 1 {
 			//Updated code for far superior smooth gameplay
+			A_SetInventory("CarbineBurstCounter",0);
 			if (CountInv("CarbineBarrelHeat") >= 60) {
 				A_Gunflash("BarrelSmoke2");
 			}
@@ -324,17 +354,34 @@ ACTOR Carbine : PB_Weapon
 					return state("Zoomout");
 				}
 				if (PressingFire() && PressingAltfire() && CountInv("XRifleAmmo") > 0){
-						return state("Fire2");
+						if(CountInv("CarbineFullAuto") >= 1) 
+							{Return State("Fire2");}
+						
+						if(CountInv("BurstFire") >= 1) 
+							{
+								if(CountInv("CarbineBurstCounter") >= 2) 
+								{A_SetInventory("CarbineBurstCounter",0); Return State("ReadyToFire2");}
+								//else{Return State("Fire2");}
+							}
+				
 				}
 				return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY);
 			}
 			else {
 				if (PressingFire() && CountInv("XRifleAmmo") > 0 ){
-					return state("Fire2");
+						if(CountInv("CarbineFullAuto") >= 1) 
+							{Return State("Fire2");}
+						
+						if(CountInv("BurstFire") >= 1) 
+							{
+								if(CountInv("CarbineBurstCounter") >= 2) 
+								{A_SetInventory("CarbineBurstCounter",0); Return State("ReadyToFire2");}
+							}
+
 				}
 				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
 			}
-			return state("");
+			return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
 		}
 		Loop
 		
@@ -342,7 +389,7 @@ ACTOR Carbine : PB_Weapon
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
-			A_SetCrosshair(0);
+			PB_HandleCrosshair(59);
 			A_TakeInventory("PB_LockScreenTilt",1);
 			A_ClearOverlays(10,11);
 		}
@@ -353,6 +400,7 @@ ACTOR Carbine : PB_Weapon
 			A_Takeinventory("ADSmode",1);
 		}
 		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
+		TNT1 A 0 A_JumpIfInventory("LMG",1,"DeselectUpgrade")
 		TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DeselectAkimbo")
         4A1S EDCBA 1
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
@@ -361,27 +409,63 @@ ACTOR Carbine : PB_Weapon
 		CB01 ABCDE 1
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
-
+	DeselectUpgrade:
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+		Wait
+	WheelCancel:
+		TNT1 A 0 {
+			A_SetInventory("SelectCarbine_DualWield",0);
+			A_SetInventory("SelectCarbine_SemiFire",0);
+			A_SetInventory("SelectCarbine_BurstFire",0);
+			A_SetInventory("SelectCarbine_FullAutoFire",0);
+			A_SetInventory("CantWeaponSpecial",0);
+			}
+		Stop
+			
 	WeaponSpecial:
 		TNT1 A 0 {
 			A_Giveinventory("PB_LockScreenTilt",1);
 			A_Takeinventory("Zoomed",1);
 			A_Takeinventory("ADSmode",1);
 			A_Takeinventory("GoWeaponSpecialAbility",1);
-			A_SetCrosshair(0);
+			PB_HandleCrosshair(59);
 			A_ZoomFactor(1.0);
 			A_ClearOverlays(10,11);
 		}
-	ToggleDualWield:
-		TNT1 A 0 {
-				A_Takeinventory("SelectCarbine_DualWield",1);
-// 				A_Takeinventory("SelectCarbine_SemiFire",1);
-// 				A_Takeinventory("SelectCarbine_BurstFire",1);
-// 				A_Takeinventory("SelectCarbine_FullAutoFire",1);
+	
+	TNT1 A 0{
+		if(CountInv("SelectCarbine_DualWield") >=1)
+			{A_Overlay(-19,"WheelCancel"); Return State("SwitchToDualWield");}
+		if(CountInv("SelectCarbine_SemiFire") && CountInv("SemiFire") >=1)
+			{A_Overlay(-19,"WheelCancel"); A_Log("Fire control already selected: Semi-Auto"); Return State("Ready3");}
+		if(CountInv("SelectCarbine_BurstFire") && CountInv("BurstFire") >=1)
+			{A_Overlay(-19,"WheelCancel"); A_Log("Fire control already selected: Burst-Fire"); Return State("Ready3");}
+		if(CountInv("SelectCarbine_FullAutoFire") && CountInv("CarbineFullAuto") >=1)
+			{A_Overlay(-19,"WheelCancel"); A_Log("Fire control already selected: Full-Auto"); Return State("Ready3");}
+		
+		if(CountInv("SelectCarbine_FullAutoFire") || CountInv("SelectCarbine_BurstFire") || CountInv("SelectCarbine_SemiFire") >=1)
+			{Return State("ToggleFireMode");}
+			
+		A_Overlay(-19,"WheelCancel");
+		A_Log("You should not be this far down the state");
+		Return State("");
 		}
-		TNT1 A 0 A_JumpIfInventory("Carbine", 2, "SwitchToDualWield")
-		Goto Ready3
+	
+	//ToggleDualWield:
+	//	TNT1 A 0 {
+	//			A_Takeinventory("SelectCarbine_DualWield",1);
+ 	//			A_Takeinventory("SelectCarbine_SemiFire",1);
+	//			A_Takeinventory("SelectCarbine_BurstFire",1);
+	//			A_Takeinventory("SelectCarbine_FullAutoFire",1);
+	//	}
+	//	TNT1 A 0 A_JumpIfInventory("Carbine", 2, "SwitchToDualWield")
+	//	Goto Ready3
 	SwitchToDualWield:
+		TNT1 A 0 {
+			if(CountInv("Carbine") < 2) {
+			A_Print("You need two carbines to dual wield!"); Return State("Ready3");}
+			Return State("");
+			}
 		TNT1 A 0 {
 			if (A_CheckAkimbo()) {
 				A_Takeinventory("DualWieldingCarbines",1);
@@ -405,59 +489,56 @@ ACTOR Carbine : PB_Weapon
 		Goto Ready3
 		
 		
-// 	ToggleFireMode:
-// 		TNT1 A 0 {
-			
-// 			if(CountInv("SelectCarbine_SemiFire") == 0 && CountInv("SemiFire") != 1) {
-// 				A_Takeinventory("SelectCarbine_DualWield",1);
-// 				A_Takeinventory("SelectCarbine_SemiFire",1);
-// 				A_Takeinventory("SelectCarbine_BurstFire",1);
-// 				A_Takeinventory("SelectCarbine_FullAutoFire",1);
-// 				A_Takeinventory("BurstFire",1);
-// 				A_GiveInventory("SemiFire");
-// 				return state("FiremodeAnimation");
-// 			}
-// 			if(CountInv("SelectCarbine_BurstFire") == 0 && CountInv("BurstFire") != 1) {
-// 				A_Takeinventory("SelectCarbine_DualWield",1);
-// 				A_Takeinventory("SelectCarbine_SemiFire",1);
-// 				A_Takeinventory("SelectCarbine_BurstFire",1);
-// 				A_Takeinventory("SelectCarbine_FullAutoFire",1);
-// 				A_Takeinventory("SemiFire",1);
-// 				A_GiveInventory("BurstFire");
-// 				return state("FiremodeAnimation");
-// 			}
-// 			if(CountInv("SelectCarbine_FullAutoFire") == 0 && (CountInv("BurstFire") == 1 || CountInv("BurstFire") == 1)){
-// 				A_Takeinventory("SelectCarbine_DualWield",1);
-// 				A_Takeinventory("SelectCarbine_SemiFire",1);
-// 				A_Takeinventory("SelectCarbine_BurstFire",1);
-// 				A_Takeinventory("SelectCarbine_FullAutoFire",1);
-// 				A_Takeinventory("BurstFire",1);
-// 				A_Takeinventory("SemiFire",1);
-// 				return state("FiremodeAnimation");
-// 			}
-			
-// 			A_Takeinventory("SelectCarbine_DualWield",1);
-// 			A_Takeinventory("SelectCarbine_SemiFire",1);
-// 			A_Takeinventory("SelectCarbine_BurstFire",1);
-// 			A_Takeinventory("SelectCarbine_FullAutoFire",1);
-// 			return state("");
-			
-// 		}
-// 		Goto Ready3
-// 	FiremodeAnimation:
-// 		4A1W ABCDEF 1 A_Setroll(roll+0.8, SPF_INTERPOLATE)
-// 		TNT1 A 0 A_StartSound("LIGHTON")
-// 		4A1W FEDCBA 1 A_Setroll(roll-0.8, SPF_INTERPOLATE)
-// 		Goto Ready3
+ 	ToggleFireMode:
+		TNT1 A 0 {
+			if (A_CheckAkimbo())
+				{
+				A_Log("Fire control not available while dual-wielding");
+				A_Overlay(-19,"WheelCancel");
+				return state("");
+				}
+			if(CountInv("SelectCarbine_SemiFire") >= 1) {
+				A_Setinventory("CarbineFullAuto",0);
+ 				A_Setinventory("BurstFire",0);
+ 				A_SetInventory("SemiFire",1);
+				A_Overlay(-19,"WheelCancel");
+				A_Log("Fire control mode selected: Semi-Auto");
+ 				return state("FiremodeAnimation");
+				}
+ 			if(CountInv("SelectCarbine_BurstFire") >= 1) {
+				A_Setinventory("CarbineFullAuto",0);
+ 				A_Setinventory("BurstFire",1);
+ 				A_SetInventory("SemiFire",0);
+				A_Overlay(-19,"WheelCancel");
+				A_Log("Fire control mode selected: Burst-Fire");
+ 				return state("FiremodeAnimation");
+				}
+			if(CountInv("SelectCarbine_FullAutoFire") >= 1) {
+				A_Setinventory("CarbineFullAuto",1);
+ 				A_Setinventory("BurstFire",0);
+ 				A_SetInventory("SemiFire",0);
+				A_Overlay(-19,"WheelCancel");
+				A_Log("Fire control mode selected: Full-Auto");
+ 				return state("FiremodeAnimation");
+				}
+ 			return state("");	
+ 		}
+ 		Goto Ready3
+ 	FiremodeAnimation:
+ 		4A1W ABCDEF 1 A_Setroll(roll+0.8, SPF_INTERPOLATE)
+ 		TNT1 A 0 A_StartSound("LIGHTON")
+ 		4A1W FEDCBA 1 A_Setroll(roll-0.8, SPF_INTERPOLATE)
+ 		Goto Ready3
 		
 	Select:
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
-			A_SetCrosshair(0);
+			PB_HandleCrosshair(59);
 			A_TakeInventory("PB_LockScreenTilt",1);
 		}
-		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
+		Goto SelectFirstPersonLegs
+		SelectContinue:
 		TNT1 A 0 A_SelectWeapon("LMG")
 		TNT1 A 0 A_TakeInventory("FistsSelected",1)
 		TNT1 A 0 A_TakeInventory("SawSelected",1)
@@ -491,6 +572,7 @@ ACTOR Carbine : PB_Weapon
 		TNT1 A 0 A_TakeInventory("LostSoulSelected",1)
 		TNT1 A 0 A_TakeInventory("HasBarrel",1)
 		TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasIncendiaryWeapon", 1)
 		TNT1 A 0 A_TakeInventory("LMGSelected",1)
 		TNT1 A 0 A_GiveInventory("CarbineSelected",1)
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
@@ -501,7 +583,7 @@ ACTOR Carbine : PB_Weapon
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
-			A_SetCrosshair(0);
+			PB_HandleCrosshair(59);
 			A_TakeInventory("PB_LockScreenTilt",1);
 			A_ClearOverlays(10,11);
 		}
@@ -513,7 +595,7 @@ ACTOR Carbine : PB_Weapon
 		TNT1 A 0 A_JumpIfInventory("Zoomed",1,"Fire2")
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
-			A_SetCrosshair(0);
+			PB_HandleCrosshair(59);
 			A_SetRoll(0);
 			}
       //  TNT1 A 0 A_JumpIfInventory("SemiFire",1,"FireSemi")
@@ -526,31 +608,19 @@ ACTOR Carbine : PB_Weapon
 			if (CountInv("CarbineMuzzleFlash1") >= 1 ) { A_SetWeaponSprite("4AFF");}
 			if (CountInv("CarbineMuzzleFlash2") >= 1 ) { A_SetWeaponSprite("4BFF");}
 			if (CountInv("CarbineMuzzleFlash3") >= 1 ) { A_SetWeaponSprite("4CFF");}
-			
-			A_FireBullets (0.1, 0.1, -1, 15, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
+			A_GunFlash;
+			A_FireBullets (0.1, 0.1, -1, 19, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
 			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
 			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			A_FireCustomMissile("RifleCaseSpawn",5,0,8,-9);
 			A_Takeinventory("XRifleAmmo",1);
-			A_Takeinventory("DoubleXRifleAmmo",1);
 			A_Giveinventory("CarbineBarrelHeat",10);
-			
-			
-			
 			A_StartSound("Weapons/Rifle/SFire", CHAN_WEAPON);
 			A_AlertMonsters;
 			A_ZoomFactor(0.98);
-			A_WeaponReady(WRF_NOPRIMARY);
-			if (CountInv("PowerStrength") >= 1 ) {
-
-				A_SetPitch(pitch-0.24, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.09, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-0.48, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.18, SPF_INTERPOLATE);
-				}
+			//A_WeaponReady(WRF_NOPRIMARY);
+            PB_WeaponRecoil(-0.48,-0.18);
 			}
 		4AFF B 1 {
 			if (CountInv("CarbineMuzzleFlash1") >= 1 ) { A_SetWeaponSprite("4AFF");}
@@ -558,20 +628,12 @@ ACTOR Carbine : PB_Weapon
 			if (CountInv("CarbineMuzzleFlash3") >= 1 ) { A_SetWeaponSprite("4CFF");}
 			
 			A_ZoomFactor(0.99);
-			A_WeaponReady(WRF_NOPRIMARY);
-			if (CountInv("PowerStrength") >= 1 ) {
-
-				A_SetPitch(pitch-0.24, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.09, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-0.48, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.18, SPF_INTERPOLATE);
-				}
+			//A_WeaponReady(WRF_NOPRIMARY);
+            PB_WeaponRecoil(-0.48,-0.18);
 		}
 		4AFF C 1 {
 			A_ZoomFactor(1.0);
-			A_WeaponReady(WRF_NOPRIMARY);
+			//A_WeaponReady(WRF_NOPRIMARY);
 		}
 		TNT1 A 0 {
 			if (CountInv("CarbineMuzzleFlash1") >= 1 ) {
@@ -589,7 +651,19 @@ ACTOR Carbine : PB_Weapon
 			else {
 				A_GiveInventory("CarbineMuzzleFlash1",1);
 			}
-			//A_ReFire;
+		}
+		TNT1 A 0 {
+			if(CountInv("SemiFire") >= 1) {
+ 				return state("ReadyToFire");
+				}
+ 			if(CountInv("BurstFire") >= 1) {
+				if(CountInv("CarbineBurstCounter") <=1)
+					{A_GiveInventory("CarbineBurstCounter",1); A_Refire;}
+ 				Else
+					{Return State("ReadyToFire");}
+				}
+			if(CountInv("CarbineFullAuto") >= 1) {A_Refire;}
+			Return State ("");
 		}
 		Goto ReadyToFire
 	
@@ -598,227 +672,100 @@ ACTOR Carbine : PB_Weapon
 			A_WeaponOffset(0,32);
 			A_SetCrosshair(5);
 			}
-        TNT1 A 0 A_JumpIfInventory("SemiFire",1,"Fire2Semi")
-        TNT1 A 0 A_JumpIfInventory("BurstFire",1,"Fire2Burst")
         TNT1 A 0 A_JumpIfInventory("XRifleAmmo",1,1)
         Goto Reload
+		4A2F A 0 A_Jump(256,"Fire2_Flash1","Fire2_Flash2")
+		Fire2_Flash1:
 		4A2F A 1 BRIGHT {
-			A_FireBullets (0.1, 0.1, -1, 15, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
+			A_GunFlash;
+			A_FireBullets (0.1, 0.1, -1, 19, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
 			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
 			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			A_FireCustomMissile("RifleCaseSpawn",5,0,8,-9);
 			A_Takeinventory("XRifleAmmo",1);
-			A_Takeinventory("DoubleXRifleAmmo",1);
 			A_Giveinventory("CarbineBarrelHeat",10);
 			A_StartSound("Weapons/Rifle/SFire", CHAN_WEAPON);
 			A_AlertMonsters;
 			A_ZoomFactor(1.485);
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.15, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.06, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-0.30, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.12, SPF_INTERPOLATE);
-				}
+            PB_WeaponRecoil(-0.30,-0.12);
 			}
+		Fire2Continue:
         4A2F B 1 BRIGHT {
 			//A_WeaponReady(WRF_NOPRIMARY);
 			A_ZoomFactor(1.495);
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.15, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.06, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-0.30, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.12, SPF_INTERPOLATE);
-				}
+            PB_WeaponRecoil(-0.30,-0.12);
 			}
-		4A2F C 1 {
-			//A_WeaponReady(WRF_NOPRIMARY);
-			A_ZoomFactor(1.5);
-			
-			
-			if(GetCvar("pb_toggle_aim_hold")) {
-				if(JustReleased(BT_ALTATTACK)){
-					return state("Zoomout");
-				}
+		4A2F C 1 A_ZoomFactor(1.5)
+		TNT1 A 0
+		{
+			if(GetCvar("pb_toggle_aim_hold")) 
+			{
+				if(JustReleased(BT_ALTATTACK))
+					{return state("Zoomout");}
 		
-				if (JustPressed(BT_ATTACK) && PressingAltfire()){
-						return state("Fire2");
+				if ((JustPressed(BT_ATTACK) || PressingFire())  && PressingAltfire())
+				{
+					if(CountInv("SemiFire") >= 1) 
+						{return state("Ready2");}
+					if(CountInv("BurstFire") >= 1) 
+						{
+							if(CountInv("CarbineBurstCounter") <=1)
+								{A_GiveInventory("CarbineBurstCounter",1); A_Refire("Fire2");}
+							Else
+								{Return State("ReadyToFire2");}
+						}
+					if(CountInv("CarbineFullAuto") >= 1) { A_Refire("Fire2");}
 				}
+			
+			Return State ("");
 			}
-			else {
-				if(PressingAltfire()){
-					return state("Zoomout");
-				}
+			
+			else 
+			{
+				if(PressingAltfire())
+					{return state("Zoomout");}
 				
-				if (JustPressed(BT_ATTACK)){
-						return state("Fire2");
-				}
-				A_Refire("Fire2");
-				
+
+				if(CountInv("SemiFire") >= 1) 
+						{return state("Ready2");}
+				if(CountInv("BurstFire") >= 1) 
+							{
+								if(CountInv("CarbineBurstCounter") <=1)
+									{A_GiveInventory("CarbineBurstCounter",1); A_Refire("Fire2");}
+								Else
+									{Return State("ReadyToFire2");}
+							}
+				if(CountInv("CarbineFullAuto") >= 1) {A_Refire("Fire2");}
+					
+			Return State ("");
 			}
 			return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
-			
 		}
 		//TNT1 A 0 A_Refire
-		Goto Ready2
+		Goto ReadyToFire2
 		
-	Fire2Semi:
-        TNT1 A 0 A_JumpIfInventory("XRifleAmmo",1,1)
-        Goto Reload
-		TNT1 A 0 A_ChangeFlag("WEAPON.NOAUTOFIRE", 1)
-		4A2F A 1 BRIGHT {
-			A_FireBullets (0.1, 0.1, -1, 25, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
+		Fire2_Flash2:
+		4A3F A 1 BRIGHT {
+			A_GunFlash;
+			A_FireBullets (0.1, 0.1, -1, 19, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
 			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
 			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			A_FireCustomMissile("RifleCaseSpawn",5,0,8,-9);
 			A_Takeinventory("XRifleAmmo",1);
-			A_Takeinventory("DoubleXRifleAmmo",1);
+			A_Giveinventory("CarbineBarrelHeat",10);
 			A_StartSound("Weapons/Rifle/SFire", CHAN_WEAPON);
 			A_AlertMonsters;
 			A_ZoomFactor(1.485);
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.15, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.06, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-0.30, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.12, SPF_INTERPOLATE);
-				}
+            PB_WeaponRecoil(-0.30,-0.12);
 			}
-        4A2F B 1 BRIGHT {
-			A_ZoomFactor(1.495);
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.15, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.06, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-0.30, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.12, SPF_INTERPOLATE);
-				}
-			}
-		4A2F C 1 {
-			A_ZoomFactor(1.5);
-			}
-		TNT1 A 0 A_ChangeFlag("WEAPON.NOAUTOFIRE", 0)
-		Goto Ready2
-		
-	Fire2Burst:
-        TNT1 A 0 A_JumpIfInventory("XRifleAmmo",1,1)
-        Goto Reload
-		4A2F A 1 BRIGHT {
-			A_FireBullets (0.1, 0.1, -1, 15, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
-			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
-			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
-			A_FireCustomMissile("RifleCaseSpawn",5,0,8,-9);
-			A_Takeinventory("XRifleAmmo",1);
-			A_Takeinventory("DoubleXRifleAmmo",1);
-			A_StartSound("Weapons/Rifle/SFire", CHAN_WEAPON);
-			A_AlertMonsters;
-			A_ZoomFactor(1.485);
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.15, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.06, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-0.30, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.12, SPF_INTERPOLATE);
-				}
-			}
-        4A2F B 1 BRIGHT {
-			A_ZoomFactor(1.495);
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.15, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.06, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-0.30, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.12, SPF_INTERPOLATE);
-				}
-			}
-        TNT1 A 0 A_JumpIfInventory("XRifleAmmo",1,1)
-        Goto Reload
-		4A2F A 1 BRIGHT {
-			A_FireBullets (0.1, 0.1, -1, 15, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
-			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
-			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
-			A_FireCustomMissile("RifleCaseSpawn",5,0,8,-9);
-			A_Takeinventory("XRifleAmmo",1);
-			A_Takeinventory("DoubleXRifleAmmo",1);
-			A_StartSound("Weapons/Rifle/SFire", CHAN_WEAPON);
-			A_AlertMonsters;
-			A_ZoomFactor(1.485);
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.15, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.06, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-0.30, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.12, SPF_INTERPOLATE);
-				}
-			}
-        4A2F B 1 BRIGHT {
-			A_ZoomFactor(1.495);
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.15, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.06, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-0.30, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.12, SPF_INTERPOLATE);
-				}
-			}
-        TNT1 A 0 A_JumpIfInventory("XRifleAmmo",1,1)
-        Goto Reload
-		4A2F A 1 BRIGHT {
-			A_FireBullets (0.1, 0.1, -1, 15, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
-			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
-			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
-			A_FireCustomMissile("RifleCaseSpawn",5,0,8,-9);
-			A_Takeinventory("XRifleAmmo",1);
-			A_Takeinventory("DoubleXRifleAmmo",1);
-			A_StartSound("Weapons/Rifle/SFire", CHAN_WEAPON);
-			A_AlertMonsters;
-			A_ZoomFactor(1.485);
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.15, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.06, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-0.30, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.12, SPF_INTERPOLATE);
-				}
-			}
-        4A2F B 1 BRIGHT {
-			A_ZoomFactor(1.495);
-			if (CountInv("PowerStrength") >= 1 ) {
-				A_SetPitch(pitch-0.15, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.06, SPF_INTERPOLATE);
-				}
-			else {
-				A_SetPitch(pitch-0.30, SPF_INTERPOLATE);
-				A_SetAngle(angle-0.12, SPF_INTERPOLATE);
-				}
-			}
-        TNT1 A 0 A_JumpIfInventory("XRifleAmmo",1,1)
-        Goto Reload
-		4A2F C 1 {
-			A_ZoomFactor(1.5);
-			}
-		Goto Ready2
-
+		Goto Fire2Continue
     AltFire:
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
-			A_SetCrosshair(0);
+			PB_HandleCrosshair(59);
 			A_TakeInventory("PB_LockScreenTilt",1);
 		}
 		TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO)
@@ -840,7 +787,7 @@ ACTOR Carbine : PB_Weapon
 			A_Takeinventory("Zoomed",1);
 			A_Takeinventory("ADSmode",1);
 			A_ZoomFactor(1.0);
-			A_SetCrosshair(0);
+			PB_HandleCrosshair(59);
 			}
         4AFZ EDCBA 1
 		TNT1 A 0 A_WeaponReady(WRF_NOSECONDARY)
@@ -854,7 +801,6 @@ ACTOR Carbine : PB_Weapon
 			A_Takeinventory("ADSmode",1);
 		}
 	Goto Ready3
-
 
 	BarrelSmoke3:
 			TNT1 A 1 A_FireCustomMissile("GunBarrelSmoke", 0, 0, 0, 0, 0, 0)
@@ -895,19 +841,17 @@ ACTOR Carbine : PB_Weapon
 		TNT1 A 0 A_JumpIfInventory("XRifleAmmo",41,"ReloadLeftCarbine")
 		Goto ReloadCheckPoint1
 		
-		
-		
 	InsertBulletsRight:
 		TNT1 A 0 A_JumpIfInventory("XRifleAmmo",41,"ReloadLeftCarbine")
 		TNT1 A 0 A_JumpIfInventory("NewCLip",1,1)
 		Goto ReloadLeftCarbine
 		TNT1 A 0 {
 			A_Giveinventory("XRifleAmmo",1);
-			A_Giveinventory("DoubleXRifleAmmo",1);
 			A_Takeinventory("NewCLip",1);
 			}
 		Goto InsertBulletsRight
 	ReloadLeftCarbine:
+		TNT1 A 0 A_Takeinventory("CarbineHasUnloaded",1)
 		TNT1 A 0 A_JumpIfInventory("LeftXRifleAmmo",41,"SelectAnimationDualWield")
 		4B20 G 1 A_SetRoll(roll+0.8)
         4B20 H 1
@@ -997,7 +941,6 @@ ACTOR Carbine : PB_Weapon
 		Goto Ready3
 		TNT1 A 0 {
 			A_Giveinventory("XRifleAmmo",1);
-			A_Giveinventory("DoubleXRifleAmmo",1);
 			A_Takeinventory("NewCLip",1);
 			}
 		Goto InsertBullets
@@ -1008,7 +951,6 @@ ACTOR Carbine : PB_Weapon
 		Goto Ready3
 		TNT1 A 0 {
 			A_Giveinventory("XRifleAmmo",1);
-			A_Giveinventory("DoubleXRifleAmmo",1);
 			A_Takeinventory("NewCLip",1);
 			}
 		Goto InsertBullets2
@@ -1060,7 +1002,6 @@ ACTOR Carbine : PB_Weapon
 		Goto FinishUnload
 		TNT1 A 0 {
 			A_Takeinventory("XRifleAmmo",1);
-			A_Takeinventory("DoubleXRifleAmmo",1);
 			A_Giveinventory("NewClip",1);
 			}
 		Goto RemoveBullets
@@ -1071,13 +1012,16 @@ ACTOR Carbine : PB_Weapon
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		Goto Ready3
 	
- 	Spawn:
-		TNT1 A 0 A_jumpif( V5_MODELS == 1 , "Spawn.V5")
-		CB00 Z 10
-		LOOP 
+
 	Spawn.V5:
-		TNT1 A 0 A_jumpif( V5_MODELS == 0 , "Spawn")
-		PBVP A 10
+		VB00 Z 10 {
+			IF( A_CHECKRANGE( V5_MDist , "NULL", TRUE) ) {A_SetSpawnSprite("CB00");}
+			}
+	Spawn:
+		TNT1 A 0 NoDelay A_jumpif( V5_MODELS == 1 && V5_Cull == 1, "Spawn.V5")
+		CB00 Z 10 {
+				if ( GetCvar( "V5_MODELS" ) == 1 && GetCVar( "V5_Cull" ) == 0 ) {A_SetSpawnSprite("VB00");}
+		}
 		LOOP
 		
     
@@ -1140,7 +1084,7 @@ ACTOR XRifleAmmo : Ammo
    Inventory.MaxAmount 41
    Ammo.BackpackAmount 0
    Ammo.BackpackMaxAmount 40
-   Inventory.Icon "4AFLA0"
+   Inventory.Icon "CB00Z0"
 }
 
 
@@ -1150,5 +1094,5 @@ ACTOR LeftXRifleAmmo : Ammo
    Inventory.MaxAmount 41
    Ammo.BackpackAmount 0
    Ammo.BackpackMaxAmount 40
-   Inventory.Icon "4AFLA0"
+   Inventory.Icon "CB00Z0"
 }

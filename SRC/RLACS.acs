@@ -1,0 +1,432 @@
+/*
+Guided Rocket Launcher
+By Scotty
+
+Set SC_DEBUG_MODE 1 in the console to use debug mode! It displays useless data in a hudmessage
+and puts pretty blue trails behind the rockets. Ooooooh!
+
+The constants below can be used to make quick changes to the behavior.
+
+LATENCY: The length in time, in tics, with which the rockets recalculate their trajectories.
+
+NUMBER_ROCKETS:	The max number of rockets that you can have following the laser.
+					Any over will just fly straight where you were aiming.
+
+ROCKET_SPEED: The speed with which the rocket will travel. (Duh)
+
+ROCKET_CUTOFF: The minimum distance away from the laser for the rocket to recalculate
+				its angle and pitch. (If it gets too close to the laser, it will stop 
+				updating its trajectory and just fly straight for wherever it was heading.
+					
+ROCKET_TURNVALUE: A fixed point number representing the max angle that rockets can adjust 
+					per update. This creates a curve effect. Use 0 to ignore this and just
+					use whateverangle and pitch it needs to head straight for the laser.
+
+*/
+
+#include "zcommon.acs"
+
+#define	LATENCY			1
+#define	NUMBER_ROCKETS	100
+#define ROCKET_SPEED	40
+#define LOCKON_ROCKET_SPEED	55
+#define ROCKET_CUTOFF 	32
+#define ROCKET_TURNVALUE 0//0.02
+
+bool rocket[NUMBER_ROCKETS] = {0};
+
+int laserX = 0;
+int laserY = 0;
+int laserZ = 0;
+
+int homingX_1 = 0;
+int homingY_1 = 0;
+int homingZ_1 = 0;
+
+int homingX_2 = 0;
+int homingY_2 = 0;
+int homingZ_2 = 0;
+
+int homingX_3 = 0;
+int homingY_3 = 0;
+int homingZ_3 = 0;
+
+bool homingTarget_1 = false;
+bool homingTarget_2 = false;
+bool homingTarget_3 = false;
+
+function int abs (int x) {
+    if (x < 0)
+        return -x;
+	return x;
+}
+
+//==============================================================================
+//Finds the first zero element in the rocket[] array.
+//This would be much more useful if I could pass in a pointer to the array!
+//
+//Parameters:
+//elements -	INT, the number of elements in the array. 	
+//
+//Returns:	INT value for the first element with a 0; -1 if none were found.
+function int checkForFirstZero (int elements) {
+	int result = -1;
+	int i;
+	bool found = 0;
+	//Cycle through each value in the rocket array
+	for(i = 0; i < elements || !found; i++) {
+		if(rocket[i] == 0) {
+			result = i;
+			found = 1;
+		}
+	}
+	return result;
+}
+
+//Taken and modified from a function on the zdoom wiki
+//http://zdoom.org/wiki/GetTargetPitch
+function int getTargetPitch (int tid1, int targetX, int targetY, int targetZ) {
+    int x, y, z, xy, a;
+    x = GetActorX(tid1) - targetX;
+    y = GetActorY (tid1) - targetY;
+    z = GetActorZ(tid1) - targetZ;
+    a = VectorAngle(x, y);
+
+    if ((a + 0.125) % 0.5 > 0.25)
+        xy = FixedDiv(y, sin(a));
+    else
+        xy = FixedDiv(x, cos(a));
+
+    return -VectorAngle(xy, z);
+}
+
+
+//==============================================================================
+//Returns the signed difference between two angles
+//
+//Parameters:
+//angleA -	FIXED, The first angle to compare
+//angleB -	FIXED, The second angle to compare
+//
+function int diffAngle(int angleA, int angleB) {
+	int result = angleA - angleB;
+	if(result > 0.5) {
+		result -= 1.0;
+	} else if (result < -0.5) {
+		result += 1.0;
+	}
+	return result;
+}
+
+//==============================================================================
+//This is a function that creates a curve effect on the projectile.
+//Essentially what it does is takes a target angle, the projectile's current
+//angle, finds the difference between the two, and adds or subtracts a small
+//fixed numbner (changeValue) from the current angle and returns the result,
+//so it eases closer to the result rather than just being the result.
+//
+//Parameters:
+//targetAngle -		FIXED, The target angle that the projectile needs to have
+//currentAngle - 	FIXED, the current angle that the projectile has
+//changeValue -		FIXED, a small value to change the current angle by.	
+//
+function int closeIn(int targetAngle, int currentAngle, int changeValue) { 
+	int diff = diffAngle(currentAngle, targetAngle);
+	int result; 
+	if(abs(diff) < changeValue) {
+		result = targetAngle;
+	} else if(diff > 0) {
+		result = currentAngle - changeValue;
+	} else if (diff < 0) {
+		result = currentAngle + changeValue;
+	}
+	
+	return result;
+}
+
+//==============================================================================
+//This is the meat and potatoes of the mod!
+//This takes the TID of a rocket, the X, Y, and Z positions of a target (laser),
+//Does math to figure out where the rocket needs to go and changes the velocity
+//accordingly.
+//
+//Parameters:
+//projectileTID -	INT, The TID of the projectile
+//targetX - 		INT, The target X coordinate
+//targetY - 		INT, The target Y coordinate
+//targetZ - 		INT, The target Z coordinate
+//speed -			INT, the speed with which the projectile will move
+//cutoff -			FIXED, the distance with which to make the projectile stop following the target.
+//turnValue - 		FIXED, the amount per call the rocket is allowed to turn. Pass 0 to ignore this and just use the target angle.
+//
+//Returns: bool value that indicates if the projectile can follow its target.
+//
+function bool setVelocityToTarget(int projectileTID, int targetX, int targetY, int targetZ, int speed, int cutoff, int turnValue, int rocket_type) {
+	
+	//Fixed point variables which define the individual X, Y, and Z distances 
+	//that the rocket is from the target.
+	int disX = ((targetX  << 16) - getactorx(projectileTID));
+	int disY = ((targetY  << 16) - getactory(projectileTID));
+	int disZ = ((targetZ  << 16) - getactorZ(projectileTID));
+	//Int equivalents of the values above. These are used to determine the cutoff distance.
+	int idisX = disX / 65535;
+	int idisY = disY / 65535;
+	int idisZ = disZ / 65535;
+	//Actual distance the projectile is from the target.
+	int distance = sqrt(idisx * idisx + idisy * idisy + idisz * idisz);
+	
+	//This is to check for a cutoff distance.
+	//This is used because without it, if you were to shoot the rocket downward at a
+	//specific range of angles, it doesn't want to touch the ground. Instead it
+	//goes berserk in place, hovering just above the floor.
+	if(distance > cutoff) {
+		//Target and Current Angle
+		int targetAngle = vectorAngle(disX, disY);
+		int currentAngle = getActorAngle(projectileTID);
+		
+		//Target and Current Pitch
+		
+		int targetPitch = 0;
+		
+		if (rocket_type == 0) {
+			targetPitch = getTargetPitch(projectileTid, laserX << 16, laserY << 16, laserZ << 16);
+		}
+		
+		if (rocket_type == 1) {
+			targetPitch = getTargetPitch(projectileTid, homingX_1 << 16, homingY_1 << 16, homingZ_1 << 16);
+		}
+		
+		if (rocket_type == 2) {
+			targetPitch = getTargetPitch(projectileTid, homingX_2 << 16, homingY_2 << 16, homingZ_2 << 16);
+		}
+		
+		if (rocket_type == 3) {
+			targetPitch = getTargetPitch(projectileTid, homingX_3 << 16, homingY_3 << 16, homingZ_3 << 16);
+		}
+		
+		//Normalize the pitch to a positive value.
+		if(targetPitch < -0.5) {
+			targetPitch += 1.0;
+		}
+		//Grab the current pitch
+		int currentPitch = getActorPitch(projectileTID);
+		//This is intended to fix a small anomaly that causes a rocket to fly out of the 
+		//launcher at 0.0 pitch at first then readjust, without regard to the player pitch.
+		if(currentPitch == 0) {
+			currentPitch = targetPitch;
+		}
+		
+		//Next Angle and Pitch
+		int nextAngle, nextPitch;
+		//If the turnValue is not 0, we'll calculate the next angle by the difference
+		//between the target and current angles, plus or minus the turnvalue.
+		//This creates a curve effect!
+		if(turnValue != 0) {
+			nextAngle = closeIn(targetAngle, currentAngle, turnValue);
+			nextPitch = closeIn(targetPitch, currentPitch, turnValue);
+		//If the turnValue is 0, we'll just set the pitch and angle to what it needs to be.
+		//This was the original incarnation of this weapon used and it works really well
+		//if you're annoyed by the curve effect.
+ 		} else {
+			nextAngle = targetAngle;
+			nextPitch = targetPitch;
+		}
+			
+		//Next X, Y, and Z velocities
+		//Trig here to make sure the combined X, Y, and Z velocities equal the speed that is passed in.
+		int nextVelX = fixedmul(Cos(nextAngle), Cos(nextPitch)) * speed;
+		int nextVelY = fixedmul(Sin(nextAngle), Cos(nextPitch)) * speed;
+		int nextVelZ = sin(nextPitch) * speed;
+		
+		//Chage the velocity here using the calculated values above.
+		setActorVelocity(projectileTid, nextVelX, nextVelY, nextVelZ, 0, 0);
+		
+		//Store the pitch and angle data on the actor's Pitch and Angle.
+		//Angle affects the look, and the values on both will be used next round to 
+		//determine the velocities to set.
+		setActorPitch(projectileTID, nextPitch);
+		setActorAngle(projectileTID, nextAngle);
+		
+		//Dumps debug data if the cvar SC_DEBUG_MODE is set to true.
+		if(getCvar("SC_DEBUG_MODE") == 1) {
+/*			hudmessagebold(
+				s:"TargetX:   ", i: targetX,
+				s:"\nTargetY:   ", i: targetY,
+				s:"\nTargetZ:   ", i: targetZ,
+				s:"\nRocketX:  ", f: getactorx(projectileTID),
+				s:"\nRocketY:  ", f: getactory(projectileTID),
+				s:"\nRocketZ:  ", f: getactorz(projectileTID),
+				s:"\nDisX:     ", f: disx,
+				s:"\nDisY:     ", f: disy,
+				s:"\nDisZ:     ", f: disz,
+				s:"\nDist:     ", f: sqrt((idisx * idisx) + (idisy * idisy)) << 16,			
+				s:"\nT-Angle:  ", f: targetAngle,
+				s:"\nC-Angle:  ", f: currentAngle,
+				s:"\nT-Pitch:  ", f: targetPitch,
+				s:"\nC-Pitch:  ", f: currentPitch,
+				s:"\nX-Vel:    ", f: nextVelX,
+				s:"\nY-Vel:    ", f: nextVelY,
+				s:"\nZ-Vel:    ", f: nextVelZ;
+				HUDMSG_LOG, 10, 0, 0.1, 0.5, 35
+			);*/
+			SpawnSpotForced("Trail", projectileTID, 0, 0);
+		}
+		return TRUE;
+	} 
+	return FALSE;
+}
+
+script "rocketFollow" (void) {
+	//Grab the first slot available for a rocket to occupy
+	int checkedArray = checkForFirstZero(NUMBER_ROCKETS);
+	//If the result is good...
+	if(checkedArray != -1) { 
+		thing_changetid(0,20000 + checkedArray);
+		//Store the rocket's TID - 20000 in the array. This will flag it as occupied.
+		rocket[activatorTID() - 20000] = 1;
+		Bool follow = true;
+		//Then the rocket follows the laser until it's exploded or it gets too close to the laser.
+		while(rocket[activatorTID() - 20000] == 1 && follow) {
+			follow = setVelocityToTarget(activatorTID(), laserX, laserY, laserZ, ROCKET_SPEED, ROCKET_CUTOFF, ROCKET_TURNVALUE, 0);
+			delay(LATENCY);
+		}
+	}
+}
+
+script "homingRocketFollow_1" (void) {
+	//Grab the first slot available for a rocket to occupy
+	int checkedArray = checkForFirstZero(NUMBER_ROCKETS);
+	//If the result is good...
+	if(checkedArray != -1) { 
+		thing_changetid(0,20000 + checkedArray);
+		//Store the rocket's TID - 20000 in the array. This will flag it as occupied.
+		rocket[activatorTID() - 20000] = 1;
+		Bool follow = true;
+		//Then the rocket follows the laser until it's exploded or it gets too close to the laser.
+		while(rocket[activatorTID() - 20000] == 1 && follow && homingTarget_1) {
+			if(!homingTarget_1) {break;}
+			follow = setVelocityToTarget(activatorTID(), homingX_1, homingY_1, homingZ_1, LOCKON_ROCKET_SPEED, ROCKET_CUTOFF, ROCKET_TURNVALUE, 1);
+			delay(LATENCY);
+		}
+	}
+}
+script "homingRocketFollow_2" (void) {
+	//Grab the first slot available for a rocket to occupy
+	int checkedArray = checkForFirstZero(NUMBER_ROCKETS);
+	//If the result is good...
+	if(checkedArray != -1) { 
+		thing_changetid(0,20000 + checkedArray);
+		//Store the rocket's TID - 20000 in the array. This will flag it as occupied.
+		rocket[activatorTID() - 20000] = 1;
+		Bool follow = true;
+		//Then the rocket follows the laser until it's exploded or it gets too close to the laser.
+		while(rocket[activatorTID() - 20000] == 1 && follow && homingTarget_2) {
+			if(!homingTarget_2) {break;}
+			follow = setVelocityToTarget(activatorTID(), homingX_2, homingY_2, homingZ_2, LOCKON_ROCKET_SPEED, ROCKET_CUTOFF, ROCKET_TURNVALUE, 2);
+			delay(LATENCY);
+		}
+	}
+}
+
+script "homingRocketFollow_3" (void) {
+	//Grab the first slot available for a rocket to occupy
+	int checkedArray = checkForFirstZero(NUMBER_ROCKETS);
+	//If the result is good...
+	if(checkedArray != -1) { 
+		thing_changetid(0,20000 + checkedArray);
+		//Store the rocket's TID - 20000 in the array. This will flag it as occupied.
+		rocket[activatorTID() - 20000] = 1;
+		Bool follow = true;
+		//Then the rocket follows the laser until it's exploded or it gets too close to the laser.
+		while(rocket[activatorTID() - 20000] == 1 && follow && homingTarget_3) {
+			if(!homingTarget_3) {break;}
+			follow = setVelocityToTarget(activatorTID(), homingX_3, homingY_3, homingZ_3, LOCKON_ROCKET_SPEED, ROCKET_CUTOFF, ROCKET_TURNVALUE, 3);
+			delay(LATENCY);
+		}
+	}
+}
+
+Script "checkLockOnTargetState" (void)
+{
+	// Set the monster as the activator of the script so we get its health
+	SetActivator(0, AAPTR_MASTER);
+
+	// Return true if the monster had died or the effect had worn off. 
+	If(GetActorProperty(0, APROP_Health) <= 0) {
+		SetResultValue(True);
+	}
+	else {
+		SetResultValue(False);
+	}
+}
+
+script "rocketCleanup" (void)
+{
+	if(activatorTID() != 0) {
+		//Open a slot in the array
+		rocket[activatorTID() - 20000] = 0;
+		//Make sure the velocity is 0
+		setActorVelocity(activatorTID(), 0, 0, 0, 0, 0);
+		thing_changeTid(0, 0);
+	}
+}
+
+script "homingRocketCleanup" (int rocketNum)
+{
+	if(activatorTID() != 0) {
+		//Open a slot in the array
+		rocket[activatorTID() - 30000] = 0;
+		//Make sure the velocity is 0
+		setActorVelocity(activatorTID(), 0, 0, 0, 0, 0);
+		thing_changeTid(0, 0);
+	}
+}
+
+script "getLaserCoords" (int x, int y, int z) {
+	laserX = x;
+	laserY = y;
+	laserZ = Z;
+}
+
+script "getHomingCoords_1" (int x, int y, int z) {
+	homingX_1 = x;
+	homingY_1 = y;
+	homingZ_1 = Z;
+	homingTarget_1 = True;
+}
+
+
+script "getHomingCoords_2" (int x, int y, int z) {
+	homingX_2 = x;
+	homingY_2 = y;
+	homingZ_2 = Z;
+	homingTarget_2 = True;
+}
+
+
+script "getHomingCoords_3" (int x, int y, int z) {
+	homingX_3 = x;
+	homingY_3 = y;
+	homingZ_3 = Z;
+	homingTarget_3 = True;
+}
+
+Script "UnsetHomingTarget1" (void) {
+	homingTarget_1 = False;
+}
+Script "UnsetHomingTarget2" (void) {
+	homingTarget_2 = False;
+}
+Script "UnsetHomingTarget3" (void) {
+	homingTarget_3 = False;
+}
+
+Script "lockOnTargetHeight" (void)
+{
+  // Set the monster as the activator of the script so we get its height
+  SetActivator(0, AAPTR_MASTER);
+
+  // Get and return the height value to the possession indicators so the zoffset can be adjusted
+  int masterheight = GetActorProperty(0, APROP_Height) >> 16;
+  SetResultValue(masterheight);
+}
