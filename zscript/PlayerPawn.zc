@@ -6,10 +6,6 @@ enum Bobbing
 	Bob_InverseAlpha,
 	Bob_Smooth,
 	Bob_InverseSmooth,
-	Bob_Build,
-	Bob_Dusk,
-	Bob_Painkiller,
-	Bob_UT
 }
 
 class PlayerPawnBase : PlayerPawn
@@ -48,6 +44,7 @@ class PlayerPawnBase : PlayerPawn
 	sector	RealFloor;
 	vector2	Acceleration;
 	vector3	Acceleration3;
+	playerinfo ZMPlayer;
 	
 	//////////////////
 	
@@ -101,7 +98,14 @@ class PlayerPawnBase : PlayerPawn
 	bool	LedgeGrabbed;
 	float	LedgeAngle;
 	int		LedgeHeight;
+	bool	LedgeCheck;
 	int		LedgeTime;
+	int		LedgeHeightMax;
+	int		LedgeHeightMin;
+	float	FrameTime;
+	double	velx;
+	double	vely;
+	double	velz;
 	weapon	ReselectWeapon;
 	
 	//Grappling Hook
@@ -508,6 +512,10 @@ class PlayerPawnBase : PlayerPawn
 			{
 				GrapplingMove();
 			}
+			else if(LedgeCheck)
+			{
+				LedgeReach();
+			}
 			else if(LedgeGrabbed)
 			{
 				LedgeGrab();
@@ -757,306 +765,6 @@ class PlayerPawnBase : PlayerPawn
 		{
 			BlockDoubleJump = False;
 			BlockJump = False;
-		}
-	}
-	
-	void BuildGravity()
-	{
-		if(!bNOGRAVITY && !WaterLevel < 2 && !GrappleVel.Length())
-			Gravity = pb_setgravity;
-		else
-			Gravity = 0.f;
-	}
-	
-	void BuildJump()
-	{
-		let player = self.player;
-		
-		//Common stuff
-		PreJumpCommon();
-		
-		//underwater/flying specific jump behavior are in WaterMove and FlyMove
-		if(WaterLevel >= 2 || bNOGRAVITY) { return; }
-		
-		//Check slope angle and sector height
-		Bool SlopedFloor;
-		[BlockJump, SlopedFloor] = CheckIfJumpable();
-		
-		//Elevators Jump Boost
-		ElevatorJump(SlopedFloor);
-		
-		////////////////////////////////
-		//Actual Jump
-		if(player.cmd.buttons & BT_JUMP || BuildJumpDelay)
-		{
-			//Special circumstances jump denial
-			if(LedgeGrabbed || LandingVelZ >= 10.f || GrappleVel.Length() || CanWSlide) { return; }
-			
-			if(player.crouchoffset != 0)
-			{
-				player.crouching = 1;
-			}
-			else if(player.onground && !BlockJump)
-			{
-				Double BuildSmallerJump;
-				
-				if(player.deltaviewheight)
-				{
-					BuildSmallerJump = 0.85f;
-				}
-				else
-				{
-					BuildJumpDelay++;
-					if(BuildJumpDelay == 1)
-					{
-						player.viewheight -= be_jumpanim;
-						return;
-					}
-					else
-					{
-						BuildJumpDelay = 0;
-						BuildSmallerJump = 1.f;
-					}
-				}
-				
-				Float JumpVelZ = pb_jumpheight + ElevatorJumpBoost;
-				Float JumpFac = GetPowerJump();
-				if(JumpFac) { JumpVelZ *= JumpFac; }
-				
-				if(zm_rampjump) //Ramp Jumps
-					Vel.Z += (Vel.Z > 0 ? zm_rjumpmulti : 1) * JumpVelZ;
-				else
-					Vel.Z = (- FloorNormal.XY dot SafeUnit2(Vel.XY) > 0 ? 1.f + sin(FloorAngle) : 1.f) * JumpVelZ; // - FloorNormal.XY dot SafeUnit2(Vel.XY) > 0 == going uphill on a slope
-					
-				bOnMobj = false;
-				ZMJumpTics = True;
-					
-				if(!(player.cheats & CF_PREDICTING) && !JumpSoundCooler)
-				{
-					A_PlaySound("*jump", CHAN_BODY);
-					JumpSoundCooler = 4;
-				}
-				
-				BlockJump = pb_autojump ? False : True;
-				BlockDoubleJump = True;
-			}
-			else if(!Player.OnGround)
-			{
-				if(BuildJumpDelay) { BuildJumpDelay = 0; }
-				
-				if(CanDoubleJump && !BlockDoubleJump && ((pb_doublejump == 1 && Vel.Z > 0) || pb_doublejump == 2))
-				{
-					Float DoubleJumpVelZ = pb_jumpheight * pb_doublejumpheight;
-					Float JumpFac = GetPowerJump();
-					if(JumpFac) { DoubleJumpVelZ *= JumpFac; }
-					Vel.Z = DoubleJumpVelZ;
-					
-					bOnMobj = false;
-					ZMJumpTics = True;
-					
-					if(!(player.cheats & CF_PREDICTING)) { A_PlaySound("*jump", CHAN_BODY); }
-					
-					CanDoubleJump = False;
-				}
-			}
-		}
-		else
-		{
-			BlockDoubleJump = False;
-			BlockJump = False;
-		}
-	}
-	
-	void PainkillerGravity()
-	{
-		if(WaterLevel >= 2)
-		{
-			if(Vel.Length() < MaxGroundSpeed / 3.f)
-				Gravity = 0.5f;
-			else
-				Gravity = 0.f;
-		}
-		else if(bNOGRAVITY || GrappleVel.Length())
-		{
-			Gravity = 0.f;
-		}
-		else
-		{
-			Gravity = pb_setgravity;
-		}
-	}
-	
-	void PainkillerJump()
-	{
-		let player = self.player;
-		
-		//Common stuff
-		PreJumpCommon();
-		
-		//underwater/flying specific jump behavior are in WaterMove and FlyMove
-		if(WaterLevel >= 2 || bNOGRAVITY) { return; }
-		
-		//Check slope angle and sector height
-		Bool SlopedFloor;
-		[BlockJump, SlopedFloor] = CheckIfJumpable();
-		
-		//Elevators Jump Boost
-		ElevatorJump(SlopedFloor);
-		
-		////////////////////////////////
-		//Actual Jump
-		if(player.cmd.buttons & BT_JUMP)
-		{
-			if(LedgeGrabbed || GrappleVel.Length() || CanWSlide) { return; }
-			
-			if(player.crouchoffset != 0)
-			{
-				player.crouching = 1;
-			}
-			else if(player.onground && !BlockJump)
-			{
-				SmallerJumpHeight++;
-				
-				Float JumpVelZ = pb_jumpheight + ElevatorJumpBoost;
-				Float JumpFac = GetPowerJump();
-				if(JumpFac) { JumpVelZ *= JumpFac; }
-					
-				if(zm_rampjump) //Ramp Jumps
-				{
-					Vel.Z += (SmallerJumpHeight > 1 ? JumpVelZ * pk_bhopjumpheight : JumpVelZ) * (Vel.Z > 0 ? zm_rjumpmulti : 1);
-				}
-				else
-				{
-					Float SlopeFactor = - FloorNormal.XY dot SafeUnit2(Vel.XY) > 0 ? 1.f + sin(FloorAngle) : 1.f;
-					Vel.Z = (SmallerJumpHeight > 1 ? JumpVelZ * pk_bhopjumpheight : JumpVelZ) * SlopeFactor;
-				}
-				
-				bOnMobj = false;
-				ZMJumpTics = True;
-				
-				if(!(player.cheats & CF_PREDICTING) && !JumpSoundCooler)
-				{
-					A_PlaySound("*jump", CHAN_BODY);
-					JumpSoundCooler = 4;
-				}
-				
-				//if autojump is on set Blockjump false while jump key is pressed
-				BlockJump = pb_autojump ? False : True;
-				BlockDoubleJump = True;
-			}
-			else if(!Player.OnGround && CanDoubleJump && !BlockDoubleJump && ((pb_doublejump == 1 && Vel.Z > 0) || pb_doublejump == 2))
-			{
-				Float DoubleJumpVelZ = pb_jumpheight * pb_doublejumpheight;
-				Float JumpFac = GetPowerJump();
-				if(JumpFac) { DoubleJumpVelZ *= JumpFac; }
-				Vel.Z = DoubleJumpVelZ;
-				
-				bOnMobj = false;
-				ZMJumpTics = True;
-				
-				if(!(player.cheats & CF_PREDICTING)) { A_PlaySound("*jump", CHAN_BODY); }
-				
-				CanDoubleJump = False;
-			}
-		}
-		else
-		{
-			BlockDoubleJump = False;
-			BlockJump = False;
-		}
-	}
-	
-	void UTGravity()
-	{
-		//Gravity
-		if(WaterLevel >= 2)
-		{
-			if(Vel.Length() < MaxGroundSpeed / 3.f && !(player.cmd.buttons & BT_JUMP))
-				Gravity = 0.5f;
-			else
-				Gravity = 0.f;
-		}
-		else if(bNOGRAVITY || GrappleVel.Length())
-		{
-			Gravity = 0.f;
-		}
-		else
-		{
-			Gravity = pb_setgravity;
-		}
-	}
-	
-	void UTJump()
-	{
-		let player = self.player;
-		
-		//Common stuff
-		PreJumpCommon();
-		
-		//underwater/flying specific jump behavior are in WaterMove and FlyMove
-		if(WaterLevel >= 2 || bNOGRAVITY) { return; }
-		
-		//Check slope angle and sector height
-		Bool SlopedFloor;
-		[BlockJump, SlopedFloor] = CheckIfJumpable();
-		
-		//Elevators Jump Boost
-		ElevatorJump(SlopedFloor);
-		
-		////////////////////////////////
-		//Actual Jump
-		if(player.cmd.buttons & BT_JUMP)
-		{
-			//Special circumstances jump denial
-			if(LedgeGrabbed || GrappleVel.Length() || CanWSlide || (DashCooler && DashCooler < 100)) { return; }
-			
-			if(player.crouchoffset != 0)
-			{
-				player.crouching = 1;
-			}
-			else if(Player.OnGround && !BlockJump)
-			{
-				Float JumpVelZ = pb_jumpheight + ElevatorJumpBoost;
-				Float JumpFac = GetPowerJump();
-				if(JumpFac) { JumpVelZ *= JumpFac; }
-				
-				if(zm_rampjump) //Ramp Jumps
-					Vel.Z += (Vel.Z > 0 ? zm_rjumpmulti : 1) * JumpVelZ;
-				else
-					Vel.Z = (- FloorNormal.XY dot SafeUnit2(Vel.XY) > 0 ? 1.f + sin(FloorAngle) : 1.f) * JumpVelZ; // - FloorNormal.XY dot SafeUnit2(Vel.XY) > 0 == going uphill on a slope
-				
-				bOnMobj = false;
-				ZMJumpTics = True;
-				
-				if(!(player.cheats & CF_PREDICTING) && !JumpSoundCooler)
-				{
-					A_PlaySound("*jump", CHAN_BODY);
-					JumpSoundCooler = 4;
-				}
-				
-				//if autojump is on set Blockjump false while jump key is pressed
-				BlockJump = pb_autojump ? False : True;
-				BlockDoubleJump = True;
-			}
-			else if(!Player.OnGround && pb_doublejump && CanDoubleJump && !BlockDoubleJump && Vel.Z > 0)
-			{
-				Float DoubleJumpVelZ = pb_jumpheight * pb_doublejumpheight;
-				Float JumpFac = GetPowerJump();
-				if(JumpFac) { DoubleJumpVelZ *= JumpFac; }
-				Vel.Z = DoubleJumpVelZ;
-				
-				bOnMobj = false;
-				ZMJumpTics = True;
-				
-				if(!(player.cheats & CF_PREDICTING)) { A_PlaySound("*jump", CHAN_BODY); }
-				
-				CanDoubleJump = False;
-			}
-		}
-		else
-		{
-			BlockDoubleJump = False;
-			if(Player.OnGround) { BlockJump = False; }
 		}
 	}
 	
@@ -1327,602 +1035,6 @@ class PlayerPawnBase : PlayerPawn
 		PlayIdle();
 	}
 	
-	//////////////////////////////////////////
-	// Build Engine
-	
-	void BuildHandleMove()
-	{
-		MaxGroundSpeed *= GroundSpeedMulti(True);
-		
-		if(!Player.OnGround || (Player.OnGround && DashNumber))
-		{
-			BuildAirMove();
-			if(pb_ledgegrab) { LedgeGrabInitiator(); }
-			if(!Player.OnGround && DashNumber) { DashCooler = 100; }
-		}
-		else
-		{
-			BuildGroundMove();
-			Grappled = False;
-			if(pb_dropprevention) { DropPrevention(); }
-		}
-	}
-	
-	void BuildInputDetection()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		if(cmd.sidemove)
-		{
-			if(cmd.buttons & BT_MOVERIGHT)
-				SVel += 40;
-			else
-				SVel -= 40;
-				
-			SVel = clamp(SVel, -90, 90);
-		}
-		else
-		{
-			SVel = 0;
-		}
-		
-		if(cmd.forwardmove)
-		{
-			if(cmd.buttons & BT_FORWARD)
-				FVel += 40;
-			else
-				FVel -= 40;
-				
-			FVel = clamp(FVel, -90, 90);
-		}
-		else
-		{
-			FVel = 0;
-		}
-		
-		//Only for flying and swimming
-		if(WaterLevel == 2 && DeepWater)
-		{
-			if(cmd.buttons & BT_JUMP)
-			{
-				if(Vel.Z > 0) { Vel.Z = 0.f; }
-				UVel = 0;
-				return;
-			}
-			else
-			{
-				DeepWater = False;
-			}
-		}
-		
-		if(bNOGRAVITY || WaterLevel >= 2)
-		{
-			if(cmd.buttons & BT_JUMP)
-				UVel += 40;
-			else if(cmd.buttons & BT_CROUCH)
-				UVel -= 40;
-			else
-				UVel = 0;
-				
-			UVel = clamp(UVel, -90, 90);
-		}
-		else
-		{
-			UVel = 0;
-		}
-	}
-	
-	int BuildFriction()
-	{
-		//Friction Value
-		Int Friction;
-		if(WaterLevel >= 2)
-			Friction = - 0x2000;
-		else if(bNOGRAVITY)
-			Friction = 0;
-		else
-			Friction = (8 - pb_friction) * 2 * 0x0200;
-		
-		//Applying the friction on the length of the vector instead of the single components fixed the Build engine directional distortion
-		Int FrictionedVel = Int((!bNOGRAVITY && WaterLevel < 2 ? Vel.XY.Length() : Vel.Length()) * (0xCFD0 + Friction)) >> 16;
-		
-		return FrictionedVel <= 10.f ? 0 : FrictionedVel;
-	}
-	
-	void BuildGroundMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Values Reset
-		MaxAirSpeed = Vel.XY.Length();
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Convert Velocity in Build Units
-		Vel.XY *= 20.f;
-		
-		if(LandingVelZ < 10.f) //this value feels good
-		{
-			//Directional inputs
-			BuildInputDetection();
-			Acceleration = RotateVector((FVel, - SVel), Angle);
-			if(Acceleration.Length()) { Acceleration = min(Acceleration.Length(), 90) * SafeUnit2(Acceleration) * GroundSpeedMulti(False); }
-			
-			//Acceleration
-			Vel.XY += Acceleration;
-		}
-		else //landing recovery
-		{
-			LandingVelZ--;
-		}
-		
-		//Friction
-		Int FrictionedVel = BuildFriction();
-		
-		//Translate back into Doom Units
-		Vel.XY /= 20.f;
-		FrictionedVel /= 20.f;
-		
-		//Limiter
-		Vel.XY = min(FrictionedVel, MaxGroundSpeed) * SafeUnit2(Vel.XY);
-		
-		//Sprite Animation
-		GroundSpriteAnimation();
-	}
-	
-	void BuildAirMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		Bool DashMove;
-		if((DashNumber || Grappled) && MaxAirSpeed > MaxGroundSpeed) { DashMove = True; }
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Convert Velocity in Build Units
-		Vel.XY *= 20.f;
-		
-		//Directional inputs
-		BuildInputDetection();
-		Acceleration = RotateVector((FVel, - SVel), Angle);
-		Acceleration = min(Acceleration.Length(), 90) * SafeUnit2(Acceleration) * GroundSpeedMulti(False);
-		
-		//Acceleration
-		Vel.XY += Acceleration;
-		
-		//Friction
-		Int FrictionedVel;
-		if(!DashMove)
-			FrictionedVel = BuildFriction();
-		else
-			FrictionedVel = Vel.XY.Length();
-		
-		//Limiter
-		Vel.XY = min(FrictionedVel, (DashMove ? MaxAirSpeed : MaxGroundSpeed) * 20) * SafeUnit2(Vel.XY);
-		
-		//Translate back into Doom Units
-		Vel.XY /= 20.f;
-		
-		//Sprite Animation
-		AirSpriteAnimation();
-		
-		//Reset speed cap
-		if(Vel.XY.Length() <= MaxGroundSpeed) { MaxAirSpeed = Vel.XY.Length(); }
-	}
-	
-	void BuildWaterMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Value Resets
-		MaxAirSpeed = Vel.XY.Length();
-		if(WaterLevel == 3) { DeepWater = True; }
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Convert Velocity in Build Units
-		Vel *= 20.f;
-		
-		//Directional inputs
-		BuildInputDetection();
-		Acceleration = RotateVector((FVel, - SVel), Angle);
-		Acceleration = min(Acceleration.Length(), 90) * SafeUnit2(Acceleration) * GroundSpeedMulti(False);
-		
-		//Acceleration
-		Vel.XY += Acceleration;
-		
-		//Crouch/jump press
-		Vel.Z += UVel;
-		
-		//Friction
-		Int FrictionedVel = BuildFriction();
-		
-		//Limiter
-		Vel = min(FrictionedVel, MaxGroundSpeed * 15.f) * SafeUnit3(Vel);
-		if(Deepwater && WaterLevel == 2 && Vel.Z > 0) { Vel.Z = 0; }
-		
-		//Translate back into Doom Units
-		Vel /= 20.f;
-		
-		// Sprite Animation
-		GroundSpriteAnimation();
-	}
-	
-	void BuildFlyMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Value Resets
-		MaxAirSpeed = Vel.XY.Length();
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Convert Velocity in Build Units
-		Vel *= 20.f;
-		
-		//Directional inputs
-		BuildInputDetection();
-		Acceleration = RotateVector((FVel, - SVel), Angle);
-		Acceleration = min(Acceleration.Length(), 90) * SafeUnit2(Acceleration) * GroundSpeedMulti(False);
-		
-		//Acceleration
-		Vel.XY += Acceleration;
-		
-		//Crouch/jump press
-		Vel.Z += UVel;
-		
-		//Friction
-		Int FrictionedVel = BuildFriction();
-		
-		//Limiter
-		Vel = min(FrictionedVel, MaxGroundSpeed * 30.f) * SafeUnit3(Vel);
-		
-		//Translate back into Doom Units
-		Vel /= 20.f;
-		
-		// Sprite Animatiom
-		PlayIdle();
-	}
-	
-	//////////////////////////////////////////
-	// Dusk
-	
-	void DuskHandleMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		if(!Player.OnGround || (Player.OnGround && (((cmd.buttons & BT_JUMP) && !BlockJump) || DashNumber)))
-		{
-			DuskAirMove();
-			if(pb_ledgegrab) { LedgeGrabInitiator(); }
-			if(!Player.OnGround && DashNumber) { DashCooler = 100; }
-		}
-		else
-		{
-			MaxGroundSpeed *= GroundSpeedMulti(True);
-			DuskGroundMove();
-			Grappled = False;
-			if(pb_dropprevention) { DropPrevention(); }
-		}
-	}
-	
-	void DuskGroundMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Values Reset
-		MaxAirSpeed = MaxGroundSpeed;
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Directional inputs
-		Acceleration = RotateVector((cmd.forwardmove, -cmd.sidemove), Angle);
-		Acceleration = (MaxGroundSpeed / 10.f) * SafeUnit2(Acceleration);
-		
-		//Friction
-		DFriction();
-		
-		//Acceleration
-		Vel.XY += Acceleration;
-		
-		//Sprite Animation
-		GroundSpriteAnimation();
-	}
-	
-	void DuskAirMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		Bool CanAccelerate = ((cmd.buttons & BT_MOVERIGHT) && !(cmd.buttons & BT_MOVELEFT)) || (!(cmd.buttons & BT_MOVERIGHT) && (cmd.buttons & BT_MOVELEFT));
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Top Speed Penalty
-		if(!CanAccelerate && Player.OnGround) { MaxAirSpeed = max(MaxAirSpeed - dsk_acceleration * ActualSpeed / 2.f, MaxGroundSpeed); }
-		
-		//Directional inputs
-		Acceleration = RotateVector((cmd.forwardmove, - cmd.sidemove), Angle);
-		if(Acceleration.Length())
-		{
-			Acceleration = MaxAirSpeed * SafeUnit2(Acceleration) / 3.f; //multiplying by Vel / 10.f mantains air control consistent at all speed
-			
-			//Top Speed
-			if(!ADashTargetSpeed)
-			{
-				if(Player.OnGround && CanAccelerate) { MaxAirSpeed += dsk_acceleration * ActualSpeed; }
-				MaxAirSpeed = clamp(MaxAirSpeed, MaxGroundSpeed, pb_maxhopspeed);
-			}
-		}
-		
-		//Friction
-		if(Vel.XY.Length() < 1.f)
-			Vel.XY = (0, 0);
-		else
-			Vel.XY *= 0.8f;
-		
-		//Acceleration
-		Vel.XY += Acceleration;
-		
-		//Limiter
-		Vel.XY = min(Vel.XY.Length(), MaxAirSpeed) * SafeUnit2(Vel.XY);
-		
-		//Sprite Animation
-		AirSpriteAnimation();
-	}
-	
-	void DuskWaterMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Value Resets
-		MaxAirSpeed = Vel.XY.Length();
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Directional Inputs
-		Acceleration3 = (cmd.forwardmove, - cmd.sidemove, 0);
-		if(cmd.buttons & BT_JUMP || cmd.buttons & BT_CROUCH)
-		{
-			Acceleration3.XY = (0, 0);
-			Acceleration3.Z = (cmd.buttons & BT_CROUCH ? -1 : 1) * (MaxGroundSpeed * 3.f / 40.f) * ActualSpeed;
-		}
-		else
-		{
-			Acceleration3.XY = (MaxGroundSpeed * 3.f / 40.f) * SafeUnit2(Acceleration3.XY);
-			Acceleration3.Z = Acceleration3.X * sin(-Pitch);
-			Acceleration3.X *= cos(Pitch);
-		}
-		
-		//Friction
-		DFriction();
-		if(WaterLevel == 2) { WaterVelZLimiter(); }
-		
-		//Acceleration
-		Vel += (RotateVector(Acceleration3.XY, Angle), Acceleration3.Z);
-		
-		//Sprite Animation
-		GroundSpriteAnimation();
-	}
-	
-	void DuskFlyMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Value Resets
-		MaxAirSpeed = Vel.XY.Length();
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Directional Inputs
-		Acceleration3 = (cmd.forwardmove, - cmd.sidemove, 0);
-		if(cmd.buttons & BT_JUMP || cmd.buttons & BT_CROUCH)
-		{
-			Acceleration3.XY = (0, 0);
-			Acceleration3.Z = (cmd.buttons & BT_CROUCH ? -1 : 1) * (MaxGroundSpeed * 3.f / 20.f) * ActualSpeed;
-		}
-		else
-		{
-			Acceleration3.XY = (MaxGroundSpeed * 3.f / 20.f) * SafeUnit2(Acceleration3.XY);
-			Acceleration3.Z = Acceleration3.X * sin(-Pitch);
-			Acceleration3.X *= cos(Pitch);
-		}
-		
-		//Friction
-		DFriction();
-		
-		//Acceleration
-		Vel += (RotateVector(Acceleration3.XY, Angle), Acceleration3.Z);
-		
-		//Sprite Animatiom
-		PlayIdle();
-	}
-	
-	//////////////////////////////////////////
-	// Painkiller
-	
-	void PainkillerHandleMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		if(!Player.OnGround || (Player.OnGround && (((cmd.buttons & BT_JUMP) && !BlockJump) || DashNumber)))
-		{
-			PainkillerAirMove();
-			if(pb_ledgegrab) { LedgeGrabInitiator(); }
-			if(!Player.OnGround && DashNumber) { DashCooler = 100; }
-		}
-		else
-		{
-			MaxGroundSpeed *= GroundSpeedMulti(True);
-			PainkillerGroundMove();
-			Grappled = False;
-			if(pb_dropprevention) { DropPrevention(); }
-		}
-	}
-	
-	void PainkillerFriction()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Going too slow, stop
-		if(WaterLevel >= 2 || bNOGRAVITY)
-		{
-			if(Vel.Length() < 1.f)
-			{
-				Vel.XY = (0, 0);
-				return;
-			}
-		}
-		else if(Vel.XY.Length() < 1.f)
-		{
-			Vel.XY = (0, 0);
-			return;
-		}
-		
-		Float Friction; //I modded PK to print to console the length of the velocity vector and it increased and decreased by a fixed value
-		if(WaterLevel >= 2 || bNOGRAVITY)
-		{
-			Friction = MaxGroundSpeed / (WaterLevel >= 2 ? 2.f : 10.f);
-			
-			if(Vel.Length() >= Friction)
-				Vel -= Friction * SafeUnit3(Vel);
-			else if(Vel.Length())
-				Vel -= Vel.Length() * SafeUnit3(Vel);
-		}
-		else
-		{
-			Friction = MaxGroundSpeed / (12.f - pb_friction);
-			
-			if(Vel.XY.Length() >= Friction)
-				Vel.XY -= Friction * SafeUnit2(Vel.XY);
-			else if(Vel.XY.Length())
-				Vel.XY -= Vel.XY.Length() * SafeUnit2(Vel.XY);
-		}
-	}
-	
-	void PainkillerValuesReset()
-	{
-		MaxAirSpeed = ActualMaxAirSpeed = max(Vel.XY.Length(), MaxGroundSpeed / 4.f);
-		SmallerJumpHeight = TrickFailed = 0;
-		AirControl = 1;
-	}
-	
-	void PainkillerGroundMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Values Reset
-		PainkillerValuesReset();
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Directional inputs
-		Acceleration = (cmd.forwardmove, - cmd.sidemove);
-		Acceleration = MaxGroundSpeed * 0.6f * SafeUnit2(Acceleration);
-		
-		//Friction
-		PainkillerFriction();
-		
-		//Acceleration
-		Vel.XY += RotateVector(Acceleration, Angle);
-		
-		//Limiter
-		Vel.XY = min(Vel.XY.Length(), MaxGroundSpeed) * SafeUnit2(Vel.XY);
-		
-		//Sprite Animation
-		GroundSpriteAnimation();
-	}
-	
-	void PainkillerAirMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		Vector2 DirInput = SafeUnit2((cmd.forwardmove, - cmd.sidemove));
-		ActualMaxAirSpeed = Vel.XY.Length(); //if speed is forcefully lowered due to impact with walls or actors we need to get along with that. Not lowering going up stairs
-		
-		if(!TrickFailed)
-		{
-			//Air Control
-			AirControlCheck(DirInput.Length());
-			//Trickjump check
-			if(DirInput.Length()) { TrickJumpCheck(DirInput); }
-		}
-		
-		if(Player.OnGround) //ground hop
-		{
-			if(TrickFailed) //Trick jump failed
-			{
-				Acceleration = MaxAirSpeed * DirInput;
-				MaxAirSpeed = MaxGroundSpeed / 2.f; //penalty
-				Vel.XY = RotateVector(Acceleration, Angle); //redirect movement in the pressed direction before applying the uber low air control
-				AirControl = 0.01f;
-				TrickFailed = False;
-			}
-			else if(AirControl == 1) //regular movement
-			{
-				//Directional inputs
-				Acceleration = MaxAirSpeed * DirInput;
-				
-				//Top Speed
-				if(Player.CrouchFactor == 1) { MaxAirSpeed = clamp(Vel.XY.Length() + pk_acceleration * ActualSpeed, MaxGroundSpeed, pb_maxhopspeed); } //no cheap speed up coming out of QSlide
-				ActualMaxAirSpeed = MaxAirSpeed;
-			}
-			else
-			{
-				//Top Speed
-				MaxAirSpeed = clamp(Vel.XY.Length() - pk_acceleration * ActualSpeed, MaxGroundSpeed, pb_maxhopspeed);
-			}
-			
-			//Acceleration
-			Vel.XY += RotateVector(Acceleration, Angle) * AirControl;
-			
-			//Limiter
-			Vel.XY = min(Vel.XY.Length(), MaxAirSpeed) * SafeUnit2(Vel.XY);
-		}
-		else //mid air
-		{
-			if(TrickFailed) //Trick jump failed
-			{
-				PainkillerFriction();
-			}
-			else //regular movement
-			{
-				//Acceleration
-				Vel.XY += RotateVector(Acceleration, Angle) * AirControl;
-				
-				//Top speed penality
-				TopSpeedPenality();
-				
-				//Limiter
-				Vel.XY = min(Vel.XY.Length(), ActualMaxAirSpeed) * SafeUnit2(Vel.XY);
-			}
-		}
-		
-		//Sprite Animation
-		AirSpriteAnimation();
-	}
 	
 	void AirControlCheck(Bool DirInput)
 	{
@@ -1977,89 +1089,6 @@ class PlayerPawnBase : PlayerPawn
 		ActualMaxAirSpeed = clamp(ActualMaxAirSpeed, MaxGroundSpeed, MaxAirSpeed);		//This is an as close as possible imitation
 	}
 	
-	void PainkillerWaterMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Value Resets
-		PainkillerValuesReset();
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Directional inputs
-		Acceleration3 = (cmd.forwardmove, -cmd.sidemove, 0);
-		//XY
-		Acceleration3.XY = (MaxGroundSpeed / 2.f) * SafeUnit2(Acceleration3.XY);
-		//Z
-		if(cmd.buttons & BT_JUMP || cmd.buttons & BT_CROUCH)
-		{
-			Acceleration3.Z = (cmd.buttons & BT_JUMP ? 1 : -1) * 30.f * ActualSpeed;
-		}
-		else
-		{
-			Acceleration3.Z = Acceleration3.X * sin(-Pitch);
-			Acceleration3.X *= cos(Pitch);
-		}
-		
-		//Friction
-		PainkillerFriction();
-		
-		//Acceleration
-		Vel += (RotateVector(Acceleration3.XY, Angle), Acceleration3.Z);
-		
-		//Limiter
-		Vel = min(Vel.Length(), MaxGroundSpeed / 2.f) * SafeUnit3(Vel);
-		
-		//Sprite Animation
-		GroundSpriteAnimation();
-		
-		//Set acceleration for when you stop swimming
-		Acceleration = 30.f * SafeUnit2(Acceleration3.XY);
-	}
-	
-	void PainkillerFlyMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Value Resets
-		PainkillerValuesReset();
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Directional inputs
-		Acceleration3 = (cmd.forwardmove, -cmd.sidemove, 0);
-		//XY
-		Acceleration3.XY = (MaxGroundSpeed * 3.f) / 2.f * SafeUnit2(Acceleration3.XY);
-		//Z
-		if(cmd.buttons & BT_JUMP || cmd.buttons & BT_CROUCH)
-		{
-			Acceleration3.Z = (cmd.buttons & BT_JUMP ? 1 : -1) * 30.f * ActualSpeed;
-		}
-		else
-		{
-			Acceleration3.Z = Acceleration3.X * sin(-Pitch);
-			Acceleration3.X *= cos(Pitch);
-		}
-		
-		//Friction
-		PainkillerFriction();
-		
-		//Acceleration
-		Vel += (RotateVector(Acceleration3.XY, Angle), Acceleration3.Z);
-		
-		//Limiter
-		Vel = min(Vel.Length(), (MaxGroundSpeed * 3.f) / 2.f) * SafeUnit3(Vel);
-		
-		//Sprite Animatiom
-		PlayIdle();
-		
-		//Set acceleration for when the flight ends
-		Acceleration = 30.f * SafeUnit2(Acceleration3.XY);
-	}
 	
 	//////////////////////////////////////////
 	// Quake
@@ -2270,218 +1299,6 @@ class PlayerPawnBase : PlayerPawn
 		PlayIdle();
 	}
 	
-	//////////////////////////////////////////
-	// UT
-	
-	void UTHandleMove()
-	{
-		if(!Player.OnGround || (Player.OnGround && DashNumber))
-		{
-			UTAirMove();
-			if(pb_ledgegrab) { LedgeGrabInitiator(); }
-			if(!Player.OnGround && DashNumber) { DashCooler = 100; }
-		}
-		else
-		{
-			MaxGroundSpeed *= GroundSpeedMulti(True);
-			UTGroundMove();
-			Grappled = False;
-			if(pb_dropprevention) { DropPrevention(); }
-		}
-	}
-	
-	void UTFriction(Float BrakeFriction)
-	{
-		if(!Vel.XY.Length()) { return; }
-		
-		Float RemainingTime = 1.f / TICRATE;
-		Float MaxTimeStep = 1.f / 33.f;
-		
-		while(RemainingTime >= 0.0002f) //value taken from UT4 source code
-		{
-			Float dt = min(MaxTimeStep, RemainingTime * 0.5f);
-			RemainingTime -= dt;
-			
-			Vel.XY = Vel.XY - BrakeFriction * Vel.XY * dt ;
-			
-			if(Vel.XY.Length() <= 1.f)
-			{
-				Vel.XY = (0, 0);
-				return;
-			}
-		}
-	}
-	
-	void UTGroundMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Values Reset
-		MaxAirSpeed = Vel.XY.Length();
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Dash recovery
-		if(DashCooler >= 13)
-		{
-			UTFriction(3.f * pb_friction); //stronger friction after landing from a dash/walldash
-			BlockJump = True;
-		}
-		else
-		{
-			//Directional inputs
-			Acceleration = RotateVector((cmd.forwardmove, - cmd.sidemove), Angle);
-			Acceleration = 200.f * SafeUnit2(Acceleration) * GroundSpeedMulti(False) / pb_friction;
-			
-			//Friction
-			if(Acceleration.Length())
-				Vel.XY = Vel.XY - (Vel.XY - Acceleration * Vel.XY.Length()) / TICRATE;
-			else
-				UTFriction(1.5f * pb_friction); //this feels good
-			
-			//Acceleration
-			Vel.XY += Acceleration / TICRATE;
-			
-			//Limiter
-			Vel.XY = min(Vel.XY.Length(), MaxGroundSpeed) * SafeUnit2(Vel.XY);
-		}
-		
-		//Sprite Animation
-		GroundSpriteAnimation();
-	}
-	
-	void UTAirMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Directional inputs
-		Acceleration = RotateVector((cmd.forwardmove, - cmd.sidemove), Angle);
-		Acceleration = 0.62f * SafeUnit2(Acceleration);
-		
-		//Acceleration
-		Vel.XY += Acceleration;
-		
-		//Limiter
-		Vel.XY = min(Vel.XY.Length(), MaxAirSpeed > MaxGroundSpeed ? MaxAirSpeed : MaxGroundSpeed) * SafeUnit2(Vel.XY);
-			
-		//Sprite Animation
-		AirSpriteAnimation();
-		
-		//Reset speed cap
-		if(Vel.XY.Length() <= MaxGroundSpeed) { MaxAirSpeed = Vel.XY.Length(); }
-	}
-	
-	void UTWaterFlyFriction(Float BrakeFriction)
-	{
-		if(Vel.Length() < 1.f) { return; }
-		
-		Float RemainingTime = 1.f / TICRATE;
-		Float MaxTimeStep = 1.f / 33.f;
-		
-		while(RemainingTime >= 0.0002f) //value taken from UT4 source code
-		{
-			Float dt = min(MaxTimeStep, RemainingTime * 0.5f);
-			RemainingTime -= dt;
-			
-			Vel = Vel - BrakeFriction * Vel * dt;
-			
-			if(Vel.Length() <= 1.f)
-			{
-				Vel = (0, 0, 0);
-				return;
-			}
-		}
-	}
-	
-	void UTWaterMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Value Resets
-		MaxAirSpeed = Vel.XY.Length();
-		DashCooler = 0;
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Directional inputs
-		Acceleration3 = (cmd.forwardmove, - cmd.sidemove, 0);
-		//XY
-		Acceleration3.XY = 10.f * SafeUnit2(Acceleration3.XY) * GroundSpeedMulti(False);
-		//Z
-		if(cmd.buttons & BT_JUMP || cmd.buttons & BT_CROUCH)
-		{
-			Acceleration3.Z = (cmd.buttons & BT_JUMP ? 1 : -1) * 10.f * ActualSpeed;
-		}
-		else
-		{
-			Acceleration3.Z = Acceleration3.X * sin(-Pitch);
-			Acceleration3.X *= cos(Pitch);
-		}
-		
-		//Friction
-		if(WaterLevel == 2) { WaterVelZLimiter(); }
-		if(Acceleration3.Length())
-			Vel = Vel - (Vel - (RotateVector(Acceleration3.XY, Angle), Acceleration3.Z) * Vel.Length()) / TICRATE;
-		else
-			UTWaterFlyFriction(2.f);
-			
-		//Acceleration
-		Vel += (RotateVector(Acceleration3.XY, Angle), Acceleration3.Z) / TICRATE;
-		
-		//Limiter
-		Vel = min(Vel.Length(), MaxGroundSpeed / 2.f) * SafeUnit3(Vel);
-		
-		//Sprite Animation
-		GroundSpriteAnimation();
-	}
-	
-	void UTFlyMove()
-	{
-		Let Player = Self.Player;
-		UserCmd cmd = Player.cmd;
-		
-		//Value Resets
-		MaxAirSpeed = Vel.XY.Length();
-		DashCooler = 0;
-		
-		///////////////////////////////////////////
-		//Actual Movement
-		
-		//Directional inputs
-		Acceleration3 = (cmd.forwardmove, - cmd.sidemove, 0);
-		//XY
-		Acceleration3.XY = 20.f * SafeUnit2(Acceleration3.XY) * GroundSpeedMulti(False);
-		//Z
-		if(cmd.buttons & BT_JUMP || cmd.buttons & BT_CROUCH)
-		{
-			Acceleration3.Z = (cmd.buttons & BT_JUMP ? 1 : -1) * 20.f * ActualSpeed;
-		}
-		else
-		{
-			Acceleration3.Z = Acceleration3.X * sin(-Pitch);
-			Acceleration3.X *= cos(Pitch);
-		}
-		
-		//Friction
-		if(Acceleration3.Length())
-			Vel = Vel - (Vel - (RotateVector(Acceleration3.XY, Angle), Acceleration3.Z) * Vel.Length()) / TICRATE;
-		else
-			UTWaterFlyFriction(2.f);
-			
-		//Acceleration
-		Vel += (RotateVector(Acceleration3.XY, Angle), Acceleration3.Z) / TICRATE;
-		
-		//Limiter
-		Vel = min(Vel.Length(), (MaxGroundSpeed * 3.f) / 2.f) * SafeUnit3(Vel);
-		
-		// Sprite Animatiom
-		PlayIdle();
-	}
 	
 	//////////////////////////////////////////
 	// Crouching							//
@@ -3123,110 +1940,131 @@ class PlayerPawnBase : PlayerPawn
 	
 	void LedgeGrabInitiator()
 	{
-		let player = self.player;
+		ZMPlayer = self.player;
+		
+		//Already ledge grabbing, no clipping, moving away from where you are looking, ceiling already too low for sure
+		if((pos.z <= floorz) || LedgeCheck || LedgeGrabbed || (ZMPlayer.Cheats & CF_NOCLIP2) || Vel.XY dot AngleToVector(Angle) <= 0 || CeilingZ <= Pos.Z + Height * 1.6f) { return; }
+		
+		//============================================
+		//Find ledge (if any)						//
+		//============================================
 		
 		FLineTraceData LedgeTrace;
-		Float TraceDistanceW = sqrt(2) * Radius + 1; //account for the fact that Doom's hitboxes are square
-		Float TraceDistanceL;
-		Sector LedgeSector;
-
-		int l;
-		for(l = 0; l < 3; l++)
-		{
-			if(!TraceDistanceL) //Scan environment from chest height up to above head
-			{
-				LineTrace(Angle, TraceDistanceW, 0, TRF_BLOCKSELF|TRF_THRUACTORS, Height * (0.6f + 0.3f * l), data: LedgeTrace);
-				//Hit Geometry
-				if(LedgeTrace.Distance < TraceDistanceW && LedgeTrace.HitType == TRACE_HitWall) { TraceDistanceL = LedgeTrace.Distance + 5; }
-			}
-			else //Only check for a ledge after geometry was hit, since you need to look for empty space *above* the hit spot
-			{
-				//Tracer stopped by solid actors and by impassable midtextures
-				LineTrace(Angle, TraceDistanceL + 1, 0, TRF_SOLIDACTORS|TRF_BLOCKSELF, Height * (0.6f + 0.3f * l), data: LedgeTrace);
-				
-				if(LedgeTrace.Distance > TraceDistanceL)
-				{
-					LedgeSector = LedgeTrace.HitSector;
-					break; //no need to keep looking if we already have a result
-				}
-			}
-			
-			//No ledge, stop. I have very rarely encountered an issue where GZDoom would get stuck without reporting erros. Endless loops are the first
-			//lines of code to be considered culprit of such problem, for safety I added l >= 3 to the return to make sure if something goes very wrong 
-			//the engine does not freeze
-			if((l == 2 && !LedgeSector) || l >= 3) { return; }
-		}
+		Float TraceDistance = sqrt(2) * Radius + 1; //account for the fact that Doom's hitboxes are square
+		LineTrace(Angle, TraceDistance, 0, TRF_BLOCKSELF|TRF_THRUACTORS, Height * 1.2f, data: LedgeTrace);
+		Vector3 HitPos = LedgeTrace.HitLocation;
 		
-		//If player is in slime, they cannot cheese their way out of it and break maps
-		sector sss=floorsector;
-		if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
+		Int LedgeCandidate;
+		if(LedgeTrace.HitType == TRACE_HitWall) //hit wall scenario
+		{
+			if(LedgeTrace.Hit3DFloor != NULL) //3D floor
+			{
+				LedgeCandidate = LedgeTrace.Hit3DFloor.Top.ZAtPoint(HitPos.XY);
+			}
+			else //regular wall
+			{
+				Line HitLine = LedgeTrace.HitLine;
+				if(HitLine.FrontSector != NULL && HitLine.FrontSector != CurSector)
+					LedgeCandidate = HitLine.FrontSector.FloorPlane.ZatPoint(HitPos.XY);
+				else if(HitLine.BackSector != NULL && HitLine.BackSector != CurSector)
+					LedgeCandidate = HitLine.BackSector.FloorPlane.ZatPoint(HitPos.XY);
+			}
+		}
+		else if(LedgeTrace.HitSector != CurSector)//tracer stopper mid air in a sector that is not the one where player currently is
+		{
+			LedgeCandidate = LedgeTrace.HitSector.NextLowestFloorAt(HitPos.X, HitPos.Y, HitPos.Z, FFCF_3DRESTRICT, 0);
+		}
+		else
+		{
 			return;
 		}
 		
-		//Check if there is enough space in the current sector for player to raise (+5 for safety)
-		Vector3 Hit = LedgeTrace.HitLocation;
-		Int MinimumHeight = Height + 5;
-		LedgeHeight = LedgeSector.NextLowestFloorAt(Hit.X + cos(Angle), Hit.Y + sin(Angle), Hit.Z, FFCF_3DRESTRICT, 0);
-		if(CeilingZ - LedgeHeight < MinimumHeight) { return; }
-		
-		//Check there is no actor above player
-		FLineTraceData ActorCheck;
-		Int HeightCheck = (LedgeHeight + MinimumHeight) - (Pos.Z + Height);
-		LineTrace(Angle, HeightCheck, -90, TRF_SOLIDACTORS, Height, data: ActorCheck);
-		if(ActorCheck.Distance < HeightCheck) { return; }
-		
-		//Check if landing sector is high enough to host player
-		Int LedgeCeiling = LedgeSector.NextHighestCeilingAt(Hit.X + cos(Angle), Hit.Y + sin(Angle), Hit.Z, FFCF_3DRESTRICT, 0);
-		if(LedgeCeiling - LedgeHeight < MinimumHeight) { return; }
-		
-		//Find if there is enough space to fit player on the sides using the power of math
-		Float RequiredTracerDistance = sqrt(Radius * Radius + LedgeTrace.Distance * LedgeTrace.Distance);
-		Float TracerAngle = asin(Radius / RequiredTracerDistance);
-		FLineTraceData SideTracer;
-		
-		int s;
-		for(s = -1; s < 2; s++)
+		//Check if the candidate ledge can suffice
+		if(LedgeCandidate > Pos.Z + Height * 0.6f && LedgeCandidate <= Pos.Z + Height * 1.2f)
 		{
-			if(s)
+			Vector3 OrigPos = Pos;
+			SetXYZ((Pos.XY, LedgeCandidate));
+			if(!CheckMove(Pos.XY + 5.f * AngleToVector(Angle))) //not enough space, cancel everything :(
 			{
-				LineTrace(Angle + TracerAngle * s, RequiredTracerDistance, 0, TRF_SOLIDACTORS|TRF_BLOCKSELF, Hit.Z - Pos.Z, data: SideTracer);
-				if(SideTracer.Distance < RequiredTracerDistance || s >= 2) { return; } //s >= 2 just in case
+				SetXYZ(OrigPos);
+				return;
 			}
+			SetXYZ(OrigPos);
+			LedgeHeight = LedgeCandidate;
+			LedgeHeightMin = (LedgeHeight - Height * 0.97f);
+			LedgeHeightMax = (LedgeHeight - Height * 0.751f);
 		}
-			
+		else
+		{
+			return; //too high/low
+		}
+		
+		//============================================
+		//Abemus ledge, execute						//
+		//============================================
+		
 		//Switch to a weapon that forbids firing during the ledge grab
-		//ReselectWeapon = Player.ReadyWeapon;
-		GiveInventory("Grabbing_A_Ledge", 1);
-		//Player.ReadyWeapon = Null;
-		//Let AssignWeapon = LedgeGrabWeapon(FindInventory("LedgeGrabWeapon"));
-		//Player.PendingWeapon = AssignWeapon;
 		
+		/*
 		//Reset dash stuff just in case
-		MaxAirSpeed = ADashTargetSpeed;
-		DashCooler = ADashCooler = ADashTargetSpeed = WJumpSpeed = DashNumber = 0;
+		//MaxAirSpeed = ADashTargetSpeed;
+		//DashCooler = ADashCooler = ADashTargetSpeed = WJumpSpeed = DashNumber = 0;
+		*/
 		
-		//Allow ledge grab
-		A_StopSound(CHAN_WEAPON); 	//stop looping weapon sounds
-		StopHook();					//stop hook, not needed but just in case
-		LedgeAngle = Angle;
-		A_SetPitch(sin(Angle));
-		A_PlaySound("ledgeclimb", CHAN_BODY);
-		LedgeGrabbed = True;
+		//Credit Cherno
+		//Console.Printf("Num: %f", LedgeHeight);
+		
+		velz = 8;
+		LedgeCheck = True;
+		
+		if(vel.length() < 5)
+		{
+			GiveInventory("Grabbing_A_Ledge", 1);
+		}
+		if(pos.z >= (LedgeHeightMin+20))
+		{
+			player.SetPSprite(PSP_WEAPON,player.ReadyWeapon.FindState("FinishClimb"));
+			
+			A_StopSound(CHAN_WEAPON);
+			A_Playsound("ledgeclimb");
+			LedgeAngle = Angle;
+			LedgeCheck = False;
+			LedgeGrabbed = True;
+			return;
+		}
+		if((player.readyweapon is "Melee_Attacks") || (player.readyweapon is "PB_Chainsaw") || (player.readyweapon is "PB_Axe"))
+		{
+			player.SetPSprite(PSP_WEAPON,player.ReadyWeapon.FindState("StainedLedgeClimb"));
+		}
+		else
+		{
+			player.SetPSprite(PSP_WEAPON,player.ReadyWeapon.FindState("LedgeClimb"));
+		}
+	}
+	void LedgeReach()
+	{
+		LedgeTime++;
+		if(LedgeTime >= 30)
+		{
+			SetPlayerProperty(0,0,PROP_TOTALLYFROZEN);
+			LedgeGrabbed = LedgeTime = LedgeHeight = LedgeHeightMin = LedgeHeightMax = FrameTime = 0;
+		}
 	}
 	
 	void LedgeGrab()
 	{
-		let player = self.player;
-		
-		if(Pos.Z >= LedgeHeight || !Vel.Length())
+		if(Pos.Z >= LedgeHeight || !Vel.Length() || LedgeTime >= 35)
 		{
-			//Reassign weapon
-		//	Player.PendingWeapon = ReselectWeapon;
-			TakeInventory("Grabbing_A_Ledge", 1);
 			//End Ledge Grab
+			LedgeCheck = False;
+			SetOrigin((Pos.X, Pos.Y, LedgeHeight), True);
+			SetPlayerProperty(0,0,PROP_TOTALLYFROZEN);
+			
+			//Only if ledge grab was successful
+			if(LedgeTime >= 35) { return; }
+			LedgeGrabbed = LedgeTime = LedgeHeight = LedgeHeightMin = LedgeHeightMax = FrameTime = 0;
 			Vel = Vel.Length() ? (5.f * AngleToVector(LedgeAngle), -3) : (0, 0, 0); //push player forward and downward
 			A_PlaySound("*land", CHAN_BODY);
-			LedgeGrabbed = LedgeTime = 0;
 		}
 		else
 		{
@@ -3237,14 +2075,15 @@ class PlayerPawnBase : PlayerPawn
 		LedgeTime++;
 		if(LedgeTime >= 35)
 		{
-			//Player.PendingWeapon = ReselectWeapon;
-			TakeInventory("Grabbing_A_Ledge", 1);
-			LedgeGrabbed = LedgeTime = 0;
+			SetPlayerProperty(0,0,PROP_TOTALLYFROZEN);
+			LedgeGrabbed = LedgeTime = LedgeHeight = LedgeHeightMin = LedgeHeightMax = FrameTime = 0;
 		}
 		
 		//Sprite animation
 		PlayIdle();
 	}
+	
+	
 	
 	//////////////////////////////////////
 	// Grappling Hook 					//
@@ -3541,46 +2380,12 @@ class PlayerPawnBase : PlayerPawn
 								XBob = BobXMulti * cos(BobAngle);
 								YBob = 0.5f * (BobYMulti * (1. + (cos(BobAngle * 2))));
 								break;
-							
-							case Bob_Build:
-								XBob = 2.f * BobXMulti * cos(BobAngle);	
-								YBob = BobYMulti * (1. - abs(sin(BobAngle)));
-								break;
-							
-							case Bob_Dusk:
-								XBob = 0.f;
-								YBob = BobYMulti * (cos(BobAngle));
-								break;
-							
-							case Bob_Painkiller:
-								XBob = BobXMulti * cos(BobAngle);	
-								YBob = - BobYMulti * (1. - abs(sin(BobAngle)));
-								break;
-							
-							case Bob_UT:
-								XBob = 1.5 * BobXMulti * cos(BobAngle);	
-								YBob = BobYMulti * sin(2.f * BobAngle);
 						}
 					}
 				}
 			}
 			
 			r = (XBob, YBob);
-			
-			//properly align sprites for the animations that require it
-			switch(BobStyle)
-			{
-				case Bob_Dusk:
-					r.Y += pb_maxgroundspeed * RangeY;
-					break;
-				
-				case Bob_Painkiller:
-					r.Y += pb_maxgroundspeed * RangeY;
-					break;
-					
-				case Bob_UT:
-					r.Y += pb_maxgroundspeed * RangeY;
-			}
 			
 			//////////////////////////////
 			//Yaw Weapon Sway
