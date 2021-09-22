@@ -34,12 +34,6 @@ Actor PB_M2PlasmaFireAnimation1 : Inventory
 Actor PB_M2PlasmaFireAnimation2 : Inventory
 {inventory.maxamount 1}
 
-Actor StunBombCooldown : PowerUp {PowerUp.Duration -3}
-Actor ActivateStunCooldown : PowerUpGiver
-{	PowerUp.Type "StunBombCooldown"
-	+AUTOACTIVATE
-}
-
 Actor PB_M2Upgrade: Custominventory
 {
 //$Category Ammunition
@@ -54,7 +48,7 @@ Actor PB_M2Upgrade: Custominventory
 	States
 	{
 	Spawn:
-		M2PR B 2
+		M2PR B 2 BRIGHT Light("WeaponUpgradeSpawner")
 		Loop
 	
     Pickup:
@@ -134,7 +128,6 @@ ACTOR PB_M2Plasma : PB_Weapon //12222
 		M200 QQQQQQ 1 A_DoPBWeaponAction
 		TNT1 A 0 A_PlaySoundEx("weapons/m2plasma/screenup", "Auto")
 		M200 RSTU 2 A_DoPBWeaponAction
-		TNT1 A 0 A_StartSound("weapons/m2plasma/screenon", CHAN_AUTO)
 		M200 UVVUUVUVUVUUVVUVUVV 1 A_DoPBWeaponAction
 		TNT1 A 0 A_PlaySoundEx("weapons/carbine/fancybutton", "Auto")
 		M200 VUVVVVVV 1 A_DoPBWeaponAction
@@ -237,9 +230,8 @@ ACTOR PB_M2Plasma : PB_Weapon //12222
 			A_PlaySound("PLSMLG2");
 			}
 		PR1G ABCDEF 1
-	ReallyReady2:
 		TNT1 A 0 A_PlaySound("LGHUM1", 6,1,1)
-	ReallyReady2Loop:
+	ReallyReady2:
 		PR1G GHIJIH 1 A_DoPBWeaponAction
 		Loop
 		
@@ -630,28 +622,23 @@ ACTOR PB_M2Plasma : PB_Weapon //12222
 		TNT1 A 0 A_Jump(256, "LeftToRight", "RightToLeft")
 		goto LeftToRight
 	FireStunBomb:
-		TNT1 A 0 A_JumpIfInventory("StunBombCooldown",1,"NoFireStun")
-		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",25,1)
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",10,1)
         Goto Reload
 		TNT1 A 0 A_PlaysoundEx("PZPCHR2", "Auto")
 		PR1F XYZABACABACABAC 1 BRIGHT A_FireCustomMissile("ElectroBlastTrail2", 0, 0, 0, 0)
 		TNT1 A 0 {
 			A_PlaysoundEx("STNBOMB", "Weapon");
-			A_TakeInventory("M2PlasmaAmmo", 25);
+			A_TakeInventory("M2PlasmaAmmo", 10);
 			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
 			A_FireCustomMissile("StunBomb", 0, 0, 0, 0, 0, 0);
 			A_Zoomfactor(0.98);
 			A_GunFlash;
 			}
-		TNT1 A 0 A_GiveInventory("ActivateStunCooldown",1)
 		PR1F D 1 BRIGHT A_Zoomfactor(0.99)
 		PR1F D 1 BRIGHT A_Zoomfactor(1.0)
 		PR1F EEFF 1 BRIGHT
 		Goto ReallyReady2
 	
-	NoFireStun:
-		TNT1 A 0 A_Print("Stun bomb on cooldown",1)
-		Goto ReallyReady2
 	LeftToRight:
 		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",10,1)
         Goto Reload
@@ -791,11 +778,9 @@ ACTOR PB_M2Plasma : PB_Weapon //12222
 		TNT1 A 0 {
 			A_SetCrosshair(5);
 			A_Giveinventory("PB_LockScreenTilt",1);
-			A_StopSound(CHAN_6);
 			A_PlaySoundEx("PLSMLG1","Auto");
 		}
 		PR1G FEDCBA 1
-		TNT1 A 0 A_PlaySound("PLSM2LP", 6,0.1,1)
 		Goto ResumeUpgradedReloading
 	UpgradedReloading:
 		TNT1 A 0 A_JumpIfInventory("LightningGunMode",1,"CheckLightningReload")
@@ -809,7 +794,7 @@ ACTOR PB_M2Plasma : PB_Weapon //12222
 		M223 ABCDEFGHIJKLLLLL 1
 		TNT1 A 0 A_PlaysoundEx("Weapons/CellEject", "Auto")
 		TNT1 A 0 A_FireCustomMissile("GunFireSmoke", -40, 0, -6, -9, 0, 0)
-		TNT1 A 0 PB_SpawnCasing("EmptyCell",38,29,12,2,Frandom(6,9),Frandom(3,6))
+		TNT1 A 0 A_FireCustomMissile ("PlasmaCaseSpawn", 192, 0, -20, 2, random (0, 160))
 		M223 MNOPQRSTUV 1
 		TNT1 A 0 A_PlaySoundEx("weapons/m2plasma/reload", "Auto")
 		M223 WXYZ 1
@@ -839,7 +824,7 @@ ACTOR PB_M2Plasma : PB_Weapon //12222
 			A_PlaysoundEx("Weapons/CellEject","Auto");
 			}
 		M220 IJK 1
-		TNT1 A 0 PB_SpawnCasing("EmptyCell",38,13,38,2,Frandom(10,15),Frandom(5,8))
+		TNT1 A 0 A_FireCustomMissile ("PlasmaCaseSpawn", 192, 0, -20, 2, random (0, 160))
 		M220 LLLLL 1 A_Setroll(roll+1.0)
 		M220 MNOPQ 1 A_Setroll(roll+1.0)
 		M220 RR 1
@@ -889,7 +874,7 @@ ACTOR PB_M2Plasma : PB_Weapon //12222
 			A_PlaysoundEx("Weapons/CellEject","Auto");
 			}
 		M220 IJK 1
-		TNT1 A 0 PB_SpawnCasing("EmptyCell",38,13,38,2,Frandom(10,15),Frandom(5,8))
+		TNT1 A 0 A_FireCustomMissile ("PlasmaCaseSpawn", 192, 0, -20, 2, random (0, 160))
 		M220 LLLLL 1 A_Setroll(roll+1.0)
 		M220 MNOPQ 1 A_Setroll(roll+1.0)
 		M220 RR 1
@@ -915,7 +900,7 @@ ACTOR PB_M2Plasma : PB_Weapon //12222
 			A_PlaysoundEx("Weapons/CellEject","Auto");
 			}
 		M222 EF 1 
-		TNT1 A 0 PB_SpawnCasing("EmptyCell",38,-13,38,2,Frandom(-15,-10),Frandom(5,8))
+		TNT1 A 0 A_FireCustomMissile ("PlasmaCaseSpawn", 192, 0, -20, 2, random (0, 160))
 		M222 GGGGHIJKLMMMMNOPQRSTUUVWXYZ 1
 		M231 DEFG 1
 	InsertBullets4:
