@@ -493,6 +493,139 @@ Class EmptyBrass : Actor
    }
 }
 
+Class EmptyBrass2: Actor //This is a new actor I wrote that allows for minimal code for inherited actors so long as the format of the sprites stays the same.
+{
+	bool smoking;
+	override void BeginPlay(void)
+	{
+		ChangeStatNum(STAT_PB_BULLETS);
+		NashGoreStatics.QueueCasings();
+		Super.BeginPlay();
+	}
+	
+	Default
+	{
+	   Height 2;
+	   Radius 2;
+	   Speed 8;
+	   Scale 0.1;
+	   +DOOMBOUNCE;
+	   - NOGRAVITY;
+	   +WINDTHRUST;
+	   +CLIENTSIDEONLY;
+	   +MOVEWITHSECTOR;
+	   +MISSILE;
+	   +NOBLOCKMAP;
+	   -DROPOFF;
+	   +NOTELEPORT;
+	   +FORCEXYBILLBOARD;
+	   +NOTDMATCH;
+	   +GHOST;
+	   +RollSprite
+	   +ROLLCENTER;
+	   BounceCount 4;
+	   Mass 1;
+	   SeeSound "weapons/casingR";
+	}
+   States
+   {
+	   Spawn:
+			CAS3 A 0;
+			SpawnJump:
+			"####" A 0 A_Jump(16, "SpawnSmoking");
+			"####" A 0 A_Jump(256,"Spawn1","Spawn2","Spawn3");
+		Spawn1:
+			"####" ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH  1 {
+				A_SetRoll(roll+16);
+			}
+			Goto Death;
+		Spawn2:
+			"####" BCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHA  1 {
+				A_SetRoll(roll+32);
+			}
+			Goto Death;
+		Spawn3:
+			"####" CDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHAB  1 {
+				A_SetRoll(roll+72);
+			}
+			Goto Death;
+		SpawnSmoking:
+			"####" A 0 { smoking = 1;}
+			"####" ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 1 {
+				A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0);
+				A_SetRoll(roll+75);
+			}
+			Goto Death;
+		Death:
+			  "####" A 0 A_SetRoll(0);
+			  "####" A 0 A_Jump(256,"Case1","Case2","Case3","Case4","Case5","Case6","Case7","Case8","Case9","Case10");
+			Case1:
+				"####" K 1;
+				Goto Rest;
+			Case2:
+				"####" L 1;
+				Goto Rest;
+			Case3:
+				"####" M 1;
+				Goto Rest;
+			Case4:
+				"####" N 1;
+				Goto Rest;
+			Case5:
+				"####" O 1;
+				Goto Rest;
+			Case6:
+				"####" P 1;
+				Goto Rest;
+			Case7:
+				"####" Q 1;
+				Goto Rest;
+			Case8:
+				"####" R 1;
+				Goto Rest;
+			Case9:
+				"####" S 1;
+				Goto Rest;
+			Case10:
+				"####" T 1;
+				Goto Rest;
+			Rest:
+				"####" "#" 0 A_JumpIf(smoking == 1, "Rest2");
+				"####" "###########################################" 1;
+				"####" "#" -1;
+				Stop;
+			Rest2:
+				"####" "###########################################" 1 A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,SXF_CLIENTSIDE,0);
+				"####" "#" -1;
+				Stop;
+		
+		 Disappear:
+			 TNT1 A 1;
+			 Stop;
+		 
+	Splash:
+	TNT1 A 0;
+	TNT1 A 0 A_SpawnItem("UnderwaterEmptyBrass");
+	Stop;
+   }
+}
+
+Class SGL_Drum : EmptyBrass2 //See?  Very minimal code to do the same thing.
+{
+  Default
+   {
+		Scale 0.33;
+		BounceCount 3;
+		SeeSound "weapons/largemagdrop";
+	}
+ States
+   {
+		Spawn:
+			SGD1 A 0;
+			Goto SpawnJump;
+	}
+}
+
 Class ShotgunWad : Actor
 {
 	bool smoking;
@@ -669,7 +802,7 @@ Class EmptyGrenadeBrass : Actor
    +THRUACTORS;
    +ROLLSPRITE;
    Mass 4;
-   SeeSound "weapons/shell";
+   SeeSound "Weapons/GrenadeCaseBounce";
    }
    States
    {
