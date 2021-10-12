@@ -380,12 +380,18 @@ class PB_WeaponBase : DoomWeapon
 		Actor own = invoker.owner;
 		bool shouldHelmet = ACS_NamedExecuteWithResult("ToggleHelmetAnimation",0,0,0) == 0 && own.CountInv("IntroductionSequence") == 0;
 		bool shouldRespect = invoker.respectInventoryItem != "" && own.CountInv(invoker.respectInventoryItem) == 0;
+		bool dontRespect = Cvar.FindCVar('pb_respectweapons').GetBool() == false && own.CountInv(invoker.respectInventoryItem) == 0;
 
 		if (shouldHelmet)
 		{
 			own.GiveInventory("IntroductionSequence",1);
 			//Console.printf("Setting State: HelmetAnimation");
 			return invoker.resolveState("HelmetAnimation");
+		}
+		else if (dontRespect)
+		{
+			own.GiveInventory(invoker.respectInventoryItem,1);
+			return invoker.resolveState("SelectAnimation");
 		}
 		else if (shouldRespect)
 		{
@@ -424,7 +430,6 @@ class PB_WeaponBase : DoomWeapon
 			Goto SelectAnimation;
 		WeaponRespect:
 		SelectAnimation:
-			TNT1 AAAA 1;
 		Ready3:
 			TNT1 A 1 A_Jump(255, "Ready3");
 			Loop;	
