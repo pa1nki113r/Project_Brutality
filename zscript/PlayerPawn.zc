@@ -21,10 +21,10 @@ class PlayerPawnBase : PlayerPawn
 	int tankdeathcounter;
 	int tankspritecounter;
 	bool baseweaponpda;
-	TankBaseNotReal TankBaseSprite; //tank's fake sprite as the actor.
+	
 	Actor TankTurretSprite;
 	string TankTurretSpriteActor;
-	Property TankTurretSpriteActor: TankTurretSpriteActor;
+	
 	Array<String> CollectedWeapons, BaseWeapons;
 	
 	///////////////////////////////////
@@ -132,6 +132,11 @@ class PlayerPawnBase : PlayerPawn
 	double	XBobOffset;
 	double	YBob;
 	float	BobTime;
+	
+	//Weapon Rolling
+	const rolldrag = 0.15;
+	const rollvel = 0.20;
+	double currentRoll;
 	
 	///////////////////////////////////
 	//Painkiller only
@@ -2418,28 +2423,26 @@ class PlayerPawnBase : PlayerPawn
 	// The rest of Project Brutality player class
 	Default
 	{
-		PlayerPawnBase.TankTurretSpriteActor "TankTurretNotReal";
+		
 	}
 	void SpawnTankSprite()
 	{
-		if (TankBaseSprite) return;
-		TankBaseSprite = TankBaseNotReal(Spawn("TankBaseNotReal",self.pos + self.vel,ALLOW_REPLACE));
+		
+		
 		TankTurretSprite = Spawn(TankTurretSpriteActor,self.pos + self.vel,ALLOW_REPLACE);
 	}
 	void DestroyTankSprites()
 	{
-		TankBaseSprite.Destroy();
+		
 		TankTurretSprite.Destroy();
-		TankBaseSprite = NULL;
+		
 		TankTurretSprite = NULL;
 	}
 	void SetTankSpritePosition(int spritestate,double angle = 0)
 	{
-		if (TankBaseSprite != NULL)
+		
 		{
-			TankBaseSprite.SetOrigin(self.pos + self.vel,true);
-			TankBaseSprite.spritestate = spritestate;
-			TankBaseSprite.angle = angle;
+			
 		}
 	}
 	
@@ -2592,6 +2595,26 @@ class PlayerPawnBase : PlayerPawn
 			}
 		}
 	}
+	//state used for tilting of weapon sprites
+	states
+	{
+		spinloop:
+		TNT1 A 0
+		{
+			if(health>=1)
+			{
+			double velang = atan2(vel.y, vel.x);
+			vector2 dir = (sin(-angle), cos(-angle));
+			vector2 velunit = vel.xy; //.unit()
+			//double delta = absAngle(velang, angle);
+			currentroll += (velunit dot dir) * rollvel;
+			currentroll *= rolldrag;
+			A_OverlayRotate(PSP_WEAPON, currentroll);
+			}
+		}
+		TNT1 A 1;
+		loop;
+	}
 }
 
 
@@ -2648,9 +2671,8 @@ Class DashHandler : EventHandler
 			
 			if(DashPlayer.FindInventory("PlayerDashed") && CVar.FindCVar("pb_dasheffect").GetBool() == true) {
 					screen.DrawTexture (dashTex, true, 0, 0,
-					DTA_HUDRULES, true,
 					DTA_FULLSCREEN, true,
-					DTA_SRCWIDTH, CVar.FindCVar("vid_defwidth").GetInt());
+                    DTA_KeepRatio, true);
 					//DTA_SRCWIDTH breaks GZ4.3.3 compatibility, a more compatible way of handling this might be useful
 			}
 	

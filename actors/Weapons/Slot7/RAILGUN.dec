@@ -100,6 +100,16 @@ ACTOR PB_Railgun : PB_Weapon 13204
 				A_ZoomFactor(1.0);
 			}
 			TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
+			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") < 12, 3)
+			TNT1 A 0 A_JumpIfInventory("RailgunUnloaded",1,2)
+			TNT1 A 0 {
+				if (CountInv("RailgunLaserMode") == 1) { 
+					A_StartSound("weapons/railgun/deselectred", CHAN_AUTO, CHANF_OVERLAP);
+				}
+				else {
+					A_StartSound("weapons/railgun/deselectblue", CHAN_AUTO, CHANF_OVERLAP);
+				}
+			}
 			R024 ABCD 0 //Red
 			R023 ABCD 0 //Empty, Blue
 			R025 ABCD 0 //Empty, Red
@@ -117,6 +127,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 			Goto SelectFirstPersonLegs
 			SelectContinue:
 			//TNT1 A 0 A_Takeinventory("RailgunUnloaded",1)
+			TNT1 A 0 A_TakeInventory("RailgunCooldown",25)
 			TNT1 A 0 A_Takeinventory("Unloading",1)
 			TNT1 A 0 A_TakeInventory("RifleSelected",1)
 			TNT1 A 0 A_TakeInventory("CarbineSelected",1)
@@ -166,7 +177,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 				A_SetCrosshair(5);
 				A_StartSound("weapons/railgun/inspect1", CHAN_AUTO, CHANF_OVERLAP);
 			}
-			
+			TNT1 A 0 A_TakeInventory("RailgunCooldown",25)
 			R000 ABCDEFGHIJKLMNOPQRSTUV 1 A_DoPBWeaponAction
 			TNT1 A 0 A_StartSound("weapons/nailgun/up", CHAN_AUTO, CHANF_OVERLAP)
 			R000 WXYZ 1 A_DoPBWeaponAction
@@ -284,18 +295,17 @@ ACTOR PB_Railgun : PB_Weapon 13204
 							return state("Fire_Scope");
 					}
 					
-					
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOBOB|WRF_NOFIRE);
 					
 					}
 				else {
 					if (PressingFire() && CountInv("RailgunAmmo") > 0){
 						return state("Fire_Scope");
 					}
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOBOB);
 				}
 				return state("");
-			
+
 			}
 			Loop
 			
@@ -314,13 +324,13 @@ ACTOR PB_Railgun : PB_Weapon 13204
 					if (PressingFire() && PressingAltfire() && CountInv("RailgunAmmo") > 0){
 							return state("Fire_Scope");
 					}
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOBOB|WRF_NOFIRE);
 				}
 				else {
 					if (PressingFire() && CountInv("RailgunAmmo") > 0){
 						return state("Fire_Scope");
 					}
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOBOB);
 				}
 				return state("");
 			}
@@ -527,18 +537,26 @@ ACTOR PB_Railgun : PB_Weapon 13204
 				PB_WeaponRecoil(-2.5,-0.2);
 				A_Overlay(-6, "RailFireSparks", true);
 			}
-			R026 DEFG 1
+			R026 DE 1
 			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") < 12, "FireRailgun_Empty")
-			R026 HIJKLMNOPQRSTUVWXYZ 1
+			R026 F 1 Offset(0,33)
+			R026 G 1 Offset(0,34)
+			R026 G 1 Offset(0,34)
+			R026 G 1 Offset(0,35)
+			R026 G 12 Offset(0,35)
+			R026 GHI 1 Offset(0,34)
+			R026 JK 1 Offset(0,33)
+			R026 LMNOPQRSTUVWXYZ 1 Offset(0,32)
 			goto Ready3
 		FireRailgun_Empty:
-			R027 ABCDEFGHIJK 1 
+			R026 FG 1
+			R027 ABCDEFGHIJK 1
 			goto Ready3
 		
 		RailFireSparks:
 			R126 CDE 1 BRIGHT
 			Stop
-			
+
 		Fire_Laser:
 			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",1,1)
 			Goto Reload
@@ -555,7 +573,6 @@ ACTOR PB_Railgun : PB_Weapon 13204
 				}
 				A_TakeInventory("RailgunAmmo", 1);
 				A_GiveInventory("RailgunLaserCharge", 1);
-				
 				if(JustReleased(BT_ATTACK) || !PressingFire()) {
 					return state("Laser_Blast");
 				}
@@ -571,8 +588,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 					A_StartSound("weapons/railgun/lasercharge1", CHAN_AUTO, CHANF_OVERLAP);
 					return state("Laser_Stage_2");
 				}
-				A_Refire("Laser_Stage_1");
-				return state("");
+				return state("Laser_Stage_1"); //Return state fixes the laser mode charge where it stops charging if altfire isn't held down.
 			}
 		Laser_Stage_2:
 			R036 HIJKL 1 BRIGHT {
@@ -599,8 +615,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 					return state("Laser_Stage_3");
 				}
 				
-				A_Refire("Laser_Stage_2");
-				return state("");
+				return state("Laser_Stage_2");
 			}
 		Laser_Stage_3:
 			R036 NOPQR 1 BRIGHT {
@@ -626,8 +641,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 					A_StartSound("weapons/railgun/lasercharge3", CHAN_AUTO, CHANF_OVERLAP);
 					return state("Laser_Stage_4");
 				}
-				A_Refire("Laser_Stage_3");
-				return state("");
+				return state("Laser_Stage_3");
 			}
 		Laser_Stage_4:
 			R036 TUVWX 1 BRIGHT {
@@ -655,8 +669,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 				if(JustReleased(BT_ATTACK) || !PressingFire()) {
 					return state("Laser_Blast");
 				}
-				A_Refire("Laser_Stage_4");
-				return state("");
+				return state("Laser_Stage_4");
 			}
 		Laser_Blast:
 			R036 Z 1 BRIGHT {
@@ -716,7 +729,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 			R038 D 1 BRIGHT {
 				PB_WeaponRecoil(-2.5,-0.2);
 			}
-			R038 EFGHIJKLMNOPQRSTUVWXY 1 BRIGHT /*{
+			R038 EFGHIJKLMNOPQ 1 BRIGHT /*{
 				if(GetCvar("pb_toggle_aim_hold")) {
 					
 					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){return state("Zoomout");}
@@ -730,6 +743,10 @@ ACTOR PB_Railgun : PB_Weapon 13204
 				}
 				return state("");
 			}*/
+			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") < 12, "FireScope_Empty")
+			R038 Q 18 BRIGHT
+			FireScope_Empty:
+			R038 RSTUVWXY 1 BRIGHT
 			Goto Ready3
 			
 		Fire_Scope_Laser:
@@ -764,8 +781,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 					A_StartSound("weapons/railgun/lasercharge1", CHAN_AUTO, CHANF_OVERLAP);
 					return state("Laser_Stage_2_Scope");
 				}
-				A_Refire("Laser_Stage_1_Scope");
-				return state("");
+				return state("Laser_Stage_1_Scope"); //Return state fixes the laser mode charge where it stops charging if altfire isn't held down.
 			}
 		Laser_Stage_2_Scope:
 			R039 HIJKL 1 BRIGHT {
@@ -791,9 +807,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 					A_StartSound("weapons/railgun/lasercharge2", CHAN_AUTO, CHANF_OVERLAP);
 					return state("Laser_Stage_3_Scope");
 				}
-				
-				A_Refire("Laser_Stage_2_Scope");
-				return state("");
+				return state("Laser_Stage_2_Scope");
 			}
 		Laser_Stage_3_Scope:
 			R039 NOPQR 1 BRIGHT {
@@ -819,8 +833,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 					A_StartSound("weapons/railgun/lasercharge3", CHAN_AUTO, CHANF_OVERLAP);
 					return state("Laser_Stage_4_Scope");
 				}
-				A_Refire("Laser_Stage_3_Scope");
-				return state("");
+				return state("Laser_Stage_3_Scope");
 			}
 		Laser_Stage_4_Scope:
 			R039 TUVWX 1 BRIGHT {
@@ -848,8 +861,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 				if(JustReleased(BT_ATTACK) || !PressingFire()) {
 					return state("Laser_Blast_Scope");
 				}
-				A_Refire("Laser_Stage_4_Scope");
-				return state("");
+				return state("Laser_Stage_4_Scope");
 			}
 		Laser_Blast_Scope:
 			R096 Z 0
@@ -944,17 +956,17 @@ ACTOR PB_Railgun : PB_Weapon 13204
 				//Blue
 				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
 				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
-				if (CountInv("RailgunUnloaded") == 0 ) { A_SetWeaponSprite("R048");}
+				if (CountInv("RailgunAmmo") == 0  && CountInv("RailgunUnloaded") == 1 ) { A_SetWeaponSprite("R048");}
 				
-				
-				
-				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R04");}
+				//Red
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R049");}
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R050");}
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R051");}
-				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunUnloaded") == 0 ) { A_SetWeaponSprite("R052");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0  && CountInv("RailgunUnloaded") == 1 ) { A_SetWeaponSprite("R052");}
 				
 					
 			}
+			TNT1 A 0 A_JumpIfInventory("RailgunUnloaded",1,"ReloadUnloaded")
 			R047 DEFGHIJK 1 BRIGHT {
 				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
 				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
@@ -976,7 +988,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R050");}
 				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R051");}	
 			}
-			TNT1 A 0 A_FireCustomMissile ("PlasmaCaseSpawn", 60, 0, 30, -25, random (0, 160))
+			TNT1 A 0 PB_SpawnCasing("EmptyCell", 28, 11, 20, 1, random(2,4), 4)
 			R047 STUVWXY 1 BRIGHT {
 				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
 				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
@@ -1039,6 +1051,7 @@ ACTOR PB_Railgun : PB_Weapon 13204
 			}
 			TNT1 A 0 A_StartSound("weapons/riflemagslap", CHAN_AUTO, CHANF_OVERLAP)
 			
+			ReloadUnloadedContinue: //ReloadUnloaded jumps 2 frames ahead of here
 			R053 TUV 1 BRIGHT {
 				//Blue
 				if (CountInv("Cell") < 60) { A_SetWeaponSprite("R059");}
@@ -1113,7 +1126,15 @@ ACTOR PB_Railgun : PB_Weapon 13204
 			TNT1 A 0 A_StartSound("weapons/railgun/inspect6", CHAN_AUTO, CHANF_OVERLAP)
 			R079 HIJKLMNOPQRSTUVW 1 BRIGHT
 			Goto InsertBullets
-			
+		
+		ReloadUnloaded:
+			R052 D 0 A_JumpIfInventory("RailgunLaserMode",1,2) //Red
+			R048 D 0 //Blue
+			"####" DDDDEFGHI 1
+			"####" A 0 A_StartSound("weapons/plasma/cellin", CHAN_AUTO, CHANF_OVERLAP)
+			"####" JKLMNOPQRSTUVWX 1
+			TNT1 A 0 A_StartSound("weapons/riflemagslap", CHAN_AUTO, CHANF_OVERLAP)
+			Goto ReloadUnloadedContinue+2 //Jumps two frames ahead of this state so less code is being used
 		InsertBullets:
 			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",60,"Ready3")
 			TNT1 A 0 A_JumpIfInventory("Cell",1,1)
