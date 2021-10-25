@@ -24,6 +24,11 @@ Actor RespectAutoShotgun: Inventory
 Inventory.maxamount 1
 }
 
+actor DrumMagNotInserted : Inventory
+{
+Inventory.MaxAmount 1
+}
+
 Actor PumpAutoShotgun: Inventory
 {
 Inventory.maxamount 1
@@ -81,6 +86,7 @@ Actor PB_AutoshotgunUpgrade: PB_UpgradeItem
 	  TNT1 A 0 A_GiveInventory("PB_Autoshotgun", 1)
 	  TNT1 A 0 A_GiveInventory("AutoshotgunDrumMag", 1)
 	  TNT1 A 0 A_GiveInventory("HasTwoASG", 1)
+	  TNT1 A 0 A_GiveInventory("DrumMagNotInserted",1)
       Stop
 	}
 }
@@ -197,6 +203,17 @@ ACTOR PB_Autoshotgun  : PB_Weapon
 			}
 			AG01 MN 1
 			Goto Ready3
+		DrumMagInspectCheck:
+			TNT1 A 0 A_ClearOverlays(10,11)
+			TNT1 A 0 A_TakeInventory("DrumMagNotInserted",1)
+			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DrumMagInspectGoBackToSingle")
+			goto BeginNormalDrumReload
+		DrumMagInspectGoBackToSingle:
+			AG60 NMLKJI 1 A_Setroll(roll-1.0, SPF_INTERPOLATE)
+			AG60 HGF 1 A_Setroll(roll+2.0, SPF_INTERPOLATE)
+			AG60 EDCB 1 
+			AG60 A 1 A_Setroll(0, SPF_INTERPOLATE)
+			goto BeginNormalDrumReload
 		SelectAnimationDrum:
 			AU24 EFG 0
 			AU23 EFG 0
@@ -226,13 +243,17 @@ ACTOR PB_Autoshotgun  : PB_Weapon
 				PB_HandleCrosshair(70);
 				A_TakeInventory("PB_LockScreenTilt",1);
 			}
-			TNT1 A 0 {if (CountInv("AutoshotgunDrumMag") == 1 && CountInv("PBAutoShotgunHasUnloaded") != 1) {Return State("ReadyToFireDrum");}Return State("");}
+			TNT1 A 0 {
+				if (CountInv("AutoshotgunDrumMag") == 1 && CountInv("PBAutoShotgunHasUnloaded") != 1) {Return State("ReadyToFireDrum"); }
+				Return State("");
+			}
 
 		ReadyToFire:
 			
 			AG10 H 1 {
 					if (CountInv("JustFiredAutoshotgun") >= 60) { A_Gunflash("BarrelSmoke1");}
 					if (CountInv("PumpAutoShotgun") == 1 && CountInv("AutoShotgunAmmo") >= 1) {return state("Pump");}
+					if (CountInv("DrumMagNotInserted") >= 1 ) { return state("DrumMagInspectCheck"); }
 					return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBAutoShotgunHasUnloaded"));
 			}
 			Loop
@@ -291,9 +312,16 @@ ACTOR PB_Autoshotgun  : PB_Weapon
 				}
 				A_Overlay(10, "IdleLeft_Overlay", true);
 				A_Overlay(11, "IdleRight_Overlay", true);
+				if (CountInv("DrumMagNotInserted") >= 1 ) { return state("DrumMagInspectCheck"); }
+				Return State("");
 			}
 		ReadyToFireDualWield:
-			TNT1 A 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOFIRE)
+			TNT1 A 1 
+			{
+				if (CountInv("DrumMagNotInserted") >= 1 ) { return state("DrumMagInspectCheck"); }
+				Return State("");
+			}
+			TNT1 A 0 A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOFIRE)
 			Loop
 		IdleLeft_Overlay:
 			AG61 J 1 {
