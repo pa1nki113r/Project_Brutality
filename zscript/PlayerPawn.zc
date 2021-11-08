@@ -34,6 +34,7 @@ class PlayerPawnBase : PlayerPawn
 	bool	Pain;
 	bool	StrafeRunning;
 	double	ViewAngleDelta;
+	double	ViewPitchDelta;
 	float	ActualSpeed;
 	float	MaxAirSpeed;
 	float 	MaxGroundSpeed;
@@ -131,6 +132,7 @@ class PlayerPawnBase : PlayerPawn
 	double	XBob;
 	double	XBobOffset;
 	double	YBob;
+	double	YBobOffset;
 	float	BobTime;
 	
 	//Weapon Rolling
@@ -466,6 +468,7 @@ class PlayerPawnBase : PlayerPawn
 		else
 		{	
 			ViewAngleDelta = cmd.Yaw * (360.0 / 65536.0); //needed for two other things
+			ViewPitchDelta = cmd.Pitch * (90.0 / 65536.0);
 			
 			if(Player.TurnTicks) //moved here to save many doubled lines
 			{
@@ -2257,7 +2260,7 @@ class PlayerPawnBase : PlayerPawn
 
 		if(weapon == null || weapon.bDontBob || !(player.WeaponState & WF_WEAPONBOBBING))
 		{
-			MoveRangeMulti = StillRangeMulti = XBob = XBobOffset = YBob = 0;
+			MoveRangeMulti = StillRangeMulti = XBob = XBobOffset = YBob = YBobOffset = 0;
 			return (0, 0);
 		}
 		
@@ -2400,17 +2403,25 @@ class PlayerPawnBase : PlayerPawn
 				Double SwayFrictionMulti = CVar.GetCVar("zm_yawswayfriction", Player).GetFloat() / 10;
 				
 				XBobOffset += (CVar.GetCVar("zm_yawswaydirection", Player).GetBool() ? -1 : 1) * ViewAngleDelta * CVar.GetCVar("zm_yawswayspeed", Player).GetFloat() / 50;
+				YBobOffset += (CVar.GetCVar("zm_yawswaydirection", Player).GetBool() ? -1 : 1) * ViewPitchDelta * CVar.GetCVar("zm_yawswayspeed", Player).GetFloat() / 50;
 				
 				if(abs(XBobOffset) > 0.2)
 					XBobOffset -= XBobOffset / ((1.5 - SwayFrictionMulti) * 100);
 				else if(!ViewAngleDelta)
 					XBobOffset = 0;
 				
+				if(abs(YBobOffset) > 0.2)
+					YBobOffset -= YBobOffset / ((1.5 - SwayFrictionMulti) * 100);
+				else if(!ViewPitchDelta)
+					YBobOffset = 0;
+				
 				r.X += clamp(XBobOffset, -SwayRange, SwayRange);
+				r.Y += clamp(YBobOffset, -SwayRange, SwayRange);
 			}
 			else
 			{
 				XBobOffset = 0;
+				YBobOffset = 0;
 			}
 				
 			//////////////////////////////
