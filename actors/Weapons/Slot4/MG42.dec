@@ -40,6 +40,7 @@ ACTOR PB_MG42 : PB_Weapon
 	+WEAPON.NOAUTOAIM
 	+WEAPON.AMMO_OPTIONAL
 	+WEAPON.NOAUTOFIRE
+	+WEAPON.NOALERT
 	Scale 0.45
 	Tag "MG-42 (Hitler's Buzzsaw)"
 	Inventory.AltHUDIcon "HBUSD0"
@@ -121,22 +122,23 @@ ACTOR PB_MG42 : PB_Weapon
 		Stop
 	SmokeReal:
 		TNT1 A 0 {
-			If(CountInv("MG42HeatLevel") >=115 || CountInv("MG42HeatLevel") ==120) {
+			If(CountInv("MG42HeatLevel") >=105 || CountInv("MG42HeatLevel") ==120) {
 				return state("OverheatedSmoke");
 				}
 				return state("");
 			}
+	ActualSmoke:
 		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 {
 			A_FireCustomMissile("GunBarrelSmoke", 0, 0, 0, 0, 0, 0);
 			A_FireCustomMissile("GunBarrelSmoke", 0, 0, 0, 0, 0, 0);
 		}
 	Stop
 	OverheatedSmoke:
-		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 {
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 {
 			A_FireCustomMissile("GunFireSmoke_Overheat", 0, 0, 0, 1, 0, 0);
 			A_FireCustomMissile("GunFireSmoke_Overheat", 0, 0, 0, -1, 0, 0);
 			}
-		Stop
+		Goto ActualSmoke
 	
 	Respect:
 		TNT1 A 0 {
@@ -177,7 +179,7 @@ ACTOR PB_MG42 : PB_Weapon
 		MGS5 A 0 A_JumpIfInventory("NewClip", 14, 5)
 		MGS4 A 0 A_JumpIfInventory("NewClip", 12, 4)
 		MGS3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGS2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGKS A 0 A_JumpIfInventory("NewClip", 8, 2)
 		TNT1 A 0
 		"####" A 0
 		"####" CBA 1
@@ -240,15 +242,17 @@ ACTOR PB_MG42 : PB_Weapon
 		TNT1 A 0 A_JumpIf(CountInv("MG42HasOverheated") && CountInv("Zoomed") == 1,2)
 		TNT1 A 0 A_JumpIfInventory("MG42HasOverheated",1,"BarrelChange")
 		Goto Ready3
-	UnzoomBarrelChange:
+	UnzoomOverheat:
 		TNT1 A 0 {
 		A_TakeInventory("Zoomed", 1);
 		A_TakeInventory("ADSMode", 1);
 		A_PlaySoundEx("IronSights", "Auto");
 		A_Overlay(5, "BeltUnzoomFlash");
 		A_ZoomFactor(1);
+		A_PlaySound("MG42HEAT");
 		}
 		MRGZ DCB 1
+		Goto Overheat+1
 	BarrelChange:
 		TNT1 A 0{
 		A_ClearOverlays(5, 6);
@@ -323,6 +327,7 @@ ACTOR PB_MG42 : PB_Weapon
 		A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
 		A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
 		A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+		A_AlertMonsters;
 		PB_WeaponRecoil(-2.2,-0.6);
 		}
 		MGFI AB 1
@@ -332,8 +337,8 @@ ACTOR PB_MG42 : PB_Weapon
 		TNT1 A 0 A_Overlay(3, "Cooling")
 		Goto Ready3
 	Overheat:
-		"####" A 0 A_GiveInventory("MG42HasOverheated")
-		"####" A 0 A_PlaySound("MG42HEAT")
+		TNT1 A 0 A_PlaySound("MG42HEAT")
+		TNT1 A 0 A_GiveInventory("MG42HasOverheated")
 		MG5R A 0 A_JumpIfInventory("NewClip", 14, 5)
 		MG4R A 0 A_JumpIfInventory("NewClip", 12, 4)
 		MG3R A 0 A_JumpIfInventory("NewClip", 10, 3)
@@ -416,12 +421,12 @@ ACTOR PB_MG42 : PB_Weapon
 							Return State("Fire2");
 							}
 					else if (PressingFire() && PressingAltfire() && CountInv("NewClip") > 1 && CountInv("MG42HeatLevel") == 120) {
-							Return State ("UnzoomBarrelChange");
+							Return State ("UnzoomOverheat");
 						}
 					else if (PressingFire() && PressingAltfire() && CountInv("NewClip") <= 1) {
 							Return State ("Unzoom");
 						}
-				return A_DoPBWeaponAction(WRF_NOSECONDARY);
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY);
 			}
 		else {
 			return A_DoPBWeaponAction;
@@ -454,7 +459,7 @@ ACTOR PB_MG42 : PB_Weapon
 			return state ("ActualFire2");
 			}
 		else if (CountInv("MG42HeatLevel") == 120) {
-			return state ("UnzoomBarrelChange");
+			return state ("UnzoomOverheat");
 			}
 		else {
 			return state ("Unzoom");
@@ -476,40 +481,19 @@ ACTOR PB_MG42 : PB_Weapon
 		A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 		PB_WeaponRecoil(-2.0,-0.5);
 		}
-		MGZF ABC 1
+		MGZF AB 1
 		TNT1 A 0 {
-		if (CountInv("MG42HeatLevel") >= 120) {
-			return state ("UnzoomBarrelChange");
+		if (CountInv("NewClip") > 1 && CountInv("MG42HeatLevel") != 80) {
+			return state ("ActualFire2_2");
+			}
+		else if (CountInv("MG42HeatLevel") == 80) {
+			return state ("UnzoomOverheat");
 			}
 		else {
 			A_Overlay(3, "Cooling");
 			return state ("Ready2");
 			}	
 		}
-		TNT1 A 0 {
-			if(GetCvar("pb_toggle_aim_hold")) {
-				if(JustReleased(BT_ALTATTACK)){
-					return state("Unzoom");
-				}
-		
-				if (JustPressed(BT_ATTACK) && PressingAltfire()){
-						return state("Fire2");
-				}
-			}
-			else {
-				if(PressingAltfire()){
-					return state("Unzoom");
-				}
-				
-				if (JustPressed(BT_ATTACK)){
-						return state("Fire2");
-				}
-				A_Refire("Fire2");
-				
-			}
-			return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
-		}
-		Goto Ready2
 	ActualFire2_2:
 		TNT1 A 0 {
 		A_Overlay(-3, "MuzzleFlashZoom");
@@ -518,19 +502,20 @@ ACTOR PB_MG42 : PB_Weapon
 		A_TakeInventory("NewClip", 2);
 		A_PlaySound("MG42FIR");
 		A_FireBullets(5, 5, 1, 26, "MachineGunBulletPuff", 1);
+		A_Firecustommissile("MiniBeltPieceSpawn",0,0,12,18);
 		A_Firecustommissile("MG42CaseSpawn",0,0,12,random(-18, 18));
 		A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
 		A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
 		A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 		PB_WeaponRecoil(-2.0,-0.5);
 		}
-		MGZF ABC 1
+		MGZF AB 1
 		TNT1 A 0 {
-		if (CountInv("NewClip") > 1 && CountInv("MG42HeatLevel") != 120) {
+		if (CountInv("NewClip") > 1 && CountInv("MG42HeatLevel") != 80) {
 			return state ("ActualFire2_3");
 			}
-		else if (CountInv("MG42HeatLevel") == 120) {
-			return state ("UnzoomBarrelChange");
+		else if (CountInv("MG42HeatLevel") == 80) {
+			return state ("UnzoomOverheat");
 			}
 		else {
 			A_Overlay(3, "Cooling");
@@ -551,13 +536,13 @@ ACTOR PB_MG42 : PB_Weapon
 		A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 		PB_WeaponRecoil(-2.0,-0.5);
 		}
-		MGZF ABC 1
+		MGZF AB 1
 		TNT1 A 0 {
-		if (CountInv("NewClip") > 1 && CountInv("MG42HeatLevel") != 120) {
+		if (CountInv("NewClip") > 1 && CountInv("MG42HeatLevel") != 80) {
 			return state ("ActualFire2_4");
 			}
-		else if (CountInv("MG42HeatLevel") == 120) {
-			return state ("UnzoomBarrelChange");
+		else if (CountInv("MG42HeatLevel") == 80) {
+			return state ("UnzoomOverheat");
 			}
 		else {
 			A_Overlay(3, "Cooling");
@@ -572,42 +557,20 @@ ACTOR PB_MG42 : PB_Weapon
 		A_TakeInventory("NewClip", 2);
 		A_PlaySound("MG42FIR");
 		A_FireBullets(5, 5, 1, 26, "MachineGunBulletPuff", 1);
+		A_Firecustommissile("MiniBeltPieceSpawn",0,0,12,18);
 		A_Firecustommissile("MG42CaseSpawn",0,0,12,random(-18, 18));
 		A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
 		A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
 		A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 		PB_WeaponRecoil(-2.0,-0.5);
 		}
-		MGZF AB 1
+		MGZF ABC 1
 		MG3Z A 0 A_JumpIfInventory("NewClip", 10, 3)
 		MG2Z A 0 A_JumpIfInventory("NewClip", 8, 2)
 		MG1Z A 0
 		"####" A 0
 		"####" A 10
 		TNT1 A 0 A_Overlay(3, "Cooling")
-		TNT1 A 0 {
-			if(GetCvar("pb_toggle_aim_hold")) {
-				if(JustReleased(BT_ALTATTACK)){
-					return state("Unzoom");
-				}
-		
-				if (JustPressed(BT_ATTACK) && PressingAltfire()){
-						return state("Fire2");
-				}
-			}
-			else {
-				if(PressingAltfire()){
-					return state("Unzoom");
-				}
-				
-				if (JustPressed(BT_ATTACK)){
-						return state("Fire2");
-				}
-				A_Refire("Fire2");
-				
-			}
-			return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
-		}
 		Goto Ready2
 	
 	FlashKicking:
@@ -693,7 +656,7 @@ ACTOR PB_MG42 : PB_Weapon
 		MGS5 A 0 A_JumpIfInventory("NewClip", 14, 5)
 		MGS4 A 0 A_JumpIfInventory("NewClip", 12, 4)
 		MGS3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGS2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGKS A 0 A_JumpIfInventory("NewClip", 8, 2)
 		TNT1 A 0
 		"####" A 0
 		"####" ABC 1
@@ -707,7 +670,8 @@ ACTOR PB_MG42 : PB_Weapon
 			A_TakeInventory("PB_LockScreenTilt",1);
 			A_ClearOverlays(10,11);
 		}
-		TNT1 A 0 {	
+		TNT1 A 0 {
+			A_GunFlash("DeselectFlash");
 			A_Takeinventory("Zoomed",1);
 			A_Takeinventory("ADSmode",1);
 			A_ZoomFactor(1.0);
