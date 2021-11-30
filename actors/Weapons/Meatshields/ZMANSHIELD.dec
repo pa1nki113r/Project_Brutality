@@ -1,0 +1,255 @@
+ACTOR ZMANShield : PB_Weapon
+{
+	Weapon.AmmoUse1 1
+	Weapon.AmmoGive1 30
+	Weapon.AmmoUse2 1
+	Weapon.AmmoGive2 15
+	Weapon.AmmoType1 "MeatshieldGunAmmo"
+	Weapon.AmmoType2 "MeatshieldPistolAmmo"
+	Weapon.Sisterweapon "none"
+	States
+	{
+		
+	CheckPrimaryWeapon:
+		TNT1 A 0
+        ZS5G A 1 A_JumpIfInventory("MeatshieldGunAmmo", 1, "SwitchWeapons")
+		Goto Altfire
+	
+	SwitchToRifle:
+		TNT1 A 0 A_Takeinventory("MeatShieldPistolEquipped",1)
+		ZSHF HIJ 2
+		ZSHF G 3 A_PlaySound("RIFCL_CK")
+		ZSHF FED 2
+		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
+		Goto Ready
+		
+	SwitchWeapons:
+		TNT1 A 0 A_JumpIfInventory("MeatShieldPistolEquipped", 1, "SwitchToRifle")
+		TNT1 A 0 A_Giveinventory("MeatShieldPistolEquipped",1)
+		ZSHF DEF 2
+		ZSHF G 3 A_PlaySound("weapons/pistolup")
+		ZSHF JIH 2
+		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
+		Goto ReadySideArm
+		
+	ReadySideArm:
+		TNT1 A 0 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "SwitchWeapons")
+		TNT1 A 0 A_Takeinventory("IsFiringThisShitOut",1)
+		ZS5G A 1 
+			{
+				A_WeaponReady;
+				
+			}
+		TNT1 A 0 A_SpawnItemEx("MeatShieldHuman", 15, 0, 15, 0)
+		TNT1 A 0 
+        Loop
+	
+	Ready:
+	Ready3:
+		TNT1 A 0 A_JumpIfInventory("GoWeaponSpecialAbility", 1, "SwitchWeapons")
+		ZSHG A 1 
+			{
+				A_WeaponReady;
+				
+			}
+		TNT1 A 0 A_SpawnItemEx("MeatShieldHuman", 15, 0, 15, 0)
+		TNT1 A 0 A_AlertMonsters
+        Loop
+		
+		
+	Select:
+	    TNT1 A 0 A_TakeInventory("MeatAmmo", 100)
+		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
+		TNT1 AAAAAAAA 1 A_Raise
+		Wait
+		
+	//First Person Legs in Doom (because, you know, "I'm not original")
+		FirstPersonLegsHide:
+			TNT1 A 20
+		FirstPersonLegsStand:
+			TNT1 A 0 
+			TNT1 A 0 A_JumpIf(momx > 0.8 || momx < -0.8 || momy > 0.8 || momy < -0.8, "FirstPersonLegsWalk1")
+			TNT1 A 0 A_JumpIf(momZ != 0, "FirstPersonLegsJump")
+			TNT1 A 0 A_JumpIf(Height < 54, "FirstPersonLegsCrouch")
+			TNT1 A 0 A_JumpIfInventory("FPSLegChecker", 1, 2)
+			STAN A 1 
+			{
+				A_OverlayOffset(-10, 0, (-pitch*2)+200);
+			}
+			Loop
+			TNT1 A 0 
+			TNT1 A 0 A_JumpIf(Height < 54, "FirstPersonLegsCrouch")
+			TNT1 A 0 A_JumpIf(momZ != 0, "FirstPersonLegsJump")
+			STAN M 1 
+			{
+				A_OverlayOffset(-10, 0, (-pitch*2)+200);
+			}
+			Loop
+			
+		FirstPersonLegsCrouch:
+			TNT1 A 0 
+			TNT1 A 0 A_PlaySound("IronSights", 0) //Sound when player crouches
+			FirstPersonLegsCrouchContinue:
+			TNT1 A 0 A_JumpIf(momZ != 0, "FirstPersonLegsJump")
+			TNT1 A 0 A_JumpIf(momx > 0.8 || momx < -0.8 || momy > 0.8 || momy < -0.8, "FirstPersonLegsWalk1")
+			TNT1 A 0 A_JumpIf(Height > 54, "FirstPersonLegsStand")
+			STAN N 1 
+			{
+				A_OverlayOffset(-10, 0, (-pitch*2)+200);
+			}
+			Loop
+			
+		FirstPersonLegsWalk1:
+			TNT1 A 0
+			TNT1 A 0 A_JumpIfInventory("FPSLegChecker", 1, "FirstPersonLegsWalk2")
+			TNT1 A 0 A_JumpIf(momZ != 0, "FirstPersonLegsJump")
+			TNT1 A 0 A_GiveInventory("FPSLegChecker",1)
+			STAN BCCDDEEFF 1
+			{
+				A_OverlayOffset(-10, 0, (-pitch*2)+200);
+				A_JumpIf(momZ != 0, "FirstPersonLegsJump");
+			}
+			Goto FirstPersonLegsStand
+			
+		FirstPersonLegsWalk2:
+			TNT1 A 0
+			TNT1 A 0 A_JumpIf(momZ != 0, "FirstPersonLegsJump")
+			TNT1 A 0 A_TakeInventory("FPSLegChecker",1)
+			STAN GHHIIJJKLL 1 
+			{
+				A_OverlayOffset(-10, 0, (-pitch*2)+200);
+				A_JumpIf(momZ != 0, "FirstPersonLegsJump");
+			}
+			Goto FirstPersonLegsStand
+			
+		FirstPersonLegsJump:
+			TNT1 A 0 
+			STAN I 1 
+			{
+				A_OverlayOffset(-10, 0, (-pitch*2)+200);
+			}
+			Goto FirstPersonLegsStand
+    Fire:
+		TNT1 A 0 A_WeaponOffset(0,32)
+		TNT1 A 0 A_JumpIfInventory("MeatShieldPistolEquipped", 1, "FireSideArm")
+        TNT1 A 0 A_JumpIfInventory("MeatshieldGunAmmo", 1, 2)
+		Goto Altfire
+		TNT1 A 0 A_AlertMonsters
+		TNT1 A 0 A_SpawnItemEx("MeatShieldHuman", 15, 0, 15, 0)
+		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",-5,0,0,0)
+		TNT1 A 0 A_PlaySound("weapons/rifle")
+        TNT1 A 0 A_FireCustomMissile("SmokeSpawner",0,0,0,5)
+		TNT1 A 0 A_FireCustomMissile("MeatShieldTracer", random(3,-3), 0, 3, 0)
+		TNT1 A 0 A_TakeInventory("MeatshieldGunAmmo", 1)
+		ZSHF A 1 BRIGHT
+		TNT1 A 0 A_SpawnItemEx("MeatShieldHuman", 15, 0, 15, 0)
+		ZSHF BC 1
+		TNT1 A 0 A_SpawnItemEx("MeatShieldHuman", 15, 0, 15, 0)
+		ZSHG A 2
+		TNT1 A 0 A_Refire
+		Goto Ready
+		
+	FireSideArm:
+        TNT1 A 0 A_JumpIfInventory("MeatshieldPistolAmmo", 1, 1)
+		Goto CheckPrimaryWeapon
+		TNT1 A 0 A_AlertMonsters
+		TNT1 A 0 A_SpawnItemEx("MeatShieldHuman", 15, 0, 15, 0)
+		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",-5,0,0,0)
+		TNT1 A 0 A_PlaySound("weapons/pistol")
+        TNT1 A 0 A_FireCustomMissile("GunFireSmoke",0,0,0,5)
+		TNT1 A 0 A_FireCustomMissile("MeatShieldTracer", random(3,-3), 0, 3, 0)
+		TNT1 A 0 A_TakeInventory("MeatshieldPistolAmmo", 1)
+		ZS5F A 1 BRIGHT
+		ZS5F BC 1
+		TNT1 A 0 A_FireCustomMissile("Mp40CaseSpawn", 0,0,-1,-2)
+		ZS5F D 2 
+		ZS5F D 2 A_WeaponReady
+		TNT1 A 0 A_Refire
+		Goto ReadySideArm
+		
+    AltFire:
+	Deselect:
+		TNT1 A 0 A_Playsound("misc/gibbed", 1)
+		TNT1 A 0 A_GiveInventory("RedBloodSplatterz", 1)
+		ZSHG DEFGHII 4 A_SpawnItemEx("MeatShieldHuman", 15, 0, 15, 0)
+        TNT1 A 0 A_PlaySound("skeleton/swing")
+		TNT1 A 0 A_FireCustomMissile("ThrowedZman", 0, 0, 0, 0)
+		TNT1 A 0 A_TakeInventory("GoSpecial",1)
+		TNT1 A 0 A_TakeInventory("GotMeatShield", 1)
+		TNT1 A 0 A_TakeInventory("HasZmanShield",1)
+		TNT1 A 0 A_Giveinventory("Punching",1)
+        THEF B 4 
+        THEF C 4
+		TNT1 A 0 A_TakeInventory("GoWeaponSpecialAbility",5)
+		TNT1 A 0 A_Giveinventory("Punching",1)
+		THEF D 4
+		TNT1 A 0 A_TakeInventory("GoSpecial",1)
+		TNT1 A 0 A_TakeInventory("GotMeatShield", 1)
+		TNT1 A 0 A_TakeInventory("HasZmanShield",1)
+		TNT1 A 0 A_TakeInventory("MeatShieldPistolEquipped", 1)
+		TNT1 A 0 A_TakeInventory("ZManShield",1)
+		TNT1 A 2 
+		Stop
+			
+ 	Spawn:
+		8876 A -1
+		Stop
+		
+	}
+}
+
+ACTOR ThrowedZman
+{
+	Radius 6
+	Height 8
+	Speed 24
+    Fastspeed 32
+	Damage 60
+	+MISSILE
+    Scale 1.0
+	+FORCEXYBILLBOARD
+	+THRUACTORS
+	-NOGRAVITY
+	+NOEXTREMEDEATH
+	Gravity 0.4
+	DamageType Kick
+	Decal BrutalBloodSuper
+	States
+	{
+	Spawn:
+        X721 A 2
+		TNT1 A 0 A_ChangeFlag("THRUACTORS", 0)
+		Fly:
+		X721 BCDEFGH 2
+		Loop
+		
+    Death:
+	    TNT1 AAAAAA 0 A_SpawnItem("MuchBlood2")
+		TNT1 A 0 A_SpawnItem("DeadZombieman1")
+		TNT1 A 3
+		Stop
+	}
+}
+
+ACTOR ThrowedZombieMan2: ThrowedZMan
+{
+    +NOGRAVITY
+	Damage 20
+}
+
+ACTOR ThrowedSergeantPiece: ThrowedZombieMan2
+{
+	Damage 10
+	States
+	{
+	Spawn:
+        SP2X HIJK 5
+		Loop
+		
+    Death:
+	    TNT1 A 0 A_SpawnItem("MeatDeath")
+		TNT1 A 5
+		Stop
+	}
+}
