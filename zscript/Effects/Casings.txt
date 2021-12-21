@@ -2314,3 +2314,74 @@ Class MiniBeltPieceSpawn2 : Actor
 		Stop;
 	}
 }
+
+Class MP40DogTag: Actor
+{
+	override void BeginPlay(void)
+	{
+		ChangeStatNum(STAT_PB_BULLETS);
+		NashGoreStatics.QueueCasings();
+		Super.BeginPlay();
+	}
+	
+	default
+	{
+		Height 2;
+		Radius 2;
+		Speed 32;
+		Scale 0.15;
+		+DOOMBOUNCE;
+		-NOGRAVITY;
+		+WINDTHRUST;
+		+CLIENTSIDEONLY;
+		+MOVEWITHSECTOR;
+		+MISSILE;
+		+NOBLOCKMAP;
+		-DROPOFF;
+		+NOTELEPORT;
+		+FORCEXYBILLBOARD;
+		+NOTDMATCH;
+		+GHOST;
+		-DONTSPLASH;
+		-CANBOUNCEWATER;
+		+FLOORCLIP;
+		+THRUACTORS;
+		+ROLLSPRITE;
+		+ROLLCENTER;
+		Mass 4;
+		SeeSound "weapons/casing";
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0;
+
+		Exist:
+			D0TA A 1 
+			{
+				A_SetRoll(angle-3, SPF_INTERPOLATE);
+				A_JumpIf(waterlevel > 1, "Splash");
+			}
+			D0TA A 1 A_JumpIf(waterlevel > 1, "Splash");
+			Loop;
+
+		Death:
+			TNT1 A 0 A_StopSound(CHAN_AUTO);
+			TNT1 A 0 A_PlaySound("decasebounce");
+			TNT1 A 0 A_SetRoll(0);
+			Goto Rest1;
+		Rest1:
+			D0TA B 900;
+			TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("ToggleBulletJanitor")==1,"Disappear") ;
+			Loop;
+
+		Disappear:
+			TNT1 A 1;
+			Stop;
+			
+		Splash:
+			TNT1 A 0;
+			Stop;
+	}
+}
