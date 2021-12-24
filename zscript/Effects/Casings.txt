@@ -1524,7 +1524,7 @@ Class ShotgunCasing3 : ShotgunCasing
    }
 }
 
-Class EmptyClipMP40 : Actor
+Class EmptyClipMP40 : Actor //this one is used by the SMG and Pistol.... why? just fucking why? can we rename it to somethin else please?
 {
 		override void BeginPlay(void)
 	{
@@ -1538,7 +1538,7 @@ Class EmptyClipMP40 : Actor
    Speed 4;
    Scale 0.125;
    +DOOMBOUNCE;
-   - NOGRAVITY;
+   -NOGRAVITY;
    +WINDTHRUST;
    +CLIENTSIDEONLY;
    +MOVEWITHSECTOR;
@@ -1549,19 +1549,21 @@ Class EmptyClipMP40 : Actor
    +FORCEXYBILLBOARD;
    +NOTDMATCH;
    +GHOST;
+   +ROLLSPRITE
+   +ROLLCENTER
    Mass 1;
    SeeSound "weapons/smallmagdrop";
    }
    States
    {
    Spawn:
-      CLP4 A 1;
+	  CLP4 A 1;
 	  
 	  Exist:
-      CLP4 ABCDEFGH 4;
+	  CLP4 ABCDEFGH 4;
       Goto Spawn+1;
    Death:
-      CLP4 G 900;
+      CLP4 G 900 A_SetRoll(0);
 	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
       loop;
 	  
@@ -1569,6 +1571,54 @@ Class EmptyClipMP40 : Actor
 	  TNT1 A 1;
 	  Stop;
    }
+}
+
+Class EmptyMagMP40 : Actor //this one is actually used by the MP40
+{
+	override void BeginPlay(void)
+	{
+		ChangeStatNum(STAT_PB_BULLETS);
+		NashGoreStatics.QueueCasings();
+		Super.BeginPlay();
+	}
+	Default
+	{
+		Height 12;
+		Radius 9;
+		Speed 4;
+		Scale 0.125;
+		+DOOMBOUNCE;
+		-NOGRAVITY;
+		+WINDTHRUST;
+		+CLIENTSIDEONLY;
+		+MOVEWITHSECTOR;
+		+MISSILE;
+		+NOBLOCKMAP;
+		-DROPOFF;
+		+NOTELEPORT;
+		+FORCEXYBILLBOARD;
+		+NOTDMATCH;
+		+GHOST;
+		+ROLLSPRITE
+		+ROLLCENTER
+		Mass 1;
+		SeeSound "weapons/smallmagdrop";
+	}
+	States
+	{
+		Spawn:
+			C1P4 A 1 A_SetRoll(roll+90);
+		Exist:
+			C1P4 AAAAAAAAABBBBBBBBBAAAAAAAAABBBBBBBBB 1 A_SetRoll(roll+10, SPF_INTERPOLATE);
+			Goto Spawn+1;
+		Death:
+			C1P4 # 900 A_SetRoll(0);
+			TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
+			loop;  
+		Disappear:
+			TNT1 A 1;
+			Stop;
+	}
 }
 
 Class EmptyClip : Actor
