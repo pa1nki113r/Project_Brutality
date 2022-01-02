@@ -40,8 +40,60 @@ Actor PB_PlasmaFireAnimation2: Inventory
 Inventory.maxamount 1
 }
 
+// This is to make the no doomguy talk cvar work, as it's impossible to
+// use cvars on sndinfo and on Inventory.PickupSound
+ACTOR PB_M1PlasmaPickup : PB_UpgradeItem
+{
+	Inventory.PickupSound ""
+	Inventory.PickupMessage "You got the UAC-M1 Plasma Rifle! (Slot 7)"
+	Inventory.MaxAmount 3
+	Scale 0.51
+	States
+	{
+	Spawn.V5:
+		VLAS A 10 {
+			IF( A_CHECKRANGE( V5_MDist , "NULL", TRUE) ) {A_SetSpawnSprite("PLAS");}
+			}
+	Spawn:
+		TNT1 A 0 NoDelay A_jumpif( V5_MODELS == 1 && V5_Cull == 1, "Spawn.V5")
+		PLAS A 10 {
+				if ( GetCvar( "V5_MODELS" ) == 1 && GetCVar( "V5_Cull" ) == 0 ) {A_SetSpawnSprite("VLAS");}
+		}
+		LOOP
+// I'm sorry if this is a fucking hackjob, but it's the only way I can prevent
+// the M1 Plasma pickup from happen if the ammo count is full.
+	Pickup:
+		TNT1 A 0 {
+			if(CountInv("Cell") == 300 && CountInv("PB_M1Plasma") >=3 && CountInv("GotAPack") < 1 && CountInv("GotAPack_h") < 1) {
+				return state("FullAmmo");
+				}
+			else if(CountInv("Cell") == 600 && CountInv("PB_M1Plasma") >=3 && CountInv("GotAPack") >= 1 && CountInv("GotAPack_h") < 1) {
+				return state("FullAmmo");
+				}
+			else if(CountInv("Cell") == 800 && CountInv("PB_M1Plasma") >=3 && CountInv("GotAPack") >= 1 && CountInv("GotAPack_h") >= 1) {
+				return state("FullAmmo");
+				}
+				return state("");
+			}
+		TNT1 A 0 {
+			A_GiveInventory("PB_M1Plasma");
+			if(GetCvar("nodoomguytalk") >= 1) {
+				A_StartSound("7LSPICK",3,CHANF_NOPAUSE );
+				}
+			else {
+				A_StartSound("PLSPICK",3,CHANF_NOPAUSE );
+				}
+		}
+		Stop
+	FullAmmo:
+		TNT1 A 1
+		TNT1 A 0
+		Fail
+	}
+}
 
 Actor PlasmaRifleHasUnloaded : Inventory {}
+
 // --------------------------------------------------------------------------
 
 // Plasma Gun
