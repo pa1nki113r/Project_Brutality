@@ -18,6 +18,12 @@ Actor Unloading : Inventory
 inventory.maxamount 1
 }
 
+//I think we should consider using this (HasUnloaded) as a base for future 
+//unloaded weapon tokens, so we don't have to to put inventory.maxamount 1 
+//every single damn time. Unless it can cause issues idk, this was a suggestion
+//I thought about because I inherited HasUnloaded for the left Carbine 
+//unloaded token.
+// -JMartinez2098
 Actor HasUnloaded : Inventory
 {
 inventory.maxamount 1
@@ -95,7 +101,9 @@ inventory.maxamount 1
 
 ACTOR HalfTicCounter : Inventory { Inventory.MaxAmount 1 }
 
-Actor RifleUpgrade: Custominventory
+//This will be disabled for now due to the HDMR being incomplete.
+//This actor can be uncommented when it's completed.
+/*Actor RifleUpgrade: Custominventory
 {
 //$Category Ammunition
 	Game Doom
@@ -118,7 +126,7 @@ Actor RifleUpgrade: Custominventory
 	  TNT1 A 0 A_GiveInventory("DMRUpgraded", 1)
       Stop
 	}
-}
+}*/
 
 //Placing the helmet on Doomguy's head
 Actor IntroductionSequence : Inventory
@@ -165,7 +173,7 @@ ACTOR Rifle : PB_Weapon
 	Obituary "%o was shot down by %k's DMR."
     AttackSound "None"
     Inventory.PickupSound "CLIPIN"
-	Inventory.Pickupmessage "You got the UAC30 DMR! (Slot 4)"
+	Inventory.Pickupmessage "You got the UAC-30 DMR! (Slot 4)"
 	+WEAPON.WIMPY_WEAPON
     +WEAPON.NOAUTOAIM
     +WEAPON.NOALERT
@@ -316,6 +324,9 @@ ACTOR Rifle : PB_Weapon
 		IdleLeft_Overlay:
 			P2SG B 1 {
 				// Full-Auto
+				if(CountInv("HasUnloadedDMR") == 1) {
+					A_SetOverlaySprite(10, "P2SU");
+					}
 				if(CountInv("LeftRifleAmmo")<=0 && CountInv("RifleAmmo")>0){
 					A_GiveInventory("DualFiring",1);
 				}
@@ -336,6 +347,9 @@ ACTOR Rifle : PB_Weapon
 		IdleRight_Overlay:
 			P2SG A 1 {
 				// Full-Auto
+				if(CountInv("HasUnloadedDMR") == 1) {
+					A_SetOverlaySprite(11, "P2SU");
+					}
 				if(CountInv("LeftRifleAmmo")>0 && CountInv("RifleAmmo")<=0){
 					A_TakeInventory("DualFiring",1);
 				}
@@ -481,9 +495,14 @@ ACTOR Rifle : PB_Weapon
 		stop
 		
 	SelectAnimationDualWield:
-		R2F6 ABCD 1
+		R2FU CD 0
+		R2F6 AB 1
+		R2F6 CD 1 {
+			if(CountInv("DualWieldingDMRs") == 1) {A_SetWeaponSprite("R2FU");}
+		}
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/up", "Auto")
 	ReadyDualWield:
+		P2SU AB 0 //Loads unloaded dual sprites into memory
 		TNT1 A 0 {
 			A_SetRoll(0);
 			PB_HandleCrosshair(58);
@@ -519,7 +538,7 @@ ACTOR Rifle : PB_Weapon
 			A_ClearOverlays(10,11);
 		}
 		TNT1 A 0 {	
-			A_Takeinventory("HasUnloadedDMR",1);
+			//A_Takeinventory("HasUnloadedDMR",1);
 			A_Takeinventory("Unloading",1);
 			A_Takeinventory("Zoomed",1);
 			A_Takeinventory("ADSmode",1);
@@ -537,7 +556,11 @@ ACTOR Rifle : PB_Weapon
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
 	DeselectAnimationDualWield:
-		R2F7 ABCD 1
+		R2FD AB 0
+		R2F7 AB 1 {
+			if(CountInv("DualWieldingDMRs") == 1) {A_SetWeaponSprite("R2FD");}
+		}
+		R2F7 CD 1
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
 	WeaponSpecial:
@@ -648,7 +671,7 @@ ACTOR Rifle : PB_Weapon
 		Goto SelectFirstPersonLegs
 		SelectContinue:
 		TNT1 A 1 ACS_NamedExecuteAlways("ToggleCarbineUpgraded",0) //For people who want this weapon to replace another
-		TNT1 A 0 A_Takeinventory("HasUnloadedDMR",1)
+		//TNT1 A 0 A_Takeinventory("HasUnloadedDMR",1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		TNT1 A 0 A_TakeInventory("FistsSelected",1)
 		TNT1 A 0 A_TakeInventory("SawSelected",1)
@@ -1059,6 +1082,11 @@ ACTOR Rifle : PB_Weapon
 			if (CountInv("DMRUpgraded") == 1) {A_SetWeaponSprite("H0F5");}
 			A_PlaySoundEx("weapons/rifle/magchange", "Auto");
 		}
+		TNT1 A 0 {
+			if(CountInv("RifleAmmo") < 1 && CountInv("DMRUpgraded") != 1) {
+				PB_SpawnCasing("EmptyDMRMag",38,26,7,frandom(0, 3.5),frandom(-7.2, -3.3),frandom(3,7));
+				}
+			}
 		R2F0 XYZ 1 {
 			if (CountInv("DMRUpgraded") == 1) {A_SetWeaponSprite("H0F5");}
 		}
@@ -1134,7 +1162,13 @@ ACTOR Rifle : PB_Weapon
  		TNT1 A 0 A_JumpIfInventory("RifleAmmo",31,"SkipRightReload")
 		R3F0 ABCDEFGHIJKLMN 1 
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/magout", "Auto")
-		R3F0 OPQRSTUVWXYZ 1
+		R3F0 OPQRSTUVW 1
+		TNT1 A 0 {
+			if(CountInv("RifleAmmo") < 1 && CountInv("DMRUpgraded") != 1) {
+				PB_SpawnCasing("EmptyDMRMag",38,26,7,frandom(0, 3.5),frandom(-7.2, -3.3),frandom(3,7));
+				}
+			}
+		R3F0 XYZ 1
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/magchange", "Auto")
 		R3F1 ABCD 1 
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/magin", "Auto")
@@ -1148,7 +1182,13 @@ ACTOR Rifle : PB_Weapon
  		TNT1 A 0 A_JumpIfInventory("LeftRifleAmmo",31,"SkipLeftReload")
 		R3F2 BCDEFGHIJKLMN 1 
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/magout", "Auto")
-		R3F2 OPQRST 1 
+		R3F2 OPQR 1
+		TNT1 A 0 {
+			if(CountInv("LeftRifleAmmo") < 1 && CountInv("DMRUpgraded") != 1) {
+				PB_SpawnCasing("EmptyDMRMag",38,-20,7,frandom(0, 3.5),frandom(3.3, 7.2),frandom(3,7));
+				}
+			}
+		R3F2 ST 1 
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/magchange", "Auto")
 		R3F2 UVWX 1 
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/magin", "Auto")
@@ -1358,7 +1398,14 @@ ACTOR Rifle : PB_Weapon
 		R4F0 ABCDEFGGHIJKLM 1
 		Stop
 	FlashKicking2:
-		R7F0 ABCDEFGGHIJKLM 1
+		R7F2 ALM 0
+		R7F0 A 1 {
+			if(CountInv("HasUnloadedDMR") == 1) {A_SetFlashWeaponSprite("R7F2");}
+			}
+		R7F0 BCDEFGGHIJK 1
+		R7F0 LM 1 {
+			if(CountInv("HasUnloadedDMR") == 1) {A_SetFlashWeaponSprite("R7F2");}
+			}
 		Stop
 
 	FlashAirKicking:
@@ -1367,7 +1414,13 @@ ACTOR Rifle : PB_Weapon
 		R4F0 ABCDEFGGGGHIJKLM 1
 		Stop
 	FlashAirKicking2:
-		R7F0 ABCDEFGGGGHIJKLM 1
+		R7F0 A 1 {
+			if(CountInv("HasUnloadedDMR") == 1) {A_SetFlashWeaponSprite("R7F2");}
+			}
+		R7F0 BCDEFGGGGHIJK 1
+		R7F0 LM 1 {
+			if(CountInv("HasUnloadedDMR") == 1) {A_SetFlashWeaponSprite("R7F2");}
+			}
 		Stop
 	
 	FlashSlideKicking:
@@ -1376,7 +1429,14 @@ ACTOR Rifle : PB_Weapon
 		R4F3 ABCDEFGHIJKLMNOPQRSTUVWX 1
 		Stop
 	FlashSlideKicking2:
-		R7F1 ABCDEFGHIJKLMNOPQRSTUVWX 1
+		R7F3 ABWX 0
+		R7F1 AB 1 {
+			if(CountInv("HasUnloadedDMR") == 1) {A_SetFlashWeaponSprite("R7F3");}
+			}
+		R7F1 CDEFGHIJKLMNOPQRSTUV 1
+		R7F1 WX 1 {
+			if(CountInv("HasUnloadedDMR") == 1) {A_SetFlashWeaponSprite("R7F3");}
+			}
 		Stop
 		
 	FlashSlideKickingStop:
@@ -1385,7 +1445,10 @@ ACTOR Rifle : PB_Weapon
 		R4F3 RSTUVWX 1
 		Stop
 	FlashSlideKickingStop2:
-		R7F1 RSTUVWX 1
+		R7F1 RSTUV 1
+		R7F1 WX 1 {
+			if(CountInv("HasUnloadedDMR") == 1) {A_SetFlashWeaponSprite("R7F3");}
+			}
 		Stop
 		
 	FlashPunching:
