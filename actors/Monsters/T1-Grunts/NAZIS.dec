@@ -90,23 +90,23 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0 A_Jump(32, "MissileWalkingFrontWard")
 		
 		TNT1 A 0 A_SpawnItemEx("FootStep", 0, 0, 20, 0, 0)
-		TNT1 B 0 A_SpawnItem("HeadshotTarget4", 5, 55,0)
+		TNT1 B 0 A_SpawnItem("HeadshotTarget4", 5, 40,0)
 		NAZW A 1 A_FaceTarget
 		NAZW A 2 A_Recoil(-1)
 		NAZW A 0 A_Chase
 		
-		TNT1 B 0 A_SpawnItem("HeadshotTarget4", 5, 55,0)
+		TNT1 B 0 A_SpawnItem("HeadshotTarget4", 5, 40,0)
 		NAZW B 1 A_FaceTarget
 		NAZW B 2 A_Recoil(-1)
 		NAZW A 0 A_Chase
 		
 		TNT1 A 0 A_SpawnItemEx("FootStep", 0, 0, 20, 0, 0)
-		TNT1 B 0 A_SpawnItem("HeadshotTarget4", 5, 55,0)
+		TNT1 B 0 A_SpawnItem("HeadshotTarget4", 5, 40,0)
 		NAZW C 1 A_FaceTarget
 		NAZW C 2 A_Recoil(-1)
 		NAZW A 0 A_Chase
 		
-		TNT1 B 0 A_SpawnItem("HeadshotTarget4", 5, 55,0)
+		TNT1 B 0 A_SpawnItem("HeadshotTarget4", 5, 40,0)
 		NAZW D 1 A_FaceTarget
 		NAZW D 2 A_Recoil(-1)
 		NAZW A 0 A_Chase
@@ -368,7 +368,8 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Downed")
 		TNT1 A 0 A_JumpIfInTargetInventory("HasPlasmaWeapon",1,"Death.Plasma")
 		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate")
-		//TNT1 A 0 A_JumpIfInTargetInventory("FireModeAcidGun",1,"Death.Desintegrate")
+		//This was a bitch to do, but glad I got it working :)
+		TNT1 A 0 A_JumpIf(CountInv("HellRifleSelected", AAPTR_TARGET) && CountInv("FireModeAcidGun",AAPTR_TARGET) == 1, "Death.Desintegrate")
         TNT1 A 0 A_CustomMissile ("MuchBlood", 50, 0, random (0, 360), 2, random (0, 160))
 		NAZI H 5
 		NAZI I 5 A_Scream
@@ -447,12 +448,23 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 			Stop
 		
 	Death.head:
-		TNT1 A 0 A_JumpIfInTargetInventory("HasPlasmaWeapon",1,"Death.Plasma")
-		TNT1 A 0 A_JumpIfInTargetInventory("HasCutingWeapon", 1, "Death.Decapitate")
-		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate")
-		//TNT1 A 0 A_JumpIfInTargetInventory("FireModeAcidGun",1,"Death.Desintegrate")
-		TNT1 A 0 A_JumpIfInTargetInventory("FlameCannonSelected",1,"Death.Fire")
-		TNT1 A 0 A_JumpIfInTargetInventory("BHCSelected",1,"Death.Blackhole") //To be changed when the BHG is scrapped
+//Death handler based on the type of weapons selected. 
+//Messy but it's way better than a ton of A_JumpIfInTargetInventory functions.
+		TNT1 A 0 {
+			if(CountInv("HellRifleSelected", AAPTR_TARGET) && CountInv("FireModeAcidGun",AAPTR_TARGET) == 1)
+			{return state("Death.Desintegrate");}
+			if(CountInv("HasPlasmaWeapon",AAPTR_TARGET) == 1)
+			{return state("Death.Plasma");}
+			if(CountInv("HasCutingWeapon",AAPTR_TARGET) == 1)
+			{return state("Death.Decapitate");}
+			if(CountInv("HasIncendiaryWeapon",AAPTR_TARGET) == 1)
+			{return state("Death.Incinerate");}
+			if(CountInv("FlameCannonSelected",AAPTR_TARGET) == 1)
+			{return state("Death.Fire");}
+			if(CountInv("BHCSelected",AAPTR_TARGET) == 1)
+			{return state("Death.Blackhole");}
+			return state("");
+		}
 		TNT1 A 0 A_SpawnItem("NaziHeadExplode", 0, 50)
 	NoHeadDeathResumed:
 		TNT1 A 0 A_NoBlocking
