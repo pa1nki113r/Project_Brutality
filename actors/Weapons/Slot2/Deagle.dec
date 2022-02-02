@@ -64,6 +64,7 @@ ACTOR PB_Deagle : PB_Weapon
 	PB_WeaponBase.UnloaderToken "DeagleHasUnloaded"
 	Inventory.AltHUDIcon "D4E0Z0"
 	PB_WeaponBase.respectItem "RespectDeagle"
+	FloatBobStrength 0.5
 	States
 	{
 	Steady:
@@ -694,6 +695,11 @@ ACTOR PB_Deagle : PB_Weapon
 			}
 		TNT1 A 0 A_PlaySoundEx("weapons/smg_click", "Auto")
 		Goto Ready3
+	
+	// Fixes crash when there is only 1 round in reserve
+	NoAmmoDualWield:
+		D62H H 1
+		Goto Ready3
 		
 	ReloadDualWield:
 		TNT1 A 0 {
@@ -706,7 +712,7 @@ ACTOR PB_Deagle : PB_Weapon
 		
         TNT1 A 0 A_JumpIfInventory("PistolBullets",2,2)
 		TNT1 A 0 A_PlaySoundEx("weapons/empty", "Auto")
-        Goto Ready3
+        Goto NoAmmoDualWield
 		TNT1 A 0 {
 			A_ZoomFactor(1.0);
 			A_SetCrosshair(5);
@@ -844,15 +850,10 @@ ACTOR PB_Deagle : PB_Weapon
 			}
 		Goto Ready3
 		
-	Spawn.V5:
-		V4E0 Z 10 {
-			IF( A_CHECKRANGE( V5_MDist , "NULL", TRUE) ) {A_SetSpawnSprite("D4E0");}
-			}
 	Spawn:
-		TNT1 A 0 NoDelay A_jumpif( V5_MODELS == 1 && V5_Cull == 1, "Spawn.V5")
-		D4E0 Z 10 {
-				if ( GetCvar( "V5_MODELS" ) == 1 && GetCVar( "V5_Cull" ) == 0 ) {A_SetSpawnSprite("V4E0");}
-		}
+		V4E0 Z 0 NoDelay
+		D4E0 Z 10 A_PbvpFramework("V4E0")
+		"####" Z 0 A_PbvpInterpolate()
 		LOOP
 
 		
@@ -913,6 +914,7 @@ ACTOR DeagleAmmo : Ammo
    Inventory.MaxAmount 12
    Ammo.BackpackAmount 0
    Ammo.BackpackMaxAmount 12
+   +INVENTORY.IGNORESKILL
    Inventory.Icon "D4E0Z0"
 }
 
@@ -922,5 +924,6 @@ ACTOR LeftDeagleAmmo : Ammo
    Inventory.MaxAmount 12
    Ammo.BackpackAmount 0
    Ammo.BackpackMaxAmount 12
+   +INVENTORY.IGNORESKILL
    Inventory.Icon "D4E0Z0"
 }
