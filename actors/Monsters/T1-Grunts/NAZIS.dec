@@ -363,6 +363,17 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0 A_SpawnItem("HeadshotTarget4", 5, 40, 0)
 		NAZI G 3 A_Pain
 		Goto See
+	Death.Fatality:
+		TNT1 A 0 A_Pain
+		TNT1 A 0 A_SetInventory("GoFatality",1, AAPTR_TARGET)
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_Jump(128, "Fatality2")
+		TNT1 A 0 A_SetInventory("NaziFatality",1, AAPTR_TARGET)
+		Stop
+	Fatality2:
+		TNT1 A 0 A_SetInventory("NaziFatality2",1, AAPTR_TARGET)
+		Stop
+		
 	Death:
 		// Death state handler for other weapons.
 		TNT1 A 0 {
@@ -384,9 +395,10 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 			{return state("Death.Ice");}
 			return state("");
 		}
-		TNT1 A 0 A_Jump(80, "Death.Arm")
-		TNT1 A 0 A_Jump(158, "Death2")
+		TNT1 A 0 A_Jump(64, "Death.Arm")
 		TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Downed")
+		TNT1 A 0 A_Jump(256, "NormalDeath", "Death2", "Death3", "Wolf3DDeath")
+	NormalDeath:
         TNT1 A 0 A_CustomMissile ("MuchBlood", 50, 0, random (0, 360), 2, random (0, 160))
 		NAZI H 5
 		NAZI I 5 A_Scream
@@ -410,6 +422,28 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 			TNT1 A 0 A_StartSound("BODYF",6)
 			NA21 L -1
 			Stop
+	Death3:
+		TNT1 A 0 A_Stop
+		NA21 A 6 A_ScreamAndUnblock
+		NA21 BCD 6
+		TNT1 A 0 A_SpawnItem ("GrowingBloodPool")
+		TNT1 A 0 A_StartSound("BODYF",6)
+		NA21 E -1
+		STOP
+	
+	Wolf3DDeath:
+		TNT1 A 0 A_Stop
+		NWF3 V 6 A_ScreamAndUnblock
+		NWF3 W 6 {
+			A_CustomMissile ("MuchBlood", 50, -13, random (0, 360), 2, random (0, 160));
+			A_CustomMissile ("Brutal_Blood", 50, -13, random (0, 360), 2, random (0, 160));
+			A_CustomMissile ("Brutal_Blood", 50, -13, random (0, 360), 2, random (0, 160));
+			}
+		NWF3 XY 6
+		TNT1 A 0 A_StartSound("BODYF",6)
+		TNT1 A 0 A_SpawnItem("DeadNazi_Wolf3D")
+		STOP
+		
 	Death.Nailgun:						
 			TNT1 A 0 A_Jump(150 , "Naildeath1", "Naildeath2")
 			TNT1 A 0 A_Jump(64, "Death.Blast")
@@ -2635,3 +2669,39 @@ States{Spawn:
 	   
 Actor NaziAmmo : inventory
 {inventory.maxamount 32}
+
+Actor FatalizedNazi : DeadZSPEC
+{
+-Shootable
+	States
+	{
+	Spawn:
+		NZFT R 1
+		NZFT R -1
+		Stop
+	}
+}
+
+ACTOR BeheadedNazi: FatalizedNazi
+{
+	Mass 6
+	States
+	{
+	Spawn:
+		NAZH E 1
+		NAZH E -1
+		Stop
+	}
+}
+
+Actor DeadNazi_Wolf3D : FatalizedNazi
+{
+-Shootable
+	States
+	{
+	Spawn:
+		NWF3 Z 1
+		NWF3 Z -1
+		Stop
+	}
+}
