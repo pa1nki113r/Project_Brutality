@@ -8,7 +8,7 @@ Download repository as a ZIP file and drag it over gzdoom.exe.
 ### Running addons
 When loading more than just PB, It is highly recommended you use a Front-end Launcher, such as [ZDL](https://github.com/lcferrum/qzdl/releases), [DoomRunner](https://github.com/Youda008/DoomRunner/releases), or [SSGL](https://github.com/FreaKzero/ssgl-doom-launcher/releases)
 
-## Feedback and Rug Reporting
+## Feedback and Bug Reporting
 While we would love to hear your opinions and ideas, Issues are reserved for bug reports only. Please make sure that the bug is with the mod itself and not due to any add-ons. The team is not responsible for any addons. Even if the add-on is made by a member of the dev team, it is not our resposibility to fix it, but instead is upto the add-on's creator on whether or not they fix it. Also make sure the issue has not already been posted.
 
 Any suggestions, opinions, or questions should be posted on the discord server. Don't forget to check the rules and faq channels, as well as each channel's pins and description.
