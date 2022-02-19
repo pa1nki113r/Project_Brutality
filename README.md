@@ -7,7 +7,7 @@ This is the bleeding-edge version that is constantly being developed on, and not
 
 ### Quick start (PB only) 
 
-Download repository as a ZIP file and drag it over gzdoom.exe.[^zandronum?]
+Download repository as a ZIP file and drag it over gzdoom.exe. [^zandronum?]
 
 #### How To Download
 
@@ -38,7 +38,7 @@ Looking for add-ons or a place to share your personal PB add-on? Between the dis
 
 ### If the Dev team asks you to remove something using mod resources, please do so without issue.
 
-[^steam]:[DooM classics Complete bundle](https://store.steampowered.com/sub/18397/)
-[^GOG]: [DooM II + Final DooM](https://www.gog.com/game/doom_ii_final_doom) | [The Ultimate DooM (DOOM I)](https://www.gog.com/game/the_ultimate_doom)
-[^zandronum]: PB3.0 uses ZScript, annonymous functions, and other features that zandronum does not support.
-[^ios]: Sadly, there is no known PB3.0 Capable GZDooM source port for ios that we are aware of.
+[^steam]: Steam: [DooM classics Complete bundle](https://store.steampowered.com/sub/18397/)
+[^GOG]: GOG: [DooM II + Final DooM](https://www.gog.com/game/doom_ii_final_doom) | [The Ultimate DooM (DOOM I)](https://www.gog.com/game/the_ultimate_doom)
+[^zandronum?]: What about Zandronum?: PB3.0 uses ZScript, annonymous functions, and other features that zandronum does not support.
+[^ios?]: How can I play on IOS?: Sadly, there is no known PB3.0 Capable GZDooM source port for ios that we are aware of.
