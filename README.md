@@ -5,13 +5,9 @@ This is the bleeding-edge version that is constantly being developed on, and not
 
 ## Installing Project Brutality
 
-### Quick start (PB only) 
+### How To Download
 
-Download repository as a ZIP file and drag it over gzdoom.exe. [^zandronum?]
-
-#### How To Download
-
-You will need the latest version of [GZDooM](https://zdoom.org/downloads "GZDooM") (or [Delta Touch](https://play.google.com/store/apps/details?id=com.opentouchgaming.deltatouch&hl=en_US&gl=US "Delta Touch") for Android[^ios?]) and either a copy of the one of the official IWADs[^Steam][^GOG] or Freedoom phase 1 and/or 2. To download the latest build, scroll up to the top and click the green button labeled __Code__ then click [Download Zip](https://github.com/pa1nki113r/Project_Brutality/archive/refs/heads/master.zip "You can also click here to download."). If you are on mobile and don't see a button, you'll need to turn on desktop view.
+You will need the latest version of [GZDooM](https://zdoom.org/downloads "GZDooM")[^zandronum?] (or [Delta Touch](https://play.google.com/store/apps/details?id=com.opentouchgaming.deltatouch&hl=en_US&gl=US "Delta Touch") for Android[^ios?]) and either a copy of the one of the official IWADs[^Steam][^GOG] or [Freedoom phase 1+2](https://freedoom.github.io/download.html "FreeDoom"). To download the latest build, scroll up to the top and click the green button labeled __Code__ then click [Download Zip](https://github.com/pa1nki113r/Project_Brutality/archive/refs/heads/master.zip "You can also click here to download."). If you are on mobile and don't see a button, you'll need to turn on desktop view.
 
 [For more help, Check out the this video by Galdoc](https://www.youtube.com/watch?v=ntTPhunwcTM "How To Get Started with Doom Mods (after 27 years) on YouTube")
 
