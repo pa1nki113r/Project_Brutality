@@ -7,11 +7,11 @@ This is the bleeding-edge version that is constantly being developed on, and not
 
 ### Quick start (PB only) 
 
-Download repository as a ZIP file and drag it over gzdoom.exe.
+Download repository as a ZIP file and drag it over gzdoom.exe.[^zandronum?]
 
 #### How To Download
 
-You will need the latest version of [GZDooM](https://zdoom.org/downloads "GZDooM") (or [Delta Touch](https://play.google.com/store/apps/details?id=com.opentouchgaming.deltatouch&hl=en_US&gl=US "Delta Touch") for Android) and either a copy of the one of the official IWADs or Freedoom phase 1 and/or 2. To download the latest build, scroll up to the top and click the green button labeled __Code__ then click [Download Zip](https://github.com/pa1nki113r/Project_Brutality/archive/refs/heads/master.zip "You can also click here to download."). If you are on mobile and don't see a button, you'll need to toggle desktop
+You will need the latest version of [GZDooM](https://zdoom.org/downloads "GZDooM") (or [Delta Touch](https://play.google.com/store/apps/details?id=com.opentouchgaming.deltatouch&hl=en_US&gl=US "Delta Touch") for Android[^ios?]) and either a copy of the one of the official IWADs[^Steam][^GOG] or Freedoom phase 1 and/or 2. To download the latest build, scroll up to the top and click the green button labeled __Code__ then click [Download Zip](https://github.com/pa1nki113r/Project_Brutality/archive/refs/heads/master.zip "You can also click here to download."). If you are on mobile and don't see a button, you'll need to turn on desktop view.
 
 [For more help, Check out the this video by Galdoc](https://www.youtube.com/watch?v=ntTPhunwcTM "How To Get Started with Doom Mods (after 27 years) on YouTube")
 
@@ -37,3 +37,8 @@ Looking for add-ons or a place to share your personal PB add-on? Between the dis
 - Add-ons should be made for the master branch to avoid confussion.
 
 ### If the Dev team asks you to remove something using mod resources, please do so without issue.
+
+[^steam]:[DooM classics Complete bundle](https://store.steampowered.com/sub/18397/)
+[^GOG]: [DooM II + Final DooM](https://www.gog.com/game/doom_ii_final_doom) | [The Ultimate DooM (DOOM I)](https://www.gog.com/game/the_ultimate_doom)
+[^zandronum]: PB3.0 uses ZScript, annonymous functions, and other features that zandronum does not support.
+[^ios]: Sadly, there is no known PB3.0 Capable GZDooM source port for ios that we are aware of.
