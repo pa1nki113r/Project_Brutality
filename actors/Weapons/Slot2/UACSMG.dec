@@ -23,6 +23,10 @@ ACTOR DualWieldingSMGs: Inventory
 Inventory.MaxAmount 1
 }
 
+Actor SelectDualWieldSMG : Inventory
+{inventory.maxamount 1}
+Actor SelectLaserSight : SelectDualWieldSMG{}
+
 ACTOR Laserdot: BulletPuff
 { 
 	Decal "None"
@@ -129,13 +133,14 @@ ACTOR PB_SMG : PB_Weapon
 		{
 				if (CountInv("LaserSightActivated")==1 && CountInv("KeepLaserDeactivated") != 1)
 				{
-					A_SpawnLaserPuff;
+					A_SpawnLaserPuff(0,0,"LaserDotPerma");
 				}
 				else 
 				{
 					A_DestroyLaserPuff;
 				}
 		}
+		TNT1 A 0 A_DestroyLaserPuff()
 		Loop
 		
 	Ready:
@@ -182,6 +187,7 @@ ACTOR PB_SMG : PB_Weapon
 		TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded", 1, "UnloadedReady")
 	ReadyToFire:
 		A1F1 E 1 {
+			A_Overlay(-16,"LaserOverlay");
 			if (PressingFire() && PressingAltfire() && CountInv("SMGAmmo") > 0){
 					return state("Fire");
 			}
@@ -250,6 +256,7 @@ ACTOR PB_SMG : PB_Weapon
 			A_Overlay(11, "IdleRight_Overlay", true);
 			}
 	ReadyToFireDualWield:
+		TNT1 A 0 A_Overlay(-16,"LaserOverlay")
 		TNT1 A 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE)
 		Loop
 		
@@ -391,6 +398,11 @@ ACTOR PB_SMG : PB_Weapon
 		A2F3 Z 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD, PBWEAP_UNLOADED)
 		Loop
 		
+	WheelCancel:
+		TNT1 A 0 A_SetInventory("SelectLaserSight",0)
+		TNT1 A 0 A_SetInventory("SelectDualWieldSMG",0)
+		Stop
+		
 	WeaponSpecial:
 		TNT1 A 0 {
 			A_Takeinventory("GoWeaponSpecialAbility",1);
@@ -401,6 +413,46 @@ ACTOR PB_SMG : PB_Weapon
 			A_ZoomFactor(1.0);
 			A_ClearOverlays(10,11);
 			}
+		TNT1 A 0 {
+			if(CountInv("SelectLaserSight") == 1) {	
+				A_Overlay(-12, "WheelCancel");
+				return state ("ToggleLaser");
+				}
+			if(CountInv("SelectDualWieldSMG") == 1) {
+				A_Overlay(-12, "WheelCancel");
+				return state ("DualHandler");
+				}
+			return state("");
+			}
+			Goto Ready3
+	ToggleLaser:
+		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "ToggleLaserDualWield")
+		A2F4 M 1 Offset(-18, 55)
+		A2F4 MM 1 A_WeaponOffset(-10, 8, WOF_ADD)
+		A2F4 M 1
+		A2F4 M 3
+			{
+				A_StartSound("LIGHTON", CHAN_AUTO);
+				if(CountInv("LaserSightActivated")){A_SetInventory("LaserSightActivated",0); A_Print("\cgLaser \c-Deactivated");}
+				else{A_GiveInventory("LaserSightActivated",1); A_Print("\cgLaser \c-Activated");}
+			}
+		A2F4 MMM 1 A_WeaponOffset(10, -8, WOF_ADD)
+		TNT1 A 0 A_WeaponOffset(0,32)
+		Goto Ready3
+	
+	ToggleLaserDualWield:
+		A2F3 ABCDE 1
+		A2F3 E 3
+			{
+				A_StartSound("LIGHTON", CHAN_AUTO);
+				if(CountInv("LaserSightActivated")){A_SetInventory("LaserSightActivated",0); A_Print("\cgLaser \c-Deactivated");}
+				else{A_GiveInventory("LaserSightActivated",1);  A_Print("\cgLaser \c-Activated");}
+			}
+		A2F3 E 0 A_StartSound("LIGHTON", CHAN_AUTO)
+		A2F3 DCBA 1
+		Goto Ready3
+		
+	DualHandler:
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "StopDualWield")
 		TNT1 A 0 A_JumpIfInventory("PB_SMG", 2,"SwitchToDualWield")
 		TNT1 A 0 A_Print("You need two submachine guns to dual wield!")
@@ -424,6 +476,7 @@ ACTOR PB_SMG : PB_Weapon
 	
 	Deselect:
 		TNT1 A 0 {
+			A_DestroyLaserPuff();
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			PB_HandleCrosshair(44);
@@ -433,16 +486,17 @@ ACTOR PB_SMG : PB_Weapon
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		TNT1 A 0 A_Takeinventory("Zoomed",1)
 		TNT1 A 0 A_Takeinventory("ADSmode",1)
-		TNT1 A 0 A_DestroyLaserPuff
 		TNT1 A 0 A_Overlay(-9, "Null")
         TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "DeselectDualWield")
         A1F1 DCBA 1
+		TNT1 A 0 A_DestroyLaserPuff
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
 	DeselectDualWield:
 		A2F3 ABCDEFG 1
+		TNT1 A 0 A_DestroyLaserPuff
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
 
@@ -869,37 +923,8 @@ ACTOR PB_SMG : PB_Weapon
 		
 	Spawn:
 		VTFL A 0 NoDelay
-		ATFL A 10 {
-			if ( GetCvar( "V5_MODELS" ) == 1 ){
-				If ( GetCVar( "V5_Cull" ) == 0 ) {
-					A_SetSpawnSprite("VTFL");
-					If ( GetCvar( "V5_Quake3" ) == 1 ){
-						A_settics(1); bFLOATBOB = true; A_setangle(normalize180(angle) + V5_Q3Spin,SPF_INTERPOLATE); SetZ(floorz+16.0);
-					}
-					else{bFLOATBOB=false;A_setangle(90,SPF_INTERPOLATE);}
-				}
-				else {
-					if( !A_CHECKRANGE( V5_MDist , "NULL", TRUE) ) {
-						A_SetSpawnSprite("VTFL");
-						If ( GetCvar( "V5_Quake3" ) == 1 ){
-							A_settics(1); bFLOATBOB = true; A_setangle(normalize180(angle) + V5_Q3Spin,SPF_INTERPOLATE); SetZ(floorz+16.0);
-						}
-						else{bFLOATBOB=false;A_setangle(90,SPF_INTERPOLATE);}
-					}
-					else{bFLOATBOB=false;A_setangle(90,SPF_INTERPOLATE);}
-				}
-			}
-			else{bFLOATBOB=false;A_setangle(90,SPF_INTERPOLATE);}
-		}
-		"####" A 0 {
-				If ( GetCVar( "V5_MODELS" ) == 1 && GetCvar( "V5_Quake3" ) == 1 ){
-				If ( GetCVar( "V5_Cull" ) == 0 ) {SetZ(floorz+16.0);}
-					else{ 
-						if( A_CHECKRANGE( V5_MDist , "NULL", TRUE) ) {bFLOATBOB=false;A_setangle(90,SPF_INTERPOLATE);}
-					}
-				}
-				else{bFLOATBOB=false;A_setangle(90,SPF_INTERPOLATE);}
-		}
+		ATFL A 10 A_PbvpFramework("VTFL")
+		"####" A 0 A_PbvpInterpolate()
 		LOOP
 		
 	FlashPunching:
