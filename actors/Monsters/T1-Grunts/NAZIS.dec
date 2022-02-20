@@ -17,14 +17,15 @@ ACTOR PB_Nazi : PB_Monster
 	+FLOORCLIP
 	+MISSILEMORE
 	+FASTER
-	-DONTHURTSPECIES
+	+DONTHURTSPECIES
     BloodType "Brutal_Blood", "BloodSPlatterReplacer", "SawBlood"
 	SeeSound "nazi/sight"
 	PainSound "nazi/pain"
 	DeathSound "nazi/death"
 	ActiveSound "nazi/active"
 	Obituary "%o was terminated by a Nazi."
-	DropItem "None"
+	HitObituary "%o met a Nazi and was bashed to death." //<- Going to figure this out later as it doesn't work for some reason.
+	MeleeRange 26
 	DamageFactor "Melee", 2.0
 	DamageFactor "KillMe", 0.0
 	DamageFactor "SSG", 10.0
@@ -32,6 +33,7 @@ ACTOR PB_Nazi : PB_Monster
 	DamageFactor "CauseObjectsToSplash", 0.0
 	MaxStepHeight 24
 	MaxDropOffHeight 32
+	Species "Nazi"
 damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood", 0.0
 	DropItem "PB_MP40"
 	States
@@ -128,7 +130,14 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 B 0 A_SpawnItem("HeadshotTarget4", 5, 40,0)
 		NAZI BBBBB 1 A_Chase
 		Goto See
-		
+	
+	Melee:
+			NZ1B A 3 A_FaceTarget
+			TNT1 A 0 A_StartSound("skeleton/swing")
+			NZ1B B 3 A_CustomMeleeAttack(3 * random(1,4), "monsters/nazi/bash", "", "Melee", false)
+			NZ1B A 3 A_FaceTarget
+			Goto See
+			
 	Missile:
 		TNT1 A 0 A_TakeInventory("SKNazi", 1)
 		TNT1 A 0 A_Jump(32, "MissileWalkingFrontWard")
@@ -1885,6 +1894,7 @@ ACTOR NaziGotHisLegBlownOff: ZombiemanGotHisLegBlowed
 {
 	-usespecial
 	//Activation THINGSPEC_Activate | THINGSPEC_ThingTargets | THINGSPEC_NoDeathSpecial
+	PainSound "nazi/pain"
 	States
 	{
 
@@ -1906,7 +1916,7 @@ ACTOR NaziGotHisLegBlownOff: ZombiemanGotHisLegBlowed
 	    NAZL FFFFF 2 A_CustomMissile ("PB_SquirtingBloodTrail", 12, 0, random (0, 360), 2, random (0, 45))
         TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
 		
-//		TNT1 A 0 A_Jump(12, "LastStand")
+		TNT1 A 0 A_Jump(24, "LastStand")
 //		TNT1 A 0 A_Jump(24, "LeaveCrawling")
 		
 	    TNT1 A 0 A_GiveInventory("DeathTimer1", 1)
@@ -1941,9 +1951,7 @@ ACTOR NaziGotHisLegBlownOff: ZombiemanGotHisLegBlowed
 	LastStand:
 		TNT1 A 0 A_StopSound(4)
 		TNT1 A 0 A_NoBlocking
-		TNT1 A 0 A_Pain
-		TNT1 A 0 A_CHangeFlag("FRIENDLY", 0)
-		TNT1 A 0 A_SpawnItem ("DeadNazi_NoLeg")
+		TNT1 A 0 A_SpawnItem ("NaziLastStand")
 		Stop
 
     Death.Head:
@@ -2928,4 +2936,152 @@ States{ Spawn:
 		Stop
 		  
 		  Stop}}
-		  
+
+
+// Last Stand Nazi!
+ACTOR NaziLastStand: NaziGotHisLegBlownOff
+{
+Speed 0
+MONSTER
++MISSILEMORE
++MISSILEEVENMORE
++LOOKALLAROUND
+//Radius 16
+	//Height 32
+BloodType "Brutal_Blood", "BloodSPlatterReplacer", "SawBlood"
+States
+	{
+	Spawn:
+	NZLS A 1 A_Look
+	Goto See
+	
+	See:
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS AAAAA 1 A_Chase
+	Loop
+	
+	Missile:
+	TNT1 A 0
+	
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+    TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	TNT1 AA 0 A_CustomMissile("OrangeLensFlareAlt", 24, 18, 15, 0)
+    TNT1 A 0 A_PlaySound("LUGFIRE")
+	NZLS B 6 BRIGHT {
+		A_CustomMissile("MonsterTracer", 28, 0, random(-12, 12), 0);
+		A_FaceTarget;
+		}
+    TNT1 A 0 A_SpawnItem ("Mp40CaseSpawn", 0, 20,0)
+	
+	
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+    TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	TNT1 AA 0 A_CustomMissile("OrangeLensFlareAlt", 24, 18, 15, 0)
+    TNT1 A 0 A_PlaySound("LUGFIRE")
+	NZLS B 6 BRIGHT {
+		A_CustomMissile("MonsterTracer", 28, 0, random(-12, 12), 0);
+		A_FaceTarget;
+		}
+    TNT1 A 0 A_SpawnItem ("Mp40CaseSpawn", 0, 20,0)
+	
+	
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+    TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	TNT1 AA 0 A_CustomMissile("OrangeLensFlareAlt", 24, 18, 15, 0)
+    TNT1 A 0 A_PlaySound("LUGFIRE")
+	NZLS B 6 BRIGHT {
+		A_CustomMissile("MonsterTracer", 28, 0, random(-12, 12), 0);
+		A_FaceTarget;
+		}
+    TNT1 A 0 A_SpawnItem ("Mp40CaseSpawn", 0, 20,0)
+	
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+    TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	TNT1 AA 0 A_CustomMissile("OrangeLensFlareAlt", 24, 18, 15, 0)
+    TNT1 A 0 A_PlaySound("LUGFIRE")
+	NZLS B 6 BRIGHT {
+		A_CustomMissile("MonsterTracer", 28, 0, random(-12, 12), 0);
+		A_FaceTarget;
+		}
+    TNT1 A 0 A_SpawnItem ("Mp40CaseSpawn", 0, 20,0)
+	
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+    TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	TNT1 AA 0 A_CustomMissile("OrangeLensFlareAlt", 24, 18, 15, 0)
+    TNT1 A 0 A_PlaySound("LUGFIRE")
+	NZLS B 6 BRIGHT {
+		A_CustomMissile("MonsterTracer", 28, 0, random(-12, 12), 0);
+		A_FaceTarget;
+		}
+    TNT1 A 0 A_SpawnItem ("Mp40CaseSpawn", 0, 20,0)
+	
+	
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+    TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	TNT1 AA 0 A_CustomMissile("OrangeLensFlareAlt", 24, 18, 15, 0)
+    TNT1 A 0 A_PlaySound("LUGFIRE")
+	NZLS B 6 BRIGHT {
+		A_CustomMissile("MonsterTracer", 28, 0, random(-12, 12), 0);
+		A_FaceTarget;
+		}
+    TNT1 A 0 A_SpawnItem ("Mp40CaseSpawn", 0, 20,0)
+	
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_SpawnItem ("HeadshotTarget10", 0, 28,0)
+	NZLS A 10 A_FaceTarget
+	TNT1 A 0 A_CHangeFlag("FRIENDLY", 1)
+	TNT1 A 0 A_CHangeFlag("SHOOTABLE", 0)
+	Goto GotoDeath
+	
+	
+	Death.MinorHead:
+	Death.Head:
+        TNT1 A 0 A_PlaySound("misc/xdeath4")
+		TNT1 AA 0 A_CustomMissile ("SmallBrainPiece", 32, 0, random (0, 360), 2, random (0, 160))
+        TNT1 AAAA 0 A_CustomMissile ("BrainBlood", 37, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_SpawnItem("NaziHeadExplode")
+		TNT1 A 0 A_NoBlocking
+		NAZL GHI 6
+        TNT1 A 0 A_SpawnItem ("DeadNazi_NoLeg", 1)
+		Stop
+	}
+}			  
