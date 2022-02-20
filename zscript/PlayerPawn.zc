@@ -21,10 +21,10 @@ class PlayerPawnBase : PlayerPawn
 	int tankdeathcounter;
 	int tankspritecounter;
 	bool baseweaponpda;
-	TankBaseNotReal TankBaseSprite; //tank's fake sprite as the actor.
+	
 	Actor TankTurretSprite;
 	string TankTurretSpriteActor;
-	Property TankTurretSpriteActor: TankTurretSpriteActor;
+	
 	Array<String> CollectedWeapons, BaseWeapons;
 	
 	///////////////////////////////////
@@ -34,6 +34,7 @@ class PlayerPawnBase : PlayerPawn
 	bool	Pain;
 	bool	StrafeRunning;
 	double	ViewAngleDelta;
+	double	ViewPitchDelta;
 	float	ActualSpeed;
 	float	MaxAirSpeed;
 	float 	MaxGroundSpeed;
@@ -131,7 +132,13 @@ class PlayerPawnBase : PlayerPawn
 	double	XBob;
 	double	XBobOffset;
 	double	YBob;
+	double	YBobOffset;
 	float	BobTime;
+	
+	//Weapon Rolling
+	const rolldrag = 0.10;
+	const rollvel = 0.10;
+	double currentRoll;
 	
 	///////////////////////////////////
 	//Painkiller only
@@ -461,6 +468,7 @@ class PlayerPawnBase : PlayerPawn
 		else
 		{	
 			ViewAngleDelta = cmd.Yaw * (360.0 / 65536.0); //needed for two other things
+			ViewPitchDelta = cmd.Pitch * (90.0 / 65536.0);
 			
 			if(Player.TurnTicks) //moved here to save many doubled lines
 			{
@@ -2252,7 +2260,7 @@ class PlayerPawnBase : PlayerPawn
 
 		if(weapon == null || weapon.bDontBob || !(player.WeaponState & WF_WEAPONBOBBING))
 		{
-			MoveRangeMulti = StillRangeMulti = XBob = XBobOffset = YBob = 0;
+			MoveRangeMulti = StillRangeMulti = XBob = XBobOffset = YBob = YBobOffset = 0;
 			return (0, 0);
 		}
 		
@@ -2395,17 +2403,40 @@ class PlayerPawnBase : PlayerPawn
 				Double SwayFrictionMulti = CVar.GetCVar("zm_yawswayfriction", Player).GetFloat() / 10;
 				
 				XBobOffset += (CVar.GetCVar("zm_yawswaydirection", Player).GetBool() ? -1 : 1) * ViewAngleDelta * CVar.GetCVar("zm_yawswayspeed", Player).GetFloat() / 50;
+				YBobOffset += (CVar.GetCVar("zm_yawswaydirection", Player).GetBool() ? -1 : 1) * ViewPitchDelta * CVar.GetCVar("zm_yawswayspeed", Player).GetFloat() / 25;
 				
 				if(abs(XBobOffset) > 0.2)
+				{
 					XBobOffset -= XBobOffset / ((1.5 - SwayFrictionMulti) * 100);
+				}
 				else if(!ViewAngleDelta)
+				{
 					XBobOffset = 0;
+				}
+				
+				if(abs(YBobOffset) > 0.2)
+				{
+					YBobOffset -= YBobOffset / ((1.5 - SwayFrictionMulti) * 100);
+				}
+				else if(!ViewPitchDelta)
+				{
+					YBobOffset = 0;
+				}
 				
 				r.X += clamp(XBobOffset, -SwayRange, SwayRange);
+				if(CVar.GetCVar("zm_pitchswaytype", Player).GetBool() == 0)
+				{
+					r.Y += clamp((abs(YBobOffset)), 0, SwayRange);
+				}
+				else
+				{
+					r.Y += clamp(YBobOffset, 0, SwayRange);
+				}
 			}
 			else
 			{
 				XBobOffset = 0;
+				YBobOffset = 0;
 			}
 				
 			//////////////////////////////
@@ -2418,28 +2449,26 @@ class PlayerPawnBase : PlayerPawn
 	// The rest of Project Brutality player class
 	Default
 	{
-		PlayerPawnBase.TankTurretSpriteActor "TankTurretNotReal";
+		
 	}
 	void SpawnTankSprite()
 	{
-		if (TankBaseSprite) return;
-		TankBaseSprite = TankBaseNotReal(Spawn("TankBaseNotReal",self.pos + self.vel,ALLOW_REPLACE));
+		
+		
 		TankTurretSprite = Spawn(TankTurretSpriteActor,self.pos + self.vel,ALLOW_REPLACE);
 	}
 	void DestroyTankSprites()
 	{
-		TankBaseSprite.Destroy();
+		
 		TankTurretSprite.Destroy();
-		TankBaseSprite = NULL;
+		
 		TankTurretSprite = NULL;
 	}
 	void SetTankSpritePosition(int spritestate,double angle = 0)
 	{
-		if (TankBaseSprite != NULL)
+		
 		{
-			TankBaseSprite.SetOrigin(self.pos + self.vel,true);
-			TankBaseSprite.spritestate = spritestate;
-			TankBaseSprite.angle = angle;
+			
 		}
 	}
 	
@@ -2592,6 +2621,26 @@ class PlayerPawnBase : PlayerPawn
 			}
 		}
 	}
+	//state used for tilting of weapon sprites
+	states
+	{
+		spinloop:
+		TNT1 A 0
+		{
+			if(health>=1)
+			{
+			double velang = atan2(vel.y, vel.x);
+			vector2 dir = (sin(-angle), cos(-angle));
+			vector2 velunit = vel.xy; //.unit()
+			//double delta = absAngle(velang, angle);
+			currentroll += (velunit dot dir) * rollvel;
+			currentroll *= rolldrag;
+			A_OverlayRotate(PSP_WEAPON, currentroll);
+			}
+		}
+		TNT1 A 1;
+		loop;
+	}
 }
 
 
@@ -2648,9 +2697,8 @@ Class DashHandler : EventHandler
 			
 			if(DashPlayer.FindInventory("PlayerDashed") && CVar.FindCVar("pb_dasheffect").GetBool() == true) {
 					screen.DrawTexture (dashTex, true, 0, 0,
-					DTA_HUDRULES, true,
 					DTA_FULLSCREEN, true,
-					DTA_SRCWIDTH, CVar.FindCVar("vid_defwidth").GetInt());
+                    DTA_KeepRatio, true);
 					//DTA_SRCWIDTH breaks GZ4.3.3 compatibility, a more compatible way of handling this might be useful
 			}
 	

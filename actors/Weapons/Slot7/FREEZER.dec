@@ -6,6 +6,7 @@ Inventory.MaxAmount 1
 Actor FreezerAmmo : Ammo
 {
 inventory.maxamount 60
++INVENTORY.IGNORESKILL
 Inventory.Icon "FRPKA0"
 }
 
@@ -49,6 +50,7 @@ Actor PB_Freezer: PB_Weapon
 	Obituary "%o was iced by %k"
 	Tag "Cryo Rifle"
 	Scale 0.48
+	PB_WeaponBase.respectItem "RespectFreezer"
   States
   {
   	
@@ -61,7 +63,7 @@ Actor PB_Freezer: PB_Weapon
 		Goto Ready
 		
 		Ready:
-			TNT1 A 0 A_JumpIfInventory("RespectFreezer", 1, "SelectAnimation")
+			TNT1 A 0 PB_RespectIfNeeded
 		WeaponRespect:
 			TNT1 A 0 {
 				A_SetCrosshair(5);
@@ -239,6 +241,7 @@ Actor PB_Freezer: PB_Weapon
 			TNT1 A 0 A_TakeInventory("SubMachineGunSelected",1)
 			TNT1 A 0 A_TakeInventory("LostSoulSelected",1)
 			TNT1 A 0 A_TakeInventory("HasBarrel",1)
+			TNT1 A 0 A_TakeInventory("HasIceBarrel", 1)
 			TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
 			TNT1 A 0 A_TakeInventory("HasIncendiaryWeapon", 1)
 			TNT1 A 0 A_GiveInventory("FreezerSelected",1) 
@@ -348,28 +351,32 @@ Actor PB_Freezer: PB_Weapon
 			Goto Reload
 			FR11 ABCDEFGHI 0 // Initialize sprites into virtual memory
 			FR14 ABC 0 
-			TNT1 A 0 A_Playsound("weapons/cryobowflyby",2,1,1)
+		BeamCharge:
+			TNT1 A 0 A_Playsound("weapons/railgun/deselectred",2,1,1)
+			FR11 IIIHGFEDCBAIII 2
 		BeamHold:
+			TNT1 A 0 A_JumpIfInventory("FreezerAmmo",2,1)
+			Goto Reload
+			TNT1 A 0 A_Playsound("weapons/cryobowflyby",2,1,1)
 			FR13 ABCB 1 BRIGHT {
 				if (CountInv("FreezerOverCooling") >= 100 ) { A_SetWeaponSprite("FR14");}
 				A_GunFlash;
 				A_Overlay(-2, "BeamMuzzleFlash");
 				A_AlertMonsters;
-				PB_FireFreezerLaser();
 				A_FireCustomMissile("BlueFlareSpawn",0,0,0,0);
-				//A_FireCustomMissile("CryoShot", 0, 0, 0, -1);
+				PB_FireFreezerLaser();
 				A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0);
 				A_Giveinventory("FreezerOverCooling",8);
-				PB_WeaponRecoil(-0.80,+frandom(-1.8,1.8));
+				PB_WeaponRecoil(-0.40,+frandom(-1.4,1.4));
 			}
 			TNT1 A 0 A_Takeinventory("FreezerAmmo",2)
-			TNT1 A 0 A_JumpIfInventory("FreezerAmmo",1,1)
+			TNT1 A 0 A_JumpIfInventory("FreezerAmmo",2,1)
 			Goto EndBeam
-			TNT1 A 0 A_Refire
+			TNT1 A 0 A_Refire ("BeamHold")
 		EndBeam:
 			TNT1 A 0 A_StopSound(2)
 			TNT1 A 0 A_StopSound(6)
-			TNT1 A 0 A_Playsound("Weapons/FreezerRecharge")
+			TNT1 A 0 A_Playsound("Weapons/Freezer/Beamstop")
 			FR10 CDEFGHI 1 {
 				if (CountInv("FreezerOverCooling") >= 100 ) { A_SetWeaponSprite("FR11");}
 			}
@@ -818,19 +825,14 @@ ACTOR FreezerBall : FastProjectile
 		TNT1 A 0 A_CustomMissile("BlueFlareSpawn",0,0,0,0)
 		TNT1 A 0 A_CustomMissile ("Icetracer", 0, 0, random (0, 360), 2, random (0, 360))
 		Loop
-	Death:		
+	Death:	
 		TNT1 A 0 A_SpawnItemEx ("DetectFloorIce",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
 	    TNT1 A 0 A_SpawnItemEx ("DetectCeilIce",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
 		TNT1 A 0 Bright A_StopSound(CHAN_BODY)
 		TNT1 A 0 Bright A_ChangeFlag("ICEDAMAGE", 1)
 		TNT1 A 0 Bright A_ChangeFlag("NODAMAGETHRUST", 0)
 		TNT1 A 0 Bright A_Explode(180,60, 0)  
-		TNT1 A 0 Bright {
-			if(GetCvar("pb_realdamage")) {A_Explode(60, 120);}
-			else{
-				A_Explode(60, 120, 0);
-				}
-			}
+		TNT1 A 0 Bright A_Explode(60, 120, 0)
 	    TNT1 AAAAAAAAAAA 0 Bright A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
 		TNT1 AAAAA 0 Bright A_SpawnItemEx("CryoSmoke3", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
 		TNT1 AAAAAAA 0 Bright A_SpawnItemEx("FreezerTrailSparksSmall", random(5,-5), random(5,-5), random(5,-5), random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
@@ -922,46 +924,6 @@ Actor IceTracer
   }
 }
 
-ACTOR CryoShot : FastProjectile
-{
-	Radius 4
-	Height 8
-	Speed 140
-	Damage 0
-	Damagetype "Freeze"
-	Projectile
-	RenderStyle Add
-	Alpha 0.9
-	+FORCERADIUSDMG
-	+NODAMAGETHRUST
-	+NoExtremeDeath
-	+BLOODLESSIMPACT
-	DeathSound "weapons/cryobowhit"
-	MissileType "CryoTrail"
-	MissileHeight 8
-	Decal "FreezerBurnSmall"
-	States
-	{
-	Spawn:
-		BSHT A 1 Bright 
-		Loop
-	Death:		
-		TNT1 A 0 A_SpawnItemEx ("DetectFloorIce",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
-	    TNT1 A 0 A_SpawnItemEx ("DetectCeilIce",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
-		BXPL A 0 Bright A_StopSound(CHAN_BODY)
-		BXPL A 0 Bright A_ChangeFlag("ICEDAMAGE", 1)
-		BXPL A 0 Bright A_ChangeFlag("NODAMAGETHRUST", 0)
-		BXPL A 0 Bright A_Explode(40, 10, 0) 
-		BXPL A 0 Bright A_Explode(20, 25, 0)
-		BXPL A 0 Bright A_SpawnItemEx("MiniCryoSmoke1", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
-		TNT1 A 0 Bright A_SpawnItemEx("IceExplosionImpact", 0, 0, 0, 0, 0, 0, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
-		
-		BXPL ABCDEFGH 1 Bright
-		BXPL IJKLM 1 Bright A_FadeOut(0.1)
-		Stop
-	}
-}
-
 ACTOR CryoTrail
 {
 	+NOINTERACTION
@@ -975,49 +937,6 @@ ACTOR CryoTrail
 	{
 	Spawn:
 		X027 ABCDEFGHIJK 1 Bright
-		Stop
-	}
-}
-
-ACTOR IcicleGround
-{
-	-SOLID
-	+FLOORHUGGER
-	+FORCEYBILLBOARD 
-	Gravity 500.0
-	Mass 10000000000
-	Radius 1
-	Height 1
-	Scale 1.0
-	States
-	{
-	Spawn:
-		TNT1 A 0 
-		ISHT A 1 A_SetScale(frandom(0.6, 1.4),frandom(0.1, 0.3))
-		ISHT ABCDEF 6 Bright
-		ISHT F 500 Bright
-		ISHT EEDDCCBBAA 1 A_FadeOut(0.1)
-		Stop
-	}
-}
-
-
-ACTOR IcicleCeiling
-{
-	-SOLID
-	+NOGRAVITY
-	+CeilingHugger
-	+FORCEYBILLBOARD 
-	Radius 1
-	Height 1
-	States
-	{
-	Spawn:
-		TNT1 A 0 
-		ISHC A 1 A_SetScale(frandom(0.6, 1.4),frandom(0.1, 0.3))
-		ISHC ABCDEF 6 Bright
-		ISHC F 500 Bright
-		ISHC EEDDCCBBAA 1 A_FadeOut(0.1)
 		Stop
 	}
 }

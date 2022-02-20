@@ -1,0 +1,245 @@
+/////////////
+//LASER API//
+/////////////
+
+/*
+			SecuLaserz ClassAPI created by Lewisk3 (Redxone) 
+
+	SPECIAL THANKS: 
+		Xaser (One of the main reasons i got into Doom modding)
+		phantombeta (ZScript sensei)
+		TheZombieKiller (ZScript sensei)
+		Tapwave (Some design, ZScript help)
+		Gutawer (Helped out in just about every question/problem i had.)
+
+    Disclaimer:
+		There are multiple ways to do lasers, this one creates them out of sprites
+		which if done right can look really good. You could also use a 3D model (If you are a masochist)
+        or a couple flat sprites.		
+
+	Copyright:
+		You may use this in your mod provided you DO NOT remove this
+		comment block.
+		Please provide credit if you decide to post your mod on the forums
+		and you are using this API.
+
+	Documentation:
+	|
+	|1  Creating lasers
+	|	--> To create a laser from complete scratch you must follow 3 steps.
+	|		: 1 - Include this file in your main ZScript lump. Example below
+	|		  | Create a ZSCRIPT lump inside put
+	|		  | #include "<location>/lasers.zsc"
+	|		: 2 - Initialize laser sprites. Example below.
+	|		  | class LaserSpritesYay : Actor
+	|		  | {
+	|		  |	    States
+	|		  |		{
+	|		  |			Sprites: // State can be called whatever you want too!
+	|		  |				#### # -1;
+	|		  |				#### # -1;
+	|		  |				//etc..
+	|		  |		}
+	|		  | }
+	|		: 3 - Create a laser class extending MWLaser. Example below
+	|		  |	 class MyLaser : MWLaser {};	
+	|		  This laser will currently fire an invisble beam dealing 5 damage!
+	|		
+	|2  Customizing lasers
+	|	--> There are multiple properties you can use to customize your lasers. See Below
+	|		 MWLaser.frontOffset	: How far infront of the player the laser is. (Def -100, front to back).
+	|		 MWLaser.range          : How far the laser can shoot. (Damage dropoff).
+	|        MWLaser.laserSprite    : How the laser will look. (Takes a sprite name "####").
+	|        MWLaser.laserSize      : How large a laser looks. (Def 0.15, works like Scale).
+	|		 MWLaser.speedFactor    : How fast the laser moves relative to "lightspeed" (Def 1.0);
+	|3  Firing lasers
+	|	--> There are 2 ways to fire a laser
+	|		: 1 - Use LaserWeapon
+	|		  | This way is the easiest but requires you are firing it from a weapon.
+	|		  | To use LaserWeapon extend your weapon by it. (class Pewpew : LaserWeapon)
+	|		  | In your "Fire" state call shootLaser or shootLaserEx
+	|		  | shootLaser(Name laserclass, int offsx, int offsy, Name laserpuff);
+	|		  | shootLaserEx(Name laserclass, int offsx, int offsy, Name laserpuff, int frontOffset);
+	|		: 2 - Use A_FireProjectile
+	|		  | This way is more manual but will work on anything that supports FireProjectile. 
+	|		  | A_FireProjectile(Name class, int angle, bool useammo, int offsx, int offsy);
+	|		  | It is also very powerful, you can use it to access every laser property! Example below.
+	|		  | let laserproj = A_FireProjectile(...);
+	|         | let laser = MWLaser (laserproj);
+	|         | laser.<property> = <value>
+	|		  | The properties go by their variable names and not by their default definitions. See Below
+	|         | frontOffset = DistanceOffs
+	|         | range       = MaxRange
+	|         | laserSprite = graphic
+	|         | laserSize   = graphicScalar
+	End Doc.
+*/
+
+
+
+class LaserFollower : FastProjectile
+{
+	string followSprite;
+	int lifetime;
+	property lsprite: followSprite;
+	property live : lifetime;
+
+	Default
+	{
+		+NOGRAVITY
+		+NOINTERACTION
+		+NOBLOCKMAP
+		Radius 2;
+		Height 2;
+		Alpha 1.0;
+		Speed 0;
+		RenderStyle "Add"; 
+		Damage 0;
+		Scale 0.15;
+		PROJECTILE;
+		//LaserFollower.lsprite "TNT1";
+		LaserFollower.live 1;
+		+RANDOMIZE
+		+FORCEXYBILLBOARD
+	}
+
+	States
+	{
+		Spawn:
+			TNT1 A 0; // Interesting little bug here that NoDelay doesn't fix.
+			TNT1 A 1 Fast
+			{
+				tics = lifetime;
+				sprite = GetSpriteIndex(invoker.followSprite);
+			}
+		stop;
+
+	}
+}
+
+class MWLaser : FastProjectile
+{
+
+	int DistanceOffs;
+	int MaxRange;
+	int DistanceTraveled; // In meters.
+	string graphic;
+	double graphicScalar;
+	double speedOffs;
+	double laserdensity;
+	double laserConverge;
+	int followDuration;
+	int trailrng;
+	int laserRenderAmt;
+
+	property frontOffset: DistanceOffs;
+	property range : MaxRange;
+	property InitalRange: DistanceTraveled;
+	property laserSprite : graphic;
+	property laserSize  : graphicScalar;
+	property speedFactor : speedOffs;
+	property laserDensity : laserdensity;
+	property trailDuration : followDuration;
+	property laserRenderDistance : laserRenderAmt;
+	property trailChance : trailrng;
+	property convergeScalar : laserConverge;
+
+	Default
+	{
+		// Laser Range:
+		// 200upt.
+		// 32units = 1m
+		// 1 frame = 7m.
+
+		+NOGRAVITY
+		Radius 1;
+		Height 1;
+		Alpha 1.0;
+		Speed 200; // "Lightspeed"
+		RenderStyle "Add";
+		Damage 0;
+		Decal "DoomImpScorch";
+		PROJECTILE;
+		MWLaser.frontOffset -98;
+		MWLaser.range 500;
+		MWLaser.InitalRange 0;
+		MWLaser.laserSprite "TNT1";
+		MWLaser.laserSize 0.10;
+		MWLaser.speedFactor 1.0;
+		MWLaser.trailDuration 1;
+		MWLaser.trailChance 0;
+		MWLaser.laserDensity 50.0;
+		MWLaser.laserRenderDistance 200;
+		MWLaser.convergeScalar 1.0;
+		+RANDOMIZE
+		+FORCEXYBILLBOARD
+	}
+
+	Override void postBeginPlay()
+	{
+		spawnLaser("LaserFollower");
+		Super.postBeginPlay();
+	}
+	Override void tick()
+	{
+		//A_Warp(AAPTR_TARGET,0,0,-10, 0, WARPF_COPYVELOCITY | WARPF_COPYINTERPOLATION );
+		DistanceTraveled += floor(speed/32)+1;
+		if(DistanceTraveled >= MaxRange)Destroy();
+		//console.printf("%s: %i :> %i","Laser dist: ",DistanceTraveled,MaxRange);
+		Super.tick();
+	}
+
+	void spawnLaser(Name laserclass)
+	{
+		if(DistanceTraveled < MaxRange)
+		{
+			int distc = DistanceOffs;
+			double fD = distc;
+			double sx = 0.06;
+			double sy = 0.06;
+			double density = laserdensity+CVar.findCVar("sd_lasers_densityoffset").getInt();
+			for(double i = 0; i < laserRenderAmt; i++)
+			{
+				if(random(0,trailrng) == trailrng)
+				{
+					//console.printf("%i: %s :> %d",i,"Laser",fD);
+					double spawnX = ((fD*vel.x)/-density);
+					double spawnY = -(fD*vel.y)/-density;
+					double spawnZ = 2+(fD*vel.z)/-density;
+					bool success; Actor trail;
+					[success, trail] = A_SpawnItemEx(laserclass, spawnX, spawnY, spawnZ, 0,0,0,0, SXF_ABSOLUTEANGLE | SXF_NOCHECKPOSITION);
+					let las = LaserFollower(trail);
+					las.followSprite = graphic;
+					las.Scale.X        =sx; //graphicScalar- (i / 100)/10;
+					las.Scale.Y        =sy; //graphicScalar- (i / 100)/10;
+					las.lifetime      = followDuration;
+					sx += (graphicScalar/(laserRenderAmt*laserConverge));
+					sy += (graphicScalar/(laserRenderAmt*laserConverge));
+					fD = distc+((i+1)/2);
+				}
+			}
+		}
+	}
+
+	// Used for max-range.
+	States
+	{
+		Spawn:
+		TNT1 A 0 NoDelay
+		{
+			A_ScaleVelocity(invoker.speedOffs);
+			//spawnLaser("LaserFollower");
+		}
+		LaserDone:
+			TNT1 A 1;
+		loop;
+	}
+}
+
+
+
+/////////////
+//LASER API//
+/////////////
+
+#include "zscript/weapons/Projectiles/LASERDEFS"
