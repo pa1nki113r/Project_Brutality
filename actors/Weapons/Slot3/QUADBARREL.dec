@@ -208,7 +208,7 @@ States
 		Loop
 	
 	Death:
-			TNT1 A 0 A_Explode(80,60, XF_HURTSOURCE, 1, 0, 0, 0, "Fire")
+			TNT1 A 0 A_Explode(80,60, XF_HURTSOURCE, 1, 0, 0, 0)//, "Fire")
 			TNT1 A 0 A_PlaySound("RAILIMP")
 			TNT1 A 0 A_PlaySound("FAREXPL", 1)
 			TNT1 A 0 A_SpawnItem("WhiteShockwave")
@@ -229,7 +229,7 @@ Scale 0.45
 Damage 9
 States {
 Death:
-			TNT1 A 0 A_Explode(70,35, XF_HURTSOURCE, 1, 0, 0, 0, "Fire")
+			TNT1 A 0 A_Explode(70,35, XF_HURTSOURCE, 1, 0, 0, 0)//, "Fire")
 			TNT1 A 0 A_PlaySound("RAILIMP")
 			TNT1 A 0 A_PlaySound("FAREXPL", 1)
 			TNT1 A 0 A_SpawnItem("WhiteShockwave")
@@ -509,7 +509,7 @@ ACTOR PB_QuadSG  : PB_Weapon
 			if(CountInv("LeftQSSGAmmoCounter")>0 && CountInv("QSSGAmmoCounter")==0){
 				A_TakeInventory("DualFiring",1);
 			}
-			if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1)){
+			if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1) && CountInv("LeftQSSGAmmoCounter") <= 0){
 				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire")==0){
 					if(CountInv("QSSGAmmoCounter") > 0){
 						return state("FireRight_Overlay");
@@ -545,10 +545,14 @@ ACTOR PB_QuadSG  : PB_Weapon
 					if (CountInv("LeftQSSGAmmoCounter") >= 4) {
 						A_Recoil(3);
 						A_PlaySound("QSGFIRE1", 8);
-						A_SetHealth (health-7);
-						A_PlaySound("*pain50", 13);
 						A_ZoomFactor(0.915);
 						A_TakeInventory("LeftQSSGAmmoCounter", 4);
+						if(!GetCvar("pb_qsgnoselfdamage")) {
+							if(health > 7) { //to ensure that it doesn't kill the player
+							A_DamageSelf(7, "None");
+							A_PlaySound("*pain50", 13);	
+							}
+						}
 					if (CountInv("BreathMode") != 1) {
 						A_FireBullets(0, 0, 2, 110, "shotpuff", 0, 220);
 						A_FireProjectile("ShotgunWad",random(-1,1),0,6,-2,FPF_NOAUTOAIM,random(-1,1));
@@ -616,8 +620,9 @@ ACTOR PB_QuadSG  : PB_Weapon
 						A_FireCustomMissile("GunFireSmokE", 0, 0, 2, 0, 0, 0);
 						A_PlaySound("QSGCHRG", 8);
 						A_FireCustomMissile("GunFireSmoke", 0, 0, -2, 0, 0, 0);
+						}
 					}
-				}
+			//	}
 			return state ("");
 		}
 		Q2L1 D 1 BRIGHT 
@@ -694,15 +699,18 @@ ACTOR PB_QuadSG  : PB_Weapon
 
 	FireRight_Overlay:
         TNT1 A 0 {
-			a_takeinventory("DualFiring");
 			if (CountInv("FullBlastMode") == 1) {
 					if (CountInv("QSSGAmmoCounter") >= 4) {
 						A_Recoil(3);
 						A_PlaySound("QSGFIRE1", 8);
-						A_SetHealth (health-7);
-						A_PlaySound("*pain50", 13);
 						A_ZoomFactor(0.915);
 						A_TakeInventory("QSSGAmmoCounter", 4);
+						if(!GetCvar("pb_qsgnoselfdamage")) {
+							if(health > 7) { //to ensure that it doesn't kill the player
+							A_DamageSelf(7, "None");
+							A_PlaySound("*pain50", 13);		
+							}
+						}
 					if (CountInv("BreathMode") != 1) {
 						A_FireBullets(0, 0, 2, 110, "shotpuff", 0, 220);
 						A_FireProjectile("ShotgunWad",random(-1,1),0,6,-2,FPF_NOAUTOAIM,random(-1,1));
@@ -770,8 +778,8 @@ ACTOR PB_QuadSG  : PB_Weapon
 						A_FireCustomMissile("GunFireSmokE", 0, 0, 2, 0, 0, 0);
 						A_FireCustomMissile("GunFireSmoke", 0, 0, -2, 0, 0, 0);
 						A_PlaySound("QSGCHRG", 8);
+						}
 					}
-				}
 			RETURN STATE ("");
 		}
 		
@@ -814,6 +822,11 @@ ACTOR PB_QuadSG  : PB_Weapon
 			//CountInv("DualFiring")==0
 			if(CountInv("LeftQSSGAmmoCounter")<=0 || CountInv("QSSGAmmoCounter")>0){
 				A_GiveInventory("DualFiring",1);
+				}
+			}
+		TNT1 A 0 {
+			if(CountInv("QSSGAmmoCounter")<=0){
+				A_GiveInventory("DualFireReload",1);
 			}
 		}
 		Goto IdleRight_Overlay
@@ -841,8 +854,13 @@ ACTOR PB_QuadSG  : PB_Weapon
 		Q1L2 KLMN 1
 		Q1L2 O 1 {
 			//CountInv("DualFiring")==0
-			if(CountInv("LeftQSSGAmmoCounter")<=0 || CountInv("QSSGAmmoCounter")>0){
-				A_GiveInventory("DualFiring",1);
+			if(CountInv("LeftQSSGAmmoCounter")>=0 || CountInv("QSSGAmmoCounter")<=0){
+				A_TakeInventory("DualFiring",1);
+			}
+		}
+		TNT1 A 0 {
+			if(CountInv("LeftQSSGAmmoCounter")<=0){
+				A_GiveInventory("DualFireReload",1);
 			}
 		}
 		Goto IdleRight_Overlay
@@ -1826,17 +1844,18 @@ ACTOR PB_QuadSG  : PB_Weapon
 		Stop
 		
 	FlashSlideKickingAkimbo:
-		QSHK CDEFGHIIIIIIIIIIIIIIIIHFEDC 1
+		QAKK CDEFGHIIIIIIIIIIIIIIIIHGFEDC 1
 		Stop
 
 	FlashSlideKickingStop:
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("QuadAkimboMode", 1, "FlashSlideKickingAkimboStop")
 		QSHK FEDCA 1 
+		QSSG A 2 
 		Stop
 
 	FlashSlideKickingAkimboStop:
-		QSHK IHGFEDC 1  
+		QAKK IHGFEDC 1  
 		Stop
 		
 	FlashPunching:
