@@ -9,9 +9,12 @@ This is the bleeding-edge version that is constantly being developed on, and not
 
 You will need the latest version of [GZDooM](https://zdoom.org/downloads "GZDooM")[^zandronum?] (or [Delta Touch](https://play.google.com/store/apps/details?id=com.opentouchgaming.deltatouch&hl=en_US&gl=US "Delta Touch") for Android[^ios?]) and either a copy of the one of the official IWADs[^Steam][^GOG] or [Freedoom phase 1+2](https://freedoom.github.io/download.html "FreeDoom"). To download the latest build, scroll up to the top and click the green button labeled __Code__ then click [Download Zip](https://github.com/pa1nki113r/Project_Brutality/archive/refs/heads/master.zip "You can also click here to download."). If you are on mobile and don't see a button, you'll need to turn on desktop view.
 
-[For more help, Check out the this video by Galdoc](https://www.youtube.com/watch?v=ntTPhunwcTM "How To Get Started with Doom Mods (after 27 years) on YouTube")
+<dl>
+  <dt><u>For more help,</u></dt>
+  <dd><a href="https://www.youtube.com/watch?v=ntTPhunwcTM" Title="How To Get Started with Doom Mods (after 27 years) on YouTube">Check out the this video by Galdoc</a></dd>
+  <dd><a href="https://docs.google.com/document/d/1x-icObxSRW3FMldy1xp9C_36wa12Cag_ZthVuejxvWY/edit?usp=sharing" title="Basic Installation Requirements for Doom Mods">Check out this Guide by Ted the Dragon</a></dd>
+</dl>
 
-  
 ### Running addons
 
 When loading more than just PB, It is highly recommended you use a Front-end Launcher, such as [ZDL](https://github.com/lcferrum/qzdl/releases "A rather simple, yet extremely flexible launcher"), [DoomRunner](https://github.com/Youda008/DoomRunner/releases "Want something that is just as flexible as ZDL or newer than zde"), or [SSGL](https://github.com/FreaKzero/ssgl-doom-launcher/releases "First timer, casual player, a Doomsday Engine launcher fan, or just want something with more personality?")
@@ -26,7 +29,7 @@ Any suggestions, opinions, or questions should be posted on the [discord server]
 
 ## Add-ons and Mods
   
-Looking for add-ons or a place to share your personal PB add-on? Between the discord server, [The Project Brutality Website](https://projectbrutality.com/), [The Brutal Repository](https://brutalrepository.pl/), and [The Moddb Page](https://www.moddb.com/mods/project-brutality) has you covered. Just please respect other modders and use proper modder's etiquette.
+Looking for add-ons or a place to share your personal PB add-on? Between the discord server, [The Project Brutality Website](https://projectbrutality.com/), and [The Brutal Repository](https://brutalrepository.pl/) <!--, and [The Moddb Page](https://www.moddb.com/mods/project-brutality)--> have you covered. Just please respect other modders and use proper modder's etiquette.
 - If possible, ask for permission. If they say no, respect their decision.
 - In cases where the modder is not around or available to ask, be sure to credit them. If the modder is unknown but not you, do not claim it as your own.
 - If the modder asks you to remove their stuff from your add-on, Please do so.
