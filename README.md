@@ -17,7 +17,7 @@ You will need the latest version of [GZDooM](https://zdoom.org/downloads "GZDooM
 
 ### Running addons
 
-When loading more than just PB, It is highly recommended you use a Front-end Launcher, such as [ZDL](https://github.com/lcferrum/qzdl/releases "A rather simple, yet extremely flexible launcher"), [DoomRunner](https://github.com/Youda008/DoomRunner/releases "Want something that is just as flexible as ZDL or newer than zde"), or [SSGL](https://github.com/FreaKzero/ssgl-doom-launcher/releases "First timer, casual player, a Doomsday Engine launcher fan, or just want something with more personality?")
+When loading more than just PB, It is highly recommended you use a Front-end Launcher, such as [ZDL](https://github.com/lcferrum/qzdl/releases "A rather simple, yet extremely flexible launcher"), [DoomRunner](https://github.com/Youda008/DoomRunner/releases "Want something that is just as flexible as ZDL or newer than zde"), or [SSGL](https://github.com/FreaKzero/ssgl-doom-launcher/releases/tag/v2.0.0-devpreview.24 "First timer, casual player, a Doomsday Engine launcher fan, or just want something with more personality?")
 
 ## Feedback and Bug Reporting
 
