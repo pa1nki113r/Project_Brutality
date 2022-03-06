@@ -14,6 +14,47 @@ ACTOR ChainsawSSGCooldown : PowerupGiver
 {	PowerUp.Type "ChainsawSSGCooldownActive"
 	+AUTOACTIVATE
 }
+
+// I have plans for this later :3
+ACTOR PB_ChainsawPickup : PB_UpgradeItem
+{
+	Inventory.PickupSound ""
+	Inventory.PickupMessage ""
+	Scale .49
+	FloatBobStrength 0.5
+	States
+	{
+	Spawn:
+		VSAW A 0 NoDelay
+		CSAW A 10 A_PbvpFramework("VSAW")
+		"####" A 0 A_PbvpInterpolate()
+		LOOP
+
+	Pickup:
+		TNT1 A 0 A_JumpIfInventory("PB_Chainsaw",1,"PickupFuel")
+		TNT1 A 0 A_Log("\c- You found the Chainsaw, find some meat!!! (Slot 1)")
+        TNT1 A 0 {
+			A_GiveInventory ("PB_Chainsaw");
+			if(GetCvar("nodoomguytalk") >= 1) {
+				A_StartSound("CSAWPICK",3,CHANF_NOPAUSE );
+				}
+			else {
+				A_StartSound("IGOTSAW",3,CHANF_NOPAUSE );
+				}
+		}
+		STOP
+	PickupFuel:
+		TNT1 A 0 A_JumpIfInventory("Gas",999,"DontPickup")
+		TNT1 A 0 A_StartSound("CSAWGAS", 3, CHANF_NOPAUSE)
+		TNT1 A 0 A_Log("\c-You already have the chainsaw, so you picked up it's gas tank instead!")
+		TNT1 A 0 A_GiveInventory("Gas",30)
+		Stop
+	DontPickup:
+		TNT1 A 1
+		TNT1 A 0
+		Fail
+	}
+}
 	
 Actor PB_Chainsaw  : PB_Weapon replaces Chainsaw
 {
@@ -26,7 +67,7 @@ Actor PB_Chainsaw  : PB_Weapon replaces Chainsaw
 	weapon.selectionorder 220
 	Weapon.KickBack 0
 	Obituary "$OB_MPCHAINSAW"
-	Inventory.PickUpSound "IGOTSAW"
+	Inventory.PickUpSound "CSAWPICK"
 	Weapon.UpSound "none"
 	weapon.readysound "weapons/chainsaw/idle"
 	Inventory.PickupMessage "You found the Chainsaw, find some meat!!! (Slot 1)"
@@ -37,17 +78,13 @@ Actor PB_Chainsaw  : PB_Weapon replaces Chainsaw
 	Tag "Chainsaw"
 	Scale .49
 	Inventory.AltHUDIcon "CSAWA0"
+	FloatBobStrength 0.5
 	states
 	{
-	Spawn.V5:
-		VSAW A 10 {
-			IF( A_CHECKRANGE( V5_MDist , "NULL", TRUE) ) {A_SetSpawnSprite("CSAW");}
-			}
 	Spawn:
-		TNT1 A 0 NoDelay A_jumpif( V5_MODELS == 1 && V5_Cull == 1, "Spawn.V5")
-		CSAW A 10 {
-				if ( GetCvar( "V5_MODELS" ) == 1 && GetCVar( "V5_Cull" ) == 0 ) {A_SetSpawnSprite("VSAW");}
-		}
+		VSAW A 0 NoDelay
+		CSAW A 10 A_PbvpFramework("VSAW")
+		"####" A 0 A_PbvpInterpolate()
 		LOOP
 		
 		Select:
@@ -91,6 +128,7 @@ Actor PB_Chainsaw  : PB_Weapon replaces Chainsaw
 		TNT1 A 0 A_TakeInventory("SubMachineGunSelected",1)
 		TNT1 A 0 A_TakeInventory("LostSoulSelected",1)
 		TNT1 A 0 A_TakeInventory("HasBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasIceBarrel", 1)
 		TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
 		TNT1 A 0 A_TakeInventory("HasIncendiaryWeapon", 1)
 		TNT1 A 0 A_Takeinventory("PowerBloodOnVisor",1)

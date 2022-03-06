@@ -38,6 +38,7 @@ ACTOR GrenadeRounds : Ammo
    Inventory.MaxAmount 7
    Ammo.BackpackAmount 0
    Ammo.BackpackMaxAmount 7
+   +INVENTORY.IGNORESKILL
    Inventory.Icon "SGL0Z0"
 }
 
@@ -247,6 +248,7 @@ ACTOR PB_SuperGL: PB_Weapon 13206
 			TNT1 A 0 A_TakeInventory("SubMachineGunSelected",1)
 			TNT1 A 0 A_TakeInventory("LostSoulSelected",1)
 			TNT1 A 0 A_TakeInventory("HasBarrel",1)
+			TNT1 A 0 A_TakeInventory("HasIceBarrel", 1)
 			TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
 			TNT1 A 0 A_TakeInventory("HasIncendiaryWeapon", 1)
 			TNT1 A 0 A_TakeInventory("GrenadeDetonator",1)
@@ -328,6 +330,13 @@ ACTOR PB_SuperGL: PB_Weapon 13206
 			
 			//Unload Previous Ammo Type
 			TNT1 A 0 A_StartSound("Ironsights",15 )
+			TNT1 A 0 {
+				if(CountInv("GrenadeTypeImpact") == 1) {A_Print("$PB_SGLIMPACT", 2);}
+				if(CountInv("GrenadeTypeSticky") == 1) {A_Print("$PB_SGLSTICKY", 2);}
+				if(CountInv("GrenadeTypeIncendiary") == 1) {A_Print("$PB_SGLINCEN", 2);}
+				if(CountInv("GrenadeTypeCryo") == 1) {A_Print("$PB_SGLCRYO", 2);}
+				if(CountInv("GrenadeTypeAcid") == 1) {A_Print("$PB_SGLACID", 2);}
+				}
 			SL03 ABCDEF 1 {
 				A_SetRoll(roll-0.6,SPF_INTERPOLATE);
 				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL03");}
@@ -696,7 +705,20 @@ ACTOR PB_SuperGL: PB_Weapon 13206
 				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL34");}
 				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL44");}
 			}
-			TNT1 A 0 {if (CountInv("GrenadeRounds") == 0 ){PB_SpawnCasing("SGL_Drum",25,0,20,Frandom(3,4),Frandom(3,4),1);}}
+			TNT1 A 0 {if (CountInv("GrenadeRounds") == 0 )
+			{
+				if(A_GetCurrentGrenadeType() == "Sticky")
+				{PB_SpawnCasing("SGL_StickyDrum",25,0,20,Frandom(3,4),Frandom(3,4),1);}
+				else if(A_GetCurrentGrenadeType() == "Incendiary")
+				{PB_SpawnCasing("SGL_IncendiaryDrum",25,0,20,Frandom(3,4),Frandom(3,4),1);}
+				else if(A_GetCurrentGrenadeType() == "Cryo")
+				{PB_SpawnCasing("SGL_CryoDrum",25,0,20,Frandom(3,4),Frandom(3,4),1);}
+				else if(A_GetCurrentGrenadeType() == "Acid")
+				{PB_SpawnCasing("SGL_AcidDrum",25,0,20,Frandom(3,4),Frandom(3,4),1);}
+				else {
+				PB_SpawnCasing("SGL_Drum",25,0,20,Frandom(3,4),Frandom(3,4),1);}
+				}
+			}
 			SL03 VWXYZ 1 {
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
 				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL03");}
@@ -1551,7 +1573,7 @@ ACTOR GreenCloudLarge : GreenCloudSmall
 	Scale 1.55
 //	Translation "0:255=%[0,0,0]:[0,1,0]"
 	DamageType "Desintegrate"
-	SeeSound "world/barrelloop "
+	SeeSound "world/barrelloop"
 	States
 	{
 	
@@ -1611,10 +1633,10 @@ ACTOR GreenCloudMissile
 	Scale 0.25
 	Alpha 0.7
 //	Translation "0:255=%[0,0,0]:[0,1,0]"
-	Seesound "redburn"
 	States
 	{
 	Spawn:
+		TNT1 A 0 A_PlaySound("redburn",CHAN_AUTO,1)
 		GTXL KLMNOPQRST 1 BRIGHT Light("BARONBALL") A_SetScale(ScaleX+0.05, ScaleY+0.05)
 		TNT1 A 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
 		TNT1 A 0 A_Explode ( 20, 100, 0)

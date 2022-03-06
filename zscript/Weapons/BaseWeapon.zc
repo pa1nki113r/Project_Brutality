@@ -58,7 +58,7 @@ class PB_WeaponBase : DoomWeapon
 	//upon request I also have code for the tactical lean mod out there.
 	Action State PB_SpawnCasing(String Missile,Double ShellX,Double ShellY,Double ShellZ,Double ShellV_X,Double ShellV_Y,Double ShellV_Z)
 	{
-		A_SpawnItemEX(Missile,cos(pitch)*ShellX,ShellY,((ShellZ)*players[consoleplayer].Crouchfactor)-(sin(pitch)*ShellX),ShellV_X,ShellV_Y,ShellV_Z,0,SXF_ABSOLUTEVELOCITY || SXF_TRANSFERPITCH,0);
+		A_SpawnItemEX(Missile,cos(pitch)*ShellX,ShellY,((ShellZ)*players[consoleplayer].Crouchfactor)-(sin(pitch)*ShellX),ShellV_X,ShellV_Y,ShellV_Z,0,SXF_TRANSFERPITCH,0);
 	Return Null;
 	}
 	
@@ -191,7 +191,7 @@ class PB_WeaponBase : DoomWeapon
 	{
 			if (CountInv("LaserSightActivated")==1 && CountInv("KeepLaserDeactivated") != 1)
 			{
-				invoker.A_SpawnLaserPuff();
+				//invoker.A_SpawnLaserPuff();
 			}
 			else 
 			{
@@ -202,16 +202,24 @@ class PB_WeaponBase : DoomWeapon
 	{
 		if (invoker.laseractor) invoker.laseractor.Destroy();
 	}
-	action Actor A_SpawnLaserPuff()
+	action Actor A_SpawnLaserPuff(Double jitteramountX,Double jitteramountY,String DotColor)
 	{
 		int integer;
-		[invoker.InvActor, invoker.integer] = LineAttack(angle,4096,pitch,0,'None',"InvisiblePuff",LAF_NORANDOMPUFFZ|LAF_NOINTERACT);
+		Double DotJitterX, DotJitterY;
+		Double FinalAngle, FinalPitch;
+
+		DotJitterX = Frandom(-(jitteramountX),jitteramountX);
+		DotJitterY = Frandom(-(jitteramountY),jitteramountY);
+		FinalAngle = angle + DotJitterX;
+		FinalPitch = Pitch + DotJitterY; 
+
+		[invoker.InvActor, invoker.integer] = LineAttack(Finalangle,4096,Finalpitch,0,'None',"InvisiblePuff",LAF_NORANDOMPUFFZ|LAF_NOINTERACT);
 		if (invoker.InvActor)
 		{
 			invoker.invactorpos = invoker.InvActor.pos;
 			invoker.InvActor.Destroy();
 		}
-		if (!invoker.laseractor) invoker.laseractor = Spawn("LaserDotPerma",invoker.invactorpos);
+		if (!invoker.laseractor) invoker.laseractor = Spawn(DotColor,invoker.invactorpos);
 		else invoker.laseractor.SetOrigin(invoker.invactorpos, true);
 		
 		return invoker.laseractor;
@@ -291,7 +299,15 @@ class PB_WeaponBase : DoomWeapon
 			else if (ResolveState("NoDualWield")) return ResolveState("NoDualWield");
 			else return ResolveState("WeaponSpecial");
 		}
-		if (CountInv("GrabbedBarrel")>=1 || CountInv("GrabbedBurningBarrel")>=1) 
+		if (CountInv("GrabbedBarrel")>=1) 
+		{
+			return ResolveState("GrabBarrel");
+		}
+		if (CountInv("GrabbedBurningBarrel")>=1) 
+		{
+			return ResolveState("GrabBarrel");
+		}
+		if (CountInv("GrabbedIceBarrel")>=1) 
 		{
 			return ResolveState("GrabBarrel");
 		}
@@ -381,17 +397,22 @@ class PB_WeaponBase : DoomWeapon
 		bool shouldHelmet = ACS_NamedExecuteWithResult("ToggleHelmetAnimation",0,0,0) == 0 && own.CountInv("IntroductionSequence") == 0;
 		bool shouldRespect = invoker.respectInventoryItem != "" && own.CountInv(invoker.respectInventoryItem) == 0;
 		bool dontRespect = Cvar.FindCVar('pb_respectweapons').GetBool() == false && own.CountInv(invoker.respectInventoryItem) == 0;
-
 		if (shouldHelmet)
 		{
 			own.GiveInventory("IntroductionSequence",1);
 			//Console.printf("Setting State: HelmetAnimation");
 			return invoker.resolveState("HelmetAnimation");
-		}
+		}	
 		else if (dontRespect)
 		{
 			own.GiveInventory(invoker.respectInventoryItem,1);
+			if(own.CountInv("MG42Selected") == 1) {
+				own.SetInventory("MG42HeatLevel",0);
+				return invoker.resolveState("SelectAnimation");
+			}
+			else {
 			return invoker.resolveState("SelectAnimation");
+			}
 		}
 		else if (shouldRespect)
 		{
@@ -415,18 +436,72 @@ class PB_WeaponBase : DoomWeapon
 				A_GiveInventory("sae_deathcam", 1);
 				A_SetCrosshair(5);
 			}
-			TNT1 A 22 A_StartSound("IronSights",CHAN_AUTO);
-			HLMT ABC 2;
-			HLMT DEFGH 3;
-			HLMT I 4 A_StartSound("HLMTPUT",CHAN_AUTO);
-			HLMT JKLMN 2;
-			TNT1 A 0 A_StartSound("HLMTBEP",CHAN_AUTO);
-			HLMT O 3 A_StartSound("HLMTBPP",CHAN_AUTO);
-			TNT1 A 0 {
+			H3L6 H 1 A_SetBlend("00 00 00", 1, 35, "00 00 00", 0);
+			TNT1 A 34 A_StartSound("IronSights",CHAN_AUTO);
+			H3L1 ABCDE 1 A_SetRoll(roll+10, SPF_INTERPOLATE);
+			TNT1 A 0 A_StartSound("RSUP1",CHAN_AUTO);
+			H3L1 FGHIJK 1 A_SetRoll(roll+5, SPF_INTERPOLATE);
+			H3L1 LMNOP 1 A_SetRoll(roll-3, SPF_INTERPOLATE);
+			//add sound for hand grabbing other side
+			H3L1 QRSTUVWXYZ 1;
+			H3L2 ABCD 1;
+			H3L2 E 1 A_StartSound("IronSights",CHAN_AUTO);
+			H3L2 FGHIJKLMNOPQRSTUVWXYZ 1 A_SetRoll(roll-3, SPF_INTERPOLATE);
+			H3L3 ABCD 1;
+			H3L3 E 1 A_StartSound("IronSights",CHAN_AUTO);
+			H3L3 FGHIJ 1 A_SetRoll(roll-1.5, SPF_INTERPOLATE);
+			H3L3 JKLMN 1 A_SetRoll(roll+1.5, SPF_INTERPOLATE);
+			H3L3 OPQRS 1 A_SetRoll(roll+3, SPF_INTERPOLATE);
+			H3L3 TUVWXYZ 1 A_SetRoll(roll+3, SPF_INTERPOLATE);
+			H3L4 ABC 1 A_SetRoll(roll+3, SPF_INTERPOLATE);
+			H3L4 DEFGH 1 A_SetRoll(roll+3.5, SPF_INTERPOLATE);
+			H3L4 I 1
+			{
+				A_PlaySound("helmet/swipe");
+				A_SetRoll(roll+2.5, SPF_INTERPOLATE);
+			}
+			H3L4 JKLMNOP 1 A_SetRoll(roll+2.5, SPF_INTERPOLATE);
+			H3L4 Q 1
+			{
+				A_PlaySound("helmet/swipe");
+				A_SetRoll(roll+2, SPF_INTERPOLATE);
+			}
+			H3L4 RSTUVWXYZ 1 A_SetRoll(roll+2, SPF_INTERPOLATE);
+			H3L5 ABC 1 A_SetRoll(roll+3, SPF_INTERPOLATE);
+			H3L5 DEF 1 A_SetRoll(roll+4, SPF_INTERPOLATE);
+			H3L5 GH 1 A_SetRoll(roll+5, SPF_INTERPOLATE);
+			H3L5 I 1
+			{
+				A_StartSound("RSUP2",CHAN_AUTO);
+				A_SetRoll(roll+5, SPF_INTERPOLATE);
+			}
+			H3L5 JKL 1 A_SetRoll(roll+2.5, SPF_INTERPOLATE);
+			H3L5 MNO 1 A_SetRoll(roll+1, SPF_INTERPOLATE);
+			H3L5 P 1 A_StartSound("marine/superfist6",CHAN_AUTO);
+			H3L5 QRS 1;
+			H3L5 T 8;
+			H3L5 UVXYZ 1;
+			TNT1 A 0 A_SetBlend("00 00 00", 0, 8, "00 00 00", 1);
+			H3L6 A 1
+			{
+				A_StartSound("HLMTPUT",CHAN_AUTO);
+				A_SetRoll(roll+(frandom(-2,2)), SPF_INTERPOLATE);
+			}
+			H3L6 BCDEF 1 A_SetRoll(roll+(frandom(-2,2)), SPF_INTERPOLATE);
+			H3L6 G 1
+			{
+				A_StartSound("HLMTBEP",CHAN_AUTO);
+				A_SetRoll(roll+(frandom(-2,2)), SPF_INTERPOLATE);
+			}
+			H3L6 H 8 A_SetBlend("00 00 00", 1, 10, "51 92 99", 1);
+			TNT1 A 1 A_StartSound("HLMTBPP",CHAN_AUTO);
+			TNT1 A 20 A_SetBlend("51 92 99", 1, 20, "51 92 99", 0);
+			TNT1 A 0
+			{
 				A_TakeInventory("sae_extcam", 1);
 				A_TakeInventory("sae_deathcam", 1);
-				}
-			HLMT PQRS 2 A_Raise(9999);
+			}
+			TNT1 A 0 A_Raise(9999);
 			Goto SelectAnimation;
 		WeaponRespect:
 		SelectAnimation:
@@ -445,7 +520,12 @@ class PB_WeaponBase : DoomWeapon
 		LedgeClimb:
 			CL1M A 0;
 			"####" A 0 A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, false);
-			"####" A 0 A_ClearOverlays(10, 11);
+			"####" A 0 {
+				A_ClearOverlays(10, 11);
+				A_ClearOverlays(5,3);
+				A_ClearOverlays(-3,2);
+				A_ClearOverlays(-2,4);
+				}
 			"####" A 0 A_Stop();
 			"####" A 0 A_ZoomFactor(1.0);
 			"####" A 0 A_GunFlash("LedgeGrabFlash");
