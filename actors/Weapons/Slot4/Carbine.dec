@@ -42,7 +42,7 @@ Actor DualWieldingCarbines : Inventory
 {Inventory.MaxAmount 1}
 
 
-ACTOR Carbine : PB_Weapon
+ACTOR PB_Carbine : PB_Weapon
 {
 	SpawnID 9450
 	Weapon.BobRangeX 0.3
@@ -73,6 +73,7 @@ ACTOR Carbine : PB_Weapon
 	PB_WeaponBase.UnloaderToken "CarbineHasUnloaded"
 	Inventory.AltHUDIcon "CB00Z0"
 	PB_WeaponBase.respectItem "RespectCarbine"
+	FloatBobStrength 0.5
 	States
 	{
 		Steady:
@@ -80,7 +81,7 @@ ACTOR Carbine : PB_Weapon
 			Goto Ready
 		
 		Ready:
-			TNT1 A 0 A_SelectWeapon("LMG")
+			TNT1 A 0 A_SelectWeapon("PB_LMG")
 			TNT1 A 0 PB_RespectIfNeeded
 		WeaponRespect:
 			TNT1 A 0 {
@@ -397,7 +398,7 @@ ACTOR Carbine : PB_Weapon
 			A_Takeinventory("ADSmode",1);
 		}
 		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
-		TNT1 A 0 A_JumpIfInventory("LMG",1,"DeselectUpgrade")
+		TNT1 A 0 A_JumpIfInventory("PB_LMG",1,"DeselectUpgrade")
 		TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DeselectAkimbo")
         4A1S EDCBA 1
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
@@ -449,7 +450,7 @@ ACTOR Carbine : PB_Weapon
 
 	SwitchToDualWield:
 		TNT1 A 0 {
-			if(CountInv("Carbine") < 2) {
+			if(CountInv("PB_Carbine") < 2) {
 			A_Print("You need two carbines to dual wield!"); Return State("Ready3");}
 			Return State("");
 			}
@@ -526,7 +527,7 @@ ACTOR Carbine : PB_Weapon
 		}
 		Goto SelectFirstPersonLegs
 		SelectContinue:
-		TNT1 A 0 A_SelectWeapon("LMG")
+		TNT1 A 0 A_SelectWeapon("PB_LMG")
 		TNT1 A 0 A_TakeInventory("FistsSelected",1)
 		TNT1 A 0 A_TakeInventory("SawSelected",1)
 		TNT1 A 0 A_TakeInventory("SledgeSelected",1)
@@ -558,6 +559,7 @@ ACTOR Carbine : PB_Weapon
 		TNT1 A 0 A_TakeInventory("SubMachineGunSelected",1)
 		TNT1 A 0 A_TakeInventory("LostSoulSelected",1)
 		TNT1 A 0 A_TakeInventory("HasBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasIceBarrel", 1)
 		TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
 		TNT1 A 0 A_TakeInventory("HasIncendiaryWeapon", 1)
 		TNT1 A 0 A_TakeInventory("LMGSelected",1)
@@ -840,6 +842,7 @@ ACTOR Carbine : PB_Weapon
 		TNT1 A 0 A_Takeinventory("CarbineHasUnloaded",1)
 		TNT1 A 0 A_JumpIfInventory("LeftXRifleAmmo",41,"SelectAnimationDualWield")
 		4B20 G 1 A_SetRoll(roll+0.8)
+		TNT1 A 0 A_JumpIfInventory("LeftCarbineHasUnloaded",1,"ReloadLeftUnloadedStart")
         4B20 H 1
         4B20 IJKLMNO 1 A_SetRoll(roll-0.8)
 		
@@ -847,8 +850,10 @@ ACTOR Carbine : PB_Weapon
 		4B20 UVWXY 1 A_SetRoll(roll-0.6)
 		TNT1 A 0 A_PlaySoundEx("weapons/carbine/magout", "Auto")
 		4B20 Z 1 A_SetRoll(roll-0.6)
+	ContinueLeftReload:
         4B21 AB 1 A_SetRoll(roll-0.6)
 		4B21 CDEF 1
+		TNT1 A 0 A_JumpIfInventory("LeftCarbineHasUnloaded",1,2)
 		TNT1 A 0 A_FireCustomMissile("EmptyClipSpawn",-5,0,-25,-4)
 		4B21 GHIJKLMN 1 A_SetRoll(roll+0.6)
 		TNT1 A 0 A_PlaySoundEx("weapons/carbine/magin", "Auto")
@@ -858,6 +863,7 @@ ACTOR Carbine : PB_Weapon
 		TNT1 A 0 A_PlaySoundEx("weapons/riflemagslap", "Auto")
 		4B21 WXYZ 1 A_SetRoll(roll+1.5)
         4B22 ABCDEFGH 1 A_SetRoll(roll-1.5)
+		TNT1 A 0 A_TakeInventory("LeftCarbineHasUnloaded",1)
 	InsertBulletsLeft:
 		TNT1 A 0 A_JumpIfInventory("LeftXRifleAmmo",41,"SelectAnimationDualwield")
 		TNT1 A 0 A_JumpIfInventory("NewCLip",1,1)
@@ -867,7 +873,11 @@ ACTOR Carbine : PB_Weapon
 			A_Takeinventory("NewCLip",1);
 			}
 		Goto InsertBulletsLeft
-		
+	ReloadLeftUnloadedStart:
+		4B21 A 1 Offset(4,34) A_SetRoll(roll-0.6)
+		4B21 A 0 A_WeaponOffset(0,32)
+		4B21 A 1 A_SetRoll(roll-0.1)
+		GOTO ContinueLeftReload	
 
 	Reload:
 		TNT1 A 0 {
@@ -895,14 +905,17 @@ ACTOR Carbine : PB_Weapon
 	ReloadCheckPoint1:
         4A20 G 1 A_SetRoll(roll+0.8)
         4A20 H 1
+		TNT1 A 0 A_JumpIfInventory("CarbineHasUnloaded",1,"ReloadUnloadedStart")
         4A20 IJKLMNO 1 A_SetRoll(roll-0.8)
 		
 		4A20 PQRST 1
 		4A20 UVWXY 1 A_SetRoll(roll-0.6)
 		TNT1 A 0 A_PlaySoundEx("weapons/carbine/magout", "Auto")
 		4A20 Z 1 A_SetRoll(roll-0.6)
+	ReloadFromUnload:	
         4A21 AB 1 A_SetRoll(roll-0.6)
 		4A21 CDEF 1
+		TNT1 A 0 A_JumpIfInventory("CarbineHasUnloaded",1,2)
 		TNT1 A 0 A_FireCustomMissile("EmptyClipSpawn",-5,0,-25,-4)
 		4A21 GHIJKLMN 1 A_SetRoll(roll+0.6)
 		TNT1 A 0 A_PlaySoundEx("weapons/carbine/magin", "Auto")
@@ -950,7 +963,12 @@ ACTOR Carbine : PB_Weapon
 		4AFR BA 1 A_SetRoll(roll+1.5, SPF_INTERPOLATE)
 		TNT1 A 0 A_SetCrosshair(0)
 		Goto Ready3
-
+		
+	ReloadUnloadedStart:
+		4A21 A 1 Offset(-4,34) A_SetRoll(roll-0.6)
+		4A21 A 0 A_WeaponOffset(0,32)
+		4A21 A 1 A_SetRoll(roll-0.1)
+		GOTO ReloadFromUnload
 	AlreadyUnloaded:
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		Goto Ready3
@@ -976,13 +994,26 @@ ACTOR Carbine : PB_Weapon
 		TNT1 A 0 A_SetCrosshair(5)
 		TNT1 A 0 A_PlaySoundEx("Ironsights", "Auto")
 		TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "UnLoadDualWieldStart")
+		 4A20 ABCDEF 1 A_SetRoll(roll+0.8)
 	UnloadCheckPoint:
-        4AFR ABCDE 1
-        4AFR FGHIJ 1 A_SetRoll(roll+0.8, SPF_INTERPOLATE)
+        4A20 G 1 A_SetRoll(roll+0.8)
+        4A20 H 1
+        4A20 IJKLMNO 1 A_SetRoll(roll-0.8)
+		
+		4A20 PQRST 1
+		4A20 UVWXY 1 A_SetRoll(roll-0.6)
 		TNT1 A 0 A_PlaySoundEx("weapons/carbine/magout", "Auto")
-		4AFR KLMNO 1 A_SetRoll(roll-0.8, SPF_INTERPOLATE)
-		4AFR PPQRST 1 A_SetRoll(roll-0.9, SPF_INTERPOLATE)
-		4AFA AAA 1 A_SetRoll(roll+1.8, SPF_INTERPOLATE)
+		4A20 Z 1 A_SetRoll(roll-0.6)
+        4A21 AB 1 A_SetRoll(roll-0.6)
+		4A21 CDEF 1
+		4A21 GHIJK 1 A_SetRoll(roll+0.6)
+		4A21 K 5
+		4A22 F 1 Offset(-10,32) A_SetRoll(roll-1.5)
+		4A22 G 0 A_WeaponOffset(0,32) 
+		4A22 G 1 A_SetRoll(roll-1.5)
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "RemoveBullets")
+		4A22 HIJ 1 A_SetRoll(roll-1.5)
+		4A22 KLMN 1
 	RemoveBullets:
 		TNT1 A 0 A_JumpIfInventory("XRifleAmmo",1,1)
 		Goto FinishUnload
@@ -993,21 +1024,58 @@ ACTOR Carbine : PB_Weapon
 		Goto RemoveBullets
 	
 	FInishUnload:
-		4AFR CBA 1
 		TNT1 A 0 A_GiveInventory("CarbineHasUnloaded", 1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "UnloadLeftCarbine")
 		Goto Ready3
 	
-
-	Spawn.V5:
-		VB00 Z 10 {
-			IF( A_CHECKRANGE( V5_MDist , "NULL", TRUE) ) {A_SetSpawnSprite("CB00");}
+	UnloadLeftCarbine:
+		//TNT1 A 0 A_Takeinventory("CarbineHasUnloaded",1)
+		
+		
+		4A22 H 1 A_SetRoll(roll-1.5)
+		4A22 H 1 Offset(-18,44) A_SetRoll(roll-1.5)
+		4A22 H 1 Offset(-30,56) A_SetRoll(roll-1.5)
+		TNT1 A 5 A_WeaponOffset(0,32)
+		TNT1 A 0 A_JumpIf(CountInv("LeftXRifleAmmo") < 1,"SelectAnimationDualWield")
+		4B20 G 1 A_SetRoll(roll+0.8)
+        4B20 H 1
+        4B20 IJKLMNO 1 A_SetRoll(roll-0.8)
+		
+		4B20 PQRST 1
+		4B20 UVWXY 1 A_SetRoll(roll-0.6)
+		TNT1 A 0 A_PlaySoundEx("weapons/carbine/magout", "Auto")
+		4B20 Z 1 A_SetRoll(roll-0.6)
+        4B21 AB 1 A_SetRoll(roll-0.6)
+		4B21 CDEF 1
+		4B21 GHIJK 1
+		4B21 K 5
+		4B22 F 1 Offset(10,32) A_SetRoll(roll-1.5)
+		4A22 G 0 A_WeaponOffset(0,32) 
+		4B22 G 1 A_SetRoll(roll-1.5)
+		4B22 H 1 A_SetRoll(roll-1.5)
+		4B22 H 1 Offset(18,44) A_SetRoll(roll-1.5)
+		4B22 H 1 Offset(30,56) A_SetRoll(roll-1.5)
+		TNT1 A 5 A_WeaponOffset(0,32)
+		RemoveBullets_Left:
+		TNT1 A 0 A_JumpIfInventory("LeftXRifleAmmo",1,1)
+		Goto FInishDualUnload
+		TNT1 A 0 {
+			A_Takeinventory("LeftXRifleAmmo",1);
+			A_Giveinventory("NewClip",1);
 			}
+		Goto RemoveBullets_Left
+	
+	FInishDualUnload:
+		TNT1 A 0 A_GiveInventory("CarbineHasUnloaded", 1)
+		TNT1 A 0 A_GiveInventory("LeftCarbineHasUnloaded",1)
+		TNT1 A 0 A_Takeinventory("Unloading",1)
+		Goto SelectAnimationDualWield
+		
 	Spawn:
-		TNT1 A 0 NoDelay A_jumpif( V5_MODELS == 1 && V5_Cull == 1, "Spawn.V5")
-		CB00 Z 10 {
-				if ( GetCvar( "V5_MODELS" ) == 1 && GetCVar( "V5_Cull" ) == 0 ) {A_SetSpawnSprite("VB00");}
-		}
+		VB00 Z 0 NoDelay
+		CB00 Z 10 A_PbvpFramework("VB00")
+		"####" "#" 0 A_PbvpInterpolate()
 		LOOP
 		
     
@@ -1070,6 +1138,7 @@ ACTOR XRifleAmmo : Ammo
    Inventory.MaxAmount 41
    Ammo.BackpackAmount 0
    Ammo.BackpackMaxAmount 40
+   +INVENTORY.IGNORESKILL
    Inventory.Icon "CB00Z0"
 }
 
@@ -1079,5 +1148,8 @@ ACTOR LeftXRifleAmmo : Ammo
    Inventory.MaxAmount 41
    Ammo.BackpackAmount 0
    Ammo.BackpackMaxAmount 40
+   +INVENTORY.IGNORESKILL
    Inventory.Icon "CB00Z0"
 }
+
+Actor LeftCarbineHasUnloaded: HasUnloaded{}
