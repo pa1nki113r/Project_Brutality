@@ -1,0 +1,192 @@
+//Credits to CATSVISOR for some of the code below.  The code used to make hud messages "float". 
+
+#library "Reticle"
+#include "zcommon.acs"
+
+function bool OnButton (int button)
+{
+ if((GetPlayerInput(-1,INPUT_BUTTONS) & button))
+  return true;
+  
+  return false;
+}
+
+Function int abs(int x)
+{
+    if (x < 0)
+        return -x;
+    return x;
+}
+
+Function int GetAspectRatio(void)
+{
+    int noWideScreen = GetCVAR("vid_nowidescreen");
+    int tft = GetCVAR("vid_tft");
+
+    if (noWideScreen)
+    {
+        if (tft && GetScreenHeight() * 5 / 4 == GetScreenWidth())
+        {
+            return 54;
+        }
+        return 43;
+    }
+
+    // If the size is approximately 16:9, consider it so.
+    if (Abs(GetScreenHeight() * 16 / 9 - GetScreenWidth()) < 10)
+    {
+        return 169;
+    }
+    // Consider 17:10 as well.
+    if (Abs(GetScreenHeight() * 17 / 10 - GetScreenWidth()) < 10)
+    {
+        return 1710;
+    }
+	if (GetScreenWidth() == 1280 && GetScreenHeight() == 800)
+	{
+		return 43;
+	}
+    // 16:10 has more variance in the pixel dimensions. Grr.
+    
+
+	
+	
+	if (Abs(GetScreenHeight() * 16 / 10 - GetScreenWidth()) < 60)
+    {
+	       // 320x200 and 640x400 are always 4:3, not 16:10
+        if ((GetScreenWidth() == 320 && GetScreenHeight() == 200) || (GetScreenWidth() == 640 && GetScreenHeight() == 400))
+        {
+            return 43;
+        }
+        return 1610;
+    }
+    // Unless vid_tft is set, 1280x1024 is 4:3, not 5:4.
+    if (tft && GetScreenHeight() * 5 / 4 == GetScreenWidth())
+    {
+        return 54;
+    }
+    // Assume anything else is 4:3
+    return 43;
+}
+
+Script "DMR_Reticle" ENTER //(void) NET
+{
+	int TestScopeX = GetCvar("TestScopeX");
+	int TestScopeY = GetCvar("TestScopeY");
+	int offset = 0;
+	
+	int x = 0.5;
+	int y = 0.5; 
+	int xx = 0.5;
+	int yy = 0.5; 
+				
+	int xres;
+	int yres;
+	
+	 int x_font_res = 5762;
+	 int y_font_res = 3240;
+	
+
+	while(true)
+		{
+
+				int Angle = FixedMul(GetPlayerInput(-1,INPUT_YAW),0.3);
+				int Pitch = FixedMul(GetPlayerInput(-1,INPUT_PITCH),1.1);
+				
+				int Angle2 = FixedMul(GetPlayerInput(-1,INPUT_YAW),0.3);
+				int Pitch2 = FixedMul(GetPlayerInput(-1,INPUT_PITCH),1.1);
+				
+						offset = 0.050;
+						
+						xres = 1280;
+						yres = 800;
+				
+				/*
+				if(GetAspectRatio() == 43) 
+					{
+						yres = 525;
+						xres = 683;
+						offset = 0.150;
+					}
+				if(GetAspectRatio()  == 169)
+					{
+						offset = 0.0;
+						yres = 525;
+						xres = 933;
+					}
+				if(GetAspectRatio()  == 1610)
+					{
+						offset = 0.050;
+						yres = 525;
+						xres = 840;
+					}
+				*/
+				str weapon = GetWeapon();
+				int extcam = (CheckInventory("cat_extcam") | CheckInventory("IsDuringHelmetAnimation"));
+				int MorphedPlayer = strICmp(weapon, "D4BARONHUD") == 0 | strICmp(weapon, "REVENANT_RUNE") ==0 | strICmp(weapon, "D4REVENANTHUD") ==0;	
+				TestScopeX = GetCvar("TestScopeX");
+				TestScopeY = GetCvar("TestScopeY");
+			  
+		//Setting the limits
+		if(x > 0.515) x=0.515;
+		if(x < 0.485) x=0.485;
+		if(y > 0.515) y=0.515;
+		if(y < 0.485) y=0.485;
+			  	   
+		if(OnButton(BT_FORWARD)) y += 0.0035; 
+		if(OnButton(BT_BACK)) y -= 0.0035;
+		if(OnButton(BT_MOVELEFT)) x -= 0.0035;
+		if(OnButton(BT_MOVERIGHT)) x += 0.0035;
+			  
+			  x+= +Angle;
+			  y+= +Pitch;	
+
+		if(x > 0.5 && OnButton(BT_MOVERIGHT) == 0 && Angle == 0 ) x -= 0.0035;
+		if(x < 0.5 && OnButton(BT_MOVELEFT) == 0 && Angle == 0 ) x += 0.0035;
+		if(y > 0.5 && OnButton(BT_Forward) == 0 && Pitch == 0 ) y -= 0.0035;
+		if(y < 0.5 && OnButton(BT_back) == 0 && Pitch == 0 ) y += 0.0035;
+	
+	//A third set of XY for more exagerated movement
+		if(xx > 0.500) xx= 0.500;
+		if(xx < 0.490) xx=0.490;
+		if(yy > 0.520) yy=0.520;
+		if(yy < 0.510) yy=0.510;
+			  	   
+		if(OnButton(BT_FORWARD)) yy += 0.0035; 
+		if(OnButton(BT_BACK)) yy -= 0.0035;
+		if(OnButton(BT_MOVELEFT)) xx -= 0.0035;
+		if(OnButton(BT_MOVERIGHT)) xx += 0.0035;
+			  
+			  xx+= +(Angle/2);
+			  yy+= +(Pitch/9);	
+
+		if(xx > 0.5 && OnButton(BT_MOVERIGHT) == 0 && Angle2 == 0 ) xx -= 0.0035;
+		if(xx < 0.5 && OnButton(BT_MOVELEFT) == 0 && Angle2 == 0 ) xx += 0.0035;
+		if(yy > 0.5 && OnButton(BT_Forward) == 0 && Pitch2 == 0 ) yy -= 0.0035;
+		if(yy < 0.5 && OnButton(BT_back) == 0 && Pitch2 == 0 ) yy += 0.0035;
+		
+		if( (StrICmp(weapon, "Rifle")  == 0)  && CheckInventory("Zoomed") && (GetCvar("ReticleStyle")==1) )
+			{
+				SetHudSize(1280,800,1);
+				if(CheckInventory("DMRUpgraded"))
+					{
+						SetFont("HDMR_R");
+						HudMessage(s:"A"; HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP |HUDMSG_LAYER_OVERHUD| HUDMSG_ADDBLEND,1, CR_UNTRANSLATED, (FixedMul(xx+0,xres<<16)>>16<<16), (FixedMul((y+0),yres<<16)>>16<<16), 0.7);
+					}
+				Else
+					{
+						SetFont("DMR_R");
+						HudMessage(s:"A"; HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP |HUDMSG_LAYER_OVERHUD| HUDMSG_ADDBLEND,1, CR_UNTRANSLATED, (FixedMul(xx+0,xres<<16)>>16<<16), (FixedMul((y+0),yres<<16)>>16<<16), 0.7);//Reflex
+					}
+				//HudMessage(s:"A"; HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP |HUDMSG_LAYER_OVERHUD| HUDMSG_ADDBLEND,1, CR_UNTRANSLATED, (FixedMul(xx+0.99,xres<<16)>>16<<16), (FixedMul((y+1.4),yres<<16)>>16<<16), 0.7);//Kobra
+				//RandomAlpha = Random(0.01,0.20);
+			}
+		else
+			{
+				SetFont("Blank");
+				HudMessage(s:"A"; HUDMSG_PLAIN | HUDMSG_NOTWITHFULLMAP |HUDMSG_LAYER_UNDERHUD,1, CR_UNTRANSLATED, 0,0,0,0);
+			}
+		Delay(1);
+		
+		}
+}
