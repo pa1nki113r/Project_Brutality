@@ -20,7 +20,13 @@ the second part is giving the ammo2 as a start item on the player itself
 */
 
 ACTOR ChexRifleAmmo : Ammo {
-Inventory.MaxAmount 42 }
+	Inventory.Amount 0
+   Inventory.MaxAmount 42
+   Ammo.BackpackAmount 0
+   Ammo.BackpackMaxAmount 42
+   +INVENTORY.IGNORESKILL
+   Inventory.Icon "CRRSA0"
+}
 ACTOR UnloadedChexRifle : Inventory {
 Inventory.MaxAmount 1 }
 ACTOR JustGotAChexWeapon : Inventory {
@@ -317,12 +323,15 @@ ACTOR ChexRifle : PB_Weapon
 	Ready:
 		TNT1 A 0 A_PlaySound("PLSDRAW")
 		TNT1 A 0 A_JumpIfInventory("JustGotAChexWeapon", 1, "RespectAnimation")
-		CHRS DCBA 1
+		CHRS D 1
+		CXSU A 0 A_JumpIfInventory("UnloadedChexRifle",1,2)
+		CHRS A 0
+		"####" CBA 1
 		Goto RealReady
 	Ready3:
 	RealReady: 
-		CHRE EEEEEEAABBCCCDDDDCCCBBAAEEEEEE 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD)
 		TNT1 A 0 A_JumpIfInventory("UnloadedChexRifle",1,"Unloaded")
+		CHRE EEEEEEAABBCCCDDDDCCCBBAAEEEEEE 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD)
 		Loop
 	Unloaded:
 		CRR2 N 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD)
@@ -388,7 +397,10 @@ ACTOR ChexRifle : PB_Weapon
 		TNT1 A 0 A_Refire
 		Goto RealReady
 	Deselect:
-		CHRS ABCD 1
+		CXSU A 0 A_JumpIfInventory("UnloadedChexRifle",1,2)
+		CHRS A 0
+		"####" ABC 1
+		CHRS D 1
 	RealDeselect:
 		TNT1 A 0 A_Lower
 		Wait
@@ -400,34 +412,27 @@ ACTOR ChexRifle : PB_Weapon
 	ReloadAnimation:
 		TNT1 A 0 A_JumpIfInventory ("UnloadedChexRifle",1,"ReloadAnimationIfUnloaded")
 		TNT1 A 0 A_TakeInventory ("UnloadedChexRifle")
-		CXR2 XWVUTS 1 A_SetRoll(roll-1.2)
-		CXR2 RQPO 1 A_SetRoll(roll+1.8)
-		CXR2 NML 1 A_SetRoll(roll+0.4)
-		CXR2 KJI 1
-		CXR2 H 1
-		CXR2 GFEDCB 1 A_SetRoll (roll+2.0)
-		TNT1 A 0 A_PlaySound ("weapons/chexrifle/out", 3)
-		CXR2 A 1
-		CXR1 ZY 1
-		TNT1 A 0 A_SetRoll(roll-3.0)
-		CXR1 XWVUTSRQPON 1
-		TNT1 A 0 A_PlaySound ("CELLPKUP", 6)
-		CXR1 N 2
-		CXR1 NOPQRSTUVWX 1
-		TNT1 A 0 A_SetRoll(roll-3.0)
+		CXR1 ABC 1 A_SetRoll(roll-1.2, SPF_INTERPOLATE)
+		CXRE A 0 A_JumpIf(CountInv("ChexRifleAmmo") < 1, 2)
+		CXR1 A 0
+		"####" DEF 1 A_SetRoll(roll-1.2, SPF_INTERPOLATE)
+		"####" GHIJ 1 A_SetRoll(roll+.8)
+		"####" KLM 1 A_SetRoll(roll+0.4)
+		"####" NOP 1
+		"####" Q 1
+		"####" R 1 A_PlaySound ("weapons/chexrifle/out", 3)
+		CXR1 STUVWX 1 A_SetRoll (roll+1.45, SPF_INTERPOLATE)
+	ContinueReloadFromUnloaded:
 		CXR1 YZ 1
-		CXR2 A 1 A_SetRoll (roll+3)
-		TNT1 A 0 A_PlaySound ("weapons/chexrifle/in", 3)
-		/*
-		CXR2 BCDEFGHIJKLMNOPQRSTUV 1
-		CXR2 WXZ 1 A_SetRoll (roll+3)
 		CXR2 A 1
-		*/
-		CXR2 BCDEFGH 1 A_SetRoll (roll-2.0)
-		CXR2 IJK 1
-		CXR2 LMN 1 A_SetRoll(roll-0.4)
-		CXR2 OPQR 1 A_SetRoll(roll-1.8)
-		CXR2 STUVWX 1 A_SetRoll(roll+1.2)
+		CXR2 BCDEFG 1
+		TNT1 A 0 A_PlaySound ("weapons/chexrifle/in", 6)
+		CXR2 HIJKLM  1 A_SetRoll (roll-01.45, SPF_INTERPOLATE)
+		CXR2 NOPQRST 1 A_SETROLL(ROLL-.56, SPF_INTERPOLATE)
+		TNT1 A 0 A_PlaySound ("weapons/riflemagslap", 3)
+		CXR2 TUVWXYZ 1 A_SETROLL(ROLL-0.4, SPF_INTERPOLATE)
+		CXR3 ABCDEFG 1 A_SetRoll (roll+0.4, SPF_INTERPOLATE)
+		CXR3 HIJK 1
 		TNT1 A 0 A_SetRoll (0)
 	ReloadSequence:
 		TNT1 A 0 A_JumpIfInventory ("Cell", 1, 2)
@@ -445,20 +450,12 @@ ACTOR ChexRifle : PB_Weapon
 		Goto RealReady
 	ReloadAnimationIfUnloaded:
 		TNT1 A 0 A_TakeInventory ("UnloadedChexRifle")
-		CXR1 ABCD 1 A_SetRoll (roll-2)
-		CXR1 FG 1 A_SetRoll (roll-2)
-		CXR1 HI 1 A_SetRoll (roll+2)
-		CXR1 JKLM 1 A_SetRoll (roll+2)
-		CXR1 NOPQRSTUVWXYZ 1 A_SetRoll (roll+0.2)
-		CXR2 A 1 A_SetRoll (roll+0.2)
-		TNT1 A 0 A_PlaySound ("weapons/chexrifle/in", 3)
-		CXR2 BCDE 1 A_SetRoll (roll-0.2)
-		CXR2 FGHIJKLMN 1
-		CXR2 OPQR 1 A_SetRoll (roll-1.0)
-		CXR2 ST 1
-		CXR2 UVWX 1 A_SetRoll (roll+0.5)
-		TNT1 A 0 A_SetRoll (0)
-		Goto ReloadSequence
+		CHRU ABC 1 A_SetRoll(roll-1.8, SPF_INTERPOLATE)
+		CHRU DEF 1 A_SetRoll(roll-1.8, SPF_INTERPOLATE)
+		CHRU GHIJ 1 A_SetRoll(roll+.4)
+		CXR1 WX 1 A_SetRoll (roll+1.0, SPF_INTERPOLATE)
+		Goto ContinueReloadFromUnloaded
+		
 	Unload:
 		TNT1 A 0 A_TakeInventory ("Unloading")
 		TNT1 A 0 A_JumpIfInventory("ChexRifleAmmo", 1, "UnloadAnimation")
@@ -466,22 +463,18 @@ ACTOR ChexRifle : PB_Weapon
 	UnloadAnimation:
 		TNT1 A 0 A_TakeInventory ("Unloading")
 		TNT1 A 0 A_GiveInventory ("UnloadedChexRifle",1)
-		CXR2 XWVUTS 1 A_SetRoll(roll-1.2)
-		CXR2 RQPO 1 A_SetRoll(roll+1.8)
-		CXR2 NML 1 A_SetRoll(roll+0.4)
-		CXR2 KJI 1
-		CXR2 H 1
-		CXR2 GFEDCB 1 A_SetRoll (roll+2.0)
-		TNT1 A 0 A_PlaySound ("weapons/chexrifle/out", 3)
-		CXR2 A 1
-		CXR1 ZY 1
-		TNT1 A 0 A_SetRoll(roll-3.0)
-		CXR1 XWVUTSRQPON 1
-		TNT1 A 0 A_PlaySound ("CELLPKUP", 6)
-		CXR1 N 2
-		CXR1 MLKJIHG 1
-		TNT1 A 0 A_SetRoll(roll-0.6)
-		CXR1 FEDCBA 1
+		CXR1 ABC 1 A_SetRoll(roll-1.2, SPF_INTERPOLATE)
+		CXRE A 0 A_JumpIf(CountInv("ChexRifleAmmo") < 1, 2)
+		CXR1 A 0
+		CXR1 DEF 1 A_SetRoll(roll-1.2, SPF_INTERPOLATE)
+		CXR1 GHIJ 1 A_SetRoll(roll+.8)
+		CXR1 KLM 1 A_SetRoll(roll+0.4)
+		CXR1 NOP 1
+		CXR1 Q 1
+		CXR1 R 1 A_PlaySound ("weapons/chexrifle/out", 3)
+		CXR1 STUVWX 1 A_SetRoll (roll+1.45, SPF_INTERPOLATE)
+		CXR1 Y 10
+		CHRU JIHGFEDCBA 1
 		TNT1 A 0 A_SetRoll(0)
 	UnloadSequence:
 		TNT1 A 0 A_JumpIfInventory ("ChexRifleAmmo", 1, 2)
