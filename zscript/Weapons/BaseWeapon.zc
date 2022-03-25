@@ -31,6 +31,89 @@ class PB_WeaponBase : DoomWeapon
 	property FiringLeftWeapon: FiringLeftWeapon;
 	property FiringRightWeapon: FiringRightWeapon;
 	
+	action void PB_SetPlayerExecutionProperties() {
+		SetPlayerProperty(0, 1, PROP_INVULNERABILITY);
+		SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN );
+		SetPlayerProperty(0, 1, PROP_FLY);
+	}
+	
+	
+	action void PB_UnsetPlayerExecutionProperties() {
+		SetPlayerProperty(0, 0, PROP_INVULNERABILITY);
+		SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN );
+		SetPlayerProperty(0, 0, PROP_FLY);
+		A_ClearTarget();
+	}
+	
+	action void PB_ExecutionCheckMonster(Actor monster) {
+	
+		// Zombieman
+		let player = self.player;
+		
+		if(monster.getClass() is "PB_ZombieMan") {
+			A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET);
+			int selector = (random(1,3));
+// 			int selector = 3;
+			FLineTraceData RemoteRay;
+			bool wallcheck = LineTrace(
+               angle,
+               120,
+               pitch,
+			   TRF_THRUACTORS,
+               offsetz: height-12,
+               data: RemoteRay
+            );
+			
+			// Drop Kick Fatality
+			if((z-floorz) > 8) {
+				A_Warp(AAPTR_PLAYER_GETTARGET, 0, 0, 54, WARPF_USECALLERANGLE|WARPF_NOCHECKPOSITION);
+				A_GiveInventory("PB_ZombiemanExecution4", 1);
+				return;
+			}
+			// Wall Kick Fatality
+			if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {A_GiveInventory("PB_ZombiemanExecution3", 1); return;}
+			
+			// Generic Fatalities
+			if(selector == 1) {A_GiveInventory("PB_ZombiemanExecution1", 1); return;}
+			if(selector == 2) {A_GiveInventory("PB_ZombiemanExecution2", 1); return;}
+			if(selector == 3) {A_GiveInventory("PB_ZombiemanExecution5", 1); return;}
+		}
+	}
+	
+	action state PB_Execute() {
+	
+	
+        CVar experimental_settings = CVar.FindCVar('pb_experimental');
+		
+		if(experimental_settings.GetBool()){
+			//
+			if (GetPointer(AAPTR_PLAYER_GETTARGET) is "PB_Monster" && GetDistance(True, AAPTR_PLAYER_GETTARGET) < 120 ){
+				
+// 				int targetMaxHealth = CallACS("Executions_GetTargetMaxHealth");
+// 				int targetCurrentHealth = CallACS("Executions_GetTargetCurrentHealth");
+				
+				int targetMaxHealth = GetPointer(AAPTR_PLAYER_GETTARGET).spawnHealth();
+				int targetCurrentHealth = GetPointer(AAPTR_PLAYER_GETTARGET).health;
+				
+				if (targetCurrentHealth <= targetMaxHealth*0.2|| targetCurrentHealth < 65) {
+						
+						// Force targeted actor to execution state
+						A_Stop();
+						PB_ExecutionCheckMonster(GetPointer(AAPTR_PLAYER_GETTARGET));
+						return ResolveState("ExecutionHandler");
+// 						(GetPointer(AAPTR_PLAYER_GETTARGET)).SetState(FindState("Death.Execution"));
+						
+						
+						
+						// Make targeted actor give token to player based on execution animation to play
+						// Force player actor to enter corresponding execution based on received token
+				}
+				
+			}
+		}
+		return null;
+	}
+	
 	// Shoutout to Matt on ZDoom forums for the helpful weapon functions
     action bool PressingFire(){return player.cmd.buttons & BT_ATTACK;}
     action bool PressingAltfire(){return player.cmd.buttons & BT_ALTATTACK;}
