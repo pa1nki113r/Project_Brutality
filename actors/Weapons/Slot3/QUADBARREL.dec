@@ -10,6 +10,7 @@ ACTOR QSSGAmmoCounter: Ammo
 	Ammo.BackpackAmount 0
 	Ammo.BackpackMaxAmount 4
 	Inventory.Icon "QSGSA0"
+	+Inventory.IgnoreSkill
 }
 
 Actor LeftQSSGAmmoCounter : Ammo
@@ -19,6 +20,7 @@ Actor LeftQSSGAmmoCounter : Ammo
 	Ammo.BackpackAmount 0
 	Ammo.BackpackMaxAmount 4
 	Inventory.Icon "QSGSA0"
+	+Inventory.IgnoreSkill
 }
 
 Actor QuadFlameSpawnerCheap //Those actors are required to spawn QuadFlameMissileCheap with separate random rotations
@@ -143,7 +145,14 @@ States
 		Loop
 	Death:
 // 			TNT1 A 0 A_Explode(150,100, XF_HURTSOURCE, 1, 0, 0, 0, "Fire")
-			TNT1 A 0 A_Explode(150,100)
+			TNT1 A 0 {
+				if(GetCvar("pb_realdamage")) {
+				A_Explode(150,100);
+				}
+				else {
+					A_Explode(150,100,0);
+				}
+			}
 			TNT1 A 0 A_PlaySound("RAILIMP")
 			TNT1 A 0 A_PlaySound("FAREXPL", 1)
 			TNT1 A 0 A_SpawnItem("WhiteShockwave")
@@ -208,7 +217,14 @@ States
 		Loop
 	
 	Death:
-			TNT1 A 0 A_Explode(80,60, XF_HURTSOURCE, 1, 0, 0, 0, "Fire")
+			TNT1 A 0 {
+			if(GetCvar("pb_realdamage")) {
+				A_Explode(80,60, XF_HURTSOURCE, 1, 0, 0, 0);//, "Fire")
+				}
+			else {
+				A_Explode(80,60, 0, 1, 0, 0, 0);
+				}
+			}
 			TNT1 A 0 A_PlaySound("RAILIMP")
 			TNT1 A 0 A_PlaySound("FAREXPL", 1)
 			TNT1 A 0 A_SpawnItem("WhiteShockwave")
@@ -229,7 +245,14 @@ Scale 0.45
 Damage 9
 States {
 Death:
-			TNT1 A 0 A_Explode(70,35, XF_HURTSOURCE, 1, 0, 0, 0, "Fire")
+			TNT1 A 0 {
+				if(GetCvar("pb_realdamage")) {
+					A_Explode(70,35, XF_HURTSOURCE, 1, 0, 0, 0);//, "Fire")
+					}
+				else {
+					A_Explode(70,35, 0, 1, 0, 0, 0);
+					}
+				}
 			TNT1 A 0 A_PlaySound("RAILIMP")
 			TNT1 A 0 A_PlaySound("FAREXPL", 1)
 			TNT1 A 0 A_SpawnItem("WhiteShockwave")
@@ -412,16 +435,16 @@ ACTOR PB_QuadSG  : PB_Weapon
 		QR4S IJKLMN 1 A_DoPBWeaponAction(wrf_allowreload)
 		Q1R0 A 6 A_DoPBWeaponAction(wrf_allowreload)
 		Q1R1 ABCDEFFFG 1 A_DoPBWeaponAction(wrf_allowreload)
-		TNT1 A 0 A_PlaySoundEx("insertshell", "Auto")
+		TNT1 A 0 A_PlaySoundEx("weapons/qsg/singlein", "Auto")
 		Q1R1 HIIIIH 1 A_DoPBWeaponAction(wrf_allowreload)
 		Q1R2 GFEEEFG 1 A_DoPBWeaponAction(wrf_allowreload)
-		TNT1 A 0 A_PlaySoundEx("insertshell", "Auto")
+		TNT1 A 0 A_PlaySoundEx("weapons/qsg/singlein", "Auto")
 		Q1R2 HIIIIH 1 A_DoPBWeaponAction(wrf_allowreload)
 		Q1R3 GFEEEFG 1 A_DoPBWeaponAction(wrf_allowreload)
-		TNT1 A 0 A_PlaySoundEx("insertshell", "Auto")
+		TNT1 A 0 A_PlaySoundEx("weapons/qsg/singlein", "Auto")
 		Q1R3 HIIIIHG 1 A_DoPBWeaponAction(wrf_allowreload)
 		Q1R4 FEEEEFH 1 A_DoPBWeaponAction(wrf_allowreload)
-		TNT1 A 0 A_PlaySoundEx("insertshell", "Auto")
+		TNT1 A 0 A_PlaySoundEx("weapons/qsg/singlein", "Auto")
 		Q1R4 GHIIIIIJKL 1 A_DoPBWeaponAction(wrf_allowreload)
 		QRS4 I 7 A_DoPBWeaponAction(wrf_allowreload)
 		QSS1 NOPQ 1 A_DoPBWeaponAction(wrf_allowreload)
@@ -509,7 +532,7 @@ ACTOR PB_QuadSG  : PB_Weapon
 			if(CountInv("LeftQSSGAmmoCounter")>0 && CountInv("QSSGAmmoCounter")==0){
 				A_TakeInventory("DualFiring",1);
 			}
-			if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1)){
+			if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1) && CountInv("LeftQSSGAmmoCounter") <= 0){
 				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire")==0){
 					if(CountInv("QSSGAmmoCounter") > 0){
 						return state("FireRight_Overlay");
@@ -547,15 +570,18 @@ ACTOR PB_QuadSG  : PB_Weapon
 						A_PlaySound("QSGFIRE1", 8);
 						A_ZoomFactor(0.915);
 						A_TakeInventory("LeftQSSGAmmoCounter", 4);
+						if(GetCvar("pb_realdamage")) {
 							if(health > 7) { //to ensure that it doesn't kill the player
 							A_DamageSelf(7, "None");
-							A_PlaySound("*pain50", 13);		
+							A_PlaySound("*pain50", 13);	
+							}
 						}
 					if (CountInv("BreathMode") != 1) {
 						A_FireBullets(0, 0, 2, 110, "shotpuff", 0, 220);
-						A_FireProjectile("ShotgunWad",random(-1,1),0,6,-2,FPF_NOAUTOAIM,random(-1,1));
-						A_FireProjectile("ShotgunWad",random(-1,1),0,10,-2,FPF_NOAUTOAIM,random(-1,1));
-						A_FireProjectile("ShotgunWad",random(-1,1),0,6,-2,FPF_NOAUTOAIM,random(-1,1));
+						A_FireProjectile("ShotgunWad",random(-1,1),0,-6,-2,FPF_NOAUTOAIM,random(-1,1));
+						A_FireProjectile("ShotgunWad",random(-1,1),0,-10,-2,FPF_NOAUTOAIM,random(-1,1));
+						A_FireProjectile("ShotgunWad",random(-1,1),0,-6,-2,FPF_NOAUTOAIM,random(-1,1));
+						A_FireProjectile("ShotgunWad",random(-1,1),0,-10,-2,FPF_NOAUTOAIM,random(-1,1));
 						A_FireCustomMissile("YellowFlareSpawn", 15, 0, 0, 0);
 						A_FireBullets(0, 0, 1, 100, "shotpuff", 0, 220);
 						 A_FireBullets (17, 9, 10, 7, "ShotgunPuff"); 
@@ -581,9 +607,8 @@ ACTOR PB_QuadSG  : PB_Weapon
 						A_ZoomFactor(0.915);
 						A_TakeInventory("LeftQSSGAmmoCounter", 2);
 					if (CountInv("BreathMode") != 1) {
-						A_FireProjectile("ShotgunWad",random(-1,1),0,6,-2,FPF_NOAUTOAIM,random(-1,1));
-						A_FireProjectile("ShotgunWad",random(-1,1),0,10,-2,FPF_NOAUTOAIM,random(-1,1));
-						A_FireProjectile("ShotgunWad",random(-1,1),0,6,-2,FPF_NOAUTOAIM,random(-1,1));
+						A_FireProjectile("ShotgunWad",random(-1,1),0,-6,-2,FPF_NOAUTOAIM,random(-1,1));
+						A_FireProjectile("ShotgunWad",random(-1,1),0,-10,-2,FPF_NOAUTOAIM,random(-1,1));
 						A_FireCustomMissile("YellowFlareSpawn", 15, 0, 0, 0);
 						A_FireBullets(0, 0, 1, 100, "shotpuff", 0, 220);
 						A_FireBullets (17, 9, 10, 7, "ShotgunPuff");
@@ -605,8 +630,7 @@ ACTOR PB_QuadSG  : PB_Weapon
 						A_ZoomFactor(0.915);
 						A_TakeInventory("LeftQSSGAmmoCounter", 1);
 					If (CountInv("BreathMode") != 1) {
-						A_FireProjectile("ShotgunWad",random(-1,1),0,6,-2,FPF_NOAUTOAIM,random(-1,1));
-						A_FireProjectile("ShotgunWad",random(-1,1),0,10,-2,FPF_NOAUTOAIM,random(-1,1));
+						A_FireProjectile("ShotgunWad",random(-1,1),0,-6,-2,FPF_NOAUTOAIM,random(-1,1));
 						A_FireCustomMissile("YellowFlareSpawn", 15, 0, 0, 0);
 						A_FireBullets(0, 0, 1, 100, "shotpuff", 0, 220);
 						A_FireBullets (17, 9, 10, 7, "ShotgunPuff");
@@ -618,12 +642,16 @@ ACTOR PB_QuadSG  : PB_Weapon
 						A_FireCustomMissile("GunFireSmokE", 0, 0, 2, 0, 0, 0);
 						A_PlaySound("QSGCHRG", 8);
 						A_FireCustomMissile("GunFireSmoke", 0, 0, -2, 0, 0, 0);
+						}
 					}
-				}
+			//	}
 			return state ("");
 		}
+		TNT1 A 0 A_JumpIfInventory("NewShell",1,1)
+		Goto NoAmmoLeftGun
 		Q2L1 D 1 BRIGHT 
 		TNT1 A 0 A_ZoomFactor(0.975)
+		TNT1 A 0 A_ALERTMONSTERS
 		Q2L1 E 1 {
             PB_WeaponRecoil(-6.80,+2.40);
 		}
@@ -641,7 +669,12 @@ ACTOR PB_QuadSG  : PB_Weapon
 		}
 		Goto IdleLeft_Overlay
 	
-	LeftRecoil_FullBlast:		
+	NoAmmoLeftGun:
+		Q2LG A 1
+		Goto IdleLeft_Overlay
+		
+	LeftRecoil_FullBlast:
+		TNT1 A 0 A_ALERTMONSTERS
 		Q2L4 A 1	BRIGHT
 		TNT1 A 0 A_ZoomFactor(0.95)
 		Q2L4 B 1 BRIGHT
@@ -665,8 +698,9 @@ ACTOR PB_QuadSG  : PB_Weapon
 		}
 		Goto IdleLeft_Overlay
 		
-	LeftRecoil_HalfBlast:		
-		TNT1 A 0 A_JumpIfInventory("LeftQSSGAmmoCounter", 4, "LeftRecoil_HalfBlast4")
+	LeftRecoil_HalfBlast:
+		TNT1 A 0 A_ALERTMONSTERS
+		TNT1 A 0 A_JumpIf(CountInv("LeftQSSGAmmoCounter") >=2, "LeftRecoil_HalfBlast4")
 		Q2L2 A 1	BRIGHT
 		TNT1 A 0 A_ZoomFactor(0.95)
 		Q2L2 B 1 BRIGHT
@@ -696,20 +730,22 @@ ACTOR PB_QuadSG  : PB_Weapon
 
 	FireRight_Overlay:
         TNT1 A 0 {
-			a_takeinventory("DualFiring");
 			if (CountInv("FullBlastMode") == 1) {
 					if (CountInv("QSSGAmmoCounter") >= 4) {
 						A_Recoil(3);
 						A_PlaySound("QSGFIRE1", 8);
 						A_ZoomFactor(0.915);
 						A_TakeInventory("QSSGAmmoCounter", 4);
+						if(GetCvar("pb_realdamage")) {
 							if(health > 7) { //to ensure that it doesn't kill the player
 							A_DamageSelf(7, "None");
 							A_PlaySound("*pain50", 13);		
+							}
 						}
 					if (CountInv("BreathMode") != 1) {
 						A_FireBullets(0, 0, 2, 110, "shotpuff", 0, 220);
 						A_FireProjectile("ShotgunWad",random(-1,1),0,6,-2,FPF_NOAUTOAIM,random(-1,1));
+						A_FireProjectile("ShotgunWad",random(-1,1),0,10,-2,FPF_NOAUTOAIM,random(-1,1));
 						A_FireProjectile("ShotgunWad",random(-1,1),0,10,-2,FPF_NOAUTOAIM,random(-1,1));
 						A_FireProjectile("ShotgunWad",random(-1,1),0,6,-2,FPF_NOAUTOAIM,random(-1,1));
 						A_FireCustomMissile("YellowFlareSpawn", 15, 0, 0, 0);
@@ -739,7 +775,6 @@ ACTOR PB_QuadSG  : PB_Weapon
 					if (CountInv("BreathMode") != 1) {
 						A_FireProjectile("ShotgunWad",random(-1,1),0,6,-2,FPF_NOAUTOAIM,random(-1,1));
 						A_FireProjectile("ShotgunWad",random(-1,1),0,10,-2,FPF_NOAUTOAIM,random(-1,1));
-						A_FireProjectile("ShotgunWad",random(-1,1),0,6,-2,FPF_NOAUTOAIM,random(-1,1));
 						A_FireCustomMissile("YellowFlareSpawn", 15, 0, 0, 0);
 						A_FireBullets(0, 0, 1, 100, "shotpuff", 0, 220);
 						A_FireBullets (17, 9, 10, 7, "ShotgunPuff");
@@ -762,7 +797,6 @@ ACTOR PB_QuadSG  : PB_Weapon
 						A_TakeInventory("QSSGAmmoCounter", 1);
 					if (CountInv("BreathMode") != 1) {
 						A_FireProjectile("ShotgunWad",random(-1,1),0,6,-2,FPF_NOAUTOAIM,random(-1,1));
-						A_FireProjectile("ShotgunWad",random(-1,1),0,10,-2,FPF_NOAUTOAIM,random(-1,1));
 						A_FireCustomMissile("YellowFlareSpawn", 15, 0, 0, 0);
 						A_FireBullets(0, 0, 1, 100, "shotpuff", 0, 220);
 						A_FireBullets (17, 9, 10, 7, "ShotgunPuff");
@@ -774,13 +808,15 @@ ACTOR PB_QuadSG  : PB_Weapon
 						A_FireCustomMissile("GunFireSmokE", 0, 0, 2, 0, 0, 0);
 						A_FireCustomMissile("GunFireSmoke", 0, 0, -2, 0, 0, 0);
 						A_PlaySound("QSGCHRG", 8);
+						}
 					}
-				}
 			RETURN STATE ("");
 		}
-		
+		TNT1 A 0 A_JumpIfInventory("NewShell",1,1)
+		Goto NoAmmoRightGun
 		Q1L1 D 1 BRIGHT 
 		TNT1 A 0 A_ZoomFactor(0.975)
+		TNT1 A 0 A_ALERTMONSTERS
 		Q1L1 E 1 {
             PB_WeaponRecoil(-6.80,-2.40);
 		}
@@ -798,7 +834,12 @@ ACTOR PB_QuadSG  : PB_Weapon
 		}
 		Goto IdleRight_Overlay
 	
-	RightRecoil_FullBlast:		
+	NoAmmoRightGun:
+		Q2RG A 1
+		Goto IdleRight_Overlay
+		
+	RightRecoil_FullBlast:
+		TNT1 A 0 A_ALERTMONSTERS
 		Q1L4 A 1	BRIGHT
 		TNT1 A 0 A_ZoomFactor(0.95)
 		Q1L4 B 1 BRIGHT
@@ -818,12 +859,18 @@ ACTOR PB_QuadSG  : PB_Weapon
 			//CountInv("DualFiring")==0
 			if(CountInv("LeftQSSGAmmoCounter")<=0 || CountInv("QSSGAmmoCounter")>0){
 				A_GiveInventory("DualFiring",1);
+				}
+			}
+		TNT1 A 0 {
+			if(CountInv("QSSGAmmoCounter")<=0){
+				A_GiveInventory("DualFireReload",1);
 			}
 		}
 		Goto IdleRight_Overlay
 
 	RightRecoil_HalfBlast:		
-		TNT1 A 0 A_JumpIfInventory("QSSGAmmoCounter", 4, "RightRecoil_HalfBlast4")
+		TNT1 A 0 A_ALERTMONSTERS
+		TNT1 A 0 A_JumpIf(CountInv("QSSGAmmoCounter") >=2, "RightRecoil_HalfBlast4")
 		Q1L2 A 1	BRIGHT
 		TNT1 A 0 A_ZoomFactor(0.95)
 		Q1L2 B 1 BRIGHT
@@ -845,8 +892,13 @@ ACTOR PB_QuadSG  : PB_Weapon
 		Q1L2 KLMN 1
 		Q1L2 O 1 {
 			//CountInv("DualFiring")==0
-			if(CountInv("LeftQSSGAmmoCounter")<=0 || CountInv("QSSGAmmoCounter")>0){
-				A_GiveInventory("DualFiring",1);
+			if(CountInv("LeftQSSGAmmoCounter")>=0 || CountInv("QSSGAmmoCounter")<=0){
+				A_TakeInventory("DualFiring",1);
+			}
+		}
+		TNT1 A 0 {
+			if(CountInv("LeftQSSGAmmoCounter")<=0){
+				A_GiveInventory("DualFireReload",1);
 			}
 		}
 		Goto IdleRight_Overlay
@@ -1003,7 +1055,7 @@ ACTOR PB_QuadSG  : PB_Weapon
 	FullBlast:
 		TNT1 A 0 A_TakeInventory("Reloading", 1)
 		TNT1 A 0 A_JumpIfInventory("QSSGAmmoCounter", 4, 1)
-		Goto Reload
+		Goto HalfBlast
         TNT1 AAAAA 0
         TNT1 A 0 A_Recoil(3)
         QSF4 A 1 BRIGHT A_PlaySound("QSGFIRE1", 8)//NEED A LOUDER FUCKING BANG
@@ -1062,6 +1114,7 @@ ACTOR PB_QuadSG  : PB_Weapon
 		TNT1 A 0 A_TakeInventory("Reloading", 1)
 		TNT1 A 0 A_JumpIfInventory("QSSGAmmoCounter", 4, "FireRightBarrels")
 		TNT1 A 0 A_JumpIfInventory("QSSGAmmoCounter", 2, "FireLeftBarrels")
+		TNT1 A 0 A_JumpIfInventory("QSSGAmmoCounter", 1, "FireLeftSingleBarrel")
 		Goto Reload
 		
 	FireRightBarrels:
@@ -1108,8 +1161,8 @@ ACTOR PB_QuadSG  : PB_Weapon
 		TNT1 A 0 A_ZoomFactor(1.0)
         QSF2 I 1 
         QSF2 JKLLLMNOP 1 
-		TNT1 A 0
-		Goto RealReady
+		TNT1 A 0 A_JumpIfInventory("QSSGAmmoCounter", 1, "RealReady")
+		Goto Reload
 		
 	FireLeftBarrels:
         TNT1 AAAAA 0
@@ -1227,7 +1280,8 @@ ACTOR PB_QuadSG  : PB_Weapon
 		TNT1 A 0 A_ZoomFactor(0.985)
 		QSF1 IJKL 1
 		TNT1 A 0 A_ZoomFactor(1.0)
-		Goto RealReady
+		TNT1 A 0 A_JumpIfInventory("QSSGAmmoCounter", 1, "RealReady")
+		Goto Reload
 		
 	DualFireReload:
 		TNT1 A 0 A_TakeInventory("DualFiring",1)
@@ -1327,7 +1381,7 @@ ACTOR PB_QuadSG  : PB_Weapon
 		"####" ABCD 1
 	InsertOneByOneInsertRight:
 		"####" EEE 1
-		"####" A 0 A_PlaySoundEx("insertshell", "Auto")
+		"####" A 0 A_PlaySoundEx("weapons/qsg/singlein", "Auto")
 		"####" GHIII 1
 		"####" A 0 {
 			A_TakeInventory("NewShell", 1);
@@ -1447,7 +1501,7 @@ ACTOR PB_QuadSG  : PB_Weapon
 		"####" ABCD 1
 	InsertOneByOneInsertLeft:
 		"####" EEE 1
-		"####" A 0 A_PlaySoundEx("insertshell", "Auto")
+		"####" A 0 A_PlaySoundEx("weapons/qsg/singlein", "Auto")
 		"####" GHIII 1
 		"####" A 0 {
 			A_TakeInventory("NewShell", 1);
@@ -1564,7 +1618,7 @@ ACTOR PB_QuadSG  : PB_Weapon
 		"####" ABCD 1
 	InsertOneByOneInsert:
 		"####" EEE 1
-		"####" A 0 A_PlaySoundEx("insertshell", "Auto")
+		"####" A 0 A_PlaySoundEx("weapons/qsg/singlein", "Auto")
 		"####" GHIII 1
 		"####" A 0 {
 			A_TakeInventory("NewShell", 1);
@@ -1661,7 +1715,7 @@ ACTOR PB_QuadSG  : PB_Weapon
 		Loop
 	TakeOneByOneAkimboRight:
 		Q1R1 IIH 1
-		"####" A 0 A_PlaySoundEx("insertshell", "Auto")
+		"####" A 0 A_PlaySoundEx("weapons/qsg/singlein", "Auto")
 		"####" A 0 {
 			A_TakeInventory("QSSGAmmoCounter", 1);
 			A_GiveInventory("NewShell", 1);
@@ -1721,7 +1775,7 @@ ACTOR PB_QuadSG  : PB_Weapon
 		Loop
 	TakeOneByOneAkimboLeft:
 		Q1R1 IIH 1
-		"####" A 0 A_PlaySoundEx("insertshell", "Auto")
+		"####" A 0 A_PlaySoundEx("weapons/qsg/singlein", "Auto")
 		"####" A 0 {
 			A_TakeInventory("QSSGAmmoCounter", 1);
 			A_GiveInventory("NewShell", 1);
@@ -1788,7 +1842,7 @@ ACTOR PB_QuadSG  : PB_Weapon
 		Loop
 	TakeOneByOne:
 		Q1R1 IIH 1
-		"####" A 0 A_PlaySoundEx("insertshell", "Auto")
+		"####" A 0 A_PlaySoundEx("weapons/qsg/singlein", "Auto")
 		"####" A 0 {
 			A_TakeInventory("QSSGAmmoCounter", 1);
 			A_GiveInventory("NewShell", 1);
@@ -1837,6 +1891,7 @@ ACTOR PB_QuadSG  : PB_Weapon
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("QuadAkimboMode", 1, "FlashSlideKickingAkimboStop")
 		QSHK FEDCA 1 
+		QSSG A 2 
 		Stop
 
 	FlashSlideKickingAkimboStop:
