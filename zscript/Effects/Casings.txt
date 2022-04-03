@@ -656,7 +656,7 @@ Class FiftyCaseSpawn2: FiftyCaseSpawn
 	Spawn:
         TNT1 A 0;
 		TNT1 A 1 A_SpawnProjectile("EmptyBrassMinigun",-2,0,random(-80,-100),CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH,random(40,80));
-		TNT1 A 1 A_SpawnProjectile("MinigunBeltPiece",-4,0,random(-80,-100),CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH,random(40,80));
+		TNT1 A 1 A_SpawnProjectile("LMGBeltLink",-4,0,random(-80,-100),CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH,random(40,80));
 		Stop;
 	}
 }
@@ -978,6 +978,82 @@ Class SGL_Drum : EmptyBrass2 //See?  Very minimal code to do the same thing.
 			Goto SpawnJump;
 	}
 }
+
+Class SGL_StickyDrum : SGL_Drum
+{
+ States
+   {
+		Spawn:
+			SGD2 A 0;
+			Goto SpawnJump;
+	}
+}
+
+Class SGL_IncendiaryDrum : SGL_Drum
+{
+ States
+   {
+		Spawn:
+			SGD3 A 0;
+			Goto SpawnJump;
+	}
+}
+
+Class SGL_CryoDrum : SGL_Drum
+{
+ States
+   {
+		Spawn:
+			SGD4 A 0;
+			Goto SpawnJump;
+	}
+}
+
+Class SGL_AcidDrum : SGL_Drum
+{
+ States
+   {
+		Spawn:
+			SGD5 A 0;
+			Goto SpawnJump;
+	}
+}
+
+Class RevolverSpeedLoader : EmptyBrass2
+{
+	Default
+	{  	
+   -DONTSPLASH;
+   -CANBOUNCEWATER;
+   +FLOORCLIP;
+   +THRUACTORS;
+		Scale 0.20;
+		BounceFactor 0.85;
+		BounceCount 4;
+		SeeSound "weapons/smallmagdrop";
+	}
+	States
+	{
+		Spawn:
+			RVS1 A 0;
+			Goto SpawnJump;
+		SpawnSmoking:
+			"####" ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 1 {
+				A_SetRoll(roll+75);
+			}
+			Goto Death;
+		Death:
+			  "####" A 0 A_SetRoll(0);
+			  "####" A 0 A_Jump(256,"Case1","Case2");
+		Case1:
+			"####" C 0;
+			Goto Rest;
+		Case2:
+			"####" G 0;
+			Goto Rest;
+		}
+}
+		
 
 Class ShotgunWad : Actor
 {
@@ -1356,6 +1432,7 @@ Class ShotgunCasing : Actor
    +ROLLSPRITE;
    Mass 1;
    SeeSound "weapons/shell";
+   BounceCount 5;
    }
    States
    {
@@ -1380,6 +1457,7 @@ Class ShotgunCasing : Actor
 		Goto Death;
 		
 		Death:
+		  TNT1 A 0 A_StopSound(2);
 		  TNT1 I 0 A_SetRoll(0);
 		  TNT1 A 0 A_Jump(256,"Case1","Case2","Case3","Case4","Case5","Case6","Case7","Case8","Case9","Case10");
 		Case1:
@@ -1436,6 +1514,7 @@ Class ShotgunCasingRedLive : ShotgunCasing
 		Goto Death;
 		
 		Death:
+		  TNT1 A 0 A_StopSound(2);
 		  TNT1 I 0 A_SetRoll(0);
 		  TNT1 A 0 A_Jump(256,"Case1","Case2","Case3","Case4","Case5","Case6","Case7","Case8","Case9","Case10");
 		Case1:
@@ -1502,6 +1581,7 @@ Class ShotgunCasingGreenLive : ShotgunCasing
 		Goto Death;
 		
 		Death:
+			TNT1 A 0 A_StopSound(2);
 		  TNT1 I 0 A_SetRoll(0);
 		  TNT1 A 0 A_Jump(256,"Case1","Case2","Case3","Case4","Case5","Case6","Case7","Case8","Case9","Case10");
 		Case1:
@@ -1568,6 +1648,7 @@ Class ShotgunCasingOrangeLive : ShotgunCasing
 		Goto Death;
 		
 		Death:
+			TNT1 A 0 A_StopSound(2);
 		  TNT1 I 0 A_SetRoll(0);
 		  TNT1 A 0 A_Jump(256,"Case1","Case2","Case3","Case4","Case5","Case6","Case7","Case8","Case9","Case10");
 		Case1:
@@ -1656,6 +1737,7 @@ Class ShotgunCasing2 : ShotgunCasing
 		Goto Death;
 		
 		Death:
+			TNT1 A 0 A_StopSound(2);
 		  TNT1 I 0 A_SetRoll(0);
 		  TNT1 A 0 A_Jump(256,"Case1","Case2","Case3","Case4","Case5","Case6","Case7","Case8","Case9","Case10");
 		Case1:
@@ -1720,6 +1802,7 @@ Class ShotgunCasing3 : ShotgunCasing
 		Goto Death;
 		
 		Death:
+			TNT1 A 0 A_StopSound(2);
 		  TNT1 I 0 A_SetRoll(0);
 		  TNT1 A 0 A_Jump(256,"Case1","Case2","Case3","Case4","Case5","Case6","Case7","Case8","Case9","Case10");
 		Case1:
@@ -1850,6 +1933,91 @@ Class EmptyClip : Actor
   Disappear:
 	  TNT1 A 1;
 	  Stop;
+   }
+}
+
+
+Class EmptyDMRMag : EmptyMagMP40
+{
+		override void BeginPlay(void)
+	{
+		ChangeStatNum(STAT_PB_BULLETS);
+		NashGoreStatics.QueueCasings();
+		Super.BeginPlay();
+	}
+  Default
+  {
+   Scale 0.20;
+   BounceCount 3;
+   SeeSound "weapons/largemagdrop";
+   }
+   States
+   {
+   Spawn:
+      ECL1 A 1;
+	  
+	  Exist:
+      ECL1 A 3 A_SetRoll(roll+36, SPF_INTERPOLATE); 
+      loop;
+   Death:
+	  TNT1 A 0 A_SetRoll(0);
+	  TNT1 A 0 A_Jump(256, "Rest1", "Rest2", "Rest3", "Rest4");
+   Rest1:
+	  ECL1 B 900;
+	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
+   	  Loop;
+	Rest2:
+	  ECL1 C 900;
+	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
+   	  Loop;
+	Rest3:
+	  ECL1 D 900;
+	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
+   	 Loop;
+   Rest4:
+	  ECL1 E 900;
+	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
+	  Loop;
+	  
+  Disappear:
+	  TNT1 A 1;
+	  Stop;
+   }
+}
+
+Class EmptyHDMRMag_Sniper : EmptyDMRMag
+{
+		override void BeginPlay(void)
+	{
+		ChangeStatNum(STAT_PB_BULLETS);
+		NashGoreStatics.QueueCasings();
+		Super.BeginPlay();
+	}
+  Default
+  {
+   Scale 0.23;
+   BounceCount 3;
+   SeeSound "weapons/largemagdrop";
+   }
+   States
+   {
+   Spawn:
+      HCL2 A 1;
+	  
+	  Exist:
+      HCL2 A 3 A_SetRoll(roll+36, SPF_INTERPOLATE); 
+      loop;
+   Death:
+	  TNT1 A 0 A_SetRoll(0);
+	  TNT1 A 0 A_Jump(256, "Rest1", "Rest2");
+   Rest1:
+	  HCL2 B 900;
+	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
+   	  Loop;
+	Rest2:
+	  HCL2 C 900;
+	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
+   	  Loop;
    }
 }
 
@@ -2096,7 +2264,8 @@ Class EmptyLMGMag : Actor
    +NOTELEPORT;
    +FORCEXYBILLBOARD;
    +NOTDMATCH;
-   +ROLLSPRITE
+   +ROLLSPRITE;
+   +ROLLCENTER;
    +GHOST;
    Mass 1;
    SeeSound "weapons/largemagdrop";
@@ -2509,7 +2678,8 @@ Class PlasmaCaseOLSpawn : RifleCaseSpawn
 
  //the black metal piece that holds the bullets on belt! " -
                        // Dragonball1957
-					   
+// Converted to a base class so that other possible belt link sprites could use this.
+// This may get deleted though.					   
 Class MinigunBeltPiece : Actor
 {
 		override void BeginPlay(void)
@@ -2539,6 +2709,8 @@ Class MinigunBeltPiece : Actor
    -CANBOUNCEWATER;
    +FLOORCLIP;
    +THRUACTORS;
+   +ROLLSPRITE;
+   +ROLLCENTER;
    Mass 4;
    SeeSound "weapons/casing";
    }
@@ -2548,20 +2720,23 @@ Class MinigunBeltPiece : Actor
       TNT1 A 0;
       
 	  Exist:
-      CL1N ABCDEFGH 3 A_JumpIf(waterlevel > 1, "Splash");
+      "####" "#" 3 {
+		A_SetRoll(roll+36);
+		A_JumpIf(waterlevel > 1, "Splash");
+		}
       Loop;
 
    Death:
       TNT1 A 0 A_StopSound(CHAN_AUTO);
 	  TNT1 A 0 A_PlaySound("decasebounce");
-      LCPJ A 0 A_Jump(256,"Rest1","Rest2");
+      "####" A 0 A_Jump(256,"Rest1","Rest2");
       Goto Rest1;
     Rest1:
-      CL1N F 900;
+      "####" "#" 900;
      TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("ToggleBulletJanitor")==1,"Disappear") ;
 		Loop;
     Rest2:
-      CL1N B 900;
+      "####" "#" 900;
      TNT1 A 0 A_JumpIf(ACS_NamedExecuteWithResult("ToggleBulletJanitor")==1,"Disappear") ;
 		Loop;
 	
@@ -2579,7 +2754,6 @@ Class LMGMissileBeltLink : MinigunBeltPiece
 {
  Default
  {
-  +ROLLSPRITE;
   Scale .155;
  }
  States
@@ -2685,7 +2859,7 @@ Class MiniBeltPieceSpawn2 : Actor
 	{
 	Spawn:
         TNT1 A 0;
-		TNT1 A 1 A_SpawnProjectile("MinigunBeltPiece",-2,0,-random(80,100),CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH,random(40,80));
+		TNT1 A 1 A_SpawnProjectile("LMGBeltLink",-2,0,-random(80,100),CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH,random(40,80));
 		Stop;
 	}
 }
