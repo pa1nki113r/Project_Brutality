@@ -1,3 +1,5 @@
+
+
 class PB_WeaponBase : DoomWeapon 
 {
 	Actor laseractor;
@@ -31,10 +33,78 @@ class PB_WeaponBase : DoomWeapon
 	property FiringLeftWeapon: FiringLeftWeapon;
 	property FiringRightWeapon: FiringRightWeapon;
 	
+	
+	bool usingEquipment;
+	property usingEquipment: usingEquipment;
+	
+	bool usingMelee;
+	property usingMelee: usingMelee;
+	
+	bool usingKick;
+	property usingKick: usingKick;
+	
+	bool executingEnemy;
+	property executingEnemy: executingEnemy;
+	
+	action void PB_SawAttack(bool stealArmor = 0)
+	{
+		
+				double playerHealth = self.health;
+				
+				if(CountInv("Gas") > 0 && playerHealth < 200) {
+				
+					double healingFactor = 0.03*sqrt(200-playerHealth);
+					A_Saw("", "Machete/Yum", 2, "SSawPuff2", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS, 80, 3, 0, healingFactor, 200);
+				
+				}
+				else {
+					A_Saw("", "Machete/Yum", 2, "SSawPuff2", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMO, 80, 3, 0);
+				}
+	}
+	
+	action bool PB_usingEquipment(){
+		return invoker.usingEquipment;
+	}
+	
+	action void PB_SetUsingEquipment(bool type){
+		invoker.usingEquipment = type;
+	}
+	
+	action bool PB_usingMelee(){
+		return invoker.usingMelee;
+	}
+	
+	action void PB_SetUsingMelee(bool type){
+		invoker.usingMelee = type;
+	}
+	
+	
+	action bool PB_usingKick(){
+		return invoker.usingKick;
+	}
+	
+	action void PB_SetUsingKick(bool type){
+		invoker.usingKick = type;
+	}
+	
+	
+	action bool PB_executingEnemy(){
+		return invoker.executingEnemy;
+	}
+	
+	action void PB_SetExecutingEnemy(bool type){
+		invoker.executingEnemy = type;
+	}
+	
 	action void PB_SetPlayerExecutionProperties() {
+		A_GiveInventory("ExecutionToken", 1); // When dashing, make sure to STOP player momentum, or else it fucks with the execution. Using a token for now.
+		A_ClearOverlays(10,11);
+		A_StopSound(CHAN_7);
+		A_StopSound(CHAN_WEAPON);
 		SetPlayerProperty(0, 1, PROP_INVULNERABILITY);
 		SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN );
 		SetPlayerProperty(0, 1, PROP_FLY);
+		PB_SetExecutingEnemy(true);
 	}
 	
 	
@@ -42,73 +112,157 @@ class PB_WeaponBase : DoomWeapon
 		SetPlayerProperty(0, 0, PROP_INVULNERABILITY);
 		SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN );
 		SetPlayerProperty(0, 0, PROP_FLY);
-		A_ClearTarget();
+		PB_SetExecutingEnemy(false);
+		PB_SetUsingMelee(false);
+		//A_ClearTarget();
+		A_TakeInventory("KnifeHasHit",1);
+		A_TakeInventory("HasCutingWeapon", 1);
+		A_TakeInventory("ExecutionToken", 1);
 	}
 	
-	action void PB_ExecutionCheckMonster(Actor monster) {
 	
-		// Zombieman
-		let player = self.player;
+	action StateLabel PB_ExecuteZombieMan() {
+		A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
+		StateLabel result;
+		int selector = (random(1,4));
+		FLineTraceData RemoteRay;
+		bool wallcheck = LineTrace(
+		   angle,
+		   120,
+		   pitch,
+		   TRF_THRUACTORS,
+		   offsetz: height-12,
+		   data: RemoteRay
+		);
 		
-		if(monster.getClass() is "PB_ZombieMan") {
-			A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET);
-			int selector = (random(1,3));
-// 			int selector = 3;
-			FLineTraceData RemoteRay;
-			bool wallcheck = LineTrace(
-               angle,
-               120,
-               pitch,
-			   TRF_THRUACTORS,
-               offsetz: height-12,
-               data: RemoteRay
-            );
+		// Drop Kick Fatality
+		if((z-floorz) > 8) {
+			A_Warp(AAPTR_PLAYER_GETTARGET, 0, 0, 54, WARPF_USECALLERANGLE|WARPF_NOCHECKPOSITION);
+			result = "Execution_Zombieman4";
+			return result;
+		}
+		
+		// Wall Kick Fatality
+		if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
+			result = "Execution_Zombieman3";
+			return result;
+		}
+		
+		// Generic Fatalities
+		switch(selector){
+			case 1:
+				result = "Execution_Zombieman1";
+				break;
+			case 2:
+				result = "Execution_Zombieman2";
+				break;
+			case 3:
+				result = "Execution_Zombieman5";
+				break;
+			case 4:
+				result = "Execution_Zombieman6";
+				break;
+		}
+		return result;
+	}
+	
+	
+	action StateLabel PB_ExecuteImp() {
+		A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
+		StateLabel result;
+// 		int selector = (random(1,4));
+		int selector = 1;
+		FLineTraceData RemoteRay;
+		bool wallcheck = LineTrace(
+		   angle,
+		   120,
+		   pitch,
+		   TRF_THRUACTORS,
+		   offsetz: height-12,
+		   data: RemoteRay
+		);
+		
+		// Drop Kick Fatality
+// 		if((z-floorz) > 8) {
+// 			A_Warp(AAPTR_PLAYER_GETTARGET, 0, 0, 54, WARPF_USECALLERANGLE|WARPF_NOCHECKPOSITION);
+// 			result = "Execution_Zombieman4";
+// 			return result;
+// 		}
+		
+// 		// Wall Kick Fatality
+// 		if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
+// 			result = "Execution_Zombieman3";
+// 			return result;
+// 		}
+		
+		// Generic Fatalities
+		switch(selector){
+			case 1:
+				result = "Execution_Imp1";
+				break;
+		}
+		return result;
+	}
+		
+	action StateLabel PB_ExecutionHandlerString(Actor monster) {
+	
+		A_Stop();
+		PB_SetPlayerExecutionProperties();
+		A_SetCrosshair(5);
+		
+		name enemy = monster.getClassName();
+// 		A_print(enemy);
+		
+		switch(enemy){
+			// Zombieman
+			case 'PB_Zombieman':
+				return PB_ExecuteZombieMan();
+			case 'PB_PistolZombieman1':
+				return PB_ExecuteZombieMan();
+			case 'PB_HelmetZombieman':
+				return PB_ExecuteZombieMan();
+			case 'PB_PistolZombieman2':
+				return PB_ExecuteZombieMan();
 			
-			// Drop Kick Fatality
-			if((z-floorz) > 8) {
-				A_Warp(AAPTR_PLAYER_GETTARGET, 0, 0, 54, WARPF_USECALLERANGLE|WARPF_NOCHECKPOSITION);
-				A_GiveInventory("PB_ZombiemanExecution4", 1);
-				return;
-			}
-			// Wall Kick Fatality
-			if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {A_GiveInventory("PB_ZombiemanExecution3", 1); return;}
-			
-			// Generic Fatalities
-			if(selector == 1) {A_GiveInventory("PB_ZombiemanExecution1", 1); return;}
-			if(selector == 2) {A_GiveInventory("PB_ZombiemanExecution2", 1); return;}
-			if(selector == 3) {A_GiveInventory("PB_ZombiemanExecution5", 1); return;}
+			// Imp
+			case 'PB_Imp1':
+				return PB_ExecuteImp();
+				
+			default:
+				A_Print("Execution Failed");
+				PB_UnsetPlayerExecutionProperties();
+				return "GoingToReady2";
 		}
 	}
 	
 	action state PB_Execute() {
 	
-	
         CVar experimental_settings = CVar.FindCVar('pb_experimental');
 		
 		if(experimental_settings.GetBool()){
 			//
-			if (GetPointer(AAPTR_PLAYER_GETTARGET) is "PB_Monster" && GetDistance(True, AAPTR_PLAYER_GETTARGET) < 120 ){
+			if(GetPointer(AAPTR_PLAYER_GETTARGET) != NULL)
+			{
+// 				if (GetPointer(AAPTR_PLAYER_GETTARGET) is "PB_Monster" && GetDistance(True, AAPTR_PLAYER_GETTARGET) < 120 ){
 				
-// 				int targetMaxHealth = CallACS("Executions_GetTargetMaxHealth");
-// 				int targetCurrentHealth = CallACS("Executions_GetTargetCurrentHealth");
-				
-				int targetMaxHealth = GetPointer(AAPTR_PLAYER_GETTARGET).spawnHealth();
-				int targetCurrentHealth = GetPointer(AAPTR_PLAYER_GETTARGET).health;
-				
-				if (targetCurrentHealth <= targetMaxHealth*0.2|| targetCurrentHealth < 65) {
+				if(GetPointer(AAPTR_PLAYER_GETTARGET) is "PB_Monster")
+				{
+					LookExParams look;
+					look.FOV = 110;
+					
+					if (GetPointer(AAPTR_PLAYER_GETTARGET).IsVisible(self, false, look) && GetDistance(True, AAPTR_PLAYER_GETTARGET) < 250 ){
 						
-						// Force targeted actor to execution state
-						A_Stop();
-						PB_ExecutionCheckMonster(GetPointer(AAPTR_PLAYER_GETTARGET));
-						return ResolveState("ExecutionHandler");
-// 						(GetPointer(AAPTR_PLAYER_GETTARGET)).SetState(FindState("Death.Execution"));
+// 						Actor monster = self.AimTarget();
+						Actor monster = GetPointer(AAPTR_PLAYER_GETTARGET);
+						int targetMaxHealth = monster.spawnHealth();
+						int targetCurrentHealth = monster.health;
 						
-						
-						
-						// Make targeted actor give token to player based on execution animation to play
-						// Force player actor to enter corresponding execution based on received token
+						if (targetCurrentHealth <= targetMaxHealth*0.2|| targetCurrentHealth < 65) {
+							StateLabel st = PB_ExecutionHandlerString(monster);
+							return ResolveState(st);
+						}
+					}
 				}
-				
 			}
 		}
 		return null;
@@ -169,6 +323,8 @@ class PB_WeaponBase : DoomWeapon
     {
         return !(player.cmd.buttons & which) && player.oldbuttons & which;
     }
+	
+    action bool IsPressingInput(int which){return player.cmd.buttons & which;}
 	
 	Default
 	{
@@ -313,8 +469,66 @@ class PB_WeaponBase : DoomWeapon
 		return 0;
 	}
 	
+	// Used for interrupting the hand animation when kicking with melee attacks
+	action bool PB_MeleeKickInterruptCheck() {
+		if( InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftJab")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftHook")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftUpperCut")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftBackHand")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightJab"))||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightHook")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightUpperCut")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightBackHand"))
+		) {
+			return true;
+		}
+		return false;
+	}
 	
-	action state A_DoPBWeaponAction(int weapflags = WRF_ALLOWRELOAD, int pbFlags = 0, string unloadtoken = "HasUnloaded")
+	action bool PB_MeleeAttackKickCheck() 
+	{
+	
+		if( InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftJab")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftHook")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftUpperCut")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftBackHand")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightJab"))||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightHook")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightUpperCut")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightBackHand")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("SideKickRight")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("SideKickLeft")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("HookKickLeft")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("ThrustKick")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("AirKickCombo")) ||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("HookKickRight"))
+		) {
+			return false;
+		}
+		return true;
+		
+	}
+	
+	action bool PB_WeaponIsInReadyState()
+	{
+		if ( (InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("Ready")) || 
+			  InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("ReallyReady")) ||
+			  InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("ReadyToFire"))||
+			  InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("Ready3"))
+			 ) 
+			 ||
+			(InStateSequence(invoker.owner.player.GetPSprite(10).Curstate,invoker.ResolveState("IdleLeft_Overlay")) && 
+			 InStateSequence(invoker.owner.player.GetPSprite(11).Curstate,invoker.ResolveState("IdleRight_Overlay")) && 
+			 InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("ReadyToFireDualWield"))) 
+		   ){
+			
+			return true;
+		}
+		return false;
+	}
+	
+	
+	action state A_DoPBWeaponAction(int weapflags = WRF_ALLOWRELOAD, int pbFlags = 0, string unloadtoken = "HasUnloaded", bool noReload = false)
 	{
 		static const string PBWeapEmptyToken[] = 
 		{
@@ -336,46 +550,19 @@ class PB_WeaponBase : DoomWeapon
 			"NoDualWield", "WeaponSpecial", "GrabbedBarrel", "GrabbedBurningBarrel"
 		};
 		if (!(pbFlags & PBWEAP_UNLOADED)) pbFlags |= CheckUnloaded(invoker.UnloaderToken);
-		if (CountInv("GoFatality")>=1)
+		if (CountInv("GoFatality")>=1 || PB_executingEnemy())
 		{
 			return ResolveState("Steady");
 		}
-		/*
-		if (CountInv("Grabbing_A_Ledge")>=1) 
-		{
-			return ResolveState("LedgeClimb");
-		}
-		*/
+		
 		if(((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()) || ((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon())){
 			if(CountInv("DualFireReload") >= 2){
 				A_TakeInventory("DualFireReload",2);
 				return ResolveState("Reload");
 			}
 		}
-		if (CountInv("DoPunch")>=1) 
-		{
-			return ResolveState("QuickPunch");
-		}
-		if (CountInv("Kicking")>=1) 
-		{
-			return ResolveState("DoKick");
-		}
-		else if (CountInv("Taunting")>=1) 
-		{
-			return ResolveState("Taunt");
-		}
-		if (CountInv("Salute1")>=1 || CountInv("Salute2")>=1) 
-		{
-			return ResolveState("Salute");
-		}
-		if (CountInv("UseEquipment")>=1) 
-		{
-			return ResolveState("UseEquipment");
-		}
-		if (CountInv("ToggleEquipment")>=1) 
-		{
-			return ResolveState("SwitchEquipment");
-		}
+		
+// 		}
 		if (CountInv("GoWeaponSpecialAbility")>=1)
 		{
 			if (ResolveState("DualWieldBaby")) return ResolveState("DualWieldBaby");
@@ -413,8 +600,13 @@ class PB_WeaponBase : DoomWeapon
 				}
 			}
 		}
-		A_WeaponReady(weapflags);
-		//A_WeaponOffset(-CallACS("Script_GetGunOffsetX"), CallACS("Script_GetGunOffsetY")-1,WOF_INTERPOLATE | (!!(pbFlags & PBWEAP_KEEPYOFFSET) ? WOF_KEEPY : 0));
+		
+		if (noReload) {
+			A_WeaponReady();
+		}
+		else {
+			A_WeaponReady(weapflags);
+		}
 		return null;
 	}
 	
