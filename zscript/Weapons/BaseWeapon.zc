@@ -46,21 +46,51 @@ class PB_WeaponBase : DoomWeapon
 	bool executingEnemy;
 	property executingEnemy: executingEnemy;
 	
-	action void PB_SawAttack(bool stealArmor = 0)
+	
+	bool chainsawMode;
+	property chainsawMode: chainsawMode;
+	
+	
+	action bool PB_ChainsawHealthRestore(){
+		return invoker.chainsawMode;
+	}
+	
+	action void PB_SetChainsawHealthRestore(bool type){
+		invoker.executingEnemy = type;
+	}
+	
+	action void PB_SawAttack(bool verticalCut = 0, bool stealArmor = 0)
 	{
 		
 				double playerHealth = self.health;
 				
-				if(CountInv("Gas") > 0 && playerHealth < 200) {
-				
-					double healingFactor = 0.03*sqrt(200-playerHealth);
-					A_Saw("", "Machete/Yum", 2, "SSawPuff2", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS, 80, 3, 0, healingFactor, 200);
+				if(CountInv("ChainsawResourceGather") >= 1 && GetPointer(AAPTR_PLAYER_GETTARGET) is "PB_Monster" && CountInv("Gas") > 0 && playerHealth < 200) {
+					
+					double coefficient = 0.015;
+					if (playerHealth < 100) {coefficient = 0.03;}
+						
+						
+					double healingFactor = coefficient*sqrt(200-playerHealth);
+					
+					if(verticalCut) {
+						A_Saw("", "Machete/Yum", 2, "SSawPuff3", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS, 80, 3, 0, healingFactor, 200);
+					}
+					else {
+						A_Saw("", "Machete/Yum", 2, "SSawPuff2", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS, 80, 3, 0, healingFactor, 200);
+					}
 				
 				}
 				else {
-					A_Saw("", "Machete/Yum", 2, "SSawPuff2", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMO, 80, 3, 0);
+					if(verticalCut) {
+						A_Saw("", "Machete/Yum", 2, "SSawPuff3", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS, 80, 3, 0);
+					}
+					else {
+						A_Saw("", "Machete/Yum", 2, "SSawPuff2", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS, 80, 3, 0);
+					}
 				}
 	}
+	
+	
 	
 	action bool PB_usingEquipment(){
 		return invoker.usingEquipment;
@@ -501,7 +531,10 @@ class PB_WeaponBase : DoomWeapon
 			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("HookKickLeft")) ||
 			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("ThrustKick")) ||
 			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("AirKickCombo")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("HookKickRight"))
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("HookKickRight"))||
+			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("JavelinReadyToFire"))
+			
+			
 		) {
 			return false;
 		}
