@@ -436,6 +436,7 @@ ACTOR ThrownGrenade1
 	+DontHurtSpecies
 	+DontHarmSpecies
 	+NoExtremeDeath
+	+UseBounceState
 	DamageType "ExplosiveImpact"
 	BounceFactor 0.5
 	WallBounceFactor 0.25
@@ -446,19 +447,29 @@ ACTOR ThrownGrenade1
 	States
 	{
 	Spawn:
-		TNT1 A 0
-		GRND ABCDEFGA 2
+		GRND ABCD 2
+		TNT1 A 0 A_GiveInventory("GrenadeTime",1)
+		GRND EFGA 2
 		TNT1 A 0 A_StopSound(5)
-		TNT1 A 0 A_GiveInventory("GrenadeTime", 1)
 		TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, "Explode")
 		Loop
+	
+	Bounce:
+	Bounce.Floor:
+	Bounce.Ceiling:
+	Bounce.Wall:
+		TNT1 A 0
+		TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, "Explode")
+		TNT1 A 0 A_JumpIf(GetCvar("pb_grenadeimpact"),"Explode")
+		Goto Spawn
 
 	Death:
 		TNT1 A 0
 		TNT1 A 0
+		TNT1 A 0 A_JumpIf(GetCvar("pb_grenadeimpact"),"Explode")
 	    GRND G 17
+		TNT1 A 0 A_GiveInventory("GrenadeTime",1)
 		TNT1 A 0 A_StopSound(5)
-		TNT1 A 0 A_GiveInventory("GrenadeTime", 1)
 		TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, "Explode")
 		Loop
 			
@@ -554,6 +565,7 @@ ACTOR EnemyThrownGrenade : HandGrenadeAnother
     +BOUNCEONACTORS
 	+NOEXTREMEDEATH
 	+DONTHURTSPECIES
+	-UseBounceState
 	Species "Zombieman"
 	+MTHRUSPECIES
 	+THRUSPECIES
@@ -563,6 +575,21 @@ ACTOR EnemyThrownGrenade : HandGrenadeAnother
    Speed 16
    States
    {
+	Spawn:
+		GRND ABCDEFGA 2
+		TNT1 A 0 A_GiveInventory("GrenadeTime",1)
+		TNT1 A 0 A_StopSound(5)
+		TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, "Explode")
+		Loop
+
+	Death:
+		TNT1 A 0
+		TNT1 A 0
+	    GRND G 17
+		TNT1 A 0 A_GiveInventory("GrenadeTime",1)
+		TNT1 A 0 A_StopSound(5)
+		TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, "Explode")
+		Loop
    Explode:
 		TNT1 A 0 A_SpawnItemEx("FootStep6", 0, 0, 40, 0, 0)
 		TNT1 A 0 A_Stop
@@ -574,7 +601,7 @@ ACTOR EnemyThrownGrenade : HandGrenadeAnother
 		GRND G 25
 		TNT1 A 0 A_StopSound(6)
 		EXPL A 0 Radius_Quake (2, 16, 0, 15, 0)//(intensity, duration, damrad, tremrad, tid)
-		TNT1 A 0 A_SpawnItemEx ("HandGrenadeExplosionEnemy",0,0,30,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 A 0 A_SpawnItemEx ("HandGrenadeExplosion",0,0,30,0,0,0,0,SXF_NOCHECKPOSITION,0)
 		TNT1 A 0 A_SpawnItem("WhiteShockwave")
 		TNT1 A 0 A_SpawnItem ("BigRicoChet", 0, -30)
 		TNT1 A 0 A_SpawnItemEx ("NewGroundExplosionSmoke",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
@@ -786,6 +813,7 @@ ACTOR ThrownStunGrenade : ThrownGrenade1
 	DeathSound "none"
 	Obituary "%o ate %k grenade."
 	+ROLLSPRITE 
+	-UseBounceState
 	States
 	{
 		Spawn:
