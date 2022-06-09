@@ -110,6 +110,7 @@ ACTOR StunGrenadeAmmo : Ammo
    Ammo.BackPackAmount 1
    Ammo.BackPackMaxAmount 12
    Inventory.PickUpMessage "Picked up a stun grenade"
+   Inventory.PickupSound "StunGrenadePickup"
    Inventory.Icon STNGA0
    +INVENTORY.IGNORESKILL
    Scale 0.6
@@ -428,12 +429,14 @@ ACTOR ThrownGrenade1
 	+DOOMBOUNCE
 	+FLOORCLIP
 	+DONTGIB
+	-NOBLOCKMAP
 	Species "Marine"
 	+MTHRUSPECIES
 	+THRUSPECIES
 	+DontHurtSpecies
 	+DontHarmSpecies
 	+NoExtremeDeath
+	+UseBounceState
 	DamageType "ExplosiveImpact"
 	BounceFactor 0.5
 	WallBounceFactor 0.25
@@ -444,19 +447,29 @@ ACTOR ThrownGrenade1
 	States
 	{
 	Spawn:
-		TNT1 A 0
-		GRND ABCDEFGA 2
+		GRND ABCD 2
+		TNT1 A 0 A_GiveInventory("GrenadeTime",1)
+		GRND EFGA 2
 		TNT1 A 0 A_StopSound(5)
-		TNT1 A 0 A_GiveInventory("GrenadeTime", 1)
 		TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, "Explode")
 		Loop
+	
+	Bounce:
+	Bounce.Floor:
+	Bounce.Ceiling:
+	Bounce.Wall:
+		TNT1 A 0
+		TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, "Explode")
+		TNT1 A 0 A_JumpIf(GetCvar("pb_grenadeimpact"),"Explode")
+		Goto Spawn
 
 	Death:
 		TNT1 A 0
 		TNT1 A 0
+		TNT1 A 0 A_JumpIf(GetCvar("pb_grenadeimpact"),"Explode")
 	    GRND G 17
+		TNT1 A 0 A_GiveInventory("GrenadeTime",1)
 		TNT1 A 0 A_StopSound(5)
-		TNT1 A 0 A_GiveInventory("GrenadeTime", 1)
 		TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, "Explode")
 		Loop
 			
@@ -552,6 +565,7 @@ ACTOR EnemyThrownGrenade : HandGrenadeAnother
     +BOUNCEONACTORS
 	+NOEXTREMEDEATH
 	+DONTHURTSPECIES
+	-UseBounceState
 	Species "Zombieman"
 	+MTHRUSPECIES
 	+THRUSPECIES
@@ -561,6 +575,21 @@ ACTOR EnemyThrownGrenade : HandGrenadeAnother
    Speed 16
    States
    {
+	Spawn:
+		GRND ABCDEFGA 2
+		TNT1 A 0 A_GiveInventory("GrenadeTime",1)
+		TNT1 A 0 A_StopSound(5)
+		TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, "Explode")
+		Loop
+
+	Death:
+		TNT1 A 0
+		TNT1 A 0
+	    GRND G 17
+		TNT1 A 0 A_GiveInventory("GrenadeTime",1)
+		TNT1 A 0 A_StopSound(5)
+		TNT1 A 0 A_JumpIfInventory("GrenadeTime", 3, "Explode")
+		Loop
    Explode:
 		TNT1 A 0 A_SpawnItemEx("FootStep6", 0, 0, 40, 0, 0)
 		TNT1 A 0 A_Stop
@@ -584,7 +613,7 @@ ACTOR EnemyThrownGrenade : HandGrenadeAnother
 		TNT1 AAA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180))
         TNT1 AAAAAAA 0 A_CustomMissile ("MediumExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360))
         EXPL AAAAAA 0 A_CustomMissile ("ExplosionSmokeFast22", 0, 0, random (0, 360), 2, random (0, 360))
-		TNT1 A 0 A_Explode(100,150, XF_HURTSOURCE)
+		TNT1 A 0 A_Explode(40,150, XF_HURTSOURCE)
 		TNT1 A 1
 		TNT1 A 0 A_Playsound("handgrenade/Explosion", 1)
 		TNT1 A 0 A_PlaySound("FAREXPL", 3)
@@ -784,6 +813,7 @@ ACTOR ThrownStunGrenade : ThrownGrenade1
 	DeathSound "none"
 	Obituary "%o ate %k grenade."
 	+ROLLSPRITE 
+	-UseBounceState
 	States
 	{
 		Spawn:
