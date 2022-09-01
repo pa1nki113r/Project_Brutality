@@ -481,24 +481,24 @@ class PlayerPawnBase : PlayerPawn
 				if(LedgeGrabbed) { Angle = clamp(Angle, LedgeAngle - 20, LedgeAngle + 20); }
 			}
 			
-			/////////////////////////////////////////
-			//Acrobatics triggers
-			if(CVar.GetCVar("pb_doubletap", Player).GetBool()) { DoubleTapCheck(); }
-			//Dashing parameters reset
-			if(DashCooler == 100 && (Player.OnGround || WaterLevel >= 2 || bNOGRAVITY))
-			{
-				WJumpSpeed = DashNumber = 0;
-				DashCooler = 18;
-				A_TakeInventory("PlayerDashed", 1);
+// 			/////////////////////////////////////////
+// 			//Acrobatics triggers
+// 			if(CVar.GetCVar("pb_doubletap", Player).GetBool()) { DoubleTapCheck(); }
+// 			//Dashing parameters reset
+// 			if(DashCooler == 100 && (Player.OnGround || WaterLevel >= 2 || bNOGRAVITY))
+// 			{
+// 				WJumpSpeed = DashNumber = 0;
+// 				DashCooler = 18;
+// 				A_TakeInventory("PlayerDashed", 1);
 					
-			}
-			else if(DashCooler && DashCooler <= 18)
-			{
-				DashCooler--;
-				if(alphaFade < 1.0) {
-					alphaFade += 0.1;
-				}
-			}
+// 			}
+// 			else if(DashCooler && DashCooler <= 18)
+// 			{
+// 				DashCooler--;
+// 				if(alphaFade < 1.0) {
+// 					alphaFade += 0.1;
+// 				}
+// 			}
 			//Air Dash
 // 			if(pb_airdash)
 // 			{
@@ -1416,7 +1416,9 @@ class PlayerPawnBase : PlayerPawn
 		
 		if(Player.OnGround)
 		{
-			if(Player.CrouchFactor != 1 && !CSlideStartTime && CheckInventory("Kicking",1))
+			Int BT=cmd.buttons;
+			
+			if(Player.CrouchFactor != 1 && !CSlideStartTime && (BT & BT_USER4))
 			{
 				sector sss=floorsector;
 				if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
@@ -2677,48 +2679,48 @@ Class SpeedoMeterHandler : EventHandler
 	}
 }
 
-Class DashHandler : EventHandler
-{
-	float getPlayerAlpha()
-	{
-		Let DashPlayer = PlayerPawnBase(Players[consoleplayer].Mo);
-		return DashPlayer.GetAlphaFade();
-	}
+// Class DashHandler : EventHandler
+// {
+// 	float getPlayerAlpha()
+// 	{
+// 		Let DashPlayer = PlayerPawnBase(Players[consoleplayer].Mo);
+// 		return DashPlayer.GetAlphaFade();
+// 	}
 	
-	Override void renderOverlay(RenderEvent e)
-	{
-        Let DashPlayer = players[consoleplayer].mo;
-		//TextureID dashTex = TexMan.CheckForTexture("graphics/DASHSCREEN.png",TexMan.Type_Any);
-		TextureID dashTex = TexMan.CheckForTexture("DASHSCREEN",TexMan.Type_Any);
-		Vector2 imageScale = TexMan.GetScaledSize(dashTex);
+// 	Override void renderOverlay(RenderEvent e)
+// 	{
+//         Let DashPlayer = players[consoleplayer].mo;
+// 		//TextureID dashTex = TexMan.CheckForTexture("graphics/DASHSCREEN.png",TexMan.Type_Any);
+// 		TextureID dashTex = TexMan.CheckForTexture("DASHSCREEN",TexMan.Type_Any);
+// 		Vector2 imageScale = TexMan.GetScaledSize(dashTex);
 		
-		if(DashPlayer != NULL && PlayerInGame[consoleplayer])
-		{
+// 		if(DashPlayer != NULL && PlayerInGame[consoleplayer])
+// 		{
 			
-			if(DashPlayer.FindInventory("PlayerDashed") && CVar.FindCVar("pb_dasheffect").GetBool() == true) {
-					screen.DrawTexture (dashTex, true, 0, 0,
-					DTA_FULLSCREEN, true,
-                    DTA_KeepRatio, true);
-					//DTA_SRCWIDTH breaks GZ4.3.3 compatibility, a more compatible way of handling this might be useful
-			}
+// 			if(DashPlayer.FindInventory("PlayerDashed") && CVar.FindCVar("pb_dasheffect").GetBool() == true) {
+// 					screen.DrawTexture (dashTex, true, 0, 0,
+// 					DTA_FULLSCREEN, true,
+//                     DTA_KeepRatio, true);
+// 					//DTA_SRCWIDTH breaks GZ4.3.3 compatibility, a more compatible way of handling this might be useful
+// 			}
 	
-		}
-	}
-//
-    Override void NetworkProcess(ConsoleEvent e)
-    {
-        if(e.Player >= 0 && PlayerInGame[e.Player] && Players[e.Player].Mo)
-        {
-            if(e.Name == "Dash")
-            {
-                Let DashPlayer = PlayerPawnBase(Players[e.Player].Mo);
-                if(DashPlayer) { 
-					DashPlayer.DashInitiator(); 
-				}
-            }
-        }
-    }
-}
+// 		}
+// 	}
+
+//     Override void NetworkProcess(ConsoleEvent e)
+//     {
+//         if(e.Player >= 0 && PlayerInGame[e.Player] && Players[e.Player].Mo)
+//         {
+//             if(e.Name == "Dash")
+//             {
+//                 Let DashPlayer = PlayerPawnBase(Players[e.Player].Mo);
+//                 if(DashPlayer) {
+// 					DashPlayer.DashInitiator();
+// 				}
+//             }
+//         }
+//     }
+// }
 
 Class WallSlideHandler : EventHandler
 {
@@ -3059,5 +3061,174 @@ Class HookTrail : Actor
 			
 		DespawnTrail:
 			Stop;
+	}
+}
+
+
+class DEDashJumpHandler : EventHandler
+{
+	override void PlayerEntered(PlayerEvent e)
+	{
+		players[e.PlayerNumber].mo.A_GiveInventory("DEDashJump", 1);
+	}
+}
+
+
+Class DEDashJump : Inventory 						///Dash and double jump code by TheCamaleonMaligno ( https://www.youtube.com/watch?v=mTfGxY_Afhs )
+{
+	Double DashDir, DashSpeed;
+	Int DashTics, DashCharge, AirTics;
+	Bool DJump, Waiting;
+	/*Default
+	{
+		Inventory.MaxAmount 1;
+		+INVENTORY.AUTOACTIVATE
+	}*/
+	Override Void Tick()
+	{
+		Super.Tick();
+		If(!Owner || Owner && (!Owner.Player || Owner.Health<1)) Return;
+		PlayerInfo P=Owner.Player;
+		
+		
+		
+		Int BT=P.cmd.buttons;
+		
+		Int DashMaxCharge=35;
+		
+		If(!Waiting && (BT & BT_USER3) && DashCharge>=DashMaxCharge/2 && !DashTics && !Owner.CheckInventory("IsSlideKicking", 1))
+		{
+			DashDir=0;
+			If(BT & BT_FORWARD) DashDir=0;
+			If(BT & BT_BACK) DashDir=180;
+			If(BT & BT_MOVELEFT) DashDir=90;
+			If(BT & BT_MOVERIGHT) DashDir=-90;
+			If((BT & BT_FORWARD) && (BT & BT_MOVELEFT)) DashDir=45;
+			If((BT & BT_FORWARD) && (BT & BT_MOVERIGHT)) DashDir=-45;
+			If((BT & BT_BACK) && (BT & BT_MOVELEFT)) DashDir=180-45;
+			If((BT & BT_BACK) && (BT & BT_MOVERIGHT)) DashDir=180+45;
+			DashDir+=Owner.Angle;
+			If(DashCharge<DashMaxCharge) { Waiting=True; DashCharge=0; }
+			DashCharge=Max(0,DashCharge-DashMaxCharge/2);
+			DashSpeed=70;//35;
+			DashTics=10;
+			Owner.A_SetBlend("White",0.05,20);
+			Owner.A_StartSound("player/dash",69,CHANF_OVERLAP);
+			//Owner.A_QuakeEx(2,2,2,15,0,1,"",QF_SCALEDOWN);
+			Owner.A_QuakeEx(0.5,0.5,0.5,5,0,1,"",QF_SCALEDOWN);
+			Actor C=Spawn("DashCollisionChecker",Owner.Pos);
+			C.bSolid=True;
+			C.Master=Self;
+			C.Target=Owner;
+			C.A_SetSize(Owner.Radius,Owner.Height);
+			C.bNoTImeFreeze=True;
+			GiveInventory("EvadeCheck", 1);
+		}
+		
+		if(Owner.CheckInventory("ExecutionToken", 1)) {
+				Owner.vel.x = 0;
+				Owner.vel.y = 0;
+				DashTics = 0;
+				TakeInventory("EvadeCheck", 2);
+				TakeInventory("EvadeHold", 2);
+			}
+		
+		If(DashTics)
+		{
+			//If(P.OnGround) {P.OnGround=False; Owner.AddZ(1); }
+			
+			
+			
+			
+			DashTics--;
+			Owner.VelFromAngle(DashSpeed,DashDir);
+			If(DashTics<=5) DashSpeed*=0.65;//0.8;
+			Owner.Vel.Z=0;
+			level.airControl = 0.25;
+			Owner.vel.x *= 0.50;
+			Owner.vel.y *= 0.50;
+			GiveInventory("EvadeHold", 1);
+		}
+		If(P.onGround)
+		{
+			DJump=True;
+			AirTics=0;
+			level.airControl = 0.00390625;
+		}
+		//Else If(!(Owner.GetPlayerInput(MODINPUT_OLDBUTTONS) & BT_JUMP) && (Owner.GetPlayerInput(MODINPUT_BUTTONS) & BT_JUMP) && DJump && AirTics>=5)
+		//{
+		
+			//Owner.Vel.Z=Max(Owner.Vel.Z+8,8);
+			//Float DoubleJumpVelZ = /*5.5*/7.4 * 1.2;
+			//Owner.Vel.Z = DoubleJumpVelZ;
+			//Owner.A_StartSound("JMPBOOT",69,CHANF_OVERLAP);
+			
+			//DJump=False;
+			
+		//}
+		Else AirTics++;
+		If(DashCharge<DashMaxCharge)
+		{
+			DashCharge++;
+			If(DashCharge==DashMaxCharge && !P.OnGround) DashCharge=DashMaxCharge-1;
+			If(DashCharge==DashMaxCharge)
+			{
+				Waiting=False;
+				Owner.A_StartSound("player/dashready",69,CHANF_OVERLAP);
+				TakeInventory("EvadeCheck", 2);
+				TakeInventory("EvadeHold", 2);
+			}
+		}
+	}
+}
+
+
+
+Class DashCollisionChecker : Actor
+{
+	DEDashJump je;
+	Override Void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		let sas=DEDashJump(Master);
+		je=sas;
+	}
+	Override bool CanCollideWith(Actor other, bool passive)
+	{
+		If(Other==target || Other.bMissile)
+		Return False;
+		If(Pos.Z>Other.Pos.Z+Other.Height || Other.Pos.Z>Pos.Z+Height) Return False;
+		If(Other.bSolid && Other.bShootable && Other.CanCollideWith(Self,0))
+		Tracer=Other;
+		Return False;
+	}
+	Override VOid Tick()
+	{
+		Super.TIck();
+		If(!target || !je || je && !je.dashtics) { Destroy(); Return; }
+		SetOrigin(Target.Pos+Target.Vel*0.1,0);
+		Vel=Target.Vel;
+		If(Tracer)
+		{
+			bThruActors=True;
+			/*
+			Let Cg=Weapon_Chaingun(Target.player.ReadyWeapon);
+			If(Cg && Cg.Tracer)
+			{
+				bForcePain=True;
+				Target.Vel*=0;
+				Tracer.DamageMobj(Self,Target,75,'Normal',0,Target.Angle);
+				Tracer.ApplyKickback(Target,Target,300,Target.Angle,'Normal',0);
+				Tracer.A_TakeInventory("DashStun");
+				Tracer.A_GiveInventory("DashStun");
+				Target.A_StartSound("Weapons/DE/ChaingunShieldDash",9,CHANF_OVERLAP,0.5);
+				Target.A_QuakeEx(1,1,1,8,0,1,"",QF_SCALEDOWN);
+				Cg.DashImpact();
+				Cg.DashImpact();
+			}
+			*/
+			je.DashSpeed=0;
+			Destroy();
+		}
 	}
 }

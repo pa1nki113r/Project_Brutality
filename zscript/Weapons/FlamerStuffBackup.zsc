@@ -1,0 +1,531 @@
+Class FlamethrowerMissileNew : actor
+{
+	default {
+		Radius 12;
+		Height 8;
+		Speed 16;
+		Damage 1;
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+		+DONTSPLASH;
+		+MISSILE;
+		+FORCEXYBILLBOARD;
+		+Randomize;
+		-RIPPER;
+		+NOBLOOD;
+		+NOBLOODDECALS;
+		+BLOODLESSIMPACT;
+		-BLOODSPLATTER;
+		+HitMaster;
+		RenderStyle "Add";
+		DamageType "Fire";
+		Scale 0.1;
+		Gravity 0;
+	}
+	States {
+		Spawn:
+			TNT1 A 0;
+			DB55 E 1 BRIGHT A_SetScale(frandom(0.02, 0.08),frandom(0.02, 0.08));
+			DB55 FGH 1 BRIGHT A_SetScale(ScaleX+0.1, ScaleY+0.1);
+			DB55 IJKLMNOPQRSTUVWXYZ 1 BRIGHT {
+				A_SetScale(ScaleX+0.04, ScaleY+0.04);
+				A_Explode(1, 120, 0);
+			}
+		Death:
+			TNT1 A 0 A_Explode(8, 150, 0);
+			TNT1 A 0 A_SpawnItemEx("FT_GroundFireSpawner", random (-25, 25), random (-15, 15),0,5);
+			EXPL A 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (10, 90));
+			DB54 EFGHIJKLMNOPQR 1 BRIGHT;
+			Stop;
+			
+		XDeath:
+			TNT1 A 0 A_Explode(3, 150, 0);
+			EXPL A 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (10, 90));
+			
+			TNT1 A 0 {
+				Actor pointer_collided = master; 
+				if (pointer_collided && !(pointer_collided.GetSpecies() == "Hitbox")) {
+					bPAINLESS = true;
+					bTHRUACTORS = true;
+					bSOLID = false;
+					A_AttachLightDef('FlamethrowerLight',"IncinerationGlow");
+				}
+				else {
+						self.SetState(FindState("Death"));
+						return;
+				}
+			}
+		StickOnActor:
+			TNT1 A 1 {
+				
+				if (master) {
+					A_SpawnItemEx("FT_GroundFire", random(1,-1), random(-16,16), random((master.height/2)-16,(master.height/2)+16), Flags: SXF_NOCHECKPOSITION);
+					A_SpawnItemEx("FT_GroundFire", random(1,-1), random(-16,16), random((master.height/2)-12,(master.height/2)+12), Flags: SXF_NOCHECKPOSITION);
+					
+// 					A_Explode(random(0,1), 20, 0);
+					A_DamageMaster(random(0,1), "Fire");
+				}
+				
+// 				A_SpawnItemEx("FT_GroundFire", random(1,-1), random(-12,12), random(24,36), 0, 0, 0, 0, SXF_NOCHECKPOSITION, 0);
+// 				A_SpawnItemEx("FT_GroundFire", random(1,-1), random(-12,12), random(24,36), 0, 0, 0, 0, SXF_NOCHECKPOSITION, 0);
+			}
+			TNT1 A 0 A_JumpIfHealthLower(0, "DieOut", AAPTR_MASTER);
+			TNT1 A 0 A_Jump(6, "DieOut");
+			TNT1 A 1 A_Warp(AAPTR_MASTER, 0, 0, 0, 0, 0, "StickOnActor");
+			Stop;
+			
+		DieOut:
+			TNT1 A 0 A_RemoveLight('FlamethrowerLight');
+			Stop;
+	
+	}
+}
+
+class NukageSplashParticle: Actor
+{
+	Default
+	{
+		Radius 1;
+		Height 1;
+		Gravity 0.8;
+		Scale 0.4;
+		+NOCLIP;
+		+NOBLOCKMAP;
+		+CORPSE;
+		+Rollsprite;
+		Translation "0:255=%[0,1,0]:[0,1,0]";
+		+THRUSPECIES;
+		Species "Nukage";
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	States
+	{
+	/*
+	Spawn:
+		NBL2 ABCD 4;
+		Stop;
+		*/
+		
+	Spawn:
+		TNT1 A 1 NoDelay {
+			A_SetScale(frandom(0.33, 0.47),frandom(0.33, 0.47));
+			A_SetRoll(random(0,360));
+		}
+		TNT1 A 0 A_Jump(256, "Spawn1", "Spawn2", "Spawn3");
+	Spawn1:
+		X057 ABCDEFGHIJKLMNOPQRSSSSSSSSSSSSSSSSSSSSSSSSSS 1 bright A_CheckFloor("Crash");
+		Stop;
+	Spawn2:
+		X058 ABCDEFGHIJKLMNOPQRRRRRRRRRRRRRRRRRRRRRRRRRRR 1 bright A_CheckFloor("Crash");
+		Stop;
+	Spawn3:
+		X059 ABCDEFGHIJKLMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM 1 bright A_CheckFloor("Crash");
+		Stop;
+	Crash:
+		TNT1 A 0 {
+			A_SetRoll(0);
+			A_Stop();
+		}
+        XDT1 EFGHIJKL 2 bright;
+		Stop;
+	}
+}
+
+Class NukageMissile : actor
+{
+	default {
+
+	Radius 5;
+	Height 2;
+	Projectile;
+	Speed 30;
+    Damage 5;
+    Gravity 2.55;
+	Scale 0.75;
+	+MISSILE;
+    -BLOODSPLATTER;
+	-EXTREMEDEATH;
+	+HitMaster;
+	-NOGRAVITY;
+	+EXPLODEONWATER;
+	+FLOORCLIP;
+	+DONTGIB;
+	+HitMaster;
+	DamageType "Desintegrate";
+	Health 30;
+	DeathSound "none";
+	Obituary "%o was trapped %k nukage slime!";
+	+THRUSPECIES;
+	Species "Nukage";
+}
+	States
+	{
+	Spawn:
+		TNT1 A 0;
+		VOM2 ABCDEF 1 Bright {
+			A_SpawnItemEx("GreenTrailSparks", random(5,6),random(-1,1),random(-12,-6),8,0,0,0,SXF_NOCHECKPOSITION);
+			A_SpawnItemEx("GreenTrailSparks", random(5,6),random(-1,1),random(-12,-6),8,0,0,0,SXF_NOCHECKPOSITION);
+			A_SpawnItemEx("GreenTrailSparks", random(5,6),random(-1,1),random(-12,-6),8,0,0,0,SXF_NOCHECKPOSITION);
+			A_SpawnItemEx("GreenTrailSparks", random(5,6),random(-1,1),random(-12,-6),8,0,0,0,SXF_NOCHECKPOSITION);
+			}
+		Loop;
+	
+	JustEnd:
+		TNT1 A 1;
+		Stop;
+
+	XDeath:
+		TNT1 A 0 A_NoBlocking;
+		TNT1 A 0 A_GiveInventory("NukageStreamCount", 15, AAPTR_MASTER);
+		TNT1 AAA 0 A_SpawnItemEx("GreenTrailSparks", random(1,-1), random(1,-1), random(1,-1), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
+	    TNT1 AAAA 0 A_CustomMissile("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160));
+		TNT1 A 0 {
+			// TODO: Need to figure out this bug causing crashes with hitbox collisions
+			Actor pointer_collided = master; 
+			if (pointer_collided && !(pointer_collided.GetSpecies() == "Hitbox")) {
+				pointer_collided.A_SetTranslation("Green");
+				self.SetState(FindState("BeginStickOnActor"));
+				return;
+			}
+			else {
+					self.SetState(FindState("Death_NoBlob"));
+					return;
+			}
+		}
+		Stop;
+	BeginStickOnActor:	
+		TNT1 A 0 A_JumpIfInventory("NukeAlreadyIn", 1, "JustEnd", AAPTR_MASTER);
+		TNT1 A 0 A_GiveInventory("NukeAlreadyIn", 1, AAPTR_MASTER);
+	StickOnActor:
+		TNT1 A 1 {
+		
+			if (master) {
+				A_SpawnItemEx("GreenTrailSparks", random(1,-1), random(-16,16), random((master.height/2)-16,(master.height/2)+16), Flags: SXF_NOCHECKPOSITION);
+				A_SpawnItemEx("GreenTrailSparks", random(1,-1), random(-16,16), random((master.height/2)-12,(master.height/2)+12), Flags: SXF_NOCHECKPOSITION);
+				
+			}
+		}
+		TNT1 A 0 A_JumpIfHealthLower(0, "Explode", AAPTR_MASTER);
+		TNT1 A 0 A_Warp(AAPTR_MASTER, 0, 0, 0, 0, 0, "StickOnActor");
+		Goto Explode;
+
+	Explode:
+		TNT1 A 0 A_AlertMonsters;
+		TNT1 A 0 A_ScreamAndUnblock;
+		TNT1 A 0 {
+			Actor pointer_collided = master; 
+			
+			// Burst Enemy if continually spraying nukage
+			if (pointer_collided && !(pointer_collided.GetSpecies() == "Hitbox")) {
+			
+				if (pointer_collided.InStateSequence(pointer_collided.CurState, pointer_collided.ResolveState("Death.Desintegrate"))) {
+					self.SetState(FindState("ExplodeAcid"));
+					return;
+				}
+				
+				// Explode enemy if dying to different damage type
+				else {
+					pointer_collided.SetStateLabel("XDeath");
+					self.SetState(FindState("ExplodeNormal"));
+					return;
+				}
+			}
+			
+		}
+		TNT1 A 0;
+		Stop;
+		
+	ExplodeNormal:
+		TNT1 A 0 A_NoBlocking;
+		TNT1 A 0 A_Explode(400, 180, 0, 0, 0, 0, 0, "", "Fire");
+		TNT1 A 0 A_SpawnItem ("BigRicoChet", 0, -30);
+		TNT1 AAAA 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+		EXPL A 0 A_SpawnItem("ExplosionParticleSpawner");
+		TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+		TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+		TNT1 A 0 A_SpawnItemEx ("IncendiaryGrenadeFX", 0, 0, 0);
+		TNT1 AAAA 0 A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
+		EXPL AAAAAAAAAA 0 A_CustomMissile ("FireballExplosionFlamesBig", 6, 0, random (0, 360), 2, random (0, 360));
+		FRFX ZZZ 0 BRIGHT A_CustomMissile ("BigNeoSmoke", 2, 0, random (0, 360), 2, random (0, 360));
+		TNT1 A 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (10, 90));
+		
+		Stop;
+	
+	ExplodeAcid:
+		TNT1 A 0 A_NoBlocking;
+		TNT1 A 0 A_Explode ( 90, 180 );
+		
+		TNT1 A 0 A_SpawnItemEx("NukeSplashLarge", 0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
+		TNT1 AAA 0 A_SpawnItemEx("GreenTrailSparks", random(1,-1), random(1,-1), random(1,-1), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
+		TNT1 AAAAAAAAA 0 A_SpawnItemEx("NukageSplashParticle", random(-1,1),random(-1,1),1,random(-5,5),random(-5,5),5,random(60,360),SXF_NOCHECKPOSITION);
+		
+		
+		TNT1 A 0 A_SpawnItemEx("NewAcidExplosionSmoke", 0 ,0,32,0,0,0,0,SXF_NOCHECKPOSITION);
+		TNT1 AAAAAAAAAAAA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
+		TNT1 AAAAAAAAA 2 BRIGHT Light("BARONBALL");
+		Stop;
+		
+	Death:
+	Crash:	
+		TNT1 A 0 A_NoBlocking;
+		TNT1 A 0 A_StartSound("weapons/flamethrower/acidsplat");
+		
+		TNT1 AAA 0 A_SpawnItemEx("GreenTrailSparks", random(1,-1), random(1,-1), random(1,-1), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
+		TNT1 AAA 0 A_SpawnItemEx("NukageSplashParticle", random(-1,1),random(-1,1),1,random(-5,5),random(-5,5),5,random(60,360),SXF_NOCHECKPOSITION);
+		
+		
+		TNT1 A 0 A_SpawnItemEx("NukeSplashLarge", 0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
+		TNT1 A 0 A_CheckFloor("SpawnLanded");
+		TNT1 A 0 A_CheckCeiling("SpawnUpper");
+		TNT1 A 0 A_SpawnItem("NukeBlob");
+		Stop;
+	SpawnLanded:
+		TNT1 A 0 A_SpawnItem("LandedNuke");
+		Stop;
+	SpawnUpper:
+		TNT1 A 0 A_SpawnItem("UpperNuke");
+		Stop;
+		
+	Death_NoBlob:
+		TNT1 AAA 0 A_SpawnItemEx("GreenTrailSparks", random(1,-1), random(1,-1), random(1,-1), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
+		TNT1 AAA 0 A_SpawnItemEx("NukageSplashParticle", random(-1,1),random(-1,1),1,random(-5,5),random(-5,5),5,random(60,360),SXF_NOCHECKPOSITION);
+		TNT1 A 0 A_SpawnItemEx("NukeSplashLarge", 0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
+		TNT1 A 0 A_Explode ( 25, 90 );
+		Stop;
+	}
+}
+
+CLASS NukeBlob : actor
+{
+	Default
+	{
+		+wallsprite;
+		Health 18;
+		Mass 100000;
+		Scale 0.6;
+		Radius 25;
+		Height 8;
+		DamageFactor "Desintegrate", 0.0;
+		+EXPLODEONWATER;
+		+NOBLOOD;
+		+Shootable;
+		+nogravity;
+		+THRUSPECIES;
+		Species "Nukage";
+	}
+	States
+	{
+	Spawn:
+		FMN3 A 0 A_Jump(128, 6);
+		FMN3 B 0 A_Jump(128, 5);
+		FMN3 C 0 A_Jump(128, 4);
+		FMN3 D 0 A_Jump(128, 3);
+		FMN3 E 0 A_Jump(128, 2);
+		FMN3 F 0;
+        FMN3 "#" 1 
+        {           
+            FLineTraceData wallangle;
+            LineTrace(angle, 1284, 0, TRF_THRUACTORS, offsetz: 3, data: wallangle);
+            if (wallangle.HitType == TRACE_HitWall)
+            {
+               angle = atan2(wallangle.hitline.delta.y, wallangle.hitline.delta.x) - 90;
+            }   
+			If (wallangle.lineside == 1)
+			{
+				Angle = (angle - 180);
+				}
+			}
+	Spawn2:
+		 FMN3 "#####" 2 BRIGHT Light("BARONBALL") {
+			A_SpawnItem("GreenTrailSparks");
+		}
+		Loop;
+
+	Death:
+		FMN3 "######" 1 BRIGHT A_SetScale(ScaleX+0.05, ScaleY+0.05);
+		TNT1 A 0 { 
+			A_AlertMonsters();
+			A_ScreamAndUnblock();
+			A_Explode(150, 200, 0, 0, 0, 0, 0, "", "ExplosiveImpact");
+			A_SpawnItemEx("NewAcidExplosionSmoke", random(-1,1),random(-1,1),1,0,0,0,0,SXF_NOCHECKPOSITION);
+			A_SpawnItemEx("NewAcidExplosionSmoke", random(-1,1),random(-1,1),1,0,0,0,0,SXF_NOCHECKPOSITION);
+			A_SpawnItem("ExplosionParticleSpawner");
+			Radius_Quake (2, 24, 0, 15, 0);
+		}
+		TNT1 AA 0 A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
+		TNT1 A 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (10, 90));
+
+		//TNT1 AAAAAAA 2 BRIGHT Light("BARONBALL") A_SpawnItem("GreenFlare",0,20);
+		Stop;
+		
+	Death.Fire:
+	Death.Burn:
+	Death.Incinerate:
+		FMN3 "######" 1 BRIGHT A_SetScale(ScaleX+0.05, ScaleY+0.05);
+		TNT1 A 6 A_SpawnItemEx ("IncendiaryGrenadeFX", 0, 0, 0);
+		TNT1 A 0 A_Explode(140, 220, 0, 0, 0, 0, 0, "", "Fire");
+		TNT1 AAAAA 0 A_SpawnItemEx("FT_GroundFireSpawner", random (-25, 25), random (-15, 15),0,5);
+		TNT1 AAAA 0 A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
+		EXPL AAAAAAAAAA 0 A_CustomMissile ("FireballExplosionFlamesBig", 6, 0, random (0, 360), 2, random (0, 360));
+		FRFX ZZZ 0 BRIGHT A_CustomMissile ("BigNeoSmoke", 2, 0, random (0, 360), 2, random (0, 360));
+		TNT1 A 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (10, 90));
+		Stop;
+	}
+}
+
+Class NukageStreamMissile : actor
+{
+	default {
+	Radius 5;
+	Height 6;
+	Projectile;
+	Speed 28;
+    Damage 1;
+	+HitMaster;
+    Gravity 1;
+	Scale 0.26;
+	Projectile;
+	+MISSILE;
+    -BLOODSPLATTER;
+// 	+EXTREMEDEATH
+	-NOGRAVITY;
+	+EXPLODEONWATER;
+	+FLOORCLIP;
+	-DONTGIB;
+	-NoExtremeDeath;
+	+ROLLSPRITE;
+ 	DamageType "Desintegrate";
+	DeathSound "none";
+	Obituary "%o was killed by %k nukage slime!";
+	+THRUSPECIES;
+	Species "Nukage";
+	}
+
+	States
+	{
+	Spawn:
+		TNT1 A 0;
+		VOM2 A 1 A_SetRoll(random(0,360));
+	Fly:
+		VOM2 ABCDEF 1 Bright {
+			//A_SpawnItemEx("GreenTrailSparks", random(5,6),random(-1,1),random(-12,-6),8,0,0,0,SXF_NOCHECKPOSITION);
+			A_AttachLightDef('FlamethrowerLight',"GREENITEM");
+			
+		}
+		Loop;
+
+	XDeath:
+		TNT1 A 0 A_NoBlocking;
+		TNT1 A 0 A_SpawnItemEx("NukeSplashSmall", random(-1,1),random(-1,1),1,0,0,0,0,SXF_NOCHECKPOSITION);
+		TNT1 A 0 A_GiveInventory("NukageStreamCount", 1, AAPTR_MASTER);
+		TNT1 A 0 A_JumpIfInventory("NukageStreamCount", 10, "BeginStickOnEnemy", AAPTR_MASTER);
+		Stop;
+
+	JustEnd:
+		TNT1 A 1;
+		TNT1 A 0 A_AlertMonsters;
+		TNT1 A 0 A_ScreamAndUnblock;
+		Stop;
+	
+	BeginStickOnEnemy:
+		TNT1 A 0 A_JumpIfInventory("NukeAlreadyIn", 1, "JustEnd", AAPTR_MASTER);
+		TNT1 A 0 A_SpawnItem("SmallNewAcidExplosionSmoke",0,0);
+	    TNT1 AAA 0 A_SpawnItemEx("GreenTrailSparks", random(1,-1), random(1,-1), random(1,-1), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
+		TNT1 AAAA 0 A_CustomMissile("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160));
+		TNT1 A 0 {
+			Actor pointer_collided = master; 
+			if (pointer_collided && !(pointer_collided.GetSpecies() == "Hitbox")) {
+					pointer_collided.A_SetTranslation("Green");
+					self.SetState(FindState("BeginStickOnActor"));
+					return;
+			}
+			else {
+					self.SetState(FindState("Death"));
+					return;
+			}
+		}
+		Stop;
+	BeginStickOnActor:
+		TNT1 A 0 A_GiveInventory("NukeAlreadyIn", 1, AAPTR_MASTER);
+	StickOnEnemy:
+		TNT1 A 1 {
+			A_SpawnItemEx("GreenTrailSparks", random(1,-1), random(1,-1), random(1,-1), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
+			A_SpawnItemEx("GreenTrailSparks", random(1,-1), random(1,-1), random(1,-1), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
+		}
+		TNT1 A 0 A_JumpIfHealthLower(0, "HandleDeath", AAPTR_MASTER);
+		TNT1 A 0 A_Warp(AAPTR_MASTER, 0, 0, 0, 0, 0, "StickOnEnemy");
+		Goto HandleDeath;
+
+	HandleDeath:
+		TNT1 A 0 A_AlertMonsters;
+		TNT1 A 0 A_ScreamAndUnblock;
+		TNT1 A 0 {
+			Actor pointer_collided = master; 
+			
+			// Melt Enemy if continually spraying nukage
+			if (pointer_collided && !(pointer_collided.GetSpecies() == "Hitbox")) {
+			
+				if (pointer_collided.InStateSequence(pointer_collided.CurState, pointer_collided.ResolveState("Death.Desintegrate"))) {
+					self.SetState(FindState("ExplodeAcid"));
+					return;
+				}
+				
+				// Explode enemy if dying to different damage type
+				else {
+					pointer_collided.SetStateLabel("XDeath");
+					self.SetState(FindState("Explode"));
+					return;
+				}
+			}
+			
+		}
+		TNT1 A 0;
+		Stop;
+		
+		
+	ExplodeAcid:
+		TNT1 A 0 A_NoBlocking;
+		TNT1 A 0 A_Explode ( 90, 180 );
+		
+		TNT1 AAAAAA 0 A_SpawnItemEx("GreenTrailSparks", random(1,-1), random(1,-1), random(1,-1), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
+		TNT1 AAAAAAAAA 0 A_SpawnItemEx("NukageSplashParticle", random(-1,1),random(-1,1),1,random(-5,5),random(-5,5),5,random(60,360),SXF_NOCHECKPOSITION);
+		TNT1 A 0 A_SpawnItemEx("NewAcidExplosionSmoke", 0 ,0,32,0,0,0,0,SXF_NOCHECKPOSITION);
+		TNT1 AAAAAAAAAAAA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
+		//TNT1 AAAAAAAAA 2 BRIGHT Light("BARONBALL");
+		Stop;
+		
+	Explode:
+		TNT1 A 0 A_SpawnItem("WhiteShockwaveBig");
+		TNT1 A 0 A_Explode(400, 180, 0, 0, 0, 0, 0, "", "Fire");
+		TNT1 A 0 A_SpawnItem ("BigRicoChet", 0, -30);
+		TNT1 AAAA 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+		EXPL A 0 A_SpawnItem("ExplosionParticleSpawner");
+		TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+		TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+		TNT1 A 0 A_SpawnItemEx ("IncendiaryGrenadeFX", 0, 0, 0);
+		TNT1 AAAA 0 A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
+		EXPL AAAAAAAAAA 0 A_CustomMissile ("FireballExplosionFlamesBig", 6, 0, random (0, 360), 2, random (0, 360));
+		FRFX ZZZ 0 BRIGHT A_CustomMissile ("BigNeoSmoke", 2, 0, random (0, 360), 2, random (0, 360));
+		
+		
+		TNT1 A 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (10, 90));
+		TNT1 A 0 Radius_Quake (2, 24, 0, 15, 0);
+		Stop;
+
+	Death:
+	Crash:	
+		TNT1 A 0 {
+			A_SpawnItemEx("NukageSplashParticle", random(-1,1),random(-1,1),1,random(-5,5),random(-5,5),5,random(60,360),SXF_NOCHECKPOSITION);
+			A_SpawnItemEx("NukeSplashSmall", random(-1,1),random(-1,1),1,0,0,0,0,SXF_NOCHECKPOSITION);
+			A_SpawnItemEx("GreenTrailSparks", random(-4,4),random(-4,4),random(0,8),8,0,0,0,SXF_NOCHECKPOSITION);
+			A_SpawnItemEx("GreenTrailSparks", random(-4,4),random(-4,4),random(0,8),8,0,0,0,SXF_NOCHECKPOSITION);
+		}
+		Stop;
+	}
+}

@@ -10,6 +10,13 @@ Class PB_Monster : Actor abstract
 	bool willBeLooking;
 	int heardOpponent;
 	
+	void ExecutionHandler() {
+		if(CheckInventory("ExecutionToken",1)) {
+			SetState(FindState("Execution"));
+		}
+	}
+	
+	
 	void HitboxerHandler() {
 		
 		if (HitBoxSpawned == True){
@@ -79,6 +86,7 @@ Class PB_Monster : Actor abstract
 		
 		//Handle Hitbox system
 		HitboxerHandler();
+		ExecutionHandler();
 	}
 
 	override void PostBeginPlay() {
@@ -109,7 +117,7 @@ Class PB_Monster : Actor abstract
 	}
 
 	void A_DropAdjust(class<actor> missiletype, class<actor> missiletype2,double offX, double offY, double offZ,double PredAngle=0,
-						double dist=0,double speedmult=1.,double gravity=0,actor target=null)
+						double dist=0,double speedmult=1.,double gravity=0,actor target=null,double spawnOffsetY=0,bool flipped=0,int minRange=0,int maxRange=1000)
 	{
 		if (getdefaultbytype(missiletype).gravity != 0) { PredAngle = ACS_NamedExecuteWithResult("PredictAim", 1, 20, 32); }	//(int retAngle, int projectileSpeed, int projectileZ)
 		else {PredAngle = ACS_NamedExecuteWithResult("PredictAim", 1, getdefaultbytype(missiletype).speed, offZ);}	//(int retAngle, int projectileSpeed, int projectileZ)
@@ -119,7 +127,7 @@ Class PB_Monster : Actor abstract
 		double ceil = self.CeilingZ - self.pos.z;
 		
 		double tarDist = self.A_PrepairDrop();
-		if(ceil < 80 || tarDist > 1000)
+		if(ceil < 80 || (tarDist > maxRange || tarDist < minRange))
 		{
 			self.A_SpawnProjectile(missiletype2,offZ);
 			return;
@@ -143,10 +151,19 @@ Class PB_Monster : Actor abstract
         if(dist>0 && gravity != 0) {self.pitch += atan(10/dist);}
 		else { self.pitch = 0;}
 		
-		self.A_DropProjectile(missiletype,offX,offY,offZ,tarDist,PredAngle);
+		double finalAngle =  PredAngle+1024;
+		
+		if(flipped) {
+			finalAngle = PredAngle-1024;
+		}
+		else {
+			finalAngle = PredAngle+1024;
+		}
+		
+		self.A_DropProjectile(missiletype,offX,offY,offZ,tarDist,finalAngle, spawnOffsetY);
     }
 	
-	void A_DropProjectile(class<actor> missiletype, double offX, double offY, double offZ, double targdist, double PredictAngle)
+	void A_DropProjectile(class<actor> missiletype, double offX, double offY, double offZ, double targdist, double PredictAngle, double spawnOffsetY=0.0)
 	{
 			
 			if(!getdefaultbytype(missiletype).gravity) {
@@ -155,7 +172,7 @@ Class PB_Monster : Actor abstract
 			else {
 				self.A_SpawnItemEx(
 					missiletype,offX,offY,offZ,
-					cos(pitch)*offY,0,-sin(pitch)*offY,
+					cos(pitch)*abs(offY),0,-sin(pitch)*abs(offY),
 					PredictAngle*360/65536,												// atan(offY/targdist)
 					flags:SXF_NOCHECKPOSITION|SXF_SETTARGET|SXF_TRANSFERPITCH
 				);
