@@ -27,7 +27,7 @@ class PB_WeaponBase : DoomWeapon
 	property fireMode: fireMode;
 	bool akimboMode;
 	property akimboMode: akimboMode;
-
+	
 	bool FiringLeftWeapon;
 	bool FiringRightWeapon;
 	property FiringLeftWeapon: FiringLeftWeapon;
@@ -509,7 +509,25 @@ class PB_WeaponBase : DoomWeapon
 	{
 		invoker.rocketLauncherMode = type;
 	}
-	
+
+//I know that two functions are messy but hey, they work like wonders.	
+//Also, a HUGE thank you to both A_D_M_E_R_A_L and DoomKrakken for showing
+//their examples on making the plasma ammo counter! Thanks guys!
+//-JMartinez2098
+//Edit - Thank you A_D_M_E_R_A_L for trimming down both of the functions into one
+	action void PB_SetPRCounter(int layer, name ammotype, name spr, bool isRightDigit = false)
+	{
+		int amount = CountInv(ammotype);
+		int a; //frame number based on ammo count
+		let pl_ws = player.GetPSprite(layer);
+		if(pl_ws) {
+			if(isRightDigit) a = amount % 10;  //check if isRightDigit is true
+			else a = amount / 10;
+			pl_ws.Sprite = GetSpriteIndex(spr);
+			pl_ws.Frame = a;
+		}
+	}
+
 	action void A_DecideSpawnLaserPuff()
 	{
 			if (CountInv("LaserSightActivated")==1 && CountInv("KeepLaserDeactivated") != 1)
@@ -748,7 +766,6 @@ class PB_WeaponBase : DoomWeapon
 	   sprite = GetSpriteIndex(str);
 	}
 	
-	
 	action void LedgeReach(float HeightDecrease)
 	{
 		let plr = PlayerPawnBase(self);
@@ -774,18 +791,18 @@ class PB_WeaponBase : DoomWeapon
 			own.GiveInventory(invoker.respectInventoryItem,1);
 			if(self.player.ReadyWeapon.GetClassName() == "PB_MG42") {
 				own.SetInventory("MG42HeatLevel",0);
-				return invoker.resolveState("SelectAnimation");
+				return invoker.A_Jump(256,"SelectAnimation");
 			}
 			if(self.player.ReadyWeapon.GetClassName() == "PB_SuperGL"){ //Thanks to 7Soul on the ZDoom Forums for posting on getting a selected weapon
 				A_SetCurrentGrenadeType("Impact");
-				return invoker.resolveState("SelectAnimation");
+				return invoker.A_Jump(256,"SelectAnimation");
 				}
 			if(self.player.ReadyWeapon.GetClassName() == "PB_RocketLauncher"){
 				PB_SetCurrentRocketMode("Standard");
-				return invoker.resolveState("SelectAnimation");
+				return invoker.A_Jump(256,"SelectAnimation");
 				}
 			else {
-			return invoker.resolveState("SelectAnimation");
+			return invoker.A_Jump(256,"SelectAnimation");
 			}
 		}
 		else if (shouldRespect)
@@ -797,7 +814,7 @@ class PB_WeaponBase : DoomWeapon
 		else
 		{
 			//Console.printf("Setting State: SelectAnimation");
-			return invoker.resolveState("SelectAnimation");
+			return invoker.A_Jump(256,"SelectAnimation");
 		}
 	}
 	
@@ -831,13 +848,13 @@ class PB_WeaponBase : DoomWeapon
 			H3L4 DEFGH 1 A_SetRoll(roll+3.5, SPF_INTERPOLATE);
 			H3L4 I 1
 			{
-				A_PlaySound("helmet/swipe");
+				A_StartSound("helmet/swipe");
 				A_SetRoll(roll+2.5, SPF_INTERPOLATE);
 			}
 			H3L4 JKLMNOP 1 A_SetRoll(roll+2.5, SPF_INTERPOLATE);
 			H3L4 Q 1
 			{
-				A_PlaySound("helmet/swipe");
+				A_StartSound("helmet/swipe");
 				A_SetRoll(roll+2, SPF_INTERPOLATE);
 			}
 			H3L4 RSTUVWXYZ 1 A_SetRoll(roll+2, SPF_INTERPOLATE);
@@ -876,9 +893,9 @@ class PB_WeaponBase : DoomWeapon
 				A_TakeInventory("sae_deathcam", 1);
 			}
 			TNT1 A 0 A_Raise(9999);
-			Goto SelectAnimation;
+			TNT1 A 0 A_Jump(256,"SelectAnimation");
+			Goto Ready3;
 		WeaponRespect:
-		SelectAnimation:
 		Ready3:
 			TNT1 A 1 A_Jump(255, "Ready3");
 			Loop;	
@@ -894,18 +911,13 @@ class PB_WeaponBase : DoomWeapon
 		LedgeClimb:
 			CL1M A 0;
 			"####" A 0 A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, false);
-			"####" A 0 {
-				A_ClearOverlays(10, 11);
-				A_ClearOverlays(5,3);
-				A_ClearOverlays(-3,2);
-				A_ClearOverlays(-2,4);
-				}
+			"####" A 0 A_ClearOverlays(-5, 80);
 			"####" A 0 A_Stop();
 			"####" A 0 A_ZoomFactor(1.0);
 			"####" A 0 A_GunFlash("LedgeGrabFlash");
 			"####" A 0 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH);
 			"####" A 0 SetPlayerProperty(0,1,PROP_TOTALLYFROZEN);
-			"####" A 0 A_Playsound("ledgeclimb",5);
+			"####" A 0 A_StartSound("ledgeclimb",5);
 			"####" ABC 1 {
 				let plr = PlayerPawnBase(self);
 				
@@ -930,7 +942,7 @@ class PB_WeaponBase : DoomWeapon
 				if(Pos.Z >= (plr.LedgeHeight - Height * 0.78f))
 				{
 					A_SetPitch(pitch-pitch/2, SPF_INTERPOLATE);
-					GiveInventory("Grabbing_A_Ledge", 1);
+					SetInventory("Grabbing_A_Ledge",1); //SetInventory fixes the looping ledge grab bug when sv_unlimited_pickup 1 is on
 					LedgeReach(0.751);
 				}
 				else if(Pos.Z < (plr.LedgeHeight - Height * 0.78f))
@@ -943,7 +955,6 @@ class PB_WeaponBase : DoomWeapon
 			
 			"####" E 1 {
 				let plr = PlayerPawnBase(self);
-				
 				plr.velz = 3.6;
 				A_SetPitch(0, SPF_INTERPOLATE);
 				LedgeReach(0.751);
@@ -974,11 +985,10 @@ class PB_WeaponBase : DoomWeapon
 			1L1M A 0 A_JumpIfInventory("PowerBloodOnVisor",1,2);
 			CL1M A 0;
 			"####" A 0 A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, false);
-			"####" A 0 A_ClearOverlays(10, 11);
+			"####" A 0 A_ClearOverlays(-5, 80);
 			"####" A 0 A_GunFlash("LedgeGrabFlash");
 			"####" JK 1 {
 				let plr = PlayerPawnBase(self);
-				
 				plr.velz = 3.6;
 				A_SetPitch(pitch-3, SPF_INTERPOLATE);
 				Vel = Vel.Length() ? (0, 0, plr.velz) : (0, 0, 0);
@@ -990,9 +1000,9 @@ class PB_WeaponBase : DoomWeapon
 			}
 			TNT1 A 0 A_SetPitch(0, SPF_INTERPOLATE);
 			TNT1 A 0 SetPlayerProperty(0,0,PROP_TOTALLYFROZEN);
-			TNT1 A 0 TakeInventory("Grabbing_A_Ledge", 1);
+			TNT1 A 0 SetInventory("Grabbing_A_Ledge", 0);
 			//TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand");
-			TNT1 A 0;
+			TNT1 A 0 A_Jump(256,"SelectAnimation");
 			Goto Ready3;
 				
 	}
