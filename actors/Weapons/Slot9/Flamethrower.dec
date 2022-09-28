@@ -13,6 +13,8 @@ Actor FlamerUpgraded: Inventory
 Inventory.MaxAmount 1
 }
 
+Actor FlamerTankNotInserted : PumpshotgunMagNotInserted{}
+
 Actor FlamerUnloaded: Inventory
 {
 Inventory.MaxAmount 1
@@ -189,6 +191,7 @@ Loop
 Pickup:
 TNT1 A 0 A_GiveInventory ("FlamerUpgraded")
 TNT1 A 0 A_GiveInventory ("PB_Flamethrower")
+TNT1 A 0 A_GiveInventory("FlamerTankNotInserted")
 TNT1 A 0 A_GiveInventory ("Gas", 90)
 Stop
 }
@@ -229,7 +232,7 @@ ACTOR PB_Flamethrower : PB_Weapon
 	+FLOORCLIP
 	+DONTGIB
 	Inventory.PickupMessage "You got the UAC M3 Flamethrower! (Slot 0)"
-	Tag "Flamer"
+	Tag "UAC-M3 Flamethrower"
 	States
 	{
 	Steady:
@@ -242,6 +245,11 @@ ACTOR PB_Flamethrower : PB_Weapon
 		TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO)
 		FLS1 ABCD 1 A_DoPBWeaponAction
 		//respect animation here
+	StartUpgradeRespect:
+		TNT1 A 0 {
+			A_GiveInventory("RespectFlamerGoonUpgraded");
+			A_TakeInventory("FlamerTankNotInserted",1);
+			}
 		FRL1 ABCDEFGHIJKLMNOPQRSTUVWXY 1  A_DoPBWeaponAction
 		TNT1 A 0 A_StartSound("weapons/flamethrower/respect4", CHAN_AUTO)
 		FRL1 Z 1 A_DoPBWeaponAction
@@ -334,7 +342,7 @@ ACTOR PB_Flamethrower : PB_Weapon
         Goto Ready3
 
 	SelectAnimationUpgraded:
-		TNT1 A 0 A_PlaySound("FLMDRAW")
+		TNT1 A 0 A_StartSound("weapons/flamethrower/respect1", CHAN_AUTO)
 		FLT2 ABCD 0
 		FLT1 A 0
 	    TNT1 A 0
@@ -342,7 +350,6 @@ ACTOR PB_Flamethrower : PB_Weapon
 			if(CountInv("Gas") == 0 || CountInv("FlamerNukageMode") == 1) {A_SetWeaponSprite("FLT2");}
 			}
 		TNT1 A 0 A_JumpIfInventory("FlamerNukageMode", 1, "Ready5")
-		TNT1 A 0 A_PlaySound("FLIDLE",CHAN_WEAPON,10,1)
 		Goto Ready3
 	
 	Ready4:
@@ -377,13 +384,19 @@ ACTOR PB_Flamethrower : PB_Weapon
 				A_GiveInventory("HasFireWeapon", 1);
 			}
 		}
+		TNT1 A 0 A_JumpIfInventory("FlamerTankNotInserted", 1, "StartUpgradeRespect")
 		TNT1 A 0 A_StartSound("weapons/flamethrower/idle",CHAN_BODY,CHANF_LOOPING,0.8)
 		TNT1 A 0 A_JumpIfInventory("FlamerNukageMode", 1, "Ready5")
 		TNT1 A 0 A_JumpIfInventory("FlamerUpgraded", 1, "Ready2")
 		TNT1 A 0 A_JumpIfInventory("FlamerAmmo", 1, 1)
 		Goto NoAmmo
 	ReallyReady:
-	    FRR2 AABBCC 1 A_DoPBWeaponAction
+	    FRR2 AABBCC 1 {
+			if(CountInv("FlamerTankNotInserted") >= 1) {
+				return state("StartUpgradeRespect");
+				}
+			return A_DoPBWeaponAction;
+		}
 	    Loop
 
 	Ready2:
@@ -394,6 +407,7 @@ ACTOR PB_Flamethrower : PB_Weapon
 	    Loop
 
 	Ready5:
+		TNT1 A 0 A_JumpIfInventory("FlamerTankNotInserted", 1, "StartUpgradeRespect")
 		TNT1 A 0 A_StartSound("weapons/flamethrower/click",CHAN_BODY,CHANF_LOOPING,0.8)
         FRR1 A 0 A_JumpIfInventory("FlamerUpgraded", 1, 2)
 		FRR2 A 0 
@@ -621,6 +635,8 @@ ACTOR PB_Flamethrower : PB_Weapon
 		TNT1 A 0 {
 			if (CountInv("FlamerAmmo") == 0) {
 				A_FireCustomMissile("GunFireSmoke");
+				PB_SpawnCasing("FlamerEmptyGas", 30, 6, 11,frandom(-2,2),frandom(-4,-2),frandom(3,5));
+				//A_FireCustomMissile("FlamerEmptyGas");
 			}
 		}
 		FRE1 RST 1 
