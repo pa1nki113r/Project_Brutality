@@ -242,8 +242,11 @@ ACTOR Trail : GuidedLaser
     }
 }
 
-ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
+ACTOR PB_RocketLauncher : PB_Weapon// replaces RocketLauncher
 {
+	//$Title Rocket Launcher
+	//$Category Weapons
+	//$Sprite RKTLZ0
 	Weapon.BobRangeX 0.3
 	Weapon.BobRangeY 0.5
 	Weapon.BobStyle InverseSmooth
@@ -267,6 +270,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 	Inventory.PickupMessage "You got the UAC Guided Rocket Launcher! (Slot 6)"
 	Tag "Rocket Launcher"
 	Inventory.AltHUDIcon "RKTLZ0"
+	PB_WeaponBase.respectItem "RespectRocketLauncher"
 	States
 	{
 		Steady:
@@ -275,7 +279,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 
 		Ready:
 			TNT1 A 0 A_GiveInventory("HasExplosiveWeapon")
-			TNT1 A 0 A_JumpIfInventory("RespectRocketLauncher", 1, "SelectAnimation")
+			TNT1 A 0 PB_RespectIfNeeded
 		WeaponRespect:
 			TNT1 A 0 {
 				PB_SetCurrentRocketMode("Standard");
@@ -313,7 +317,22 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			TNT1 A 0 A_StartSound("weapons/rocket/loadingmechanism2", 1)
 			RL02 QRSTUVWXY 1 A_DoPBWeaponAction
 			Goto Ready3
-			
+		
+		LaserOverlay:
+		TNT1 A 1
+		{
+				if (PB_GetCurrentRocketMode() == "Laser")
+				{
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
+				}
+				else 
+				{
+					A_DestroyLaserPuff;
+				}
+		}
+		TNT1 A 0 A_DestroyLaserPuff()
+		Loop
+		
 		SelectAnimation:
 			TNT1 A 0 A_PlaySoundEx("weapons/sgl/inspect2", CHAN_AUTO)
 			
@@ -336,18 +355,19 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		Ready3:
 			TNT1 A 0 {
 				A_SetRoll(0);
-				if (PB_GetCurrentRocketMode() == "Homing") {A_SetCrosshair(79);}
+				if (PB_GetCurrentRocketMode() == "Homing") {PB_HandleCrosshair(79);}
 				else { PB_HandleCrosshair(78); }
 				A_TakeInventory("PB_LockScreenTilt",1);
 				A_TakeInventory("RocketLauncher_LockSound");
 			}
 		ReadyToFire:
 			RL03 E 1 {
+				A_Overlay(-16,"LaserOverlay");
 				if (PB_GetCurrentRocketMode() == "Standard") {A_SetWeaponSprite("RL03");}
 				if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL09");}
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("RL10");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 				}
 				if (PB_GetCurrentRocketMode() == "Standard" && CountInv("RocketLauncherUnloaded") == 1) {A_SetWeaponSprite("RL11");}
 				if (PB_GetCurrentRocketMode() == "Homing" && CountInv("RocketLauncherUnloaded") == 1) {A_SetWeaponSprite("RL12");}
@@ -401,6 +421,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 				if (PB_GetCurrentRocketMode() == "Homing" && CountInv("RocketLauncherUnloaded") == 1) {A_SetWeaponSprite("RL17");}
 				if (PB_GetCurrentRocketMode() == "Laser" && CountInv("RocketLauncherUnloaded") == 1) {A_SetWeaponSprite("RL18");}
 			}
+			TNT1 A 0 A_DestroyLaserPuff()
 			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 			Wait
 			
@@ -409,40 +430,8 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			TNT1 A 0
 			Goto SelectFirstPersonLegs
 			SelectContinue:
-			TNT1 A 0 A_TakeInventory("RifleSelected",1)
-			TNT1 A 0 A_TakeInventory("CarbineSelected",1)
-			TNT1 A 0 A_TakeInventory("FistsSelected",1)
-			TNT1 A 0 A_TakeInventory("SawSelected",1)
-			TNT1 A 0 A_TakeInventory("SledgeSelected",1)
-			TNT1 A 0 A_TakeInventory("HandgunSelected",1)
-			TNT1 A 0 A_TakeInventory("DualHandgunSelected",1)
-			TNT1 A 0 A_TakeInventory("RevolverSelected",1)
-			TNT1 A 0 A_TakeInventory("ShotgunSelected",1)
-			TNT1 A 0 A_TakeInventory("SSGSelected",1)
-			TNT1 A 0 A_TakeInventory("ASGSelected",1)
-			TNT1 A 0 A_TakeInventory("QSGSelected",1)
-			TNT1 A 0 A_TakeInventory("MinigunSelected",1)
-			TNT1 A 0 A_TakeInventory("NewChaingunSelected",1)	
-			TNT1 A 0 A_GiveInventory("RocketLauncherSelected",1)
-			TNT1 A 0 A_TakeInventory("GrenadeLauncherSelected",1)
-			TNT1 A 0 A_TakeInventory("SGLSelected",1)
-			TNT1 A 0 A_TakeInventory("PlasmaGunSelected",1)
-			TNT1 A 0 A_TakeInventory("M2Selected",1)	
-			TNT1 A 0 A_TakeInventory("FreezerSelected",1)
-			TNT1 A 0 A_TakeInventory("RailGunSelected",1)
-			TNT1 A 0 A_TakeInventory("BFGSelected",1)
-			TNT1 A 0 A_TakeInventory("BFGBeamSelected",1)
-			TNT1 A 0 A_TakeInventory("BHCSelected",1)
-			TNT1 A 0 A_TakeInventory("RevenantLauncherSelected",1)
-			TNT1 A 0 A_TakeInventory("FlameCannonSelected",1)
-			TNT1 A 0 A_TakeInventory("HellRifleSelected",1)
-			TNT1 A 0 A_TakeInventory("LandMineSelected",1)
-			TNT1 A 0 A_TakeInventory("UACSMGSelected",1)
-			TNT1 A 0 A_TakeInventory("SubMachineGunSelected",1)
-			TNT1 A 0 A_TakeInventory("LostSoulSelected",1)
-			TNT1 A 0 A_TakeInventory("HasBarrel",1)
-			TNT1 A 0 A_TakeInventory("HasIceBarrel", 1)
-			TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
+			TNT1 A 0 
+			TNT1 A 0 PB_WeapTokenSwitch("RocketLauncherSelected")
 			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
 			TNT1 AAAAAAAA 1 A_Raise
 			Wait
@@ -509,9 +498,15 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			// Switch Mode based on wheel selection
 			TNT1 A 0 {
 			 
-				if(CountInv("RocketLauncher_Standard") == 1) {PB_SetCurrentRocketMode("Standard");}
-				if(CountInv("RocketLauncher_Homing") == 1) {PB_SetCurrentRocketMode("Homing");}
-				if(CountInv("RocketLauncher_Laser") == 1) {PB_SetCurrentRocketMode("Laser");}
+				if(CountInv("RocketLauncher_Standard") == 1) {
+				A_Print("$PB_RLNORM",1);
+				PB_SetCurrentRocketMode("Standard");}
+				if(CountInv("RocketLauncher_Homing") == 1) {
+				A_Print("$PB_RLLOCK",1);
+				PB_SetCurrentRocketMode("Homing");}
+				if(CountInv("RocketLauncher_Laser") == 1) {
+				A_Print("$PB_RLGUID",1);
+				PB_SetCurrentRocketMode("Laser");}
 				A_TakeInventory("CantWeaponSpecial" ,1 );
 				A_TakeInventory("RocketLauncher_Standard", 1);
 				A_TakeInventory("RocketLauncher_Homing", 1);
@@ -540,7 +535,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				A_SetRoll(0);
-				if (PB_GetCurrentRocketMode() == "Homing") {A_SetCrosshair(79);}
+				if (PB_GetCurrentRocketMode() == "Homing") {PB_HandleCrosshair(79);}
 				else { PB_HandleCrosshair(78); }
 				A_TakeInventory("PB_LockScreenTilt",1);
 			}
@@ -571,7 +566,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 				}
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("RL58");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 					A_FireCustomMissile("PB_GuidedRocket", 0, 0, 0, -3);
 				}
 				if (PB_GetCurrentRocketMode() == "Homing") {
@@ -585,7 +580,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			RL06 B 1 BRIGHT {
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("RL58");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 				}
 				if (PB_GetCurrentRocketMode() == "Homing") {
 					A_SetWeaponSprite("RL33");
@@ -594,7 +589,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			RL06 CDEF 1 {
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("RL58");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 				}
 				if (PB_GetCurrentRocketMode() == "Homing") {
 					A_SetWeaponSprite("RL33");
@@ -605,7 +600,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			RL06 FEDC 1 {
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("RL58");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 				}
 				if (PB_GetCurrentRocketMode() == "Homing") {
 					A_SetWeaponSprite("RL33");
@@ -618,7 +613,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			RL06 GHIJKLM 1 {
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("RL58");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 				}
 				if (PB_GetCurrentRocketMode() == "Homing") {
 					A_SetWeaponSprite("RL33");
@@ -628,7 +623,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			RL06 NOPQR 1 {
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("RL58");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 				}
 				if (PB_GetCurrentRocketMode() == "Homing") {
 					A_SetWeaponSprite("RL33");
@@ -638,7 +633,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			RL06 STUVWXYZ 1 {
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("RL58");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 				}
 				if (PB_GetCurrentRocketMode() == "Homing") {
 					A_SetWeaponSprite("RL33");
@@ -647,7 +642,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			RL99 A 1 {
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("RL59");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 				}
 				if (PB_GetCurrentRocketMode() == "Homing") {
 					A_SetWeaponSprite("RL34");
@@ -844,7 +839,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			RL88 H 1 BRIGHT {
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("R105");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 				}
 				if (PB_GetCurrentRocketMode() == "Homing") {
 					A_SetWeaponSprite("R106");
@@ -900,7 +895,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			RL88 ABCDEFGH 1 {
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("R105");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 				}
 				if (PB_GetCurrentRocketMode() == "Homing") {
 					A_SetWeaponSprite("R106");
@@ -927,7 +922,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			RL88 IJKLMN 1 {
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("R105");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 				}
 				if (PB_GetCurrentRocketMode() == "Homing") {
 					A_SetWeaponSprite("R106");
@@ -1083,7 +1078,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 				}
 				if (PB_GetCurrentRocketMode() == "Laser") {
 					A_SetWeaponSprite("R105");
-					A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+					A_SpawnLaserPuff(0,0,"GuidedLaser");
 					A_FireCustomMissile("PB_GuidedRocket", 0, 0, 0, -3);
 				}
 				if (PB_GetCurrentRocketMode() == "Homing") {
@@ -1116,7 +1111,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
-			if (PB_GetCurrentRocketMode() == "Homing") {A_SetCrosshair(79);}
+			if (PB_GetCurrentRocketMode() == "Homing") {PB_HandleCrosshair(79);}
 			else { PB_HandleCrosshair(78); }
 			A_TakeInventory("PB_LockScreenTilt",1);
 		}
@@ -1153,7 +1148,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL29 ABCD 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL42");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if(PressingFire() && CountInv("SpiralRocketToken") == 0 && PB_GetCurrentRocketMode()== "Standard") {
 				A_StartSound("weapons/rocket/seeker_nofire", CHAN_AUTO, CHANF_OVERLAP);
@@ -1166,7 +1161,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL29 EFG 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL42");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if(PressingFire() && CountInv("SpiralRocketToken") == 0 && PB_GetCurrentRocketMode()== "Standard") {
 				A_StartSound("weapons/rocket/seeker_nofire", CHAN_AUTO, CHANF_OVERLAP);
@@ -1181,7 +1176,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL29 HIJKLMNOPQ 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL42");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if(PressingFire() && CountInv("SpiralRocketToken") == 0 && PB_GetCurrentRocketMode()== "Standard") {
 				A_StartSound("weapons/rocket/seeker_nofire", CHAN_AUTO, CHANF_OVERLAP);
@@ -1195,7 +1190,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL29 RSTUVW 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL42");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if(PressingFire() && CountInv("SpiralRocketToken") == 0 && PB_GetCurrentRocketMode()== "Standard") {
 				A_StartSound("weapons/rocket/seeker_nofire", CHAN_AUTO, CHANF_OVERLAP);
@@ -1211,7 +1206,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL29 X 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL42");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if(PB_GetCurrentRocketMode() == "Standard" && CountInv("SpiralRocketToken") == 1) {
 				A_SetWeaponSprite("RL48");
@@ -1248,7 +1243,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL42");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 				A_FireCustomMissile("PB_WeavingGuidedRocket_1", 0, 0, -1, -4);
 				A_FireCustomMissile("PB_WeavingGuidedRocket_2", 0, 0, 1, -4);
 			}
@@ -1257,7 +1252,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			if (PB_GetCurrentRocketMode() == "Homing") {
 				A_SetWeaponSprite("RL35");
 				A_TakeInventory("RocketLauncher_LockOnTargets", 4);
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 				A_FireCustomMissile("PB_HomingRocket_1", 0, 0, -1, -4);
 				A_FireCustomMissile("PB_HomingRocket_2", 0, 0, 1, -4);
 			}
@@ -1266,14 +1261,14 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL29 Z 1 BRIGHT {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL42");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL35");}
 		}
 		RL30 ABCD 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL43");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL36");}
 		}
@@ -1282,7 +1277,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL30 DBCA 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL43");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL36");}
 		}
@@ -1292,7 +1287,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL30 EFGHIJK 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL43");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL36");}
 		}
@@ -1300,7 +1295,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL30 LMNOPQR 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL43");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL36");}
 		}
@@ -1308,7 +1303,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL30 STUVWXY 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL43");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL36");}
 		}
@@ -1323,7 +1318,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL31 ABCDEFGH 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL46");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL38");}
 			if(PressingFire() && CountInv("SpiralRocketToken") == 0) {
@@ -1339,7 +1334,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL31 IJKLMNOP 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL46");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL38");}
 			if(PressingFire() && CountInv("SpiralRocketToken") == 0) {
@@ -1355,7 +1350,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL31 QRSTUVWX 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL46");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL38");}
 			if(PressingFire() && CountInv("SpiralRocketToken") == 0) {
@@ -1395,7 +1390,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL46");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 				A_FireCustomMissile("PB_WeavingGuidedRocket_1", 0, 0, -1, -4);
 				A_FireCustomMissile("PB_WeavingGuidedRocket_2", 0, 0, 0, -3);
 				A_FireCustomMissile("PB_WeavingGuidedRocket_3", 0, 0, 1, -4);
@@ -1405,7 +1400,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 			if (PB_GetCurrentRocketMode() == "Homing") {
 				A_SetWeaponSprite("RL38");
 				A_TakeInventory("RocketLauncher_LockOnTargets", 4);
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 				A_FireCustomMissile("PB_HomingRocket_1", 0, 0, -1, -4);
 				A_FireCustomMissile("PB_HomingRocket_2", 0, 0, 0, -3);
 				A_FireCustomMissile("PB_HomingRocket_3", 0, 0, 1, -4);
@@ -1415,14 +1410,14 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL31 Z 1 BRIGHT {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL46");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL38");}
 		}
 		RL32 ABCD 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL47");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL39");}
 		}
@@ -1431,7 +1426,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL32 DCBA 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL47");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL36");}
 		}
@@ -1441,7 +1436,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL32 EFGHIJK 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL47");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL39");}
 		}
@@ -1449,7 +1444,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL32 LMNOPQRS 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL47");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL39");}
 		}
@@ -1457,7 +1452,7 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RL32 TUVWX 1 {
 			if (PB_GetCurrentRocketMode() == "Laser") {
 				A_SetWeaponSprite("RL47");
-				A_FireBullets(0,0,1,0,"GuidedLaser", FBF_NORANDOMPUFFZ);
+				A_SpawnLaserPuff(0,0,"GuidedLaser");
 			}
 			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL39");}
 		}
@@ -1738,7 +1733,6 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		RKTL Z -1
 		Stop
 		
-    FlashKicking:
 	FlashPunching:
 		TNT1 A 0 
 		
@@ -1750,14 +1744,25 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		}
 		Stop
 		
+    FlashKicking:
+		TNT1 A 0 
+		
+		RL83 ABCDEFGHIJKLMN 0
+		RL84 ABCDEFGHIJKLMN 0
+		RL40 ABCDEFGHIJKLMN 1 {
+			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL84");}
+			if (PB_GetCurrentRocketMode() == "Laser") {A_SetWeaponSprite("RL83");}
+		}
+		Goto Ready3
+		
 	FlashAirKicking:
 		RL83 ABCDEFGHIJKLMN 0
 		RL84 ABCDEFGHIJKLMN 0
 		RL40 ABCDEFGGGGHIJKLMN 1 {
-			if (PB_GetCurrentRocketMode() == "Homing") {A_SetFlashWeaponSprite("RL84");}
-			if (PB_GetCurrentRocketMode() == "Laser") {A_SetFlashWeaponSprite("RL83");}
+			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL84");}
+			if (PB_GetCurrentRocketMode() == "Laser") {A_SetWeaponSprite("RL83");}
 		}
-		Stop
+		Goto Ready3
 		
 	FlashSlideKicking:
 		RL85 ABCDEFGHIJKLMNOPQRSTU 0
@@ -1765,17 +1770,17 @@ ACTOR PB_RocketLauncher : PB_Weapon replaces RocketLauncher
 		
 		
 		RL41 ABCDEFGHHHHHHIJKLMNOPQRSTU 1 {
-			if (PB_GetCurrentRocketMode() == "Homing") {A_SetFlashWeaponSprite("RL85");}
-			if (PB_GetCurrentRocketMode() == "Laser") {A_SetFlashWeaponSprite("RL86");}
+			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL85");}
+			if (PB_GetCurrentRocketMode() == "Laser") {A_SetWeaponSprite("RL86");}
 		}
-		Stop
+		Goto Ready3
 		
 	FlashSlideKickingStop:
 		RL41 OPQRSTU 1 {
-			if (PB_GetCurrentRocketMode() == "Homing") {A_SetFlashWeaponSprite("RL85");}
-			if (PB_GetCurrentRocketMode() == "Laser") {A_SetFlashWeaponSprite("RL86");}
+			if (PB_GetCurrentRocketMode() == "Homing") {A_SetWeaponSprite("RL85");}
+			if (PB_GetCurrentRocketMode() == "Laser") {A_SetWeaponSprite("RL86");}
 		}
-		Stop
+		Goto Ready3
 		
 	}
 }
@@ -1786,5 +1791,6 @@ ACTOR RocketRounds : Ammo
    Inventory.MaxAmount 6
    Ammo.BackpackAmount 0
    Ammo.BackpackMaxAmount 6
+   +INVENTORY.IGNORESKILL
    Inventory.Icon "LAUNA0"
 }

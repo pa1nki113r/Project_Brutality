@@ -681,6 +681,14 @@ class PB_XDeathBurnedMeat : Actor
     }
 }
 
+class PB_XDeathBurnedMeatGreen : PB_XDeathBurnedMeat
+{
+    Default
+	{
+		translation "16:47=114:127", "179:191=116:127";
+	}
+}
+
 class PB_XDeathBurnedMeat2 : PB_XDeathBurnedMeat
 {
     States
@@ -693,6 +701,14 @@ class PB_XDeathBurnedMeat2 : PB_XDeathBurnedMeat
 			CARB B -1;
 			Stop;
     }
+}
+
+class PB_XDeathBurnedMeat2Green : PB_XDeathBurnedMeat2
+{
+    Default
+	{
+		translation "16:47=114:127", "174:191=115:127";
+	}
 }
 
 class PB_XDeathBurnedMeat3 : PB_XDeathBurnedMeat
@@ -708,6 +724,15 @@ class PB_XDeathBurnedMeat3 : PB_XDeathBurnedMeat
 			Stop;
     }
 }
+
+class PB_XDeathBurnedMeat3Green : PB_XDeathBurnedMeat3
+{
+	Default
+	{
+		translation "16:47=114:125", "179:191=116:127";
+	}
+}
+
 
 class PB_XDeathBurnedArm : PB_XDeathBurnedMeat
 {
@@ -926,6 +951,126 @@ class PB_GibHand: PB_TinyGibBase
 	}
 }
 
+// Nazi Arm
+class PB_NaziArm : PB_XDeathArm1
+{
+	Default
+	{
+		+ROLLSPRITE;
+	}
+	States
+    {
+		Spawn:
+			TNT1 A 0 A_setroll(0);
+			TNT1 A 0 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+		Fly:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			NZA1 A 3 {
+			A_SetRoll(roll+30);
+			A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			}
+			Loop;
+		Death:
+			NZA1 B 1 {
+				A_SetRoll(0);
+				A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+				A_SpawnItem("PB_GibNaziArm");
+			}
+			Stop;
+    }
+}
+class PB_GibNaziArm: PB_GibArm
+{
+	Default
+	{
+		+RollSprite;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_setroll(0);
+			NZA1 B 1 A_SpawnItem ("NashGoreBloodSpot", 0, 1);
+		Rest:
+			NZA1 B -1;
+			Stop;
+		Death.plasma: 
+		Death.Burn: 
+		Death.Flames:	    
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-15, 15), random (-15, 15));
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-15, 15), random (-15, 15));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedArm", 2, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, 270);  
+			Stop;
+		Death:    
+			TNT1 AAAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 A 0 A_SpawnProjectile ("PB_GibHand", 0, 0, random (0, 180), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 A 0 A_SpawnProjectile ("PB_GibNaziArmPart", 0, 0, random (0, 180), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			Stop;
+		Death.Kick:
+		Death.Melee:
+		Death.SuperPunch:
+			NZA1 BB 1 A_FaceTarget();
+			TNT1 A 0 A_SpawnProjectile ("PB_NaziArmKicked", 5, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 40));
+			Stop;
+		Pain:
+			TNT1 A 0 ThrustThingZ(0,20,0,1);
+			NZA1 AAA 3 {
+			A_setroll(roll+30);
+			}
+			Goto Spawn;
+	
+		Death.ExplosiveImpact:
+			TNT1 A 0 {	
+				A_ChangeLinkFlags(False);
+				ThrustThingZ(0,50,0,1);
+			}
+			NZA1 A 6;
+			NZA1 A 3 {
+			A_setroll(roll+30);
+			A_CheckFloor("Landz");
+			}
+			Goto Landz;
+		Landz:
+			TNT1 A 0 A_setroll(0);
+			XDT5 I 0 A_SpawnItem("PB_GibNaziArm");
+			Stop;
+	}
+}
+
+class PB_NaziArmKicked: PB_NaziArm
+{
+	Default
+	{
+		+ROLLSPRITE;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 {bNOCLIP = True;}
+			NZA1 A 2 {
+				bNOCLIP = False;
+				A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			}
+		Flying:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			NZA1 A 3 {
+				A_SetRoll(roll+30);
+				A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			}
+			Loop;
+	}
+}
+
+class PB_GibNaziArmPart: PB_GibArmPart
+{
+	States
+    {
+		Spawn:
+			NZT1 Z 1;
+		Death:
+			NZT1 Z -1;
+			Stop;
+	}
+}
 
 /////////////////////
 //LEGS
@@ -1150,6 +1295,120 @@ class PB_GibPlasmaZombieBoot: PB_TinyGibBase
 			PZ13 D 1;
 		Death:
 			PZ13 D -1;
+			Stop;
+	}
+}
+
+// Nazi Legs
+class PB_NaziLeg: PB_XDeathPlasmaZombieLeg
+{
+	Default
+	{
+		Scale 1.1;
+		Speed 8;
+		Gravity 0.4;
+		BounceFactor 0.4;
+		+RollSprite;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+		Fly:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			NZL3 A 4 {
+				A_SetRoll(roll+30);
+				A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			}
+			Loop;
+		Death:
+			NZL3 B 0 {
+				A_SetRoll(0);
+				A_SpawnItem("PB_GibNaziLeg");
+			}
+			Stop;
+    }
+}
+
+class PB_GibNaziLeg: PB_GibPlasmaZombieLeg1
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_SetRoll(0);
+			TNT1 A 0 A_Jump(128, "Spawn1");
+			NZL3 B 1 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			NZL3 B -1;
+			Stop;
+		Spawn1:
+			NZL3 E 1 A_SpawnItem("NashGoreBloodSpot",0,0,0,1);
+			NZL3 E -1;
+			Stop;
+		Death.plasma:	    
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedLeg", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));   
+			Stop;
+		Death:    
+			TNT1 AAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 A 0 A_SpawnProjectile ("PB_GibNaziLegPart", 0, 0, random (0, 180), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 A 0 A_SpawnProjectile ("PB_GibNaziBoot", 0, 0, random (0, 180), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			Stop;
+		Death.Kick:
+		Death.Melee:
+		Death.SuperPunch:
+			NZL3 A 1 {
+				A_FaceTarget();
+				A_SpawnProjectile ("PB_NaziLeg", 5, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 40));
+				}
+			Stop;
+		
+		Pain:
+			TNT1 A 0 ThrustThingZ(0,20,0,1);
+			NZL3 AAAAAAAA 2 A_SetRoll(roll+30);
+			Goto Spawn;
+		
+		Death.ExplosiveImpact:
+			TNT1 A 0 {A_ChangeLinkFlags(False);}
+			TNT1 A 0 ThrustThingZ(0,50,0,1);
+			NZL3 A 5;
+			NZL3 AAA 4 {
+				A_SetRoll(roll+30);
+				A_CheckFloor("Landz");
+			}
+			Goto Landz;
+		Landz:
+			TNT1 A 0 A_SpawnItem("PB_GibNaziLeg");
+			Stop;
+	}
+}
+
+class PB_GibNaziLegPart: PB_TinyGibBase
+{
+	Default
+	{
+		Scale 1.1;
+    }
+	States
+    {
+		Spawn:
+			NZL3 C 1;
+		Death:
+			NZL3 C -1;
+			Stop;
+	}
+}
+
+class PB_GibNaziBoot: PB_TinyGibBase
+{
+	Default
+	{
+		Scale 1.1;
+    }
+	States
+    {
+		Spawn:
+			NZL3 D 1;
+		Death:
+			NZL3 D -1;
 			Stop;
 	}
 }
@@ -1884,8 +2143,6 @@ class PB_ZombiemanHead: PB_LimbBase
 	}
 }
 
-
-
 class PB_XDeathZombiemanHeadOnXDeath: PB_XDeathZombieManHead
 {
 	States
@@ -1932,6 +2189,243 @@ class PB_XDeathZombiemanHeadKicked: PB_XDeathZombieManHead
 	Default
 	{
 		Speed 9;
+	}
+}
+
+
+// NAZI GORE
+
+class PB_XDeathNaziHelmet: PB_XDeathZombieManHead //White skinned piece 1
+{
+	Default 
+	{
+		+NOBLOOD;
+		Scale 1.1;
+		Decal "None";
+		seesound "nazi/helmet";
+		deathsound "nazi/helmet";
+		BounceCount 3;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			GERH ABCD 4;
+			Loop;
+		Death:
+			GERH A 1 A_SpawnItem("PB_NaziHelmetResting");
+			Stop;
+    }
+}
+
+class PB_NaziHelmetResting: PB_ZombiemanHead
+{
+	default
+	{
+		damagefactor "Kick", 99.0;
+		damagefactor "Melee", 99.0;
+		damagefactor "SuperPunch", 99.0;
+		damagefactor "Crush", 0.0;
+		damagefactor "Trample",0.0;
+		damagefactor "Stomp", 0.0;
+		damagefactor "Plasma", 0.0;
+		Radius 10;
+		Mass 12;
+		Scale 1.1;
+		Health 99999999;
+		+SHOOTABLE;
+		+THRUACTORS;
+		+NOBLOOD;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0;
+		Spawn1:
+			BR8B I 0 A_Jump(128, "Spawn2");
+			GERH A -1;
+			Stop;
+		Spawn2:
+			GERH C -1;
+			Stop;
+	
+		Death.Trample:
+		Death.Stomp:
+			TNT1 A 0; //A_GiveToTarget("BootsSmearedWithRedBlood", 6)
+			Goto Death;
+		Death:
+		Crush:
+			TNT1 A 0;
+			TNT1 A 0 A_SpawnItem("PB_NaziHelmetResting");
+			Stop;
+		
+		Pain.Kick:
+		Pain.Melee:
+		Pain.SuperPunch:
+		Pain.Plasma:
+		Death.Melee:
+		Death.SuperPunch:
+		Death.Kick:
+		Death.Plasma:
+			GERH AA 1 A_FaceTarget();
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathNaziHelmet", 5, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 30));
+			TNT1 A 0 A_StartSound("BLANKSND");
+			TNT1 A 20;
+			Stop;
+		Pain:
+			TNT1 A 0;
+			Goto Spawn;
+		
+		Death.ExplosiveImpact:
+		Pain.ExplosiveImpact:
+			TNT1 A 0;
+			TNT1 A 0 {A_ChangeLinkFlags(False);}
+			TNT1 A 0 ThrustThingZ(0,50,0,1);
+			GERH ABCD 6;
+			XDT5 I 0 A_SpawnItem("PB_NaziHelmetResting");
+			Stop;
+	}
+}
+
+
+class PB_XDeathNaziHead: PB_XDeathChainsawZombieHead
+{
+    States
+    {
+		Spawn:
+		Spawn1:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_JumpIf(Vel.Z == 0, "Death");
+			TNT1 A 0 {bTHRUSPECIES = False;}
+			XZE1 A 3 {
+				A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+				A_SetRoll(roll+30);
+			}
+			Loop;
+		Death:
+			XZE1 E 1 A_SETROLL(0);
+			XZE1 E 1 A_SpawnItem("PB_NaziHead",0,0,0,1);
+			Stop;
+	}
+}
+
+class PB_NaziHead: PB_ZombiemanHead
+{
+	DEFAULT 
+	{
+		+ROLLCENTER;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 {bROLLSPRITE = FALSE;}
+			TNT1 A 0 A_Jump(256, "Spawn1", "Spawn2", "Spawn3", "Spawn4");
+		Spawn1:
+			XZE1 A -1;
+			Stop;
+		Spawn2:
+			XZE1 B -1;
+			Stop;
+		Spawn3:
+			XZE1 A -1 {bYFLIP = true;}
+			Stop;
+		Spawn4:
+			XZE1 B -1{bXFLIP = true;}
+			Stop;
+	
+		Death.Trample:
+		Death.Stomp:
+			TNT1 A 0; //A_GiveToTarget("BootsSmearedWithRedBlood", 6)
+			Goto Death;
+		Death:
+			TNT1 A 0;
+			TNT1 A 0 {
+				bYFLIP = false;
+				bXFLIP = false;
+			}
+			TNT1 A 0 A_SpawnItem("NaziHeadExplode");
+			Stop;
+		Crush:
+			TNT1 A 0 {
+				bYFLIP = false;
+				bXFLIP = false;
+			}
+			TNT1 AAAAAAAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (60, 140));
+			TNT1 A 0 A_StartSound("misc/xdeath4");
+			CRS1 B 5;
+			CRS1 B -1;
+			Stop;
+		Death.plasma:
+			TNT1 A 0 {
+				bYFLIP = false;
+				bXFLIP = false;
+			}
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedSkull", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			EXPL A 0 A_SpawnProjectile ("ExplosionSmoke", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			Stop;
+		Death.Melee:
+		Death.SuperPunch:
+		Death.Kick:
+			TNT1 A 0 {
+				bYFLIP = false;
+				bXFLIP = false;
+			}
+			XZE1 AA 1 A_FaceTarget();
+			TNT1 AAAA 0 A_SpawnItemEx("NashGoreBlood", 0, 0, 10);
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathNaziHeadKicked", 5, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 30));
+			TNT1 A 0 A_StartSound("misc/xdeath4", 1);
+			TNT1 A 0 A_StartSound("player/cyborg/fist", 3);
+			TNT1 A 20;
+			Stop;
+		
+		Pain:
+			TNT1 A 0;
+			TNT1 A 0 {
+				bYFLIP = false;
+				bXFLIP = false;
+				bROLLSPRITE = TRUE;
+			}
+			TNT1 A 0 ThrustThingZ(0,20,0,1);
+			XZE1 AAAAAAAA 2 {
+			A_SetRoll(roll-30);
+			}
+			Goto Spawn;
+		
+		Death.ExplosiveImpact:
+			TNT1 A 0;
+			TNT1 A 0 {
+				bYFLIP = false;
+				bXFLIP = false;
+				bROLLSPRITE = TRUE;
+			}
+			TNT1 A 0 {A_ChangeLinkFlags(False);}
+			TNT1 A 0 ThrustThingZ(0,50,0,1);
+			XZE1 AAAA 2 {
+			A_SetRoll(roll-30);
+			}
+			XDT5 I 0 A_SpawnItem("PB_NaziHead");
+			Stop;
+	}
+}
+
+class PB_XDeathNaziHeadKicked: PB_XDeathNaziHead
+{
+	Default
+	{
+		Speed 9;
+	}
+}
+
+class PB_XDeathNaziHeadOnXDeath: PB_XDeathNaziHead
+{
+	States
+	{
+		Spawn:
+			TNT1 A 1 A_jump(96, "ExplodeOnAir");
+			Goto Spawn1;
+		ExplodeOnAir:
+			TNT1 A 0 A_SpawnItem("NaziHeadExplode");
+			Stop;
 	}
 }
 
@@ -2128,6 +2622,7 @@ class PB_XDeathChainsawZombieHead: PB_XDeathArm1
 		Radius 10;
 		Scale 1.0;
 		+ROLLSPRITE;
+		+ROLLCENTER;
 	}
     States
     {
@@ -2230,6 +2725,147 @@ class PB_XDeathChainsawZombieHeadKicked: PB_XDeathChainsawZombieHead
 	}
 }
 
+class PB_XDeathHellTrooperHead: PB_XDeathChainsawZombieHead
+{
+    States
+    {
+		Spawn:
+		Spawn1:
+			TNT1 A 0 A_JumpIf(waterlevel > 1, "Death");
+			TNT1 A 0 A_JumpIf(Vel.Z == 0, "Death");
+			TNT1 A 0 {bTHRUSPECIES = False;}
+			HTHD A 3 {
+				A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+				A_SetRoll(roll+30);
+			}
+			Loop;
+		Death:
+			HTHD A 1 A_SETROLL(0);
+			HTHD A 1 A_SpawnItem("PB_HellTrooperHead",0,0,0,1);
+			Stop;
+	}
+}
+
+class PB_HellTrooperHead: PB_ZombiemanHead
+{
+	DEFAULT 
+	{
+		+ROLLCENTER;
+	}
+    States
+    {
+		Spawn:
+			TNT1 A 0 {bROLLSPRITE = FALSE;}
+			TNT1 A 0 A_Jump(256, "Spawn1", "Spawn2", "Spawn3", "Spawn4");
+		Spawn1:
+			HTHD A -1;
+			Stop;
+		Spawn2:
+			HTHD B -1;
+			Stop;
+		Spawn3:
+			HTHD A -1{bYFLIP = true;}
+			Stop;
+		Spawn4:
+			HTHD B -1{bXFLIP = true;}
+			Stop;
+	
+		Death.Trample:
+		Death.Stomp:
+			TNT1 A 0; //A_GiveToTarget("BootsSmearedWithRedBlood", 6)
+			Goto Death;
+		Death:
+			TNT1 A 0;
+			TNT1 A 0 {
+				bYFLIP = false;
+				bXFLIP = false;
+			}
+			TNT1 A 0 A_SpawnItem("ShotgunguyHeadExplode");
+			Stop;
+		Crush:
+			TNT1 A 0 {
+				bYFLIP = false;
+				bXFLIP = false;
+			}
+			TNT1 AAAAAAAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (60, 140));
+			TNT1 A 0 A_StartSound("misc/xdeath4");
+			CRS1 B 5;
+			CRS1 B -1;
+			Stop;
+		Death.plasma:
+			TNT1 A 0 {
+				bYFLIP = false;
+				bXFLIP = false;
+			}
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedSkull", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			EXPL A 0 A_SpawnProjectile ("ExplosionSmoke", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			Stop;
+		Death.Melee:
+		Death.SuperPunch:
+		Death.Kick:
+			TNT1 A 0 {
+				bYFLIP = false;
+				bXFLIP = false;
+			}
+			HTHD AA 1 A_FaceTarget();
+			TNT1 AAAA 0 A_SpawnItemEx("NashGoreBlood", 0, 0, 10);
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathHellTrooperHeadKicked", 5, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 30));
+			TNT1 A 0 A_StartSound("misc/xdeath4", 1);
+			TNT1 A 20;
+			Stop;
+		
+		Pain:
+			TNT1 A 0;
+			TNT1 A 0 {
+				bYFLIP = false;
+				bXFLIP = false;
+				bROLLSPRITE = TRUE;
+			}
+			TNT1 A 0 ThrustThingZ(0,20,0,1);
+			HTHD AAAAAAAA 2 {
+			A_SetRoll(roll-30);
+			}
+			Goto Spawn;
+		
+		Death.ExplosiveImpact:
+			TNT1 A 0;
+			TNT1 A 0 {
+				bYFLIP = false;
+				bXFLIP = false;
+				bROLLSPRITE = TRUE;
+			}
+			TNT1 A 0 {A_ChangeLinkFlags(False);}
+			TNT1 A 0 ThrustThingZ(0,50,0,1);
+			HTHD AAAA 2 {
+			A_SetRoll(roll-30);
+			}
+			XDT5 I 0 A_SpawnItem("PB_NaziHead");
+			Stop;
+	}
+}
+
+class PB_XDeathHellTrooperHeadKicked: PB_XDeathHellTrooperHead
+{
+	Default
+	{
+		Speed 9;
+	}
+}
+
+class PB_XDeathHellTrooperHeadOnXDeath: PB_XDeathHellTrooperHead
+{
+	States
+	{
+		Spawn:
+			TNT1 A 1 A_jump(96, "ExplodeOnAir");
+			Goto Spawn1;
+		ExplodeOnAir:
+			TNT1 A 0 A_SpawnItem("ShotgunguyHeadExplode");
+			Stop;
+	}
+}
+
+
 class PB_Teeth : PB_TinyGibBase
 {
 	Default
@@ -2285,18 +2921,18 @@ Class PB_Intestine : PB_TinyGibBase
 	{
 		Radius 8;
 		Height 12;
-		Speed 6;
-		Mass 1;
-		BounceFactor 0.4;
+		Speed 9;
+		Mass 5;
 		Renderstyle "Translucent";
 		Alpha 0.9;
-		+DOOMBOUNCE;
+		Gravity 0.5;
 		+NOBLOCKMAP;
 		+MISSILE;
 		+NOTELEPORT;
 		+MOVEWITHSECTOR;
 		+CLIENTSIDEONLY;
 		+FORCEXYBILLBOARD;
+		+RollSprite;
 		-EXPLODEONWATER;
 		DeathSound "misc/xdeath2";
 		Decal "BrutalBloodSplat";
@@ -2305,43 +2941,51 @@ Class PB_Intestine : PB_TinyGibBase
     States
     {
 		Spawn:
-			TNT1 A 0 A_Jump(256, "Spawn1", "Spawn2", "Spawn3", "Spawn4");
+			TNT1 A 0;
+			GUTS A 1 A_Jump(256, "Spawn1", "Spawn2");
 		Spawn1:
-			GUTS A 4;
+			TNT1 A 0 A_SetScale(frandom(0.55,0.85),frandom(0.85,0.85));
+			GUTS ABCDEFGHIJ 1 A_SetRoll(roll+10,SPF_INTERPOLATE);
+		Spawn1_Flying:
+			GUTS J 3 A_SetRoll(roll+10,SPF_INTERPOLATE);
 			Loop;
-			
 		Spawn2:
-			GUTS B 4;
+			TNT1 A 0 A_SetScale(frandom(0.35,1.15),frandom(0.85,1.25));
+			GUTS ABCDEFGHIJ 1 A_SetRoll(roll-10,SPF_INTERPOLATE);
+		Spawn2_Flying:
+			GUTS J 3 A_SetRoll(roll-10,SPF_INTERPOLATE);
 			Loop;
 			
-		Spawn3:
-			GUTS C 4;
-			Loop;
-			
-		Spawn4:
-			GUTS D 4;
-			Loop;	
 	
 		Death:
-			TNT1 A 0 A_JumpIf(waterlevel > 1, "Water");
+			"####" "#" 0 A_JumpIf(waterlevel > 1, "Water");
+			"####" "#" 2 A_CheckFloor("Rest");
+			Loop;
 		Rest:
-			TNT1 A 0 A_SetAngle(random(0,360));
-			TNT1 A 0 {bFLATSPRITE = True;}
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_Jump(255, "Rest1", "Rest2");
 		Rest1:
-			GUTS Y -1;
+			GUTS K -1;
 			Stop;
 		Rest2:
-			GUTS Z -1;
+			GUTS L -1;
+			Stop;
+		Rest3:
+			GUTS K 1 {bSPRITEFLIP = true;}
+			GUTS K -1;
+			Stop;
+		Rest4:
+			GUTS L 1 {bSPRITEFLIP = true;}
+			GUTS L -1;
 			Stop;
 		
 		Water:
 			TNT1 A 0 A_Jump(128, "Water2");
 		Water1:
-			GUTS GH 10;
+			GUTS GH 10 A_SetRoll(roll+20);
 			Loop;
 		Water2:
-			GUTS IJ 10;
+			GUTS IJ 10 A_SetRoll(roll-20);
 			Loop;
     }
 }
@@ -2350,7 +2994,7 @@ class PB_Intestine2: PB_Intestine
 {
 	Default
 	{
-		Speed 3;
+		Speed 12;
 	}
 }
 
@@ -2555,6 +3199,21 @@ class PB_XDeathHalfHelmetSergeant1: PB_XDeathHalfZombieman
     }
 }
 
+class PB_XDeathHalfNazi1: PB_XDeathHalfZombieman
+{
+    States
+    {
+		Spawn:
+			TNT1 A 0 A_SpawnItem("NashgoreBloodSpot",0,0,0,1);
+			NZH1 A 12;
+			Loop;
+		Death:
+			TNT1 A 0 A_SpawnItem("NashgoreBloodSpot",0,0,0,1);
+			NZH1 B 1 A_SpawnItem("PB_Gib_HalfNazi1",0,0,0,1);
+			Stop;
+    }
+}
+
 class PB_XDeathHalfZombieman2 : PB_XDeathHalfZombieman
 {
     States
@@ -2627,6 +3286,41 @@ Class PB_Gib_HalfSergeant1: PB_GibBase
 	}
 }
 
+
+Class PB_Gib_HalfNazi1: PB_GibBase
+{
+    States
+    {
+		Spawn:
+			NZH1 B 1 A_SpawnItem("NashgoreBloodSpot",0,0,0,1);
+			NZH1 B -1;
+			Stop;
+		Death:
+			TNT1 AAAAAAA 0 A_SpawnProjectile ("PB_XDeathSkinPiece2", 5, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_XDeathSkinPiece1", 5, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SmallGib", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 170));
+			TNT1 AA 0 A_SpawnProjectile ("NashGoreBlood", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+			TNT1 AA 0 A_SpawnProjectile ("PB_XDeath1", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathNaziHead", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AA 0 A_SpawnProjectile ("PB_NaziArm", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			Stop;
+		Death.Trample:
+		Death.Crush:
+		Death.Stomp:
+		Death.SuperPunch:
+		Death.ExtremePunches:
+			 TNT1 AAA 0 A_SpawnProjectile ("PB_XDeath1", 5, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 30));
+			 TNT1 AAAA 0 A_SpawnProjectile ("NashGoreBlood", 5, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 30));
+			 TNT1 AAAAAAA 0 A_SpawnProjectile ("PB_XDeathSkinPiece2", 5, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 30));
+			 TNT1 AAAA 0 A_SpawnProjectile ("PB_XDeathSkinPiece1", 5, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 130));
+			 TNT1 AAAA 0 A_SpawnProjectile ("PB_SmallGib", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 30));
+			 TNT1 A 0 A_SpawnProjectile ("PB_XDeathNaziHead", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 30));
+			 TNT1 AA 0 A_SpawnProjectile ("PB_NaziArm", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 30));
+			 XME2 L 1;
+			 XME2 L -1;
+			 Stop;
+	}
+}
 
 Class PB_Gib_HalfHelmetSergeant1: PB_GibBase
 {
