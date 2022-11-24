@@ -187,7 +187,7 @@ ACTOR Melee_Attacks : PB_Weapon Replaces Fist
 				A_TakeInventory("Kicking", 1);
 			}	
 		Goto ReadyFists
-
+		
 	Reload:
 	WeaponSpecial:
 		TNT1 A 0 A_TakeInventory("Punching", 1)
@@ -272,6 +272,13 @@ ACTOR Melee_Attacks : PB_Weapon Replaces Fist
 		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
     Ready3:
 		TNT1 A 0 A_SetRoll(0)
+		TNT1 A 0 {
+			A_ClearOverlays(3,65);
+			PB_SetUsingKick(false);
+			PB_SetUsingMelee(false);
+			PB_SetUsingEquipment(false);
+			PB_SetExecutingEnemy(false);
+		}
 		TNT1 A 0 A_TakeInventory("PB_LockScreenTilt",1)
 		P1NG ABCDEFGHIJKLMNOPQRS 0
 		P2NG ABCDEFGHIJKLMNOPQRS 0
@@ -285,7 +292,12 @@ ACTOR Melee_Attacks : PB_Weapon Replaces Fist
  		TNT1 A 0 A_JumpIfInventory("ShotgunguyHead",1,"ReadyShotgunguyHead")
         TNT1 A 0 A_JumpIfInventory("LostSoulFatality",1,"ReadySoul")
 		TNT1 A 0 A_JumpIfInventory("PhantasmFatality",1, "ReadyPhantasm")
-		P0NG ABCDEFGHIJKLMNOPQRSRQPONMLKJIHGFEDCBA 1 A_DoPBWeaponAction
+		P0NG ABCDEFGHIJKLMNOPQRSRQPONMLKJIHGFEDCBA 1 {
+			if (CountInv("PowerBloodOnVisor") >= 1 ) { A_SetWeaponSprite("P1NG"); }
+			if (CountInv("PowerBlueBloodOnVisor") >= 1 ) { A_SetWeaponSprite("P2NG");}
+			if (CountInv("PowerGreenBloodOnVisor") >= 1 ) { A_SetWeaponSprite("P3NG");}
+			return A_DoPBWeaponAction;
+			}
 		loop
 		
 	ReadyShotgunguyHEad:
@@ -340,11 +352,11 @@ ACTOR Melee_Attacks : PB_Weapon Replaces Fist
 		PUNS HIJ 1
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
-	GrabObject:
+/*	GrabObject:
 		TNT1 A 0
 	    TNT1 A 0 A_PlaySound("weapons/fistwhoosh2")
         PKUP ABCDEF 1
-		Goto Ready		
+		Goto Ready	*/	
     KillLS:
 		THEA E 1 A_PlaySound("gore/headshot")
         THEA E 3 
@@ -1214,7 +1226,7 @@ ACTOR Melee_Attacks : PB_Weapon Replaces Fist
 		KIC4 HIJKLM 1 A_SetRoll(roll-1)
 		TNT1 A 0 A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, false)
 		TNT1 AAAA 1 {
-				A_WeaponReady;
+				A_WeaponReady(WRF_NOSWITCH);
 				if (PressingUser4() || JustReleased(BT_USER4)) { return state("HookKickLeft"); }
 				return state("");
 			}
@@ -1245,7 +1257,7 @@ ACTOR Melee_Attacks : PB_Weapon Replaces Fist
 		KIC5 HIJKLM 1 A_SetRoll(roll+1)
 		TNT1 A 0 A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, false)
 		TNT1 AAAA 1 {
-				A_WeaponReady;
+				A_WeaponReady(WRF_NOSWITCH);
 				if (PressingUser4() || JustReleased(BT_USER4)) { return state("HookKickRight"); }
 				return state("");
 			}
@@ -1283,7 +1295,7 @@ ACTOR Melee_Attacks : PB_Weapon Replaces Fist
 		TNT1 A 0 A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, false)
 		TNT1 A 0 A_TakeInventory("Kicking",1)
 		TNT1 A 0 A_TakeInventory("DoPunch",1)
-		TNT1 AAAA 1 A_DoPBWeaponAction
+		TNT1 AAAA 1 A_DoPBWeaponAction(WRF_NOSWITCH)
 		Goto ReadyFists
 		
 	HookKickRight:
@@ -1316,7 +1328,7 @@ ACTOR Melee_Attacks : PB_Weapon Replaces Fist
 		TNT1 A 0 A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, false)
 		TNT1 A 0 A_TakeInventory("Kicking",1)
 		TNT1 A 0 A_TakeInventory("DoPunch",1)
-		TNT1 AAAA 1 A_DoPBWeaponAction
+		TNT1 AAAA 1 A_DoPBWeaponAction(WRF_NOSWITCH)
 		Goto ReadyFists
 		
 	
@@ -1469,7 +1481,7 @@ ACTOR Melee_Attacks : PB_Weapon Replaces Fist
 		{
 // 			A_OverlayOffset(3, 0, 0);
 			if (PB_MeleeKickInterruptCheck()) { return state("FlashInterrupt"); }
-			return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+			return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE|WRF_NOSWITCH);
 		}
 		Stop
 	FlashInterrupt:
