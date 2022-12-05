@@ -1,0 +1,2297 @@
+Class PB_Imp1 : PB_Monster// Replaces DoomImp
+{
+		Default
+		{
+		Monster;
+		Radius 18;
+		Height 56;
+		Speed 8;
+		FastSpeed 8;
+		MaxStepHeight 24;
+		MaxDropOffHeight 32;
+		Mass 100;
+		SeeSound "imp/sight";
+		PainSound "imp/pain";
+		DeathSound "imp/death";
+		ActiveSound "imp/active";
+		BloodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
+		Health 100;
+		PainChance 200;
+		PainChance "Avoid", 64;
+		PainChance "Head", 255;
+		PainChance "Kick", 255;
+		PainChance "ExtremePunches", 255;
+		PainChance "Melee", 255;
+		PainChance "Taunt", 0;
+		PainChance "MonsterKnocked", 255;
+		PainChance "ExplosiveImpact", 255;
+		PainChance "Trample", 255;
+		PainChance "Stun", 255;
+		PainChance "Siphon", 255;
+		PainChance "Head", 256;
+		damagefactor "Crush", 5.0;
+		damagefactor "Avoid", 1.0;
+		damagefactor "GibRemoving", 0.0;
+		damagefactor "Blood", 0.0; damagefactor "BlueBlood", 0.0; damagefactor "GreenBlood", 0.0;
+		damagefactor "Kick", 0.4;
+		damagefactor "Shrapnel", 0.4;
+		damagefactor "ExplosiveImpact", 0.6;
+		damagefactor "killme", 0.0;
+		damagefactor "Taunt", 1.0;
+		DamageFactor "CauseObjectsToSplash", 0.0;
+		damagefactor "SSG", 50.0;
+		damagefactor "Shotgun", 1.2;
+		damagefactor "Saw", 0.5;
+		damagefactor "Cut", 0.75;
+		damagefactor "Tear", 0.25;
+		damagefactor "TeleportRemover", 0.0;
+		HitObituary "$OB_IMPHIT";
+		Obituary "$OB_IMP";
+		MeleeRange 128;
+		
+		+FLOORCLIP;
+		+SLIDESONWALLS;
+		+STANDSTILL
+		Species "Imp";
+		}
+		
+		double wallFacingAngle;
+		bool wallClimbFlipped;
+		bool crawlingOnFloor;
+		
+		bool canBeStealthKilled;
+		bool knockedDown;
+		bool wallGrabbing;
+		bool jumping;
+		
+		
+		// Check walls on right/left (from Imp's POV) after facing the player
+		
+		
+		bool canJumpOnCeiling(int height) {
+			// Is too low to do a jump?
+			FLineTraceData RemoteRayCeiling;
+			bool ceilingcheck = LineTrace(
+			   self.angle,
+			   height,
+			   self.pitch-90,
+			   TRF_THRUACTORS,
+			   offsetz: self.height,
+			   data: RemoteRayCeiling
+			);
+			
+			if(ceilingcheck && RemoteRayCeiling.HitType == TRACE_HitCeiling ) {
+// 				A_PrintBold("Ceiling too low to jump");
+				return true;
+			}
+			return false;
+		}
+		
+		bool tooCloseToFloor() {
+			
+			FLineTraceData RemoteRayFloor;
+			bool floorcheck = LineTrace(
+			   self.angle,
+			   36,
+			   self.pitch+90,
+			   TRF_THRUACTORS,
+			   offsetz: self.height,
+			   data: RemoteRayFloor
+			);
+			
+			if(floorcheck && RemoteRayFloor.HitType == TRACE_HitFloor ) {
+				A_PrintBold("Floor too close to wall grab");
+				return true;
+			}
+			return false;
+		}
+		
+		bool touchingWall(){
+			// Walls left of Imp's perspective
+			FLineTraceData RemoteRay;
+			bool wallcheck = LineTrace(
+			   self.angle,
+			   44,
+			   self.pitch,
+			   TRF_THRUACTORS,
+			   offsetz: self.height,
+			   data: RemoteRay
+			);
+			
+			if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
+				return true;
+			}
+			return false;
+		}
+		
+		bool canJumpOnWallLeft(int range){
+			
+			// Is too low to do a jump?
+			FLineTraceData RemoteRayCeiling;
+			bool ceilingcheck = LineTrace(
+			   self.angle,
+			   128,
+			   self.pitch-90,
+			   TRF_THRUACTORS,
+			   offsetz: self.height,
+			   data: RemoteRayCeiling
+			);
+			
+			if(ceilingcheck && RemoteRayCeiling.HitType == TRACE_HitCeiling ) {
+// 				A_PrintBold("Ceiling too low to jump");
+				return false;
+			}
+			
+		
+			// Walls left of Imp's perspective
+			FLineTraceData RemoteRay;
+			bool wallcheck = LineTrace(
+			   self.angle-270,
+			   range,
+			   self.pitch,
+			   TRF_THRUACTORS,
+			   offsetz: self.height,
+			   data: RemoteRay
+			);
+			
+			if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
+// 				A_PrintBold("Imp Wall Check Left Passed");
+				return true;
+			}
+			return false;
+		}
+		
+		
+		// Check walls on right (from Imp's POV) after facing the player
+		bool canJumpOnWallRight(int range) {
+			// Is too low to do a jump?
+			FLineTraceData RemoteRayCeiling;
+			bool ceilingcheck = LineTrace(
+			   self.angle,
+			   128,
+			   self.pitch-90,
+			   TRF_THRUACTORS,
+			   offsetz: self.height,
+			   data: RemoteRayCeiling
+			);
+			
+			if(ceilingcheck && RemoteRayCeiling.HitType == TRACE_HitCeiling ) {
+// 				A_PrintBold("Ceiling too low to jump");
+				return false;
+			}
+			// Walls right of Imp's perspective
+			FLineTraceData RemoteRay;
+			bool wallcheck = LineTrace(
+			   self.angle-90,
+			   300,
+			   self.pitch,
+			   TRF_THRUACTORS,
+			   offsetz: self.height,
+			   data: RemoteRay
+			);
+			
+			if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
+// 				A_PrintBold("Imp Wall Check Right Passed");
+				return true;
+			}
+			return false;
+		}
+		
+		
+		override void PostBeginPlay() {
+			Super.PostBeginPlay(); // call the super function for virtual functions so we don't break shit if GZdoom update.
+			HitBoxSpawned = False;
+		}
+		
+		
+		override void Tick()
+		{
+			Super.Tick();
+			
+			
+			
+			if( !self.InStateSequence(self.Curstate, self.ResolveState("Spawn")) || 
+				!self.InStateSequence(self.Curstate, self.ResolveState("Stand")) ||
+				!self.InStateSequence(self.Curstate, self.ResolveState("Pain.Melee"))) {
+					canBeStealthKilled = false;
+			}
+			
+			if(!self.InStateSequence(self.Curstate, self.ResolveState("WallLatch_Turret"))) {
+				A_SetScale(1.0);
+				bMISSILEEVENMORE = true;
+				bMISSILEMORE = true;
+			}
+			else {
+				bMISSILEEVENMORE = false;
+				bMISSILEMORE = false;
+			}
+			
+			
+			if( self.InStateSequence(self.Curstate, self.ResolveState("WallLatchLeft")) || 
+				self.InStateSequence(self.Curstate, self.ResolveState("WallLatch_Turret")) ||
+				self.InStateSequence(self.Curstate, self.ResolveState("WallLatch_Missile")) ||
+				self.InStateSequence(self.Curstate, self.ResolveState("SwitchWallRight")) ||
+				self.InStateSequence(self.Curstate, self.ResolveState("SwitchWallLeft")) ||
+				self.InStateSequence(self.Curstate, self.ResolveState("WallLatchRight"))) {
+				bNoGravity = true;
+				bDONTTHRUST = true;
+			}
+			else {
+				bNoGravity = false;
+				bDONTTHRUST = false;
+			}
+			
+			// Update recognition if crouching
+			if(crawlingOnFloor) {
+				self.Height = 28;
+			}
+			else {
+				self.Height = 56;
+			}
+			
+			//Handle Hitbox system
+			HitboxerHandler();
+			
+			//Handle Execution system
+			ExecutionHandler();
+		}
+		
+		States
+		{
+		
+			Execution:
+				TNT1 A 1 A_Die("Execution");
+				Stop;
+			Death.Execution:
+				TNT1 A 0 A_Stopsound();
+				Stop;
+				
+				
+			
+			Spawn:
+				TROS A 1 {canBeStealthKilled = true;}
+			Stand:
+				TROS AB 10 A_LookEx();
+				Loop;
+			See:
+				TROO AABB 2 A_Chase();
+				TNT1 A 0 A_StartSound("flesh/step");
+				TROO CCDD 2 A_Chase();
+				TNT1 A 0 A_StartSound("flesh/step");
+				Loop;
+			
+			////////////////
+			//Attack Logic// 
+			////////////////
+			Melee:
+				TNT1 A 0 A_JumpIfCloser(80, "Melee2");
+				TNT1 A 0 A_Jump(110, "MeleeRush");
+				TROO E 1 A_StartSound("imp/sight", CHAN_AUTO);
+				TROT C 4 A_FaceTarget();
+				TROT D 4 {
+					ThrustThingZ(0,28,0,1);
+					A_FaceTarget();
+					A_Recoil (-18);
+				}
+				TROT E 2  A_FaceTarget();
+				TROT F 2 { 
+					jumping = true;
+					A_StartSound("weapons/fistwhoosh", CHAN_AUTO);
+					A_FaceTarget();
+				}
+				TROT F 6 A_FaceTarget();
+				TROT GGG 2 A_SpawnProjectile("ImpAttack2",10,0,0,0);
+				TNT1 A 0 {jumping = false;}
+					
+				TROT HHH 2 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine");
+				Goto See;
+			MeleeRush:
+				TNT1 A 0 A_StartSound("imp/sight", CHAN_AUTO);
+				TROO AABB 1 {
+					A_FaceTarget();
+					A_Recoil(-2);
+				}
+				TNT1 A 0 A_StartSound("flesh/step", CHAN_AUTO);
+				TROO CCDD 1 {
+					A_FaceTarget();
+					A_Recoil(-2);
+				}
+				TNT1 A 0 A_StartSound("flesh/step", CHAN_AUTO);
+			Melee2:
+				TNT1 A 0 {
+					A_StartSound("flesh/step", CHAN_AUTO);
+				}
+				TROO EF 4 A_FaceTarget();
+				TNT1 A 0 A_StartSound("weapons/fistwhoosh", CHAN_AUTO);
+				TROO G 4 A_SpawnProjectile("ImpAttack",10,0,0,0);
+				TROO FE 4 A_FaceTarget();
+				TNT1 A 0 A_Jump(132, "See");
+				TROO I 2 A_FaceTarget(90,45);
+				TNT1 A 0 A_StartSound("weapons/fistwhoosh", CHAN_AUTO);
+				TROA H 6 A_SpawnProjectile("ImpAttack",10,0,0,0);
+				TROO I 2;
+				Goto See;
+	
+		// Attack Handler
+		Missile:
+			TROO E 6 {
+				A_FaceTarget();
+				
+				int jumpChance = (random(1,256));
+				if(jumpChance > 212) {
+					if(canJumpOnWallLeft(300)){
+						return A_Jump(256, "TurnAndJumpLeft");
+					}
+					if(canJumpOnWallRight(300)){
+						return A_Jump(256, "TurnAndJumpRight");
+					}
+					if(canJumpOnWallLeft(650)){
+						return A_Jump(256, "TurnAndJumpLeft_Long");
+					}
+					if(canJumpOnWallRight(650)){
+						return A_Jump(256, "TurnAndJumpRight_Long");
+					}
+					if(canJumpOnCeiling(200)) {
+						return A_Jump(256, "JumpToCeiling");
+					}
+				}
+				
+				
+				
+				if(GetDistance(true, AAPTR_TARGET) < 250) {
+					int pounceChance = (random(1,256));
+					if(pounceChance > 192) {
+						return A_Jump(256, "PounceAttack");
+					}
+					
+				}
+				
+				return A_CheckLOF("NormalAttack", CLOFF_MUSTBESOLID|CLOFF_IGNOREGHOST|CLOFF_SKIPOBJECT );
+			}
+			Goto See;
+			
+		PounceAttack:
+			TROT H 2 {
+				A_FaceTarget();
+				int direction = (random(0,1));
+				if (direction == 1) {
+					A_SetAngle(angle+40);
+				}
+				else {
+					A_SetAngle(angle+320);
+				}
+				crawlingOnFloor = true;
+			}
+			TROT H 2 A_Recoil(-8);
+			TROF DAABBCCBB 2 A_Recoil(-2);
+			TNT1 A 0 {
+				crawlingOnFloor = False;
+				A_Stop();
+				A_FaceTarget();
+				A_StartSound("weapons/fistwhoosh");
+				
+			}
+			TROF D 1 {
+					ThrustThingZ(0,35,0,1);
+					A_Recoil (-25);
+					A_FaceTarget();
+					jumping = true;
+			}
+			TROF DDDD 2  A_SpawnProjectile("ImpAttack",10,0,0,0);
+			
+			PounceLoop:
+				TROF DDDDDDDDDDDDDDDDDDD 2 A_CheckFloor("PounceEnd");
+			PounceEnd:
+				TROF B 4 {
+					A_Stop();
+					jumping = false;
+				}
+				TROT HD 2 A_FaceTarget();
+				Goto See;
+				
+		// Right - Mirror the imp sprite	
+		
+		
+		TurnAndJumpRight_Long:
+			TROT H 2 {
+				A_SetAngle(angle-90);
+				crawlingOnFloor = true;
+			}
+			TROF AABBCCBBAABB 2 A_Recoil(-3);
+			TNT1 A 0 {
+					crawlingOnFloor = False;
+					jumping = true;
+					A_Stop();
+				
+					ThrustThingZ(0,random(42,48),0,1);
+					A_Recoil (-20);
+					A_StartSound("imp/jump", CHAN_AUTO);
+				
+			}
+			TROF D 8;
+			TROF DDDDDDDDDDDDDDDDDD 1 {
+			
+				if(touchingWall()) {
+					jumping = false;
+					SetState(self.ResolveState("WallLatchRight"));
+				}
+				
+				if(A_CheckFloor("LandingAllFours")) {
+					jumping = false;
+					SetState(self.ResolveState("LandingAllFours"));
+				}
+				
+			}
+			TROF C 1 A_Stop();
+			Goto LandingAllFours;
+		
+		TurnAndJumpRight:
+			TNT1 A 0 {
+				A_SetAngle(angle-90);
+			}
+			TROT C 4;
+			TROT D 4 {
+					ThrustThingZ(0,random(45,55),0,1);
+					A_Recoil (-20);
+					A_StartSound("imp/jump", CHAN_AUTO);
+					jumping = true;
+			}
+			TROT EF 6;
+			TROT GGGGGGGGGGGGGGGGGG 1 {
+				
+				if(A_CheckFloor("Landing")) {
+					jumping = false;
+					SetState(self.ResolveState("Landing"));
+				}
+				
+				if(touchingWall()) {
+					jumping = false;
+					SetState(self.ResolveState("WallLatchRight"));
+				}
+				
+			}
+			
+			TROT H 6 {jumping = false;}
+			TROT D 6;
+			Goto See;
+		WallLatchRight:
+			IW00 A 1 {
+				A_Stop();
+				wallFacingAngle = self.angle;
+				wallGrabbing = true;
+				wallClimbFlipped = true;
+				A_SprayDecal("Crack");
+				A_SpawnProjectile ("HitPuff", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				
+				A_SetAngle(wallFacingAngle+100);
+				A_StartSound("imp/wallgrab", CHAN_AUTO);
+				
+				
+				A_SpawnProjectile ("MeleeSmoke", random(32,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(32,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(22,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(22,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(12,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(12,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(12,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(12,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				
+			}
+			IW00 A 1 A_JumpIf(tooCloseToFloor(), "DropFromWall");
+			Goto WallLatch_Turret;
+		
+		TurnAndJumpLeft_Long:
+			TROT H 2 {
+				A_SetAngle(angle-270);
+				crawlingOnFloor = true;
+			}
+			TROF AABBCCBBAABB 2 A_Recoil(-3);
+			TNT1 A 0 {
+				crawlingOnFloor = False;
+				A_Stop();
+				
+					ThrustThingZ(0,random(42,48),0,1);
+					A_Recoil (-20);
+				
+			}
+			TROF D 8;
+			TROF DDDDDDDDDDDDDDDDDD 1 {
+			
+				if(touchingWall()) {
+					SetState(self.ResolveState("WallLatchLeft"));
+				}
+				
+				if(A_CheckFloor("LandingAllFours")) {
+					SetState(self.ResolveState("LandingAllFours"));
+				}
+				
+			}
+			TROF C 1 A_Stop();
+			Goto LandingAllFours;
+		
+		
+		// Left
+		TurnAndJumpLeft:
+			TNT1 A 0 A_SetAngle(angle-270);
+			TROT C 4;
+			TROT D 4 {
+					ThrustThingZ(0,random(45,55),0,1);
+					A_Recoil (-20);
+					A_StartSound("imp/jump", CHAN_AUTO);
+			}
+			TROT EF 6;
+			TROT GGGGGGGGGGGGGGGGGG 1 {
+				
+				if(A_CheckFloor("Landing")) {
+					SetState(self.ResolveState("Landing"));
+				}
+				
+				if(touchingWall()) {
+					SetState(self.ResolveState("WallLatchLeft"));
+				}
+				
+			}
+			TROT HD 6;
+			Goto See;
+			
+		WallLatchLeft:
+			IW00 A 1 {
+				A_Stop();
+				
+				wallFacingAngle = self.angle;
+				wallClimbFlipped = false;
+				wallGrabbing = true;
+				A_SprayDecal("Crack");
+				A_SpawnProjectile ("HitPuff", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				
+				
+				A_SetAngle(wallFacingAngle+280);
+				A_StartSound("imp/wallgrab", CHAN_AUTO);
+				
+				
+				
+				A_SpawnProjectile ("MeleeSmoke", random(32,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(32,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(22,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(22,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(12,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(12,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(12,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("MeleeSmoke", random(12,36), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			
+				
+			}
+			IW00 A 1 A_JumpIf(tooCloseToFloor(), "DropFromWall");
+			Goto WallLatch_Turret;
+		SwitchWallRight: 
+			TROT G 2 A_SetAngle(wallFacingAngle);
+			Goto WallLatchRight;
+		SwitchWallLeft:
+			TROT G 2 A_SetAngle(wallFacingAngle);
+			Goto WallLatchLeft;
+			
+			
+		WallLatch_Turret:
+			IW01 ABCD 0;
+			IW00 A 6 {
+				if (wallClimbFlipped) {
+					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.\
+				}
+			
+				if ( !wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) > 0)) {
+// 					SetState(self.ResolveState("DropFromWall"));
+					SetState(self.ResolveState("SwitchWallRight"));
+				}
+				
+				
+				if ( wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) < 0)) {
+// 					SetState(self.ResolveState("DropFromWall"));
+					SetState(self.ResolveState("SwitchWallLeft"));
+				}
+				
+				A_SetScale(scale.X+0.003,Scale.Y+0.01);
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+			}
+			IW00 A 6 {
+				if (wallClimbFlipped) {
+					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.\
+				}
+			
+				if ( !wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) > 0)) {
+// 					SetState(self.ResolveState("DropFromWall"));
+					SetState(self.ResolveState("SwitchWallRight"));
+				}
+				
+				
+				if ( wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) < 0)) {
+// 					SetState(self.ResolveState("DropFromWall"));
+					SetState(self.ResolveState("SwitchWallLeft"));
+				}
+				
+				A_SetScale(scale.X+0.003,Scale.Y+0.01);
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+			}
+			IW00 A 6 {
+				if (wallClimbFlipped) {
+					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.
+				}
+				
+			
+				if ( !wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) > 0)) {
+// 					SetState(self.ResolveState("DropFromWall"));
+					SetState(self.ResolveState("SwitchWallRight"));
+				}
+				
+				
+				if ( wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) < 0)) {
+// 					SetState(self.ResolveState("DropFromWall"));
+					SetState(self.ResolveState("SwitchWallLeft"));
+				}
+				
+				A_SetScale(scale.X-0.003,Scale.Y-0.01);
+			
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+			}
+			IW00 A 6 {
+				if (wallClimbFlipped) {
+					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.
+				}
+				
+				
+				if ( !wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) > 0)) {
+// 					SetState(self.ResolveState("DropFromWall"));
+					SetState(self.ResolveState("SwitchWallRight"));
+				}
+				
+				
+				if ( wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) < 0)) {
+// 					SetState(self.ResolveState("DropFromWall"));
+					SetState(self.ResolveState("SwitchWallLeft"));
+				}
+				
+				A_SetScale(scale.X-0.003,Scale.Y-0.01);
+			
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+			}
+			TNT1 A 0 A_Jump(24, "DropFromWall");
+			Loop;
+			
+		WallLatch_Missile:
+			TNT1 A 0 A_Jump(128, 2);
+			TNT1 A 0 A_JumpIfCloser(225, "WallPounce");
+			IW00 B 1 BRIGHT {
+			
+				if ( !wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) > 0)) {
+					SetState(self.ResolveState("DropFromWall"));
+				}
+				
+				
+				if ( wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) < 0)) {
+					SetState(self.ResolveState("DropFromWall"));
+				}
+				
+				
+				if (wallClimbFlipped) {
+					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.
+					A_FaceTarget();
+					A_Startsound ("IMPCHARG");
+					A_SpawnItemEx("PB_DoomImpBall_Spawn", 1, -24, 27);
+				}
+				else {
+					A_FaceTarget();
+					A_Startsound ("IMPCHARG");
+					A_SpawnItemEx("PB_DoomImpBall_Spawn", 1, 24, 27);
+				}
+			
+			}
+
+			IW00 BBBBBB 1 BRIGHT {
+				A_FaceTarget(90,45);
+				
+				if (wallClimbFlipped) {
+					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.
+// 					A_SpawnProjectile ("ImBallGettingReady", -35, 30, random (0, 140), 2, random (0, 160));
+				}
+				else {
+// 					A_SpawnProjectile ("ImBallGettingReady", 35, 30, random (0, 140), 2, random (0, 160));
+				}
+			}
+
+
+			IW00 C 2 BRIGHT {
+				
+				if (wallClimbFlipped) {
+					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.
+					A_DropAdjust("PB_DoomImpBallGravity","PB_DoomImpBall",8,-34,32, spawnOffsetY: -12, flipped: 1, minRange: 200, maxRange: 600);
+					
+					A_SpawnProjectile ("SmallFlameTrails", 35, -30, random (0, 40), 2, random (0, 160));
+					A_SpawnProjectile ("SmallFlameTrails", 35, -30, random (0, 40), 2, random (0, 160));
+					A_SpawnProjectile ("SmallFlameTrails", 35, -30, random (0, 40), 2, random (0, 160));
+					
+				}
+				else {
+					A_DropAdjust("PB_DoomImpBallGravity","PB_DoomImpBall",8,34,32, minRange: 200, maxRange: 750);
+					
+					
+					A_SpawnProjectile ("SmallFlameTrails", 35, 30, random (0, 40), 2, random (0, 160));
+					A_SpawnProjectile ("SmallFlameTrails", 35, 30, random (0, 40), 2, random (0, 160));
+					A_SpawnProjectile ("SmallFlameTrails", 35, 30, random (0, 40), 2, random (0, 160));
+				}
+				
+			}
+			
+			IW00 DCB 3 {
+				if (wallClimbFlipped) {
+					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.
+				}
+					
+			}
+			IW00 A 1 {
+				if (wallClimbFlipped) {
+					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.
+				}
+				//A_SetAngle(angle+15);
+			}
+			TNT1 A 0 A_Jump(12, "DropFromWall");
+			Goto WallLatch_Turret;
+			
+		WallPounce:
+			TROT EFG 3 A_FaceTarget();
+			TROF D 2 {
+				ThrustThingZ(0,5,1,1);
+				A_Recoil (-15);
+				A_FaceTarget();
+			}
+			TROF DDDD 2 A_SpawnProjectile("ImpAttack",10,0,0,0);
+			TROF DDDDDDDDD 2 A_CheckFloor("LandingAllFours");
+			Goto LandingAllFours;
+			
+			
+		DropFromWall:
+			IW00 A 1 {
+				A_SetAngle(-wallFacingAngle);
+				A_Recoil(-9);
+				wallGrabbing = false;
+				ThrustThingZ(0,10,1,1);
+				bNoGravity = false;
+				A_StartSound("weapons/fistwhoosh", CHAN_AUTO);
+			}
+		Dropping:
+			TROT F 2 A_CheckFloor("Landing");
+			Loop;
+			
+		LandingAllFours:
+			TNT1 A 0 {
+				A_StartSound("land", CHAN_AUTO);
+				wallGrabbing = false;
+				bNoGravity = false;
+			}
+			TROF C 4;
+			TROT GHD 4;
+			Goto See;
+		Landing:
+			TNT1 A 0 {
+				A_StartSound("land", CHAN_AUTO);
+				wallGrabbing = false;
+				bNoGravity = false;
+			}
+			TROT GHD 4;
+			Goto See;
+			
+		
+			
+			
+			
+			
+		NormalAttack:
+			TROO E 1 {
+				A_FaceTarget();
+				A_Startsound ("IMPCHARG");
+// 				A_SpawnProjectile ("SmallFlameTrails", 35, 30, random (0, 40), 2, random (0, 160));
+// 				A_SpawnProjectile ("ImBallGettingReady", 35, 30, random (0, 140), 2, random (0, 160));
+				A_SpawnItemEx("PB_DoomImpBall_Spawn", 1, 24, 30);
+			}
+
+			TROO EEE 2 {
+				A_FaceTarget(90,45); 
+// 				A_SpawnProjectile ("SmallFlameTrails", 35, 30, random (0, 40), 2, random (0, 160));
+// 				A_SpawnProjectile ("ImBallGettingReady", 35, 30, random (0, 140), 2, random (0, 160));
+			}
+
+
+			TNT1 A 0 A_Jump(96, "SpecialAttack");
+			TROO F 2 {
+				A_DropAdjust("PB_DoomImpBallGravity","PB_DoomImpBall",2,32,32, minRange: 200, maxRange: 600);
+				A_SpawnProjectile ("SmallFlameTrails", 33, 24, random (0, 40), 2, random (0, 160));
+				A_SpawnProjectile ("SmallFlameTrails", 33, 24, random (0, 40), 2, random (0, 160));
+				A_SpawnProjectile ("SmallFlameTrails", 33, 24, random (0, 40), 2, random (0, 160));
+			}
+			
+			TROO GF 5;
+			TROO F 5;
+			Goto See;
+
+		SpecialAttack:
+			TROO F 2 A_FaceTarget(90,45);
+			TROO G 6 {
+				A_DropAdjust("PB_DoomImpBallGravity","PB_DoomImpBall",2,32,32, minRange: 200, maxRange: 600);
+				A_SpawnProjectile ("SmallFlameTrails", 33, 24, random (0, 40), 2, random (0, 160));
+				A_SpawnProjectile ("SmallFlameTrails", 33, 24, random (0, 40), 2, random (0, 160));
+				A_SpawnProjectile ("SmallFlameTrails", 33, 24, random (0, 40), 2, random (0, 160));
+			}
+			TROO F 4;
+			TROO I 2 A_FaceTarget(90,45);
+			TROA H 6  {
+				A_DropAdjust("PB_DoomImpBallGravity","PB_DoomImpBall",4,32,32, minRange: 200, maxRange: 600);
+				A_SpawnProjectile ("SmallFlameTrails", 33, 8, random (0, 40), 2, random (0, 160));
+				A_SpawnProjectile ("SmallFlameTrails", 33, 8, random (0, 40), 2, random (0, 160));
+				A_SpawnProjectile ("SmallFlameTrails", 33, 8, random (0, 40), 2, random (0, 160));
+			}
+			TROO I 4;
+			Goto See;
+			
+		
+		////////////////
+		//Pain Logic// 
+		////////////////
+		Pain.Head:
+			TNT1 A 0 A_JumpIf (jumping, "PainMidair");
+			TNT1 A 0 A_JumpIf (wallGrabbing, "FallingStart");
+			TNT1 A 0 A_JumpIf (knockedDown, "Downed");
+			TROO H 3 {
+				A_FaceTarget();
+				A_Stop();
+				A_Pain();
+				crawlingOnFloor = False;
+			}
+			TROH ST 4;
+			TROH U 1 A_Pain();
+			TROH U 4;
+			TROH TSV 4;
+			Goto See;
+		
+		Pain.Melee:
+			TNT1 A 0 A_JumpIf (canBeStealthKilled, "StealthKill");
+		Pain:
+			TNT1 A 0 A_JumpIf (jumping, "PainMidair");
+			TNT1 A 0 {
+				crawlingOnFloor = False;
+				jumping = false;
+			}
+			TNT1 A 0 A_JumpIf (wallGrabbing, "FallingStart");
+			TNT1 A 0 A_JumpIf (knockedDown, "Downed");
+			TROO H 6 A_Pain();
+			Goto See;
+		// Old Stealth System, going to be replaced with something better
+		StealthKill:
+			TROO H 1 A_FaceTarget();
+			TNT1 A 0 A_JumpIfInTargetInventory("Punching",1, 2);
+			TROO H 1;
+			Goto Pain;
+			// This old shit is going to be removed with the new stealth kill system
+			TNT1 A 0 A_GiveToTarget("SKImp", 1);
+			TNT1 A 0 A_NoBlocking();
+			TNT1 A 0 A_Die("Stealthy");
+			TNT1 A 1;
+			Stop;
+		Death.Stealthy:
+			TNT1 A 0;
+			Stop;
+			
+        Downed:
+			ID11 D 6 A_Pain();
+			Goto GetUp;
+		PainMidair:
+			TNT1 A 0 {
+				A_Stop();
+				jumping = false;
+			}
+			Goto FallingStart;
+			
+		Pain.Kick:
+		Pain.ExtremePunches:
+			TNT1 A 0 A_JumpIf (jumping, "PainMidair");
+			TNT1 A 0 {
+				crawlingOnFloor = False;
+				jumping = false;
+			}
+			TNT1 A 0 A_JumpIf (knockedDown, "Downed");
+			TROH V 1 {
+					bNODROPOFF = false;
+					bFORCEXYBILLBOARD = true;
+					knockedDown = true;
+					A_Pain();
+					A_facetarget();
+					ThrustThingZ(0,25,0,1);
+			}
+		FallingStart:
+			TROH V 3 {
+				A_Recoil(10);
+				wallGrabbing = false;
+			}
+			IZD4 KL 6;
+			Goto FallingAfterImpact;
+		
+		Pain.ExplosiveImpact:
+		Pain.Explosive:
+			TNT1 A 0 A_JumpIf (jumping, "PainMidair");
+			TNT1 A 0 {
+				crawlingOnFloor = False;
+				jumping = false;
+			}
+			TNT1 A 0 A_JumpIf (knockedDown, "Downed");
+			TROH V 1 {
+					bNODROPOFF = false;
+					bFORCEXYBILLBOARD = true;
+					knockedDown = true;
+					A_Pain();
+					A_facetarget();
+					ThrustThingZ(0,30,0,1);
+			}
+			TROH V 3 A_Recoil(15);
+			IZD4 KL 6;
+			Goto FallingAfterImpact;
+		FallingAfterImpact:
+			IZD4 L 1 {
+				A_GiveInventory ("FallingHeight", 1);
+				A_CheckFloor ("GetUp");
+			}
+			NULL A 0 A_JumpIf (Vel.Z == 0, "GetUp");
+			Loop;
+		
+		
+		GetUp:
+			TNT1 A 0 A_SpawnItem("LargeMassWaterImpact");
+			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 22, "FallingDie");
+			TNT1 A 0 {
+				A_TakeInventory("FallingHeight", 100);
+				A_Stop();
+				A_StartSound("BODYF",CHAN_AUTO);
+			}
+			IZD4 MMMMMMMMM 5 A_JumpIf(Vel.Z < 0, "FallingAfterImpact");
+			IZD4 N 6 {
+				A_FaceTarget();
+				knockedDown = false;
+				bNODROPOFF = true;
+				bFORCEXYBILLBOARD = false;
+			}
+			IZD4 O 6;
+			TROT H 4;
+			Goto See;
+		 
+		FallingDie:
+			TNT1 A 0 {
+				bCOUNTKILL = false;
+				bSHOOTABLE = false;
+				A_SpawnItem("SplatteredSmall");
+			}
+			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 32, "Death.Stomp");
+			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 25, "FallingSuperDeath");
+			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 16, "FallingDeath");
+		FallingDeath:
+			TNT1 A 0 {
+				A_Scream();
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
+				}
+			TROO M 2 {
+				A_StartSound("BODYF",CHAN_AUTO);
+				A_SpawnItem ("GrowingBloodPool");
+				A_SpawnItem ("DeadImp1");
+			}
+			Stop;
+		FallingSuperDeath:
+			TNT1 A 0 A_XScream();
+			Goto Death.ExplosiveImpact+1;
+				
+		Pain.Siphon:
+			TNT1 A 0 A_JumpIf (jumping, "PainMidair");
+			TNT1 A 0 {
+				crawlingOnFloor = False;
+				jumping = false;
+			}
+			TROO H 1 {
+				A_SpawnItemEx("RedLightning_Small", random (-12, 12), random (-12, 12), random (16, 52), 0, 0);
+				A_SpawnItemEx("RedLightning_Small", random (-12, 12), random (-12, 12), random (16, 52), 0, 0);
+				A_SpawnItemEx("RedLightning_Small", random (-12, 12), random (-12, 12), random (16, 52), 0, 0);
+				A_FaceTarget();
+				A_GiveToTarget("HealthBonus",4);
+			}
+			TROO H 5 {
+				A_FaceTarget();
+				A_Pain();
+				}
+			Goto See;
+		Possession:
+			TROO H 3 {
+				A_SetInvulnerable();
+				A_Pain();
+			}
+			"####" "#" 35 ACS_NamedExecuteAlways("Pos - Flicker effect");
+			TNT1 A 0 A_UnSetInvulnerable();
+			Goto See;
+	
+		Pain.Stun:
+			TNT1 A 0 {
+				crawlingOnFloor = False;
+				jumping = false;
+				A_Stop();
+			}
+			TROO H 1 A_Pain();
+			TROO HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0);
+			TROO H 1 A_Pain();
+			TROO HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0);
+			TROO H 1 A_Pain();
+			TROO HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0);
+			TROO H 1 A_Pain();
+			TROO HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0);
+			TROO H 1 A_Pain();
+			TROO HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0);
+			TROO H 1 A_Pain();
+			Goto See;
+			
+		
+		//New Evade Animation
+		Pain.Avoid:
+			TNT1 A 0 {
+				crawlingOnFloor = False;
+				jumping = false;
+			}
+			TNT1 A 0 A_JumpIf (wallGrabbing, "DropFromWall");
+			TNT1 A 0 A_Jump(256, "AvoidLeft", "AvoidRight");
+		AvoidLeft:
+		
+			TROT H 2 {
+				A_FaceTarget();
+				A_SetAngle(angle+90);
+				crawlingOnFloor = true;
+			}
+			TROT H 2;
+			TROF DAABBCCBBAABB 2 A_Recoil(-3);
+			TNT1 A 0 {
+				crawlingOnFloor = False;
+				A_Stop();
+			}
+			TROT HD 2 A_FaceTarget();
+			Goto Missile;
+		AvoidRight:
+			TROT H 2 {
+				A_FaceTarget();
+				A_SetAngle(angle+270);
+				crawlingOnFloor = true;
+			}
+			TROT H 2;
+			TROF DAABBCCBBAABB 2 A_Recoil(-4);
+			TNT1 A 0 {
+				crawlingOnFloor = False;
+				A_Stop();
+			}
+			TROT HD 2 A_FaceTarget();
+			Goto Missile;
+					
+	   //If the monster is hit by the "Killme" damage (which is "exploded" by the captured marine), automatically start firing at the target.
+		Pain.KillMe:
+			TNT1 A 0;
+			Goto Missile;
+		//Emergency manuever in case the monster gets killed by an "alerter" actor	
+		Death.KillMe:
+		Death.Taunt:
+		Death.Avoid:
+			TNT1 A 0;
+			TNT1 A 0 {
+				bTHRUACTORS = true;
+				bCOUNTKILL = false;
+			}
+			TNT1 A 0 A_SpawnItemEx ("PB_Imp1",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION |SXF_TRANSFERSPECIAL| SXF_TRANSFERAMBUSHFLAG ,0);
+			Stop;
+			
+		Death:
+			TNT1 A 0 A_JumpIf(jumping, "DeathShotgunFly");
+			TNT1 A 0 A_JumpIf (knockedDown, "Death.Down");
+			TNT1 A 0 A_Jump(32, "Death.Arm");
+			TNT1 A 0 A_Jump(24,"DeathNoGuts");
+			TNT1 A 0 A_Jump(26, "Death4");
+			TNT1 A 0 A_Jump(256, "Death1", "Death2", "Death3");
+		Death1:
+			TR97 A 8 ;
+			TR97 B 8 A_Scream();
+			TR97 C 6;
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			TR97 D 6 A_NoBlocking();
+			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItem("DeadImp1");
+			Stop;
+		Death2:
+			TROO V 8;
+			TROO W 8 A_Scream();
+			TROO X 6 A_NoBlocking();
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			TROO Y 6;
+			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItem ("DeadImpTROOY");
+			Stop;
+		Death3:
+			SROD A 7;
+			SROD B 6 A_Scream();
+			SROD C 6 A_NoBlocking();
+			SROD D 6;
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			SROD E 6;
+			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItem ("DeadImpSRODF");
+			Stop;
+		Death4:
+			TNT1 A 0 A_Scream();
+			TNT1 A 0 A_NoBlocking();
+			TROD ABCD 6;
+			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItemEx ("ImpDyingOfBloodLoss", 0,0,7,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			Stop;
+				
+		Death.Down:
+		Death.Trample:
+			TNT1 A 0 {
+				A_Scream();
+				A_NoBlocking();
+				A_Stop();
+			}
+			TNT1 AAA 0 A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			ID11 DC 6;
+			TNT1 A 0 A_SpawnItem("DeadImp1");
+			Stop;
+
+		Death.Arm:
+			TNT1 A 0 {
+				A_SpawnProjectile ("XDeathImpArm", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_MuchBlood2", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			}
+			TNT1 A 0 A_Scream();
+			TNT1 A 0 A_NoBlocking();
+			TNT1 A 0 A_Jump(96, "Arm2");
+			TR08 A 8;
+			TNT1 A 0 A_SpawnItem ("DyingImpNoArm", 2);
+			Stop;
+		Arm2:
+			TNT1 A 0 A_SpawnProjectile ("MuchBlood", 50, 0, random (0, 360), 2, random (0, 160));
+			T408 A 8 A_SpawnProjectile ("XDeath1", 40, 0, random (0, 360), 2, random (0, 160));
+			TNT1 A 0 A_SpawnItem ("DyingImpNoArm2", 2);
+			Stop;
+			
+		DeathNoGuts:
+			TNT1 A 0  {
+				A_SpawnProjectile ("PB_SmallGib", 34, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Intestine", 22, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_MuchBlood2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("XDeath1", 34, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("XDeath1", 34, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("XDeath1", 34, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				
+			
+			}
+			TNT1 A 0 A_Jump(128, "DeathNoGuts2");
+			IMPC A 8 A_Scream();
+			IMPC B 8 A_NoBlocking();
+			IMPC C 8;
+			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItem ("DyingImp", 2);
+			Stop;
+		DeathNoGuts2:
+			I9PC C 8;
+			I9PC D 8 A_Scream();
+			I9PC E 8 A_NoBlocking();
+			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItem ("DyingImp2", 2);
+			Stop;
+	
+		Death.cut:
+		Death.HKFT:
+			TNT1 A 0 A_Jump(16, "Death.Arm");
+			TNT1 A 0 A_Jump(32,"DeathNoGuts");
+		Saw1:
+			TNT1 O 0 {
+				A_NoBlocking();
+				A_FaceTarget();
+				A_Stop();
+			}
+			TNT1 AAA 0 A_SpawnProjectile ("PB_XDeath1", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			IXD4 I 1 {
+				A_SpawnProjectile ("XDeathHalfImp", 28, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 45));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 60));
+				A_SpawnProjectile ("PB_Intestine", 28, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 60));
+				A_SpawnProjectile ("PB_Intestine", 28, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 60));
+				A_SpawnProjectile ("PB_Intestine2", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 60));
+				A_SpawnProjectile ("PB_Intestine2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 60));
+				A_Stop();
+			}
+				
+			
+			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
+			IXD4 IIIIIIIIIIIII 2 {
+				A_SpawnProjectile ("PB_BloodMistSmall", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (65, 90));
+			}
+			IXD4 J 4 A_SpawnProjectile ("PB_MuchBlood2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			IXD4 KL 8;
+			TNT1 A 0 A_SpawnItem ("DeadImpIXD4L");
+			Stop;
+			
+		Death.Tear:
+		Death.Saw:
+			TNT1 O 0 {
+				A_NoBlocking();
+				A_FaceTarget();
+				A_Stop();
+				A_XScream();
+			}
+			TNT1 A 0 A_Jump(128, "Tear2");
+			TNT1 A 0 {
+				A_SpawnProjectile ("PB_MuchBlood", 34, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath4", 38, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", random(36,40), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", random(36,40), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", random(36,40), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_BloodMistLarge", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 44, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnItem ("GrowingBloodPool");
+			}
+			T5SW AABBCCDDEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			T5SW F 6 A_StartSound("BODYF",CHAN_AUTO);
+			TNT1 A 0 A_SpawnItem("DeadImpT5SWG");
+			Stop;
+		
+		Tear2:
+			TNT1 A 0 {
+				A_SpawnProjectile ("PB_MuchBlood", 34, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath4", 38, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", random(36,40), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", random(36,40), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallGib", random(36,40), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("pb_XDeath3", random(36,40), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_BloodMistLarge", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 44, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				
+				A_SpawnItem ("GrowingBloodPool");
+			}
+			IXD1 ABCD 4;
+			TNT1 A 0 A_SpawnProjectile ("XDeathHalfImp2", 36, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 30));
+			IXD1 EFG 6;
+			TNT1 A 0 A_SpawnItem ("DeadImpIXD1H");
+			Stop;
+			
+		Death.cutless:
+			TNT1 A 0 A_Stop();
+			TNT1 A 0 A_JumpIf (knockedDown, "Death.Down");
+			TNT1 A 0 A_Jump(42,"DeathNoGuts");
+			TNT1 A 0 A_Jump(16, "Death");
+			TNT1 A 0 A_Jump(16, "Death.LegMassacre");
+			Goto Death.Minigun;
+		
+	    Death.Minigun:
+			TNT1 A 0 {
+				A_FaceTarget();
+				A_Scream();
+				A_NoBlocking();
+			}
+			TNT1 A 0 A_Jump(128, "DeathMinigun2");
+			TNT1 A 0 A_SpawnItem ("BrutalizedImp1", 1);
+			Stop;
+		
+		DeathMinigun2:
+			TNT1 A 0 A_SpawnItem ("BrutalizedImp4", 1);
+			Stop;
+			
+		Death.LegMassacre:
+			TR09 A 8 {
+				A_SpawnProjectile ("XDeathImpLeg", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_MuchBlood", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_NoBlocking();
+			}
+			TNT1 A 0 A_SpawnItem ("ImpBrutalizedWithNoLeg");
+			Stop;
+			
+		HeadExploder:
+			TNT1 A 0 A_Jump(72, "HeadExplode");
+			Goto HeadMinor;
+		Death.head:
+			TNT1 A 0 A_Stop();
+			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
+			TNT1 A 0 A_JumpIfInTargetInventory("HasPlasmaWeapon", 1, "Death.Plasma");
+			TNT1 A 0 A_JumpIfInTargetInventory("HasCutingWeapon", 1, "Death.Decapitate");
+			TNT1 A 0 A_JumpIfHealthLower(-50, "HeadExplode");
+			TNT1 A 0 A_JumpIfInTargetInventory("RandomHeadExploder", 1, "HeadExploder");
+		HeadMinor:
+			TNT1 A 0 {
+				A_StartSound("MinorHeadshot", CHAN_AUTO);
+				A_SpawnProjectile ("Brains1", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("Brains1", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("Brains3", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("Brains6", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallBrainPiece", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("SuperWallRedBlood", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			}
+			
+			TNT1 A 0 A_Jump (256, "DeathMinorhead1", "DeathMinorhead2", "DeathMinorhead3");
+		DeathMinorHead1:
+			TNT1 A 0 A_Jump(150, "MinorHead1", "MinorHead2");
+			TROH K 9 A_NoBlocking();
+			TROH M 8 A_Scream();
+			TROH N 8;
+			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItem ("DeadImp_MinorHeadDeadFront");
+			Stop;
+		DeathMinorhead2:
+			TNT1 AAA 0 A_SpawnProjectile ("Teeth", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			T6SW A 8 A_NoBlocking();
+			T6SW B 8 A_Scream(); 
+			T6SW C 8;
+			T6SW DDD 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			T6SW EEEDDD 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
+			T6SW F 6;
+			TNT1 A 0 A_SpawnItem ("DeadImpT6SWG");
+			Stop;
+		
+		DeathMinorhead3:
+			TNT1 AAA 0 A_SpawnProjectile ("Teeth", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			T6SW H 8 A_NoBlocking();
+			T6SW I 8 A_Scream();
+			T6SW J 8;
+			T6SW KKK 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			T6SW LLLKKK 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
+			T6SW M 6;
+			TNT1 A 0 A_SpawnItem ("DeadImpT6SWn");
+			Stop;
+		
+		
+		
+		HeadExplode:
+			TNT1 A 0 {
+				A_Stop();
+				A_StartSound("gore/headshot", CHAN_BODY);
+				A_SpawnItem("ImpHeadExplode", 0, 40);
+				A_XScream();
+				A_SpawnItem("BloodSplasher2");
+				A_NoBlocking();
+			}
+			TNT1 A 0 A_Jump(129, "HeadExplode2");
+			TROH AAAABBBBB 2 {
+				A_SpawnItemEx("NashGoreBloodSpurt",
+				frandom(-5, 5), frandom(-5, 5), frandom(48, 52),
+				frandom(-2, 2), frandom(-2, 2), frandom(4, 8),
+				frandom(0, 360));
+			}
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			TROH CCCCC 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (60, 120));
+			
+			TROH DDDD 2;
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			TROH EEEEEEEEEEEEEEEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
+			TNT1 A 0 A_SpawnItem ("DeadImp_NoHead");
+			Stop;
+		HeadExplode2:	
+			TNT1 A 0 A_ClearTarget();
+			POSL G 2 {
+				A_SpawnItem("ImpHeadExplode", 0, 40);
+				A_SpawnItem("BloodSplasher2");
+				bNOBLOCKMONST = true;
+				A_StartSound("misc/PB_XDeath4");
+				A_FaceTarget();
+				A_XScream();
+				A_NoBlocking();
+				}
+			ZL5E AAAABBBBB 2 {
+				A_SpawnItemEx("NashGoreBloodSpurt",
+				frandom(-5, 5), frandom(-5, 5), frandom(48, 52),
+				frandom(-2, 2), frandom(-2, 2), frandom(4, 8),
+				frandom(0, 360));
+			}
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			ZL5E CCCCCCCCCCC 2 {
+				A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (60, 120));
+				A_SpawnItemEx("NashGoreBloodSpurt",
+				frandom(-3, 3), frandom(-3, 5), frandom(28, 29),
+				frandom(-2, 2), frandom(-2, 2), frandom(4, 8),
+				frandom(0, 360));
+			}
+			
+			ZL5E DDDD 2;
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			ZL5E EEEEEEEEEEEEEEEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
+			TNT1 A 0 A_SpawnItem ("DeadImp_ZL5EE");
+			Stop;
+			
+		Death.Decapitate:
+			TNT1 A 0 {
+				A_Stop();
+				A_FaceTarget();
+				A_NoBlocking();
+				A_SpawnItemEx ("XDeathImpHeadBeheaded",0,0,50,random(-2,2),random(-2,2),12,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnProjectile ("PB_MuchBlood", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			}
+			ZL5E AAAAABBBBBB 2 {
+				A_SpawnItemEx("NashGoreBloodSpurt",
+				frandom(-5, 5), frandom(-5, 5), frandom(48, 52),
+				frandom(-2, 2), frandom(-2, 2), frandom(4, 8),
+				frandom(0, 360));
+			}
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			ZL5E CCCCCCCCCCCCCCCCC 2 {
+				A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (60, 120));
+				A_SpawnItemEx("NashGoreBloodSpurt",
+				frandom(-3, 3), frandom(-3, 5), frandom(28, 29),
+				frandom(-2, 2), frandom(-2, 2), frandom(4, 8),
+				frandom(0, 360));
+			}
+			ZL5E DDDD 2;
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			ZL5E EEEEEEEEEEEEEEEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
+			TNT1 A 0 A_SpawnItem ("DeadImp_ZL5EE");
+			Stop;
+			
+    Death.Leg:
+		TNT1 A 0 A_JumpIfHealthLower(-100,"DoubleLegRemove");
+		TNT1 A 0 A_JumpIfHealthLower(-20, "LegRemove");
+		Goto Death;
+	DoubleLegRemove:
+		ZL4E A 6 {
+			A_Scream();
+			A_Stop();
+			A_NoBlocking();
+			A_FaceTarget();
+			A_StartSound("gore/minimum");
+			A_SpawnProjectile ("XDeathImpLeg", 15, 0, random (150, 215), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("XDeathImpLeg", 15, 0, random (150, 215), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_XDeath1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_XDeath1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_XDeath1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_XDeath1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			
+			A_SpawnProjectile ("PB_BloodMistLarge", 22, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+			A_SpawnProjectile ("PB_BloodMistLarge", 9, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+			A_SpawnProjectile ("PB_BloodMistLarge", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+			A_SpawnProjectile ("PB_BloodMistLarge", 17, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+ 			ThrustThingZ(0,6,0,1);
+			}
+		ZL4E BCD 5;
+		TNT1 A 0 {
+			A_SpawnItem ("GrowingBloodPool");
+			A_StartSound("BODYF",CHAN_AUTO);
+			A_SpawnItem ("DeadImpZL4Ee");
+		}
+		Stop;
+	LegRemove:
+		TNT1 A 0 A_Jump(64, "LegRemoveRare");
+        TNT1 A 0 {
+			A_StartSound("gore/minimum");
+			A_SpawnProjectile ("PB_MuchBlood2", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_XDeath1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("XDeathImpLeg", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_SmallGib", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_BloodMistLarge", 9, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+			A_SpawnProjectile ("PB_BloodMistLarge", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+			A_SpawnProjectile ("PB_BloodMistLarge", 17, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+			A_SpawnItem ("GrowingBloodPool");
+			A_NoBlocking();
+			A_Scream();
+		}
+		
+		TR09 A 10;
+		TR09 BC 5;
+        TNT1 A 0 A_SpawnItem ("DyingImpNoLeg", 5);
+        Stop;
+	LegRemoveRare:
+        TNT1 A 0 {
+			A_StartSound("gore/minimum");
+			A_SpawnProjectile ("PB_MuchBlood2", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_XDeath1", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("XDeathImpLeg", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			A_SpawnProjectile ("PB_BloodMistLarge", 9, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+			A_SpawnProjectile ("PB_BloodMistLarge", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+			A_SpawnProjectile ("PB_BloodMistLarge", 17, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+			A_SpawnItem ("GrowingBloodPool");
+			A_NoBlocking();
+			A_Scream();
+			A_SpawnItemEx ("ImpSaciLol",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+		}
+        Stop;
+
+		Death.ExplosiveImpact:
+			TNT1 A 1 {
+					bNODROPOFF = false;
+					ThrustThingZ(0,30,0,1);
+					A_FaceTarget();
+			}
+			TNT1 A 0 A_Jump(128,"ExplosiveImpact2");
+			TNT1 A 0 A_Jump(16,"XDeath");
+			//TNT1 A 0 //A_Jump(96, "Death.Landmine")
+			TNT1 A 0 {
+				A_Xscream();
+				A_NoBlocking();
+				ThrustThingZ(0,40,0,1);
+				NashGoreGibs.SpawnGibs(self);
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains2", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains3", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains4Green", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains5", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("XDeathImpArm", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath3", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("XDeathImpLeg", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+			}
+			ID17 AB 5;
+			ID17 CDEFFFFFFFF 5 A_CheckFloor ("DeadExplosiveImpact1");
+			TNT1 A 0 A_SpawnItem ("DeadImpID17G");
+			Stop;
+			
+		DeadExplosiveImpact1:
+			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
+			TNT1 A 0 A_Jump(128, "DeadExplosiveImpact2");
+			TNT1 O 0 A_NoBlocking();
+			TNT1 A 0 A_SpawnItem ("ThisImpGotDestroyed");
+			Stop;
+		
+		DeadExplosiveImpact2:
+			TNT1 A 0 A_SpawnItem ("ThisImpGotDestroyed2");
+			Stop;
+			
+		ExplosiveImpact2:
+			TNT1 A 0 {
+				A_Xscream();
+				A_NoBlocking();
+				ThrustThingZ(0,40,0,1);
+				NashGoreGibs.SpawnGibs(self);
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains2", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains3", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains4Green", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains5", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SmallBrainPiece", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("XDeathImpArm", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath3", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("XDeathImpLeg", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("PB_BloodMistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+			}
+			ID13 A 1;
+			ID17 HI 4;
+			ID17 JKLMN 4 A_CheckFloor ("DeadLandmine");
+			ID17 NNNNNNNN 4 A_CheckFloor ("DeadLandmine");
+			TNT1 A 0 A_SpawnItem ("DeadImp_NoLeg");
+			Stop;
+	
+		DeadLandmine:
+			TR09 E 1 A_NoBlocking();
+			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItem ("DeadImp_NoLeg");
+			Stop;
+			
+	
+			
+		  Death.SuperPunch:
+		  Death.ExtremePunches:
+			TNT1 A 0 {
+				bNODROPOFF = false;
+				bNOBLOCKMONST = true;
+			}
+			TNT1 A 0 A_Jump(96,"Death.LandMine");
+			TNT1 A 0 A_NoBlocking();
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeath2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_SmallGib", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains2", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains3", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_Brains5", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SmallBrainPiece", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_BloodmistLarge", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("XDeathImpArm", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("XDeathImpLeg", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 ThrustThingZ(0,30,0,1);
+			ID17 AB 5;
+			ID17 CDEF 5 A_CheckFloor ("Dead.ExplosiveImpact");
+			ID17 FFFFFFFFFF 5 A_CheckFloor ("Dead.ExplosiveImpact");
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			TNT1 A 0 A_SpawnItem ("DeadImpID17G");
+			Stop;
+			
+			
+		Death.fire:
+		Death.Flames:
+		Death.Burn:
+			TNT1 A 1 {
+				A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
+				A_ScreamAndUnblock();
+				A_SpawnItemEx("BurningImpRunning",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
+			}
+			Stop;
+		  
+		Death.Desintegrate:
+			TNT1 A 1 {
+				A_ScreamAndUnblock();
+				A_SpawnItemEx("DesintegratedHuman",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
+			}
+			Stop;
+			
+		Death.Blackhole:
+			TNT1 A 0 A_NoBlocking();
+			TNT1 A 1 A_SpawnItemEx("BlackHoledHuman",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
+			Stop;
+			
+		Death.Plasma: 
+		Death.Plasma2:
+			TNT1 A 0 A_Stop();
+			TNT1 A 0 A_Jump(96, "OtherPlasmaDeath");
+			TNT1 A 0 A_StartSound("plasmaflesh", CHAN_AUTO);
+			TNT1 A 0 A_SpawnItemEx("RealisticFireSparks1Blue",random(-2,2),random(-2,2),18,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			TNT1 AAAAAAAA 0 A_SpawnProjectile("Ashes1", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 AAAAAAAA 0 A_SpawnProjectile("Ashes2", 24, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 AAAAAA 0 A_SpawnProjectile("PB_BloodmistLarge", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 AAA 0 A_SpawnProjectile("NashgoreBlood", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			PBR1 B 6 A_NoBlocking();
+			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1Blue",random(-2,2),random(-2,2),10,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			TNT1 A 0 A_SpawnItem("BarrelExplosionSmokeColumn", -5);
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15));
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35));
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35));
+			PBR1 CCCDDD 2 A_SpawnProjectile ("BluePlasmaFireNonStatic", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			PBR1 EEEFF 2;
+			PBR1 GGG 3;
+			PBR1 H -1;
+			Stop;
+			
+			
+			
+		OtherPlasmaDeath:
+			TNT1 A 0 A_StartSound("imp/death", CHAN_BODY);
+			IMPP A 8 BRIGHT;
+			IMPP B 8 BRIGHT A_NoBlocking();
+			TNT1 A 0 A_StartSound("plasmaflesh", CHAN_BODY);
+			TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			
+			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1Blue",random(-2,2),random(-2,2),32,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			TNT1 A 0 A_SpawnItem("ImpHeadExplode", 0, 42);
+			TNT1 AAAAAAAA 0 A_SpawnProjectile("Ashes1", 44, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 AAAAAAAA 0 A_SpawnProjectile("Ashes2", 48, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 AAAA 0 A_SpawnProjectile("BluePlasmaFireNonStatic", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 AAAA 0 A_SpawnProjectile("PB_BloodmistLarge", 46, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 AAAAAAA 0 A_SpawnProjectile("NashgoreBlood", 38, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 180));
+			TNT1 AA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 46, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			IMPP CDE 6 A_SpawnItemEx("RealisticFireSparks1Blue",random(-2,2),random(-2,2),18,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			TNT1 A 0 A_SpawnItem("BarrelExplosionSmokeColumn", -5);
+			IMPP F -1;
+			stop;
+			
+			
+		Death.SuperPlasma:
+			TNT1 A 0 {
+				A_FaceTarget();
+				A_XScream();
+				A_NoBlocking();
+			}
+			XBRN AA 2 BRIGHT A_SpawnItem("BlueFlare",0,43);
+			TNT1 AAAAAAAAA 0 A_SpawnProjectile ("PB_BloodmistLarge", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			
+			TNT1 A 0 A_SpawnProjectile ("XDeathImpArm", 36, 3, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("XDeathImpLeg", 20, 4, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedArm", 36, -3, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedLeg", 20, -4, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedSkull", 48, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat3", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAAAA 0 A_SpawnProjectile ("PlasmaParticleX", 48, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 AAA 0 A_SpawnProjectile ("BigPlasmaParticleX", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			XBRN BBCC 2 BRIGHT A_SpawnItem("BlueFlare",0,43);
+			Stop;
+			
+			
+		Death.GreenFire:
+			TNT1 A 0 {
+				A_FaceTarget();
+				A_XScream();
+				A_NoBlocking();
+			}
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_BloodmistLarge", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("XDeathImpArm", 36, 3, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("XDeathImpLeg", 20, 4, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedArm", 36, -3, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedLeg", 20, -4, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedSkull", 48, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnProjectile ("PB_XDeathBurnedMeat3", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			EXPL AAAAA 0 A_SpawnProjectile ("GreenFlameTrails", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			XBRN AAAA 2 BRIGHT {
+				A_SpawnItem("GreenFlare",0,43);
+				A_SpawnItemEx("RealisticFireSparks1Green",random(-2,2),random(-2,2),18,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+				}
+			Stop;
+			
+		Death.Incinerate:
+			TNT1 A 0 {
+				A_Stop();
+				A_NoBlocking();
+				A_StartSound("MELT");
+			}
+			TNT1 AAAA 0 A_SpawnProjectile ("ExplosionParticleHeavy", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 AAAA 0 A_SpawnProjectile ("ExplosionParticleVeryFast", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,32,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15));
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35));
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35));
+			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),32,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			T6SB AAAAA 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),28,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			T6SB BBBBB 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 28, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),24,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			T6SB CCCCC 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_StartSound("SZZLL", 3);
+			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),20,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			T6SB DDDDD 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 20, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),16,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			T6SB EEEEE 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),12,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			T6SB FFFFF 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile ("BurningEmberParticlesFloating_Bigger", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			TNT1 A 0 A_SpawnItem("BarrelExplosionSmokeColumn");
+			T6SB GGGG 2 Light("IncinerationGlow");
+			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			T6SB HHIIHHIIHHIIHHII 2 Light("IncinerationGlow");
+			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0);
+			T6SB HHIIHHIIHHIIHHII 12;
+			T6SB J -1;
+			Stop;
+			
+		Death.Shrink:
+			TNT1 A 1 {
+				A_StartSound("Shrink", 3);
+				A_SpawnItemEx ("ImpShrinkFX1", 0, 0,  5, 0, 0);
+				}
+			TNT1 A 1 A_SpawnItemEx ("ImpShrinkFX2", 0, 0, 5, 0, 0);
+			TNT1 A 1 A_SpawnItemEx ("ImpShrinkFX3", 0, 0, 5, 0, 0);
+			TNT1 A 1 A_SpawnItemEx ("ImpShrinkFX4", 0, 0, 5, 0, 0);
+			TNT1 A 1 A_SpawnItemEx ("ImpShrinkFX5", 0, 0, 5, 0, 0);
+			TNT1 A 1 A_SpawnItemEx ("ImpShrinkFX6", 0, 0, 5, 0, 0);
+			TNT1 A 1 A_SpawnItemEx ("ImpShrinkFX7", 0, 0, 5, 0, 0);
+			TNT1 A 1 A_SpawnItemEx ("LilImp", 1);
+			stop;
+			
+		 Death.Melee:
+			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down");
+			TNT1 A 0 A_JumpIfInventory ("SKZombieMan", 1, "StealthKill");
+        Death.Kick:
+			TNT1 A 0 {
+				bNODROPOFF = false;
+				bSLIDESONWALLS = true;
+				ThrustThingZ(0,30,0,1);
+				A_Scream();
+				A_NoBlocking();
+				A_FaceTarget();
+				A_Recoil (10);
+			}
+			ID30 ABCD 8;
+			TNT1 A 0 A_StartSound("BODYF");
+			TNT1 A 0 A_SpawnItem("DeadImp1MeleeDeath");
+			Stop;
+	
+		Death.Shotgun:
+			TNT1 A 0 A_Jump(42, "Death.Shotgunontheface");
+			TNT1 A 0 A_JumpIfCloser(80, "Death.Blast");
+			TNT1 A 0 A_JumpIfCloser(320, "Death.Shotgunontheface");
+			Goto Death;
+			
+		Death.Shotgunontheface:	
+			TNT1 A 0 {
+				bSLIDESONWALLS = false;
+				bNOBLOCKMONST = true;
+			}
+			TNT1 A 0 A_Jump(160, "DeathShotgunFly");
+			
+			TROO H 1 {
+				A_FaceTarget();
+				A_Stop();
+				A_Pain();
+				A_Recoil(13);
+				ThrustThingZ(0,20,0,1);
+				}
+			TNT1 A 0 A_JumpIf(Vel.Y == 0, "DeathShotgunFly");
+			TNT1 A 0 A_Jump(128, "DeathShotgunontheface2");
+			TNT1 A 0 {
+				A_Scream();
+				A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_NoBlocking();
+				}
+			TR06 AAAABBBBCCCCDDDD 1 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TR06 EFGHIJ 4 A_JumpIf((Vel.Y == 0), "DSFStop");
+			Goto DSFStop;
+		DSFStop:
+			TNT1 A 0{
+				A_Stop();
+				A_SpawnItem ("GrowingBloodPool");
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 2, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 0));
+				A_StartSound("BODYF",CHAN_AUTO);
+				A_SpawnItem("DeadImpTR06K");
+				}
+			Stop;
+		DeathShotgunontheface2:	
+			TNT1 A 0 {
+				A_Scream();
+				A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_NoBlocking();
+				}
+			TR06 LLLLMMMMNNNNOOOO 1 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TR06 QRSTU 4 A_JumpIf((Vel.Y == 0), "DSFStop2");
+			Goto DSFStop2;
+			
+		DSFStop2:
+			TNT1 A 0 {
+				A_Stop();
+				A_SpawnItem ("GrowingBloodPool");
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 2, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 0));
+				A_StartSound("BODYF",CHAN_AUTO);
+				A_SpawnItem("DeadImpTR06V");
+			}
+			Stop;
+		
+		
+		DeathShotgunFly:
+			TNT1 A 0 {
+				bNODROPOFF = false;
+				bSLIDESONWALLS = false;
+				ThrustThingZ(0,30,0,1);
+				A_Scream();
+				A_NoBlocking();
+				A_FaceTarget();
+				A_Recoil (6);
+			}
+			ID11 A 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			ID11 A 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			ID11 B 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			ID11 B 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			ID11 C 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			ID11 C 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			ID11 D 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "TakeASit");
+			ID11 D 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItem("DeadImp1");
+			Stop;
+		TakeASit:
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 6, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			ID11 B 5;
+			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItemEx("DeadImp_Slumped", 10);
+			Stop;
+	
+		Death.Nailgun:
+			TNT1 A 0 A_Jump(256,
+				"Naildeath1", "Naildeath1", "Naildeath2", "Naildeath2",
+				"Death.Blast", "Death.Tear", "Death.Saw");
+		Naildeath1:
+			TNT1 A 0 {
+				bNODROPOFF = false;
+				bSLIDESONWALLS = false;
+				ThrustThingZ(0,random(20,30),0,1);
+				A_Scream();
+				A_NoBlocking();
+				A_FaceTarget();
+				A_Recoil(30);
+			}
+			ID11 A 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			ID11 A 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			ID11 B 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			ID11 B 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			ID11 C 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			ID11 C 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			ID11 D 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_JumpIf((Vel.Y == 0), "PinToWall");
+			ID11 D 4 A_SpawnProjectile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_StartSound("BODYF",CHAN_AUTO);
+			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItem("DeadImp1");
+			Stop;
+		PinToWall:
+			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood2", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AA 0 A_SpawnProjectile ("PB_XDeath1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 6, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 A 0 A_StartSound("Weapons/NailHitBleed", CHAN_AUTO);
+			PIN6 E 5;
+			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItemEx("DeadImp_Pinned", 10);
+			Stop;
+			
+		Naildeath2:
+			TNT1 A 0 A_XScream();
+			TNT1 A 0 A_NoBlocking();
+			TNT1 A 0 A_FaceTarget();
+			TNT1 AAA 0 A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAA 0 A_SpawnProjectile ("PB_Xdeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AA 0 A_SpawnProjectile ("PB_Xdeath2", 16, 0, random (130, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_BloodMistBig", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+			TNT1 A 0 A_SpawnProjectile ("PinnedImpTorso", 32, 0, 180, 2, random (-2, 2));
+			
+			TNT1 AAAA 0 A_SpawnProjectile ("PB_SquirtingBloodTrail", 30, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+			
+			IXD4 I 1 {
+				A_Stop();
+				A_SpawnItem ("GrowingBloodPool");
+			}
+			IXD4 IIIIIIIIIIIIII 2 {
+				A_SpawnProjectile ("PB_BloodMistSmall", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (20, 90));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (65, 90));
+			}
+			IXD4 J 4 A_SpawnProjectile ("PB_MuchBlood2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			IXD4 KL 8;
+			TNT1 A 0 A_SpawnItem ("DeadImpIXD4L");
+			Stop;
+			
+		Death.Railgun:
+			TNT1 A 0 A_Jump(96, "Death.SSG");
+		Death.Blast:
+			TNT1 A 0 A_FaceTarget();
+			TNT1 A 0 A_Jump(12, "Death.Arm");
+			TNT1 A 0 A_NoBlocking();
+			TNT1 A 0 A_Jump(132, "Death.Blast2", "Death.Blast3");
+			TNT1 A 0 {
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SmallGib", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SmallGib", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+				A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+				A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+				}
+			TR03 A 6 {
+				A_Stop();
+				A_SpawnItem ("GrowingBloodPool");
+				}
+			TR03 BBBBBBBBBB 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 60));
+			TR03 CCC 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
+			TR03 DD 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 6, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 60));
+			TNT1 A 0 A_StartSound("BODYF");
+			TNT1 A 0 A_SpawnItem("DeadImpTR03E");
+			Stop;
+		
+		Death.Blast2:
+			TNT1 A 0 {
+				A_XScream();
+				NashGoreGibs.SpawnGibs(self);
+				A_SpawnProjectile ("XDeathImpArm", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("XDeathImpHead", 44, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SmallGib", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SmallGib", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_XDeath2", 16, 0, random (130, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SmallGib", 16, 0, random (130, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+				A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+				A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+				A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+			}
+			TR04 A 6 {
+				A_Stop();
+				A_SpawnItem ("GrowingBloodPool");
+				}
+			TR04 BBBBBBBBBBBBBBBBBBB 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 60));
+			TR04 CCC 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
+			TR04 DD 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 6, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 60));
+			TNT1 A 0 {
+				A_StartSound("BODYF");
+				A_SpawnItem("DeadImpTR04E");
+				}
+			Stop;
+		Death.Blast3:
+			TNT1 A 0 {
+					A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_SmallGib", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_XDeath1", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_XDeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_SmallGib", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_XDeath3", 16, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("NashGoreBloodSpurt", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+					A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+					A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+					}
+				TR04 A 7 {
+					A_Stop();
+					A_SpawnItem ("GrowingBloodPool");
+					}
+				TR04 GGGG 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 60));
+				TR04 HHH 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 26, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
+				TR04 III 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 6, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 60));
+				TNT1 A 0 A_StartSound("BODYF");
+				TNT1 A 0 A_SpawnItem("DeadImpTR04J");
+				Stop;
+	
+	Death.SSG:
+	    ZZD1 E 1 {
+				A_Recoil(-8);
+				A_FaceTarget();
+				NashGoreGibs.SpawnGibs(self);
+				for (int i = 0; i < 5; i++) {	
+					A_SpawnProjectile ("PB_SmallGib", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_BloodmistLarge", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+					A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				}
+				
+				A_SpawnProjectile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
+				A_SpawnProjectile ("XDeathImpArm", 32, 0, random (180, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 80));
+				A_SpawnProjectile ("XDeathImpArm", 32, 0, random (160, 170), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 80));
+				A_SpawnProjectile ("XDeathImpHead", 32, 0, random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 80));
+				A_XScream();
+				A_NoBlocking();
+			}
+        IZD1 EEFFGH 6;
+		IZD1 H 1 A_StartSound("BODYF");
+		IZD1 HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH 2 {
+			A_SpawnItemEx("PB_SquirtingBloodTrail", 
+			0, 0, frandom(3, 4),
+			frandom(-3, 3), frandom(-3, 3), frandom(3, 6),
+			frandom(0.0, 360));
+		}
+		TNT1 A 0 {
+			A_SpawnItem ("GrowingBloodPool");
+			A_SpawnItem("DeadImpJustLegsAreLeft");
+		}
+        Stop;
+		
+	XDeath:
+		TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG");
+		TNT1 A 0 { 
+			NashGoreGibs.SpawnGibs(self);
+			A_SpawnProjectile ("PB_XDeath1", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+			A_SpawnProjectile ("PB_XDeath3", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+			A_SpawnProjectile ("PB_XDeath3", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+			A_SpawnProjectile ("PB_XDeath3", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+			A_SpawnProjectile ("PB_XDeath2", 42, 0, random (0, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+			A_SpawnProjectile ("PB_XDeath4", 42, 0, random (0, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
+			}
+		TNT1 AAAAAA 0 A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 90));
+        TNT1 A 1 {
+			A_SpawnItemEx("ImpXDeath",0,0,2,Vel.X,Vel.Y,Vel.Z,angle,SXF_ABSOLUTEVELOCITY|SXF_ABSOLUTEANGLE|SXF_NOCHECKPOSITION,0);
+			A_Recoil(2);
+			A_XScream();
+			A_NoBlocking();
+		}
+		Stop;
+		
+		Raise:
+			POSS KJIH 5;
+			Goto See;
+		
+		Death.IceBeam:
+			TNT1 A 0 {
+				bSHOOTABLE = false;
+				bSOLID = false;
+				A_SpawnItem("FrozenImp");
+				A_SpawnItem("IceCrystalGround");
+				A_SpawnItem("IceCrystalGround");
+			}
+			Stop;
+		
+		Death.Ice:
+		Death.Freeze:
+		Death.Frost:
+			TNT1 A 0 {
+				bSHOOTABLE = false;
+				bSOLID = false;;
+				A_SpawnItem("FrozenImp");
+			}
+			Stop;
+		
+		Death.Fatality:
+				TNT1 A 0 A_Pain();
+				TNT1 A 0 A_NoBlocking();
+				TNT1 A 0 A_JumpIfIntargetInventory("FistsSelected", 1, 1);
+				Goto Death.ExplosiveImpact;
+				TNT1 A 0 A_GiveToTarget("GoFatality", 1);
+				TNT1 A 0 A_Jump(256,"Death.Fatality1", "Death.Fatality1", "Death.Fatality2", "Death.Fatality2", "Death.Fatality3", "Death.Fatality4");
+				Goto Death.Fatality1;
+
+		Death.Fatality1:
+			TNT1 A 0 A_GiveToTarget("ZombieManFatality", 1);
+			Stop;
+		Death.Fatality2:
+			TNT1 A 0 A_GiveToTarget("ZombieManFatality2", 1);
+			Stop;
+		Death.Fatality3:
+			TNT1 A 0 A_GiveToTarget("ZombieManFatality3", 1);
+			Stop;
+		Death.Fatality4:
+			TNT1 A 0 A_GiveToTarget("ZombieManFatality4", 1);
+			Stop;
+		Death.Fatality5://Didn't like this one, but it gives me an idea...
+			TNT1 A 0 A_GiveToTarget("ZombieManFatality5", 1);
+			Stop;
+		Death.Fatality6:
+			TNT1 A 0 A_GiveToTarget("ZombieManFatality6", 1);
+			Stop;
+			
+		Death.HelperMarineFatallity:
+			TNT1 A 1 {
+				A_Pain();
+				A_NoBlocking();
+				A_GiveToTarget("ZombieManFatality3", 1);
+			}
+			Stop;
+			
+			
+		 Crush:
+		 Death.Crush:
+		 Death.Crusher:
+			TNT1 A 0 A_Scream();
+			TNT1 A 0 A_NoBlocking();
+			TROO H 2;
+			TNT1 A 1 A_XScream();
+			TNT1 A 0 {
+				NashGoreGibs.SpawnGibs(self);
+			}
+			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAA 0 A_SpawnProjectile ("PB_SquirtingBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 AAAAAA 0 bright A_SpawnProjectile ("PB_XDeath1", 5, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 180));
+			TNT1 AA 0 bright A_SpawnProjectile ("PB_SmallGib", 55, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 180));
+			TNT1 AAA 0 A_SpawnItemEx("NashGoreSquishyGibs", flags: SXF_TRANSFERTRANSLATION);
+			TNT1 A 0 A_SpawnItem ("PB_CrushedRemains");
+			Stop;
+			
+		
+		 Death.Stomp:
+		//	TNT1 A 0 A_Scream();
+			TNT1 A 0 A_NoBlocking();
+			//POSS IJK 2;
+			TNT1 A 1 A_XScream();
+			TNT1 A 0 {
+				NashGoreGibs.SpawnGibs(self);
+			}
+			TNT1 AAAAAAAAAAAAAAAAAAAAAAAAA 0 A_SpawnProjectile ("PB_SquirtingBloodTrail", 0, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+			TNT1 AAAAAA 0 bright A_SpawnProjectile ("PB_XDeath1", 5, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 180));
+			TNT1 AAAAA 0 bright A_SpawnProjectile ("PB_SmallGib", 55, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (30, 180));
+			TNT1 A 0 A_SpawnItem ("PB_CrushedRemains");
+			Stop;
+			
+		Death.BHFT:
+		Death.RVFT:
+			TNT1 A 1 {
+				A_Pain();
+				A_Scream();
+				A_NoBlocking();
+				A_GiveToTarget("ZombieManFatality", 1);
+			}
+			Stop;
+	}
+}
