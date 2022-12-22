@@ -115,6 +115,14 @@ ACTOR HasThreeMiniguns: CustomInventory
 	}
 }
 
+//The reason for this is because for some fucked reason, when you get killed by
+//a pinky demon, the health check for the kicks, quick melee and grenade gets screwed up,
+//and you allowing players to kick, use melee and grenades while dead. This token seems to fix the problem.
+Actor CantDoAction : Inventory
+{
+	Inventory.MaxAmount 1
+}
+
 ACTOR DualPlasmaChecker: Inventory
 {
 	Inventory.MaxAmount 4
@@ -123,6 +131,11 @@ ACTOR DualPlasmaChecker: Inventory
 ACTOR DualM2PlasmaChecker: Inventory
 {
 	Inventory.MaxAmount 4
+}
+
+Actor HasNotPickedUpSSG : Inventory //For the QSG weapon respect
+{
+	Inventory.MaxAmount 1
 }
 
 ACTOR DoGrenade : Inventory
@@ -160,10 +173,9 @@ ACTOR FootStep
     +CLIENTSIDEONLY
     +MOVEWITHSECTOR
     +NOEXTREMEDEATH
-    DamageType Trample
-    Damage (random (2, 3))
+	+PAINLESS    
 	+NODAMAGETHRUST
-	+BLOODLESSIMPACT 
+	+BLOODLESSIMPACT	
 	gravity 40
 	mass 1000
     Obituary "%o was trampled by %k."
@@ -186,14 +198,18 @@ ACTOR FootStep
 
 Actor Footstep5: FootStep
 {
-    Damage 0
+    
     -CLIENTSIDEONLY
+	+PAINLESS
+	+NODAMAGETHRUST
 }
 
 Actor Footstep6: FootStep
 {
-    Damage (random (2, 3))
+    
     -CLIENTSIDEONLY
+	+PAINLESS
+	+NODAMAGETHRUST
 	States
 		{
 		Spawn:
@@ -213,23 +229,29 @@ Actor Footstep6: FootStep
 
 Actor Footstep6NoDamage: Footstep6
 {
-    Damage 0
+-CLIENTSIDEONLY
++PAINLESS   
++NODAMAGETHRUST 
 }
 
 Actor Footstep8: FootStep
 {
-    Damage (random (1, 1))
+    
 	Mass 0
     -CLIENTSIDEONLY
+	+PAINLESS
+	+NODAMAGETHRUST
 }
 
 Actor FootstepStrong: FootStep
 {
 Speed 0
 Radius 16
-Damage 15
-    Damage (random (2, 3))
+
+    
     -CLIENTSIDEONLY
+	+PAINLESS
+	+NODAMAGETHRUST
 	States
 		{
 		Spawn:
@@ -244,9 +266,11 @@ Damage 15
 
 Actor HeavyFootSteps: FootStep
 {
-    Damage 1
+    
     -CLIENTSIDEONLY
-	DamageType "Stomp"
+	+PAINLESS
+	+NODAMAGETHRUST
+	
 	Obituary "%o was trampled by a Mancubus."
 	States
 		{
@@ -268,9 +292,11 @@ Actor HeavyFootSteps: FootStep
 
 Actor HeavyFootSteps32: FootStep
 {
-    Damage 1
+    
     -CLIENTSIDEONLY
-	DamageType "Stomp"
+	+PAINLESS
+	+NODAMAGETHRUST
+	
 	Obituary "%o was trampled by a Cyberdemon."
 	States
 		{
@@ -291,11 +317,13 @@ Actor HeavyFootSteps32: FootStep
 
 Actor TankStep: FootStep
 {
-    Damage (random (4, 5))
+    
     -CLIENTSIDEONLY
 	-DONTSPLASH
 	-EXPLODEONWATER
 	-THRUACTORS
+	+PAINLESS
+	+NODAMAGETHRUST
 	mass 500
 	Height 12
 	Radius 8
@@ -746,6 +774,7 @@ ACTOR Doomer : PlayerPawnBase Replaces DoomPlayer
 	Player.StartItem "LeftRevolverAmmo", 6
 	Player.StartItem "SSGAmmoCounter", 2
 	Player.StartItem "LeftSSGAmmo", 2
+	Player.StartItem "HasNotPickedUpSSG",1
 	Player.StartItem "QSSGAmmoCounter", 4
 	Player.StartItem "PB_NailgunAmmo", 120
 	Player.StartItem "PlasmaAmmo", 50
@@ -782,14 +811,15 @@ ACTOR Doomer : PlayerPawnBase Replaces DoomPlayer
 	States
 	{
     Spawn:
-	    MARN A 0 ForceMoveUnlock()
 		MARN A 1 
+		MARN A 0 ForceMoveUnlock()
 		MARN A 0 A_overlay(-50, "spinloop")
 		MARN A 0 A_TakeInventory("PlayerIsDead", 1)
 		MARN A 0 A_TakeInventory("IsInvisible", 1)		
 		MARN A 0 A_TakeInventory("ChainguyguyContinue", 1)
 		MARN A 0 // ACS_ExecuteAlways(171, 0, 0, 0, 0)//Disable Camera.
 		MARN A 0 SetPlayerProperty(0,0,0) //Attempt to fix issue with players not moving unless they kick.
+		MARN A 0 SetPlayerProperty(0,0,4) //Attempt to fix issue with players not moving unless they kick.
 		MARN A 1 
 	StandStill:	
 		MARN A 0
@@ -1556,6 +1586,7 @@ ACTOR Doomer : PlayerPawnBase Replaces DoomPlayer
 	Death.SuperPunch:
     Death.Blast:
 	Death.SSG:
+		TNT1 A 0 A_GiveInventory("CantDoAction",1)
 		TNT1 A 0 A_StopSound(7)
 		TNT1 A 0 A_StopSound(1)
 		TNT1 A 0 //a_JumpIfInventory("RevenantCurse", 1, "Revenant_Death")
