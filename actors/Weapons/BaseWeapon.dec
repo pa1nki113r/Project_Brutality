@@ -19,6 +19,7 @@ Actor DualFireReload: Inventory {Inventory.maxamount 2}
 //Actions observed by the AI!
 Actor PlayerIsThrowingAGrenade : Inventory {inventory.maxamount 1}
 Actor CantWeaponSpecial : Inventory {inventory.maxamount 1}
+Actor DoingHelmetAnim : Inventory {inventory.maxamount 1}
 
 
 
@@ -66,7 +67,8 @@ States
 		TNT1 A 1 {
 			
 			if(JustPressed(BT_USER1) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() &&
-			!CheckInventory("GoFatality",1)) {
+			!CheckInventory("GoFatality",1) && !CheckInventory("CantDoAction",1)) 
+			{
 				A_OverlayOffset(PSP_WEAPON, 0, 32);
 				PB_SetUsingEquipment(true);
 				A_Overlay(PSP_WEAPON, "UseEquipment");
@@ -74,7 +76,8 @@ States
 			}
 		
 			if(JustPressed(BT_USER2) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() && !CheckInventory("Zoomed", 1)
-			&& !CheckInventory("GoFatality",1)) {
+			&& !CheckInventory("GoFatality",1) && !CheckInventory("CantDoAction",1)) 
+			{
 				A_OverlayOffset(PSP_WEAPON, 0, 32);
 				PB_SetUsingMelee(true);
 				A_Overlay(PSP_WEAPON, "QuickMelee");
@@ -85,8 +88,8 @@ States
 	KickHandler_Overlay:
 		TNT1 A 1 {
 			if(JustPressed(BT_USER4) && !PB_usingKick() && !PB_executingEnemy() && !CheckInventory("Zoomed", 1) && PB_MeleeAttackKickCheck() &&
-			!CheckInventory("GoFatality",1)
-			) {
+			!CheckInventory("GoFatality",1)) 
+			{
 				PB_SetUsingKick(true);
 				A_OverlayOffset(-999, 0, 32);
 				A_Overlay(-999, "DoKick");
@@ -345,6 +348,7 @@ States
 			
 		//NEW EQUIPMENT SYSTEM
 		UseEquipment:
+			TNT1 A 0 A_JumpIfInventory("CantDoAction",1,"FailOverlay")
 			TNT1 A 0 A_JumpIfHealthLower(0, "FailOverlay")
 			TNT1 A 0 {
 				A_ClearOverlays(3,65);
@@ -368,7 +372,7 @@ States
 			
 			
 			Goto GoingToReady
-		
+			
 		WheelCancelEquipment:
 			TNT1 A 0
 				{
@@ -681,6 +685,7 @@ States
 	// The quick melee is going to be reworked, knife combos are tacky and bloat the code
 	// The quick melee should have a primary purpose of executing enemies or finishing them off to the point where they can be executed
 	QuickMelee:
+		TNT1 A 0 A_JumpIfInventory("CantDoAction",1,"FailOverlay")
 		TNT1 A 0 A_JumpIfHealthLower(0, "FailOverlay")
 		TNT1 A 0 A_ClearOverlays(3,65)
 		TNT1 A 0 A_Gunflash("Null")
@@ -744,6 +749,7 @@ States
 ////////////////////////////////////////////////KNIFE COMBO//////////////////////////////////////////////////////////////
 		
     DoKick:
+		TNT1 A 0 A_JumpIfInventory("CantDoAction",1,"FailOverlay")
 		TNT1 A 0 A_JumpIfHealthLower(0, "FailOverlay")
 		TNT1 A 0 {
 			//A_Giveinventory("PB_LockScreenTilt",1);
@@ -848,6 +854,8 @@ States
 		Stop
 	
 	FailOverlay:
+		TNT1 A 0 A_JumpIfInventory("CantDoAction",1,1)
+		Goto StopFail
 		TNT1 A 0 A_JumpIf(Health > 0, 2)
 		TNT1 A 1 {
 			PB_SetUsingKick(false);
@@ -857,7 +865,8 @@ States
 			}
 		Loop
 	StopFail:
-		TNT1 A 0
+		TNT1 AA 0
+		TNT1 A 1 A_SetInventory("CantDoAction",0)
 		TNT1 A 1
 		Stop
 		
