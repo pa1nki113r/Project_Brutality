@@ -430,12 +430,15 @@ class PB_Hud_ZS : BaseStatusBar
                     }
                 }
 
-                if(CheckWeaponSelected("PB_Freezer"))
+                if(CheckWeaponSelected("PB_CryoRifle"))
                 {
-                    DrawImage("BARBACT2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
-                    DrawImage("BAMBAR2", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                    DrawBar("CURBAR2", "BGBARL", GetAmount("PrimaryPistolAmmo"), GetMaxAmount("PrimaryPistolAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
-                    DrawString(mNumFont, Formatnumber(GetAmount("PrimaryPistolAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
+                    if(CheckInventory("CryoRiflePistolToken"))
+                    {
+                        DrawImage("BARBACT2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
+                        DrawImage("BAMBAR2", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
+                        DrawBar("CURBAR2", "BGBARL", GetAmount("PrimaryPistolAmmo"), GetMaxAmount("PrimaryPistolAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawString(mNumFont, Formatnumber(GetAmount("PrimaryPistolAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
+                    }
                 }
                 
                 if(WeaponUsesAmmoType("PistolBullets"))
