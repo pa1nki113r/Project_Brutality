@@ -164,7 +164,8 @@ class PB_Hud_ZS : BaseStatusBar
                     continue;
                 }
 
-                //Replace doom sprites
+                
+                /* //Replace doom sprites
                 if(TexMan.GetName(icon) == "BKEYA0")
                 {
                     icon = texman.checkfortexture("KEYYCB");
@@ -193,7 +194,7 @@ class PB_Hud_ZS : BaseStatusBar
                 if(TexMan.GetName(icon) == "YSKUA0")
                 {
                     icon = texman.checkfortexture("SKKYYY");
-                }
+                } */
                 
                 //Scale the icon up if needed
                 size = TexMan.GetScaledSize(icon);
