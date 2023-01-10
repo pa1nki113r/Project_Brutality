@@ -120,8 +120,8 @@ class PB_Hud_ZS : BaseStatusBar
             DrawImage(barBorder, (-113, -18), DI_SCREEN_RIGHT_BOTTOM, 1);
             if(Secondary) { DrawImage(barBorder, (-113, -36), DI_SCREEN_RIGHT_BOTTOM, 1); }
             //Bars
-            if(Secondary) { DrawBar(currentBar, "BGBARL", IntAmmo2, Secondary.MaxAmount, (-113, -39), 0, 0, DI_SCREEN_RIGHT_BOTTOM); }
-            DrawBar(reserveBar, "BGBARL", IntAmmo1, Primary.MaxAmount, (-113, -21), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+            if(Secondary) { DrawBar(currentBar, "BGBARL", IntAmmo2, Secondary.MaxAmount, (-113, -39), 0, 1, DI_SCREEN_RIGHT_BOTTOM); }
+            DrawBar(reserveBar, "BGBARL", IntAmmo1, Primary.MaxAmount, (-113, -21), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
             //Numbers
             if(Secondary) { DrawString(mNumFont, Formatnumber(Secondary.Amount), (-150, -50), DI_TEXT_ALIGN_RIGHT, fontTranslation); }
             DrawString(mNumFont, Formatnumber(Primary.Amount), (-150, -32), DI_TEXT_ALIGN_RIGHT, fontTranslation);
@@ -253,7 +253,7 @@ class PB_Hud_ZS : BaseStatusBar
             }
             DrawImage("HTBAR1", (115, -36), DI_SCREEN_LEFT_BOTTOM, 1);
             DrawBar("BLUEBAR", "BGBARL", IntHealth, min(MaxHealth, 100), (115, -39), 0, 0, DI_SCREEN_LEFT_BOTTOM);
-            DrawString(mNumFont, Formatnumber(IntHealth), (185, -50), DI_TEXT_ALIGN_RIGHT, Font.FindFontColor('HUDBLUEBAR'));
+            DrawString(mNumFont, Formatnumber(Health), (185, -50), DI_TEXT_ALIGN_RIGHT, Font.FindFontColor('HUDBLUEBAR'));
                 
             //Armorbar
             DrawImage("BARBACK2", (124, -12), DI_SCREEN_LEFT_BOTTOM, 1, (180, 22));
@@ -310,7 +310,7 @@ class PB_Hud_ZS : BaseStatusBar
                         //Left Rifle Ammo
                         DrawImage("BARBACY2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR1", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR1", "BGBARL", GetAmount("LeftRifleAmmo"), GetMaxAmount("LeftRifleAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR1", "BGBARL", GetAmount("LeftRifleAmmo"), GetMaxAmount("LeftRifleAmmo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("LeftRifleAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
                     }
 
@@ -319,7 +319,7 @@ class PB_Hud_ZS : BaseStatusBar
                         //Underbarrel Grenade Ammo
                         DrawImage("BARBACR2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR4", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR4", "BGBARL", GetAmount("RocketAmmo"), GetMaxAmount("RocketAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR4", "BGBARL", GetAmount("RocketAmmo"), GetMaxAmount("RocketAmmo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("RocketAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_RED);
                         DrawImage("AMMOIC4", (-66, -55), DI_SCREEN_RIGHT_BOTTOM, 1, (17, 17));
                     }
@@ -331,7 +331,7 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         DrawImage("BARBACY2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR1", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR1", "BGBARL", GetAmount("LeftXRifleAmmo"), GetMaxAmount("LeftXRifleAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR1", "BGBARL", GetAmount("LeftXRifleAmmo"), GetMaxAmount("LeftXRifleAmmo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("LeftXRifleAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
                     }
                 }
@@ -342,7 +342,7 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         DrawImage("BARBACT2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR2", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR2", "BGBARL", GetAmount("SecondaryPistolAmmo"), GetMaxAmount("SecondaryPistolAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR2", "BGBARL", GetAmount("SecondaryPistolAmmo"), GetMaxAmount("SecondaryPistolAmmo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("SecondaryPistolAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
                     }
                 }
@@ -353,7 +353,7 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         DrawImage("BARBACT2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR2", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR2", "BGBARL", GetAmount("LeftRevolverAmmo"), GetMaxAmount("LeftRevolverAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR2", "BGBARL", GetAmount("LeftRevolverAmmo"), GetMaxAmount("LeftRevolverAmmo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("LeftRevolverAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
                     }
                 }
@@ -364,7 +364,7 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         DrawImage("BARBACT2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR2", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR2", "BGBARL", GetAmount("LeftSMGAmmo"), GetMaxAmount("LeftSMGAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR2", "BGBARL", GetAmount("LeftSMGAmmo"), GetMaxAmount("LeftSMGAmmo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("LeftSMGAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
                     }
                 }
@@ -375,7 +375,7 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         DrawImage("BARBACT2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR2", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR2", "BGBARL", GetAmount("LeftDeagleAmmo"), GetMaxAmount("LeftDeagleAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR2", "BGBARL", GetAmount("LeftDeagleAmmo"), GetMaxAmount("LeftDeagleAmmo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("LeftDeagleAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
                     }
                 }
@@ -386,7 +386,7 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         DrawImage("BARBACT2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR2", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR2", "BGBARL", GetAmount("LeftMP40Ammo"), GetMaxAmount("LeftMP40Ammo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR2", "BGBARL", GetAmount("LeftMP40Ammo"), GetMaxAmount("LeftMP40Ammo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("LeftMP40Ammo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
                     }
                 }
@@ -397,7 +397,7 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         DrawImage("BARBACO2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR3", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR3", "BGBARL", GetAmount("LeftSSGAmmo"), GetMaxAmount("LeftSSGAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR3", "BGBARL", GetAmount("LeftSSGAmmo"), GetMaxAmount("LeftSSGAmmo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("LeftSSGAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
                     }
                 }
@@ -408,7 +408,7 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         DrawImage("BARBACO2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR3", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR3", "BGBARL", GetAmount("LeftASGAmmo"), GetMaxAmount("LeftASGAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR3", "BGBARL", GetAmount("LeftASGAmmo"), GetMaxAmount("LeftASGAmmo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("LeftASGAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
                     }
                 }
@@ -419,7 +419,7 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         DrawImage("BARBACO2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR3", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR3", "BGBARL", GetAmount("LeftQSSGAmmoCounter"), GetMaxAmount("LeftQSSGAmmoCounter"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR3", "BGBARL", GetAmount("LeftQSSGAmmoCounter"), GetMaxAmount("LeftQSSGAmmoCounter"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("LeftQSSGAmmoCounter")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
                     }
                 }
@@ -430,7 +430,7 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         DrawImage("BARBACP2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR5", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR5", "BGBARL", GetAmount("LeftPlasmaAmmo"), GetMaxAmount("LeftPlasmaAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR5", "BGBARL", GetAmount("LeftPlasmaAmmo"), GetMaxAmount("LeftPlasmaAmmo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("LeftPlasmaAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_PURPLE);
                     }
                 }
@@ -441,7 +441,7 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         DrawImage("BARBACP2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR5", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR5", "BGBARL", GetAmount("LeftM2PlasmaAmmo"), GetMaxAmount("LeftM2PlasmaAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR5", "BGBARL", GetAmount("LeftM2PlasmaAmmo"), GetMaxAmount("LeftM2PlasmaAmmo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("LeftM2PlasmaAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_PURPLE);
                     }
                 }
@@ -452,7 +452,7 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         DrawImage("BARBACT2", (-121, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR2", (-113, -54), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR2", "BGBARL", GetAmount("PrimaryPistolAmmo"), GetMaxAmount("PrimaryPistolAmmo"), (-113, -57), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR2", "BGBARL", GetAmount("PrimaryPistolAmmo"), GetMaxAmount("PrimaryPistolAmmo"), (-113, -57), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(GetAmount("PrimaryPistolAmmo")), (-150, -68), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
                     }
                 }
@@ -499,8 +499,8 @@ class PB_Hud_ZS : BaseStatusBar
                     DrawImage("BAMBAR6", (-113, -18), DI_SCREEN_RIGHT_BOTTOM, 1);
                     DrawImage("BAMBAR7", (-113, -36), DI_SCREEN_RIGHT_BOTTOM, 1); 
                     //Bars
-                    DrawBar("RESBAR7", "BGBARL", Secondary.Amount, Secondary.MaxAmount, (-113, -39), 0, 0, DI_SCREEN_RIGHT_BOTTOM); 
-                    DrawBar("RESBAR6", "BGBARL", Primary.Amount, Primary.MaxAmount, (-113, -21), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                    DrawBar("RESBAR7", "BGBARL", Secondary.Amount, Secondary.MaxAmount, (-113, -39), 0, 1, DI_SCREEN_RIGHT_BOTTOM); 
+                    DrawBar("RESBAR6", "BGBARL", Primary.Amount, Primary.MaxAmount, (-113, -21), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                     //Numbers
                     DrawString(mNumFont, Formatnumber(Secondary.Amount), (-150, -50), DI_TEXT_ALIGN_RIGHT, Font.CR_DarkRed); 
                     DrawString(mNumFont, Formatnumber(Primary.Amount), (-150, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
@@ -513,7 +513,7 @@ class PB_Hud_ZS : BaseStatusBar
                 {
                     DrawImage("BARBACD1", (-121, -12), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                     DrawImage("BAMBAR6", (-113, -18), DI_SCREEN_RIGHT_BOTTOM, 1);
-                    DrawBar("RESBAR6", "BGBARL", Primary.Amount, Primary.MaxAmount, (-113, -21), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                    DrawBar("RESBAR6", "BGBARL", Primary.Amount, Primary.MaxAmount, (-113, -21), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                     DrawString(mNumFont, Formatnumber(Primary.Amount), (-150, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
                     DrawImage("AMMOIC6", (-66, -17), DI_SCREEN_RIGHT_BOTTOM, 1, (17, 17));
 
@@ -529,11 +529,11 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         //DrawImage("BARBACR2", (-121, -32), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR4", (-113, -36), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("CURBAR4", "BGBARL", Secondary.Amount, Secondary.MaxAmount, (-113, -39), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("CURBAR4", "BGBARL", Secondary.Amount, Secondary.MaxAmount, (-113, -39), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mSmallFont, "HEAT", (-150, -50), DI_TEXT_ALIGN_RIGHT, Font.CR_RED, linespacing: 8);
                         DrawImage("BARBACY1", (-121, -12), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR1", (-113, -18), DI_SCREEN_RIGHT_BOTTOM, 1);
-                        DrawBar("RESBAR1", "BGBARL", Primary.Amount, Primary.MaxAmount, (-113, -21), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                        DrawBar("RESBAR1", "BGBARL", Primary.Amount, Primary.MaxAmount, (-113, -21), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(Primary.Amount), (-150, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
                         DrawImage("AMMOIC1", (-66, -17), DI_SCREEN_RIGHT_BOTTOM, 1, (17, 17));
                     }
@@ -545,8 +545,8 @@ class PB_Hud_ZS : BaseStatusBar
                     if(!CheckInventory("FlamerUpgraded")) { DrawImage("BARBACD2", (-121, -32), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22)); }
                     DrawImage("BAMBAR6", (-113, -18), DI_SCREEN_RIGHT_BOTTOM, 1);
                     if(!CheckInventory("FlamerUpgraded")) { DrawImage("BAMBAR6", (-113, -36), DI_SCREEN_RIGHT_BOTTOM, 1); }
-                    if(!CheckInventory("FlamerUpgraded")) { DrawBar("CURBAR6", "BGBARL", Secondary.Amount, Secondary.MaxAmount, (-113, -39), 0, 0, DI_SCREEN_RIGHT_BOTTOM); }
-                    DrawBar("RESBAR6", "BGBARL", Primary.Amount, Primary.MaxAmount, (-113, -21), 0, 0, DI_SCREEN_RIGHT_BOTTOM);
+                    if(!CheckInventory("FlamerUpgraded")) { DrawBar("CURBAR6", "BGBARL", Secondary.Amount, Secondary.MaxAmount, (-113, -39), 0, 1, DI_SCREEN_RIGHT_BOTTOM); }
+                    DrawBar("RESBAR6", "BGBARL", Primary.Amount, Primary.MaxAmount, (-113, -21), 0, 1, DI_SCREEN_RIGHT_BOTTOM);
                     if(!CheckInventory("FlamerUpgraded")) { DrawString(mNumFont, Formatnumber(Secondary.Amount), (-150, -50), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE); }
                     DrawString(mNumFont, Formatnumber(Primary.Amount), (-150, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
                     DrawImage("AMMOIC6", (-66, -17), DI_SCREEN_RIGHT_BOTTOM, 1, (17, 17));
