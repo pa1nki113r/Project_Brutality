@@ -537,8 +537,6 @@ class PB_Hud_ZS : BaseStatusBar
                 
                 if(CheckWeaponSelected("PB_MG42"))
                 {
-                    if(CheckWeaponSelected("PB_MG42"))
-                    {
                         //DrawImage("BARBACR2", (-121, -32), DI_SCREEN_RIGHT_BOTTOM, 1, (180, 22));
                         DrawImage("BAMBAR4", (-113, -36), DI_SCREEN_RIGHT_BOTTOM, 1);
                         DrawBar("CURBAR4", "BGBARL", Secondary.Amount, Secondary.MaxAmount, (-113, -39), 0, rtlAmmoBar, DI_SCREEN_RIGHT_BOTTOM);
@@ -548,7 +546,6 @@ class PB_Hud_ZS : BaseStatusBar
                         DrawBar("RESBAR1", "BGBARL", Primary.Amount, Primary.MaxAmount, (-113, -21), 0, rtlAmmoBar, DI_SCREEN_RIGHT_BOTTOM);
                         DrawString(mNumFont, Formatnumber(Primary.Amount), (-150, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
                         DrawImage("AMMOIC1", (-66, -17), DI_SCREEN_RIGHT_BOTTOM, 1, (17, 17));
-                    }
                 }
 
                 if(CheckWeaponSelected("PB_Flamethrower"))
