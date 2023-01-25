@@ -2,6 +2,7 @@
 
 class PB_WeaponBase : DoomWeapon 
 {
+	double exaggerationMultiplier;
 	Actor laseractor;
 	Actor InvActor;
 	Vector3 invactorpos;
@@ -46,16 +47,32 @@ class PB_WeaponBase : DoomWeapon
 	bool executingEnemy;
 	property executingEnemy: executingEnemy;
 	
+	double horizontalOffsetRecoil;
+	property OffsetRecoilX: horizontalOffsetRecoil;
+
+	double verticalOffsetRecoil;
+	property OffsetRecoilY: verticalOffsetRecoil;
 	
 	bool chainsawMode;
 	property chainsawMode: chainsawMode;
 	
-//Cemtex's PB_AmmoIntoMag function variables
+	//Cemtex's PB_AmmoIntoMag function variables
 	string AmmoMag;
 	string AmmoPool;
 	int MagazineMaxFill;
 	int TakeGiveResrvAmnt; //So no states would be made for weapons that take more than one of their desired reserve ammo
 	
+	action void PB_FireOffset(bool interp = true) {
+		if( !cvar.GetCVar("PB_ExaggeratedRecoil", invoker.owner.player).GetBool() )
+			return;
+		invoker.exaggerationMultiplier = cvar.GetCVar("PB_ExaggeratedRecoilMul", invoker.owner.player).GetFloat();
+		if(invoker.exaggerationMultiplier == 0) {
+			invoker.exaggerationMultiplier = 0.1;
+		}
+		
+		A_WeaponOffset(random(-invoker.horizontalOffsetRecoil, invoker.horizontalOffsetRecoil) * invoker.exaggerationMultiplier, random(1, invoker.verticalOffsetRecoil) * invoker.exaggerationMultiplier + 32, WOF_INTERPOLATE);
+		A_SetRoll(roll + random(-invoker.horizontalOffsetRecoil, invoker.horizontalOffsetRecoil) * invoker.exaggerationMultiplier, SPF_INTERPOLATE);
+	}
 	
 	action bool PB_ChainsawHealthRestore(){
 		return invoker.chainsawMode;
