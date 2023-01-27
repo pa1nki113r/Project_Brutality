@@ -1,0 +1,296 @@
+class PB_Projectile : FastProjectile abstract
+{
+	enum ExplosionType
+	{
+		EType_Geometry,
+		EType_Actor,
+		EType_BleedingActor
+	}
+	
+	virtual int Handle_MissileHit(Actor victim)
+	{
+		double scaled_damage = truedamage;
+		Name dmgType = DamageType;
+
+		double ang = AbsAngle(victim.Angle, AngleTo(target));
+		if (!bNOCRITICALS && (ang < 30 || ang > 150) && Pos.Z > victim.Pos.Z + victim.Height * 0.55)
+		{
+			//Console.Printf("Critical");
+			scaled_damage = scaled_damage * 1.1;
+			dmgtype = "TorsoHitbox";
+			if (Pos.Z > victim.Pos.Z + victim.Height * 0.70)
+			{
+				//Console.Printf("Headshot");
+				dmgtype = "HeadHitbox";
+				//A_StartSound("headshotmarker", CHAN_AUTO, CHAN_UI);
+				scaled_damage = scaled_damage * 1.25;
+			}
+			else
+			{
+				//A_StartSound("torsshotmarker", CHAN_AUTO, CHAN_UI);
+			}
+		}
+		else if (Pos.Z < victim.Pos.Z + victim.Height * 0.36)
+		{
+			if (Pos.Z > victim.Pos.Z + victim.Height * 0.34)
+			{
+				//Console.Printf("Dick Shot");
+				//A_StartSound("apenshotmarker", CHAN_AUTO, CHAN_UI);
+				scaled_damage = scaled_damage * 0.95;
+			}
+			else
+			{
+				//Console.Printf("Legshot");
+				//A_StartSound("apenshotmarker", CHAN_AUTO, CHAN_UI);
+				dmgtype = "LegHitbox";
+				scaled_damage = scaled_damage * 0.80;
+			}
+		}
+		else if (!bOMNIDIRECTIONAL && ang > 50 && ang < 130)
+		{
+			//Console.Printf("Armshot");
+			//A_StartSound("apenshotmarker", CHAN_AUTO, CHAN_UI);
+			dmgtype = "ArmHitbox";
+			scaled_damage = scaled_damage * 0.70;
+		}
+		else
+		{
+			//A_StartSound("bodyshotmarker", CHAN_AUTO, CHAN_UI);
+			scaled_damage = scaled_damage * 1;
+		}
+		
+		scaled_damage = victim.GetModifiedDamage(dmgType, scaled_damage, false, self, target);
+		
+		victim.DamageMobJ(self, target, ceil(scaled_damage), dmgType, 0, angle);
+		
+		if( victim.bISMONSTER && !victim.bNOBLOOD ) 
+			victim.SpawnBlood( pos, angle, ceil(scaled_damage) );
+		
+		if (bRIPPER && target.bBOSS && bNOBOSSRIP)
+		{
+			MustExplode = true;
+		}
+		
+		return -1;
+	}
+	
+	override int SpecialMissileHit(Actor victim)
+	{
+		if (victim == Target)
+		{
+			return 1;
+		}
+		
+		if (bRIPPER)
+		{
+			if (ripAmount < 0)
+			{
+				return 0;
+			}
+
+			if (LastActor != victim)
+			{
+				ripAmount = ripAmount - 1;
+				Handle_MissileHit(victim);
+				LastActor = victim;
+			}
+			else
+			{
+				return 1;
+			}
+		}
+
+		return -1;
+	}
+	
+	virtual void ActivateLines()
+	{
+		let lt = LineActivatorTracer.DoTrace(self, angle, pitch, max(128, vel.length()));
+		for(int i = 0; i < lt.HitLines.Size(); i++)
+		{
+			let ln = lt.HitLines[i];
+			if(ln) ln.Activate(target, 0, SPAC_Impact);
+		}
+		if(BlockingLine) BlockingLine.Activate(target, 0, SPAC_Impact);
+	}
+	
+	override void Tick()
+	{
+		if (IsFrozen())
+		{
+			return;
+		}
+
+		if (MustExplode)
+		{
+			ExplodeMissile(BlockingLine, BlockingMobj);
+			return;
+		}
+		
+		activateLines();
+		
+		Super.Tick();
+	}
+
+	// [Ace] Override these if you want to do stuff when something happens.
+	protected virtual void OnHitActor(Actor target) {}
+	protected virtual void OnExplode(int type) {}
+	
+	// [Ace] In case you have attached anything to this item, calling OwnerDied allows you to do some effects on death.
+	protected void CallOwnerDied()
+	{
+		for (Inventory next = Inv; next != null; next = next.Inv)
+		{
+			next.OwnerDied();
+		}
+	}
+
+	bool MustExplode;
+	double ExtraDamageFactor;
+	protected Actor LastActor;
+	
+	Array<Actor> act_hits;
+	Actor hitactor;
+	int ripamount;
+	Property RipperCount : ripamount;
+	
+	double truedamage;
+	Property BaseDamage : truedamage;
+	
+	private int BehaviourFlags;
+	flagdef NoCriticals: BehaviourFlags, 0;
+	flagdef Omnidirectional: BehaviourFlags, 1;
+	flagdef InvisiblePuff: BehaviourFlags, 2;
+
+	Default
+	{
+		// [Ace] Speedy projectiles with a large radius are more performant, but they don't work so well with switches that rely on hitscan activation
+		// if the linedefs are packed right in front of a wall. Normally this shouldn't be a problem, but in some cases it is, such as Sigil's E5M1 switch at map start.
+		Speed 320;
+		Mass 75; // [Ace] Mass is used for shield damage calculations. A mass of 75 means projectiles will do only 75% of their damage to shields and the rest will be discarded.
+		Radius 3;
+		Height 2;
+		Projectile;
+		+GETOWNER
+		+NODAMAGETHRUST
+		+NOEXTREMEDEATH
+		+FORCERADIUSDMG
+		+BLOODSPLATTER
+		+NODAMAGETHRUST
+		+HITTRACER
+		+NOBOSSRIP
+		+RIPPER
+		-NOGRAVITY
+		ProjectileKickBack 20;
+		Renderstyle "Add";
+		Decal "BulletChip";
+		Scale 0.15;
+		PB_Projectile.RipperCount 1;
+		PB_Projectile.BaseDamage 5;
+	}
+	
+	States
+	{
+		Spawn:
+			TRAC A -1;
+			Stop;
+		Death: // [Ace] Wall.
+			TNT1 A 0
+			{
+				CallOwnerDied();
+				OnExplode(EType_Geometry);
+				A_SpawnProjectile("HitPuff",0,0,0,0);
+			}
+			Stop;
+		Crash: // [Ace] Dormant/NoBlood enemies.
+			TNT1 A 0
+			{
+				CallOwnerDied();
+				OnExplode(EType_Actor);
+			}
+			Stop;
+		XDeath: // [Ace] Bleeding enemies.
+			TNT1 A 0
+			{
+
+				CallOwnerDied();
+				OnExplode(EType_BleedingActor);
+			}
+			Stop;
+	}
+}
+
+class LineActivatorTracer : LineTracer
+{
+	Actor src;
+	Array<Line> HitLines;
+
+	play static LineActivatorTracer DoTrace(Actor src, double tangle, double tpitch, double dist, uint traceflags = 0)
+	{
+		LineActivatorTracer tracer = new("LineActivatorTracer");
+		if(tracer) 
+		{
+			tracer.src = src;
+			vector3 dir = PB_Math.VecFromAngles(tangle, tpitch);
+			tracer.Trace(src.pos, src.CurSector, dir, dist, traceflags);
+		}
+		return tracer;
+	}
+
+	// Thanks to PhantomBeta 
+	// (https://github.com/Doom2fan/Se7evidas/blob/master/PK3%20Source/S7ZScript/Bases/S7_Projectile/Linetracer.ZS)
+    transient Array<F3DFloor> ffloorsToIgnore;
+	ETraceStatus HandleWall() 
+	{
+		let hl = Results.HitLine;
+		HitLines.push(hl);
+
+        if (Results.Tier == TIER_Upper || Results.Tier == TIER_Lower)
+            return TRACE_Stop;
+
+        if (Results.ffloor && ffloorsToIgnore.Find (Results.ffloor) == ffloorsToIgnore.Size ())
+		{
+            ffloorsToIgnore.Push (Results.ffloor);
+            return TRACE_Stop;
+        }
+
+        if (Results.Tier == TIER_Middle && !hl.backsector)
+			return TRACE_Stop;
+
+        if (Results.Tier == TIER_Middle && (hl.flags & Line.ML_Blocking) && (hl.flags & Line.ML_TwoSided))
+            return TRACE_Skip;
+
+        if ((hl.flags & Line.ML_3DMidTex) && !(hl.flags & Line.ML_3DMidTex_Impass))
+            return TRACE_Stop;
+
+        if (hl.flags & (Line.ML_Blocking | Line.ML_BlockEverything))
+            return TRACE_Stop;
+
+        return TRACE_Skip;
+    }
+
+	override ETraceStatus TraceCallback()
+	{
+		if(results.HitType == Trace_HitWall)
+		{
+			let stat = HandleWall();
+			return stat;
+		}
+		if(results.HitType == Trace_HitActor)
+		{
+			return Trace_Skip;
+		}
+		return Trace_Stop;
+	}
+}
+
+/*
+class WWM_M16 : WWMProjectile
+{
+	Default
+	{
+		PB_Projectile.BaseDamage 15;
+		PB_Projectile.RipperCount 2;
+		Obituary "%o was blasted with bullets %k.";
+	}
+}*/
