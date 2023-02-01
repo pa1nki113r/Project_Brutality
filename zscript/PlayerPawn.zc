@@ -60,10 +60,6 @@ class PlayerPawnBase : PlayerPawn
 	bool	BlockDoubleJump;
 	bool	CanDoubleJump;
 	
-	//Elevator Jumps
-	float	ElevatorJumpBoost;
-	int		OldSecIndex;
-	
 	//////////////////
 	
 	//Double Tap
@@ -109,13 +105,7 @@ class PlayerPawnBase : PlayerPawn
 	double	velz;
 	weapon	ReselectWeapon;
 	
-	//Grappling Hook
-	actor	GrappledMonster;
-	actor	HookFired;
-	bool	Grappled;
-	float	PendulumLength;
-	vector3	GrappleVel;
-	vector3 Rope;
+	
 	
 	//////////////////
 	
@@ -442,7 +432,10 @@ class PlayerPawnBase : PlayerPawn
 	////																						////
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////
-	
+	void ForceMoveUnlock()
+    {
+        LedgeCheck = false;
+    }
 	Override void HandleMovement()
 	{
 		let player = self.player;
@@ -516,11 +509,7 @@ class PlayerPawnBase : PlayerPawn
 			
 			/////////////////////////////////////////
 			//Actual Movement selection
-			if(GrappleVel.Length())
-			{
-				GrapplingMove();
-			}
-			else if(LedgeCheck)
+			if(LedgeCheck)
 			{
 				LedgeReach();
 			}
@@ -651,27 +640,6 @@ class PlayerPawnBase : PlayerPawn
 		}
     }
 	
-	void ElevatorJump(bool SlopedFloor)
-	{
-		Int SecIndex = RealFloor.Index();
-		Bool CheckForElevator = Player.OnGround && SecIndex == OldSecIndex && !SlopedFloor;
-		
-		if(pb_elevatorjump)
-		{
-			if(CheckForElevator && RealFloorZ > OldRealFloorZ) //no accidental elevator jump boost on slopes
-				ElevatorJumpBoost = (RealFloorZ - OldRealFloorZ) * pb_ejumpmultiplier;
-			else
-				ElevatorJumpBoost = 0;
-		}
-		else
-		{
-			if(CheckForElevator && RealFloorZ - OldRealFloorZ >= pb_jumpheight / 2.f) { BlockJump = True; } //floor is raising too fast to not spam jump
-			ElevatorJumpBoost = 0;
-		}
-		
-		OldSecIndex = SecIndex;
-	}
-	
 	void DGravity()
 	{
 		if(WaterLevel >= 2)
@@ -681,7 +649,7 @@ class PlayerPawnBase : PlayerPawn
 			else
 				Gravity = 0.f;
 		}
-		else if(bNOGRAVITY || GrappleVel.Length())
+		else if(bNOGRAVITY)
 		{
 			Gravity = 0.f;
 		}
@@ -705,16 +673,12 @@ class PlayerPawnBase : PlayerPawn
 		Bool SlopedFloor;
 		[BlockJump, SlopedFloor] = CheckIfJumpable();
 		
-		//Elevators Jump Boost
-		ElevatorJump(SlopedFloor);
-		
-		
 		////////////////////////////////
 		//Actual Jump
 		if(player.cmd.buttons & BT_JUMP)
 		{
 			//Special circumstances jump denial
-			if(LedgeGrabbed || GrappleVel.Length()) { return; }
+			if(LedgeGrabbed) { return; }
 			
 			if(player.crouchoffset != 0)
 			{
@@ -732,7 +696,7 @@ class PlayerPawnBase : PlayerPawn
 		
 			else if(Player.OnGround && !BlockJump && !FindInventory("GoFatality"))
 			{
-				Float JumpVelZ = pb_jumpheight + ElevatorJumpBoost;
+				Float JumpVelZ = pb_jumpheight;
 				Float JumpFac = GetPowerJump();
 				if(JumpFac) { JumpVelZ *= JumpFac; }
 				
@@ -871,7 +835,6 @@ class PlayerPawnBase : PlayerPawn
 		else
 		{
 			DoomGroundMove();
-			Grappled = False;
 			if(pb_dropprevention) { DropPrevention(); }
 		}
 	}
@@ -941,7 +904,7 @@ class PlayerPawnBase : PlayerPawn
 		UserCmd cmd = player.cmd;
 		
 		Bool DashMove;
-		if((DashNumber || Grappled) && MaxAirSpeed > MaxGroundSpeed) { DashMove = True; }
+		if((DashNumber) && MaxAirSpeed > MaxGroundSpeed) { DashMove = True; }
 		
 		///////////////////////////////////////////
 		//Actual Movement
@@ -1097,7 +1060,7 @@ class PlayerPawnBase : PlayerPawn
 		ActualMaxAirSpeed = clamp(ActualMaxAirSpeed, MaxGroundSpeed, MaxAirSpeed);		//This is an as close as possible imitation
 	}
 	
-	
+/*	
 	//////////////////////////////////////////
 	// Quake
 	
@@ -1116,7 +1079,6 @@ class PlayerPawnBase : PlayerPawn
 		{
 			MaxGroundSpeed *= GroundSpeedMulti(True);
 			QuakeGroundMove();
-			Grappled = False;
 			if(pb_dropprevention) { DropPrevention(); }
 		}
 	}
@@ -1307,7 +1269,7 @@ class PlayerPawnBase : PlayerPawn
 		PlayIdle();
 	}
 	
-	
+*/	
 	//////////////////////////////////////////
 	// Crouching							//
 	//////////////////////////////////////////
@@ -1529,11 +1491,11 @@ class PlayerPawnBase : PlayerPawn
 		Acceleration = (cmd.forwardmove, - cmd.sidemove);
 		
 		//Friction
-		QuakeFriction(MaxGroundSpeed, 6.f);
+//		QuakeFriction(MaxGroundSpeed, 6.f);
 		
 		//Acceleration
 		Vector2 PreAccelVel = Vel.XY;
-		QuakeAcceleration((RotateVector(SafeUnit2(Acceleration), Angle), 0), max(MaximumSlideSpeed, MaxGroundSpeed), pb_qslideaccel);
+//		QuakeAcceleration((RotateVector(SafeUnit2(Acceleration), Angle), 0), max(MaximumSlideSpeed, MaxGroundSpeed), pb_qslideaccel);
 		
 		//Decrease slide duration depending on how tight turns are
 		QSlideDuration--;
@@ -1707,7 +1669,7 @@ class PlayerPawnBase : PlayerPawn
 		if(DashNumber > 3) { return; }
 		DashNumber++;
 		
-		Float DashVelZ = pb_jumpheight * pb_dashheight + ElevatorJumpBoost;
+		Float DashVelZ = pb_jumpheight * pb_dashheight;
 		Float JumpFac = GetPowerJump();
 		if(JumpFac) { DashVelZ *= JumpFac; }
 		Vel.Z = DashVelZ;
@@ -2094,128 +2056,6 @@ class PlayerPawnBase : PlayerPawn
 	}
 	
 	
-	
-	//////////////////////////////////////
-	// Grappling Hook 					//
-	//////////////////////////////////////
-	
-	// A very cool concept, but breaks gameplay and allows players to cheese things
-	void FireHook()
-	{
-		A_Print("Grappling Hook has been disabled");
-		return;
-	
-		Let Player = self.player;
-		//Heavy metal music stops
-		if(WaterLevel >= 2 || bNOGRAVITY) { return; }
-		//Third click, detach hook
-		if(PendulumLength || (GrappleVel.Length() && pb_hook == 1))
-		{
-			StopHook();
-			return;
-		}
-		//Second click, activate pendulum physics
-		if(GrappleVel.Length() && pb_hook == 2)
-		{
-			Float RopePitch = atan2(Rope.XY.Length(), Rope.Z);
-			//Trust me, it's better if you do not see what happens otherwise
-			if(RopePitch >= 90.f)
-			{
-				StopHook();
-				return;
-			}
-			//Initiate pendulum
-			PendulumLength = Rope.Length();
-			RopePitch *= (Vel.Z < 0 ? -1 : 1);
-			Float SwingPitch = RopePitch + 90;
-			Float SwingAngle = VectorAngle(Vel.X, Vel.Y);
-			Vel = GrappleVel.Length() * (sin(SwingPitch) * cos(SwingAngle), sin(SwingPitch) * sin(SwingAngle), cos(SwingPitch));
-			GrappleVel = Vel;
-			return;
-		}
-		//First click, fire hook
-		if(HookFired || Grappled) { return; }
-		A_StartSound("HookLaunch", CHAN_7, CHANF_DEFAULT, 0.8);
-		HookFired = SpawnPlayerMissile("Hook", Angle, 0, 0, - Height / 14.f); //SpawnPlayerMissile fires a projectile at 8/14 of Player Height, I need it to be fired at half
-	}
-	
-	bool HookLOS()
-	{
-		Float LOSPitch = atan2(Rope.XY.Length(), Rope.Z) - 90;
-		Float LOSAngle = VectorAngle(Rope.X, Rope.Y);
-		FLineTraceData LOSCheck;
-		LineTrace(LOSAngle, Rope.Length(), LOSPitch, TRF_SOLIDACTORS|TRF_BLOCKSELF, Height / 2.f, data: LOSCheck);
-		
-		if(GrappledMonster != Null && LOSCheck.HitActor == GrappledMonster) { return true; }
-		
-		return LOSCheck.Distance == Rope.Length();
-	}
-	
-	void GrapplingMove()
-	{
-		Let Player = self.player;
-		
-		if(!Player.OnGround) { Grappled = True; }
-		
-		//Fun is over kids, go home
-		if((Player.OnGround && Grappled) || WaterLevel >= 2 || bNOGRAVITY || Rope.Length() <= 4.f * Radius || float(Vel.Length() - GrappleVel.Length()) < 0.f || !HookLOS() || !Vel.Length())
-		{
-			StopHook();
-			return;
-		}
-		
-		//All good
-		if(PendulumLength)
-		{
-			//Reached the peak
-			Float RopePitch = atan2(Rope.XY.Length(), Rope.Z);
-			if(RopePitch >= 90)
-			{
-				StopHook();
-				return;
-			}
-			
-			Vector3 SwingVel;
-			if(Vel.Z < 0)
-			{
-				SwingVel = (GrappleVel.X, GrappleVel.Y, GrappleVel.Z - pb_setgravity);
-			}
-			else
-			{
-				SwingVel = (GrappleVel.X, GrappleVel.Y, GrappleVel.Z - pb_setgravity / 2.f);
-				RopePitch *= -1;
-			}
-			Float SwingPitch = RopePitch + 90;
-			Float SwingAngle = VectorAngle(Vel.X, Vel.Y);
-			Vel = SwingVel.Length() * (sin(SwingPitch) * cos(SwingAngle), sin(SwingPitch) * sin(SwingAngle), cos(SwingPitch));
-			
-			//Rope tension
-			Float Tension = Rope.Length() - PendulumLength;
-			if(Tension) { Vel += Tension * SafeUnit3(Rope); }
-			
-			//Limiter
-			MaxAirSpeed = min(Vel.XY.Length(), pb_maxhopspeed);
-			Vel.XY = MaxAirSpeed * SafeUnit2(Vel.XY);
-			
-			GrappleVel = Vel;
-		}
-		else
-		{
-			GrappleVel = SafeUnit3(Rope) * GrappleVel.Length();
-			Vel = GrappleVel;
-		}
-		
-		//Sprite animation
-		PlayIdle();
-	}
-	
-	void StopHook()
-	{
-		Rope = GrappleVel = (0, 0, 0);
-		PendulumLength = 0;
-		GrappledMonster = Null;
-	}
-	
 	//////////////////////////////////////
 	// Bobbing							//
 	//////////////////////////////////////
@@ -2280,7 +2120,7 @@ class PlayerPawnBase : PlayerPawn
 			}
 			else if(ZMJumpTics || abs(RealFloorZ - Pos.Z) > 16 || CanCSlide || CanWSlide) //mid air or csliding or wallsliding
 			{
-				if(CanWSlide || CanCSlide || GrappleVel.Length()) //don't you move boi
+				if(CanWSlide || CanCSlide) //don't you move boi
 				{
 					XBob *= abs(XBob) > 0.1 ? 0.988 : 0;
 					YBob *= abs(YBob) > 0.1 ? 0.988 : 0;
@@ -2560,13 +2400,7 @@ class PlayerPawnBase : PlayerPawn
 		if (CheckInventory("SlimeSplasherz",1)) {
 			A_TakeInventory("SlimeSplasherz", 1);
 			A_Giveinventory("SlimeOnVisor",1);
-			int selector = (random(0,5));
-			if (selector == 0){ACS_Execute(540, 0, 0, 0, 0);}
-			if (selector == 1){ACS_Execute(541, 0, 0, 0, 0);}
-			if (selector == 2){ACS_Execute(542, 0, 0, 0, 0);}
-			if (selector == 3){ACS_Execute(543, 0, 0, 0, 0);}
-			if (selector == 4){ACS_Execute(544, 0, 0, 0, 0);}
-			if (selector == 5){ACS_Execute(545, 0, 0, 0, 0);}
+			int selector = (random(0,5));			
 		}
 		if (CheckInventory("SludgeSplasherz",1)) {
 			A_TakeInventory("SludgeSplasherz", 1);
@@ -2744,22 +2578,7 @@ Class WallSlideHandler : EventHandler
     }
 }
 
-Class GrapplingHookHandler : EventHandler
-{
-    Override void NetworkProcess(ConsoleEvent e)
-    {
-		if(!pb_hook) { return; }
-		
-        if(e.Player >= 0 && PlayerInGame[e.Player] && Players[e.Player].Mo)
-        {
-            if(e.Name == "GrapplingHook")
-            {
-                Let GrapplingPlayer = PlayerPawnBase(Players[e.Player].Mo);
-                if(GrapplingPlayer) { GrapplingPlayer.FireHook(); }
-            }
-        }
-    }
-}
+
 
 Class LedgeGrabWeapon : Weapon
 {
@@ -2781,290 +2600,6 @@ Class LedgeGrabWeapon : Weapon
 			
 		Fire:
 			TNT1 A 0 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH);
-			Stop;
-	}
-}
-
-Class Hook : Actor
-{
-	Default
-	{
-		+FORCEXYBILLBOARD;
-		+HITMASTER;
-		+MISSILE;
-		+NOGRAVITY;
-		+NOTELEPORT;
-		+NOTONAUTOMAP;
-		+THRUSPECIES;
-		Damage 6;
-		Height 4;
-		Radius 2;
-		Speed 80;
-		Species "Hook";
-	}
-	
-	vector3 HookToPlayer;
-	vector3	HookToMonster;
-	int		MonsterSpeed;
-	int		MonsterFloatSpeed;
-	
-	vector3 SafeUnit3(Vector3 VecToUnit)
-	{
-		if(VecToUnit.Length()) { VecToUnit /= VecToUnit.Length(); }
-		return VecToUnit;
-	}
-	
-	vector2 SafeUnit2(Vector2 VecToUnit)
-	{
-		if(VecToUnit.Length()) { VecToUnit /= VecToUnit.Length(); }
-		return VecToUnit;
-	}
-	
-	Override void Tick()
-	{
-		Let HookOwner = PlayerPawnBase(Target);
-		if(HookOwner)
-		{
-			Vector3 WaistPos = (HookOwner.Pos.X, HookOwner.Pos.Y, HookOwner.Pos.Z + HookOwner.Height / 2.f); // player position
-			HookToPlayer = Pos - WaistPos; //hook-to-player vector
-		}
-		
-		Super.Tick();
-		
-		UpdateTrail();
-	}
-	
-	void UpdateTrail()
-	{
-		int b;
-		for(b = 1; b <= 14; b++)
-		{
-			ActorIterator BallOfSteele = Level.CreateActorIterator(84115 + b);
-			Actor Ball = BallOfSteele.Next();
-			
-			if(Ball != Null)
-			{
-				//Set trail velocity
-				Vector3 TargetPos = Pos - (HookToPlayer * b / 15.f);
-				Ball.Vel = TargetPos - Ball.Pos;
-			}
-		}
-	}
-	
-	void InitiateGrapple(Bool Monster)
-	{
-		Let HookOwner = PlayerPawnBase(Target);
-		
-		Float	PushLength = HookOwner.MaxGroundSpeed * pb_hookboost;
-		Vector3 HookPush = SafeUnit3(HookToPlayer) * PushLength;
-		Float 	HookSpeed = max((HookOwner.Vel + HookPush).Length(), PushLength);
-		HookOwner.Rope = HookToPlayer; //needed for the LOS check
-		
-		//Check hook is still in sight
-		if(!HookOwner.HookLOS())
-		{
-			SetState(FindState("DespawnHook"));
-			return;
-		}
-		
-		//Stop any eventual wall slides
-		HookOwner.StopWSlide();
-		
-		//Stop dashing stuff
-		HookOwner.ADashCooler = HookOwner.ADashTargetSpeed = 0;
-		
-		//Initiate hook
-		HookSpeed = HookOwner.MaxAirSpeed = min(HookSpeed, pb_maxhopspeed);
-		HookOwner.Vel = HookOwner.GrappleVel = HookSpeed * SafeUnit3(HookPush);
-		
-		//Hooking monsters specific
-		if(Monster)
-		{
-			Let Monster = Actor(Master);
-			PlayerPawnBase(Target).GrappledMonster = Monster;
-			SetMonsterSpeed(False);
-			A_StartSound("HookMeat", 7);
-		}
-		else
-		{
-			A_StartSound("HookWall", 7);
-		}
-	}
-	
-	void SetMonsterSpeed(Bool Reset)
-	{
-		Let Monster = Actor(Master);
-		
-		if(!Reset)
-		{
-			MonsterSpeed = Monster.Speed;
-			MonsterFloatSpeed = Monster.FloatSpeed;
-			Monster.Speed = Monster.FloatSpeed = 0;
-		}
-		else
-		{
-			Monster.Speed = MonsterSpeed;
-			Monster.FloatSpeed = MonsterFloatSpeed;
-		}
-	}
-	
-	void SpawnTrail()
-	{
-		int h;
-		for(h = 1; h <= 14; h++)
-		{
-			A_SpawnItemEx("HookTrail",0,0,0,0,0,0,0,SXF_ISTRACER|SXF_SETTARGET|SXF_ORIGINATOR|SXF_NOCHECKPOSITION);
-			
-			Let SlaveTrail = HookTrail(Tracer);
-			SlaveTrail.ChangeTid(84115 + h);
-		}
-	}
-	
-	States
-	{
-	//////////////////////////////////////
-	//Hook is traveling through space
-	Spawn:
-		OCLW A 0 NoDelay
-		{
-			A_AlertMonsters();
-			SpawnTrail();
-		}
-	Looper:
-		OCLW A 1
-		{
-			Let HookOwner = PlayerPawnBase(Target);
-			//Despawn if no geometry was found
-			if(HookToPlayer.Length() >= 1000.f || !HookOwner)
-			{
-				SetState(FindState("DespawnHook"));
-				return;
-			}
-		}
-		Loop;
-	
-	//////////////////////////////////////
-	//Hook hit a wall or ceiling
-	Death:
-		OCLW A 0
-		{
-			Let HookOwner = PlayerPawnBase(Target);
-			if(!HookOwner)
-			{
-				SetState(FindState("DespawnHook"));
-				return;
-			}
-			
-			InitiateGrapple(False);
-		}
-	
-	TillDeathDoesUsApart:
-		OCLW A 1
-		{
-			Let HookOwner = PlayerPawnBase(Target);
-			if(!HookOwner.GrappleVel.Length() || !HookOwner)
-			{
-				SetState(FindState("DespawnHook"));
-				return;
-			}
-			
-			HookOwner.Rope = HookToPlayer;
-		}
-		Loop;
-		
-	//////////////////////////////////////
-	//Hit actor
-	XDeath:
-		OCLW A 0
-		{
-			Let Monster = Actor(Master);
-			if(!Monster.bISMONSTER)
-			{
-				SetState(FindState("DespawnHook"));
-				return;
-			}
-			
-			InitiateGrapple(True);
-		}
-	
-	TillXDeathDoesUsApart:
-		OCLW A 1
-		{
-			Let HookOwner = PlayerPawnBase(Target);
-			Let Monster = Actor(Master);
-			
-			if(!HookOwner.GrappleVel.Length() || !HookOwner || Monster.Health <= 0)
-			{
-				SetState(FindState("DespawnHook"));
-				return;
-			}
-			
-			Vel = Monster.Vel;
-			HookOwner.Rope = HookToPlayer;
-		}
-		Loop;
-		
-	//////////////////////////////////////
-	//Die Monster! You don't belong in this world
-	DespawnHook:
-		OCLW A 0
-		{
-			Let HookOwner = PlayerPawnBase(Target);
-			if(HookOwner)
-			{
-				HookOwner.StopHook();
-				HookOwner.A_StartSound("HookFailed", CHAN_7, CHANF_DEFAULT, 0.2);
-			}
-			
-			Let Monster = Actor(Master);
-			if(Monster && MonsterSpeed) { SetMonsterSpeed(True); }
-		}
-		Stop;
-	}
-}
-
-Class HookTrail : Actor
-{
-	Default
-	{
-		+FORCEXYBILLBOARD;
-		+MISSILE;
-		+NOGRAVITY;
-		+NOTELEPORT;
-		+NOTONAUTOMAP;
-		+THRUSPECIES;
-		Radius 2;
-		Height 4;
-		Scale 0.5;
-		Species "HookTrail";
-	}
-	
-	States
-	{
-		Spawn:
-		Looper:
-			TEND A 1
-			{
-				if(!Hook(Target))
-				{
-					SetState(FindState("DespawnTrail"));
-					return;
-				}
-			}
-			Loop;
-			
-		Death:
-			TEND A 1
-			{
-				if(!Hook(Target))
-				{
-					SetState(FindState("DespawnTrail"));
-					return;
-				}
-			}
-			Loop;
-			
-		DespawnTrail:
 			Stop;
 	}
 }
