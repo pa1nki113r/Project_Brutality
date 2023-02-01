@@ -117,6 +117,10 @@ ACTOR PB_Minigun : PB_Weapon Replaces Chaingun
 	Inventory.AltHUDIcon "MG0ZA0"
 	PB_WeaponBase.respectItem "RespectMiniGun"
 	FloatBobStrength 0.5
+	PB_WeaponBase.OffsetRecoilX 3.5
+	PB_WeaponBase.OffsetRecoilY 2.2
+	
+
 States
 {
 	Steady:
@@ -296,8 +300,16 @@ States
 			}
 			TNT1 A 0 A_TakeInventory("Overheating", 1)
 			Loop
+	Reload:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+		Goto Ready3
 			
 	WeaponSpecial:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 {
 			A_Takeinventory("GoWeaponSpecialAbility",1);
 			A_ClearOverlays(3,4);
@@ -414,6 +426,9 @@ States
 		Goto Ready3
 
 	Deselect:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		TNT1 A 0 {
 			A_ClearOverlays(3,4);
 			A_WeaponOffset(0,32);
@@ -431,7 +446,7 @@ States
 			A_SetSpeed(1.0);
 		}
 		TNT1 A 0 A_JumpIfInventory("TripleBarrelMode", 1, "DeselectDeathDealer")
-		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
+		
 		MG23 DCBA 0 
         MG04 DCBA 1 {
 				if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("MG23");}
@@ -467,6 +482,14 @@ States
 			PB_HandleCrosshair(75);
 			A_TakeInventory("PB_LockScreenTilt",1);
 		}
+		
+		TNT1 A 0 A_TakeInventory("HasBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
+		
 		Goto SelectFirstPersonLegs
 		SelectContinue:
 		TNT1 A 1 ACS_NamedExecuteAlways("ToggleNailgunUpgraded",0) //For people who want this weapon to replace another
@@ -480,6 +503,9 @@ States
 		Wait
 		
 	Fire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
@@ -571,6 +597,7 @@ States
 			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
+			PB_FireOffset;
 			if(GetCvar("PB_alttracer") >=1)
 				{
 				 A_RailAttack(0, 0, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0, none,0.1,0.1,700,0,1,1.0,"Tracer_Trail",-6,0,0);
@@ -593,6 +620,7 @@ States
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			A_Firecustommissile("MiniBeltPieceSpawn",0,0,-12,-18);
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
+			PB_FireOffset;
 			if(GetCvar("PB_alttracer") >=1)
 				{
 				 A_RailAttack(0, 0, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0, none,0.1,0.1,700,0,1,1.0,"Tracer_Trail",-6,0,0);
@@ -613,6 +641,7 @@ States
 			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
+			PB_FireOffset;
 			if(GetCvar("PB_alttracer") >=1)
 				{
 				 A_RailAttack(0, 0, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0, none,0.1,0.1,700,0,1,1.0,"Tracer_Trail",-6,0,0);
@@ -634,6 +663,7 @@ States
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			A_Firecustommissile("MiniBeltPieceSpawn",0,0,-12,-18);
 			A_Firecustommissile("FiftyCaseSpawn",0,0,-12,-18);
+			PB_FireOffset;
 			if(GetCvar("PB_alttracer") >=1)
 				{
 				 A_RailAttack(0, 0, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0, none,0.1,0.1,700,0,1,1.0,"Tracer_Trail",-6,0,0);
@@ -780,6 +810,7 @@ States
 		}
 		TNT1 A 0 A_GunFlash("PreGlow")
 		CHAF G 1 BRIGHT {
+			PB_FireOffset;
 			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
@@ -802,6 +833,7 @@ States
 			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHG");}
 		}
 		CHAF D 1 BRIGHT {
+			PB_FireOffset;
 			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			if (CountInv("MinigunUpgraded") == 1) {A_Overlay(4,"AmmoBeltIdle_Upgraded");}
@@ -836,6 +868,7 @@ States
 	Holding1_Chaingun:
 		TNT1 A 0 A_GunFlash("FireGlow")
         CHAF A 1 BRIGHT {
+			PB_FireOffset;
 			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
@@ -863,6 +896,7 @@ States
 		}
 		//CHAG C 1
         CHAF D 1 BRIGHT {
+			PB_FireOffset;
 			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
@@ -892,6 +926,7 @@ States
 		//CHAG C 1
 		TNT1 A 0 A_GunFlash("FireGlow")
         CHAF G 1 BRIGHT {
+			PB_FireOffset;
 			if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("UCHF");}
 			A_Overlay(3,"AmmoMeterOverlayFire");
 			A_FireBullets(4, 4, 1, 10, "MachineGunBulletPuff", 1);
@@ -1161,6 +1196,7 @@ States
 	HoldingDeathDealer:
 		//TNT1 A 0 A_JumpIf(CountInv("NewClip") < 1, "HoldingDeathDealer_Stop")
         8HBF A 1 BRIGHT {
+			PB_FireOffset;
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			if(GetCvar("PB_alttracer") >=1)
 				{
@@ -1183,6 +1219,7 @@ States
 			}
         8HBF BC 1 A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer")
         8HBF D 1 BRIGHT {
+			PB_FireOffset;
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			if(GetCvar("PB_alttracer") >=1)
 				{
@@ -1205,6 +1242,7 @@ States
 			}
         8HBF EF 1 A_Overlay(3,"AmmoMeterOverlayIdle_DeathDealer")
         8HBF G 1 BRIGHT {
+			PB_FireOffset;
 			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 			if(GetCvar("PB_alttracer") >=1)
 				{
@@ -1282,6 +1320,9 @@ States
         goto Ready3
 	
 	  AltFire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
@@ -1441,6 +1482,9 @@ States
 		 Goto Ready3
 	 
 	FlashKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
 		TNT1 A 0 A_ClearOverlays(3,4)
 		MG33 ABCDEFGHIJKLMN 0
 		MG35 ABCDEFGHIJKLMN 0
@@ -1450,6 +1494,9 @@ States
 			}
 		Goto Ready3
 	FlashPunching:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
 		TNT1 A 0 A_ClearOverlays(3,4)
 		MG33 ABCDEFGHIJKLMN 0
 		MG35 ABCDEFGHIJKLMN 0
@@ -1460,6 +1507,9 @@ States
 		Stop
 		
 	FlashAirKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")	
 		TNT1 A 0 A_ClearOverlays(3,4)
 		MG33 ABCDEFGHIJKLMN 0
 		MG35 ABCDEFGHIJKLMN 0
@@ -1470,6 +1520,9 @@ States
 		Goto Ready3
 		
 	FlashSlideKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
 		TNT1 A 0 A_ClearOverlays(3,4)
 		MG34 ABCDEFGHIJKLMNOPQRSTU 0
 		MG36 ABCDEFGHIJKLMNOPQRSTU 0
@@ -1481,6 +1534,9 @@ States
 		
 		
 	FlashSlideKickingStop:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
 		TNT1 A 0 A_ClearOverlays(3,4)
 		MG18 OPQRSTU 1 {
 				if (CountInv("MinigunUpgraded") == 1) {A_SetWeaponSprite("MG34");}

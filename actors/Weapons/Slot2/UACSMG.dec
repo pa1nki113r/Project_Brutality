@@ -125,6 +125,9 @@ ACTOR PB_SMG : PB_Weapon
 	Inventory.AltHUDIcon "ATFLA0"
 	PB_WeaponBase.respectItem "RespectSMG"
 	FloatBobStrength 0.5
+	PB_WeaponBase.OffsetRecoilX 3.0
+	PB_WeaponBase.OffsetRecoilY 2.5
+
 	States
 	{
 	Steady:
@@ -416,6 +419,9 @@ ACTOR PB_SMG : PB_Weapon
 		Stop
 		
 	WeaponSpecial:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 {
 			A_Takeinventory("GoWeaponSpecialAbility",1);
 			A_Takeinventory("Zoomed",1);
@@ -491,6 +497,9 @@ ACTOR PB_SMG : PB_Weapon
 		Goto Ready3
 	
 	Deselect:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		TNT1 A 0 {
 			A_DestroyLaserPuff();
 			A_WeaponOffset(0,32);
@@ -503,7 +512,6 @@ ACTOR PB_SMG : PB_Weapon
 		TNT1 A 0 A_Takeinventory("ADSmode",1)
 		TNT1 A 0 A_Overlay(-9, "Null")
         TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
 		TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded",1,"DeselectUnloaded")
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "DeselectDualWield")
         A1F1 DCBA 1
@@ -528,6 +536,14 @@ ACTOR PB_SMG : PB_Weapon
 			A_TakeInventory("PB_LockScreenTilt",1);
 			A_ClearOverlays(10,11);
 		}
+		
+		TNT1 A 0 A_TakeInventory("HasBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
+		
 		Goto SelectFirstPersonLegs
 		SelectContinue:
 		TNT1 A 0
@@ -537,6 +553,9 @@ ACTOR PB_SMG : PB_Weapon
 		Wait
 		
     Fire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
@@ -554,6 +573,7 @@ ACTOR PB_SMG : PB_Weapon
 		TNT1 A 0 A_Jump(256, "Flash_Variant1", "Flash_Variant2", "Flash_Variant3", "Flash_Variant4", "Flash_Variant5")
 	ActualFire:
 		"####" "#" 1 BRIGHT {
+			PB_FireOffset;
 			A_AlertMonsters;
 			A_PlaySoundEx("ZSpecOps/MGun", "Weapon");
 			A_FireBullets (0.1, 0.1, -1, 12, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
@@ -642,6 +662,9 @@ ACTOR PB_SMG : PB_Weapon
 		Goto Ready2
 	
     AltFire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
@@ -676,6 +699,9 @@ ACTOR PB_SMG : PB_Weapon
         Goto Ready3
 		
 	Reload:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 {
 			A_ZoomFactor(1.0);
 			A_Takeinventory("ADSmode",1);
@@ -953,20 +979,33 @@ ACTOR PB_SMG : PB_Weapon
 		"####" A 0 A_PbvpInterpolate()
 		LOOP
 		
-
-	FlashPunching:
-		TNT1 A 0 A_ClearOverlays(10,11)
-		TNT1 A 0 A_JumpIfventory("DualWieldingSMGs", 1, "FlashPunchingDW")
-		A3F1 ABCDEFGGFEDCBA 1
-		Stop
-   FlashKicking:
-		TNT1 A 0 A_ClearOverlays(10,11)
+    FlashKicking:
+    TNT1 A 0 A_ClearOverlays(10,11)
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "FlashKickingDW")
 		A1F7 ABCDEFGGFEDCBA 1 A_DoPBWeaponAction
 		Goto Ready3
 
+
+	FlashPunching:
+		TNT1 A 0 A_ClearOverlays(10,11)
+    TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "FlashPunchingDW")
+		A3F1 ABCDEFGGFEDCBA 1
+		Stop
+   FlashKicking:
+
+		
+
 		
 	FlashAirKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")	
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "FlashAirKickingDW")
 		A1F7 ABCDEFGGGGFEDCBA 1 A_DoPBWeaponAction
@@ -979,13 +1018,16 @@ ACTOR PB_SMG : PB_Weapon
 	FlashAirKickingDW:
 		A2F3 ABCDEFGGGFEDCBAAA 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE)
 		Goto Ready3
-		
+
 	FlashPunchingDW:
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 15
 		Stop
 		
 	FlashSlideKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "FlashSlideKickingDW")
 		A1F8 ABCDEFGHIJKLLMLKJIHGFEDCBA 1 A_DoPBWeaponAction
@@ -998,6 +1040,9 @@ ACTOR PB_SMG : PB_Weapon
 		Goto Ready3
 		
 	FlashSlideKickingStop:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "FlashSlideKickingStopDW")
 		A1F8 GFEDCBA 1 A_DoPBWeaponAction
