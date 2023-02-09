@@ -11,8 +11,8 @@ Class PB_ZombieScientist : PB_Monster
 			Speed 10;
 			FastSpeed 12;
 			MaxStepHeight 24;
-			MaxDropOffHeight 32;
-			MeleeRange 120;
+			MaxDropOffHeight 32;			
+			MaxTargetRange 130; 
 			Mass 100;
 			SeeSound "monsters/zombie/see";
 			PainSound "monsters/zombie/pain";
@@ -39,7 +39,6 @@ Class PB_ZombieScientist : PB_Monster
 			damagefactor "Blood", 0.0; damagefactor "BlueBlood", 0.0; damagefactor "GreenBlood", 0.0;
 			damagefactor "Kick", 0.4;
 			damagefactor "Shrapnel", 0.4;
-			damagefactor "ExplosiveImpact", 0.6;
 			damagefactor "killme", 0.0;
 			damagefactor "Taunt", 1.0;
 			DamageFactor "CauseObjectsToSplash", 0.0;
@@ -189,11 +188,13 @@ Class PB_ZombieScientist : PB_Monster
 			////////////////
 				
 			Melee:
+            Missile:
 				TNT1 A 0 A_Jump(224, 2);
-				TNT1 A 0 A_CombatDialogueHandler();
-				TNT1 A 0 A_JumpIfCloser(80, "Melee2");
+				TNT1 A 0 A_CombatDialogueHandler();				
+				TNT1 A 0 A_JumpIfCloser(50, "Melee2");				
 				TNT1 A 0 A_Jump(132, "MeleeRush");
-				SCZA E 4 A_FaceTarget();
+				JumpAttack:
+				SCZA E 4 A_FaceTarget();				
 				LJD0 A 1 {
 					A_StartSound("AXSWING");
 					ThrustThingZ(0,30,0,1);
@@ -204,6 +205,7 @@ Class PB_ZombieScientist : PB_Monster
 				SCZA E 6;
 				Goto See;
 			MeleeRush:
+			TNT1 A 0 A_JumpIfInTargetLOS("JumpAttack",0, JLOSF_DEADNOJUMP|JLOSF_CLOSENOJUMP, 130, 60);
 				SCZA AABB 1 {
 					A_FaceTarget();
 					A_Recoil(-2);
@@ -240,7 +242,7 @@ Class PB_ZombieScientist : PB_Monster
 				TNT1 AA 0 A_SpawnProjectile ("PB_Teeth", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				LOSH ABBBA 4;
 				TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-				TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+				
 				TNT1 A 0 A_Jump(180, "See");
 				TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 				Goto See;
@@ -251,7 +253,7 @@ Class PB_ZombieScientist : PB_Monster
 				TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
 				SCZA G 6 A_Pain();
 				TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-				TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+				
 				TNT1 A 0 A_Jump(180, "See");
 				TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 				Goto See;
@@ -333,7 +335,7 @@ Class PB_ZombieScientist : PB_Monster
 				bFORCEXYBILLBOARD = false;
 			}
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+			
 			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 			Goto See;
 		 
@@ -929,19 +931,21 @@ Class PB_ZombieScientist : PB_Monster
 			Stop;
 			
 		Death.fire:
+		Death.FireExplosion:
 		Death.Flames:
 		Death.Burn:
 			TNT1 A 1 {
 				A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 				A_ScreamAndUnblock();
+				A_DropItem("PB_Axe",1);
 				A_SpawnItemEx("BurningLabGuy",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
 			}
 			Stop;
 		  
-		Death.Desintegrate:
+		Death.Disintegrate:
 			TNT1 A 0 A_Scream();
 			TNT1 A 0 A_NoBlocking();
-			TNT1 A 0 A_SpawnItem("DesintegratedHuman");
+			TNT1 A 0 A_SpawnItem("DisintegratedHuman");
 			Stop;
 			
 		Death.Blackhole:
@@ -1317,6 +1321,7 @@ Class PB_ZombieScientist : PB_Monster
 	    Stop;
 		
 	Death.Blast2:
+	TNT1 A 0 A_NoBlocking();
 	    TNT1 A 0 {
 			A_XScream();
 			NashGoreGibs.SpawnGibs(self);
@@ -1412,18 +1417,9 @@ Class PB_ZombieScientist : PB_Monster
 		Raise:
 			POSS KJIH 5;
 			Goto See;
-		
-		Death.IceBeam:
-			TNT1 A 0 {
-				bSHOOTABLE = false;
-				bSOLID = false;
-				A_SpawnItem("FrozenLabguy");
-				A_SpawnItem("IceCrystalGround");
-				A_SpawnItem("IceCrystalGround");
-			}
-			Stop;
-		
+
 		Death.Ice:
+		Death.IceExplosion:
 		Death.Freeze:
 		Death.Frost:
 			TNT1 A 0 { 
