@@ -200,6 +200,7 @@ ACTOR PB_Railgun : PB_Weapon
 			}
 		Ready3:
 			TNT1 A 0 A_TakeInventory("RailgunLaserCharge", 60) //Fixes incorrect charge level bug
+			TNT1 A 0 A_SetInventory("CantDoAction",0)
 			TNT1 A 0 {
 				if (CountInv("RailgunZoomed") == 1) { A_StartSound("weapons/railgun/scopeloop", 7, CHANF_LOOPING|CHANF_OVERLAP );}
 				if (CountInv("RailgunAmmo") > 0 && CountInv("RailgunLaserMode") == 1) { A_StartSound("weapons/railgun/loop_red", 6, CHANF_LOOPING|CHANF_OVERLAP );}
@@ -532,6 +533,7 @@ ACTOR PB_Railgun : PB_Weapon
 				A_RailAttack(200, 0, 0, "Green","Cyan", RGF_SILENT, 0, "RAILGUNPUFF1",0,0,0,0,5,1.0,"RailGunTrail");
 				A_ZoomFactor(0.96);
 				A_GunFlash;
+				A_SetInventory("CantDoAction",1);
 				PB_WeaponRecoil(-2.5,-0.2);
 			}
 			R026 B 1 BRIGHT {
@@ -553,6 +555,7 @@ ACTOR PB_Railgun : PB_Weapon
 			R026 GHI 1 Offset(0,34)
 			R026 JK 1 Offset(0,33)
 			R026 LMNOPQRSTUVWXYZ 1 Offset(0,32)
+			R026 A 0 A_SetInventory("CantDoAction",0)
 			goto Ready3
 		FireRailgun_Empty:
 			R026 FG 1
@@ -566,6 +569,7 @@ ACTOR PB_Railgun : PB_Weapon
 		Fire_Laser:
 			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",1,1)
 			Goto Reload
+			R026 A 0 A_SetInventory("CantDoAction",1)
 			R036 A 1 BRIGHT {
 				A_StartSound("weapons/railgun/laserchargeup", 5, CHANF_OVERLAP);
 				A_AlertMonsters;
@@ -686,7 +690,7 @@ ACTOR PB_Railgun : PB_Weapon
 				if(CountInv("RailgunLaserCharge") == 60) {
 					A_StartSound("weapons/railgun/laser_huge", 5, CHANF_OVERLAP);
 					A_FireCustomMissile("RailgunLaserBlast1", 0, 0, 0, 0);
-					A_RailAttack(9*(5*CountInv("RailgunLaserCharge")), 0, 0, "Orange","Red", RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,"MicrowaveTrail", 0, 0, 2);
+					A_RailAttack(7*(5*CountInv("RailgunLaserCharge")), 0, 0, "Orange","Red", RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,"MicrowaveTrail", 0, 0, 2);
 				}
 				if(CountInv("RailgunLaserCharge") < 15) {
 					//Does not pierce more than 2 targets
@@ -695,7 +699,7 @@ ACTOR PB_Railgun : PB_Weapon
 				}
 				else {
 					A_StartSound("weapons/railgun/laser_big", 5, CHANF_OVERLAP);
-					A_RailAttack(9*(5*CountInv("RailgunLaserCharge")), 0, 0, "Orange","Red", RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,"MicrowaveTrail", 0, 0, 0);
+					A_RailAttack(9*(2*CountInv("RailgunLaserCharge")), 0, 0, "Orange","Red", RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,"MicrowaveTrail", 0, 0, 0);
 				}
 				if (pb_weapon_recoil_extra_weapons) //only add recoil in the "extra" weapons case
 				{
@@ -711,12 +715,14 @@ ACTOR PB_Railgun : PB_Weapon
 			R037 E 1 BRIGHT A_ZoomFactor(1.0)
 			R037 FG 1 
 			R037 HIJKLMNOPQRSTU 1 BRIGHT
+			R026 A 0 A_SetInventory("CantDoAction",0)
 			Goto Ready3
 			
 		Fire_Scope:
 			TNT1 A 0 A_JumpIfInventory("RailgunLaserMode",1,"Fire_Scope_Laser")
 			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",12,1)
 			Goto Reload
+			R026 AA 0
 			R038 C 1 BRIGHT {
 				A_StartSound("weapons/railgf", CHAN_WEAPON);
 				A_AlertMonsters;
@@ -727,6 +733,7 @@ ACTOR PB_Railgun : PB_Weapon
 				A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 				A_GiveInventory("RailgunCooldown", 25);
 				A_Overlay(20, "Railgun_Cooldown");
+				A_SetInventory("CantDoAction",1);
 				A_FireCustomMissile("DoomerRailShot", 0, 0, 0, 0);
 				A_RailAttack(200, 0, 0, "Green","Cyan", RGF_SILENT, 0, "RAILGUNPUFF1",0,0,0,0,5,1.0,"RailGunTrail");
 				PB_WeaponRecoil(-2.5,-0.2);
@@ -753,11 +760,14 @@ ACTOR PB_Railgun : PB_Weapon
 			R038 Q 18 BRIGHT
 			FireScope_Empty:
 			R038 RSTUVWXY 1 BRIGHT
+			R026 A 0 A_SetInventory("CantDoAction",0)
 			Goto Ready3
 			
 		Fire_Scope_Laser:
 			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",1,1)
 			Goto Reload
+			R026 A 0
+			R026 A 0 A_SetInventory("CantDoAction",1)
 			R039 A 1 BRIGHT {
 				A_StartSound("weapons/railgun/laserchargeup", 5, CHANF_OVERLAP);
 				A_AlertMonsters;
@@ -917,6 +927,7 @@ ACTOR PB_Railgun : PB_Weapon
 				}
 				return state("");
 			}*/
+			R026 A 0 A_SetInventory("CantDoAction",0)
 			Goto Ready3
 			
 		// I swear I'm not trying to code like Yandere Dev (if... if... if...)
