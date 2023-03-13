@@ -558,7 +558,7 @@ class PB_Hud_ZS : BaseStatusBar
                     }
                 }
 
-                if(CheckWeaponSelected("PB_Carbine"))
+                if(CheckWeaponSelected("PB_Carbine") && !CheckWeaponSelected("PB_LMG"))
                 {
                     if(CheckInventory("DualWieldingCarbines"))
                     {
@@ -580,7 +580,7 @@ class PB_Hud_ZS : BaseStatusBar
                     }
                 }
 
-                if(CheckWeaponSelected("PB_Revolver"))
+                if(CheckWeaponSelected("PB_Revolver") && !CheckWeaponSelected("PB_Deagle"))
                 {
                     if(CheckInventory("DualWieldingRevolver"))
                     {
@@ -624,7 +624,7 @@ class PB_Hud_ZS : BaseStatusBar
                     }
                 }
 
-                if(CheckWeaponSelected("PB_SSG"))
+                if(CheckWeaponSelected("PB_SSG") && !CheckWeaponSelected("PB_QuadSG"))
                 {
                     if(CheckInventory("DualWieldingSSG"))
                     {
