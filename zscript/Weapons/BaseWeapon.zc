@@ -385,6 +385,7 @@ class PB_WeaponBase : DoomWeapon
     action bool PressingFire(){return player.cmd.buttons & BT_ATTACK;}
     action bool PressingAltfire(){return player.cmd.buttons & BT_ALTATTACK;}
 	action bool PressingReload(){return player.cmd.buttons & BT_RELOAD;}
+	action bool PressingUser1(){return player.cmd.buttons & BT_USER1;}
 	action bool PressingUser4(){return player.cmd.buttons & BT_USER4;} //Particularly for the fist combos
 	
 	//Set weapon recoil, factoring in the recoil multiplier cvar
@@ -904,33 +905,13 @@ class PB_WeaponBase : DoomWeapon
 		Actor own = invoker.owner;
 		bool shouldHelmet = ACS_NamedExecuteWithResult("ToggleHelmetAnimation",0,0,0) == 0 && own.CountInv("IntroductionSequence") == 0;
 		bool shouldRespect = invoker.respectInventoryItem != "" && own.CountInv(invoker.respectInventoryItem) == 0;
-		bool dontRespect = Cvar.FindCVar('pb_respectweapons').GetBool() == false && own.CountInv(invoker.respectInventoryItem) == 0;
 		if (shouldHelmet)
 		{
 			own.GiveInventory("IntroductionSequence",1);
 			own.GiveInventory("CantDoAction",1);
 			//Console.printf("Setting State: HelmetAnimation");
 			return invoker.resolveState("HelmetAnimation");
-		}	
-		else if (dontRespect)
-		{
-			own.GiveInventory(invoker.respectInventoryItem,1);
-			if(self.player.ReadyWeapon.GetClassName() == "PB_MG42") {
-				own.SetInventory("MG42HeatLevel",0);
-				return invoker.A_Jump(256,"SelectAnimation");
-			}
-			if(self.player.ReadyWeapon.GetClassName() == "PB_SuperGL"){ //Thanks to 7Soul on the ZDoom Forums for posting on getting a selected weapon
-				A_SetCurrentGrenadeType("Impact");
-				return invoker.A_Jump(256,"SelectAnimation");
-				}
-			if(self.player.ReadyWeapon.GetClassName() == "PB_RocketLauncher"){
-				PB_SetCurrentRocketMode("Standard");
-				return invoker.A_Jump(256,"SelectAnimation");
-				}
-			else {
-			return invoker.A_Jump(256,"SelectAnimation");
-			}
-		}
+		}			
 		else if (shouldRespect)
 		{
 			//Console.printf("Setting State: WeaponRespect");
@@ -1198,7 +1179,7 @@ class PB_WeaponBase : DoomWeapon
 		Melee_Equipment_Handler_Overlay:
 			TNT1 A 1 {
 				
-				if(JustPressed(BT_USER1) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() &&
+				if(PressingUser1() && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() &&
 				!CheckInventory("GoFatality",1) && !CheckInventory("CantDoAction",1)) 
 				{
 					A_OverlayOffset(PSP_WEAPON, 0, 32);
