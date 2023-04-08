@@ -385,6 +385,7 @@ class PB_WeaponBase : DoomWeapon
     action bool PressingFire(){return player.cmd.buttons & BT_ATTACK;}
     action bool PressingAltfire(){return player.cmd.buttons & BT_ALTATTACK;}
 	action bool PressingReload(){return player.cmd.buttons & BT_RELOAD;}
+	action bool PressingUser1(){return player.cmd.buttons & BT_USER1;}
 	action bool PressingUser4(){return player.cmd.buttons & BT_USER4;} //Particularly for the fist combos
 	
 	//Set weapon recoil, factoring in the recoil multiplier cvar
@@ -488,6 +489,8 @@ class PB_WeaponBase : DoomWeapon
 	{
 			PB_SetUsingMelee(false); //force to false so that quick melee doesn't break on some weapons
 			PB_SetUsingKick(false); //force to false so that kicking doesn't break on some weapons
+			PB_SetUsingEquipment(false);
+			PB_SetExecutingEnemy(false);
 			SetPlayerProperty(0,0,0); //Force the player to get unstuck
 			A_SetInventory("ADSMode",0);
 			A_SetInventory("Zoomed",0);
@@ -904,33 +907,13 @@ class PB_WeaponBase : DoomWeapon
 		Actor own = invoker.owner;
 		bool shouldHelmet = ACS_NamedExecuteWithResult("ToggleHelmetAnimation",0,0,0) == 0 && own.CountInv("IntroductionSequence") == 0;
 		bool shouldRespect = invoker.respectInventoryItem != "" && own.CountInv(invoker.respectInventoryItem) == 0;
-		bool dontRespect = Cvar.FindCVar('pb_respectweapons').GetBool() == false && own.CountInv(invoker.respectInventoryItem) == 0;
 		if (shouldHelmet)
 		{
 			own.GiveInventory("IntroductionSequence",1);
 			own.GiveInventory("CantDoAction",1);
 			//Console.printf("Setting State: HelmetAnimation");
 			return invoker.resolveState("HelmetAnimation");
-		}	
-		else if (dontRespect)
-		{
-			own.GiveInventory(invoker.respectInventoryItem,1);
-			if(self.player.ReadyWeapon.GetClassName() == "PB_MG42") {
-				own.SetInventory("MG42HeatLevel",0);
-				return invoker.A_Jump(256,"SelectAnimation");
-			}
-			if(self.player.ReadyWeapon.GetClassName() == "PB_SuperGL"){ //Thanks to 7Soul on the ZDoom Forums for posting on getting a selected weapon
-				A_SetCurrentGrenadeType("Impact");
-				return invoker.A_Jump(256,"SelectAnimation");
-				}
-			if(self.player.ReadyWeapon.GetClassName() == "PB_RocketLauncher"){
-				PB_SetCurrentRocketMode("Standard");
-				return invoker.A_Jump(256,"SelectAnimation");
-				}
-			else {
-			return invoker.A_Jump(256,"SelectAnimation");
-			}
-		}
+		}			
 		else if (shouldRespect)
 		{
 			//Console.printf("Setting State: WeaponRespect");
@@ -1247,6 +1230,7 @@ class PB_WeaponBase : DoomWeapon
 				PB_SetUsingMelee(false);
 				PB_SetUsingEquipment(false);
 				PB_SetExecutingEnemy(false);
+				A_ClearReFire(); //Prevents altfire hold glitches
 				
 			}
 			TNT1 A 0 A_Jump(255,"Ready4");
@@ -1283,6 +1267,7 @@ class PB_WeaponBase : DoomWeapon
 				PB_SetUsingMelee(false);
 				PB_SetUsingEquipment(false);
 				A_Overlay(-10, "FirstPersonLegsStand");
+				A_ClearReFire();
 			}
 			TNT1 A 0 A_JumpIfInventory("SawSelected", 1, "OnLoop");
 			TNT1 AAAA 0 A_Jump(256, "SelectAnimation");
@@ -1607,6 +1592,7 @@ class PB_WeaponBase : DoomWeapon
 				A_TakeInventory("UseEquipment", 1);
 				A_TakeInventory("ToggleEquipment", 1);
 			}
+			TNT1 A 0 A_JumpIf(PressingUser1(), "UseEquipment");
 			Goto GoingToReady2;
 		ThrowStun:
 			TNT1 A 0 {
@@ -1630,6 +1616,7 @@ class PB_WeaponBase : DoomWeapon
 				A_TakeInventory("UseEquipment", 1);
 				A_TakeInventory("ToggleEquipment", 1);
 			}
+			TNT1 A 0 A_JumpIf(PressingUser1(), "UseEquipment");
 			Goto GoingToReady2;
 		FireRevGun:
 			TNT1 A 0 {
@@ -1698,6 +1685,7 @@ class PB_WeaponBase : DoomWeapon
 				A_TakeInventory("UseEquipment", 1);
 				A_TakeInventory("ToggleEquipment", 1);
 			}
+			TNT1 A 0 A_JumpIf(PressingUser1(), "UseEquipment");
 			Goto GoingToReady2;
 		ThrowGrenade:
 			TNT1 A 0 {
@@ -1736,6 +1724,7 @@ class PB_WeaponBase : DoomWeapon
 			A_TakeInventory("ToggleEquipment", 1);
 			A_TakeInventory("PlayerIsThrowingAGrenade", 1);
 			}
+			TNT1 A 0 A_JumpIf(PressingUser1(), "UseEquipment");
 			Goto GoingToReady2;
 		TossGrenade:
 			TNT1 A 1;
@@ -1754,6 +1743,7 @@ class PB_WeaponBase : DoomWeapon
 				A_TakeInventory("ToggleEquipment", 1);
 				A_TakeInventory("PlayerIsThrowingAGrenade", 1);
 			}
+			TNT1 A 0 A_JumpIf(PressingUser1(), "UseEquipment");
 			Goto GoingToReady2;
 		ThrowMine:
 			TNT1 A 0 {
@@ -1776,6 +1766,7 @@ class PB_WeaponBase : DoomWeapon
 				A_TakeInventory("UseEquipment", 1);
 				A_TakeInventory("ToggleEquipment", 1);
 			}
+			TNT1 A 0 A_JumpIf(PressingUser1(), "UseEquipment");
 			Goto GoingToReady2;
 		
 		// The quick melee is going to be reworked, knife combos are tacky and bloat the code
