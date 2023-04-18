@@ -16,7 +16,7 @@ JMartinez2098
 
 class PB_Hud_ZS : BaseStatusBar
 {
-    int currentTickAmount, rtlAmmoBar;
+    int currentTickAmount;
     
     HUDFont mIndexFont;
     HUDFont mDefaultFont;
@@ -41,9 +41,9 @@ class PB_Hud_ZS : BaseStatusBar
     Bool HasPutOnHelmet, HasCompletedHelmetSequence;
     Bool DeathFadeDone, PlayerWasDead;
 
-    int HUDXMargin, HUDYMargin;
-
-    bool HudDynamics, showVisor;
+    //CVars
+    int HUDXMargin, HUDYMargin, rtlAmmoBar;
+    bool HudDynamics, showVisor, showVisorGlass, showLevelStats;
     
 	override void Init()
 	{
@@ -67,8 +67,32 @@ class PB_Hud_ZS : BaseStatusBar
 	override void Draw(int state, double TicFrac)
 	{
 		Super.Draw(state, TicFrac);
+		
+		rtlAmmoBar = Cvar.GetCvar("PB_RTLAmmoBar", CPlayer).GetBool();
+
+    HudDynamics = CVar.GetCvar("PB_HudDynamics", CPlayer).GetBool();
+
+    HUDXMargin = Cvar.GetCvar("pb_hudxmargin", CPlayer).GetInt();
+    HUDYMargin = CVar.GetCvar("pb_hudymargin", CPlayer).GetInt();
+            
+    showVisor = CVar.GetCvar("pb_showhudvisor", CPlayer).GetBool();
+    showVisorGlass = CVar.GetCvar("pb_showhudvisorglass", CPlayer).GetBool();
+    
+    showLevelStats = CVar.GetCvar("pb_showlevelstats", CPlayer).GetBool();
+            
+    if (state == HUD_Fullscreen)
+		{
+			BeginHUD();
+			DrawFullScreenStuff();
+		}
         
-        if (state == HUD_Fullscreen)
+    if (state == HUD_AltHud)
+		{
+			BeginHUD();
+			DrawFullScreenStuff();
+		}
+        
+    if (state == HUD_StatusBar)
 		{
 			BeginHUD();
 			DrawFullScreenStuff();
@@ -90,6 +114,9 @@ class PB_Hud_ZS : BaseStatusBar
         HUDYMargin = CVar.GetCvar("pb_hudymargin", CPlayer).GetInt();
         
         showVisor = CVar.GetCvar("pb_showhudvisor", CPlayer).GetBool();
+        showVisorGlass = CVar.GetCvar("pb_showhudvisorglass", CPlayer).GetBool();
+        
+        showLevelStats = CVar.GetCvar("pb_showlevelstats", CPlayer).GetBool();
         
         mHealthInterpolator.Reset(0);
 		mArmorInterpolator.Reset(0);
@@ -112,15 +139,6 @@ class PB_Hud_ZS : BaseStatusBar
         }
 
         CalculateSway();
-        if(currentTickAmount % 35 == 0) {
-            rtlAmmoBar = Cvar.GetCvar("PB_RTLAmmoBar", CPlayer).GetBool();
-            HudDynamics = CVar.GetCvar("PB_HudDynamics", CPlayer).GetBool();
-
-            HUDXMargin = Cvar.GetCvar("pb_hudxmargin", CPlayer).GetInt();
-            HUDYMargin = CVar.GetCvar("pb_hudymargin", CPlayer).GetInt();
-            
-            showVisor = CVar.GetCvar("pb_showhudvisor", CPlayer).GetBool();
-        } 
         
         Ammo Primary, Secondary;
         [Primary, Secondary] = GetCurrentAmmo();
@@ -153,10 +171,10 @@ class PB_Hud_ZS : BaseStatusBar
         }
     }
     
-    void From1to0SlowForced(bool Death) {
+    void DeathSequence(bool Death) {
       if(death) {
         if(HasPutOnHelmet && m0to1Float > 0.0 && !DeathFadeDone) {
-          m0to1Float -= 0.1;
+          m0to1Float *= (randompick(50, 100, 150) * 0.01);
           if(m0to1Float <= 0.0) {
             DeathFadeDone = True;
           }
@@ -210,6 +228,19 @@ class PB_Hud_ZS : BaseStatusBar
             mFallOfs += 0.5;
         }
     }
+    
+    /*
+    bool CheckPlayerCamera() { 
+    	let p = CPlayer.mo.player;
+    	
+    	if((p.Camera != CPlayer.mo) || 
+    	(p.cheats & CF_CHASECAM) || 
+    	((CVar.GetCvar("r_deathcamera", CPlayer).GetBool() == true) && CPlayer.Health <= 0))
+    		return false;
+
+			return true;
+    }
+    */
 
     void PBHud_DrawImage(String texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 box = (-1, -1), Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25) 
     {
@@ -254,7 +285,7 @@ class PB_Hud_ZS : BaseStatusBar
             }
         }
 
-        DrawImage(texture, pos, flags, m0to1Float, box, scale);
+        DrawImage(texture, pos, flags, (m0to1Float * Alpha), box, scale);
     }
 
     void PBHud_DrawString(HUDFont font, String string, Vector2 pos, int flags = 0, int translation = Font.CR_UNTRANSLATED, double Alpha = 1., int wrapwidth = -1, int linespacing = 4, Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25) 
@@ -300,10 +331,10 @@ class PB_Hud_ZS : BaseStatusBar
             }
         }
 
-        DrawString(font, string, pos, flags, translation, m0to1Float, wrapwidth, linespacing, scale);
+        DrawString(font, string, pos, flags, translation, (m0to1Float * Alpha), wrapwidth, linespacing, scale);
     }
 
-    void PBHUD_DrawSlantedBar(String ongfx, String offgfx, double curval, double maxval, vector2 position, int border, int vertical, int flags = 0)
+    void PBHUD_DrawSlantedBar(String ongfx, String offgfx, double curval, double maxval, vector2 position, int border, int vertical, int flags = 0, double alpha = 1.0)
 
 	{
 
@@ -311,19 +342,19 @@ class PB_Hud_ZS : BaseStatusBar
 		{
 			if(position.x < 0)
 			{
-				DrawBar(ongfx..i, offgfx, curval, maxval, position + (-6, 1), border, vertical, flags, m0to1Float);
+				DrawBar(ongfx..i, offgfx, curval, maxval, position + (-6, 1), border, vertical, flags, alpha);
 				position.x+=1;
 			}
 			else
 			{
-				DrawBar(ongfx..i, offgfx, curval, maxval, position + (6, 1), border, vertical, flags, m0to1Float);
+				DrawBar(ongfx..i, offgfx, curval, maxval, position + (6, 1), border, vertical, flags, alpha);
 				position.x -= 1;
 			}
 			position.y-=2;
 		}
 	}
     
-    void PBHud_DrawBar(String ongfx, String offgfx, double curval, double maxval, Vector2 position, int border, int vertical, int flags = 0, double Parallax = 0.75, double Parallax2 = 0.25) 
+    void PBHud_DrawBar(String ongfx, String offgfx, double curval, double maxval, Vector2 position, int border, int vertical, int flags = 0, double alpha = 1.0, double Parallax = 0.75, double Parallax2 = 0.25) 
     {
         double IntMSway = mSwayInterpolator.GetValue();
         double IntMPitch = mPitchInterpolator.GetValue();
@@ -366,7 +397,7 @@ class PB_Hud_ZS : BaseStatusBar
             }
         }
         
-        PBHUD_DrawSlantedBar(ongfx, offgfx, curval, maxval, position, border, vertical, flags);
+        PBHUD_DrawSlantedBar(ongfx, offgfx, curval, maxval, position, border, vertical, flags, (m0to1Float * Alpha));
     }
 
     void PBHud_DrawTexture(TextureID texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 box = (-1, -1), Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25) 
@@ -412,7 +443,7 @@ class PB_Hud_ZS : BaseStatusBar
             }
         }
 
-        DrawTexture(texture, pos, flags, m0to1Float, box, scale);
+        DrawTexture(texture, pos, flags, (m0to1Float * Alpha), box, scale);
     }
     
     ////////////////////////////////////
@@ -593,13 +624,23 @@ class PB_Hud_ZS : BaseStatusBar
 			int IntArmor = mArmorInterpolator.GetValue();
 			int MaxArmor = GetMaxAmount("BasicArmor");
 
-            if(!CheckInventory("sae_extcam") && showVisor) {
+            if(!CheckInventory("sae_extcam")) {
+              if(showVisorGlass) {
+                if(m0to1Float < 0.99) {
+                        DrawImage("HUDTPOF2", (-35 + (intmSway * 0.75) + (intMOfs * 0.25) - m32to0, -9 - (intMPitch * 0.75) + (intMOfs * 0.25) - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, 1 - m0to1Float, scale: (0.7, 0.7));  
+
+                        DrawImage("HUDBTOF2", (-35 + (intmSway * 0.75) + (intMOfs * 0.25) - m32to0, 9 - (intmPitch * 0.75) - (intMOfs * 0.25) + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, 1 - m0to1Float, scale: (0.7, 0.7));   
+                        DrawImage("HUDT2O2", (35 + (intmSway * 0.75) - (intMOfs * 0.25) + m32to0, -9 - (intMPitch * 0.75) + (intMOfs * 0.25) - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, 1 - m0to1Float, scale: (0.7, 0.7));  
+                        DrawImage("HUDBTO22", (35 + (intmSway * 0.75) - (intMOfs * 0.25) + m32to0, 9 - (intmPitch * 0.75) - (intMOfs * 0.25) + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, 1 - m0to1Float, scale: (0.7, 0.7));
+                    }
+                
                 DrawImage("HUDTOP2", (-35 + (intmSway * 0.5) + (intMOfs * 0.15) - m32to0, -9 - (intMPitch * 0.5) + (intMOfs * 0.15) - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1Float, scale: (0.7, 0.7));
                 DrawImage("HUDBOTO2", (-35 + (intmSway * 0.5) + (intMOfs * 0.15) - m32to0, 9 - (intmPitch * 0.5) - (intMOfs * 0.15) + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1Float, scale: (0.7, 0.7));   
                 DrawImage("HUDT2P2", (35 + (intmSway * 0.5) - (intMOfs * 0.15) + m32to0, -9 - (intMPitch * 0.5) + (intMOfs * 0.15) - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1Float, scale: (0.7, 0.7)); 
-                DrawImage("HUDBOT22", (35 + (intmSway * 0.5) - (intMOfs * 0.15) + m32to0, 9 - (intmPitch * 0.5) - (intMOfs * 0.15) + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1Float, scale: (0.7, 0.7));        
-                
-                    
+                DrawImage("HUDBOT22", (35 + (intmSway * 0.5) - (intMOfs * 0.15) + m32to0, 9 - (intmPitch * 0.5) - (intMOfs * 0.15) + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1Float, scale: (0.7, 0.7));
+              }
+               
+               if(showVisor) {
                     if(m0to1Float < 0.99) {
                         DrawImage("HUDTOPOF", (-35 + (intmSway * 0.75) + (intMOfs * 0.25) - m32to0, -9 - (intMPitch * 0.75) + (intMOfs * 0.25) - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, 1, scale: (0.7, 0.7));  
                         DrawImage("HUDBOTOF", (-35 + (intmSway * 0.75) + (intMOfs * 0.25) - m32to0, 9 - (intmPitch * 0.75) - (intMOfs * 0.25) + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, 1, scale: (0.7, 0.7));   
@@ -611,6 +652,7 @@ class PB_Hud_ZS : BaseStatusBar
                     DrawImage("HUDBOTOM", (-35 + (intmSway * 0.75) + (intMOfs * 0.25), 9 - (intmPitch * 0.75) - (intMOfs * 0.25)) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1Float, scale: (0.7, 0.7));   
                     DrawImage("HUDT2P", (35 + (intmSway * 0.75) - (intMOfs * 0.25), -9 - (intMPitch * 0.75) + (intMOfs * 0.25)) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1Float, scale: (0.7, 0.7));  
                     DrawImage("HUDBOT2M", (35 + (intmSway * 0.75) - (intMOfs * 0.25), 9 - (intmPitch * 0.75) - (intMOfs * 0.25)) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1Float, scale: (0.7, 0.7));
+               }
             }
 
             //Healthbar
@@ -652,22 +694,23 @@ class PB_Hud_ZS : BaseStatusBar
             //Keys
             DrawKeys((-40, 38));
             PBHud_DrawImage("KEYCRBOX", (-15, 17), DI_SCREEN_RIGHT_TOP | DI_ITEM_RIGHT_TOP);
-					
-			//Level Stats
-			PBHud_DrawString(mDefaultFont, "T: "..Level.TimeFormatted(), (25, 25), 0, Font.FindFontColor('HUDBLUEBAR'), scale: (0.5, 0.5));
-			PBHud_DrawString(mDefaultFont, "K: "..FormatNumber(Level.killed_monsters,0,5).." / "..FormatNumber(Level.total_monsters,0,5), (25, 35), 0, Font.FindFontColor('HUDBLUEBAR'), scale: (0.5, 0.5));
-			PBHud_DrawString(mDefaultFont, "I: "..FormatNumber(Level.found_items,0,5).." / "..FormatNumber(Level.total_items,0,5), (25, 45), 0, Font.FindFontColor('HUDBLUEBAR'), scale: (0.5, 0.5));
-			PBHud_DrawString(mDefaultFont, "S: "..FormatNumber(Level.found_secrets,0,5).." / "..FormatNumber(Level.total_secrets,0,5), (25, 55), 0, Font.FindFontColor('HUDBLUEBAR'), scale: (0.5, 0.5));
+			if(showLevelStats) {
+				//Level Stats
+				PBHud_DrawString(mDefaultFont, "T: "..Level.TimeFormatted(), (25, 25), 0, Font.FindFontColor('HUDBLUEBAR'), scale: (0.5, 0.5));
+				PBHud_DrawString(mDefaultFont, "K: "..FormatNumber(Level.killed_monsters,0,5).." / "..FormatNumber(Level.total_monsters,0,5), (25, 35), 0, Font.FindFontColor('HUDBLUEBAR'), scale: (0.5, 0.5));
+				PBHud_DrawString(mDefaultFont, "I: "..FormatNumber(Level.found_items,0,5).." / "..FormatNumber(Level.total_items,0,5), (25, 45), 0, Font.FindFontColor('HUDBLUEBAR'), scale: (0.5, 0.5));
+				PBHud_DrawString(mDefaultFont, "S: "..FormatNumber(Level.found_secrets,0,5).." / "..FormatNumber(Level.total_secrets,0,5), (25, 55), 0, Font.FindFontColor('HUDBLUEBAR'), scale: (0.5, 0.5));
 						
-			PBHud_DrawImage("LEVLSTAT", (15, 17), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP);
-            
+				PBHud_DrawImage("LEVLSTAT", (15, 17), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP);
+			}
+			
             if(CPlayer.Health <= 0) {
-              From1to0SlowForced(true);
+              DeathSequence(true);
               PlayerWasDead = true;
             }
             
             if(CPlayer.Health >= 1 && PlayerWasDead) {
-              From1to0SlowForced(false);
+              DeathSequence(false);
               PlayerWasDead = false;
             }
 
