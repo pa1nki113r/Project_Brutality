@@ -55,8 +55,9 @@ ACTOR PB_InfectedImp: PB_Imp Replaces DoomImp
 	damagefactor "explosiveimpact", 2.0
 	MaxStepHeight 24
 	MaxDropOffHeight 32
-	Species Imp
-	+DONTHURTSPECIES
+	Species "Imp"
+	+DONTHARMSPECIES
+	+DONTHARMCLASS
 	+SLIDESONWALLS
 	PainChance "Trample", 255
 	
@@ -108,7 +109,7 @@ ACTOR PB_InfectedImp: PB_Imp Replaces DoomImp
 	
 	Spawn:
 		1ROO A 0
-		TNT1 A 0// ACS_ExecuteAlways(796, 0, 0, 0, 0)//Check if Vanilla Mode is activated
+		
 		TNT1 A 1 //ACS_NamedExecuteAlways("CeilingClimbingImps", 0)//Check for CVARs
 		TNT1 A 0 A_GiveInventory("SKImp", 1)
 		TNT1 A 0 A_JumpIf(waterlevel == 2, "Swim")
@@ -285,7 +286,7 @@ ACTOR PB_InfectedImp: PB_Imp Replaces DoomImp
 		 TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
 		//TNT1 A 0 A_JumpIf(MomZ < 0, "FallingAfterImpact")// funny thing I tried, better not implement
 		
-        TNT1 A 0 A_SpawnItemEx("FootStep", 0, 0, 10, 0, 0)
+        
         TNT1 A 0 A_JumpIf(waterlevel == 2, "Swim")
 		TNT1 A 0 A_JumpIf(waterlevel == 3, "Swim")
 		TNT1 A 0 A_SpawnItem("HeadshotTarget4", 0, 48,0)
@@ -437,7 +438,7 @@ ACTOR PB_InfectedImp: PB_Imp Replaces DoomImp
 	
 	SeeContinue:
         TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
-        TNT1 A 0 A_SpawnItemEx("FootStep", 0, 0, 10, 0, 0)
+        
         TNT1 A 0 A_JumpIf(waterlevel == 2, "Swim")
 		TNT1 A 0 A_JumpIf(waterlevel == 3, "Swim")
 		TNT1 A 0 A_SpawnItem("HeadshotTarget4", 0, 48,0)
@@ -764,8 +765,6 @@ ACTOR PB_InfectedImp: PB_Imp Replaces DoomImp
 		
 	GetUp:
 		TNT1 A 0
-		TNT1 A 0 A_SpawnItem("LargeMassWaterImpact")
-		TNT1 A 0 A_SpawnItem("SmallUnderwaterExplosion")
 		TNT1 A 0 A_JumpIf(waterlevel == 2, "Swim")
 		TNT1 A 0 A_JumpIf(waterlevel == 3, "Swim")
 		TNT1 A 0 A_ChangeFlag("GHOST", 1)
@@ -969,6 +968,7 @@ Death.MinorLeg:
 		Stop
 		
     Death.fire:
+	Death.FireExplosion:
 	Death.Flames:
 	Death.Burn:
 		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
@@ -1269,10 +1269,10 @@ Death.MinorLeg:
         TNT1 A 0 A_SpawnItem ("SavageImpBrutalizedWithNoLeg")
 		Stop
 		
-	Death.Desintegrate:
+	Death.Disintegrate:
         TNT1 A 0 A_Scream
         TNT1 A 0 A_NoBlocking
-        TNT1 A 0 A_SpawnItem("DesintegratedHuman")
+        TNT1 A 0 A_SpawnItem("DisintegratedHuman")
       Stop
 	  
 	Death.Tear:
@@ -1574,9 +1574,16 @@ DeathNoGuts:
 		Stop
 
    FatalityMarine:
+		TNT1 A 0
+		{
+			A_StopSound(5);
+			A_StopSound(6);
+			A_StopSound(1);
+			A_StopSound(7);
+		}
         TNT1 A 0 A_SetInvulnerable
        9PFP ABCD 4
-       TNT1 A 0 A_SpawnItemEx("FootStep5", 0, 0, 40, 0, 0)
+       
        9PFP EE 6
 	   
        9PFP F 6
@@ -1692,16 +1699,9 @@ Goto See
 	TNT1 A 0 A_Fall
 	TNT1 A 0 A_SpawnItem("ImpFish")
 	Stop
-	
-	Death.IceBeam:
-	TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0)
-	TNT1 A 0 A_ChangeFlag("SOLID", 0)
-	TNT1 A 0 A_SpawnItem("FrozenSavageImp")
-	TNT1 A 0 A_SpawnItem("IceCrystalGround")
-	TNT1 A 0 A_SpawnItem("IceCrystalGround")
-	Stop
-	
+
 	Death.Ice:
+	Death.IceExplosion:
 	Death.Freeze:
 	Death.Frost:
 	TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0)
@@ -1757,7 +1757,6 @@ ACTOR SavageImpFireBall
 	Spawn:
 		TNT1 A 0 A_Playsound("DarkImpFireLoop", 1, 1)
 	Fly:
-	    TNT1 A 0 A_JumpIf(waterlevel > 1, "SpawnUnderwater")
 		DB57 AB 1 BRIGHT A_SpawnItem("GreenFlareSpawnEvenSmaller",0,0)
 		TNT1 A 0 A_SpawnItemEx("SmallGreenFlameTrails", 0, 0, 0, 0, 0, 0, 0, 128)
 		S4BA B 0 Bright A_SpawnItemEx("SavageImpFireBallTrail",0,0,0,0,0,0,0,128)
@@ -1765,14 +1764,7 @@ ACTOR SavageImpFireBall
 		S4BA B 0 Bright A_SpawnItemEx("SavageImpFireBallTrail",0,0,0,0,0,0,0,128)
 		Loop
 		
-	SpawnUnderwater:
-		DB57 AB 1 Bright 
-		HPLB A 0 BRIGHT A_SpawnItem("GreenFlareSmall",0,0)
-		TNT1 A 0 A_CustomMissile ("BUBULZ", 0, 0, random (0, 360), 2, random (0, 180))
-		DB57 C 2 Bright 
-		HPLB A 0 BRIGHT A_SpawnItem("GreenFlareSmall",0,0)
-		TNT1 A 0 A_CustomMissile ("BUBULZ", 0, 0, random (0, 360), 2, random (0, 180))
-		Loop
+	
 		
 	Death:
 		TNT1 A 0 A_StopSound(1)
