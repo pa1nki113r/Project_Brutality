@@ -228,19 +228,6 @@ class PB_Hud_ZS : BaseStatusBar
             mFallOfs += 0.5;
         }
     }
-    
-    /*
-    bool CheckPlayerCamera() { 
-    	let p = CPlayer.mo.player;
-    	
-    	if((p.Camera != CPlayer.mo) || 
-    	(p.cheats & CF_CHASECAM) || 
-    	((CVar.GetCvar("r_deathcamera", CPlayer).GetBool() == true) && CPlayer.Health <= 0))
-    		return false;
-
-			return true;
-    }
-    */
 
     void PBHud_DrawImage(String texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 box = (-1, -1), Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25) 
     {
@@ -515,6 +502,16 @@ class PB_Hud_ZS : BaseStatusBar
     //            KEY HUD             //
     ////////////////////////////////////
     
+	static const String KeyExceptions[] =
+	{
+		"BlueCard",
+		"RedCard",
+		"YellowCard",
+		"BlueSkull",
+		"RedSkull",
+		"YellowSkull"
+	};
+    
     virtual void DrawKeys(vector2 pos, int keycount = 10, int space = 21)
     {
         //From NC HUD
@@ -522,6 +519,7 @@ class PB_Hud_ZS : BaseStatusBar
         vector2 size;
         bool scaleup;
         int count = 0;
+        string keyactorname;
 
         for(let i = CPlayer.mo.inv; i != null; i = i.inv)
         {
@@ -534,6 +532,7 @@ class PB_Hud_ZS : BaseStatusBar
                 }
 
                 icon = i.AltHUDIcon;
+                keyactorname = i.GetClassName();
 
                 if(!icon.isValid())
                 {
@@ -550,44 +549,22 @@ class PB_Hud_ZS : BaseStatusBar
                     {
                         continue;
                     }
+                 
                 }
-
+                
+              	for (int i = 0; i < KeyExceptions.Size(); i++)
+		        {
+                    if(keyactorname == KeyExceptions[i])
+                    {
+						icon = texman.checkfortexture("TNT1A0");
+                    }
+                }
+          
                 //Exclude keys which use TNT1 A 0 as their icon
-                if(TexMan.GetName(icon) ~== "TNT1A0")
+                if(TexMan.GetName(icon) == "TNT1A0")
                 {
                     continue;
                 }
-
-                //Replace doom sprites
-                if(TexMan.GetName(icon) == "BKEYA0")
-                {
-                    icon = texman.checkfortexture("BLKYA0");
-                }
-                
-                if(TexMan.GetName(icon) == "RKEYA0")
-                {
-                    icon = texman.checkfortexture("REKYB0");
-                }
-                
-                if(TexMan.GetName(icon) == "YKEYA0")
-                {
-                    icon = texman.checkfortexture("YEKYC0");
-                }
-
-                if(TexMan.GetName(icon) == "BSKUA0")
-                {
-                    icon = texman.checkfortexture("BSKLA0");
-                }
-                
-                if(TexMan.GetName(icon) == "RSKUA0")
-                {
-                    icon = texman.checkfortexture("RSKLA0");
-                }
-                
-                if(TexMan.GetName(icon) == "YSKUA0")
-                {
-                    icon = texman.checkfortexture("YSKLA0");
-                } 
                 
                 //Scale the icon up if needed
                 size = TexMan.GetScaledSize(icon);
@@ -668,6 +645,13 @@ class PB_Hud_ZS : BaseStatusBar
 				PBHud_DrawImage("HLTHHUD", (82, -51), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, box: (19, 19));
 			}
             PBHud_DrawBar("HPBAR", "BGBARL", IntHealth, min(MaxHealth, 100), (112, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+            if(Health <= 25) {
+            	PBHud_DrawBar("HOBAR", "BGBARL", IntHealth, min(MaxHealth, 100), (112, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+            }
+            if(Health > 100) {
+            	PBHud_DrawBar("HLBAR", "BGBARL", IntHealth, min(MaxHealth, 100), (112, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+            }
+            
             PBHud_DrawString(mDefaultFont, Formatnumber(Health), (205, -69), DI_TEXT_ALIGN_LEFT, Font.FindFontColor('HUDBLUEBAR'));
                 
             //Armorbar
@@ -696,12 +680,20 @@ class PB_Hud_ZS : BaseStatusBar
             PBHud_DrawImage("KEYCRBOX", (-15, 17), DI_SCREEN_RIGHT_TOP | DI_ITEM_RIGHT_TOP);
 			if(showLevelStats) {
 				//Level Stats
-				PBHud_DrawString(mDefaultFont, "T: "..Level.TimeFormatted(), (25, 25), 0, Font.FindFontColor('HUDBLUEBAR'), scale: (0.5, 0.5));
-				PBHud_DrawString(mDefaultFont, "K: "..FormatNumber(Level.killed_monsters,0,5).." / "..FormatNumber(Level.total_monsters,0,5), (25, 35), 0, Font.FindFontColor('HUDBLUEBAR'), scale: (0.5, 0.5));
-				PBHud_DrawString(mDefaultFont, "I: "..FormatNumber(Level.found_items,0,5).." / "..FormatNumber(Level.total_items,0,5), (25, 45), 0, Font.FindFontColor('HUDBLUEBAR'), scale: (0.5, 0.5));
-				PBHud_DrawString(mDefaultFont, "S: "..FormatNumber(Level.found_secrets,0,5).." / "..FormatNumber(Level.total_secrets,0,5), (25, 55), 0, Font.FindFontColor('HUDBLUEBAR'), scale: (0.5, 0.5));
-						
-				PBHud_DrawImage("LEVLSTAT", (15, 17), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP);
+				//time
+				PBHud_DrawImage("1TIME", (26, 26), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (0.2, 0.2));
+				PBHud_DrawString(mDefaultFont, Level.TimeFormatted(), (35, 25), 0, Font.CR_YELLOW, scale: (0.5, 0.5));
+				//kills
+				PBHud_DrawImage("1KILLS", (26, 36), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (0.2, 0.2));
+				PBHud_DrawString(mDefaultFont, FormatNumber(Level.killed_monsters,0,5).." / "..FormatNumber(Level.total_monsters,0,5), (35, 35), 0, Font.CR_RED, scale: (0.5, 0.5));
+				//items
+				PBHud_DrawImage("1ITEMS", (26, 46), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (0.2, 0.2));
+				PBHud_DrawString(mDefaultFont, FormatNumber(Level.found_items,0,5).." / "..FormatNumber(Level.total_items,0,5), (35, 45), 0, Font.CR_GREEN, scale: (0.5, 0.5));
+				//secrets
+				PBHud_DrawImage("1SECRET", (26, 56), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (0.2, 0.2));
+				PBHud_DrawString(mDefaultFont, FormatNumber(Level.found_secrets,0,5).." / "..FormatNumber(Level.total_secrets,0,5), (35, 55), 0, Font.CR_PURPLE, scale: (0.5, 0.5));
+				
+				PBHud_DrawImage("LEVLSTAT", (15, 17), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (1.2, 1.0));
 			}
 			
             if(CPlayer.Health <= 0) {
