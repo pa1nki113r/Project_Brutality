@@ -1,0 +1,133 @@
+//Script done by Zyzx
+
+#library "PREDICTION"
+#include "zcommon.acs"
+
+#define MAXPLAYERS 64
+#define MAXOLDANGLE 35
+
+int PlayerOldAngleCnt[MAXPLAYERS];
+int PlayerOldAngle[MAXPLAYERS*MAXOLDANGLE];
+
+function int ClampAng(int a1, int a2)
+{
+/*    private int CheckAngle(int a1, int a2)
+    {
+        int a = a2 - a1;
+        a = a + ((a > 180) ? -360 : (a < -180) ? 360 : 0);
+        return a;
+    }*/
+	int a = a2 - a1;
+	if (a > 0.5) a -= 1;
+	if (a < -0.5) a += 1;
+	return a;
+}
+
+script "PredictAim_GlobalInit" OPEN
+{
+	for (int i = 0; i < MAXPLAYERS; i++)
+		PlayerOldAngleCnt[i] = 0;
+}
+
+script "PredictAim_WatchPlayer" ENTER
+{
+	int pnum = PlayerNumber();
+	PlayerOldAngleCnt[pnum] = 0;
+	int prevAngle = GetActorAngle(0);
+	
+	while (true)
+	{
+		int i;
+		if (PlayerOldAngleCnt[pnum] == MAXOLDANGLE)
+		{
+			for (i = 1; i < MAXOLDANGLE; i++)
+				PlayerOldAngle[pnum*MAXOLDANGLE+i-1] = PlayerOldAngle[pnum*MAXOLDANGLE+i];
+			PlayerOldAngleCnt[pnum]--;
+		}
+		
+		int currentAngle = VectorAngle(GetActorVelX(0), GetActorVelY(0));
+		PlayerOldAngle[pnum*MAXOLDANGLE+PlayerOldAngleCnt[pnum]] = ClampAng(currentAngle, prevAngle);
+		prevAngle = currentAngle;
+		PlayerOldAngleCnt[pnum]++;
+		Delay(1);
+	}
+}
+
+function int VectorLength3 (int x, int y, int z)
+{
+	return VectorLength(z, VectorLength(x, y));
+}
+
+script "PredictAim" (int retAngle, int projectileSpeed, int projectileZ)
+{
+	projectileZ <<= 16;
+
+	// set temporary tid or reuse current monster TID
+	int myOldTid = ActivatorTID();
+	int myUniqTid = UniqueTID();
+	Thing_ChangeTID(0, myUniqTid);
+	
+	SetActivatorToTarget(0);
+
+	int aimZOffs = GetActorProperty(0, APROP_Height)/2+8.0;
+	int distance = VectorLength3(GetActorX(0)-GetActorX(myUniqTid), GetActorY(0)-GetActorY(myUniqTid), (GetActorZ(0)+aimZOffs)-GetActorZ(myUniqTid));
+	// it will randomly NOT predict
+	int predTics = FixedDiv((distance / projectileSpeed), Random(1.0, 2.0)) >> 16;
+
+	int targetVX = GetActorVelX(0);
+	int targetVY = GetActorVelY(0);
+	int targetVZ = GetActorVelZ(0);
+	
+	// calculate average angle change for player
+	// (and average angle offset change for player)
+	if (PlayerNumber() >= 0)
+	{
+		int pnum = PlayerNumber();
+		int i;
+		int averageAngle = 0;
+		for (i = 0; i < PlayerOldAngleCnt[pnum]; i++)
+			averageAngle += PlayerOldAngle[pnum*MAXOLDANGLE+i];
+		averageAngle /= PlayerOldAngleCnt[pnum];
+		
+		// guess next movement direction based on last movement vector change history
+		int currentDirection = VectorAngle(targetVX, targetVY);
+		int currentSpeed = FixedMul(VectorLength(targetVX, targetVY), 1.5);
+		// enlarge tics by 30-speed
+		targetVX = 0;
+		targetVY = 0;
+		//print(s:"direction change = ", f:averageAngle, s:"\ntics = ", d:predTics);
+		for (i = 0; i < predTics; i++)
+		{
+			targetVX += FixedMul(currentSpeed, cos(currentDirection));
+			targetVY += FixedMul(currentSpeed, sin(currentDirection));
+			currentDirection += averageAngle;
+		}
+	}
+	else
+	{
+		targetVX *= predTics;
+		targetVY *= predTics;
+	}
+
+	int targetXPredicted = GetActorX(0)+targetVX;
+	int targetYPredicted = GetActorY(0)+targetVY;
+	int targetZPredicted = GetActorZ(0)+targetVZ*predTics+aimZOffs; // aim at center
+	
+	SetActivator(myUniqTid);
+	Thing_ChangeTID(0, myOldTid);
+	
+	// return angle offset
+	if (retAngle)
+	{
+		int newAngle = VectorAngle(targetXPredicted-GetActorX(0), targetYPredicted-GetActorY(0));
+		int oldAngle = GetActorAngle(0);
+		SetResultValue(newAngle-oldAngle);
+	}
+	else // return pitch offset
+	{
+		// X = distance. Y = Z delta
+		int actualDistance = VectorLength3(GetActorX(0)-targetXPredicted, GetActorY(0)-targetYPredicted, (GetActorZ(0)+projectileZ)-targetZPredicted);
+		int newPitch = VectorAngle(actualDistance, targetZPredicted-(GetActorZ(0)+projectileZ));
+		SetResultValue(newPitch);
+	}
+}
