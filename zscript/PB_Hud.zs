@@ -20,6 +20,7 @@ class PB_Hud_ZS : BaseStatusBar
     
     HUDFont mIndexFont;
     HUDFont mDefaultFont;
+    HUDFont mBoldFont;
 
 	DynamicValueInterpolator mHealthInterpolator;
 	DynamicValueInterpolator mArmorInterpolator;
@@ -52,6 +53,7 @@ class PB_Hud_ZS : BaseStatusBar
 		
 		mIndexFont = HUDFont.Create("INDEXFONT");
         mDefaultFont = HUDFont.Create("PBFONT");
+        mBoldFont = HUDFont.Create("PBBOLD");
 		
         mHealthInterpolator = DynamicValueInterpolator.Create(0, 0.10, 2, 64);
 		mArmorInterpolator = DynamicValueInterpolator.Create(0, 0.10, 2, 64);
@@ -682,16 +684,16 @@ class PB_Hud_ZS : BaseStatusBar
 				//Level Stats
 				//time
 				PBHud_DrawImage("1TIME", (26, 26), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (0.2, 0.2));
-				PBHud_DrawString(mDefaultFont, Level.TimeFormatted(), (35, 25), 0, Font.CR_YELLOW, scale: (0.5, 0.5));
+				PBHud_DrawString(mBoldFont, Level.TimeFormatted(), (35, 25), 0, Font.CR_YELLOW, scale: (0.5, 0.5));
 				//kills
 				PBHud_DrawImage("1KILLS", (26, 36), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (0.2, 0.2));
-				PBHud_DrawString(mDefaultFont, FormatNumber(Level.killed_monsters,0,5).." / "..FormatNumber(Level.total_monsters,0,5), (35, 35), 0, Font.CR_RED, scale: (0.5, 0.5));
+				PBHud_DrawString(mBoldFont, FormatNumber(Level.killed_monsters,0,5).." / "..FormatNumber(Level.total_monsters,0,5), (35, 35), 0, Font.CR_RED, scale: (0.5, 0.5));
 				//items
 				PBHud_DrawImage("1ITEMS", (26, 46), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (0.2, 0.2));
-				PBHud_DrawString(mDefaultFont, FormatNumber(Level.found_items,0,5).." / "..FormatNumber(Level.total_items,0,5), (35, 45), 0, Font.CR_GREEN, scale: (0.5, 0.5));
+				PBHud_DrawString(mBoldFont, FormatNumber(Level.found_items,0,5).." / "..FormatNumber(Level.total_items,0,5), (35, 45), 0, Font.CR_GREEN, scale: (0.5, 0.5));
 				//secrets
 				PBHud_DrawImage("1SECRET", (26, 56), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (0.2, 0.2));
-				PBHud_DrawString(mDefaultFont, FormatNumber(Level.found_secrets,0,5).." / "..FormatNumber(Level.total_secrets,0,5), (35, 55), 0, Font.CR_PURPLE, scale: (0.5, 0.5));
+				PBHud_DrawString(mBoldFont, FormatNumber(Level.found_secrets,0,5).." / "..FormatNumber(Level.total_secrets,0,5), (35, 55), 0, Font.CR_PURPLE, scale: (0.5, 0.5));
 				
 				PBHud_DrawImage("LEVLSTAT", (15, 17), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (1.2, 1.0));
 			}
