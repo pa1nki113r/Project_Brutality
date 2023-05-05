@@ -29,6 +29,9 @@ Inventory.Icon "FRPKA0"
 //gas in a number of different orientations, allowing the user to create projectiles
 //from ice when focussed enough, or the spray a beam of freezing gasses when unfocussed.
 Actor PB_CryoRifle: PB_Weapon {
+	//$Title TeiTenga Arms Cryo Rifle
+	//$Category Weapons
+	//$Sprite FRPKA0
 	SpawnID 9700
 	Weapon.BobRangeX 0.3
 	Weapon.BobRangeY 0.5
@@ -157,6 +160,7 @@ Actor PB_CryoRifle: PB_Weapon {
 				TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 				//First, check if player selected different fire mode
 				TNT1 A 0 {
+					A_StopSound(2);
 					A_Takeinventory("ADSmode",1);
 					PB_HandleCrosshair(5);
 					A_ZoomFactor(1.0);
@@ -296,6 +300,7 @@ Actor PB_CryoRifle: PB_Weapon {
 					A_SetRoll(0);
 					PB_HandleCrosshair(79);
 					A_TakeInventory("PB_LockScreenTilt",1);
+					A_StopSound(2);
 				}
 				TNT1 A 0 A_Takeinventory("HasUnloadedCryoRifle",1)
 				TNT1 A 0 A_Takeinventory("Unloading",1)
@@ -327,6 +332,7 @@ Actor PB_CryoRifle: PB_Weapon {
 					A_TakeInventory("PB_LockScreenTilt",1);
 				}
 				TNT1 A 0 A_JumpIfInventory("CryoRiflePistolToken",1,"FirePistol")
+				TNT1 A 0 A_JumpIf(GetCvar("pb_fastcryowarmup") == 1,"FastWarmupCheck")
 				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleMissile",1,"FireMissile")
 				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleBeam",1,"FireBeam")
 				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleSpear",1,"FireSpear")
@@ -335,12 +341,15 @@ Actor PB_CryoRifle: PB_Weapon {
 			FireMissile:
 				TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",5,1)
 				Goto Reload
+				TNT1 A 0 A_JumpIf(GetCvar("pb_fastcryowarmup") == 2,"HoldMissile")
+				TNT1 A 0 A_AlertMonsters
 				TNT1 A 0 A_Playsound("weapons/CryoRifle/powerup")
 				FR10 IIIIIHHGGFFEEDDCCBBAAIIIIIIII 1 {
 					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR11");}} 
 			HoldMissile:
 				TNT1 AAAAAAAAAA 0 A_FireCustomMissile("BluePlasmaParticle",random(10,-10),0,0,random(-3,3),0,random(7,-7) )
 				FR11 ABCDEFGHI 0 // Initialize sprites into virtual memory
+				TNT1 A 0 A_AlertMonsters
 				FR10 A 1 Bright {
 					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR11");}
 					A_GunFlash;
@@ -404,12 +413,15 @@ Actor PB_CryoRifle: PB_Weapon {
 			FireBeam:
 				TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",1,1)
 				Goto Reload
+				TNT1 A 0 A_JumpIf(GetCvar("pb_fastcryowarmup") == 2,"HoldBeam")
 				TNT1 A 0 A_Playsound("weapons/CryoRifle/powerup")
+				TNT1 A 0 A_AlertMonsters
 				FR10 IIIIIHHGGFFEEDDCCBBAAIIIIIIII 1 {
 					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR11");}}
-				TNT1 A 0 A_Playsound("weapons/cryobowflyby",2,1,1)
 			HoldBeam:
+				TNT1 A 0 A_Playsound("weapons/cryobowflyby",2,1,1)
 				FR14 ABC 0 
+				TNT1 A 0 A_AlertMonsters
 				FR13 ABCB 1 BRIGHT {
 					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR14");}
 					A_GunFlash;
@@ -468,13 +480,46 @@ Actor PB_CryoRifle: PB_Weapon {
 			Muzzle7:
 				FR12 G 1 BRIGHT
 				Stop
+			FastWarmupCheck:
+				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleMissile",1,"CheckMissile")
+				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleBeam",1,"CheckBeam")
+				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleSpear",1,"FireSpear")
+				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleFlak",1,"CheckFlak")
+				Goto CheckMissile
+				
+			CheckMissile:
+				TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",5,"FireWarmupFast")
+				Goto Reload
+			CheckBeam:
+				TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",1,"FireWarmupFast")
+				Goto Reload
+			CheckSpear:
+				TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",10,"FireWarmupFast")
+				Goto Reload
+			CheckFlak:
+				TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",5,"FireWarmupFast")
+				Goto Reload
+				
+			FireWarmupFast:
+				TNT1 AAA 0
+				TNT1 A 0 A_AlertMonsters
+				TNT1 A 0 A_Playsound("weapons/CryoRifle/powerup")
+				FR10 IIIHGFEDCBAIIII 1 {
+					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR11");}}		
+				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleMissile",1,"HoldMissile")
+				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleBeam",1,"HoldBeam")
+				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleSpear",1,"ShootTheSpear")
+				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleFlak",1,"HoldFlak")
+				Goto HoldMissile
 /////Spear Fire/////
 		FireSpear:
 			TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",10,1)
 			Goto Reload
+			TNT1 A 0 A_AlertMonsters
 			TNT1 A 0 A_Playsound("weapons/CryoRifle/powerup")
-			FR10 IIIIIHHGGFFEEDDCCBBAAIIIIIIII 1 {
+			FR10 IIIHGFEDCCBBAAIIII 1 {
 				if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR11");}}
+		ShootTheSpear:
 			TNT1 AAAAAAAAAA 0 A_FireCustomMissile("BluePlasmaParticle",random(10,-10),0,0,random(-3,3),0,random(7,-7) )
 			
 			FR11 ABCDEFGHI 0 // Initialize sprites into virtual memory
@@ -525,19 +570,21 @@ Actor PB_CryoRifle: PB_Weapon {
 			}
 			TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",10,1)
 			Goto Reload
-			TNT1 A 0
+			TNT1 A 0 A_Refire
 			Goto Ready3
 			
 /////Flak Fire/////
 		FireFlak:
 			TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",5,1)
 			Goto Reload
+			TNT1 A 0 A_JumpIf(GetCvar("pb_fastcryowarmup") == 2,"HoldFlak")
+			TNT1 A 0 A_AlertMonsters
 			TNT1 A 0 A_Playsound("weapons/CryoRifle/powerup")
 			FR10 IIIIIHHGGFFEEDDCCBBAAIIIIIIII 1 {
 				if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR11");}}
 		HoldFlak:
 			TNT1 AAAAAAAAAA 0 A_FireCustomMissile("BluePlasmaParticle",random(10,-10),0,0,random(-3,3),0,random(7,-7) )
-			
+			TNT1 A 0 A_AlertMonsters
 			FR11 ABCDEFGHI 0 // Initialize sprites into virtual memory
 			FR10 A 1 Bright {
 				if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR11");}
@@ -596,18 +643,20 @@ Actor PB_CryoRifle: PB_Weapon {
 				TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo", 1, 1)
 				Goto ReloadPistol
 				TNT1 A 0 A_GunFlash
-				FR30 Z 4 {
+				FR30 Z 5 {
 					A_GunFlash("FlashFirePistol");
 					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR39");}
 				}
-				FR30 IIII 1 {
+				FR30 III 1 {
 					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR39");}
 					A_DoPBWeaponAction(WRF_ALLOWRELOAD);
 				}
 				TNT1 A 0 A_Refire
 				Goto Ready2
 			FlashFirePistol:
-				D2FS W 1 BRIGHT {
+				TNT1 A 0 A_Overlay(-6, "PistolFlash", true)
+				D2RF A 1 BRIGHT {
+					A_OverlayOffset(PSP_FLASH,-6,32,WOF_KEEPY);
 					A_FireBullets (0.1, 0.1, -1, 15, "HitPuff", FBF_NORANDOM,8192,"Tracer", -1,4);
 					A_ZoomFactor(0.985);
 					A_PlaySound("weapons/pistol");
@@ -619,13 +668,41 @@ Actor PB_CryoRifle: PB_Weapon {
 					A_Takeinventory("PrimaryPistolAmmo",1);
 					PB_WeaponRecoil(-0.18,-0.08);
 				}
-				D2FS X 1 BRIGHT {
+				D2RF B 1 BRIGHT {
 					A_ZoomFactor(0.99);
+					A_OverlayOffset(PSP_FLASH,-6,32,WOF_KEEPY);
 					PB_WeaponRecoil(-0.18,-0.08);
 				}
-				D2FS Y 1 A_ZoomFactor(1.0)
-				D2FS Z 1
+				D2RF C 1 A_ZoomFactor(1.0)
+				D2RF D 1
+				D2RF E 1
 				Stop
+			
+		//Pistol flashes, taken from Pistol.
+		PistolFlash:
+		"####" A 0 A_OverlayOffset(-6, -6, 32, WOF_KEEPY)
+//		TNT1 A 0 A_JumpIfInventory("SilencerEquipped", 1, 2)
+		TNT1 A 0 A_Jump(256, "PistolFlash1", "PistolFlash2")
+		TNT1 A 1
+		Stop
+		PistolFlash1:
+		D2RM A 1 Bright
+		TNT1 A 0 A_Jump(256, "PistolBigFlash1", "PistolBigFlash2", "PistolBigFlash3")
+		Stop
+		PistolFlash2:
+		D2RM C 1 Bright
+		TNT1 A 0 A_Jump(256, "PistolBigFlash1", "PistolBigFlash2", "PistolBigFlash3")
+		Stop
+		PistolBigFlash1:
+		D2RM B 1 bright
+		Stop
+		PistolBigFlash2:
+		D2RM D 1 bright
+		Stop
+		PistolBigFlash3:
+		D2RM E 1 bright
+		Stop
+
 			AltFire: //drawing pistol with full CryoRifle
 				TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
 				TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
@@ -1039,6 +1116,7 @@ ACTOR IceMissile : FastProjectile {
 	+FORCEXYBILLBOARD
 	+FORCERADIUSDMG
 	+BLOODLESSIMPACT
+	
 	DeathSound "weapons/CryoRifle/freezeobject"
 		States {
 			Spawn:
@@ -1046,16 +1124,14 @@ ACTOR IceMissile : FastProjectile {
 				TNT1 A 0 A_CustomMissile("BlueFlareSpawn",0,0,0,0)
 				TNT1 A 0 A_CustomMissile ("Icetracer", 0, 0, random (0, 360), 2, random (0, 360))
 				Loop
-			Death:	
+			Death:
+				TNT1 A 0
 				TNT1 A 0 Bright A_StopSound(CHAN_BODY)
 				TNT1 A 0 Bright A_ChangeFlag("ICEDAMAGE", 1)
 				TNT1 A 0 Bright A_ChangeFlag("NODAMAGETHRUST", 0)
 				TNT1 A 0 Bright A_Explode(100,80, 0)  
 				TNT1 A 0 Bright A_Explode(50, 50, 0) 
 				TNT1 AAAAAAAAAAAAA 0 A_SpawnItemEx ("DetectFloorIce",random(-80,80), random(-80,80),1,0,0,0,0,SXF_NOCHECKPOSITION,0)
-				TNT1 AAAAAAAAAA 0 A_SpawnItemEx ("RandomSmallIcecrystal",random(-60,60), random(-60,60),random(1,15),0,0,0,0,SXF_NOCHECKPOSITION,0)
-				TNT1 AAAAAAA 0 A_SpawnItemEx ("RandomMediumIcecrystal",random(-40,40), random(-40,40),random(1,20),0,0,0,0,SXF_NOCHECKPOSITION,0)
-				TNT1 AAA 0 A_SpawnItemEx ("RandomLargeIcecrystal",random(-30,30), random(-30,30),random(1,20),0,0,0,0,SXF_NOCHECKPOSITION,0)
 				TNT1 AAAAAAAAAAA 0 Bright A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
 				TNT1 AAAAA 0 Bright A_SpawnItemEx("CryoSmoke3", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
 				TNT1 AAAAAAA 0 Bright A_SpawnItemEx("CryoRifleTrailSparksSmall", random(5,-5), random(5,-5), random(5,-5), random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)

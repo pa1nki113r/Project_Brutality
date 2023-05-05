@@ -258,6 +258,9 @@ ACTOR Hell_rifle : PB_Weapon
 				PB_HandleCrosshair(39);
 				A_TakeInventory("PB_LockScreenTilt",1);
 			}
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
 			TNT1 A 0 A_JumpIfInventory("FireModeAcidGun",1,"Fire2")
 			TNT1 A 0 A_JumpIfInventory("HellAmmo",1,1)
 			Goto Reload
@@ -405,7 +408,7 @@ ACTOR Hell_rifle : PB_Weapon
 				A_WeaponOffset(random(-1,1),random(32,34));
 				A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
 			}
-				
+			TNT1 A 0 A_ReFire("AltFire")	
 			TNT1 A 0 A_PlaySoundEx("unmbal", "Weapon")
 			TNT1 A 0 A_FireCustomMissile("RedFlareSpawn",0,0,0,0)
 			TNT1 A 0 A_FireCustomMissile("PossessionGhost")
@@ -509,7 +512,6 @@ ACTOR Hell_rifle : PB_Weapon
 				}
 				return state("");
 			}
-			TNT1 A 0 A_JumpIfInventory("CausticCharge",20,2) //Gun has reached Max charge, skip 2 frames
 			TNT1 A 0 A_JumpIfInventory("HellAmmo",5,8)
 			TNT1 A 0
 			Goto CausticChargedBlast
@@ -730,8 +732,9 @@ Xdeath:
    
 	TNT1 A 0 //A_CustomMissile ("Flametrails", 0, 0, random (0, 180), 2, random (0, 360))
 	TNT1 A 0 A_SpawnItem("HellRifle_Puff",0)
+	TNT1 A 0 A_SpawnItem("DTechBurningPiece",0)
 	TNT1 A 0 BRIGHT A_SpawnItem("RedFlare",0)
-	TNT1 AAA 0 A_SpawnItemEx("ExplosionParticleVerySlow", random(-8, 8), random(-8, 8), random(-2,2), 0, 0, 0, 0, 128, 0)
+	//TNT1 AAA 0 A_SpawnItemEx("ExplosionParticleVerySlow", random(-8, 8), random(-8, 8), random(-2,2), 0, 0, 0, 0, 128, 0)
 	TNT1 AAA 0 A_SpawnItemEx("ObeliskTrailSpark", random(-8, 8), random(-8, 8), random(-2,2), 0, 0, 0, 0, 128, 0)
 	TNT1 A 4
 	TNT2 AAA 3 A_CustomMissile ("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160))
@@ -739,9 +742,10 @@ Xdeath:
 
 	Death:
 	TNT1 A 0 A_SpawnItem("HellRifle_Puff2",0)
+	TNT1 A 0 A_SpawnItem("DTechBurningPiece2",0)
 	TNT1 A 0 BRIGHT A_SpawnItem("RedFlare",0)
 	TNT1 AAA 0 A_SpawnItemEx("ExplosionParticleVerySlow", random(-8, 8), random(-8, 8), random(-2,2), 0, 0, 0, 0, 128, 0)
-	TNT1 AA 0 A_SpawnItemEx("BurningEmberParticlesFloating_Bigger", random(19,-19), random(19,-19), random(4,-4), 0, 0, 0, 0, 128, 0)
+	//TNT1 AA 0 A_SpawnItemEx("BurningEmberParticlesFloating_Bigger", random(19,-19), random(19,-19), random(4,-4), 0, 0, 0, 0, 128, 0)
 	TNT1 AAA 0 A_SpawnItemEx("ObeliskTrailSpark", random(-8, 8), random(-8, 8), random(-2,2), 0, 0, 0, 0, 128, 0)
 	TNT1 A 4	
     TNT2 AAAAA 4 A_CustomMissile ("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160))
@@ -828,16 +832,15 @@ actor DemonPower : Ammo
 	Inventory.Icon "MSP2A0"
 	Ammo.BackpackAmount 0
 	Ammo.BackpackMaxAmount 600
-	renderstyle translucent
-	alpha 0.55
+	renderstyle add
+	scale 0.25
 	+INVENTORY.ALWAYSPICKUP
 	+INVENTORY.IGNORESKILL
 	states
 	{
 		Spawn:
-			TNT1 A 1
-			
-			MSP2 AB 4 bright //A_Fadeout(0.001)
+			DB61 A 1 BRIGHT nodelay A_spawnitemex("DemonPowerAddedEffect")
+			DB61 ABCCDEEFGGHIIJJ 1 bright 
 			loop
 			
 		ReplaceVanilla:
@@ -845,6 +848,21 @@ actor DemonPower : Ammo
 			TNT1 A 1 
 			Stop
 		}
+}
+
+actor DemonPowerAddedEffect : inventory
+{
++INVENTORY.ALWAYSPICKUP
+Inventory.MaxAmount 1
+Inventory.Amount 1
+scale 0.214
+alpha .8
+	states
+	{
+		Spawn:
+			DB61 KLMNOPQRR 2 BRIGHT
+			stop
+	}
 }
 //greater ammo item
 actor LargeDemonPower : DemonPower
@@ -854,15 +872,24 @@ actor LargeDemonPower : DemonPower
 	//$Sprite MSP2A0
 	Inventory.PickupMessage "Greater demon energy"
 	Inventory.Amount 40
-	scale 1.1
+	scale 0.35
 	states
 	{
 		Spawn:
-			TNT1 A 1 
-			
-			MSP2 ABCD 4 bright
+			DB61 A 1 BRIGHT nodelay A_spawnitemex("DemonPowerAddedEffectLarge")
+			DB61 ABCCDEEFGGHIIJJ 1 bright 
 			loop
-	}
+			
+		ReplaceVanilla:
+			TNT1 A 0 
+			TNT1 A 1 
+			Stop
+		}
+}
+
+actor DemonPowerAddedEffectLarge : DemonPowerAddedEffect
+{
+	scale 0.3 
 }
 
 Actor RedTracerSmall
@@ -893,13 +920,13 @@ Actor RedTracerSmall
   Spawn:
   Death:
     SHOQ A 2 Bright A_FadeOut(0.04)
-	TNT1 A 0 A_SpawnItemEx("ExplosionParticleVerySlow", random(19,-19), random(19,-19), random(4,-4), 0, 0, 0, 0, 128, 0)
+	TNT1 A 0 A_SpawnItemEx("ObeliskTrailSpark", random(19,-19), random(19,-19), random(4,-4), 0, 0, 0, 0, 128, 0)
 	SHOQ B 2 Bright A_FadeOut(0.04)
 	SHOQ C 2 Bright A_FadeOut(0.04)
-	TNT1 A 0 A_SpawnItemEx("BurningEmberParticlesFloating", random(19,-19), random(19,-19), random(4,-4), 0, 0, 0, 0, 128, 0)
+	TNT1 A 0 A_SpawnItemEx("ObeliskTrailSpark", random(19,-19), random(19,-19), random(4,-4), 0, 0, 0, 0, 128, 0)
 	SHOQ D 2 Bright A_FadeOut(0.04)
 	SHOQ E 2 Bright A_FadeOut(0.04)
-	TNT1 A 0 A_SpawnItemEx("ExplosionParticleVerySlow", random(19,-19), random(19,-19), random(4,-4), 0, 0, 0, 0, 128, 0)
+	TNT1 A 0 A_SpawnItemEx("ObeliskTrailSpark", random(19,-19), random(19,-19), random(4,-4), 0, 0, 0, 0, 128, 0)
 	SHOQ F 2 Bright A_FadeOut(0.04)
 	SHOQ G 2 Bright A_FadeOut(0.04)
 	TNT1 A 0 A_SpawnItemEx("ObeliskTrailSpark", random(19,-19), random(19,-19), random(4,-4), 0, 0, 0, 0, 128, 0)
@@ -1163,6 +1190,7 @@ ACTOR PossessionGhost
 	SpawnLoop:
 		BLHS ABCD 2 BRIGHT {
 			A_SpawnItem("RedFlareSpawn",0,0,0,0);
+			A_SpawnItem("RedLightningTrial_Small", 5);
 			A_SpawnItemEx("ObeliskTrailSpark", random(5,-5), random(5,-5), random(5,-5), 0, 0, 0, 0, 128, 0);
 			A_GiveInventory("PossessionGhostRoutine", 1);
 			A_SeekerMissile (4,8);

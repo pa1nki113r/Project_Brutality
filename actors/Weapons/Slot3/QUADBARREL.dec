@@ -465,7 +465,15 @@ ACTOR PB_QuadSG : PB_Weapon
 	RealReady:
 	Ready3:
 		TNT1 A 0 A_JumpIfInventory("QuadAkimboMode", 1,"ReadyDualWield")
-		QSSG A 1 A_DoPBWeaponAction(wrf_allowreload)
+		QSSG A 1 {
+			if (PressingFire() && CountInv("QSSGAmmoCounter") > 0 ){
+					return state("Fire");
+			}
+			if (PressingAltFire() && CountInv("QSSGAmmoCounter") > 0 ){
+					return state("AltFire");
+			}
+			return A_DoPBWeaponAction(wrf_allowreload);
+		}
 		Loop
 		
 	ReadyDualWield:
@@ -699,6 +707,11 @@ ACTOR PB_QuadSG : PB_Weapon
 				A_GiveInventory("DualFiring",1);
 			}
 		}
+		TNT1 A 0 {
+			if(CountInv("LeftQSSGAmmoCounter")<=0){
+				A_GiveInventory("DualFireReload",1);
+			}
+		}
 		Goto IdleLeft_Overlay
 		
 	LeftRecoil_HalfBlast:
@@ -727,6 +740,11 @@ ACTOR PB_QuadSG : PB_Weapon
 			//CountInv("DualFiring")==0
 			if(CountInv("LeftQSSGAmmoCounter")<=0 || CountInv("QSSGAmmoCounter")>0){
 				A_GiveInventory("DualFiring",1);
+			}
+		}
+		TNT1 A 0 {
+			if(CountInv("QSSGAmmoCounter")<=0){
+				A_GiveInventory("DualFireReload",1);
 			}
 		}
 		Goto IdleLeft_Overlay
@@ -901,7 +919,7 @@ ACTOR PB_QuadSG : PB_Weapon
 			}
 		}
 		TNT1 A 0 {
-			if(CountInv("LeftQSSGAmmoCounter")<=0){
+			if(CountInv("QSSGAmmoCounter")<=0){
 				A_GiveInventory("DualFireReload",1);
 			}
 		}
@@ -1171,7 +1189,7 @@ ACTOR PB_QuadSG : PB_Weapon
 		QSF2 H 1 
 		TNT1 A 0 A_ZoomFactor(1.0)
         QSF2 I 1 
-        QSF2 JKLLLMNOP 1 
+        QSF2 JKLMNOP 1 
 		TNT1 A 0 A_JumpIfInventory("QSSGAmmoCounter", 1, "RealReady")
 		Goto Reload
 		
