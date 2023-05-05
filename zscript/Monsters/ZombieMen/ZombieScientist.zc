@@ -51,6 +51,7 @@ Class PB_ZombieScientist : PB_Monster
 			damagefactor "Cut", 0.75;
 			damagefactor "Tear", 0.25;
 			damagefactor "Head", 0.6;
+			DropItem "Stimpack2", 22;
 			Obituary "%o has been sliced apart by a zombie labworker.";
 			+FLOORCLIP;
 			+SLIDESONWALLS;
@@ -250,7 +251,6 @@ Class PB_ZombieScientist : PB_Monster
 				Goto See;
 				
 			Pain.Melee:
-			TNT1 A 0 A_JumpIfInventory ("SKLabguy", 1, "StealthKill");
 			Pain:
 				TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
 				SCZA G 6 A_Pain();
@@ -259,22 +259,7 @@ Class PB_ZombieScientist : PB_Monster
 				TNT1 A 0 A_Jump(180, "See");
 				TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 				Goto See;
-			StealthKill:
-				TNT1 A 0 A_TakeInventory("SKLabguy", 1);
-				SCZA G 1 A_FaceTarget();
-				TNT1 A 0 A_JumpIfInTargetInventory("FistsSelected", 1, 2);
-				SCZA G 1;
-				Goto Pain;
-				TNT1 A 0 {
-					A_GiveToTarget("GoFatality", 1);
-					A_GiveToTarget("SKLabguy", 1);
-					A_NoBlocking();
-					A_Die("Stealthy");
-				}
-				Stop;
-			Death.Stealthy:
-				TNT1 A 0;
-				Stop;
+		
 					
 			Downed:
 				LPO4 Z 4 A_Pain();
@@ -323,7 +308,6 @@ Class PB_ZombieScientist : PB_Monster
 		
 		
 		GetUp:
-			TNT1 A 0 A_SpawnItem("LargeMassWaterImpact");
 			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 16, "FallingDie");
 			TNT1 A 0 {
 				A_TakeInventory("FallingHeight", 100);
@@ -936,8 +920,8 @@ Class PB_ZombieScientist : PB_Monster
 		Death.FireExplosion:
 		Death.Flames:
 		Death.Burn:
+			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 			TNT1 A 1 {
-				A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 				A_ScreamAndUnblock();
 				A_DropItem("PB_Axe",1);
 				A_SpawnItemEx("BurningLabGuy",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
@@ -1071,7 +1055,6 @@ Class PB_ZombieScientist : PB_Monster
 			
 		Death.Melee:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down");
-			TNT1 A 0 A_JumpIfInventory ("SKLabguy", 1, "StealthKill");
         Death.Kick:
 			TNT1 A 0 {
 				bNODROPOFF = false;
@@ -1397,6 +1380,7 @@ Class PB_ZombieScientist : PB_Monster
 		Stop;
 		
 	XDeath:
+		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 		TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG");
 		TNT1 A 0 { 
 			NashGoreGibs.SpawnGibs(self);
