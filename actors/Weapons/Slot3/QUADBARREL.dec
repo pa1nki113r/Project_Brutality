@@ -523,8 +523,17 @@ ACTOR PB_QuadSG : PB_Weapon
 			if(CountInv("LeftQSSGAmmoCounter")<=0 && CountInv("QSSGAmmoCounter")>0){
 				A_GiveInventory("DualFiring",1);
 			}
-			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("QSSGAmmoCounter")<=0) || GetCvar("SingleDualFire")==1){
-				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()){
+			if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") >=2){
+					if(CountInv("LeftQSSGAmmoCounter") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("QSSGAmmoCounter")<=0) || GetCvar("SingleDualFire") ==1){
+				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") < 2){
 					if(CountInv("LeftQSSGAmmoCounter") > 0){
 						return state("FireLeft_Overlay");
 					}
@@ -553,6 +562,10 @@ ACTOR PB_QuadSG : PB_Weapon
 					}
 				}
 			}
+			if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire") == 2){
+					if(CountInv("QSSGAmmoCounter") > 0){
+						return state("FireRight_Overlay");
+				}
 			if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon()){
 				if(CountInv("QSSGAmmoCounter")>0 && GetCvar("SingleDualFire")==1){
 					return state("FireRight_Overlay");
@@ -560,6 +573,11 @@ ACTOR PB_QuadSG : PB_Weapon
 				if(CountInv("QSSGAmmoCounter")>0 && CountInv("LeftQSSGAmmoCounter")>0 && GetCvar("SingleDualFire")==0){
 					A_Overlay(10, "FireLeft_Overlay", false);
 					return state("FireRight_Overlay");
+				}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
 				}
 				else {
 					A_PlaySoundEx("weapons/empty", "Auto");
