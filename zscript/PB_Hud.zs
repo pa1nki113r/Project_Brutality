@@ -44,7 +44,8 @@ class PB_Hud_ZS : BaseStatusBar
 
     //CVars
     int HUDXMargin, HUDYMargin, rtlAmmoBar;
-    bool HudDynamics, showVisor, showVisorGlass, showLevelStats;
+    bool HudDynamics, showVisor, showVisorGlass, showLevelStats, forceScale;
+    
     
 	override void Init()
 	{
@@ -119,6 +120,7 @@ class PB_Hud_ZS : BaseStatusBar
         showVisorGlass = CVar.GetCvar("pb_showhudvisorglass", CPlayer).GetBool();
         
         showLevelStats = CVar.GetCvar("pb_showlevelstats", CPlayer).GetBool();
+        forceScale = CVar.GetCvar("hud_aspectscale", CPlayer).GetBool();
         
         mHealthInterpolator.Reset(0);
 		mArmorInterpolator.Reset(0);
@@ -275,6 +277,38 @@ class PB_Hud_ZS : BaseStatusBar
         }
 
         DrawImage(texture, pos, flags, (m0to1Float * Alpha), box, scale);
+    }
+    
+    void PBHud_DrawImageManualAlpha(String texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 box = (-1, -1), Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25) 
+
+    {
+
+        double IntMSway = mSwayInterpolator.GetValue();
+        double IntMPitch = mPitchInterpolator.GetValue();
+        double IntMOfs = mFOffsetInterpolator.GetValue();
+        
+        if(HudDynamics) {    
+            pos.x += IntMSway * Parallax;
+            pos.y -= IntMPitch * Parallax;
+
+            if(pos.x > 0) {
+                pos.x -= (IntMOfs * Parallax2);
+            }
+            
+            if(pos.x < 0) {
+                pos.x += (IntMOfs * Parallax2);
+            }
+            
+            if(pos.y > 0) {
+                pos.y -= (IntMOfs * Parallax2);
+            }
+            
+            if(pos.y < 0) {
+                pos.y += (IntMOfs * Parallax2);
+            }
+        }
+
+        DrawImage(texture, pos, flags, Alpha, box, scale);
     }
 
     void PBHud_DrawString(HUDFont font, String string, Vector2 pos, int flags = 0, int translation = Font.CR_UNTRANSLATED, double Alpha = 1., int wrapwidth = -1, int linespacing = 4, Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25) 
@@ -606,35 +640,51 @@ class PB_Hud_ZS : BaseStatusBar
             if(!CheckInventory("sae_extcam")) {
               if(showVisorGlass) {
                 if(m0to1Float < 0.99) {
-                        DrawImage("HUDTPOF2", (-35 + (intmSway * 0.75) + (intMOfs * 0.25) - m32to0, -9 - (intMPitch * 0.75) + (intMOfs * 0.25) - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, 1 - m0to1Float, scale: (0.7, 0.7));  
+                        PBHud_DrawImageManualAlpha("HUDTPOF2", (-35 - m32to0, -9 - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, 1 - m0to1Float, scale: (0.7, 0.7), 0.6, 0.15);  
 
-                        DrawImage("HUDBTOF2", (-35 + (intmSway * 0.75) + (intMOfs * 0.25) - m32to0, 9 - (intmPitch * 0.75) - (intMOfs * 0.25) + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, 1 - m0to1Float, scale: (0.7, 0.7));   
-                        DrawImage("HUDT2O2", (35 + (intmSway * 0.75) - (intMOfs * 0.25) + m32to0, -9 - (intMPitch * 0.75) + (intMOfs * 0.25) - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, 1 - m0to1Float, scale: (0.7, 0.7));  
-                        DrawImage("HUDBTO22", (35 + (intmSway * 0.75) - (intMOfs * 0.25) + m32to0, 9 - (intmPitch * 0.75) - (intMOfs * 0.25) + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, 1 - m0to1Float, scale: (0.7, 0.7));
+                        PBHud_DrawImageManualAlpha("HUDBTOF2", (-35 - m32to0, 9 + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, 1 - m0to1Float, scale: (0.7, 0.7), 0.6, 0.15);   
+                        
+                        PBHud_DrawImageManualAlpha("HUDTP2O2", (35 + m32to0, -9 - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, 1 - m0to1Float, scale: (0.7, 0.7), 0.6, 0.15); 
+                        
+                        PBHud_DrawImageManualAlpha("HUDBTO22", (35 + m32to0, 9 + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, 1 - m0to1Float, scale: (0.7, 0.7), 0.6, 0.15); 
                     }
                 
-                DrawImage("HUDTOP2", (-35 + (intmSway * 0.5) + (intMOfs * 0.15) - m32to0, -9 - (intMPitch * 0.5) + (intMOfs * 0.15) - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1Float, scale: (0.7, 0.7));
-                DrawImage("HUDBOTO2", (-35 + (intmSway * 0.5) + (intMOfs * 0.15) - m32to0, 9 - (intmPitch * 0.5) - (intMOfs * 0.15) + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1Float, scale: (0.7, 0.7));   
-                DrawImage("HUDT2P2", (35 + (intmSway * 0.5) - (intMOfs * 0.15) + m32to0, -9 - (intMPitch * 0.5) + (intMOfs * 0.15) - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1Float, scale: (0.7, 0.7)); 
-                DrawImage("HUDBOT22", (35 + (intmSway * 0.5) - (intMOfs * 0.15) + m32to0, 9 - (intmPitch * 0.5) - (intMOfs * 0.15) + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1Float, scale: (0.7, 0.7));
+                PBHud_DrawImageManualAlpha("HUDTOP2", (-35 - m32to0, -9 - m32to0), DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1Float, scale: (0.7, 0.7), 0.6, 0.15);
+                PBHud_DrawImageManualAlpha("HUDBOTO2", (-35 - m32to0, 9 + m32to0), DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1Float, scale: (0.7, 0.7), 0.6, 0.15);   
+                PBHud_DrawImageManualAlpha("HUDT2P2", (35 + m32to0, -9 - m32to0), DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1Float, scale: (0.7, 0.7), 0.6, 0.15); 
+                PBHud_DrawImageManualAlpha("HUDBOT22", (35 + m32to0, 9 + m32to0), DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1Float, scale: (0.7, 0.7), 0.6, 0.15);
               }
                
                if(showVisor) {
-                    if(m0to1Float < 0.99) {
-                        DrawImage("HUDTOPOF", (-35 + (intmSway * 0.75) + (intMOfs * 0.25) - m32to0, -9 - (intMPitch * 0.75) + (intMOfs * 0.25) - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, 1, scale: (0.7, 0.7));  
-                        DrawImage("HUDBOTOF", (-35 + (intmSway * 0.75) + (intMOfs * 0.25) - m32to0, 9 - (intmPitch * 0.75) - (intMOfs * 0.25) + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, 1, scale: (0.7, 0.7));   
-                        DrawImage("HUDT2POF", (35 + (intmSway * 0.75) - (intMOfs * 0.25) + m32to0, -9 - (intMPitch * 0.75) + (intMOfs * 0.25) - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, 1, scale: (0.7, 0.7));  
-                        DrawImage("HUDBOT2F", (35 + (intmSway * 0.75) - (intMOfs * 0.25) + m32to0, 9 - (intmPitch * 0.75) - (intMOfs * 0.25) + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, 1, scale: (0.7, 0.7));
-                    }
+                  		PBHud_DrawImageManualAlpha("HUDTDARK", (-35 - m32to0, -9 - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, 1, scale: (0.7, 0.7));  
+                    PBHud_DrawImageManualAlpha("HUDBDARK", (-35 - m32to0, 9 + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, 1, scale: (0.7, 0.7));   
+                    PBHud_DrawImageManualAlpha("HUDTDAR2", (35 + m32to0, -9 - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, 1, scale: (0.7, 0.7));  
+                   	PBHud_DrawImageManualAlpha("HUDBDAR2", (35 + m32to0, 9 + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, 1, scale: (0.7, 0.7));
+                  		
+                  		PBHud_DrawImageManualAlpha("HUDTOPOF", (-35 - m32to0, -9 - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, cplayer.mo.cursector.lightlevel / 255.0, scale: (0.7, 0.7));  
+                    PBHud_DrawImageManualAlpha("HUDBOTOF", (-35 - m32to0, 9 + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, cplayer.mo.cursector.lightlevel / 255.0, scale: (0.7, 0.7));   
+                    PBHud_DrawImageManualAlpha("HUDT2POF", (35 + m32to0, -9 - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, cplayer.mo.cursector.lightlevel / 255.0, scale: (0.7, 0.7));  
+                   	PBHud_DrawImageManualAlpha("HUDBOT2F", (35 + m32to0, 9 + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, cplayer.mo.cursector.lightlevel / 255.0, scale: (0.7, 0.7));
                     
-                    DrawImage("HUDTOP", (-35 + (intmSway * 0.75) + (intMOfs * 0.25), -9 - (intMPitch * 0.75) + (intMOfs * 0.25)) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1Float, scale: (0.7, 0.7));  
-                    DrawImage("HUDBOTOM", (-35 + (intmSway * 0.75) + (intMOfs * 0.25), 9 - (intmPitch * 0.75) - (intMOfs * 0.25)) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1Float, scale: (0.7, 0.7));   
-                    DrawImage("HUDT2P", (35 + (intmSway * 0.75) - (intMOfs * 0.25), -9 - (intMPitch * 0.75) + (intMOfs * 0.25)) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1Float, scale: (0.7, 0.7));  
-                    DrawImage("HUDBOT2M", (35 + (intmSway * 0.75) - (intMOfs * 0.25), 9 - (intmPitch * 0.75) - (intMOfs * 0.25)) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1Float, scale: (0.7, 0.7));
+                    PBHud_DrawImageManualAlpha("HUDTFLAR", (-35 - m32to0, -9 - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7));  
+
+                    PBHud_DrawImageManualAlpha("HUDBFLAR", (-35 - m32to0, 9 + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7));
+
+                    PBHud_DrawImageManualAlpha("HUDTFLA2", (35 + m32to0, -9 - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7));  
+                   	PBHud_DrawImageManualAlpha("HUDBFLA2", (35 + m32to0, 9 + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7));
+                    
+                    PBHud_DrawImageManualAlpha("HUDTOP", (-35, -9) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1Float, scale: (0.7, 0.7));  
+                    PBHud_DrawImageManualAlpha("HUDBOTOM", (-35, 9) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1Float, scale: (0.7, 0.7));   
+                    PBHud_DrawImageManualAlpha("HUDT2P", (35, -9), DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1Float, scale: (0.7, 0.7));  
+                    PBHud_DrawImageManualAlpha("HUDBOT2M", (35, 9) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1Float, scale: (0.7, 0.7));
                }
             }
 
             //Healthbar
+												if(GetAirTime() < 700)
+												{
+													PBHud_DrawString(mBoldFont, "O²: "..(Formatnumber(((GetAirTime() / 7.0) * 100.0) / 100.0)).."%", (137, -90), DI_TEXT_ALIGN_LEFT, Font.FindFontColor('HUDBLUEBAR'));
+												}
             PBHud_DrawImage("BARBACK1", (73, -50), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1);
             if(CheckInventory("PowerStrength")) {
 				PBHud_DrawImage("BZRKHUD", (82, -51), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, box: (19, 19));
@@ -758,7 +808,6 @@ class PB_Hud_ZS : BaseStatusBar
                         
                         PBHud_DrawBar("ABAR4", "BGBARL", GetAmount("RocketAmmo"), GetMaxAmount("RocketAmmo"), (-100, -72), 0, rtlAmmoBar, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
                         PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("RocketAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_RED);
-                        PBHud_DrawImage("AMMOIC4", (-66, -55), DI_SCREEN_RIGHT_BOTTOM, 1, (17, 17));
                     }
                 }
 
