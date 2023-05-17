@@ -183,15 +183,38 @@ ACTOR PB_Deagle : PB_Weapon
 		TNT1 A 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE)
 		Loop
 		
-	
+//Jesus Christ this took a while to figure out.
+//I know it's messy but sadly it has to be like this or 
+//else the left mouse button fucks up. -JM
 	IdleLeft_Overlay:
 		D6E2 J 1 {
 			if(CountInv("LeftDeagleAmmo")<=0 && CountInv("DeagleAmmo")>0){
 				A_GiveInventory("DualFiring",1);
 			}
-			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("DeagleAmmo")<=0) || GetCvar("SingleDualFire")==1){
-				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()){
+			if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire")==2){
 					if(CountInv("LeftDeagleAmmo") > 0){
+//						A_Log("Fire Left Overlay from RMB Inverted");
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+			if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire")==1){
+					if(CountInv("LeftDeagleAmmo") > 0){
+//						A_Log("Fire Left Overlay from LMB");
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("DeagleAmmo")<=0)){
+				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire")==0){
+					if(CountInv("LeftDeagleAmmo") > 0){
+//						A_Log("Fire Left Overlay from LMB Single");
 						return state("FireLeft_Overlay");
 					}
 					else {
@@ -208,9 +231,20 @@ ACTOR PB_Deagle : PB_Weapon
 			if(CountInv("LeftDeagleAmmo")>0 && CountInv("DeagleAmmo")<=0){
 				A_TakeInventory("DualFiring",1);
 			}
+			if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire")==2){
+				if(CountInv("DeagleAmmo") > 0){
+//					A_Log("Fire Right Overlay from LMB Inverted");
+					return state("FireRight_Overlay");
+				}
+				else {
+					A_PlaySoundEx("weapons/empty", "Auto");
+					return state("");
+				}
+			}
 			if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1 && CountInv("LeftDeagleAmmo")<=0)){
 				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire")==0){
 					if(CountInv("DeagleAmmo") > 0){
+//					A_Log("Fire Right Overlay from LMB Single");
 					return state("FireRight_Overlay");
 					}
 					else {
@@ -221,6 +255,7 @@ ACTOR PB_Deagle : PB_Weapon
 			}
 			if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire")==1){
 				if(CountInv("DeagleAmmo") > 0){
+//					A_Log("Fire Right Overlay from RMB");
 					return state("FireRight_Overlay");
 				}
 				else {
@@ -259,7 +294,16 @@ ACTOR PB_Deagle : PB_Weapon
 		D6E1 DEFGH 1
 		TNT1 A 0 A_SetFiringLeftWeapon(False)
 		D6E2 JJJ 1 {
-			if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon()){
+			if(JustPressed(BT_ALTATTACK) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") == 2){
+				if(CountInv("LeftDeagleAmmo") > 0){
+					return state("FireLeft_Overlay");
+				}
+				else {
+					A_PlaySoundEx("weapons/empty", "Auto");
+					return state("");
+				}
+			}
+			if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") < 2){
 				if(CountInv("LeftDeagleAmmo") > 0){
 					return state("FireLeft_Overlay");
 				}
@@ -303,7 +347,16 @@ ACTOR PB_Deagle : PB_Weapon
 		D6E0 DEFGH 1
 		TNT1 A 0 A_SetFiringRightWeapon(False)
 		D6E2 III 1 {
-			if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon()){
+			if(JustPressed(BT_ATTACK) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire") == 2){
+				if(CountInv("DeagleAmmo") > 0){
+					return state("FireRight_Overlay");
+				}
+				else {
+					A_PlaySoundEx("weapons/empty", "Auto");
+					return state("");
+				}
+			}
+			if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire") < 2){
 				if(CountInv("DeagleAmmo") > 0){
 					return state("FireRight_Overlay");
 				}
@@ -507,57 +560,6 @@ ACTOR PB_Deagle : PB_Weapon
 			return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
 		}
 		Goto Ready2
-/*		
-	FireDualWield:
-		TNT1 A 0 {
-			A_WeaponOffset(0,32);
-			PB_HandleCrosshair(42);
-			}
-        TNT1 A 0 A_JumpIfInventory("DeagleAmmo",1,1)
-        Goto Reload
-	FireRight:
-		TNT1 A 0 A_JumpIfInventory("PB_DeagleFireAnimation1", 1, "FireLeft")
-		D6E0 A 1 BRIGHT {
-			A_FireBullets (0.1, 0.1, -1, 90, "BulletPuff", FBF_NORANDOM,8192,"Tracer", -1,-4);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
-			A_FireCustomMissile("DeagleCasingRight",0,0,12,-5);
-			A_PlaySoundEx("weapons/deagle/fire", "Weapon");
-			A_ZoomFactor(0.985);
-			A_Takeinventory("DeagleAmmo",1);
-			A_GiveInventory("PB_DeagleFireAnimation1",1); //Toggle gun animation from one pistol to the other.
-			A_AlertMonsters;
-			A_GunFlash;
-			PB_WeaponRecoil(-0.92,-0.8);
-			}
-		D6E0 B 1 BRIGHT {
-			A_ZoomFactor(1.0);
-			PB_WeaponRecoil(-0.92,-0.8);
-			}
-		D6E0 CDEFGH 1
-		D6E0 E 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD)
-		TNT1 A 0 A_Refire
-		Goto ReadyToFireDualWield
-	FireLeft:
-		D6E1 A 1 BRIGHT{
-			A_FireBullets (0.1, 0.1, -1, 90, "BulletPuff", FBF_NORANDOM,8192,"Tracer", -1,-4);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
-			A_FireCustomMissile("DeagleCasingLeft",0,0,-12,-5);
-			A_PlaySoundEx("weapons/deagle/fire", "Weapon");
-			A_TakeInventory("PB_DeagleFireAnimation1",1);
-			A_GiveInventory("PB_DeagleFireAnimation2",1); //Toggle gun animation from one pistol to the other.
-			A_AlertMonsters;
-			A_ZoomFactor(0.985);
-			A_GunFlash;
-			PB_WeaponRecoil(-0.92,+0.8);
-			}
-		D6E1 B 1 BRIGHT {
-			A_ZoomFactor(1.0);
-            PB_WeaponRecoil(-0.92,+0.8);
-		}
-		D6E1 CDEFGH 1
-		D6E1 E 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD)//(WRF_NOSECONDARY)
-		TNT1 A 0 A_Refire
-		Goto ReadyToFireDualWield*/
 	
     AltFire:
 		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")

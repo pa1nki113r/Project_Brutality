@@ -189,8 +189,17 @@ ACTOR PB_Revolver : PB_Weapon
 			if(CountInv("LeftRevolverAmmo")<=0 && CountInv("RevolverAmmo")>0){
 				A_GiveInventory("DualFiring",1);
 			}
-			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("RevolverAmmo")<=0) || GetCvar("SingleDualFire")==1){
-				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()){
+			if((PressingAltFire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") == 2){
+					if(CountInv("LeftRevolverAmmo") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("RevolverAmmo")<=0) || GetCvar("SingleDualFire") == 1){
+				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") < 2){
 					if(CountInv("LeftRevolverAmmo") > 0){
 						return state("FireLeft_Overlay");
 					}
@@ -220,6 +229,15 @@ ACTOR PB_Revolver : PB_Weapon
 				}
 			}
 			if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire")==1){
+				if(CountInv("RevolverAmmo") > 0){
+					return state("FireRight_Overlay");
+				}
+				else {
+					A_PlaySoundEx("weapons/empty", "Auto");
+					return state("");
+				}
+			}
+			if((Pressingfire() || JustPressed(BT_ATTACK)) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire")==2){
 				if(CountInv("RevolverAmmo") > 0){
 					return state("FireRight_Overlay");
 				}
@@ -262,6 +280,15 @@ ACTOR PB_Revolver : PB_Weapon
 			}
 			41V1 F 1
 			41V1 GGG 1 {
+				if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire") == 2){
+					if(CountInv("LeftRevolverAmmo") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
 				if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon()){
 					if(CountInv("LeftRevolverAmmo") > 0){
 						return state("FireLeft_Overlay");
@@ -309,7 +336,16 @@ ACTOR PB_Revolver : PB_Weapon
 		}
 		41V1 N 1
 		41V1 OOO 1 {
-			if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon()){
+			if(JustPressed(BT_ATTACK) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire") == 2){
+				if(CountInv("RevolverAmmo") > 0){
+					return state("FireRight_Overlay");
+				}
+				else {
+					A_PlaySoundEx("weapons/empty", "Auto");
+					return state("");
+				}
+			}
+			if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire") > 2){
 				if(CountInv("RevolverAmmo") > 0){
 					return state("FireRight_Overlay");
 				}
@@ -559,14 +595,9 @@ ACTOR PB_Revolver : PB_Weapon
 		R6V2 JKLMNOPQQ 1 A_SetRoll(roll-0.5, SPF_INTERPOLATE)
 		TNT1 A 0 A_SetRoll(0)
 	InsertBullets:
-		TNT1 A 0 A_JumpIfInventory("RevolverAmmo",6,"Ready3")
-		TNT1 A 0 A_JumpIfInventory("PistolBullets",2,1)
+		TNT1 A 0 
+		TNT1 A 0 PB_AmmoIntoMag("RevolverAmmo","PistolBullets",6,2)
 		Goto Ready3
-		TNT1 A 0 {
-			A_Giveinventory("RevolverAmmo",1);
-			A_Takeinventory("PistolBullets",2);
-		}
-		Goto InsertBullets
 	
 	// Fixes crash when there is only 1 round in reserve
 	NoAmmoDualWield:
@@ -629,23 +660,10 @@ ACTOR PB_Revolver : PB_Weapon
 		42V3 MNOPQRSTUV 1
 		TNT1 A 0 A_Takeinventory("RevolverHasUnloaded", 1)
 	InsertBulletsDualWield_Right:
-		TNT1 A 0 A_JumpIfInventory("RevolverAmmo",6,"InsertBulletsDualWield_Left")
-		TNT1 A 0 A_JumpIfInventory("PistolBullets",2,1)
-		Goto InsertBulletsDualWield_Left
-		TNT1 A 0 {
-			A_Giveinventory("RevolverAmmo",1);
-			A_Takeinventory("PistolBullets",2);
-		}
-		Goto InsertBulletsDualWield_Right
-	InsertBulletsDualWield_Left:
-		TNT1 A 0 A_JumpIfInventory("LeftRevolverAmmo",6,"Ready3")
-		TNT1 A 0 A_JumpIfInventory("PistolBullets",2,1)
+		TNT1 A 0 
+		TNT1 A 0 PB_AmmoIntoMag("RevolverAmmo","PistolBullets",6,2)
+		TNT1 A 0 PB_AmmoIntoMag("LeftRevolverAmmo","PistolBullets",6,2)
 		Goto Ready3
-		TNT1 A 0 {
-			A_Giveinventory("LeftRevolverAmmo",1);
-			A_Takeinventory("PistolBullets",2);
-		}
-		Goto InsertBulletsDualWield_Left
 	
 	AlreadyUnloaded:
 		TNT1 A 0 A_Takeinventory("Unloading",1)
@@ -675,13 +693,9 @@ ACTOR PB_Revolver : PB_Weapon
 		R7V2 EFGHII 1 A_SetRoll(roll-0.5, SPF_INTERPOLATE)
 		TNT1 A 0 A_SetRoll(0)
 	RemoveBullets:
-		TNT1 A 0 A_JumpIfInventory("RevolverAmmo",1,1)
+		TNT1 A 0
+		TNT1 A 0 PB_UnloadMag("RevolverAmmo","PistolBullets",2)
 		Goto FinishUnload
-		TNT1 A 0 {
-			A_Takeinventory("RevolverAmmo",1);
-			A_Giveinventory("PistolBullets",2);
-		}
-		Goto RemoveBullets
 	FInishUnload:
 		TNT1 A 0 A_GiveInventory("RevolverHasUnloaded", 1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
@@ -715,21 +729,11 @@ ACTOR PB_Revolver : PB_Weapon
 		43V3 ABCD 1 A_SetRoll(roll+0.4, SPF_INTERPOLATE)
 		43V3 EFGH 1 A_SetRoll(roll-0.4, SPF_INTERPOLATE)
 	RemoveBullets_Right:
-		TNT1 A 0 A_JumpIfInventory("RevolverAmmo",1,1)
-		Goto RemoveBullets_Left
 		TNT1 A 0 {
-			A_Takeinventory("RevolverAmmo",1);
-			A_Giveinventory("PistolBullets",2);
-		}
-		Goto RemoveBullets_Right
-	RemoveBullets_Left:
-		TNT1 A 0 A_JumpIfInventory("LeftRevolverAmmo",1,1)
-		Goto FinishUnloadDual
-		TNT1 A 0 {
-			A_Takeinventory("LeftRevolverAmmo",1);
-			A_Giveinventory("PistolBullets",2);
-		}
-		Goto RemoveBullets_Left
+			PB_UnloadMag("RevolverAmmo","PistolBullets",2);
+			PB_UnloadMag("LeftRevolverAmmo","PistolBullets",2);
+			}
+		Goto FInishUnloadDual
 	FInishUnloadDual:
 		TNT1 A 0 A_GiveInventory("RevolverHasUnloaded", 1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)

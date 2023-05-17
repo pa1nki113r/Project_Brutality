@@ -328,17 +328,25 @@ ACTOR PB_Autoshotgun  : PB_Weapon
 			TNT1 A 1 
 			{
 				if (CountInv("DrumMagNotInserted") >= 1 ) { return state("DrumMagInspectCheck"); }
-				Return State("");
+				Return A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOFIRE);
 			}
-			TNT1 A 0 A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOFIRE)
 			Loop
 		IdleLeft_Overlay:
 			AG61 J 1 {
 				if(CountInv("LeftASGAmmo")<=0 && CountInv("AutoShotgunAmmo")>0){
 					A_GiveInventory("DualFiring",1);
 				}
+				if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") >=2){
+					if(CountInv("LeftASGAmmo") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
 				if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("AutoShotgunAmmo")<=0) || GetCvar("SingleDualFire")==1){
-					if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()){
+					if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") <=1){
 						if(CountInv("LeftASGAmmo") > 0){
 							return state("FireLeft_Overlay");
 						}
@@ -367,6 +375,15 @@ ACTOR PB_Autoshotgun  : PB_Weapon
 						}
 					}
 				}
+				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire") == 2){
+					if(CountInv("AutoShotgunAmmo") > 0){
+						return state("FireRight_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
 				if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon()){
 					if(CountInv("AutoShotgunAmmo")>0 && GetCvar("SingleDualFire")==1){
 						return state("FireRight_Overlay");
@@ -375,7 +392,7 @@ ACTOR PB_Autoshotgun  : PB_Weapon
 						A_Overlay(10, "FireLeft_Overlay", false);
 						return state("FireRight_Overlay");
 					}
-					else {
+					else if(CountInv("AutoShotgunAmmo") < 1){
 						A_PlaySoundEx("weapons/empty", "Auto");
 						return state("");
 					}
