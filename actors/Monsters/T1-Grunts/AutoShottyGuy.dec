@@ -18,6 +18,7 @@ ACTOR ASGGuy : PB_Sergeant Replaces ShotgunGuy
 	DamageFactor "Blood", 0.0 DamageFactor "BlueBlood", 0.0 DamageFactor "GreenBlood", 0.0
 	damagefactor "killme", 0.0
 	dAMAGEFACTOR "Avoid", 0.0
+	damagefactor "TeleportRemover", 0.0
 	DropItem "DropedASG"
 	DropItem "DropedGrenade" 5
     States
@@ -78,7 +79,7 @@ ACTOR ASGGuy : PB_Sergeant Replaces ShotgunGuy
 		
    Spawn:
 		TNT1 A 0
-		TNT1 A 0 ACS_ExecuteAlways(796, 0, 0, 0, 0)//Check if Vanilla Mode is activated
+		
 		  TNT1 A 0 A_GiveInventory("SKShotgunGuy", 1)
 		  TNT1 A 0 A_GiveInventory("TypeSergeant", 1)
 		  TNT1 A 0 A_TakeInventory("ASGZAmmo", 6)
@@ -97,6 +98,7 @@ ACTOR ASGGuy : PB_Sergeant Replaces ShotgunGuy
 		
 		
 	FallBack:
+	Melee:
 	TNT1 A 0 A_CheckSight("Advance")
 	TNT1 A 0 A_ChangeFLag("NODROPOFF", 1)
 	TNT1 A 0 A_SpawnItem ("HeadshotTarget4", 5, 40,0)
@@ -216,12 +218,12 @@ ACTOR ASGGuy : PB_Sergeant Replaces ShotgunGuy
 		TNT1 A 0 A_ChangeFlag("GHOST", 0)
 		TNT1 A 0 A_ChangeFlag("INVULNERABLE", 0)
 	    TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
-	    TNT1 A 0 A_JumpIfCloser(200, "FallBack")
+	    TNT1 A 0 A_JumpIfTargetInLOS("Fallback",0,JLOSF_DEADNOJUMP,150)
 		//Advance:
 		TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
 		TNT1 A 0 A_JumpIfInventory("EnemyMemory", 15, "SearchForPlayer")
 		TNT1 A 0 A_GiveInventory("EnemyMemory", 1)
-        TNT1 A 0 A_SpawnItemEx("FootStep", 0, 0, 20, 0, 0)
+        
 		TNT1 A 0 A_TakeInventory("SKShotgunGuy", 1)
 		TNT1 A 0 A_SpawnItem("HeadshotTarget4", 0, 40,0)
 		TNT1 A 0 A_SpawnItem ("LegTargetBase", 10)
@@ -256,10 +258,10 @@ ACTOR ASGGuy : PB_Sergeant Replaces ShotgunGuy
 		Loop
 		
 	SeeNeverSeen:
-		TNT1 A 0 A_JumpIfCloser(200, "FallBack")
+		TNT1 A 0 A_JumpIfTargetInLOS("Fallback",0,JLOSF_DEADNOJUMP,150)
 		Advance:
 		TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
-        TNT1 A 0 A_SpawnItemEx("FootStep", 0, 0, 10, 0, 0)
+        
 		TNT1 A 0 A_SpawnItem ("HeadshotTarget4", 5, 40,0)
 		TNT1 A 0 A_SpawnItem ("LegTargetBase", 10)
 		ASGZ AA 2 A_Chase
@@ -600,7 +602,6 @@ ACTOR ASGGuy : PB_Sergeant Replaces ShotgunGuy
         Goto Missile
 		
 	Pain.Melee:
-		TNT1 A 0 A_JumpIfInventory ("SKShotgunGuy", 1, "GotoStealthKill")
     Pain:
         ASGZ G 3
         ASGZ G 3 A_Pain
@@ -683,7 +684,6 @@ ACTOR ASGGuy : PB_Sergeant Replaces ShotgunGuy
 	
 	Death.Melee:
         TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down")
-	   	TNT1 A 0 A_JumpIfInventory ("SKShotgunGuy", 1, "StealthKill")
     Death.Kick:
 		 TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
 		 TNT1 A 0 A_Scream
@@ -1053,28 +1053,11 @@ ACTOR ASGGuy : PB_Sergeant Replaces ShotgunGuy
 		TNT1 A 0 A_SpawnItem ("DeadASGGuyAD16E")
 		Stop
 
-	StealthKill:
-	TNT1 A 0
-	TNT1 A 0 A_JumpIfInTargetInventory("FistsSelected", 1, 1)
-	Goto Death
-	TNT1 A 0 A_GiveToTarget("GoFatality", 1)
-	TNT1 A 0 A_GiveToTarget("SKAutoshotty", 1)
-	TNT1 A 0 A_Fall
-	//TNT1 A 0 A_NoBlocking
-	TNT1 A 0 A_Die("Stealthy")
-	TNT1 A 1
-	TNT1 A 1
-	Stop
 	
-	Death.IceBeam:
-	TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0)
-	TNT1 A 0 A_ChangeFlag("SOLID", 0)
-	TNT1 A 0 A_SpawnItem("FrozenAutoShotgunGuy")
-	TNT1 A 0 A_SpawnItem("IceCrystalGround")
-	TNT1 A 0 A_SpawnItem("IceCrystalGround")
-	Stop
+	
 	
 	Death.Ice:
+	Death.IceExplosion:
 	Death.Freeze:
 	Death.Frost:
 	TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0)
@@ -1228,20 +1211,19 @@ ACTOR DyingASGGuy : SwitchableDecoration
 	-SOLID
 	+SHOOTABLE
 	+FLOORCLIP
-	+usespecial
-	Activation THINGSPEC_Activate | THINGSPEC_ThingTargets | THINGSPEC_NoDeathSpecial
 	States
 	{
 		Death.Fatality:
 		Death.SuperPunch:
 		Active:
         TNT1 A 0 A_NoBlocking
-        TNT1 A 0 A_GiveToTarget("HasASGguyShield", 1)
-		TNT1 A 0 A_GiveToTarget("GotMeatShield", 1)
-		ASG5 A 12
-        Stop
+        TNT1 A 1
+		TNT1 A 0 A_PlaySound("BLANKSND")
+		TNT1 A 0 A_StopSound(4)
+        Goto XDeath
 
 	Death.fire:
+	Death.FireExplosion:
 	Death.Flames:
 	TNT1 A 0 A_StopSound(4)
 	TNT1 A 0 A_SpawnItem ("CrueltyBonus5Health")
@@ -1477,8 +1459,6 @@ ACTOR DyingASGGuyNoLeg : SwitchableDecoration
 	DamageFactor "Leg", 0.0
 	DamageFactor "BlueBloodSplasher", 0.0
     DamageFactor "BlueSuperBloodSplasher", 0.0
-	+usespecial
-	Activation THINGSPEC_Activate | THINGSPEC_ThingTargets | THINGSPEC_NoDeathSpecial
     States
     {
 	Pain.Kick:
@@ -1503,12 +1483,10 @@ ACTOR DyingASGGuyNoLeg : SwitchableDecoration
 
 		Death.Fatality:
 		Death.SuperPunch:
-		Active:
-        TNT1 A 0 A_NoBlocking
-        TNT1 A 0 A_GiveToTarget("HasASGguyShield", 1)
-		TNT1 A 0 A_GiveToTarget("GotMeatShield", 1)
-		ASAM AB 8
-        Stop
+        TNT1 A 1 A_NoBlocking
+		TNT1 A 0 A_StopSound(4)
+		TNT1 A 0 A_PlaySound("BLANKSND")
+        Goto Death
 
     Spawn:
 	ASAM A 1 A_Look
@@ -1635,18 +1613,14 @@ ACTOR DyingASGGuyLegBlewedOff: DyingASGGuyNoLeg
 	Mass 50
 	-SOLID
 	+SHOOTABLE
-	+usespecial
-	Activation THINGSPEC_Activate | THINGSPEC_ThingTargets | THINGSPEC_NoDeathSpecial
 	States
 	{
 	    Death.Fatality:
 		Death.SuperPunch:
-		Active:
         TNT1 A 0 A_NoBlocking
-        TNT1 A 0 A_GiveToTarget("HasASGguyShield", 1)
-		TNT1 A 0 A_GiveToTarget("GotMeatShield", 1)
-		ASG3 A 12
-        Stop
+		TNT1 A 0 A_StopSound(4)
+        TNT1 A 1
+        Goto Xdeath
 
 	Spawn:
     TNT1 A 0
@@ -1839,8 +1813,6 @@ ACTOR BrutalizedASGGuy1 : SwitchableDecoration
 	-SOLID
 	+SHOOTABLE
 	+FLOORCLIP
-	+usespecial
-	Activation THINGSPEC_Activate | THINGSPEC_ThingTargets | THINGSPEC_NoDeathSpecial
 	DamageFactor "bloodsplasher", 0.0    DamageFactor "tinybloodsplasher", 0.0    DamageFactor "superbloodsplasher", 0.0    DamageFactor "smallbloodsplasher", 0.0
 	DamageFactor "BlueBloodSplasher", 0.0
     DamageFactor "BlueSuperBloodSplasher", 0.0
@@ -1849,12 +1821,10 @@ ACTOR BrutalizedASGGuy1 : SwitchableDecoration
 	{
 		Death.Fatality:
 		Death.SuperPunch:
-		Active:
         TNT1 A 0 A_NoBlocking
-        TNT1 A 0 A_GiveToTarget("HasASGguyShield", 1)
-		TNT1 A 0 A_GiveToTarget("GotMeatShield", 1)
-		ASG1 A 12
-        Stop
+		TNT1 A 0 A_StopSound(4)
+        TNT1 A 1
+        Goto Xdeath
 
 	Spawn:
 	TNT1 A 0
@@ -1999,18 +1969,14 @@ ACTOR BrutalizedASGGuy_alt1 : SwitchableDecoration
 	DamageFactor "BlueBloodSplasher", 0.0
     DamageFactor "BlueSuperBloodSplasher", 0.0
 	Scale 1.0
-	+usespecial
-	Activation THINGSPEC_Activate | THINGSPEC_ThingTargets | THINGSPEC_NoDeathSpecial
 	States
 	{
 		Death.Fatality:
 		Death.SuperPunch:
-		Active:
         TNT1 A 0 A_NoBlocking
-        TNT1 A 0 A_GiveToTarget("HasASGguyShield", 1)
-		TNT1 A 0 A_GiveToTarget("GotMeatShield", 1)
-		ASG6 A 12
-        Stop
+		TNT1 A 0 A_StopSound(4)
+        TNT1 A 1
+        Goto Xdeath
 
 	Spawn:
 	TNT1 A 0

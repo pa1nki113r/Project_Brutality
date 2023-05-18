@@ -38,11 +38,12 @@ Class PB_ShotgunGuy : PB_Monster
 		damagefactor "Blood", 0.0; damagefactor "BlueBlood", 0.0; damagefactor "GreenBlood", 0.0;
 		damagefactor "Kick", 0.4;
 		damagefactor "Shrapnel", 0.4;
-		damagefactor "ExplosiveImpact", 0.6;
 		damagefactor "killme", 0.0;
 		damagefactor "Taunt", 1.0;
 		DamageFactor "CauseObjectsToSplash", 0.0;
 		damagefactor "TeleportRemover", 0.0;
+		damagefactor "ExplosiveImpact", 2.2;
+		damagefactor "Explosive", 2.2;
 		damagefactor "SSG", 50.0;
 		damagefactor "Shotgun", 1.2;
 		damagefactor "Saw", 0.5;
@@ -262,7 +263,7 @@ Class PB_ShotgunGuy : PB_Monster
 			Goto MissileContinue;
 		Missile:
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "DialogueCheck");
-			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "DialogueCheck");
+			
 			Goto AttackHandler;
 		MissileContinue:
 			SPOS E 5 {
@@ -370,7 +371,7 @@ Class PB_ShotgunGuy : PB_Monster
 			SPOS E 4 A_FaceTarget();
 			Crouching:
 			SP0C A 5 A_FaceTarget();
-			TNT1 A 0 A_Jump(90 * !pb_disable_sergent_prone, "GoProne"); //has a 90 in 256 chance, but only if the pb_disable_sergent_prone cvar is unset
+			TNT1 A 0 A_Jump(90 * !pb_disable_sergeant_prone, "GoProne"); //has a 90 in 256 chance, but only if the pb_disable_sergeant_prone cvar is unset
 			SP0C B 5 BRIGHT FireProjCrouched;
 			SP0C A 5 A_FaceTarget();
 			DoneCrouching:
@@ -488,32 +489,16 @@ Class PB_ShotgunGuy : PB_Monster
 		//Pain Logic// 
 		////////////////
 		Pain.Melee:
-			TNT1 A 0 A_JumpIfInventory ("SKShotgunGuy", 1, "StealthKill");
 		Pain:
 			TNT1 A 0 A_JumpIfInventory("IsProning",1, "PainProne");
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
 			SPOS G 6 A_Pain();
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+			
 			TNT1 A 0 A_Jump(180, "See");
 			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 			Goto See;
-		StealthKill:
-			TNT1 A 0 A_TakeInventory("SKShotgunGuy", 1);
-			SPOS G 1 A_FaceTarget();
-			TNT1 A 0 A_JumpIfInTargetInventory("FistsSelected", 1, 2);
-			SPOS G 1;
-			Goto Pain;
-			TNT1 A 0 A_GiveToTarget("GoFatality", 1);
-			TNT1 A 0 A_GiveToTarget("SKShotgunGuy", 1);
-			TNT1 A 0 A_NoBlocking();
-			TNT1 A 0 A_Die("Stealthy");
-			TNT1 A 1;
-			Stop;
-			
-		Death.Stealthy:
-			TNT1 A 0;
-			Stop;
+	
 		
 		PainProne:
 			TNT1 A 0 A_TakeInventory("IsProning", 1);
@@ -568,7 +553,6 @@ Class PB_ShotgunGuy : PB_Monster
 		
 		
 		GetUp:
-			TNT1 A 0 A_SpawnItem("LargeMassWaterImpact");
 			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 16, "FallingDie");
 			TNT1 A 0 {
 				A_TakeInventory("FallingHeight", 100);
@@ -582,7 +566,7 @@ Class PB_ShotgunGuy : PB_Monster
 				bFORCEXYBILLBOARD = false;
 			}
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+			
 			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 			Goto See;
 		 
@@ -1212,19 +1196,20 @@ Class PB_ShotgunGuy : PB_Monster
 			Stop;
 			
 		Death.fire:
+		Death.FireExplosion:
 		Death.Flames:
 		Death.Burn:
+			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 			TNT1 A 1 {
-				A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 				A_ScreamAndUnblock();
 				A_SpawnItemEx("BurningShotgunguy",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
 			}
 			Stop;
 		  
-		Death.Desintegrate:
+		Death.Disintegrate:
 			TNT1 A 1 {
 				A_ScreamAndUnblock();
-				A_SpawnItemEx("DesintegratedHuman",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
+				A_SpawnItemEx("DisintegratedHuman",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
 			}
 			Stop;
 			
@@ -1349,7 +1334,6 @@ Class PB_ShotgunGuy : PB_Monster
 			
 		Death.Melee:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down");
-			TNT1 A 0 A_JumpIfInventory ("SKShotgunGuy", 1, "StealthKill");
         Death.Kick:
 			TNT1 A 0 {
 				bNODROPOFF = False;
@@ -1364,19 +1348,7 @@ Class PB_ShotgunGuy : PB_Monster
 			TNT1 A 0 A_StartSound("BODYF");
 			TNT1 A 0 A_SpawnItem("DeadShotgunGuy1");
 			Stop;
-		StealthKill:
-			TNT1 A 0 A_JumpIfInTargetInventory("FistsSelected", 1, 1);
-			Goto Death;
-			TNT1 A 0 {
-				A_GiveToTarget("GoFatality", 1);
-				A_GiveToTarget("SKShotgunGuy", 1);
-				A_NoBlocking();
-				A_Die("Stealthy");
-			}
-			Stop;
-		Death.Stealthy:
-			TNT1 A 0;
-			Stop;
+	
 	
 	   Death.Trample:	
 	   Death.Down:
@@ -1610,6 +1582,7 @@ Class PB_ShotgunGuy : PB_Monster
 	    Stop;
 		
 	Death.Blast2:
+	TNT1 A 0 A_NoBlocking();
 	    TNT1 A 0 {
 			A_XScream();
 			NashGoreGibs.SpawnGibs(self);
@@ -1685,6 +1658,7 @@ Class PB_ShotgunGuy : PB_Monster
         Stop;
 		
 	XDeath:
+		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 		TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG");
 		TNT1 A 0 { 
 			NashGoreGibs.SpawnGibs(self);
@@ -1707,18 +1681,9 @@ Class PB_ShotgunGuy : PB_Monster
 		Raise:
 			SPOS KJIH 5;
 			Goto See;
-		
-		Death.IceBeam:
-			TNT1 A 0 {
-				bSHOOTABLE = false;
-				bSOLID = false;
-				A_SpawnItem("FrozenShotgunGuy");
-				A_SpawnItem("IceCrystalGround");
-				A_SpawnItem("IceCrystalGround");
-			}
-			Stop;
-		
+
 		Death.Ice:
+		Death.IceExplosion:
 		Death.Freeze:
 		Death.Frost:
 			TNT1 A 0 {
