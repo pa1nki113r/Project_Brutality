@@ -228,8 +228,17 @@ ACTOR PB_Carbine : PB_Weapon
 			if(CountInv("LeftXRifleAmmo")<=0 && CountInv("XRifleAmmo")>0){
 				A_GiveInventory("DualFiring",1);
 			}
-			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("XRifleAmmo")<=0) || GetCvar("SingleDualFire")==1){
-				if(PressingFire() || JustPressed(BT_ATTACK)){
+			if((PressingAltFire() || JustPressed(BT_ALTATTACK)) && GetCvar("SingleDualFire") == 2){
+					if(CountInv("LeftXRifleAmmo") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("XRifleAmmo")<=0 || GetCvar("SingleDualFire")==1)){
+				if((PressingFire() || JustPressed(BT_ATTACK)) && GetCvar("SingleDualFire") < 2){
 					if(CountInv("LeftXRifleAmmo") > 0){
 						return state("FireLeft_Overlay");
 					}
@@ -248,7 +257,16 @@ ACTOR PB_Carbine : PB_Weapon
 			if(CountInv("LeftXRifleAmmo")>0 && CountInv("XRifleAmmo")<=0){
 				A_TakeInventory("DualFiring",1);
 			}
-			if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1 && CountInv("LeftXRifleAmmo")<=0) || GetCvar("SingleDualFire")==1){
+			if((PressingFire() || JustPressed(BT_ATTACK)) && GetCvar("SingleDualFire") == 2){
+					if(CountInv("XRifleAmmo") > 0){
+						return state("FireRight_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+			}
+			if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1 && CountInv("LeftXRifleAmmo")<=0)){
 				if((PressingFire() || JustPressed(BT_ATTACK)) && GetCvar("SingleDualFire")==0){
 					if(CountInv("XRifleAmmo") > 0){
 						return state("FireRight_Overlay");
@@ -920,7 +938,16 @@ ACTOR PB_Carbine : PB_Weapon
 		//TNT1 A 0 PB_AmmoIntoMag("XRifleAmmo", "NewClip", 40, 1)
 		//Goto ReloadLeftCarbine
 //	InsertBulletsRight2:
-	TNT1 A 0 PB_AmmoIntoMag("XRifleAmmo", "NewClip", 41, 1)
+	TNT1 A 0 { //Now mag +1 works! uwu - JM
+		if(CountInv("XRifleAmmo") >= 1)
+			{
+			PB_AmmoIntoMag("XRifleAmmo", "NewClip", 41, 1);
+			}
+		else
+			{
+			PB_AmmoIntoMag("XRifleAmmo", "NewClip", 40, 1);
+			}
+	}
 	Goto ReloadLeftCarbine
 		
 	ReloadLeftCarbine:
@@ -944,7 +971,7 @@ ACTOR PB_Carbine : PB_Weapon
 		4B21 AB 1
 		TNT1 A 0 A_JumpIfInventory("LeftXRifleAmmo",1,"LeftAfterRechamber")
 		4B23 BDEFGHIKL 1
-		TNT1 A 0 A_PlaySoundEx("RIFCL_CK", "auto")
+		TNT1 A 0 A_PlaySoundEx("weapons/magpull", "auto")
 		4B23 MNP 1
 	LeftAfterRechamber:
 		4B21 CDE 1 A_SetRoll(0)
@@ -952,10 +979,16 @@ ACTOR PB_Carbine : PB_Weapon
 		TNT1 A 0 A_Takeinventory("leftCarbineHasUnloaded",1)
 		//TNT1 A 0 A_JumpIfInventory("LeftXRifleAmmo",1,"InsertBulletsLeft2") commented out since apparenly mag +1 never worked on dual wield
 	InsertBulletsLeft:
-	//	TNT1 A 0 PB_AmmoIntoMag("LeftXRifleAmmo", "NewClip", 40, 1)
-	//	Goto ReadyDualwield
-	//InsertBulletsLeft2:
-		TNT1 A 0 PB_AmmoIntoMag("LeftXRifleAmmo", "NewClip", 41, 1)
+		TNT1 A 0 { //Now mag +1 works! uwu - JM
+		if(CountInv("LeftXRifleAmmo") >= 1)
+			{
+			PB_AmmoIntoMag("LeftXRifleAmmo", "NewClip", 41, 1);
+			}
+		else
+			{
+			PB_AmmoIntoMag("LeftXRifleAmmo", "NewClip", 40, 1);
+			}
+	}
 		Goto ReadyDualwield
 	ReloadLeftUnloadedStart:
 		4B22 JKM 1
@@ -1142,10 +1175,9 @@ ACTOR PB_Carbine : PB_Weapon
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "FlashSlideKickingDW")
 		C1KI ABCDEFFFFFFFFFFFFFFFFFFF 1
-		Goto Ready3
+		Goto FlashSlideKickingStop
 	FlashSlideKickingDW:
 		CB01 EDCBAAAAAAAAAAAAAAAAAA 1
-		Goto Ready3
 	FlashSlideKickingStop:
 		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
 		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
