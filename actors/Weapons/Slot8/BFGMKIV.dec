@@ -8,6 +8,10 @@ ACTOR BFGBlackHoleMode : Inventory
 Inventory.MaxAmount 1
 }
 
+Actor BlackHoleDetonator : Inventory
+{
+Inventory.MaxAmount 1
+}
 
 ACTOR PB_BFG9000: PB_Weapon Replaces BFG9000
 {
@@ -408,6 +412,17 @@ ACTOR PB_BFG9000: PB_Weapon Replaces BFG9000
 			
 			028G FGHI 1 BRIGHT
 			Goto Ready3
+		
+		Reload:
+			"####" A 0 A_JumpIfInventory("BFGBlackHoleMode",1,2)
+			"####" A 0
+			Goto Ready3
+			"####" A 0 A_StartSound("weapons/pbarm",CHAN_AUTO)
+		ReloadHold:
+			"####" A 1 A_GiveInventory("BlackHoleDetonator",1)
+			"####" A 0 A_TakeInventory("BlackHoleDetonator",1)
+			"####" A 0 A_JumpIf(PressingReload(), "ReloadHold")
+			Goto Ready3
 			
 		FlashKicking:
 			034G ABCDEFGGGHIJKLMNO 0
@@ -575,7 +590,7 @@ Actor TinyBlackHoleSingularity : BlackHoleSingularity
 
 ACTOR BFG_BeamProjectile : MageWandMissile
 {
-  Speed 230
+  Speed 400
   Radius 13
   Height 8
   Damage 20
@@ -604,7 +619,7 @@ ACTOR BFG_BeamProjectile : MageWandMissile
     TNT1 A 0 A_SpawnItemEx("BFGLightningTrial", 0, random(-1,1), random(4,6))
 	TNT1 A 0 A_SpawnItemEx("NewBFGTrailGreen", 0, random(8,-8), random(8,-8), 0, 0, 0, 0, 128, 0)
     TNT1 A 0 A_SpawnItemEx("BFGFOG", 0, 0)
-    HSPL ABCDEFGHIJ 1 bright Light("BFGBALL") A_SetScale(ScaleX -0.1, ScaleY -0.1)
+    HSPL ABCDEFGHIJ 1 bright Light("BFGALT") A_SetScale(ScaleX -0.1, ScaleY -0.1)
     stop
   }
 }
@@ -634,18 +649,25 @@ Actor Blackhole_Ball
 			TNT1 A 0 A_StartSound("DSKTESLA", CHAN_5, CHANF_LOOPING)
 		Fly:
 			029G ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright Light("BlackholeBall") {
+				if(CountInv("BlackHoleDetonator", AAPTR_TARGET) >=1) 
+				{return resolvestate("GoExplode");}
 				A_Explode(20,90,0);
 				A_SpawnItemEx("PurpleTrailSparks", 0, 0, 8, 0, 0, 0, 0, 128);
 				A_RadiusThrust(-100,100, RTF_NOIMPACTDAMAGE);
+				return resolvestate("");
 			}
 			030G ABCD 1 Bright Light("BlackholeBall")  {
+				if(CountInv("BlackHoleDetonator", AAPTR_TARGET) >=1) 
+				{return resolvestate("GoExplode");}
 				A_Explode(20,90,0);
 				A_SpawnItemEx("PurpleTrailSparks", 0, 0, 8, 0, 0, 0, 0, 128);
 				A_RadiusThrust(-100,100, RTF_NOIMPACTDAMAGE);
+				return resolvestate("");
 			}
 			loop
 			
 		Death:
+		GoExplode:
 			TNT1 A 0 A_SpawnItem("BlackHoleSingularity",0,0,0)
 			TNT1 A 0 A_CustomMissile ("PurpleShockWave", 0, 0, random (0, 360), 2, random (0, 360))
 			TNT1 A 0 A_CustomMissile ("PurpleShockWave_Flat", 0, 0, random (0, 360), 2, random (0, 360))
