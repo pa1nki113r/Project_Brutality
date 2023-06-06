@@ -482,25 +482,25 @@ class PB_Hud_ZS : BaseStatusBar
     void DrawReserveAmmoBar()
     {
         //Pistol Ammo
-        ReserveAmmoNum("AMMOIC2", "PistolBullets", (-9, -62), (-23, -70), Font.CR_TAN);
+        ReserveAmmoNum("AMMOIC2", "PB_LowCalMag", (-9, -62), (-23, -70), Font.CR_TAN);
         
         //Shotgun Ammo
-        ReserveAmmoNum("AMMOIC3", "NewShell", (-9, -74), (-23, -82), Font.CR_ORANGE);
+        ReserveAmmoNum("AMMOIC3", "PB_Shell", (-9, -74), (-23, -82), Font.CR_ORANGE);
         
         //Heavy Ammo
-        ReserveAmmoNum("AMMOIC1", "NewClip", (-9, -86), (-23, -94), Font.CR_YELLOW);
+        ReserveAmmoNum("AMMOIC1", "PB_HighCalMag", (-9, -86), (-23, -94), Font.CR_YELLOW);
         
         //Rocket Ammo
-        ReserveAmmoNum("AMMOIC4", "RocketAmmo", (-9, -98), (-23, -106), Font.CR_RED);
+        ReserveAmmoNum("AMMOIC4", "PB_RocketAmmo", (-9, -98), (-23, -106), Font.CR_RED);
         
         //Plasma Ammo
-        ReserveAmmoNum("AMMOIC5", "Cell", (-9, -110), (-23, -118), Font.CR_PURPLE);
+        ReserveAmmoNum("AMMOIC5", "PB_Cell", (-9, -110), (-23, -118), Font.CR_PURPLE);
         
         //Gas Ammo
-        ReserveAmmoNum("AMMOIC6", "Gas", (-9, -123), (-23, -130), Font.CR_ORANGE);
+        ReserveAmmoNum("AMMOIC6", "PB_Fuel", (-9, -123), (-23, -130), Font.CR_ORANGE);
         
         //Soul Ammo
-        ReserveAmmoNum("AMMOIC7", "Demonpower", (-9, -135), (-23, -142), Font.CR_DARKRED);
+        ReserveAmmoNum("AMMOIC7", "PB_DTech", (-9, -135), (-23, -142), Font.CR_DARKRED);
     }
 
     ////////////////////////////////////
@@ -686,7 +686,7 @@ class PB_Hud_ZS : BaseStatusBar
 													PBHud_DrawString(mBoldFont, "O²: "..(Formatnumber(((GetAirTime() / 7.0) * 100.0) / 100.0)).."%", (137, -90), DI_TEXT_ALIGN_LEFT, Font.FindFontColor('HUDBLUEBAR'));
 												}
             PBHud_DrawImage("BARBACK1", (73, -50), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1);
-            if(CheckInventory("PowerStrength")) {
+            if(CheckInventory("PB_PowerStrength")) {
 				PBHud_DrawImage("BZRKHUD", (82, -51), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, box: (19, 19));
             }
             else if(Health > 100) {
@@ -769,19 +769,19 @@ class PB_Hud_ZS : BaseStatusBar
                 //Equipment
                 if(CheckInventory("FragGrenadeSelected")) {
                     PBHud_DrawImage("HFRAGY", (-24, -23), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, scale: (1.25, 1.25));
-                    PBHud_DrawString(mIndexFont, Formatnumber(GetAmount("HandGrenadeAmmo")), (-39, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED);
+                    PBHud_DrawString(mIndexFont, Formatnumber(GetAmount("PB_GrenadeAmmo")), (-39, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED);
                 }
                 if(CheckInventory("ProximityMineSelected")) {
                     PBHud_DrawImage("HMINEY", (-24, -23), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, scale: (1.25, 1.25));
-                    PBHud_DrawString(mIndexFont, Formatnumber(GetAmount("MineAmmo")), (-39, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED);
+                    PBHud_DrawString(mIndexFont, Formatnumber(GetAmount("PB_ProxMineAmmo")), (-39, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED);
                 }
                 if(CheckInventory("StunGrenadeSelected")) {
                     PBHud_DrawImage("HSTUNY", (-24, -23), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, scale: (1.25, 1.25));
-                    PBHud_DrawString(mIndexFont, Formatnumber(GetAmount("StunGrenadeAmmo")), (-39, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED);
+                    PBHud_DrawString(mIndexFont, Formatnumber(GetAmount("PB_StunGrenadeAmmo")), (-39, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED);
                 }
                 if(CheckInventory("RevGunSelected")) {
                     PBHud_DrawImage("HREVCY", (-24, -23), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, scale: (1.25, 1.25));
-                    PBHud_DrawString(mIndexFont, Formatnumber(GetAmount("MiniHellRocketAmmo")), (-39, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED);
+                    PBHud_DrawString(mIndexFont, Formatnumber(GetAmount("PB_QuickLauncherAmmo")), (-39, -32), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED);
                 }
 
                 PBHud_DrawImage("EQUPBO", (-15, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
@@ -806,8 +806,8 @@ class PB_Hud_ZS : BaseStatusBar
                         //Underbarrel Grenade Ammo
                         PBHud_DrawImage("BARBACR3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1);
                         
-                        PBHud_DrawBar("ABAR4", "BGBARL", GetAmount("RocketAmmo"), GetMaxAmount("RocketAmmo"), (-100, -72), 0, rtlAmmoBar, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-                        PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("RocketAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_RED);
+                        PBHud_DrawBar("ABAR4", "BGBARL", GetAmount("PB_RocketAmmo"), GetMaxAmount("PB_RocketAmmo"), (-100, -72), 0, rtlAmmoBar, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
+                        PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("PB_RocketAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_RED);
                     }
                 }
 
@@ -943,31 +943,31 @@ class PB_Hud_ZS : BaseStatusBar
                     }
                 }
                 
-                if(WeaponUsesAmmoType("PistolBullets"))
+                if(WeaponUsesAmmoType("PB_LowCalMag"))
                 {
                     DrawAmmoBar("BARBACT1", "BARBACT2", "BAMBAR2", "ABAR2", "ABAR2", "AMMOIC2", Font.CR_TAN);
                 }
-                if(WeaponUsesAmmoType("NewClip") && !CheckWeaponSelected("PB_MG42"))
+                if(WeaponUsesAmmoType("PB_HighCalMag") && !CheckWeaponSelected("PB_MG42"))
                 {
                     DrawAmmoBar("BARBACY1", "BARBACY2", "BAMBAR1", "ABAR1", "ABAR1", "AMMOIC1", Font.CR_YELLOW);
                 }
-                if(WeaponUsesAmmoType("NewShell"))
+                if(WeaponUsesAmmoType("PB_Shell"))
                 {
                     DrawAmmoBar("BARBACO1", "BARBACO2", "BAMBAR3", "ABAR3", "ABAR3", "AMMOIC3", Font.CR_ORANGE);
                 }
-                if(WeaponUsesAmmoType("RocketAmmo"))
+                if(WeaponUsesAmmoType("PB_RocketAmmo"))
                 {
                     DrawAmmoBar("BARBACR1", "BARBACR2", "BAMBAR4", "ABAR4", "ABAR4", "AMMOIC4", Font.CR_RED);
                 }
-                if(WeaponUsesAmmoType("Cell"))
+                if(WeaponUsesAmmoType("PB_Cell"))
                 {
                     DrawAmmoBar("BARBACP1", "BARBACP2", "BAMBAR5", "ABAR5", "ABAR5", "AMMOIC5", Font.CR_PURPLE);
                 }
-                if(WeaponUsesAmmoType("Gas") && !CheckWeaponSelected("PB_Chainsaw"))
+                if(WeaponUsesAmmoType("PB_Fuel") && !CheckWeaponSelected("PB_Chainsaw"))
                 {
                     DrawAmmoBar("BARBACD1", "BARBACD2", "BAMBAR6", "ABAR6", "ABAR6", "AMMOIC6", Font.CR_ORANGE);
                 }
-                if(WeaponUsesAmmoType("Demonpower") && !CheckWeaponSelected("PB_Unmaker"))
+                if(WeaponUsesAmmoType("PB_DTech") && !CheckWeaponSelected("PB_Unmaker"))
                 {
                     DrawAmmoBar("BARBACZ1", "BARBACZ2", "BAMBAR7", "ABAR7", "ABAR7", "AMMOIC7", Font.CR_DARKRED);
                 }
