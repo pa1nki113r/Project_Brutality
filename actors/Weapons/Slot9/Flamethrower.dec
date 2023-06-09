@@ -231,6 +231,8 @@ ACTOR PB_Flamethrower : PB_Weapon
 	+DONTGIB
 	Inventory.PickupMessage "You got the UAC-M3 Flamethrower! (Slot 0)"
 	Tag "UAC-M3 Flamethrower"
+	PB_WeaponBase.OffsetRecoilX 1.75
+	PB_WeaponBase.OffsetRecoilY 1.5
 	States
 	{
 	Steady:
@@ -843,7 +845,7 @@ ACTOR PB_Flamethrower : PB_Weapon
 		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
 		FLF2 A 0 A_JumpIfInventory("FlamerUpgraded", 1, "FireUpgraded")
 		TNT1 A 0 A_JumpIfInventory("FlamerNukageMode", 1, "FireNuke")
-        TNT1 A 0 A_JumpIfInventory("FlamerAmmo",5,1)
+        TNT1 A 0 A_JumpIfInventory("FlamerAmmo",3,1)
 		Goto Reload
         TNT1 A 0 {
 			A_AlertMonsters;
@@ -871,6 +873,7 @@ ACTOR PB_Flamethrower : PB_Weapon
 	FireContinue:
 		FLF1 ABCDEF 1 BRIGHT {
 			if(CountInv("FlamerAmmo") < 1) {return state("FireStop");}
+			PB_FireOffset;
 			A_FireCustomMissile("FlamethrowerMissileNew", 0, 0, 0, -3);
 			A_FireCustomMissile("ShotgunParticles", random(-11,11), 0, -1, random(-15,-2));
 			A_FireCustomMissile("ShotgunParticles", random(-11,11), 0, -1, random(-15,-2));
@@ -878,7 +881,7 @@ ACTOR PB_Flamethrower : PB_Weapon
 			A_FireCustomMissile("ShotgunParticles", random(-11,11), 0, -1, random(-15,-2));
 			return state("");
 		}
-		TNT1 A 0 A_TakeInventory("FlamerAmmo", 5)
+		TNT1 A 0 A_TakeInventory("FlamerAmmo", 3)
 		TNT1 A 0 A_StartSound("weapons/flamethrower/loop", CHAN_WEAPON, CHANF_LOOPING)
 		TNT1 A 0 A_ReFire("FireContinue")
 	FireStop:
@@ -891,24 +894,6 @@ ACTOR PB_Flamethrower : PB_Weapon
 		F1B1 ABC 1 BRIGHT
 		F1B1 DEFGH 1 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
 		Goto Ready3
-		
-		
-        "####" A 0 A_TakeInventory("FlamerAmmo",5)
-		"####" A 0 A_AlertMonsters
-        FLF1 D 1 BRIGHT A_SetAngle(random(1, -1) + angle)
-		"####" AAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-12,9))
-		"####" A 0 A_FireCustomMissile("FlamethrowerMissile", 0, 1, 0, -1)
-        FLF1 E 1 BRIGHT A_SetPitch(random(1, -1) + pitch)
-		"####" AAA 0 BRIGHT A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-12,9))
-		"####" A 0 A_FireCustomMissile("FlamethrowerMissile", 0, 1, 0, -1)
-        FLF1 F 1 BRIGHT A_SetPitch(random(1, -1) + pitch)
-		"####" A 0 A_PlaySoundEx("FLMRLOP", "Weapon",1)
-		"####" A 0 A_ReFire("FireContinue")
-		TNT1 A 0 {
-			A_StopSoundEx("Weapon");
-			A_PlaySoundEx("FLMREND", "Weapon");
-			}
-        Goto StopRegular
 	
 	FireNuke:
 		TNT1 A 0 A_JumpIfInventory("FlamerAmmo",2,1)
@@ -921,7 +906,10 @@ ACTOR PB_Flamethrower : PB_Weapon
 			}
 	FireContinueNuke:
 		"####" A 0
-		FLN1 ABC 1 BRIGHT A_FireCustomMissile("NukageStreamMissile", 0, 1, 0, -5)
+		FLN1 ABC 1 BRIGHT {
+			A_FireCustomMissile("NukageStreamMissile", 0, 1, 0, -5);
+			PB_FireOffset;
+		}
         "####" A 0 A_JumpIfInventory("FlamerAmmo",2,1)
 		Goto Reload
 		"####" A 0 A_AlertMonsters
@@ -929,6 +917,7 @@ ACTOR PB_Flamethrower : PB_Weapon
 			 A_FireCustomMissile("NukageStreamMissile", 0, 1, 0, -5);
 			 A_FireCustomMissile("NukageStreamMissile", 0, 1, 0, -5);
 			 A_FireCustomMissile("NukageStreamMissile", 0, 1, 0, -5);
+			PB_FireOffset;
 		}
 		"####" A 0 {
 			A_TakeInventory("FlamerAmmo", 2);
@@ -945,7 +934,7 @@ ACTOR PB_Flamethrower : PB_Weapon
 
 	FireUpgraded:
 		TNT1 A 0 A_JumpIfInventory("FlamerNukageMode", 1, "FireNukeUpgraded")
-        TNT1 A 0 A_JumpIfInventory("Gas",5,1)
+        TNT1 A 0 A_JumpIfInventory("Gas",3,1)
 		Goto Ready3
         TNT1 A 0 {
 			A_AlertMonsters;
@@ -974,13 +963,14 @@ ACTOR PB_Flamethrower : PB_Weapon
 		FLF2 ABCDEF 1 BRIGHT {
 			if(CountInv("Gas") < 1) {return state("FireStop");}
 			A_FireCustomMissile("FlamethrowerMissileNew", 0, 1, 0, -3);
+			PB_FireOffset;
 			A_FireCustomMissile("ShotgunParticles", random(-11,11), 0, -1, random(-15,-2));
 			A_FireCustomMissile("ShotgunParticles", random(-11,11), 0, -1, random(-15,-2));
 			A_FireCustomMissile("ShotgunParticles", random(-11,11), 0, -1, random(-15,-2));
 			A_FireCustomMissile("ShotgunParticles", random(-11,11), 0, -1, random(-15,-2));
 			return state("");
 		}
-		TNT1 A 0 A_TakeInventory("Gas", 5)
+		TNT1 A 0 A_TakeInventory("Gas", 3)
 		TNT1 A 0 A_StartSound("weapons/flamethrower/loop", CHAN_WEAPON, CHANF_LOOPING)
 		TNT1 A 0 A_ReFire("FireUpgradedContinue")
 	FireUpgradedStop:
@@ -1008,11 +998,15 @@ ACTOR PB_Flamethrower : PB_Weapon
 			}
 	FireContinueNukeUpgraded:
 		"####" A 0
-		FLN1 EFG 1 BRIGHT A_FireCustomMissile("NukageStreamMissile", 0, 1, 0, -5)
+		FLN1 EFG 1 BRIGHT {
+			A_FireCustomMissile("NukageStreamMissile", 0, 1, 0, -5);
+			PB_FireOffset;
+		}
         "####" A 0 A_JumpIfInventory("Gas",2,1)
 		Goto Ready3
 		"####" A 0 A_AlertMonsters
         FLN1 EFG 1 BRIGHT{
+			 PB_FireOffset;
 			 A_FireCustomMissile("NukageStreamMissile", 0, 1, 0, -5);
 			 A_FireCustomMissile("NukageStreamMissile", 0, 1, 0, -5);
 			 A_FireCustomMissile("NukageStreamMissile", 0, 1, 0, -5);
@@ -1030,18 +1024,6 @@ ACTOR PB_Flamethrower : PB_Weapon
 			}
 		Goto Ready3
 		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-		
-	
 	StopRegular:
 		TNT1 A 0 {
 				if (CountInv("FlamerUpgraded") == 1 && CountInv("Gas") < 3) {
@@ -1409,6 +1391,7 @@ ACTOR FT_GroundFireSpawner: BarrelExplosionSmokeColumn
 {
 Damagetype "Fire"
     -CLIENTSIDEONLY
+	+NODAMAGETHRUST
 	Alpha 0.9
 	RenderStyle Add
 	Scale 1.0
@@ -1418,10 +1401,10 @@ Damagetype "Fire"
 		Spawn:
 			TNT1 A 0 A_StartSound("props/torchfire", CHAN_BODY, CHANF_NOSTOP)
 			TNT1 A 1 Light("HUEHUESMALL")
-			TNT1 A 0 A_SpawnItemEx("FT_GroundFire", random(-7,7), random(-7,7), random(1,2))
+			TNT1 A 0 A_SpawnItemEx("FT_GroundFire", random(-24,24), random(-7,7), random(1,2))
 			TNT1 A 1 Light("HUEHUESMALL")
-			TNT1 A 0 A_SpawnItemEx("FT_GroundFire2", random(-7,7), random(-7,7), random(1,2))
-			TNT1 A 0 A_Explode(18, 36, 0, 0, 36)
+			TNT1 A 0 A_SpawnItemEx("FT_GroundFire2", random(-24,24), random(-7,7), random(1,2))
+			TNT1 A 0 A_Explode(12, 36, 0, 0, 36)
 			TNT1 A 0 
         {
          if(GetCVar("pb_performance_fire") == false) 
@@ -1437,11 +1420,12 @@ Damagetype "Fire"
 			A_SpawnItemEx("BigBlackSmokeMedium", random(-7,7), random(-7,7), random(12,24), 0, 0 , random(2,4));
          }
         }
-			TNT1 A 0 A_Jump(28, "StopBurning")
+			TNT1 A 0 A_Jump(7, "StopBurning")
 			Loop
 		
 		StopBurning:
 			TNT1 A 0 A_StopSound(CHAN_BODY)
+			TNT1 AAAAAAAA 2 Light("HUEHUESMALL")
 			Stop
     }
 }
@@ -1453,12 +1437,12 @@ ACTOR FT_GroundFireSpawnerPerf : FT_GroundFireSpawner
 		Spawn:
 			TNT1 A 0 A_StartSound("props/torchfire", CHAN_BODY, CHANF_NOSTOP)
 			TNT1 A 1
-			TNT1 A 0 A_SpawnItemEx("FT_GroundFire", random(-7,7), random(-7,7), random(1,2))
+			TNT1 A 0 A_SpawnItemEx("FT_GroundFire", random(-24,24), random(-7,7), random(1,2))
 			TNT1 A 1
-			TNT1 A 0 A_SpawnItemEx("FT_GroundFire2", random(-7,7), random(-7,7), random(1,2))
+			TNT1 A 0 A_SpawnItemEx("FT_GroundFire2", random(-24,24), random(-7,7), random(1,2))
 			TNT1 A 1
-			TNT1 A 0 A_Explode(18, 36, 0, 0, 36)
-			TNT1 A 0 A_Jump(28, "StopBurning")
+			TNT1 A 0 A_Explode(10, 36, 0, 0, 36)
+			TNT1 A 0 A_Jump(7, "StopBurning")
 			Loop
     }
 }
@@ -1470,7 +1454,7 @@ ACTOR FT_GroundFire
 	-SOLID
 	+FORCEXYBILLBOARD
 	RenderStyle Add
-	Scale 0.25
+	Scale 0.29
 	States
 	{
 		Spawn:
@@ -1496,7 +1480,7 @@ ACTOR FT_GroundFire2
 	-SOLID
 	+FORCEXYBILLBOARD
 	RenderStyle Add
-	Scale 0.4
+	Scale 0.55
 	States
 	{
 		Spawn:
