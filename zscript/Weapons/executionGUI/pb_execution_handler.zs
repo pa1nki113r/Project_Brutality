@@ -85,7 +85,7 @@ class pb_ExecutionHandler : EventHandler
 		
 		PlayerPawn player = players[consolePlayer].mo;
 		
-		if(null != player.FindInventory("PowerStrength") && (targetCurrentHealth <= targetMaxHealth*0.25 || targetCurrentHealth <= 150)) {
+		if(null != player.FindInventory("PB_PowerStrength") && (targetCurrentHealth <= targetMaxHealth*0.25 || targetCurrentHealth <= 150)) {
 			return true;
 		}
 		
