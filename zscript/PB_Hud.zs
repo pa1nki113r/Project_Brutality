@@ -624,7 +624,7 @@ class PB_Hud_ZS : BaseStatusBar
     
     string FormatPowerupTime(Powerup item)
 	{
-		int sec = Thinker.Tics2Seconds(item.EffectTics);
+		int sec = 1+Thinker.Tics2Seconds(item.EffectTics);
 		return String.Format("%02d:%02d", (sec % 3600) / 60, sec % 60);
 	}
     
