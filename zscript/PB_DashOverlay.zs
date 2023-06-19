@@ -8,7 +8,7 @@ class PB_DashHandler : EventHandler
 	{
 		tick++;
 		
-		let plr = players[consoleplayer];
+		playerinfo plr = players[consoleplayer];
         if (!plr)
             return;
 		
