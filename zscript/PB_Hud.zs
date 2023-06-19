@@ -665,17 +665,20 @@ class PB_Hud_ZS : BaseStatusBar
 					case 'PB_PowerSpeed':
 						image = "PWRHASTE";
 						break;
-					DEFAULT:
-						invalidpower = true;
+					Default:
+						image = "TNT1A0";
 						break;
 				}
 				
-				if(!invalidpower) {
-					fontCol = Font.FindFontColor(powername);
-					PBHud_DrawImage(image, initialpos, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
-					PBHud_DrawString(mBoldFont, powertime, (initialpos.x + 28, initialpos.y - 20), DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_LEFT, fontcol);
-					initialpos.y -= step;
-				}
+				if(TexMan.GetName(Texman.CheckForTexture(image)) == "TNT1A0")
+                {
+                    continue;
+                }
+				
+				fontCol = Font.FindFontColor(powername);
+				PBHud_DrawImage(image, initialpos, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+				PBHud_DrawString(mBoldFont, powertime, (initialpos.x + 28, initialpos.y - 20), DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_LEFT, fontcol);
+				initialpos.y -= step;
 			}
 		}
     }
