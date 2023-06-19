@@ -4,6 +4,9 @@
 /*
 Credits:
 
+generic name guy
+-Code
+
 A_D_M_E_R_A_L
 -Slanted Bars
 
@@ -12,6 +15,9 @@ Iamcarrotmaster
 
 JMartinez2098
 -Fixes
+
+BlueShadow
+-Bases for powerup timers and keycards
 */
 
 class PB_Hud_ZS : BaseStatusBar
@@ -190,6 +196,8 @@ class PB_Hud_ZS : BaseStatusBar
           DeathFadeDone = False;
       }
     }
+    
+    
     
     void CalculateSway() {
         //Limit so it only counts when the player strafes.
@@ -612,6 +620,66 @@ class PB_Hud_ZS : BaseStatusBar
         }
     }
     
+    override void DrawPowerups() {} //blank this out so it doesn't cause issues
+    
+    string FormatPowerupTime(Powerup item)
+	{
+		int sec = Thinker.Tics2Seconds(item.EffectTics);
+		return String.Format("%02d:%02d", (sec % 3600) / 60, sec % 60);
+	}
+    
+    void PB_DrawPowerups(vector2 initialpos, int step = 22) 
+    {
+		string image;
+		string powerTime;
+		name powerName;
+		bool invalidPower;
+		int fontCol;
+		
+		for(let i = CPlayer.mo.inv; i != null; i = i.inv)
+		{
+			let power = Powerup(i);
+			
+			if(power)
+			{
+				powername = i.GetClassName();
+				powertime = FormatPowerupTime(power);
+				
+				switch(powername)
+				{
+					case 'PB_PowerInvul':
+						image = "PWRINVUL";
+						break;
+					case 'PB_PowerIronFeet':
+						image = "PWRRADSU";
+						break;
+					case 'PB_PowerInvis':
+						image = "PWRINVIS";
+						break;
+					case 'PB_PowerLightAmp':
+						image = "PWRINFRA";
+						break;
+					case 'PB_PowerDoomDamage':
+						image = "PWRQUADD";
+						break;
+					case 'PB_PowerSpeed':
+						image = "PWRHASTE";
+						break;
+					DEFAULT:
+						invalidpower = true;
+						break;
+				}
+				
+				if(!invalidpower) {
+					fontCol = Font.FindFontColor(powername);
+					PBHud_DrawImage(image, initialpos, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+					PBHud_DrawString(mBoldFont, powertime, (initialpos.x + 28, initialpos.y - 20), DI_SCREEN_LEFT_BOTTOM | DI_TEXT_ALIGN_LEFT, fontcol);
+					initialpos.y -= step;
+				}
+			}
+		}
+    }
+    
     ////////////////////////////////////
     //           HUD LOGIC            //
     ////////////////////////////////////
@@ -701,7 +769,7 @@ class PB_Hud_ZS : BaseStatusBar
             	PBHud_DrawBar("HOBAR", "BGBARL", IntHealth, min(MaxHealth, 100), (112, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
             }
             if(Health > 100) {
-            	PBHud_DrawBar("HLBAR", "BGBARL", IntHealth, min(MaxHealth, 100), (112, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+            	PBHud_DrawBar("HLBAR", "BGBARL", IntHealth - 100, min(MaxHealth, 200), (112, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
             }
             
             PBHud_DrawString(mDefaultFont, Formatnumber(Health), (205, -69), DI_TEXT_ALIGN_LEFT, Font.FindFontColor('HUDBLUEBAR'));
@@ -709,6 +777,9 @@ class PB_Hud_ZS : BaseStatusBar
             //Armorbar
             PBHud_DrawImage("BARBACK2", (72, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1);
             PBHud_DrawBar("APBAR", "BGBARL", IntArmor, min(MaxArmor, 100), (112, -30), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+            if(Armor > 100) {
+            	PBHud_DrawBar("AOBAR", "BGBARL", IntArmor - 100, min(MaxArmor, 200), (112, -30), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+            }
             PBHud_DrawString(mDefaultFont, FormatNumber(Armor), (205, -48), DI_TEXT_ALIGN_LEFT, Font.FindFontColor('HUDGREENBAR2') );
             PBHud_DrawImage("ARMRHUD1", (81, -24), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1, box: (20, 21));
             if(GetArmorSavePercent() >= 32) {
@@ -726,6 +797,8 @@ class PB_Hud_ZS : BaseStatusBar
             //Mugshot
             PBHud_DrawTexture(GetMugShot(5), (25, -65), DI_ITEM_OFFSETS, scale: (1.25, 1.25));
             PBHud_DrawImage("EQUPBO", (16, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+            
+            PB_DrawPowerups((16, -76));
             
             //Keys
             DrawKeys((-40, 38));
