@@ -35,7 +35,7 @@ ACTOR UnmakerSpawner: CustomInventory
 	Pickup:
 	    TNT1 A 0
 		TNT1 A 0 A_GiveInventory("PB_Unmaker", 1)
-		TNT1 A 0 A_GiveInventory("Demonpower", 100)
+		TNT1 A 0 A_GiveInventory("PB_DTech", 100)
 		Stop
     }
 }
@@ -64,7 +64,7 @@ ACTOR PB_Unmaker : PB_Weapon
 	Weapon.AmmoUse1 0
 	Weapon.AmmoUse2 0
 	Weapon.AmmoGive1 200
-	Weapon.AmmoType1 "Demonpower"
+	Weapon.AmmoType1 "PB_DTech"
 	Weapon.AmmoType2 "UnmakerOverchargeCounter"
     Inventory.PickupSound "UNMPCK"
 	Tag "Unmaker"
@@ -72,7 +72,7 @@ ACTOR PB_Unmaker : PB_Weapon
 	+WEAPON.NOAUTOFIRE	
 	+WEAPON.AMMO_OPTIONAL
 	scale .5
-	Inventory.PickupMessage "You got the sinister Unmaker, the penultimate wrath of Hell itself. (Slot 9)"
+	Inventory.PickupMessage "You got the sinister Unmaker, the penultimate wrath of Hell itself. (Slot 0)"
 	PB_WeaponBase.respectItem "RespectUnmaker"
 	States
 	{		
@@ -123,14 +123,14 @@ ACTOR PB_Unmaker : PB_Weapon
 			if(CountInv("UnmakerFireSelected") == 1) {A_SetWeaponSprite("UNOS");}
 			}
 	Ready3:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "Runout")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
 		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected",1, "ReadyOvercharge")
 		TNT1 A 0 {
 		PB_HandleCrosshair(72);
 		A_Overlay(7,"IdleScreen");
 		A_Overlay(5,"CoreIdle");
 		}
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "Runout")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
 	ReadyToFire:
 		TNT1 A 0 A_SetInventory("HasIncendiaryWeapon",1)
 		TNT1 A 0 A_StartSound("UNMIDL", 6, CHANF_LOOPING)
@@ -192,6 +192,10 @@ WeaponSpecial:
 		TNT1 A 0 A_ClearOverlays(5,7)
 		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
 		TNT1 A 0 {
+		if(CountInv("UnmakerFireSelected")==1) { A_Print("The Overcharge has to run its course."); return state ("Ready3");} 
+		return state ("");
+		}	
+		TNT1 A 0 {
 		if(CountInv("UnmakerOverchargeCounter")<150) { A_Print("Not enough souls, absorb them with the beam or orbs."); return state ("RunOut");} 
 		return state ("");
 		}	
@@ -231,7 +235,7 @@ SwitchToNormal:
 	WeaponEmpty:
 		TNT1 A 0 A_ClearOverlays(5,9)
 		UNHH K 1 A_DoPBWeaponAction
-		TNT1 A 0 A_JumpIfInventory("Demonpower",10,"ReadyBackUp")
+		TNT1 A 0 A_JumpIfInventory("PB_DTech",10,"ReadyBackUp")
 		Loop
 	ReadyBackUp:
 		TNT1 A 0 A_TakeInventory("HasPlayedRunOutAnim",1)
@@ -457,18 +461,18 @@ SwitchToNormal:
 		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
 		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
 		TNT1 A 0 A_ClearOverlays(5,7)
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "Runout")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
 		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeFire")
 	Hold:	
 		TNT1 A 0 A_ClearOverlays(5,7)
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "Runout")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
 		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeFire")
 		UNHF ABCD 1
 		TNT1 A 0 A_PlaySOund("UNMCHG", 1)
 		TNT1 A 0 A_PlaySOund("UNMSTA", 3)
 		UNHF EFGHHIJJKLLMNNOPPQRR 1 BRIGHT
 	Fire1:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
 		UNHR A 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
@@ -480,61 +484,61 @@ SwitchToNormal:
 		A_OverlayRotate(6,frandom(-20,20));
 		A_PlaySOund("UNMLOP", 6, 1, 1);
 		A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
-		A_TakeInventory("Demonpower", 2);
+		A_TakeInventory("PB_DTech", 2);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("Fire2")
 		Goto StopPrimary
 	Fire2:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
 		UNHR B 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashNormal");
 		A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
-		A_TakeInventory("Demonpower", 2);
+		A_TakeInventory("PB_DTech", 2);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("Fire3")
 		Goto StopPrimary
 	Fire3:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
 		UNHR C 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashNormal");
 		A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
-		A_TakeInventory("Demonpower", 2);
+		A_TakeInventory("PB_DTech", 2);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("Fire4")
 		Goto StopPrimary
 	Fire4:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
 		UNHR D 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashNormal");
 		A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
-		A_TakeInventory("Demonpower", 2);
+		A_TakeInventory("PB_DTech", 2);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("Fire5")
 		Goto StopPrimary
 	Fire5:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
 		UNHR E 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashNormal");
 		A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
-		A_TakeInventory("Demonpower", 2);
+		A_TakeInventory("PB_DTech", 2);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("Fire6")
 		Goto StopPrimary
 	Fire6:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
 		UNHR F 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
@@ -545,55 +549,55 @@ SwitchToNormal:
 		A_OverlayPivotAlign(-2,PSPA_CENTER,PSPA_CENTER);
 		A_OverlayRotate(-2,frandom(-20,20));
 		A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
-		A_TakeInventory("Demonpower", 2);
+		A_TakeInventory("PB_DTech", 2);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("Fire7")
 		Goto StopPrimary
 	Fire7:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
 		UNHR G 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashNormal");
 		A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
-		A_TakeInventory("Demonpower", 2);
+		A_TakeInventory("PB_DTech", 2);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("Fire8")
 		Goto StopPrimary
 	Fire8:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
 		UNHR H 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashNormal");
 		A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
-		A_TakeInventory("Demonpower", 2);
+		A_TakeInventory("PB_DTech", 2);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("Fire9")
 		Goto StopPrimary
 	Fire9:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
 		UNHR I 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashNormal");
 		A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
-		A_TakeInventory("Demonpower", 2);
+		A_TakeInventory("PB_DTech", 2);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("Fire10")
 		Goto StopPrimary
 	Fire10:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
 		UNHR J 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashNormal");
 		A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
-		A_TakeInventory("Demonpower", 2);
+		A_TakeInventory("PB_DTech", 2);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("Fire1")
@@ -606,7 +610,7 @@ SwitchToNormal:
 		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashNormal");
 		A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
-		A_TakeInventory("Demonpower", 2);
+		A_TakeInventory("PB_DTech", 2);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_PlaySOund("UNMRLS", 3)
@@ -615,13 +619,13 @@ SwitchToNormal:
 		TNT1 A 0 A_Overlay(-3,"RespectLightning")
 		TNT1 A 0 A_Overlay(6,"RespectLightning2")
 		TNT1 A 0 A_PlaySOund("UNMSTO", 1)
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "Runout")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
 		Goto Ready3
 		
 	OverchargeFire:
 		TNT1 A 0 A_ClearOverlays(5,7)
 		TNT1 A 0 A_WeaponOffset(0,32)
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "Runout")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
 		UNOF JKLM 1
 		TNT1 A 0 A_Overlay(-2,"OverchargeCharge")
 		TNT1 A 0 A_OverlayFlags(-2,PSPF_FLIP|PSPF_MIRROR,true)
@@ -631,13 +635,13 @@ SwitchToNormal:
 		UNOF NOPQRRSTTUVVWWXXYZZ 1 BRIGHT
 	OverchargeHold:	
 		TNT1 A 0 A_ClearOverlays(5,7)
-        TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "Runout")
+        TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
 	OCFire1:
 		TNT1 A 0 {
 		if(CountInv("UnmakerOverchargeCounter")==0) { A_Print("Souls Depleted"); return state ("SwitchToNormal");} 
 		return state ("");
 		}
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "OverchargeStopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
 	    UNOF A 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-2,2),frandom(-2,2),WOF_INTERPOLATE|WOF_ADD);
@@ -651,52 +655,52 @@ SwitchToNormal:
 		A_PlaySOund("UNOCLOP", 6, 1, 1);
 		A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
 		A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,none,0,0,2000,0,1,1.0,none,-6,0,0);
-		A_TakeInventory("Demonpower", 3);
+		A_TakeInventory("PB_DTech", 3);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("OCFire2")
 		Goto OverchargeStopPrimary
 	OCFire2:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "OverchargeStopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
 		UNOF B 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_Overlay(-3,"MuzzleFlashOvercharge");
 		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
 		A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
 		A_FireCustomMissile("OverchargeLaser", frandom(-10,10), 0, 0, 0, 0,frandom(-2,5));
-		A_TakeInventory("Demonpower", 3);
+		A_TakeInventory("PB_DTech", 3);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("OCFire3")
 		Goto OverchargeStopPrimary
 	OCFire3:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "OverchargeStopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
 		UNOF C 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashOvercharge");
 		A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
 		A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,none,0,0,2000,0,1,1.0,none,-6,0,0);
-		A_TakeInventory("Demonpower", 3);
+		A_TakeInventory("PB_DTech", 3);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("OCFire4")
 		Goto OverchargeStopPrimary
 	OCFire4:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "OverchargeStopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
 		UNOF D 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashOvercharge");
 		A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
 		A_FireCustomMissile("OverchargeLaser", frandom(-2,0), 0, 0, 0, 0,frandom(-2,3));
-		A_TakeInventory("Demonpower", 3);
+		A_TakeInventory("PB_DTech", 3);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("OCFire5")
 		Goto OverchargeStopPrimary
 	OCFire5:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "OverchargeStopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
 		UNOF E 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
@@ -704,13 +708,13 @@ SwitchToNormal:
 		A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
 		A_FireCustomMissile("OverchargeLaser", frandom(-1,2), 0, 0, 0, 0,frandom(-1,3));
 		A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,none,0,0,2000,0,1,1.0,none,-6,0,0);
-		A_TakeInventory("Demonpower", 3);
+		A_TakeInventory("PB_DTech", 3);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("OCFire6")
 		Goto OverchargeStopPrimary
 	OCFire6:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "OverchargeStopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
 		UNOF F 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
@@ -721,13 +725,13 @@ SwitchToNormal:
 		A_OverlayPivotAlign(-2,PSPA_CENTER,PSPA_CENTER);
 		A_OverlayRotate(-2,frandom(-20,20));
 		A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
-		A_TakeInventory("Demonpower", 3);
+		A_TakeInventory("PB_DTech", 3);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("OCFire7")
 		Goto OverchargeStopPrimary
 	OCFire7:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "OverchargeStopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
 		UNOF G 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
@@ -735,33 +739,33 @@ SwitchToNormal:
 		A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
 		A_FireCustomMissile("OverchargeLaser", frandom(-2,4), 0, 0, 0, 0,frandom(-2,3));
 		A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,none,0,0,2000,0,1,1.0,none,-6,0,0);
-		A_TakeInventory("Demonpower", 3);
+		A_TakeInventory("PB_DTech", 3);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("OCFire8")
 		Goto OverchargeStopPrimary
 	OCFire8:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "OverchargeStopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
 		UNOF H 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashOvercharge");
 		A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
 		A_FireCustomMissile("OverchargeLaser", frandom(-2,2), 0, 0, 0, 0,frandom(-2,10));
-		A_TakeInventory("Demonpower", 3);
+		A_TakeInventory("PB_DTech", 3);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("OCFire9")
 		Goto OverchargeStopPrimary
 	OCFire9:
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "OverchargeStopPrimary")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
 		UNOF I 1 BRIGHT {
 		A_WeaponOffset(0,32,WOF_INTERPOLATE);
 		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
 		A_Overlay(-3,"MuzzleFlashOvercharge");
 		A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
 		A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,none,0,0,2000,0,1,1.0,none,-6,0,0);
-		A_TakeInventory("Demonpower", 3);
+		A_TakeInventory("PB_DTech", 3);
 		PB_WeaponRecoil(-0.7,random(1, -1));
 		}
 		TNT1 A 0 A_Refire("OCFire1")
@@ -772,7 +776,7 @@ SwitchToNormal:
 		TNT1 A 0 A_PlaySOund("UNMRLS", 3)
 		UNOF MLKJ 3
 		TNT1 A 0 A_PlaySOund("UNMSTO", 1)
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "Runout")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
 		Goto Ready3
 		
 	Altfire:
@@ -781,52 +785,52 @@ SwitchToNormal:
 		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		TNT1 A 0 A_ClearOverlays(5,7)
 		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeAltfire")
-		TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "Runout")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
 		TNT1 A 0 A_ClearOverlays(5,7)
 		UNHF ABCD 1
 		TNT1 A 0 A_PlaySOund("UNMCHG2", 1)
 	Althold:
 		TNT1 A 0 A_ClearOverlays(5,7)
 		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeAltfire")
-       	TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "Runout")
+       	TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
 		UNHR M 1 BRIGHT A_FireCustomMissile("UnmakerDoomSeeker", 0, 0, 0, -10, 0, 0)
-		TNT1 A 0 A_TakeInventory("Demonpower", 4)
+		TNT1 A 0 A_TakeInventory("PB_DTech", 4)
 		UNHR NN 1 BRIGHT
 		TNT1 A 0 PB_WeaponRecoil(-0.5,random(1, -1))
 		UNHR OOOOOKKKLL 1 BRIGHT
 		TNT1 A 0 A_Refire("Althold2")
 		Goto StopDoomSeeker
 	Althold2:
-        TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopDoomSeeker")
+        TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopDoomSeeker")
 		UNHR M 1 BRIGHT A_FireCustomMissile("UnmakerDoomSeeker", 0, 0, 0, -10, 0, 0)
-		TNT1 A 0 A_TakeInventory("Demonpower", 4)
+		TNT1 A 0 A_TakeInventory("PB_DTech", 4)
 		UNHR NN 1 BRIGHT
 		TNT1 A 0 PB_WeaponRecoil(-0.5,random(1, -1))
 		UNHR OOOOOKKLL 1 BRIGHT
 		TNT1 A 0 A_Refire("Althold3")
 		Goto StopDoomSeeker
 	Althold3:
-        TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopDoomSeeker")
+        TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopDoomSeeker")
 		UNHR M 1 BRIGHT A_FireCustomMissile("UnmakerDoomSeeker", 0, 0, 0, -10, 0, 0)
-		TNT1 A 0 A_TakeInventory("Demonpower", 4)
+		TNT1 A 0 A_TakeInventory("PB_DTech", 4)
 		UNHR NN 1 BRIGHT
 		TNT1 A 0 PB_WeaponRecoil(-0.5,random(1, -1))
 		UNHR OOOOKKL 1 BRIGHT
 		TNT1 A 0 A_Refire("Althold4")
 		Goto StopDoomSeeker
 	Althold4:
-        TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopDoomSeeker")
+        TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopDoomSeeker")
 		UNHR M 1 BRIGHT A_FireCustomMissile("UnmakerDoomSeeker", 0, 0, 0, -10, 0, 0)
-		TNT1 A 0 A_TakeInventory("Demonpower", 4)
+		TNT1 A 0 A_TakeInventory("PB_DTech", 4)
 		UNHR NN 1 BRIGHT
 		TNT1 A 0 PB_WeaponRecoil(-0.5,random(1, -1))
 		UNHR OOOKKL 1 BRIGHT
 		TNT1 A 0 A_Refire("Althold5")
 		Goto StopDoomSeeker
 	Althold5:
-        TNT1 A 0 A_JumpIf(CountInv("DemonPower") < 1, "StopDoomSeeker")
+        TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopDoomSeeker")
 		UNHR M 1 BRIGHT A_FireCustomMissile("UnmakerDoomSeeker", 0, 0, 0, -10, 0, 0)
-		TNT1 A 0 A_TakeInventory("Demonpower", 4)
+		TNT1 A 0 A_TakeInventory("PB_DTech", 4)
 		UNHR N 1 BRIGHT
 		TNT1 A 0 PB_WeaponRecoil(-0.5,random(1, -1))
 		UNHR OOKL 1 BRIGHT
@@ -837,7 +841,7 @@ SwitchToNormal:
 		
 OverchargeAltfire:
 		TNT1 A 0 A_ClearOverlays(5,7)
-        TNT1 A 0 A_JumpIfInventory("Demonpower",100,1)
+        TNT1 A 0 A_JumpIfInventory("PB_DTech",100,1)
 		
 		Goto RunOut
 		UNOF JKLM 1
@@ -865,7 +869,7 @@ OverchargeAltfire:
 		TNT1 A 0 A_Playsound("UNOCFIR2", 5)
 		//TNT1 A 0 A_PlaySOund("UNMSTO", 1)
 		TNT1 A 0 A_FireCustomMissile("UnmakerBigPossessionGhost")
-		TNT1 A 0 A_TakeInventory("Demonpower", 100)
+		TNT1 A 0 A_TakeInventory("PB_DTech", 100)
 		UNOS KLMNO 2 BRIGHT
 		TNT1 A 0 A_PlaySOund("UNMUP", 3)
 		UNOS PQRSTUVW 2 BRIGHT

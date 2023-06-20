@@ -100,7 +100,7 @@ Actor PB_SGMagazine: PB_UpgradeItem
 		{
 		A_GiveInventory("PB_Shotgun", 1);
 		A_GiveInventory("DragonBreathUpgrade", 1);
-		A_GiveInventory("NewShell", 20);
+		A_GiveInventory("PB_Shell", 20);
 		A_GiveInventory("ShotgunAmmo", 11);
         if (CountInv("PumpShotgunMagazine") == 0) {A_GiveInventory("PumpshotgunMagNotInserted", 1);}
 		A_GiveInventory("PumpshotgunMagazine", 1);
@@ -222,7 +222,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 	Weapon.AmmoUse2 0
 	Weapon.AmmoGive1 4
 	Weapon.AmmoGive2 0
-	Weapon.AmmoType1 "NewShell"
+	Weapon.AmmoType1 "PB_Shell"
 	Weapon.AmmoType2 "ShotgunAmmo"
 	Inventory.PickupMessage "You got the Pump Shotgun! (Slot 3)"
     Inventory.PickupSound "SHOTPICK"
@@ -249,8 +249,10 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 		A_ZoomFactor(1.0);
 		}
 		Goto Ready3
-		
+	Steady:
+	TNT1 A 1
 	Ready:
+		TNT1 A 0 A_JumpIfInventory("GoFatality",1,"Steady")
 		SHTS ABCDJKLMNOP 0 // Virtualize Sprites in gzdoom's memory
 		SHTD ABCDJKLMNOP 0
 		SHMS BCDEFGSTUVWX 0
@@ -552,7 +554,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 	AltTubeAmmoSwap:
 		TNT1 A 0 A_JumpIfInventory("DragonBreathUpgrade",1,"AltMagAmmoSwap")
 		TNT1 A 0 {
-		 If((CountInv("NewShell") <=2) && (CountInv("ShotgunAmmo") <=2)) 
+		 If((CountInv("PB_Shell") <=2) && (CountInv("ShotgunAmmo") <=2)) 
 			{
 			A_Log("You Need At Least 2 Rounds of Ammo for Swap"); 
 			A_Setinventory("SelectShotgun_Buckshot", 0); 
@@ -595,7 +597,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 			A_SetRoll(roll+0.4,SPF_INTERPOLATE);
 			A_SetPitch(pitch-0.1,SPF_INTERPOLATE);
 		}
-		TNT1 A 0 A_JumpIfInventory("NewShell", 1,3) 
+		TNT1 A 0 A_JumpIfInventory("PB_Shell", 1,3) 
 		SSHR H 1 A_SetRoll(roll-0.1,SPF_INTERPOLATE) // So the chamber shows as being empty
 		//TNT1 A 0 { return state (2); } // Skip This Frame if the shotgun isn't loaded.
 		SHTG K 1 {
@@ -610,7 +612,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 			A_SetRoll(roll+0.1,SPF_INTERPOLATE);
 			A_PlaySoundEx("weapons/sgpump", "Auto");
 			A_Takeinventory("ShotgunAmmo",1);
-			A_Giveinventory("NewShell",1);
+			A_Giveinventory("PB_Shell",1);
 		}
 		SSHR A 0 //A_Refire
         TNT1 A 0 //A_DoPBWeaponAction(WRF_NOBOB)
@@ -683,7 +685,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 			A_SetRoll(roll-0.4,SPF_INTERPOLATE);
 			A_SetPitch(pitch+0.1,SPF_INTERPOLATE);
 			}
-		TNT1 A 0 A_JumpIfInventory("NewShell", 1, 1)
+		TNT1 A 0 A_JumpIfInventory("PB_Shell", 1, 1)
 		SSHR I 3 A_PlaySoundEx("insertshell","Auto") 
 		SSHR JKLMNOPP 1 
 			{
@@ -694,11 +696,11 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 			{
 			A_PlaySoundEx("weapons/sgpump","Auto");
 			A_Giveinventory("ShotgunAmmo",1);
-			A_Takeinventory("NewShell",1);
+			A_Takeinventory("PB_Shell",1);
 			A_Takeinventory("SG_IsSwapping",1);
 			}
 	LoadTube:
-		TNT1 A 0 A_JumpIfInventory("NewShell", 1,1)
+		TNT1 A 0 A_JumpIfInventory("PB_Shell", 1,1)
 		goto TubeSwapFinal
 		TNT1 A 0 A_JumpIfInventory("ShotgunAmmo",9,"TubeSwapFinal")
 		SSHR BCD 1 {
@@ -714,7 +716,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 		}
 		TNT1 A 0 {
 		 A_Giveinventory("ShotgunAmmo",1);
-		 A_Takeinventory("NewShell",1);
+		 A_Takeinventory("PB_Shell",1);
 		}
 		SSHR A 0 A_Refire
         TNT1 A 0 A_DoPBWeaponAction(WRF_NOBOB)
@@ -726,7 +728,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 	AltMagAmmoSwap:
 		TNT1 A 0
 		{
-			if(CountInv("NewShell")<=10)
+			if(CountInv("PB_Shell")<=10)
 			{
 			A_Setinventory("SelectShotgun_Slugshot", 0); 
 			A_Setinventory("SelectShotgun_Buckshot", 0); 
@@ -807,12 +809,12 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 		SHMG JI 1 A_SetRoll(roll+0.1,SPF_INTERPOLATE)
 		TNT1 A 0 A_SetRoll(roll+0.1,SPF_INTERPOLATE)
 	ShellCheckerMagSwap:	
-		TNT1 A 0 A_JumpIf(CountInv("NewShell") == 0,"ReloadMagSwapFinished")
+		TNT1 A 0 A_JumpIf(CountInv("PB_Shell") == 0,"ReloadMagSwapFinished")
 		TNT1 A 0 A_JumpIfInventory("ShotgunAmmo",10,"ReloadMagSwapFinished")
 		TNT1 A 0 
 		{
 		 A_Giveinventory("ShotgunAmmo",1);
-		 A_Takeinventory("NewShell",1);
+		 A_Takeinventory("PB_Shell",1);
 		}
 		Goto ShellCheckerMagSwap	
 	ReloadMagSwapFinished:
@@ -968,7 +970,6 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 		 A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17));
 		 A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17));
 		 A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17));
-		 A_FireCustomMissile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17));
 		 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 		 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 		 A_Overlay(-6, "ShotFlash",true);
@@ -976,15 +977,18 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 		 
 		 If (CountInv("HasSlugs") >=1 )        
 		    {A_PlaySoundEx("SlugShot", "Weapon");
-              A_FireBullets(1.5, 0.5, 1, 140, "ShotgunPuff",FBF_NORANDOM);
+              //A_FireBullets(1.5, 0.5, 1, 140, "ShotgunPuff",FBF_NORANDOM);
+			  A_FireProjectile("PB_12GASlug", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			   A_FireCustomMissile("Tracer", 0, 0, 0, -14, 0, 0);
 			    return state("FireAnimBegin");}
 		 If (CountInv("HasDragonBreath") >=1 ) 
-		    {A_PlaySoundEx("DRBTFIRE", "Weapon");
-		      A_FireBullets(frandom(5.85,6.65), frandom(5.32,6.75),8,0,"None",FBF_NORANDOM,8192,"DragonsBreathTracer",-14,0);
-		       return state("FireAnimBegin");}
+		    {
+				A_PlaySoundEx("DRBTFIRE", "Weapon");
+				A_FireBullets(frandom(5.85,6.65), frandom(5.32,6.75),8,0,"None",FBF_NORANDOM,8192,"DragonsBreathTracer",-14,0);
+				return state("FireAnimBegin");
+			}
 		  A_PlaySoundEx("weapons/sg", "Weapon");   
-		  A_FireBullets(frandom(5.85,6.65), frandom(5.32,6.75),10,14,"ShotgunPuff",FBF_NORANDOM); 
+		  A_FireBullets(3.2, 3.2,10,15,"ShotgunPuff",FBF_NORANDOM); 
 		  return state("FireAnimBegin");
 		}
 		"####" B 1
@@ -1003,7 +1007,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 			A_WeaponOffset(0,32);
 		}
 		TNT1 A 0 A_JumpIfInventory("PumpshotgunMagazine", 1, "MagPump")
-		TNT1 A 0 A_JumpIf(CountInv("PowerStrength") && GetCvar("pb_SGPumpFromHip") >= 1, "PumpFromHip")
+		TNT1 A 0 A_JumpIf(CountInv("PB_PowerStrength") && GetCvar("pb_SGPumpFromHip") >= 1, "PumpFromHip")
 		SHTG BCDEFGHIJ 1 A_SetRoll(roll-0.1,SPF_INTERPOLATE)
 	P1Begin:
 	    SHTA K 0
@@ -1040,7 +1044,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 		 A_SetRoll(roll+0.4,SPF_INTERPOLATE);
 		 A_SetPitch(pitch-0.1,SPF_INTERPOLATE);
 		}
-		TNT1 A 0 A_JumpIfInventory("NewShell", 1,2) //Skip this frame if the chamber isn't empty
+		TNT1 A 0 A_JumpIfInventory("PB_Shell", 1,2) //Skip this frame if the chamber isn't empty
 		SSHR H 1 
 		{
 		 A_SetRoll(roll+0.1,SPF_INTERPOLATE);
@@ -1115,7 +1119,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 		 A_SetRoll(roll+0.4,SPF_INTERPOLATE);
 		 A_SetPitch(pitch-0.1,SPF_INTERPOLATE);
 		}
-		TNT1 A 0 A_JumpIfInventory("NewShell", 1,2) //Skip this frame if the chamber isn't empty
+		TNT1 A 0 A_JumpIfInventory("PB_Shell", 1,2) //Skip this frame if the chamber isn't empty
 		SHMG N 1 
 		{
 		 A_SetRoll(roll+0.1,SPF_INTERPOLATE);
@@ -1168,7 +1172,8 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 		 A_SetInventory("CantDoAction",1);
          If (CountInv("HasSlugs") >=1 ) {
 			A_PlaySoundEx("SlugShot", "Weapon"); 
-		    A_FireBullets(1.25, 0.25, 1, 140, "ShotgunPuff",FBF_NORANDOM);
+		    //A_FireBullets(1.25, 0.25, 1, 140, "ShotgunPuff",FBF_NORANDOM);
+			A_FireProjectile("PB_12GASlug", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 		    A_FireCustomMissile("Tracer", random(-2,2), 0, 0, -14, 0, random(-1,1));
 			return state("AltFireAnimBegin");
 			}  
@@ -1179,7 +1184,8 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 			}
 		 else {
 			  A_PlaySoundEx("weapons/sg", "Weapon");    
-			  A_FireBullets(frandom(5.1,5.86), frandom(4.57,6),10,14,"ShotgunPuff",FBF_NORANDOM);
+			  //A_FireBullets(frandom(5.1,5.86), frandom(4.57,6),10,14,"ShotgunPuff",FBF_NORANDOM);
+			  A_FireBullets(3.2, 3.2,10,15,"ShotgunPuff",FBF_NORANDOM); 
 		  return state("");
 		  }
 		}
@@ -1198,7 +1204,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 		}
 		TNT1 A 0 
 		{
-		 If (CountInv("PowerStrength") >=1 ){PB_WeaponRecoilBasic(-0.25);return state("BerserkAltPump1");}
+		 If (CountInv("PB_PowerStrength") >=1 ){PB_WeaponRecoilBasic(-0.25);return state("BerserkAltPump1");}
 		 else {PB_WeaponRecoilBasic(-0.2);} //this line was moved somehow in the conflict
 		 return state("");
 	    }
@@ -1369,11 +1375,11 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 		TNT1 A 0 A_JumpIfInventory("ShotgunAmmo", 1, "ReloadNormally")
 		TNT1 A 0 A_GiveInventory("PBPumpShotgunWasEmpty", 1)		
 	ReloadNormally:	
-		TNT1 A 0 A_JumpIf(CountInv("NewShell") == 0,"NoAmmo")
+		TNT1 A 0 A_JumpIf(CountInv("PB_Shell") == 0,"NoAmmo")
 		SHTG BCDEFGHIJ 1 A_SetRoll(roll-0.1,SPF_INTERPOLATE)
 		TNT1 A 0 A_TakeInventory("PBPumpShotgunHasUnloaded", 1)
     ShellChecker:
-		TNT1 A 0 A_JumpIf(CountInv("NewShell") == 0,"ReloadFinished")
+		TNT1 A 0 A_JumpIf(CountInv("PB_Shell") == 0,"ReloadFinished")
 		TNT1 A 0 A_JumpIfInventory("ShotgunAmmo",9,"ReloadFinished")
 		SSHR A 1 {
 		 A_DoPBWeaponAction(WRF_NOBOB);
@@ -1393,7 +1399,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 		}
 		TNT1 A 0 {
 		 A_Giveinventory("ShotgunAmmo",1);
-		 A_Takeinventory("NewShell",1);
+		 A_Takeinventory("PB_Shell",1);
 		}
 		SSHR A 0 A_Refire
         TNT1 A 0 A_DoPBWeaponAction(WRF_NOBOB)
@@ -1415,7 +1421,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 		{
 		 A_PlaySoundEx("weapons/sgpump","Auto");
 		 A_Giveinventory("ShotgunAmmo",1);
-		 A_Takeinventory("NewShell",1);
+		 A_Takeinventory("PB_Shell",1);
 		}
 		Goto ShellChecker
 	
@@ -1437,7 +1443,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 	MagReload:
 	BeginMagReload:
 		TNT1 A 0 A_JumpIfInventory("ShotgunAmmo",11,"Ready3")
-		TNT1 A 0 A_JumpIf(CountInv("NewShell") == 0,"NoAmmo")
+		TNT1 A 0 A_JumpIf(CountInv("PB_Shell") == 0,"NoAmmo")
 		SHTG BCDE 1 A_SetRoll(roll-0.1,SPF_INTERPOLATE)
 		TNT1 A 0 A_JumpIfInventory("PBPumpShotgunHasUnloaded",1,5)
 		SHMG FGHI 1 A_SetRoll(roll-0.1,SPF_INTERPOLATE)
@@ -1470,21 +1476,21 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
         SHTM JKLMN 1 
 		TNT1 A 0 A_JumpIf(CountInv("ShotgunAmmo") == 0,"ShellCheckerMag2")
 	ShellCheckerMag:	
-		TNT1 A 0 A_JumpIf(CountInv("NewShell") == 0,"ReloadMagFinished")
+		TNT1 A 0 A_JumpIf(CountInv("PB_Shell") == 0,"ReloadMagFinished")
 		TNT1 A 0 A_JumpIfInventory("ShotgunAmmo",11,"ReloadMagFinished")
 		TNT1 A 0 
 		{
 		 A_Giveinventory("ShotgunAmmo",1);
-		 A_Takeinventory("NewShell",1);
+		 A_Takeinventory("PB_Shell",1);
 		}
 		Goto ShellCheckerMag
 	ShellCheckerMag2:	
-		TNT1 A 0 A_JumpIf(CountInv("NewShell") == 0,"LoadChamberMag")
+		TNT1 A 0 A_JumpIf(CountInv("PB_Shell") == 0,"LoadChamberMag")
 		TNT1 A 0 A_JumpIfInventory("ShotgunAmmo",10,"LoadChamberMag")
 		TNT1 A 0 
 		{
 		 A_Giveinventory("ShotgunAmmo",1);
-		 A_Takeinventory("NewShell",1);
+		 A_Takeinventory("PB_Shell",1);
 		}
 		Goto ShellCheckerMag2
 	LoadChamberMag:
@@ -1572,7 +1578,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 			A_SetRoll(roll+0.4,SPF_INTERPOLATE);
 			A_SetPitch(pitch-0.1,SPF_INTERPOLATE);
 		}
-		TNT1 A 0 A_JumpIfInventory("NewShell", 1,3) 
+		TNT1 A 0 A_JumpIfInventory("PB_Shell", 1,3) 
 		SSHR H 1 A_SetRoll(roll-0.1,SPF_INTERPOLATE) // So the chamber shows as being empty
 		TNT1 A 0 { return state (2); } // Skip This Frame if the shotgun isn't loaded.
 		SHTG K 1 {
@@ -1587,7 +1593,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 			A_SetRoll(roll+0.1,SPF_INTERPOLATE);
 			A_PlaySoundEx("weapons/sgmvpump", "Auto");
 			A_Takeinventory("ShotgunAmmo",1);
-			A_Giveinventory("NewShell",1);
+			A_Giveinventory("PB_Shell",1);
 			}
 		Goto RemoveBullets
 	
@@ -1595,7 +1601,7 @@ ACTOR PB_Shotgun : PB_Weapon Replaces Shotgun
 	    TNT1 A 0 A_JumpIf(CountInv("ShotgunAmmo") == 0,"FinishUnload")
 	    TNT1 A 0 {
 			A_Takeinventory("ShotgunAmmo",1);
-			A_Giveinventory("NewShell",1);
+			A_Giveinventory("PB_Shell",1);
 			}
 		Goto RemMagBullets
 		

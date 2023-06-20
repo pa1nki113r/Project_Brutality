@@ -28,7 +28,7 @@ extend class PB_WeaponBase
 				
 				if(target)
 				{
-					if(CountInv("ChainsawResourceGather") == 1 && (target is "PB_Monster" || target.bCountKill == true) && CountInv("Gas") > 0 && playerHealth < 200) {
+					if(CountInv("ChainsawResourceGather") == 1 && (target is "PB_Monster" || target.bCountKill == true) && CountInv("PB_Fuel") > 0 && playerHealth < 200) {
 						
 						double coefficient = 0.015;
 						if (playerHealth < 100) {coefficient = 0.03;}
@@ -92,33 +92,40 @@ extend class PB_WeaponBase
 		invoker.executingEnemy = type;
 	}
 	
-	action void PB_SetPlayerExecutionProperties() {
-		A_GiveInventory("ExecutionToken", 1); // When dashing, make sure to STOP player momentum, or else it fucks with the execution. Using a token for now.
-		A_ClearOverlays(10,11);
-		A_StopSound(CHAN_7);
-		A_StopSound(CHAN_WEAPON);
-		SetPlayerProperty(0, 1, PROP_INVULNERABILITY);
-		SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN );
-		SetPlayerProperty(0, 1, PROP_FLY);
-		PB_SetExecutingEnemy(true);
+	
+	action bool PB_GetExecutionBlueBlood(){
+		return invoker.executionBlueBlood;
 	}
 	
-	
-	action void PB_UnsetPlayerExecutionProperties() {
-		SetPlayerProperty(0, 0, PROP_INVULNERABILITY);
-		SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN );
-		SetPlayerProperty(0, 0, PROP_FLY);
-		PB_SetExecutingEnemy(false);
-		PB_SetUsingMelee(false);
-		//A_ClearTarget();
-		A_TakeInventory("KnifeHasHit",1);
-		A_TakeInventory("HasCutingWeapon", 1);
-		A_TakeInventory("ExecutionToken", 1);
+	action void PB_SetExecutionBlueBlood(bool type){
+		invoker.executionBlueBlood = type;
 	}
 	
+	action bool PB_GetExecutionGreenBlood(){
+		return invoker.executionGreenBlood;
+	}
+	action void PB_SetExecutionGreenBlood(bool type){
+		invoker.executionGreenBlood = type;
+	}
+		
+	action StateLabel PB_ExecuteGeneric() {
+		StateLabel result;
+		int selector = (random(1,4));
+		FLineTraceData RemoteRay;
+		bool wallcheck = LineTrace(
+		   angle,
+		   120,
+		   pitch,
+		   TRF_THRUACTORS,
+		   offsetz: height-12,
+		   data: RemoteRay
+		);
+		
+		result = "Execution_Generic";
+		return result;
+	}
 	
 	action StateLabel PB_ExecuteZombieMan() {
-		A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
 		StateLabel result;
 		int selector = (random(1,4));
 		FLineTraceData RemoteRay;
@@ -163,7 +170,7 @@ extend class PB_WeaponBase
 	}
 	
 	action StateLabel PB_ExecuteShotguny() {
-		A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
+		//A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
 		StateLabel result;
 		int selector = (random(1,4));
 		FLineTraceData RemoteRay;
@@ -209,7 +216,7 @@ extend class PB_WeaponBase
 	
 	
 	action StateLabel PB_ExecuteImp() {
-		A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
+		//A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
 		StateLabel result;
 		int selector = (random(1,2));
 // 		int selector = 2;
@@ -251,10 +258,6 @@ extend class PB_WeaponBase
 		
 	action StateLabel PB_ExecutionHandlerString(Actor monster) {
 	
-		A_Stop();
-		PB_SetPlayerExecutionProperties();
-		A_SetCrosshair(5);
-		
 		name enemy = monster.getClassName();
 // 		A_print(enemy);
 		
@@ -278,45 +281,152 @@ extend class PB_WeaponBase
 				return PB_ExecuteShotguny();
 				
 			default:
-				A_Print("Execution Failed");
-				PB_UnsetPlayerExecutionProperties();
-				return "GoingToReady2";
+// 				A_Print("Execution Failed");
+				return PB_ExecuteGeneric();
+		}
+	}
+	
+	action void PB_SetPlayerExecutionProperties() {
+		A_GiveInventory("ExecutionToken", 1); // When dashing, make sure to STOP player momentum, or else it fucks with the execution. Using a token for now.
+		A_GiveInventory("PB_NoEffectInvul", 1); // So we don't break invulnerability
+		A_ClearOverlays(10,11);
+		A_StopSound(CHAN_7);
+		A_StopSound(CHAN_WEAPON);
+		A_SetCrosshair(5);
+		A_Stop();
+		
+		PlayerInfo plr = PlayerPawn(self).player;
+// 		plr.mo.vel *= 0;
+		plr.cheats |= CF_TOTALLYFROZEN|CF_NOTARGET|CF_GODMODE|CF_DOUBLEFIRINGSPEED|CF_INSTANTWEAPSWITCH|CF_FRIGHTENING  ;
+//		SetPlayerProperty(0, 1, PROP_INVULNERABILITY); //This breaks the invulnerability power up. -JM
+// 		A_GiveInventory("PB_NoEffectInvul",1); //Use PB_NoEffectInvul so that it doesn't break the REAL invulnerability -JM
+// 		SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN );
+// 		SetPlayerProperty(0, 1, PROP_FLY);
+		PB_SetExecutingEnemy(true);
+	}
+	
+	
+	action void PB_UnsetPlayerExecutionProperties() {
+
+		PlayerInfo plr = PlayerPawn(self).player;
+		plr.cheats &= ~(CF_TOTALLYFROZEN|CF_NOTARGET|CF_GODMODE|CF_INSTANTWEAPSWITCH|CF_DOUBLEFIRINGSPEED|CF_FRIGHTENING  );
+
+		PB_SetExecutingEnemy(false);
+		PB_SetUsingMelee(false);
+		PB_SetExecutionBlueBlood(false);
+		PB_SetExecutionGreenBlood(false);
+		//A_ClearTarget();
+		A_TakeInventory("KnifeHasHit",1);
+		A_TakeInventory("PB_NoEffectInvul",1);
+		A_TakeInventory("HasCutingWeapon", 1);
+		A_TakeInventory("ExecutionToken", 1);
+		A_TakeInventory("PB_LockScreenTilt",1);
+		A_SetRoll(0, SPF_INTERPOLATE);
+		A_SetPitch(0, SPF_INTERPOLATE);
+		A_ZoomFactor(1.0);
+		A_OverlayFlags(-9,PSPF_PLAYERTRANSLATED, false);
+		A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, false);
+		
+		
+		//Determine how much health is returned (risk vs. reward)
+		if (plr.health < 25) {
+			A_GiveInventory("HealthBonus",20);
+		}
+		else if (plr.health < 50 && plr.health >= 25) {
+			A_GiveInventory("HealthBonus",15);
+		}
+		else if (plr.health < 100 && plr.health >= 50) {
+			A_GiveInventory("HealthBonus",10);
+		}
+		else if (plr.health < 200 && plr.health >= 100) {
+			A_GiveInventory("HealthBonus",5);
+		}
+		else {
+			A_GiveInventory("HealthBonus",1);
 		}
 	}
 	
 	action state PB_Execute() {
 	
-        CVar experimental_settings = CVar.FindCVar('pb_experimental');
+//         CVar experimental_settings = CVar.FindCVar('pb_experimental');
 		
-		if(experimental_settings.GetBool()){
+// 		if(experimental_settings.GetBool()){
 			//
 			if(GetPointer(AAPTR_PLAYER_GETTARGET) != NULL)
 			{
-// 				if (GetPointer(AAPTR_PLAYER_GETTARGET) is "PB_Monster" && Distance3D(AAPTR_PLAYER_GETTARGET) < 120 ){
 				
-				if(GetPointer(AAPTR_PLAYER_GETTARGET) is "PB_Monster")
+				if(GetPointer(AAPTR_PLAYER_GETTARGET).bCountKill)
 				{
 					LookExParams look;
-					look.FOV = 110;
+					look.FOV = 360;
 					
 					Actor monster = GetPointer(AAPTR_PLAYER_GETTARGET);
-					
-					if (GetPointer(AAPTR_PLAYER_GETTARGET).IsVisible(self, false, look) && Distance3D(monster) < 250 ){
-						
-// 						Actor monster = self.AimTarget();
 
+					if (monster.IsVisible(self, true, look) && Distance3D(monster) < 200 ){
+						
 						int targetMaxHealth = monster.spawnHealth();
 						int targetCurrentHealth = monster.health;
 						
-						if (targetCurrentHealth <= targetMaxHealth*0.2|| targetCurrentHealth < 65) {
+						if (actorCanBeExecuted(monster)) {
+							
+							// Move Monster and Player toward each other
+							monster.A_Stop();
+							double spd = 27.;
+							vector3 delta = ( monster.pos.x - pos.x, monster.pos.y - pos.y, monster.pos.z - pos.z );
+							double angleToMonster = AngleTo(monster);
+							double pitchToMonster = VectorAngle( sqrt(delta.y * delta.y + delta.x * delta.x), delta.z );
+							monster.A_SetPitch(pitchToMonster, SPF_INTERPOLATE);
+							monster.A_SetAngle(angleToMonster+180,SPF_INTERPOLATE);
+							
+							vector3 neworigin = Vec3Offset(cos(angleToMonster) * spd,  sin(angleToMonster) * spd, sin(pitchToMonster) * spd);
+							monster.SetOrigin(neworigin,true);
+							
+							// Set Player View and Properties
+							int colorGreen = -16711936;
+							int colorBlue = -16776961;
+// 							A_LogInt(monster.BloodColor);
+							if(monster.BloodColor == colorGreen)
+							{
+								PB_SetExecutionGreenBlood(true);
+							}
+							
+							if(monster.BloodColor == colorBlue)
+							{
+								PB_SetExecutionBlueBlood(true);
+							}
+							
+							A_SetAngle(AngleTo(monster));
+							pitchToMonster = VectorAngle( sqrt(delta.y * delta.y + delta.x * delta.x), delta.z );
+							A_SetPitch(-pitchToMonster);
+							PB_SetPlayerExecutionProperties();
+							
 							StateLabel st = PB_ExecutionHandlerString(monster);
+							monster.A_Die("Execution");
 							return ResolveState(st);
 						}
 					}
 				}
-			}
+// 			}
 		}
 		return null;
+	}
+	
+	action bool actorCanBeExecuted(Actor monster) {
+		
+		int targetMaxHealth = monster.spawnHealth();
+		int targetCurrentHealth = monster.health;
+		
+		
+		if(CheckInventory("PB_PowerStrength",1) && (targetCurrentHealth <= targetMaxHealth*0.25 || targetCurrentHealth <= 150)) {
+			return true;
+		}
+		
+		if(targetCurrentHealth < targetMaxHealth*0.20 || targetCurrentHealth <= 60) {
+			return true;
+		}
+		
+		return false;
+		
 	}
 	
 	// Shoutout to Matt on ZDoom forums for the helpful weapon functions
@@ -352,7 +462,7 @@ extend class PB_WeaponBase
 	Return Null;
 	}
 	
-	//An example of this action: PB_AmmoIntoMag("RifleAmmo","NewClip",30,1) 
+	//An example of this action: PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,1) 
 	action void PB_AmmoIntoMag(String AmmoMag_Action,String AmmoPool_Action,int MagazineMaxFill_Action, int takeReserve)//A way to perform pretty much take all of the "Insertbullets" states and turn it into a function
 		{
 			invoker.AmmoMag = AmmoMag_Action;
@@ -364,7 +474,7 @@ extend class PB_WeaponBase
 		}
 	//Copy of Cemtex's PB_AmmoIntoMag but for unloading
 	//A way to perform pretty much take all of the "RemoveBullets" states and turn it into a function	
-	//An example of this action: PB_UnloadMag("RifleAmmo","NewClip",1) 
+	//An example of this action: PB_UnloadMag("RifleAmmo","PB_HighCalMag",1) 
 	action void PB_UnloadMag(String AmmoMag_Action,String AmmoPool_Action, int giveReserve)
 		{
 			invoker.AmmoMag = AmmoMag_Action;
@@ -374,10 +484,22 @@ extend class PB_WeaponBase
 			A_Overlay(-97,"RemoveBullets_ZScript");
 		}
 		
+		
+	//[Pop] This is a hack, ideally we shouldnt have to do this and once weapons are fully ZScript each one
+	//will have its own function for firing that gets called. Even after it may be good to keep this for 
+	//weapon addons that stay in DECORATE. Thanks to ADMERAL for throwing this together.
+	action void PB_FireBullets(string type,int amount,double angle,double offs,double height,double pitch)
+	{
+		for(int i=amount;i>0;i--)
+		{
+			A_FireProjectile(type,angle,0,offs,height,FPF_NOAUTOAIM,pitch);
+		}
+	}
+	
 	//Checks if the owner has a berserk
 	bool OwnerHasBerserk()
 	{
-        return (owner.CountInv("PowerStrength") >= 1);
+        return (owner.CountInv("PB_PowerStrength") >= 1);
 	}
 	
 	//Allows us to specify pitch and angle manually for berserk and non-berserk owners.
@@ -476,7 +598,9 @@ extend class PB_WeaponBase
 			A_SetInventory("HasAcidWeapon",0);
 			A_SetInventory("Grabbing_A_Ledge",0);
 			A_SetInventory("CantDoAction",0);
-			A_SetInventory("PowerInvulnerable2",0);
+			A_SetInventory("PB_NoEffectInvul",0);
+			A_SetInventory("sae_extcam", 0);
+			A_SetInventory("sae_deathcam", 0);
 			A_SetInventory(wepToken,1);
 	}
 	

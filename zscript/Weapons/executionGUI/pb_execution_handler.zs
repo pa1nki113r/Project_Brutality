@@ -63,25 +63,39 @@ class pb_ExecutionHandler : EventHandler
   {
   
 	
-	CVar experimental_settings = CVar.FindCVar('pb_experimental');
-	if(experimental_settings.GetBool()){
+// 	CVar experimental_settings = CVar.FindCVar('pb_experimental');
+// 	if(experimental_settings.GetBool()){
   
 		Actor target = getTarget();
 		
-		if(target) {
-			int targetMaxHealth = target.spawnHealth();//ts_ActorInfo.getActorMaxHealth(target);
-			int targetHealth = target.health;
-
-		//     int percent = 10;
-		//     if (percent < 0) { percent = 0; }
-			
-			if((targetHealth <= targetMaxHealth*0.2 || targetHealth < 65) && target is "PB_Monster" && getTargetDistance() < 250)
+		if(target && target.bCountKill) {
+			if(actorCanBeExecuted(target) && getTargetDistance() < 200)
 			{
 				draw(target, event);
 			}
 		}
-	}
+// 	}
   }
+  
+	private ui
+	bool actorCanBeExecuted(Actor monster) {
+		
+		int targetMaxHealth = monster.spawnHealth();
+		int targetCurrentHealth = monster.health;
+		
+		PlayerPawn player = players[consolePlayer].mo;
+		
+		if(null != player.FindInventory("PB_PowerStrength") && (targetCurrentHealth <= targetMaxHealth*0.25 || targetCurrentHealth <= 150)) {
+			return true;
+		}
+		
+		if(targetCurrentHealth < targetMaxHealth*0.20 || targetCurrentHealth <= 60) {
+			return true;
+		}
+		
+		return false;
+		
+	}
 
 
   private ui
