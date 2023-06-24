@@ -139,7 +139,7 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 			ZSV1 E 5 {
 				A_Stop();
 				A_FaceTarget();
-				return A_CheckLOF("AttackHandler");
+				return A_CheckLOFRanged("AttackHandler", "SideHop");
 				}
 			Goto See;
 		AttackHandler:
@@ -1147,7 +1147,75 @@ Class PB_HelmetZombieman: PB_Zombieman //Replaces ZombieMan
 		Avoid:
 			TNT1 A 0 A_Jump(256, "DiveLeft", "DiveRight", "DiveLeft", "DiveRight", "DiveFront");
 			Goto DiveFront;
-
+		Roll:
+			TNT1 A 0 A_Jump(256, "RollR", "RollL");
+		RollR:
+			5RO1 A 1;
+			TNT1 A 0
+			{
+				ThrustThing(angle * 256 / 360 + 192, 15, 0, 0);
+				//Play the Roll sound
+				bShootable = false;
+			}
+			5RO1 AAAAAAAAAAAAAAAA 1 A_SetRoll(roll+22, SPF_INTERPOLATE);
+			5RO1 A 1
+			{
+				//A_Stop();
+				A_SetRoll(0);
+				bShootable = true;
+			}
+			5RO1 A 1;
+			goto See;
+		RollL:
+			5RO2 A 1;
+			TNT1 A 0
+			{
+				ThrustThing(angle * 256 / 360 + 64, 15, 0, 0);
+				//Play the Roll sound
+				bShootable = false;
+			}
+			5RO2 AAAAAAAAAAAAAAAA 1 A_SetRoll(roll-22, SPF_INTERPOLATE);
+			5RO2 A 1
+			{
+				//A_Stop();
+				A_SetRoll(0);
+				bShootable = true;
+			}
+			5RO2 A 1;
+			goto See;
+		SideStep:
+			//Undone
+		SideHop:
+			TNT1 A 0 A_Jump(256, "SHR", "SHL");
+		SHR:
+			ZSV1 A 3 A_FaceTarget;
+			ZSV1 E 3 A_FaceTarget;
+			TNT1 A 0 ThrustThingZ(0, 20, 0, 0);
+			TNT1 A 0 ThrustThing(angle*256/360+192, 8, 0, 0);
+			5RO1 A 12;
+		SHRL:
+			5RO1 A 1 A_CheckFloor("SHRE");
+			5RO1 A 1;
+			Loop;
+		SHRE:
+			5RO1 A 1 A_FaceTarget;
+			TNT1 A 0 A_Jump(256, "RollR", "See", "Missile");
+			Goto See;
+		SHL:
+			ZSV1 A 3 A_FaceTarget;
+			ZSV1 E 3 A_FaceTarget;
+			TNT1 A 0 ThrustThingZ(0, 20, 0, 0);
+			TNT1 A 0 ThrustThing(angle*256/360+64, 8, 0, 0);
+			5RO2 A 12;
+		SHLL:
+			5RO2 A 1 A_CheckFloor("SHLE");
+			5RO2 A 1 A_CheckCeiling("SHLE");
+			Loop;
+		SHLE:
+			5RO2 A 1 A_FaceTarget;
+			TNT1 A 0 A_Jump(256, "RollL", "See", "Missile");
+			Goto See;
+		
 		Death.Ice:
 		Death.IceExplosion:
 		Death.Freeze:
