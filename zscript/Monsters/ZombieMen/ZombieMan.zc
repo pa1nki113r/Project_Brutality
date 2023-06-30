@@ -6,7 +6,7 @@ Class PB_ZombieMan : PB_Monster
 		//$Category Project Brutality - Monsters/Former Humans/Zombiemen
 		Monster;
 		Radius 16;
-		Height 56;
+		Height 54;
 		Speed 8;
 		FastSpeed 8;
 		MaxStepHeight 24;
@@ -57,7 +57,7 @@ Class PB_ZombieMan : PB_Monster
 		+SLIDESONWALLS;
 		+DOHARMSPECIES;
 		+HARMFRIENDS;
-		+STANDSTILL
+		-STANDSTILL
 		Species "Former_Human";
 	}
 		
@@ -108,7 +108,7 @@ Class PB_ZombieMan : PB_Monster
 			}
 			
 			//Handle Hitbox system
-			HitboxerHandler();
+			//HitboxerHandler();
 			
 		}
 		
@@ -225,7 +225,7 @@ Class PB_ZombieMan : PB_Monster
 		MissileContinue:
 			POSS E 5 {
 				A_FaceTarget();
-				return A_CheckLOF("AttackHandler");
+				return A_CheckLOFRanged("AttackHandler", "SideHop");
 				}
 			Goto See;
 		AttackHandler:
@@ -614,11 +614,80 @@ Class PB_ZombieMan : PB_Monster
 			Goto Missile;
 		
 		//Avoid damage
+		//[Pop] Lets use Avoid only for explosives like grenades. Roll/SideStep/SideHop should be for various other movement behaviors
 		Pain.Avoid:
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "PlayerActionDialogue");
 		Avoid:
 			TNT1 A 0 A_Jump(256, "DiveLeft", "DiveRight", "DiveLeft", "DiveRight", "DiveFront");
 			Goto DiveFront;
+		Roll:
+			TNT1 A 0 A_Jump(256, "RollR", "RollL");
+		RollR:
+			ZRO1 A 1 A_FaceTarget;
+			TNT1 A 0
+			{
+				ThrustThing(angle * 256 / 360 + 192, 15, 0, 0);
+				//Play the Roll sound
+				bShootable = false;
+			}
+			ZRO1 AAAAAAAAAAAAAAAA 1 A_SetRoll(roll+22, SPF_INTERPOLATE);
+			ZRO1 A 1
+			{
+				//A_Stop();
+				A_SetRoll(0);
+				bShootable = true;
+			}
+			ZRO1 A 1;
+			goto See;
+		RollL:
+			ZRO2 A 1 A_FaceTarget;
+			TNT1 A 0
+			{
+				ThrustThing(angle * 256 / 360 + 64, 15, 0, 0);
+				//Play the Roll sound
+				bShootable = false;
+			}
+			ZRO2 AAAAAAAAAAAAAAAA 1 A_SetRoll(roll-22, SPF_INTERPOLATE);
+			ZRO2 A 1
+			{
+				//A_Stop();
+				A_SetRoll(0);
+				bShootable = true;
+			}
+			ZRO2 A 1;
+			goto See;
+		SideStep:
+			//Undone
+		SideHop:
+			TNT1 A 0 A_Jump(256, "SHR", "SHL");
+		SHR:
+			POSS A 3 A_FaceTarget;
+			POSS E 3 A_FaceTarget;
+			TNT1 A 0 ThrustThingZ(0, 20, 0, 0);
+			TNT1 A 0 ThrustThing(angle*256/360+192, 8, 0, 0);
+			ZRO1 A 12;
+		SHRL:
+			ZRO1 A 1 A_CheckFloor("SHRE");
+			ZRO1 A 1;
+			Loop;
+		SHRE:
+			ZRO1 A 1 A_FaceTarget;
+			TNT1 A 0 A_Jump(256, "RollR", "See", "Missile");
+			Goto See;
+		SHL:
+			POSS A 3 A_FaceTarget;
+			POSS E 3 A_FaceTarget;
+			TNT1 A 0 ThrustThingZ(0, 20, 0, 0);
+			TNT1 A 0 ThrustThing(angle*256/360+64, 8, 0, 0);
+			ZRO2 A 12;
+		SHLL:
+			ZRO2 A 1 A_CheckFloor("SHLE");
+			ZRO2 A 1 A_CheckCeiling("SHLE");
+			Loop;
+		SHLE:
+			ZRO2 A 1 A_FaceTarget;
+			TNT1 A 0 A_Jump(256, "RollL", "See", "Missile");
+			Goto See;
 			
 	   //If the monster is hit by the "Killme" damage (which is "exploded" by the captured marine), automatically start firing at the target.
 		Pain.KillMe:
@@ -637,7 +706,9 @@ Class PB_ZombieMan : PB_Monster
 			Stop;
 			
 		Death:
-			TNT1 A 0 A_Jump(32, "Death.Arm");
+			TNT1 A 0; //A_Jump(32, "Death.Arm");
+			TNT1 A 0 A_DeathWepCheck("ShotgunSelected", 50, "Death.Shotgun");
+			TNT1 A 0 A_DeathWepCheck("MinigunSelected", 400, "Death.Minigun");
 			TNT1 A 0 A_Jump(18, "Death.Rare");
 			TNT1 A 0 A_Jump(129, "DeathOther", "DeathOther2");
 			TNT1 A 0 A_Jump(128, "DeathMirror");
@@ -679,6 +750,7 @@ Class PB_ZombieMan : PB_Monster
 			POSS R 6 A_SpawnItem("Zombieman_DeathMinorLeg");
 			Stop;
 
+		 Death.ArmHitbox:
 		 Death.Arm:
 			TNT1 A 0 {
 				A_SpawnProjectile ("PB_XDeathArm1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
@@ -775,15 +847,15 @@ Class PB_ZombieMan : PB_Monster
 			TNT1 A 0 A_SpawnItem("DeadZombieman_TearedInHalf");
 			Stop;
 
-		
+		Death.HeadHitbox:
 		Death.Head:
 			TNT1 A 0 A_FaceTarget();
 			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 			TNT1 A 0 A_JumpIfInTargetInventory("HasPlasmaWeapon", 1, "Death.Plasma");
 			TNT1 A 0 A_JumpIfInTargetInventory("HasCutingWeapon", 1, "Death.Decapitate");
 			TNT1 A 0 A_JumpIfInTargetInventory("RandomHeadExploder", 1, "HeadExplode");
-			TNT1 A 0 A_JumpIfHealthLower(-600, "HeavyHead");
-			TNT1 A 0 A_JumpIfHealthLower(-90, "HeadExplode");
+			TNT1 A 0 A_JumpIfHealthLower(-100, "HeavyHead");
+			TNT1 A 0 A_JumpIfHealthLower(-60, "HeadExplode");
 		HeadMinor:
 			TNT1 A 0 A_StartSound("MinorHeadshot");
 			TNT1 A 0 A_Jump (256, "DeathMinorhead1", "DeathMinorhead2", "DeathMinorhead3", "DeathMinorhead4");
@@ -893,7 +965,8 @@ Class PB_ZombieMan : PB_Monster
 		ZMAD DDDDEEEEEEEEEEEEEEEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
         ZMAD E 1 A_SpawnItem ("DeadZombieman_NoHeadFront");
 		Stop;
-			
+	 
+	 Death.LegHitbox:
      Death.Leg:
 		TNT1 A 0 A_JumpIfHealthLower(-100,"DoubleLegRemove");
 		TNT1 A 0 A_JumpIfHealthLower(-20, "LegRemove");
