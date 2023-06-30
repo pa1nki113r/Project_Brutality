@@ -1,0 +1,197 @@
+Class PBSSGSpawner : PB_SpawnerBase replaces SuperShotgun
+{
+	default
+	{
+	scale 0.45;
+	-SHOOTABLE;
+    -COUNTKILL; 
+    -SOLID;
+	+NOTIMEFREEZE;
+    //CANPUSHWALLS;
+    //-CANUSEWALLS;
+    //-ACTIVATEMCROSS;
+    //-CANPASS;
+    //-ISMONSTER;
+	+NODAMAGE;
+	-NOMENU;
+	Species "sgspawner";
+	}
+	States
+	{
+		Spawn:
+			TNT1 A 0;
+		Spawn2:	
+			TNT1 A 1 A_LookEx();
+			Loop;
+        See:
+			TNT1 A 0 A_CheckSight("Seenbutnotbyplayer");
+			TNT1 A 0
+			{
+			 if(CheckInventory("IsPlayer", 1, AAPTR_TARGET)){SetStateLabel("CheckTier");} 
+			}
+			TNT1 A 1 A_ClearTarget();
+			Goto Spawn;
+		Seenbutnotbyplayer:
+		   TNT1 A 1 A_ClearTarget();
+			Goto Spawn2;
+		CheckTier:
+			TNT1 A 0
+			{
+				// Tier Overrides
+				switch(SpawnBalance)
+				{
+					case 663: SetStateLabel("CHAOTICRANDOM"); break;
+					case 666: SetStateLabel("DynamicProgression"); break;
+					case 667: SetStateLabel("Spawn_Tier_I"); break;
+					case 668: SetStateLabel("Spawn_Tier_II"); break;
+					case 669: SetStateLabel("Spawn_Tier_III"); break;
+					case 670: SetStateLabel("Spawn_Tier_IIII"); break;
+					case 671: SetStateLabel("TieredProgression"); break;
+					case 672: SetStateLabel("DeathWish"); break;
+					// If you somehow get this somebody broke something.
+					// In the case of the cvar .
+					default:
+					A_Print("Spawn Cvar Set Wrongly Somehow, Resetting to default 666");
+					CVar.GetCVar("SpawnBalance").SetInt(666);
+					SetStateLabel("DynamicProgression"); 
+					break;
+				}
+			}
+		DynamicProgression:
+			TNT1 A 0
+			{
+			 if(SMO>=27){SetStateLabel("Spawn_Tier_IIII");}
+		     else if(SMO>=26){SetStateLabel("Spawn_Tier_IIIIDynamic3");}
+		     else if(SMO>=25){SetStateLabel("Spawn_Tier_IIIIDynamic2");}
+			 else if(SMO>=24){SetStateLabel("Spawn_Tier_IIIIDynamic");}
+			 else if(SMO>=19){SetStateLabel("Spawn_Tier_III");}
+			 else if(SMO>=18){SetStateLabel("Spawn_Tier_IIIDynamic3");}
+			 else if(SMO>=17){SetStateLabel("Spawn_Tier_IIIDynamic2");}
+			 else if(SMO>=16){SetStateLabel("Spawn_Tier_IIIDynamic");}
+			 else if(SMO>=11){SetStateLabel("Spawn_Tier_II");}
+			 else if(SMO>=10){SetStateLabel("Spawn_Tier_IIDynamic3");}
+			 else if(SMO>=9){SetStateLabel("Spawn_Tier_IIDynamic2");}
+			 else if(SMO==8){SetStateLabel("Spawn_Tier_IIDynamic");}
+			 else if(SMO>=1){SetStateLabel("Spawn_Tier_I");}
+			 // You shouldn't need this but constingency anyway.
+			 else if(SMO==0){SetStateLabel("Spawn_Tier_I");}
+			}
+			stop;
+		TieredProgression:
+			TNT1 A 0
+			{
+			      if(SMO>=25){SetStateLabel("Spawn_Tier_IIII");}
+			 else if(SMO>=17){SetStateLabel("Spawn_Tier_III");}
+			 else if(SMO>=9){SetStateLabel("Spawn_Tier_II");}
+			 else if(SMO>=1){SetStateLabel("Spawn_Tier_I");}
+			 else if(SMO==0){SetStateLabel("Spawn_Tier_I");}
+			}
+			stop;
+		CHAOTICRANDOM:
+		    TNT1 A 0 A_Jump(256, "Spawn_Tier_IIII","Spawn_Tier_III", "Spawn_Tier_II", "Spawn_Tier_I");
+			Stop;
+		Spawn_Tier_IIIIDynamic3:
+		Spawn_Tier_IIIDynamic3:
+		    TNT1 A 0 A_Jump(192,"Spawn_Tier_III");
+			TNT1 A 0 A_Jump(256,"Spawn_Tier_I");
+			Stop;	
+		Spawn_Tier_IIIIDynamic2:
+		Spawn_Tier_IIIDynamic2:
+		    TNT1 A 0 A_Jump(128,"Spawn_Tier_III");
+			TNT1 A 0 A_Jump(256,"Spawn_Tier_I");
+			Stop;	
+		Spawn_Tier_IIIIDynamic:
+		Spawn_Tier_IIIDynamic:
+		    TNT1 A 0 A_Jump(64,"Spawn_Tier_III");
+			TNT1 A 0 A_Jump(256,"Spawn_Tier_I");
+			Stop;	
+		Spawn_Tier_IIDynamic3:
+			TNT1 A 0 A_Jump(192,"Spawn_Tier_II");
+			TNT1 A 0 A_Jump(256,"Spawn_Tier_I");
+			Stop;
+		Spawn_Tier_IIDynamic2:
+			TNT1 A 0 A_Jump(128,"Spawn_Tier_II");
+			TNT1 A 0 A_Jump(256,"Spawn_Tier_I");
+			Stop;
+		Spawn_Tier_IIDynamic:
+			TNT1 A 0 A_Jump(64,"Spawn_Tier_II");
+			TNT1 A 0 A_Jump(256,"Spawn_Tier_I");
+			Stop;
+		DeathWish:
+		Spawn_Tier_IIII:
+		Spawn_Tier_III:
+			TNT1 A 0
+			{
+			if(pb_NoQuadSSG==true)
+			 {
+			 SetStateLabel("Spawn_Tier_I");
+			 }
+			}
+			TNT1 A 0 {if(CheckInventory("PB_QuadSG", 2, AAPTR_TARGET)){SetStateLabel("Spawn_Tier_II");}}
+			TNT1 A 0 A_SpawnItemEx("PB_QuadSG",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			Stop;
+		Spawn_Tier_II:
+		SpawnREVO:
+			TNT1 A 0
+			{
+			if(pb_NoAutoshotgunUpgrade==true)
+			 {
+			 SetStateLabel("Spawn_Tier_I");
+			 }
+			}
+			TNT1 A 0 {if(CheckInventory("AutoshotgunDrumMag", 1, AAPTR_TARGET)){SetStateLabel("Spawn_Tier_I");}}
+			TNT1 A 0 A_SpawnItemEx("PB_AutoshotgunUpgrade",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			Stop;
+		Spawn_Tier_I:
+		SpawnSSG:
+			TNT1 A 0;
+			TNT1 A 0 A_SpawnItemEx("droppedPB_SSG",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			Stop;
+		Death:
+		    TNT1 A 0;
+			Goto Spawn;
+	}
+}
+
+
+CLASS droppedPB_SSG:CustomInventory
+{
+default
+{
+	//SpawnID 933;
+    Radius 8;
+    Height 10;
+    Scale 0.5;
+	//Speed 1;
+	//Mass 1;
+    gravity 1;
+	Decal "none";
+    +MOVEWITHSECTOR;
+    +DONTGIB;
+    //+NOBLOCKMAP;
+    +NOTELEPORT;
+	Inventory.PickupMessage "";
+    Inventory.PickupSound "";
+	+NOTIMEFREEZE;
+    //+MISSILE;
+}
+    States
+    {
+    Spawn:
+		//TNT1 AA 1
+		TNT1 AA 0;
+		TNT1 A 0 A_SpawnItemEx("PB_SSG",0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_NOCHECKPOSITION | 288);
+	Spawn2:	
+	    TNT1 A 1;
+        Loop;
+	Pickup:
+		TNT1 A 0; //A_GiveInventory("PlayerHasWeaponTieronSSGTier",1);
+		Stop;
+	Pickup2:
+		TNT1 A 0;
+		Stop;
+	Death:
+        TNT1 A 0;
+        Stop;
+    }
+}
