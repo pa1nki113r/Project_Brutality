@@ -56,7 +56,53 @@ extend class PB_WeaponBase
 				
 	}
 	
-	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		let plr = PlayerPawnBase(Owner);
+		if (!plr)
+		{
+			GunBraced = false;
+			return;
+		}
+		
+		if (plr.Player.ReadyWeapon != self)
+		{
+			GunBraced = false;
+			return;
+		}
+		
+		FLineTraceData dt1, dt2, dt3;
+		plr.LineTrace(plr.Angle, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95, offsetside: -plr.Radius / 2, data: dt1);
+		plr.LineTrace(plr.Angle, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95 * 0.75, data: dt2);
+		plr.LineTrace(plr.Angle, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95, offsetside: plr.Radius / 2, data: dt3);
+		
+		bool geometryBrace = dt1.HitType == FLineTraceData.TRACE_HitWall || dt2.HitType == FLineTraceData.TRACE_HitWall || dt3.HitType == FLineTraceData.TRACE_HitWall;
+		if (!bMELEEWEAPON && (plr.Player.crouchfactor == 0.5 || geometryBrace) && plr.Vel.Length() < 0.65)
+		{
+			BraceTicker++;
+			if (BraceTicker == 12)
+			{
+				GunBraced = true;
+				plr.A_SetPitch(plr.Pitch - 0.5);
+				Owner.A_StartSound("Inventory/GunBrace", 19);
+			}
+			if (BraceTicker == 13)
+			{
+				plr.A_SetPitch(plr.Pitch + 0.5);
+			}
+		}
+		else
+		{
+			GunBraced = false;
+		}
+
+		if (!GunBraced && BraceTicker > 13)
+		{
+			BraceTicker = 0;
+		}
+	}
 	
 	action bool PB_usingEquipment(){
 		return invoker.usingEquipment;
@@ -440,8 +486,14 @@ extend class PB_WeaponBase
 	//Normally you want to use PB_WeaponRecoil instead, because it accounts for the berserk powerup
 	action void PB_WeaponRecoilBasic(float pitchDelta, float angleDelta = 0)
 	{
-        A_SetPitch(self.pitch+(pitchDelta * pb_weapon_recoil_mod_vertical), SPF_INTERPOLATE);
-        A_SetAngle(self.angle+(angleDelta * pb_weapon_recoil_mod_horizontal), SPF_INTERPOLATE);
+		double fac = 1.0;
+		if (invoker.GunBraced)
+		{
+			fac *= 0.33;
+		}
+		
+        A_SetPitch(self.pitch+(pitchDelta * pb_weapon_recoil_mod_vertical * fac), SPF_INTERPOLATE);
+        A_SetAngle(self.angle+(angleDelta * pb_weapon_recoil_mod_horizontal * fac), SPF_INTERPOLATE);
 	}
 	
 	//Adds weapon recoil, modifying it if the owner has a berserk powerup
