@@ -950,7 +950,7 @@ class PB_Hud_ZS : BaseStatusBar
 
                 //Specials and Dual Wields
                 int IntAmmoLeft = mAmmoLeftInterpolator.GetValue();
-                console.PrintF("%i %s", IntAmmoLeft, leftAmmoAmount);
+                //console.PrintF("%i %s", IntAmmoLeft, leftAmmoAmount);
 
                 if(CheckWeaponSelected("Rifle")) 
                 {
