@@ -1,27 +1,52 @@
-//A Smarter Alternative to spam spawning Hitboxes
+// Spawning Related Tokens
+
+//Class PlayerHasWeaponTier2SG : Inventory {default{inventory.maxamount 4;}}
+Class SpawnwSSG : Inventory {default{inventory.maxamount 1;}}
+Class NoSpawnQuadSG : Inventory {default{inventory.maxamount 1;}}
+Class NoSpawn : Inventory {default{inventory.maxamount 1;}}
+Class CheckCvarSSG : Inventory {default{inventory.maxamount 1;}}
+Class CvarChecked : Inventory {default{inventory.maxamount 1;}}
+Class NoSpawnASGUpgrade : Inventory {default{inventory.maxamount 1;}}
+Class NeedSpawning : Inventory {default{inventory.maxamount 1;}}
+Class PlayerHasHDMR : Inventory {default{inventory.maxamount 2;}}
+Class PlayerHasNailgun : Inventory {default{inventory.maxamount 1;}}
+Class PlayerHasMinigunUpgrade : Inventory {default{inventory.maxamount 1;}}
+//Class PlayerHasBFG9000 : Inventory {default{inventory.maxamount 1;}}
+
+Class AllCaughtUp : Inventory {default{inventory.maxamount 1;}}
+Class AllCaughtUpT1 : Inventory {default{inventory.maxamount 1;}}
+Class AllCaughtUpT2 : Inventory {default{inventory.maxamount 1;}}
+Class AllCaughtUpT3 : Inventory {default{inventory.maxamount 1;}}
+
 Class PB_SpawnerBase : Actor
 {
-	
+
 	Default
 	{
-		+LOOKALLAROUND;
+	+LOOKALLAROUND;
+	// Necessary for see states on the monster spawners
+	// so stuff doesn't break.
+	// does not apply with dynamic spawning turned off.
+	Monster; 
+	-SOLID;
+	+NOTIMEFREEZE;
+	-COUNTKILL;
+	//+NODAMAGE;
+	+DONTGIB;
+	//+NOMENU;
+	Species "spawner";
 	}
 
-	int getLevelCluster()
-	{
-		return level.cluster;
-	}
-	
-	int getLevelNumber()
-	{
-		return level.LevelNum;
-	}
-	
 	bool isTieredSet()
 	{
 		return CVAR.GetCVAR("pb_spawner_tiered").GetBool();
 	}
-
+	
+	int Tier()
+	{
+		return CVAR.GetCVAR("PBSpawnChoices").GetInt();
+	}
+	
 	override void Tick()
 	{
 		
@@ -34,32 +59,113 @@ Class PB_SpawnerBase : Actor
 		//If monster, check surrounding actors for same class name
 		
 	}
-	
+
 	States
 	{
 		Spawn:
-			TNT1 A 1;
-			loop;
-			
-		Spawn_Default:
-			// 
-			TNT1 A 0;
+		TNT1 A 0;
+		goto Deciding;
+		See:
+		    TNT1 A 0;
 			Stop;
-		Spawn_Tier_I:
-			TNT1 A 0;
-			Stop;
-		Spawn_Tier_II:
-			TNT1 A 0;
-			Stop;
-		Spawn_Tier_III:
-			TNT1 A 0;
-			Stop;
-		Spawn_Tier_IV:
-			TNT1 A 0;
-			Stop;
+		Deciding:
+		SpawnActor:
 		Death:
+		ChaoticRandom:
+		T1:
+		T2:
+		T3:
+		T4:
+		T2RANDOM64:
+		T2RANDOM128:
+		T2RANDOM192:
+		T3RANDOM64:
+		T3RANDOM128:
+		T3RANDOM192:
+		T4RANDOM64:
+		T4RANDOM128:
+		T4RANDOM192:
 			TNT1 A 1;
-			stop;
+            stop;
 	}
 }
 
+// SequentialMapOrder is 1-32, not 0-32, we start from 1.
+class pb_worldHandler : EventHandler
+{
+ override void WorldUnloaded (WorldEvent e)
+ {
+  // very few things have this defined but its here if needed.
+  // special case here as if anything is loaded that will go into MAP01
+  // it is definitely a map that allows you to do something with
+  // selections like jimmy's jukebox.
+    if(e.NextMap == "MAP01")
+    {
+     CVar.GetCVar("CanGive").SetBool(false);
+    }
+	// Increment based on what it isn't rather than what it is,
+    if(e.NextMap != "PBTEST"||e.NextMap != "TEST"||e.NextMap != "TITLEMAP")
+    {
+     CVar.GetCVar("CanGive").SetBool(true);
+    }
+ }
+   
+ override void WorldLoaded (WorldEvent e)
+ {   
+  // Check for re-visited maps.
+  if(e.IsReOpen==true)
+  {
+   CVar.GetCVar("CanGive").SetBool(false);
+  }
+  if(e.IsReOpen==false)
+  {
+   CVar.GetCVar("CanGive").SetBool(true);
+  }
+   // Proceed normally
+   if(CVar.GetCVar("CanGive").GetBool()==true)
+	{
+	 switch(SMO)
+	 {
+	  // Tier 1 Begin
+	  Case 0:CVar.GetCVar("SMO").SetInt(1);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 1:CVar.GetCVar("SMO").SetInt(2);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 2:CVar.GetCVar("SMO").SetInt(3);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 3:CVar.GetCVar("SMO").SetInt(4);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 4:CVar.GetCVar("SMO").SetInt(5);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 5:CVar.GetCVar("SMO").SetInt(6);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 6:CVar.GetCVar("SMO").SetInt(7);CVar.GetCVar("CanGive").SetBool(false);break;
+	  //Dynamic Progresion T2 BEGIN & T1 END - 8
+	  Case 7:CVar.GetCVar("SMO").SetInt(8);CVar.GetCVar("CanGive").SetBool(false);break;
+	  //Tiered Progression T2 Begin - 9
+	  Case 8:CVar.GetCVar("SMO").SetInt(9);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 9:CVar.GetCVar("SMO").SetInt(10);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 10:CVar.GetCVar("SMO").SetInt(11);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 11:CVar.GetCVar("SMO").SetInt(12);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 12:CVar.GetCVar("SMO").SetInt(13);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 13:CVar.GetCVar("SMO").SetInt(14);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 14:CVar.GetCVar("SMO").SetInt(15);CVar.GetCVar("CanGive").SetBool(false);break;
+	  //Dynamic Progresion T3 BEGIN & T2 END - 16
+	  Case 15:CVar.GetCVar("SMO").SetInt(16);CVar.GetCVar("CanGive").SetBool(false);break;
+	  //Tiered Progression T2 Begin - 17
+	  Case 16:CVar.GetCVar("SMO").SetInt(17);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 17:CVar.GetCVar("SMO").SetInt(18);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 18:CVar.GetCVar("SMO").SetInt(19);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 19:CVar.GetCVar("SMO").SetInt(20);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 20:CVar.GetCVar("SMO").SetInt(21);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 21:CVar.GetCVar("SMO").SetInt(22);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 22:CVar.GetCVar("SMO").SetInt(23);CVar.GetCVar("CanGive").SetBool(false);break;
+	  //Dynamic Progresion T4 BEGIN & T3 END - 24
+	  Case 23:CVar.GetCVar("SMO").SetInt(24);CVar.GetCVar("CanGive").SetBool(false);break;
+	  //Tiered Progression T4 Begin - 25
+	  Case 24:CVar.GetCVar("SMO").SetInt(25);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 25:CVar.GetCVar("SMO").SetInt(26);CVar.GetCVar("CanGive").SetBool(false);break;
+	  Case 26:CVar.GetCVar("SMO").SetInt(27);CVar.GetCVar("CanGive").SetBool(false);break;
+      // If you get this something broke, as always, insurance.
+	  // This should never happen but its here so engine don't error out
+	  // in case you somehow get a value above 27
+	  default:
+	  CVar.GetCVar("SMO").SetInt(27);CVar.GetCVar("CanGive").SetBool(false);break;
+	 }
+    }
+  }
+}
