@@ -1,5 +1,16 @@
 extend class PB_WeaponBase
 {
+    action void PB_UseLine(int range = 64)
+    {
+        double pz = height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor;
+        FLineTraceData ltd;
+        LineTrace(angle, range, pitch, offsetz: pz, data: ltd);
+        if (ltd.HitLine)
+        {
+            ltd.HitLine.Activate(player.mo, ltd.LineSide, SPAC_Use);
+        }
+    }
+    
     action void PB_FireOffset(bool interp = true) {
 		if( !cvar.GetCVar("PB_ExaggeratedRecoil", invoker.owner.player).GetBool() )
 			return;
@@ -515,26 +526,32 @@ extend class PB_WeaponBase
 	Return Null;
 	}
 	
+	//A way to perform pretty much take all of the "Insertbullets" states and turn it into a function
 	//An example of this action: PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,1) 
-	action void PB_AmmoIntoMag(String AmmoMag_Action,String AmmoPool_Action,int MagazineMaxFill_Action, int takeReserve)//A way to perform pretty much take all of the "Insertbullets" states and turn it into a function
+	action void PB_AmmoIntoMag(String AmmoMag_Action,String AmmoPool_Action,int MagazineMaxFill_Action, int takeReserve)
 		{
-			invoker.AmmoMag = AmmoMag_Action;
-			invoker.AmmoPool = AmmoPool_Action;
-			invoker.MagazineMaxFill = MagazineMaxFill_Action;
-			invoker.TakeGiveResrvAmnt = takeReserve;
-
-			A_Overlay(-97,"InsertBullets_Zscript");
+			for(int i = 0; i < MagazineMaxFill_Action; i++)
+			{
+				if((CountInv(AmmoMag_Action) == MagazineMaxFill_Action) || (!CountInv(AmmoPool_Action)))
+					return;
+				
+				A_GiveInventory(AmmoMag_Action, 1);
+				A_TakeInventory(AmmoPool_Action, takeReserve);
+			}
 		}
+	
 	//Copy of Cemtex's PB_AmmoIntoMag but for unloading
 	//A way to perform pretty much take all of the "RemoveBullets" states and turn it into a function	
 	//An example of this action: PB_UnloadMag("RifleAmmo","PB_HighCalMag",1) 
 	action void PB_UnloadMag(String AmmoMag_Action,String AmmoPool_Action, int giveReserve)
 		{
-			invoker.AmmoMag = AmmoMag_Action;
-			invoker.AmmoPool = AmmoPool_Action;
-			invoker.TakeGiveResrvAmnt = giveReserve;
-
-			A_Overlay(-97,"RemoveBullets_ZScript");
+			int amnt = CountInv(AmmoMag_Action);
+			
+			for(int i = amnt; i > 0; i--)
+			{
+				A_TakeInventory(AmmoMag_Action, 1);
+				A_GiveInventory(AmmoPool_Action, giveReserve);
+			}
 		}
 		
 		
