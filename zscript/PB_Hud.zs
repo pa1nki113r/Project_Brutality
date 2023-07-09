@@ -951,6 +951,13 @@ class PB_Hud_ZS : BaseStatusBar
                 //Specials and Dual Wields
                 int IntAmmoLeft = mAmmoLeftInterpolator.GetValue();
                 //console.PrintF("%i %s", IntAmmoLeft, leftAmmoAmount);
+                
+                let PB_Weap = PB_WeaponBase(CPlayer.ReadyWeapon);
+                
+                if(PB_Weap && PB_Weap.GunBraced == true)
+                {
+					PBHud_DrawImage("BRACICON", (-82, -50), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
+				}
 
                 if(CheckWeaponSelected("Rifle")) 
                 {
