@@ -229,6 +229,8 @@ class PB_EventHandler : EventHandler
 	transient ui PB_PDAUi_Object descriptiondialog;
 	transient ui PB_PDAWeaponContainer weaptextcontainer;
 	
+	string NextMap;
+	PB_GlobalStats Stats;
 	
 	ui void UpdateDesc()
 	{
@@ -391,12 +393,26 @@ class PB_EventHandler : EventHandler
 	override void NewGame()
 	{
 		NewGameStarted = true;
+		
+		if (!Stats)
+		{
+			Stats = PB_GlobalStats.Get();
+		}
 	}
 	override void PlayerEntered(PlayerEvent e)
 	{
-		PlayerPawnBase(players[e.Playernumber].mo).baseweaponpda = false;
-		players[e.Playernumber].mo.A_SetBlend("black",1.0,35);
-	}
+		let plr = PlayerPawnBase(players[e.PlayerNumber].mo);
+		if (plr)
+		{
+			plr.baseweaponpda = false;
+			//plr.Handler = self;
+			players[e.Playernumber].mo.A_SetBlend("black",1.0,35);
+		}
+	}/*
+	override void PlayerRespawned(PlayerEvent e)
+	{
+		PlayerPawnBase(players[e.PlayerNumber].mo).Handler = self;
+	}*/
 	override void WorldTick()
 	{
 		if (gamestate == GS_TITLELEVEL) return;
@@ -560,12 +576,38 @@ class PB_EventHandler : EventHandler
 	}
 	override void WorldLoaded(WorldEvent e)
 	{
+		if (!Stats)
+		{
+			Stats = PB_GlobalStats.Get();
+		}
+		
 		if (gamestate == GS_TITLELEVEL) return;
 		if (e.IsSaveGame)
 		{
 			ClearArrays = true;
 			PDAMonsterStrings.Clear();
 			PDAWeaponStrings.Clear();
+		}
+	}
+	override void WorldUnloaded(WorldEvent e)
+	{
+		// [Ace] Hack to work around death exits.
+		// This used to be in DSPlayer::PreTravelled but it did not function correctly in multiplayer because the players had already been revived by that point.
+		/*foreach (p : players)
+		{
+			if (p.mo && p.mo.Health <= 0)
+			{
+				p.Resurrect();
+			}
+		}*/
+
+		if (Stats.ProgressedMaps.Find(Level.MapName) == Stats.ProgressedMaps.Size())
+		{
+			Stats.ProgressedMaps.Push(Level.MapName);
+			if (Level.total_monsters > 0)
+			{
+				Stats.Counters[PB_GlobalStats.Counter_LevelsCompleted]++;
+			}
 		}
 	}
 	override void OnRegister()
