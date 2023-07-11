@@ -1,16 +1,5 @@
 // ZScript footsteps by vsonnier based on code by TheZombieKiller aka Zombie
 // Agent_Ash: CVAR caching, fixed volume multiplier, reversed and expanded delay multiplier
-
-class PB_FootstepsInit : EventHandler {
-    override void PlayerEntered(PlayerEvent e) {
-        let steps = PB_Footsteps(Actor.Spawn("PB_Footsteps"));
-		if (steps) {
-			steps.Init(players[e.playerNumber].mo);
-			steps.fplayer = players[e.playerNumber];
-		}
-	}
-}
-
 class PB_Footsteps : Actor
 {
 	Default {

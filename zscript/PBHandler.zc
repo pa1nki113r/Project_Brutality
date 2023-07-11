@@ -1,0 +1,137 @@
+class PB_EventHandler : EventHandler
+{
+	string NextMap;
+	PB_GlobalStats Stats;
+	
+	double dashAlpha;
+	int tick;
+	bool dasheffect;
+	
+	///////////////////////////////////////////////////////////////////////////
+	
+	override void WorldTick()
+	{
+		tick++;
+		
+		playerinfo plr = players[consoleplayer];
+        if (!plr)
+            return;
+		
+		if(tick % 35 == 0)
+			dashEffect = cvar.GetCvar("pb_dasheffect", plr).GetBool();
+		
+		if(dashAlpha > 0.0000000)
+			dashAlpha -= 0.2;
+	}
+	
+	override void NetworkProcess(ConsoleEvent e)
+	{
+		if(e.name == "PB_DashWhatchamacallit")
+		{
+			dashAlpha = 1.0;
+		}
+	}
+	
+	override void RenderOverlay(RenderEvent e)
+	{
+		if(gamestate == GS_TITLELEVEL)
+            return;
+            
+    	let pmo = players[consoleplayer].mo;
+        if (!pmo)
+            return;
+            
+        let texture = TexMan.CheckForTexture("Graphics/HUD/FULLSCRN/PB_DashOverlay.png");
+        
+        if(dashAlpha > 0.00000 && dashEffect)
+        	screen.DrawTexture(texture, false, 0, 0, DTA_DestWidthF, Screen.GetWidth(), DTA_DestHeightF, Screen.GetHeight(), DTA_Alpha, dashAlpha);
+	}
+	
+	///////////////////////////////////////////////////////////////////////////
+	
+	override void NewGame()
+	{
+		if (!Stats)
+		{
+			Stats = PB_GlobalStats.Get();
+		}
+		
+		Stats.Counters[PB_GlobalStats.Counter_LevelsCompleted]++;
+	}
+	override void PlayerEntered(PlayerEvent e)
+	{
+		let plr = PlayerPawnBase(players[e.PlayerNumber].mo);
+		if (plr)
+		{
+			
+		}
+		
+		//Foostep handled here
+		
+		let steps = PB_Footsteps(Actor.Spawn("PB_Footsteps"));
+		if (steps)
+		{
+			steps.Init(players[e.playerNumber].mo);
+			steps.fplayer = players[e.playerNumber];
+		}
+		
+		/////////////////////
+	}
+	
+	override void PlayerRespawned(PlayerEvent e)
+	{
+		PlayerInfo player = players[e.PlayerNumber];
+		player.mo.TakeInventory("DeathFader", 1);
+	}
+	
+	override void WorldLoaded(WorldEvent e)
+	{
+		if (!Stats)
+		{
+			Stats = PB_GlobalStats.Get();
+		}
+	}
+	override void WorldUnloaded(WorldEvent e)
+	{
+		// [Ace] Hack to work around death exits.
+		// This used to be in DSPlayer::PreTravelled but it did not function correctly in multiplayer because the players had already been revived by that point.
+		/*
+		foreach (p : players)
+		{
+			if (p.mo && p.mo.Health <= 0)
+			{
+				p.Resurrect();
+			}
+		}
+		*/
+
+		if (Stats.ProgressedMaps.Find(Level.MapName) == Stats.ProgressedMaps.Size())
+		{
+			Stats.ProgressedMaps.Push(Level.MapName);
+			if (Level.total_monsters > 0)
+			{
+				Stats.Counters[PB_GlobalStats.Counter_LevelsCompleted]++;
+			}
+		}
+	}
+	
+	Override Void WorldThingSpawned(WorldEvent e)
+	{
+		if(!e.Thing.bCORPSE && !e.Thing.bFRIENDLY && e.thing is 'PB_Monster') //e.thing is 'PB_Monster'
+		{
+			CVar HatsEnabled = Cvar.FindCvar("PB_HatExtravaganza");
+			if(HatsEnabled)
+			{
+				if(HatsEnabled.GetInt() == 1)
+				{
+					vector3 spawnPos = (0,0,0);
+					Actor LeFunnyHat = Actor.Spawn("FunnyHat",SpawnPos);
+					if(LeFunnyHat)
+					{
+						LeFunnyHat.master = e.Thing;
+					}
+				}
+			}
+		}
+	}
+}
