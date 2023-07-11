@@ -43,7 +43,7 @@ class PB_ThrownGrenade : Actor
     {
         Super.Tick();
 
-        console.printf("%i %i %i %i", grenadeTicks, grenadeBeepSpeed, exploRandom, grenadeTime);
+        //console.printf("%i %i %i %i", grenadeTicks, grenadeBeepSpeed, exploRandom, grenadeTime);
 
         if(bDOZSCRIPTTICK)
         {
