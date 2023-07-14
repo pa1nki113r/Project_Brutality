@@ -31,7 +31,11 @@ Actor RL_ScopeMode: Inventory
 {inventory.maxamount 1 }
 Actor RL_CoolDown: Inventory
 {inventory.maxamount 26 }
-
+Actor RL_ScopeAltFire:Inventory
+{
+inventory.amount 0
+inventory.maxamount 1
+}
 
 Actor AltFireRocketCounter : Inventory
 {
@@ -353,6 +357,7 @@ ACTOR PB_RocketLauncher : PB_Weapon// replaces RocketLauncher
 				if (PB_GetCurrentRocketMode() == "Laser" && CountInv("RocketLauncherUnloaded") == 1) {A_SetWeaponSprite("RL13");}
 			}
 		Ready3:
+			TNT1 A 0 A_JumpIfInventory("Zoomed",1,"Ready2")
 			TNT1 A 0 {
 				A_SetRoll(0);
 				if (PB_GetCurrentRocketMode() == "Homing") {PB_HandleCrosshair(79);}
@@ -466,6 +471,7 @@ ACTOR PB_RocketLauncher : PB_Weapon// replaces RocketLauncher
 			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
 			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
 			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+			TNT1 A 0 A_JumpIfInventory("Zoomed",1,"CantSpecial")
 			TNT1 A 0 {
 				A_GiveInventory("CantWeaponSpecial" ,1 );
 				A_Giveinventory("PB_LockScreenTilt",1);
@@ -542,6 +548,26 @@ ACTOR PB_RocketLauncher : PB_Weapon// replaces RocketLauncher
 			RL98 EE 1 
 			RL09 EE 1 
 			RL98 EE 1 
+			Goto Ready3
+		
+		CantSpecial:
+			TNT1 A 0 {
+				if(CountInv("RL_ScopeAltFire") <= 0) {
+					A_Print("Alt Fire mode on");
+					A_SetInventory("RL_ScopeAltFire",1);
+					A_TakeInventory("GoWeaponSpecialAbility", 1);
+					return state("Ready3");
+					}
+				else {
+					A_Print("Alt Fire mode off");
+					A_SetInventory("RL_ScopeAltFire",0);
+					A_TakeInventory("GoWeaponSpecialAbility", 1);
+					return state("Ready3");
+				}
+				return state(2);
+			}
+			TNT1 AAA 0
+			TNT1 A 0 A_TakeInventory("GoWeaponSpecialAbility", 1)
 			Goto Ready3
 			
 		MuzzleFlash:
@@ -836,6 +862,7 @@ ACTOR PB_RocketLauncher : PB_Weapon// replaces RocketLauncher
 			Goto LockOn_Scan3
 			
 		Scoped_LockOn_Overlay:
+			TNT1 A 0 A_JumpIf(PB_GetCurrentRocketMode() != "Homing",3)
 			TNT1 A 1 {
 			
 					A_FireBullets(0,0,1,0,"LockOnPuff_Painted_1", FBF_NORANDOMPUFFZ);
@@ -857,7 +884,8 @@ ACTOR PB_RocketLauncher : PB_Weapon// replaces RocketLauncher
 			}
 			TNT1 A 0 A_Jumpif(CountInv("Zoomed") != 0,"Scoped_LockOn_Overlay")
 			Stop
-			
+			TNT1 AAA 1
+			STOP
 		
 		Ready2:
 			TNT1 A 0 {
@@ -904,6 +932,7 @@ ACTOR PB_RocketLauncher : PB_Weapon// replaces RocketLauncher
 			
 		
 		Scope:
+			TNT1 A 0 A_JumpIf(PB_GetCurrentRocketMode() == "Homing","LockOn")
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				A_SetRoll(0);
@@ -935,11 +964,6 @@ ACTOR PB_RocketLauncher : PB_Weapon// replaces RocketLauncher
 			TNT1 A 0 {
 				A_Overlay(71, "Scoped_LockOn_Overlay");
 				A_Overlay(66, "Scope_AmmoOverlay6");
-				A_Overlay(65, "Scope_AmmoOverlay5");
-				A_Overlay(64, "Scope_AmmoOverlay4");
-				A_Overlay(63, "Scope_AmmoOverlay3");
-				A_Overlay(62, "Scope_AmmoOverlay2");
-				A_Overlay(61, "Scope_AmmoOverlay1");
 			}
 			Goto Ready2
 		ZoomOut:
@@ -964,119 +988,32 @@ ACTOR PB_RocketLauncher : PB_Weapon// replaces RocketLauncher
 			
 		
 		Scope_AmmoOverlay6:
-			R101 A 0 
-			R103 A 0 
-			R104 A 0 
-			R102 A 1 BRIGHT {
-				if(CountInv("RocketRounds") >= 6  && PB_GetCurrentRocketMode() == "Standard") {
-					A_SetOverlaySprite(66, "R101");
+			TNT1 a 0 A_JumpIf(CountInv("RocketRounds") < 1, "Scope_AmmoOverlay5")
+			2L01 BCDEFG 0
+			2L02 BCDEFG 0
+			2L03 BCDEFG 0
+			2L01 "#" 1 BRIGHT {
+				if(PB_GetCurrentRocketMode() == "Standard") {
+					PB_SetPRCounter(66, "RocketRounds", "2L01", true);
 				}
-				if(CountInv("RocketRounds") >= 6  && PB_GetCurrentRocketMode() == "Homing") {
-					A_SetOverlaySprite(66, "R103");
+				if(PB_GetCurrentRocketMode() == "Homing") {
+					PB_SetPRCounter(66, "RocketRounds", "2L02", true);
 				}
-				if(CountInv("RocketRounds") >= 6  && PB_GetCurrentRocketMode() == "Laser") {
-					A_SetOverlaySprite(66, "R104");
+				if(PB_GetCurrentRocketMode() == "Laser") {
+					PB_SetPRCounter(66, "RocketRounds", "2L03", true);
 				}
 			}
-			TNT1 A 0 A_JumpIf(CountInv("Zoomed") == 0, 1)
+			"####" "#" 0 A_JumpIf(CountInv("Zoomed") == 0, 1)
 			Loop
-			TNT1 A 0 
+			TNT1 A 1 
 			Stop
 		Scope_AmmoOverlay5:
-			R101 B 0 
-			R103 B 0 
-			R104 B 0 
-			R102 B 1 BRIGHT {
-				if(CountInv("RocketRounds") >= 5  && PB_GetCurrentRocketMode() == "Standard") {
-					A_SetOverlaySprite(65, "R101");
-				}
-				if(CountInv("RocketRounds") >= 5  && PB_GetCurrentRocketMode() == "Homing") {
-					A_SetOverlaySprite(65, "R103");
-				}
-				if(CountInv("RocketRounds") >= 5  && PB_GetCurrentRocketMode() == "Laser") {
-					A_SetOverlaySprite(65, "R104");
-				}
-			}
+			2L01 A 1 BRIGHT
 			TNT1 A 0 A_JumpIf(CountInv("Zoomed") == 0, 1)
 			Loop
-			TNT1 A 0 
+			TNT1 A 1 
 			Stop
-		Scope_AmmoOverlay4:
-			R101 C 0 
-			R103 C 0 
-			R104 C 0 
-			R102 C 1 BRIGHT {
-				if(CountInv("RocketRounds") >= 4  && PB_GetCurrentRocketMode() == "Standard") {
-					A_SetOverlaySprite(64, "R101");
-				}
-				if(CountInv("RocketRounds") >= 4  && PB_GetCurrentRocketMode() == "Homing") {
-					A_SetOverlaySprite(64, "R103");
-				}
-				if(CountInv("RocketRounds") >= 4  && PB_GetCurrentRocketMode() == "Laser") {
-					A_SetOverlaySprite(64, "R104");
-				}
-			}
-			TNT1 A 0 A_JumpIf(CountInv("Zoomed") == 0, 1)
-			Loop
-			TNT1 A 0 
-			Stop
-		Scope_AmmoOverlay3:
-			R101 D 0 
-			R103 D 0 
-			R104 D 0 
-			R102 D 1 BRIGHT {
-				if(CountInv("RocketRounds") >= 3  && PB_GetCurrentRocketMode() == "Standard") {
-					A_SetOverlaySprite(63, "R101");
-				}
-				if(CountInv("RocketRounds") >= 3  && PB_GetCurrentRocketMode() == "Homing") {
-					A_SetOverlaySprite(63, "R103");
-				}
-				if(CountInv("RocketRounds") >= 3  && PB_GetCurrentRocketMode() == "Laser") {
-					A_SetOverlaySprite(63, "R104");
-				}
-			}
-			TNT1 A 0 A_JumpIf(CountInv("Zoomed") == 0, 1)
-			Loop
-			TNT1 A 0 
-			Stop
-		Scope_AmmoOverlay2:
-			R101 E 0 
-			R103 E 0 
-			R104 E 0 
-			R102 E 1 BRIGHT {
-				if(CountInv("RocketRounds") >= 2  && PB_GetCurrentRocketMode() == "Standard") {
-					A_SetOverlaySprite(62, "R101");
-				}
-				if(CountInv("RocketRounds") >= 2  && PB_GetCurrentRocketMode() == "Homing") {
-					A_SetOverlaySprite(62, "R103");
-				}
-				if(CountInv("RocketRounds") >= 2  && PB_GetCurrentRocketMode() == "Laser") {
-					A_SetOverlaySprite(62, "R104");
-				}
-			}
-			TNT1 A 0 A_JumpIf(CountInv("Zoomed") == 0, 1)
-			Loop
-			TNT1 A 0 
-			Stop
-		Scope_AmmoOverlay1:
-			R101 F 0 
-			R103 F 0 
-			R104 F 0 
-			R102 F 1 BRIGHT {
-				if(CountInv("RocketRounds") >= 1  && PB_GetCurrentRocketMode() == "Standard") {
-					A_SetOverlaySprite(61, "R101");
-				}
-				if(CountInv("RocketRounds") >= 1  && PB_GetCurrentRocketMode() == "Homing") {
-					A_SetOverlaySprite(61, "R103");
-				}
-				if(CountInv("RocketRounds") >= 1  && PB_GetCurrentRocketMode() == "Laser") {
-					A_SetOverlaySprite(61, "R104");
-				}
-			}
-			TNT1 A 0 A_JumpIf(CountInv("Zoomed") == 0, 1)
-			Loop
-			TNT1 A 0 
-			Stop
+		
 			
 		Scope_Fire:
 			TNT1 A 0 A_JumpIf(CountInv("RL_CoolDown") != 0, "Ready2")
@@ -1089,11 +1026,12 @@ ACTOR PB_RocketLauncher : PB_Weapon// replaces RocketLauncher
 			TNT1 A 0 A_JumpIfInventory("RocketRounds",1,1)
 			Goto Reload
 		Scope_LockOn_Check:
+			TNT1 A 0 A_JumpIfInventory("RL_ScopeAltFire",1,"LoadRocket_Double")
+			TNT1 A 0 A_JumpIf(PB_GetCurrentRocketMode() != "Homing",2)
 			TNT1 A 0 A_JumpIf(CountInv("RocketLauncher_LockOnTargets") > 0, "Scope_Firing_Single")
 			Goto Ready2
 		Scope_Firing_Single:
-			
-			
+			TNT1 A 0
 			RL88 H 1 BRIGHT {
 				A_StartSound("0SRFIRE");
 				A_AlertMonsters;
@@ -1179,6 +1117,7 @@ ACTOR PB_RocketLauncher : PB_Weapon// replaces RocketLauncher
         TNT1 A 0 A_JumpIfInventory("RocketRounds",2,"LoadRocket_Double")
         Goto Reload
 	LoadRocket_Double:
+	LoadRocket_DoubleSP:
 		TNT1 A 0 {
 			A_StartSound("REVCYC", CHAN_AUTO, CHANF_OVERLAP);
 			A_StartSound("weapons/rocket/innercycle", CHAN_AUTO, CHANF_OVERLAP);
