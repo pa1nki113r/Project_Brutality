@@ -37,7 +37,9 @@ class PB_Footsteps : Actor
 		SetOrigin(toFollow.pos, false);
 		floorz = toFollow.floorz;
 		   
-		double playerVel2D = sqrt(toFollow.vel.x * toFollow.vel.x + toFollow.vel.y * toFollow.vel.y);
+		double playerVel2D = toFollow.Vel.Length();//sqrt(toFollow.vel.x * toFollow.vel.x + toFollow.vel.y * toFollow.vel.y);
+		
+		double isCrouched = toFollow.GetCrouchFactor();
 		
 		//2) Only play footsteps when on ground, and if the player is moving fast enough.
 		if ((playerVel2D > 0.1) && (toFollow.pos.z - toFollow.floorz <= 0)) {			
@@ -51,7 +53,7 @@ class PB_Footsteps : Actor
 			else
 				stepsound = GetFlatSound(Texman.GetName(toFollow.floorpic));
 			//sound volume is amplified by speed.
-			double soundVolume = 1.0 * playerVel2D * 0.12; //multiplied by 0.12 because raw value is too high to be used as volume
+			double soundVolume = isCrouched * (playerVel2D * 0.05); //multiplied by 0.12 because raw value is too high to be used as volume
 			
 			//play the sound if it's non-null
 			if (stepsound != "none")
