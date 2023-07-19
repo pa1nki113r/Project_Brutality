@@ -1,5 +1,16 @@
 extend class PB_WeaponBase
 {
+    action void PB_UseLine(int range = 64)
+    {
+        double pz = height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor;
+        FLineTraceData ltd;
+        LineTrace(angle, range, pitch, offsetz: pz, data: ltd);
+        if (ltd.HitLine)
+        {
+            ltd.HitLine.Activate(player.mo, ltd.LineSide, SPAC_Use);
+        }
+    }
+    
     action void PB_FireOffset(bool interp = true) {
 		if( !cvar.GetCVar("PB_ExaggeratedRecoil", invoker.owner.player).GetBool() )
 			return;
@@ -73,22 +84,27 @@ extend class PB_WeaponBase
 			return;
 		}
 		
-		FLineTraceData dt1, dt2, dt3;
+		FLineTraceData dt1, dt2, dt3, dt4, dt5, dt6;
 		plr.LineTrace(plr.Angle, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95, offsetside: -plr.Radius / 2, data: dt1);
 		plr.LineTrace(plr.Angle, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95 * 0.75, data: dt2);
 		plr.LineTrace(plr.Angle, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95, offsetside: plr.Radius / 2, data: dt3);
 		
-		bool geometryBrace = dt1.HitType == FLineTraceData.TRACE_HitWall || dt2.HitType == FLineTraceData.TRACE_HitWall || dt3.HitType == FLineTraceData.TRACE_HitWall;
-		if (!bMELEEWEAPON && (plr.Player.crouchfactor == 0.5 || geometryBrace) && plr.Vel.Length() < 0.65)
+		plr.LineTrace(plr.Angle + 90, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95, data: dt4);
+		plr.LineTrace(plr.Angle + 180, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95 * 0.75, data: dt5);
+		plr.LineTrace(plr.Angle - 90, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95, data: dt6);
+		
+		bool geometryBrace = dt1.HitType == FLineTraceData.TRACE_HitWall || dt2.HitType == FLineTraceData.TRACE_HitWall || dt3.HitType == FLineTraceData.TRACE_HitWall || dt4.HitType == FLineTraceData.TRACE_HitWall || dt5.HitType == FLineTraceData.TRACE_HitWall || dt6.HitType == FLineTraceData.TRACE_HitWall;
+		
+		if (!bMELEEWEAPON && (plr.Player.crouchfactor == 0.5 || geometryBrace) && plr.Vel.Length() < 6)
 		{
 			BraceTicker++;
-			if (BraceTicker == 12)
+			if (BraceTicker == 10)
 			{
 				GunBraced = true;
 				plr.A_SetPitch(plr.Pitch - 0.5);
-				Owner.A_StartSound("Inventory/GunBrace", 19);
+				Owner.A_StartSound("Weapon/Bracing", 19);
 			}
-			if (BraceTicker == 13)
+			if (BraceTicker == 11)
 			{
 				plr.A_SetPitch(plr.Pitch + 0.5);
 			}
@@ -514,26 +530,44 @@ extend class PB_WeaponBase
 	Return Null;
 	}
 	
-	//An example of this action: PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,1) 
-	action void PB_AmmoIntoMag(String AmmoMag_Action,String AmmoPool_Action,int MagazineMaxFill_Action, int takeReserve)//A way to perform pretty much take all of the "Insertbullets" states and turn it into a function
+	//Specific Casing Spawning
+	
+	Action void PB_RevolverCasingSpawn(string AmmoSide)
+	{
+		int CasingCount;
+		CasingCount = 6 - CountInv(AmmoSide);
+		for(CasingCount > 0; CasingCount--;)
 		{
-			invoker.AmmoMag = AmmoMag_Action;
-			invoker.AmmoPool = AmmoPool_Action;
-			invoker.MagazineMaxFill = MagazineMaxFill_Action;
-			invoker.TakeGiveResrvAmnt = takeReserve;
-
-			A_Overlay(-97,"InsertBullets_Zscript");
+			A_FireCustomMissile("MagnumCasing",-5,0,0,-30);
 		}
+	}
+	
+	//A way to perform pretty much take all of the "Insertbullets" states and turn it into a function
+	//An example of this action: PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,1) 
+	action void PB_AmmoIntoMag(String AmmoMag_Action,String AmmoPool_Action,int MagazineMaxFill_Action, int takeReserve)
+		{
+			for(int i = 0; i < MagazineMaxFill_Action; i++)
+			{
+				if((CountInv(AmmoMag_Action) == MagazineMaxFill_Action) || (!CountInv(AmmoPool_Action)))
+					return;
+				
+				A_GiveInventory(AmmoMag_Action, 1);
+				A_TakeInventory(AmmoPool_Action, takeReserve);
+			}
+		}
+	
 	//Copy of Cemtex's PB_AmmoIntoMag but for unloading
 	//A way to perform pretty much take all of the "RemoveBullets" states and turn it into a function	
 	//An example of this action: PB_UnloadMag("RifleAmmo","PB_HighCalMag",1) 
 	action void PB_UnloadMag(String AmmoMag_Action,String AmmoPool_Action, int giveReserve)
 		{
-			invoker.AmmoMag = AmmoMag_Action;
-			invoker.AmmoPool = AmmoPool_Action;
-			invoker.TakeGiveResrvAmnt = giveReserve;
-
-			A_Overlay(-97,"RemoveBullets_ZScript");
+			int amnt = CountInv(AmmoMag_Action);
+			
+			for(int i = amnt; i > 0; i--)
+			{
+				A_TakeInventory(AmmoMag_Action, 1);
+				A_GiveInventory(AmmoPool_Action, giveReserve);
+			}
 		}
 		
 		
@@ -894,7 +928,7 @@ extend class PB_WeaponBase
 			"IdleFlameBarrel"
 		};
 		if (!(pbFlags & PBWEAP_UNLOADED)) pbFlags |= CheckUnloaded(invoker.UnloaderToken);
-		if (CountInv("GoFatality")>=1 || PB_executingEnemy())
+		if (PB_executingEnemy())
 		{
 			return ResolveState("Steady");
 		}

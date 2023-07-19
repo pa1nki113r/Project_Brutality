@@ -8,6 +8,8 @@ class PB_Monster : Actor abstract
 	bool willBeLooking;
 	int heardOpponent;
 	
+	int avoidCooldown;
+	
 	int enemyRange;
 	Property AttackRange : enemyRange;
 	//the enemies attack range, in case you wanted some enemies to be CQC mainly, or snipe
@@ -51,6 +53,7 @@ class PB_Monster : Actor abstract
 		{
 			A_ClearTarget();
 			Wandering == true;
+			A_GiveInventory("Wandering",1);
 			A_Wander();
 			A_LookEx();
 			return;
@@ -61,6 +64,13 @@ class PB_Monster : Actor abstract
 			{
 				SetStateLabel("Fallback");
 			}
+		}
+		if(waterlevel >= 1 && Target.Pos.Z > (self.Pos.Z + 10))
+		{
+			A_Chase();
+			A_FaceTarget(30);
+			A_Recoil(-3);
+			ThrustThingZ(0, 5, 0, 1);
 		}
 		if (CheckSight(target) == true && CheckIfCloser(target, 3000))
 		{
@@ -80,7 +90,7 @@ class PB_Monster : Actor abstract
 				//dodging system check
 				LookExParams look;
 				look.FOV = 2;
-				int chance = (random(1,50));
+				int chance = (random(1,30));
 				if(target != NULL)
 				{
 					if(target.IsVisible(self, false, look) && chance <= 5 && dist <= 1500)
@@ -98,6 +108,13 @@ class PB_Monster : Actor abstract
 		else if (CheckSight(target) == false && abs(Level.MapTime - EnemyLastSighted) < 360)
 		{
 			A_Chase();
+			
+			int chanceR = (random(1,10));
+			
+			if(bFRIGHTENED && chanceR <= 5)
+			{
+				SetStateLabel("Reload");
+			}
 		}
 		else
 		{
@@ -140,7 +157,7 @@ class PB_Monster : Actor abstract
 	
 	void A_DeathWepCheck(string tokenName, double unitDist, statelabel deathState)
 	{
-		if(Distance2D(target) < unitDist && CountInv(tokenName, AAPTR_TARGET >= 1))
+		if(Distance2D(target) < unitDist && CountInv(tokenName, AAPTR_TARGET) >= 1)
 		{
 			SetStateLabel(deathState);
 		}
@@ -265,6 +282,11 @@ class PB_Monster : Actor abstract
 		Super.Tick();
 		//HitboxerHandler();
 		ExecutionHandler();
+		
+		if(avoidCooldown > 0)
+		{
+			avoidCooldown--;
+		}
 	}
 
 	override void PostBeginPlay()
@@ -272,6 +294,7 @@ class PB_Monster : Actor abstract
 		Super.PostBeginPlay();
 		heardOpponent = 0;
 		HitBoxSpawned = False;
+		avoidCooldown = 0;
 	}
 	
 	Default
