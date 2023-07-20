@@ -780,6 +780,8 @@ class PB_Hud_ZS : BaseStatusBar
 			int Armor = GetAmount("BasicArmor");
 			int IntArmor = mArmorInterpolator.GetValue();
 			int MaxArmor = GetMaxAmount("BasicArmor");
+			
+			int AxeCount = CPlayer.mo.CountInv("PB_Axe");
 
             //WARNING: vile
             if(!CheckInventory("sae_extcam") && !automapactive) {
@@ -825,7 +827,7 @@ class PB_Hud_ZS : BaseStatusBar
             //Healthbar
 			if(GetAirTime() < 700)
 			{
-				PBHud_DrawString(mBoldFont, "O²: "..(Formatnumber(((GetAirTime() / 7.0) * 100.0) / 100.0)).."%", (137, -90), DI_TEXT_ALIGN_LEFT, Font.FindFontColor('HUDBLUEBAR'));
+				PBHud_DrawString(mBoldFont, "O²: "..(Formatnumber(((GetAirTime() / 7.0) * 100.0) / 100.0)).."%", (190, -90), DI_TEXT_ALIGN_LEFT, Font.FindFontColor('HUDBLUEBAR'));
 			}
 
             PBHud_DrawImage(inPain ? "BARBCK1L" : "BARBACK1", (73, -50), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
@@ -850,6 +852,11 @@ class PB_Hud_ZS : BaseStatusBar
             
             PBHud_DrawBar(inPain ? "HOBAR" : "HPBAR", "BGBARL", IntHealth, min(MaxHealth, 100), (112, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
             
+			for (AxeCount > 0; AxeCount--;)
+			{
+				PBHud_DrawImage("AXECOUNT", (96 + (AxeCount * 8), -75), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1, (56, 85), (0.35, 0.35));
+			}
+			
             if(Health > 100) {
             	PBHud_DrawBar("HLBAR", "BGBARL", IntHealth - 100, min(MaxHealth, 200), (112, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
             }

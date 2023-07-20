@@ -10,6 +10,9 @@ class PB_EventHandler : EventHandler
 	bool HatExists;
 	int HatMonth;
 	
+	int taunttimer;
+	const tauntcooldown = 40;
+	
 	///////////////////////////////////////////////////////////////////////////
 	
 	override void WorldTick()
@@ -25,6 +28,9 @@ class PB_EventHandler : EventHandler
 		
 		if(dashAlpha > 0.0000000)
 			dashAlpha -= 0.2;
+			
+		if(taunttimer > 0)
+			taunttimer--;
 	}
 	
 	override void NetworkProcess(ConsoleEvent e)
@@ -38,6 +44,40 @@ class PB_EventHandler : EventHandler
 		{
 			HatMonth = e.Args[0];
 			return;
+		}
+		
+		let pm = players[e.Player].mo;
+		if(!pm)
+			return;
+		
+		if (e.Name ~== "RequestTaunt")
+		{	
+			if(taunttimer == 0)
+			{
+				let pbweap = PB_WeaponBase(pm.player.readyweapon);
+				/*if(pbweap)
+					console.printf("the prev weapon is "..pbweap.getclassname());*/
+				
+				//only if the weapon is in ready state or in pb_Ready state hehe
+				if((players[e.Player].weaponstate & WF_WEAPONREADY) || (pbweap && pbweap.PB_WeaponIsInReadyState() ))
+				{
+					//set the cooldown
+					taunttimer = tauntcooldown;
+					
+					//give the taunt weapon and cast it to pass the actual weapon
+					//so it can return to it later
+					pm.giveinventory("Pb_TauntWeapon",1);
+					let wp = PB_TauntWeapon(pm.findinventory("PB_TauntWeapon"));
+					
+					//only save the prev weapon if its not the taunt weapon (so it doesn't returns infinitelly to itself)
+					if(!(pm.player.readyweapon is "PB_TauntWeapon"))
+						wp.PrevWeapon = pm.player.readyweapon;
+					
+					//set the taunt weapon as the actual weapon
+					pm.player.readyweapon = wp;
+					pm.player.SetPSprite(PSP_WEAPON, wp.FindState("Ready"));
+				}
+			}
 		}
 	}
 	
