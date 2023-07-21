@@ -902,8 +902,8 @@ class PB_Hud_ZS : BaseStatusBar
             //Keys
             if(doKeyBox)
                 PBHud_DrawImage("KEYCRBOX", (-15, 17), DI_SCREEN_RIGHT_TOP | DI_ITEM_RIGHT_TOP, playerBoxAlpha);
-
-            DrawKeys((-40, 38));
+				
+			DrawKeys((-36, 38), 12, 15);
 			
             if(showLevelStats) {
 				//Level Stats
