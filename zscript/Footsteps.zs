@@ -174,9 +174,9 @@ class PB_Footsteps : Actor
 		};
 		
 		//"step/slime"
-		static const name FLATS_SLIME[] = {	"BDT_WFL", "BDT_BFL", "BDT_AFL", "BDT_SFL1", "BDT_SFL2", "NUKAGE1", "NUKAGE2", "NUKAGE3", "SLIME01", "SLIME02", "SLIME03", "SLIME04", "SLIME05", "SLIME06", "SLIME07", "SLIME08" };
+		static const name FLATS_WATER[] = {	"BDT_WFL", "BDT_BFL", "BDT_AFL", "BDT_SFL1", "BDT_SFL2", "NUKAGE1", "NUKAGE2", "NUKAGE3", "SLIME01", "SLIME02", "SLIME03", "SLIME04", "SLIME05", "SLIME06", "SLIME07", "SLIME08" };
 		//"step/water"
-		static const name FLATS_WATER[] = { "FWATER1", "FWATER2", "FWATER3", "FWATER4", "BLOOD1", "BLOOD2", "BLOOD3" };
+		static const name FLATS_SLIME[] = { "FWATER1", "FWATER2", "FWATER3", "FWATER4", "BLOOD1", "BLOOD2", "BLOOD3" };
 		//"step/slimy"
 		static const name FLATS_SLIMY[] = { "SFLR6_1","SFLR6_4","SFLR7_1","SFLR7_4" };
 		//"step/lava"
