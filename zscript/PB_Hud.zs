@@ -902,8 +902,8 @@ class PB_Hud_ZS : BaseStatusBar
             //Keys
             if(doKeyBox)
                 PBHud_DrawImage("KEYCRBOX", (-15, 17), DI_SCREEN_RIGHT_TOP | DI_ITEM_RIGHT_TOP, playerBoxAlpha);
-
-            DrawKeys((-40, 38));
+				
+			DrawKeys((-36, 38), 12, 15);
 			
             if(showLevelStats) {
 				//Level Stats
@@ -1240,7 +1240,7 @@ class PB_Hud_ZS : BaseStatusBar
 
                 if(CheckWeaponSelected("PB_Flamethrower"))
                 {
-                    PBHud_DrawImage("BARBACD1", (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1);
+                    PBHud_DrawImage("BARBACD1", (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
                     if(!CheckInventory("FlamerUpgraded")) { PBHud_DrawImage("BARBACD2", (-73, -50), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha); }
                     //Bars
                     if(!CheckInventory("FlamerUpgraded")) { PBHud_DrawBar("ABAR6", "BGBARL", Secondary.Amount, Secondary.MaxAmount, (-112, -51), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM); }
