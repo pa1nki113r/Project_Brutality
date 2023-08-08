@@ -269,8 +269,11 @@ class PB_Hud_ZS : BaseStatusBar
         let PB_Player = PlayerPawnBase(CPlayer.mo);
 
         //Limit and add variables.
-        mSway = clamp(intSway + (PB_Player.XBob * 0.5) - CPlayer.mo.Roll, -8, 8);
-        mPitch = clamp(intPitch + mFallOfs - (PB_Player.YBob * 0.5) + CPlayer.mo.Roll, -8, 8);
+	    if(PB_Player)
+	    {
+	        mSway = clamp(intSway + (PB_Player.XBob * 0.5) - CPlayer.mo.Roll, -8, 8);
+        	mPitch = clamp(intPitch + mFallOfs - (PB_Player.YBob * 0.5) + CPlayer.mo.Roll, -8, 8);
+	    }
 
         //Collect old information.
         mOldAngles = CPlayer.mo.angle;
