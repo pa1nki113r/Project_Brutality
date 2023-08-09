@@ -9,6 +9,7 @@ generic name guy
 
 A_D_M_E_R_A_L
 -Slanted Bars
+-Mugshot code
 
 Iamcarrotmaster
 -Graphics
@@ -892,7 +893,16 @@ class PB_Hud_ZS : BaseStatusBar
             //Mugshot
             PBHud_DrawImage("EQUPBO", (16, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
             
-            PBHud_DrawTexture(GetMugShot(5), (25, -65), DI_ITEM_OFFSETS, scale: (1.25, 1.25));
+             int mugflags; string mug;
+			if(pbcv_mugshot)
+			{
+				mugflags = MugShot.ANIMATEDGODMODE|MugShot.XDEATHFACE|MugShot.CUSTOM;
+				if(cplayer.mo.FindInventory("PowerInvisibility",true)||cplayer.mo.bSHADOW)
+					mug = isInvulnerable()?"SGI":"SCI";
+				else mug = isInvulnerable()?"SGD":"SFC";
+			}
+			else { mugflags = MugShot.STANDARD; mug = "STF"; }
+			PBHud_DrawTexture(GetMugShot(5,mugflags,mug),(25,-65),DI_ITEM_OFFSETS,scale:(1.25,1.25));
             
             //Powerups
             PB_DrawPowerups((16, -76));
