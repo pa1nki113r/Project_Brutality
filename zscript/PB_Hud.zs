@@ -62,13 +62,13 @@ class PB_Hud_ZS : BaseStatusBar
 
     //Hud variables
     string leftAmmoAmount;
-    bool doKeyBox, hudDynamics, inPain;
+    bool hudDynamics, inPain;
     double dashIndAlpha;
     int healthFontCol, keyamount;
 
     //CVars
     int hudXMargin, hudYMargin;
-    bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, forceScale, lowresfont, curmaxammolist, hideunusedtypes, showList;
+    bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot;
     double playerAlpha, playerBoxAlpha;
     
 	override void Init()
@@ -93,13 +93,13 @@ class PB_Hud_ZS : BaseStatusBar
 
 		InvBar = InventoryBarState.Create();
 	}
-
-	override void Draw(int state, double TicFrac)
+	
+	void GatherCvars()
 	{
-		Super.Draw(state, TicFrac);
+		hudDynamicsCvar = CVar.GetCvar("PB_HudDynamics", CPlayer).GetBool();
 
-        hudDynamicsCvar = CVar.GetCvar("PB_HudDynamics", CPlayer).GetBool();
         hudDynamics = automapactive ? false : hudDynamicsCvar;
+
 
         hudXMargin = Cvar.GetCvar("pb_hudxmargin", CPlayer).GetInt();
         hudYMargin = CVar.GetCvar("pb_hudymargin", CPlayer).GetInt();
@@ -118,6 +118,15 @@ class PB_Hud_ZS : BaseStatusBar
         playerAlpha = CVar.GetCvar("pb_hudalpha", CPlayer).GetFloat();
 
         playerBoxAlpha = CVar.GetCvar("pb_hudboxalpha", CPlayer).GetFloat();
+
+        customPBMugshot = CVar.GetCvar("pb_newmugshot", CPlayer).GetBool();
+	}
+
+	override void Draw(int state, double TicFrac)
+	{
+		Super.Draw(state, TicFrac);
+
+        GatherCvars();
         
         if(state != HUD_None)
 		{
@@ -135,25 +144,7 @@ class PB_Hud_ZS : BaseStatusBar
         m0to1Float = 0;
         dashIndAlpha = 0;
 
-        hudDynamics = CVar.GetCvar("PB_HudDynamics", CPlayer).GetBool();
-        
-        hudXMargin = Cvar.GetCvar("pb_hudxmargin", CPlayer).GetInt();
-        hudYMargin = CVar.GetCvar("pb_hudymargin", CPlayer).GetInt();
-        
-        showVisor = CVar.GetCvar("pb_showhudvisor", CPlayer).GetBool();
-        showVisorGlass = CVar.GetCvar("pb_showhudvisorglass", CPlayer).GetBool();
-        
-        showLevelStats = CVar.GetCvar("pb_showlevelstats", CPlayer).GetBool();
-        
-        lowresfont = CVar.GetCvar("pb_uselowreshudfont", CPlayer).GetBool();
-        
-        showList = CVar.GetCvar("pb_showammolist", CPlayer).GetBool();
-        curmaxammolist = CVar.GetCvar("pb_curmaxammolist", CPlayer).GetBool();
-        hideunusedtypes = CVar.GetCvar("pb_hideunusedtypes", CPlayer).GetBool();
-
-        playerAlpha = CVar.GetCvar("pb_hudalpha", CPlayer).GetFloat();
-
-        playerBoxAlpha = CVar.GetCvar("pb_hudboxalpha", CPlayer).GetFloat();
+        GatherCvars();
         
         mHealthInterpolator.Reset(0);
 		mArmorInterpolator.Reset(0);
@@ -366,6 +357,39 @@ class PB_Hud_ZS : BaseStatusBar
 
         DrawImage(texture, pos, flags, Alpha, box, scale);
     }
+    
+    /*
+    void PBHud_DrawImageRotated(String texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 scale = (1, 1), ERenderStyle style = STYLE_Translucent, Color col = 0xffffffff, int translation = 0, double Parallax = 0.75, double Parallax2 = 0.25) 
+    {
+
+        double IntMSway = mSwayInterpolator.GetValue();
+        double IntMPitch = mPitchInterpolator.GetValue();
+        double IntMOfs = mFOffsetInterpolator.GetValue();
+        
+        if(HudDynamics) {    
+            pos.x += IntMSway * Parallax;
+            pos.y -= IntMPitch * Parallax;
+
+            if(pos.x > 0) {
+                pos.x -= (IntMOfs * Parallax2);
+            }
+            
+            if(pos.x < 0) {
+                pos.x += (IntMOfs * Parallax2);
+            }
+            
+            if(pos.y > 0) {
+                pos.y -= (IntMOfs * Parallax2);
+            }
+            
+            if(pos.y < 0) {
+                pos.y += (IntMOfs * Parallax2);
+            }
+        }
+
+        DrawImageRotated(texture, pos, flags, 0, (m0to1Float * Alpha), scale, style, col, translation);
+    }
+    */
 
     void PBHud_DrawString(HUDFont font, String string, Vector2 pos, int flags = 0, int translation = Font.CR_UNTRANSLATED, double Alpha = 1., int wrapwidth = -1, int linespacing = 4, Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25) 
     {
@@ -531,6 +555,29 @@ class PB_Hud_ZS : BaseStatusBar
         }
 
         DrawTexture(texture, pos, flags, (m0to1Float * Alpha), box, scale);
+    }
+    
+    void PBHud_DrawSpecialMugshot()
+    {
+    	int mugflags; 
+		string mug;
+
+		if(customPBMugshot)
+		{
+			mugflags = MugShot.ANIMATEDGODMODE | MugShot.XDEATHFACE | MugShot.CUSTOM;
+				
+			if(cplayer.mo.FindInventory("PowerInvisibility",true) || cplayer.mo.bSHADOW)
+				mug = isInvulnerable() ? "SGI" : "SCI";
+			else 
+				mug = isInvulnerable() ? "SGD" : "SFC";
+		}
+		else 
+		{ 
+			mugflags = MugShot.STANDARD; 
+			mug = "STF"; 
+		}
+			
+		PBHud_DrawTexture(GetMugShot(5, mugflags, mug), (25, -65), DI_ITEM_OFFSETS, scale: (1.25, 1.25));
     }
     
     ////////////////////////////////////
@@ -821,6 +868,15 @@ class PB_Hud_ZS : BaseStatusBar
                     PBHud_DrawImageManualAlpha("HUDTFLA2", (35 + m32to0, -9 - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7));  
                    	PBHud_DrawImageManualAlpha("HUDBFLA2", (35 + m32to0, 9 + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7));
                     
+                    /* offsets looked a bit off, would love to revisit this sometime as it does look better
+                    
+                    PBHud_DrawImageRotated("HUDTOP", (-35, -9), DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1Float, (0.7, 0.7), STYLE_Add);  
+                    PBHud_DrawImageRotated("HUDBOTOM", (-35, 9), DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1Float, (0.7, 0.7), STYLE_Add);     
+                    PBHud_DrawImageRotated("HUDT2P", (35, -9), DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1Float, (0.7, 0.7), STYLE_Add);  
+                    PBHud_DrawImageRotated("HUDBOT2M", (35, 9), DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1Float, (0.7, 0.7), STYLE_Add)
+                    ); 
+                    */
+                    
                     PBHud_DrawImageManualAlpha("HUDTOP", (-35, -9) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1Float, scale: (0.7, 0.7));  
                     PBHud_DrawImageManualAlpha("HUDBOTOM", (-35, 9) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1Float, scale: (0.7, 0.7));   
                     PBHud_DrawImageManualAlpha("HUDT2P", (35, -9), DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1Float, scale: (0.7, 0.7));  
@@ -893,27 +949,13 @@ class PB_Hud_ZS : BaseStatusBar
             //Mugshot
             PBHud_DrawImage("EQUPBO", (16, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
             
-             int mugflags; string mug;
-			if(pbcv_mugshot)
-			{
-				mugflags = MugShot.ANIMATEDGODMODE|MugShot.XDEATHFACE|MugShot.CUSTOM;
-				if(cplayer.mo.FindInventory("PowerInvisibility",true)||cplayer.mo.bSHADOW)
-					mug = isInvulnerable()?"SGI":"SCI";
-				else mug = isInvulnerable()?"SGD":"SFC";
-			}
-			else { mugflags = MugShot.STANDARD; mug = "STF"; }
-			PBHud_DrawTexture(GetMugShot(5,mugflags,mug),(25,-65),DI_ITEM_OFFSETS,scale:(1.25,1.25));
+            PBHud_DrawSpecialMugshot();
             
             //Powerups
             PB_DrawPowerups((16, -76));
             
-            if(keyamount > 0)
-                doKeyBox = true;
-            else
-                doKeyBox = false;
-
             //Keys
-            if(doKeyBox)
+            if(keyamount > 0)
                 PBHud_DrawImage("KEYCRBOX", (-15, 17), DI_SCREEN_RIGHT_TOP | DI_ITEM_RIGHT_TOP, playerBoxAlpha);
 				
 			DrawKeys((-36, 38), 12, 15);
