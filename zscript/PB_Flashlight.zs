@@ -115,6 +115,24 @@ class PB_FPP_Holder : Inventory
 	int flashlightCharge;
 	const flashlightChargeMax = 1400; //40 seconds
 	
+	//adapted from half-life 2
+	double SimpleSpline(double value)
+	{
+		double valueSquared = value * value;
+	
+		// Nice little ease-in, ease-out spline-like curve
+		return (3 * valueSquared - 2 * valueSquared * value);
+	}
+	
+	double SimpleSplineRemapVal( double val, double A, double B, double C, double D)
+	{
+		if ( A == B )
+			return val >= B ? D : C;
+		float cVal = (val - A) / (B - A);
+		
+		return C + (D - C) * SimpleSpline(cVal);
+	}
+	
 	override void DoEffect()
 	{
 		Super.DoEffect();
@@ -125,6 +143,66 @@ class PB_FPP_Holder : Inventory
 			flashlightCharge += 5;
 		else if(on)
 			flashlightCharge--;
+			
+		//adapted from half-life 2, available at https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/flashlighteffect.cpp#L273
+
+		//Source SDK Copyright(c) Valve Corp.
+
+		bool bFlicker = false;
+		if(flashlightCharge <= flashlightChargeMax && light1 && light2)
+		{
+			double flScale;
+			
+			if (flashlightCharge >= 0)
+			{	
+				flScale = (flashlightCharge <= flashlightChargeMax * 0.45) ? SimpleSplineRemapVal( flashlightCharge, flashlightChargeMax * 0.45, 0, 1.0, 0.0) : 1.0;
+			}
+			else
+			{
+				flScale = SimpleSplineRemapVal( flashlightCharge, flashlightChargeMax, flashlightChargeMax * 0.48, 1.0, 0.0 );
+			}
+			
+			flScale = clamp(flScale, 0.25, 1.0);
+			
+			if (flScale < 0.35)
+			{
+				float flFlicker = cos(gametic * 6.0) * sin(gametic * 15.0);
+				
+				if(flFlicker > 0.25 && flFlicker < 0.75)
+				{
+					// On
+					light1.args[3] = light1.spIntensity * flScale;
+					light2.args[3] = light2.sp2Intensity * flScale;
+				}
+				else
+				{
+					// Off
+					light1.args[3] = 0.0;
+					light2.args[3] = 0.0;
+				}
+			}
+			else
+			{
+				float flNoise = cos(gametic * 7.0) * sin(gametic * 25.0);
+				
+				light1.args[3] = light1.spIntensity * flScale + 1.5 * flNoise;
+				light2.args[3] = light2.sp2Intensity * flScale + 1.5 * flNoise;
+			}
+			
+			light1.SpotOuterAngle = light1.spOuterAngle - ( 16.0 * (1.0 - flScale));
+			light2.SpotOuterAngle = light2.sp2OuterAngle - (16.0 * (1.0 - flScale));
+			
+			bFlicker = true;
+		}
+		
+		if(bFlicker == false && light1 && light2)
+		{
+			light1.args[3] = light1.spIntensity;
+			light2.args[3] = light2.sp2Intensity;
+			
+			light1.SpotOuterAngle = light1.spOuterAngle;
+			light2.SpotOuterAngle = light2.sp2OuterAngle;
+		}
 			
 		if(flashlightCharge <= 0)
 		{
