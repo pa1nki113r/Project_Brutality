@@ -952,8 +952,8 @@ class PB_Hud_ZS : BaseStatusBar
             
             if(FlashlightPointer)
             {
-            	PBHud_DrawImage("FLSHBATT", (107, -10), DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, playerBoxAlpha * clamp(flashlightBatteryAlpha, 0.0, 1.0));
-            	PBHud_DrawBar("FLSHBBAR", "FLSHBBRG", FlashlightPointer.flashlightCharge, FlashlightPointer.flashlightChargeMax, (126, -13), 0, 0, DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, clamp(flashlightBatteryAlpha, 0.0, 1.0), slanted: false);
+            	PBHud_DrawImage("FLSHBATT", (103, -12), DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, playerBoxAlpha * clamp(flashlightBatteryAlpha, 0.0, 1.0));
+            	PBHud_DrawBar("FLSHBBAR", "FLSHBBRG", FlashlightPointer.flashlightCharge, FlashlightPointer.flashlightChargeMax, (122, -15), 0, 0, DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, clamp(flashlightBatteryAlpha, 0.0, 1.0), slanted: false);
             	
             	if((FlashlightPointer.flashlightCharge < FlashlightPointer.flashlightChargeMax && flashlightBatteryAlpha < 1) || flashlightPointer.on)
             		flashlightBatteryAlpha = 10.0;
