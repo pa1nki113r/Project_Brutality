@@ -15,13 +15,13 @@ class PB_FPP_Light : Spotlight
 	
 	Vector3 offset;
 	
-	const spOuterAngle = 30.0;
+	const spOuterAngle = 45.0;
 	const spInnerAngle = 0.0;
-	const spIntensity = 185.0;
+	const spIntensity = 165.0;
 	
 	const sp2OuterAngle = 15.0;
 	const sp2InnerAngle = 0.0;
-	const sp2Intensity = 370.0;
+	const sp2Intensity = 400.0;
 	
 	const beamColor = "ff ff ff";
 	
@@ -43,7 +43,7 @@ class PB_FPP_Light : Spotlight
 		SpotInnerAngle = second ? ScaleToFOV(sp2InnerAngle) : ScaleToFOV(spInnerAngle);
 		SpotOuterAngle = second ? ScaleToFOV(sp2OuterAngle) : ScaleToFOV(spOuterAngle);
         
-		offset = (0, 0, toFollow.height / 15.0);
+		offset = (-5, 0, (toFollow.height / 10) - 5);
 		
 		return self;
 	}
@@ -127,7 +127,10 @@ class PB_FPP_Holder : Inventory
 			flashlightCharge--;
 			
 		if(flashlightCharge <= 0)
+		{
 			Disable();
+			owner.A_StartSound("Sparks/Spawn", CHAN_AUTO, CHANF_LOCAL, 0.20);
+		}
 	}
 	
 	void Enable()
@@ -210,75 +213,13 @@ class PB_FPP_Holder : Inventory
 
 //Handler
 
-class PB_FPP_Handler : StaticEventHandler {
+extend class PB_EventHandler
+{
 	
 	PB_FPP_Holder setupFlashlightHolder(PlayerPawn p)
 	{
 		PB_FPP_Holder holder = PB_FPP_Holder(p.GiveInventoryType("PB_FPP_Holder"));
 		holder.Init();
 		return holder;
-	}
-	
-	override void WorldLoaded(WorldEvent e)
-    {
-		if(e.IsReopen)
-		{
-			PB_FPP_Light hl=null;
-			for(let it=ThinkerIterator.Create("PB_FPP_Light");hl=PB_FPP_Light(it.next());)
-			{
-				hl.destroy();
-				//prevents duplicate flashlights for hub-world maps
-			}
-		}
-		for(int i=0;i<MAXPLAYERS;i++)
-		{
-			if(playeringame[i])
-			{
-				PlayerPawn p=players[i].mo;
-				PB_FPP_Holder holder=PB_FPP_Holder(p.FindInventory("PB_FPP_Holder"));
-				if(holder)
-				{
-					holder.FixState();
-				}
-			}
-		}
-		PB_FPP_Holder holder=null;
-		for(let it=ThinkerIterator.Create("PB_FPP_Holder");holder=PB_FPP_Holder(it.next());)
-		{
-			holder.FixState();
-		}
-	}
-	
-	override void PlayerDisconnected(PlayerEvent e)
-	{ 
-	//reset state on player disconnect
-		PB_FPP_Light hl=null;
-		for(let it=ThinkerIterator.Create("PB_FPP_Light");hl=PB_FPP_Light(it.next());)
-		{
-			hl.destroy();
-		}
-		PB_FPP_Holder holder=null;
-		for(let it=ThinkerIterator.Create("PB_FPP_Holder");holder=PB_FPP_Holder(it.next());)
-		{
-			if(holder.owner&&!playeringame[holder.owner.PlayerNumber()])continue;
-			holder.FixState();
-		}
-	}
-	
-	override void NetworkProcess(ConsoleEvent e)
-	{
-		if(e.name=="pb_flashlight_toggle")
-		{
-			PlayerPawn p=players[e.player].mo;
-			if(p)
-            {
-				PB_FPP_Holder holder=PB_FPP_Holder(p.FindInventory("PB_FPP_Holder"));
-				if(!holder)
-				{
-					holder=setupFlashlightHolder(p);
-				}
-				holder.ToggleFlashlight();
-			}
-		}
 	}
 }
