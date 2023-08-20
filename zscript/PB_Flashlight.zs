@@ -40,8 +40,8 @@ class PB_FPP_Light : Spotlight
 		args[2] = c.b;
 		args[3] = second ? sp2Intensity : spIntensity;
 		
-		SpotInnerAngle = second ? ScaleToFOV(sp2InnerAngle) : ScaleToFOV(spInnerAngle);
-		SpotOuterAngle = second ? ScaleToFOV(sp2OuterAngle) : ScaleToFOV(spOuterAngle);
+		SpotInnerAngle = second ? sp2InnerAngle : spInnerAngle;
+		SpotOuterAngle = second ? sp2OuterAngle : spOuterAngle;
         
 		offset = (-5, 0, (toFollow.height / 10) - 5);
 		
@@ -96,12 +96,7 @@ class PB_FPP_Light : Spotlight
 				}
 			}
 		}
-	}
-	
-	double ScaleToFOV(double anglein)
-	{
-		return anglein * (toInfo.DesiredFOV / 90.0);
-	}
+	}
 }
 
 //Holder
