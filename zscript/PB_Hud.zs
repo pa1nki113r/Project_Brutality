@@ -63,7 +63,7 @@ class PB_Hud_ZS : BaseStatusBar
     //Hud variables
     string leftAmmoAmount;
     bool hudDynamics, inPain;
-    double dashIndAlpha;
+    double dashIndAlpha, flashlightBatteryAlpha;
     int healthFontCol, keyamount;
 
     //CVars
@@ -143,6 +143,7 @@ class PB_Hud_ZS : BaseStatusBar
         m64to0 = 64;
         m0to1Float = 0;
         dashIndAlpha = 0;
+        flashlightBatteryAlpha = 0;
 
         GatherCvars();
         
@@ -177,6 +178,7 @@ class PB_Hud_ZS : BaseStatusBar
         }
 
         dashIndAlpha -= 0.2;
+        flashlightBatteryAlpha -= 0.2;
 
         if(hudDynamics && !automapactive)
             CalculateSway();
@@ -945,6 +947,17 @@ class PB_Hud_ZS : BaseStatusBar
                 PBHud_DrawImage("ARMRHUD4", (81, -24), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1, box: (20, 21));
             
             PBHud_DrawString(mBoldFont, Formatnumber(svpr), (89.8, -41), DI_TEXT_ALIGN_CENTER, Font.CR_WHITE, scale: (0.8, 0.8));
+            
+            let FlashlightPointer = PB_FPP_Holder(CPlayer.mo.FindInventory("PB_FPP_Holder"));
+            
+            if(FlashlightPointer)
+            {
+            	PBHud_DrawImage("FLSHBATT", (107, -10), DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, playerBoxAlpha * clamp(flashlightBatteryAlpha, 0.0, 1.0));
+            	PBHud_DrawBar("FLSHBBAR", "FLSHBBRG", FlashlightPointer.flashlightCharge, FlashlightPointer.flashlightChargeMax, (126, -13), 0, 0, DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, clamp(flashlightBatteryAlpha, 0.0, 1.0), slanted: false);
+            	
+            	if((FlashlightPointer.flashlightCharge < FlashlightPointer.flashlightChargeMax && flashlightBatteryAlpha < 1) || flashlightPointer.on)
+            		flashlightBatteryAlpha = 10.0;
+            }
             
             //Mugshot
             PBHud_DrawImage("EQUPBO", (16, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
