@@ -149,22 +149,24 @@ class PB_FPP_Holder : Inventory
 		//Source SDK Copyright(c) Valve Corp.
 
 		bool bFlicker = false;
-		if(flashlightCharge <= flashlightChargeMax && light1 && light2)
+		double maxCharge10Percent = flashlightChargeMax * 0.1;
+
+		if(flashlightCharge <= maxCharge10Percent && light1 && light2)
 		{
 			double flScale;
 			
 			if (flashlightCharge >= 0)
 			{	
-				flScale = (flashlightCharge <= flashlightChargeMax * 0.45) ? SimpleSplineRemapVal( flashlightCharge, flashlightChargeMax * 0.45, 0, 1.0, 0.0) : 1.0;
+				flScale = (flashlightCharge <= maxCharge10Percent * 0.45) ? SimpleSplineRemapVal( flashlightCharge, maxCharge10Percent * 0.45, 0, 1.0, 0.0) : 1.0;
 			}
 			else
 			{
-				flScale = SimpleSplineRemapVal( flashlightCharge, flashlightChargeMax, flashlightChargeMax * 0.48, 1.0, 0.0 );
+				flScale = SimpleSplineRemapVal( flashlightCharge, maxCharge10Percent, maxCharge10Percent * 0.48, 1.0, 0.0 );
 			}
 			
-			flScale = clamp(flScale, 0.25, 1.0);
+			flScale = clamp(flScale, 0.0, 1.0);
 			
-			if (flScale < 0.35)
+			if (flScale < 0.80)
 			{
 				float flFlicker = cos(gametic * 6.0) * sin(gametic * 15.0);
 				
