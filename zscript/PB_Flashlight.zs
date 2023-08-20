@@ -96,7 +96,8 @@ class PB_FPP_Light : Spotlight
 				}
 			}
 		}
-	}
+	}
+
 }
 
 //Holder
@@ -246,7 +247,7 @@ class PB_FPP_Holder : Inventory
 		light1 = null;
 		light2 = null;
 		on = false;
-		flashlightCharge = 1400;
+		flashlightCharge = flashlightChargeMax;
 		return self;
 	}
 	
