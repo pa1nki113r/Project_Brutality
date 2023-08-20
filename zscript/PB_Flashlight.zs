@@ -15,13 +15,13 @@ class PB_FPP_Light : Spotlight
 	
 	Vector3 offset;
 	
-	const spOuterAngle = 30.0;
+	const spOuterAngle = 45.0;
 	const spInnerAngle = 0.0;
-	const spIntensity = 185.0;
+	const spIntensity = 165.0;
 	
 	const sp2OuterAngle = 15.0;
 	const sp2InnerAngle = 0.0;
-	const sp2Intensity = 370.0;
+	const sp2Intensity = 400.0;
 	
 	const beamColor = "ff ff ff";
 	
