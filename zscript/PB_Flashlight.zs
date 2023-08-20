@@ -15,13 +15,13 @@ class PB_FPP_Light : Spotlight
 	
 	Vector3 offset;
 	
-	const spOuterAngle = 30.0;
+	const spOuterAngle = 45.0;
 	const spInnerAngle = 0.0;
-	const spIntensity = 185.0;
+	const spIntensity = 165.0;
 	
 	const sp2OuterAngle = 15.0;
 	const sp2InnerAngle = 0.0;
-	const sp2Intensity = 370.0;
+	const sp2Intensity = 400.0;
 	
 	const beamColor = "ff ff ff";
 	
@@ -40,10 +40,10 @@ class PB_FPP_Light : Spotlight
 		args[2] = c.b;
 		args[3] = second ? sp2Intensity : spIntensity;
 		
-		SpotInnerAngle = second ? ScaleToFOV(sp2InnerAngle) : ScaleToFOV(spInnerAngle);
-		SpotOuterAngle = second ? ScaleToFOV(sp2OuterAngle) : ScaleToFOV(spOuterAngle);
+		SpotInnerAngle = second ? sp2InnerAngle : spInnerAngle;
+		SpotOuterAngle = second ? sp2OuterAngle : spOuterAngle;
         
-		offset = (0, 0, toFollow.height / 15.0);
+		offset = (-5, 0, (toFollow.height / 10) - 5);
 		
 		return self;
 	}
@@ -96,12 +96,7 @@ class PB_FPP_Light : Spotlight
 				}
 			}
 		}
-	}
-	
-	double ScaleToFOV(double anglein)
-	{
-		return anglein * (toInfo.DesiredFOV / 90.0);
-	}
+	}
 }
 
 //Holder
@@ -115,6 +110,24 @@ class PB_FPP_Holder : Inventory
 	int flashlightCharge;
 	const flashlightChargeMax = 1400; //40 seconds
 	
+	//adapted from half-life 2
+	double SimpleSpline(double value)
+	{
+		double valueSquared = value * value;
+	
+		// Nice little ease-in, ease-out spline-like curve
+		return (3 * valueSquared - 2 * valueSquared * value);
+	}
+	
+	double SimpleSplineRemapVal( double val, double A, double B, double C, double D)
+	{
+		if ( A == B )
+			return val >= B ? D : C;
+		float cVal = (val - A) / (B - A);
+		
+		return C + (D - C) * SimpleSpline(cVal);
+	}
+	
 	override void DoEffect()
 	{
 		Super.DoEffect();
@@ -126,8 +139,73 @@ class PB_FPP_Holder : Inventory
 		else if(on)
 			flashlightCharge--;
 			
+		//adapted from half-life 2, available at https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/flashlighteffect.cpp#L273
+
+		//Source SDK Copyright(c) Valve Corp.
+
+		bool bFlicker = false;
+		double maxCharge10Percent = flashlightChargeMax * 0.1;
+
+		if(flashlightCharge <= maxCharge10Percent && light1 && light2)
+		{
+			double flScale;
+			
+			if (flashlightCharge >= 0)
+			{	
+				flScale = (flashlightCharge <= maxCharge10Percent * 0.45) ? SimpleSplineRemapVal( flashlightCharge, maxCharge10Percent * 0.45, 0, 1.0, 0.0) : 1.0;
+			}
+			else
+			{
+				flScale = SimpleSplineRemapVal( flashlightCharge, maxCharge10Percent, maxCharge10Percent * 0.48, 1.0, 0.0 );
+			}
+			
+			flScale = clamp(flScale, 0.0, 1.0);
+			
+			if (flScale < 0.80)
+			{
+				float flFlicker = cos(gametic * 6.0) * sin(gametic * 15.0);
+				
+				if(flFlicker > 0.25 && flFlicker < 0.75)
+				{
+					// On
+					light1.args[3] = light1.spIntensity * flScale;
+					light2.args[3] = light2.sp2Intensity * flScale;
+				}
+				else
+				{
+					// Off
+					light1.args[3] = 0.0;
+					light2.args[3] = 0.0;
+				}
+			}
+			else
+			{
+				float flNoise = cos(gametic * 7.0) * sin(gametic * 25.0);
+				
+				light1.args[3] = light1.spIntensity * flScale + 1.5 * flNoise;
+				light2.args[3] = light2.sp2Intensity * flScale + 1.5 * flNoise;
+			}
+			
+			light1.SpotOuterAngle = light1.spOuterAngle - ( 16.0 * (1.0 - flScale));
+			light2.SpotOuterAngle = light2.sp2OuterAngle - (16.0 * (1.0 - flScale));
+			
+			bFlicker = true;
+		}
+		
+		if(bFlicker == false && light1 && light2)
+		{
+			light1.args[3] = light1.spIntensity;
+			light2.args[3] = light2.sp2Intensity;
+			
+			light1.SpotOuterAngle = light1.spOuterAngle;
+			light2.SpotOuterAngle = light2.sp2OuterAngle;
+		}
+			
 		if(flashlightCharge <= 0)
+		{
 			Disable();
+			owner.A_StartSound("Sparks/Spawn", CHAN_AUTO, CHANF_LOCAL, 0.20);
+		}
 	}
 	
 	void Enable()
@@ -210,75 +288,13 @@ class PB_FPP_Holder : Inventory
 
 //Handler
 
-class PB_FPP_Handler : StaticEventHandler {
+extend class PB_EventHandler
+{
 	
 	PB_FPP_Holder setupFlashlightHolder(PlayerPawn p)
 	{
 		PB_FPP_Holder holder = PB_FPP_Holder(p.GiveInventoryType("PB_FPP_Holder"));
 		holder.Init();
 		return holder;
-	}
-	
-	override void WorldLoaded(WorldEvent e)
-    {
-		if(e.IsReopen)
-		{
-			PB_FPP_Light hl=null;
-			for(let it=ThinkerIterator.Create("PB_FPP_Light");hl=PB_FPP_Light(it.next());)
-			{
-				hl.destroy();
-				//prevents duplicate flashlights for hub-world maps
-			}
-		}
-		for(int i=0;i<MAXPLAYERS;i++)
-		{
-			if(playeringame[i])
-			{
-				PlayerPawn p=players[i].mo;
-				PB_FPP_Holder holder=PB_FPP_Holder(p.FindInventory("PB_FPP_Holder"));
-				if(holder)
-				{
-					holder.FixState();
-				}
-			}
-		}
-		PB_FPP_Holder holder=null;
-		for(let it=ThinkerIterator.Create("PB_FPP_Holder");holder=PB_FPP_Holder(it.next());)
-		{
-			holder.FixState();
-		}
-	}
-	
-	override void PlayerDisconnected(PlayerEvent e)
-	{ 
-	//reset state on player disconnect
-		PB_FPP_Light hl=null;
-		for(let it=ThinkerIterator.Create("PB_FPP_Light");hl=PB_FPP_Light(it.next());)
-		{
-			hl.destroy();
-		}
-		PB_FPP_Holder holder=null;
-		for(let it=ThinkerIterator.Create("PB_FPP_Holder");holder=PB_FPP_Holder(it.next());)
-		{
-			if(holder.owner&&!playeringame[holder.owner.PlayerNumber()])continue;
-			holder.FixState();
-		}
-	}
-	
-	override void NetworkProcess(ConsoleEvent e)
-	{
-		if(e.name=="pb_flashlight_toggle")
-		{
-			PlayerPawn p=players[e.player].mo;
-			if(p)
-            {
-				PB_FPP_Holder holder=PB_FPP_Holder(p.FindInventory("PB_FPP_Holder"));
-				if(!holder)
-				{
-					holder=setupFlashlightHolder(p);
-				}
-				holder.ToggleFlashlight();
-			}
-		}
 	}
 }

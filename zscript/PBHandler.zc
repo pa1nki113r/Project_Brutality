@@ -79,6 +79,20 @@ class PB_EventHandler : EventHandler
 				}
 			}
 		}
+		
+		if(e.name=="pb_flashlight_toggle")
+		{
+			PlayerPawn p=players[e.player].mo;
+			if(p)
+            {
+				PB_FPP_Holder holder=PB_FPP_Holder(p.FindInventory("PB_FPP_Holder"));
+				if(!holder)
+				{
+					holder=setupFlashlightHolder(p);
+				}
+				holder.ToggleFlashlight();
+			}
+		}
 	}
 	
 	override void RenderOverlay(RenderEvent e)
@@ -139,6 +153,33 @@ class PB_EventHandler : EventHandler
 		{
 			Stats = PB_GlobalStats.Get();
 		}
+		
+		if(e.IsReopen)
+		{
+			PB_FPP_Light hl=null;
+			for(let it=ThinkerIterator.Create("PB_FPP_Light");hl=PB_FPP_Light(it.next());)
+			{
+				hl.destroy();
+				//prevents duplicate flashlights for hub-world maps
+			}
+		}
+		for(int i=0;i<MAXPLAYERS;i++)
+		{
+			if(playeringame[i])
+			{
+				PlayerPawn p=players[i].mo;
+				PB_FPP_Holder holder=PB_FPP_Holder(p.FindInventory("PB_FPP_Holder"));
+				if(holder)
+				{
+					holder.FixState();
+				}
+			}
+		}
+		PB_FPP_Holder holder=null;
+		for(let it=ThinkerIterator.Create("PB_FPP_Holder");holder=PB_FPP_Holder(it.next());)
+		{
+			holder.FixState();
+		}
 	}
 	override void WorldUnloaded(WorldEvent e)
 	{
@@ -171,6 +212,22 @@ class PB_EventHandler : EventHandler
 			{
 				Stats.Counters[PB_GlobalStats.Counter_LevelsCompleted]++;
 			}
+		}
+	}
+	
+	override void PlayerDisconnected(PlayerEvent e)
+	{ 
+	//reset state on player disconnect
+		PB_FPP_Light hl=null;
+		for(let it=ThinkerIterator.Create("PB_FPP_Light");hl=PB_FPP_Light(it.next());)
+		{
+			hl.destroy();
+		}
+		PB_FPP_Holder holder=null;
+		for(let it=ThinkerIterator.Create("PB_FPP_Holder");holder=PB_FPP_Holder(it.next());)
+		{
+			if(holder.owner&&!playeringame[holder.owner.PlayerNumber()])continue;
+			holder.FixState();
 		}
 	}
 	
