@@ -40,8 +40,8 @@ class PB_FPP_Light : Spotlight
 		args[2] = c.b;
 		args[3] = second ? sp2Intensity : spIntensity;
 		
-		SpotInnerAngle = second ? ScaleToFOV(sp2InnerAngle) : ScaleToFOV(spInnerAngle);
-		SpotOuterAngle = second ? ScaleToFOV(sp2OuterAngle) : ScaleToFOV(spOuterAngle);
+		SpotInnerAngle = second ? sp2InnerAngle : spInnerAngle;
+		SpotOuterAngle = second ? sp2OuterAngle : spOuterAngle;
         
 		offset = (-5, 0, (toFollow.height / 10) - 5);
 		
@@ -97,11 +97,7 @@ class PB_FPP_Light : Spotlight
 			}
 		}
 	}
-	
-	double ScaleToFOV(double anglein)
-	{
-		return anglein * (toInfo.DesiredFOV / 90.0);
-	}
+
 }
 
 //Holder
@@ -149,22 +145,24 @@ class PB_FPP_Holder : Inventory
 		//Source SDK Copyright(c) Valve Corp.
 
 		bool bFlicker = false;
-		if(flashlightCharge <= flashlightChargeMax && light1 && light2)
+		double maxCharge10Percent = flashlightChargeMax * 0.1;
+
+		if(flashlightCharge <= maxCharge10Percent && light1 && light2)
 		{
 			double flScale;
 			
 			if (flashlightCharge >= 0)
 			{	
-				flScale = (flashlightCharge <= flashlightChargeMax * 0.45) ? SimpleSplineRemapVal( flashlightCharge, flashlightChargeMax * 0.45, 0, 1.0, 0.0) : 1.0;
+				flScale = (flashlightCharge <= maxCharge10Percent * 0.45) ? SimpleSplineRemapVal( flashlightCharge, maxCharge10Percent * 0.45, 0, 1.0, 0.0) : 1.0;
 			}
 			else
 			{
-				flScale = SimpleSplineRemapVal( flashlightCharge, flashlightChargeMax, flashlightChargeMax * 0.48, 1.0, 0.0 );
+				flScale = SimpleSplineRemapVal( flashlightCharge, maxCharge10Percent, maxCharge10Percent * 0.48, 1.0, 0.0 );
 			}
 			
-			flScale = clamp(flScale, 0.25, 1.0);
+			flScale = clamp(flScale, 0.0, 1.0);
 			
-			if (flScale < 0.35)
+			if (flScale < 0.80)
 			{
 				float flFlicker = cos(gametic * 6.0) * sin(gametic * 15.0);
 				
@@ -249,7 +247,7 @@ class PB_FPP_Holder : Inventory
 		light1 = null;
 		light2 = null;
 		on = false;
-		flashlightCharge = 1400;
+		flashlightCharge = flashlightChargeMax;
 		return self;
 	}
 	
