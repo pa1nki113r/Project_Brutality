@@ -948,14 +948,14 @@ class PB_Hud_ZS : BaseStatusBar
             
             PBHud_DrawString(mBoldFont, Formatnumber(svpr), (89.8, -41), DI_TEXT_ALIGN_CENTER, Font.CR_WHITE, scale: (0.8, 0.8));
             
-            let FlashlightPointer = PB_FPP_Holder(CPlayer.mo.FindInventory("PB_FPP_Holder"));
+            let flPointer = PB_FPP_Holder(CPlayer.mo.FindInventory("PB_FPP_Holder"));
             
-            if(FlashlightPointer)
+            if(flPointer)
             {
-            	PBHud_DrawImage("FLSHBATT", (103, -12), DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, playerBoxAlpha * clamp(flashlightBatteryAlpha, 0.0, 1.0));
-            	PBHud_DrawBar("FLSHBBAR", "FLSHBBRG", FlashlightPointer.flashlightCharge, FlashlightPointer.flashlightChargeMax, (122, -15), 0, 0, DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, clamp(flashlightBatteryAlpha, 0.0, 1.0), slanted: false);
+            	PBHud_DrawImage(flPointer.flOutOfBatteryPenalty ? "FLSHBATL" : "FLSHBATT", (103, -12), DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, playerBoxAlpha * clamp(flashlightBatteryAlpha, 0.0, 1.0));
+            	PBHud_DrawBar(flPointer.flOutOfBatteryPenalty ? "FLSHBBAL" : "FLSHBBAR", "FLSHBBRG", flPointer.flashlightCharge, flPointer.flashlightChargeMax, (122, -15), 0, 0, DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, clamp(flashlightBatteryAlpha, 0.0, 1.0), slanted: false);
             	
-            	if((FlashlightPointer.flashlightCharge < FlashlightPointer.flashlightChargeMax && flashlightBatteryAlpha < 1) || flashlightPointer.on)
+            	if((flPointer.flashlightCharge < flPointer.flashlightChargeMax && flashlightBatteryAlpha < 1) || flPointer.on)
             		flashlightBatteryAlpha = 10.0;
             }
             
