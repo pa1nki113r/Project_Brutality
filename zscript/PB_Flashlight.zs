@@ -282,13 +282,15 @@ class PB_FPP_Holder : Inventory
 	
 	void ToggleFlashlight()
 	{
-		if(on) {
-			Disable();
-			PlayFlashlightToggleSound(false);
-		}
-		else if(flashlightCharge > 0 && flOutOfBatteryPenalty == false) {
-			Enable();
-			PlayFlashlightToggleSound(true);
+		if(owner.Health > 0) {
+			if(on) {
+				Disable();
+				PlayFlashlightToggleSound(false);
+			}
+			else if(flashlightCharge > 0 && flOutOfBatteryPenalty == false) {
+				Enable();
+				PlayFlashlightToggleSound(true);
+			}
 		}
 	}
 	
