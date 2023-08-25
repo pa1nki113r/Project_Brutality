@@ -7,25 +7,23 @@ class PB_FPP_Light : Spotlight
 	Default 
 	{
 		+NOINTERACTION;
-		+DYNAMICLIGHT.ATTENUATE; //more realistic light dropoff
+		//+DYNAMICLIGHT.ATTENUATE; //more realistic light dropoff
 	}
 	
 	PlayerPawn toFollow;
 	PlayerInfo toInfo;
 	
 	Vector3 offset;
-	const spIntensity = 165.0;
-	const spInnerAngle = 0.0;
+	
+	const spIntensity = 128.0;
+	const spInnerAngle = 15.0;
 	const spOuterAngle = 45.0;
 	
-	const sp2Intensity = 400.0;
+	const sp2Intensity = 750.0;
 	const sp2InnerAngle = 0.0;
-	const sp2OuterAngle = 15.0;
+	const sp2OuterAngle = 25.0;
 	
-	
-	const beamColor = "ff ff ff";
-	
-	int currentTickCount;
+	const beamColor = "f4 f8 ff";
 	
 	//This is run whenever the flashlight is turned on.
 	PB_FPP_Light Init(PlayerPawn p, bool second)
@@ -50,8 +48,6 @@ class PB_FPP_Light : Spotlight
 	
 	override void Tick() 
 	{
-		currentTickCount++;
-		
 		super.Tick();
     	if (toFollow && toFollow.player)
     	{
@@ -64,7 +60,7 @@ class PB_FPP_Light : Spotlight
         
         //BD:BE monster alerting stuff, this was a nightmare to implement
         //Credits to Blackmore1014 for this
-        /* if (currentTickCount % 15 == 0)
+        if(gametic % 15 == 0 && SpotOuterAngle > 0)
         {
 		    double cosBeamAngle = cos(SpotOuterAngle);
 			double distanceToWake = args[3] / sqrt(1.0 - cosBeamAngle);
@@ -95,7 +91,7 @@ class PB_FPP_Light : Spotlight
 					}
 				}
 			}
-		} */
+		}
 	}
 }
 
@@ -108,20 +104,21 @@ class PB_FPP_Holder : Inventory
 	bool on, flOutOfBatteryPenalty;
 	
 	double flashlightCharge;
+	
+	const debuggerMode = 0;
+	
 	const flashlightChargeMax = 100.0;
-	
-	//100 / 2.5 = 40 seconds
-	const flashlightDrainTime = 2.5 / float(ticrate); 
+	//100 / 1.1111 = 90 seconds, not exact but you can't tell
+	const flashlightDrainTime = 1.1111 / float(ticrate); 
+	//100 / 25.0 = 4 seconds
+	const flashlightChargeTime = 25.0 / float(ticrate);
 	//100 / 12.5 = 8 seconds
-	const flashlightChargeTime = 12.5 / float(ticrate);
-	//100 / 6.25 = 16 seconds
-	const flashlightChargeTimeSlow = 6.25 / float(ticrate);
+	const flashlightChargeTimeSlow = 12.5 / float(ticrate);
 	
-	//adapted from half-life 2
 	double SimpleSpline(double value)
 	{
 		double valueSquared = value * value;
-	
+		
 		// Nice little ease-in, ease-out spline-like curve
 		return (3 * valueSquared - 2 * valueSquared * value);
 	}
@@ -139,10 +136,16 @@ class PB_FPP_Holder : Inventory
 	{
 		Super.DoEffect();
 		
-		if(on == false && flashlightCharge < flashlightChargeMax)
+		if(on == false && flashlightCharge < flashlightChargeMax && owner.health > 0)
 			flashlightCharge += flOutOfBatteryPenalty ? flashlightChargeTimeSlow : flashlightChargeTime;
 		else if(on)
-			flashlightCharge -= flashlightDrainTime;
+			flashlightCharge -= (debuggerMode == 1 && flashlightCharge > 10.0) ? 1.0 : flashlightDrainTime;
+		
+		if(debuggerMode == 1)
+		{
+			console.printf("Charge: ".."%f".." percent out of 100.", flashlightCharge);
+		}
+		
 		if(flashlightCharge >= flashlightChargeMax && flOutOfBatteryPenalty)
 			flOutOfBatteryPenalty = false;
 			
@@ -151,7 +154,7 @@ class PB_FPP_Holder : Inventory
 		//Source SDK Copyright(c) Valve Corp.
 
 		bool bFlicker = false;
-
+		
 		if(flashlightCharge <= 10.0 && light1 && light2)
 		{
 			double flScale;
@@ -160,7 +163,6 @@ class PB_FPP_Holder : Inventory
 			{	
 				flScale = (flashlightCharge <= 4.5) ? SimpleSplineRemapVal(flashlightCharge, 4.5, 0, 1.0, 0.0) : 1.0;
 			}
-			
 			else
 			{
 				flScale = SimpleSplineRemapVal(flashlightCharge, 10.0, 4.8, 1.0, 0.0);
@@ -170,7 +172,8 @@ class PB_FPP_Holder : Inventory
 			
 			if (flScale < 0.35)
 			{
-				float flFlicker = cos(gameTic * 6.0) * sin(gameTic * 15.0);
+				//float flFlicker = cos(gametic * 6.0) * sin(gametic * 15.0);
+				double flFlicker = frandom(-1.0, 1.0);
 				
 				if(flFlicker > 0.25 && flFlicker < 0.75)
 				{
@@ -187,7 +190,8 @@ class PB_FPP_Holder : Inventory
 			}
 			else
 			{
-				float flNoise = cos(gameTic * 7.0) * sin(gameTic * 25.0);
+				//float flNoise = cos(gametic * 7.0) * sin(gametic * 25.0);
+				double flNoise = frandom(-1.0, 1.0);
 				
 				light1.args[3] = light1.spIntensity * flScale + 1.5 * flNoise;
 				light2.args[3] = light2.sp2Intensity * flScale + 1.5 * flNoise;
@@ -225,7 +229,7 @@ class PB_FPP_Holder : Inventory
 		{
 			Disable();
 			flOutOfBatteryPenalty = true;
-			owner.A_StartSound("PB/FlashlightOff", CHAN_AUTO, CHANF_LOCAL, 0.20);
+			owner.A_StartSound("PB/FlashlightOff", CHAN_AUTO);
 		}
 	}
 	
@@ -282,7 +286,7 @@ class PB_FPP_Holder : Inventory
 	
 	void ToggleFlashlight()
 	{
-		if(owner.Health > 0) {
+		if(owner.health > 0)
 			if(on) {
 				Disable();
 				PlayFlashlightToggleSound(false);
@@ -313,7 +317,6 @@ class PB_FPP_Holder : Inventory
 
 extend class PB_EventHandler
 {
-	
 	PB_FPP_Holder setupFlashlightHolder(PlayerPawn p)
 	{
 		PB_FPP_Holder holder = PB_FPP_Holder(p.GiveInventoryType("PB_FPP_Holder"));
