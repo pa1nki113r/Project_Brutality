@@ -287,7 +287,6 @@ class PB_FPP_Holder : Inventory
 	void ToggleFlashlight()
 	{
 		if(owner.health > 0)
-		{
 			if(on) {
 				Disable();
 				PlayFlashlightToggleSound(false);
