@@ -7,7 +7,7 @@ class PB_FPP_Light : Spotlight
 	Default 
 	{
 		+NOINTERACTION;
-		//+DYNAMICLIGHT.ATTENUATE; //more realistic light dropoff
+		+DYNAMICLIGHT.ATTENUATE; //more realistic light dropoff
 	}
 	
 	PlayerPawn toFollow;
@@ -19,11 +19,11 @@ class PB_FPP_Light : Spotlight
 	const spInnerAngle = 15.0;
 	const spOuterAngle = 45.0;
 	
-	const sp2Intensity = 750.0;
+	const sp2Intensity = 584.0;
 	const sp2InnerAngle = 0.0;
 	const sp2OuterAngle = 25.0;
 	
-	const beamColor = "f4 f8 ff";
+	const beamColor = "ff f4 da";
 	
 	//This is run whenever the flashlight is turned on.
 	PB_FPP_Light Init(PlayerPawn p, bool second)
