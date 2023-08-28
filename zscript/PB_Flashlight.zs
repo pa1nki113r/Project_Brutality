@@ -15,17 +15,15 @@ class PB_FPP_Light : Spotlight
 	
 	Vector3 offset;
 	
+	const spIntensity = 128.0;
+	const spInnerAngle = 15.0;
 	const spOuterAngle = 45.0;
-	const spInnerAngle = 0.0;
-	const spIntensity = 165.0;
 	
-	const sp2OuterAngle = 15.0;
+	const sp2Intensity = 584.0;
 	const sp2InnerAngle = 0.0;
-	const sp2Intensity = 400.0;
+	const sp2OuterAngle = 25.0;
 	
-	const beamColor = "ff ff ff";
-	
-	int currentTickCount;
+	const beamColor = "ff f4 da";
 	
 	//This is run whenever the flashlight is turned on.
 	PB_FPP_Light Init(PlayerPawn p, bool second)
@@ -50,10 +48,8 @@ class PB_FPP_Light : Spotlight
 	
 	override void Tick() 
 	{
-		currentTickCount++;
-		
 		super.Tick();
-    	if (toFollow && toFollow.player) //same here.
+    	if (toFollow && toFollow.player)
     	{
         	A_SetAngle(toFollow.angle, SPF_INTERPOLATE);
         	A_SetPitch(toFollow.pitch, SPF_INTERPOLATE);
@@ -64,13 +60,13 @@ class PB_FPP_Light : Spotlight
         
         //BD:BE monster alerting stuff, this was a nightmare to implement
         //Credits to Blackmore1014 for this
-        if (currentTickCount % 15 == 0)
+        if(gametic % 15 == 0 && SpotOuterAngle > 0)
         {
 		    double cosBeamAngle = cos(SpotOuterAngle);
 			double distanceToWake = args[3] / sqrt(1.0 - cosBeamAngle);
 		    
 		    // look for monsters around you and alert them depending on beam width.
-			vector3 vectorBeamDirection = (cos(self.angle), sin(self.angle), sin( -self.pitch )).unit();
+			vector3 vectorBeamDirection = (cos(self.angle), sin(self.angle), sin(-self.pitch)).unit();
 						
 			BlockThingsIterator it = BlockThingsIterator.Create(self, distanceToWake);
 			
@@ -96,7 +92,7 @@ class PB_FPP_Light : Spotlight
 				}
 			}
 		}
-	}
+	}
 }
 
 //Holder
@@ -105,25 +101,33 @@ class PB_FPP_Holder : Inventory
 {
 	PB_FPP_Light light1;
 	PB_FPP_Light light2;
-	bool on;
+	bool on, flOutOfBatteryPenalty;
 	
-	int flashlightCharge;
-	const flashlightChargeMax = 1400; //40 seconds
+	double flashlightCharge;
 	
-	//adapted from half-life 2
+	const debuggerMode = 0;
+	
+	const flashlightChargeMax = 100.0;
+	//100 / 1.1111 = 90 seconds, not exact but you can't tell
+	const flashlightDrainTime = 1.1111 / float(ticrate); 
+	//100 / 25.0 = 4 seconds
+	const flashlightChargeTime = 25.0 / float(ticrate);
+	//100 / 12.5 = 8 seconds
+	const flashlightChargeTimeSlow = 12.5 / float(ticrate);
+	
 	double SimpleSpline(double value)
 	{
 		double valueSquared = value * value;
-	
+		
 		// Nice little ease-in, ease-out spline-like curve
 		return (3 * valueSquared - 2 * valueSquared * value);
 	}
 	
-	double SimpleSplineRemapVal( double val, double A, double B, double C, double D)
+	double SimpleSplineRemapVal(double val, double A, double B, double C, double D)
 	{
-		if ( A == B )
+		if(A == B)
 			return val >= B ? D : C;
-		float cVal = (val - A) / (B - A);
+		double cVal = (val - A) / (B - A);
 		
 		return C + (D - C) * SimpleSpline(cVal);
 	}
@@ -132,38 +136,44 @@ class PB_FPP_Holder : Inventory
 	{
 		Super.DoEffect();
 		
-		//console.printf("%i", flashlightcharge);
-		
-		if(on == false && flashlightCharge < flashlightChargeMax)
-			flashlightCharge += 5;
+		if(on == false && flashlightCharge < flashlightChargeMax && owner.health > 0)
+			flashlightCharge += flOutOfBatteryPenalty ? flashlightChargeTimeSlow : flashlightChargeTime;
 		else if(on)
-			flashlightCharge--;
+			flashlightCharge -= (debuggerMode == 1 && flashlightCharge > 10.0) ? 1.0 : flashlightDrainTime;
+		
+		if(debuggerMode == 1)
+		{
+			console.printf("Charge: ".."%f".." percent out of 100.", flashlightCharge);
+		}
+		
+		if(flashlightCharge >= flashlightChargeMax && flOutOfBatteryPenalty)
+			flOutOfBatteryPenalty = false;
 			
 		//adapted from half-life 2, available at https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/flashlighteffect.cpp#L273
 
 		//Source SDK Copyright(c) Valve Corp.
 
 		bool bFlicker = false;
-		double maxCharge10Percent = flashlightChargeMax * 0.1;
-
-		if(flashlightCharge <= maxCharge10Percent && light1 && light2)
+		
+		if(flashlightCharge <= 10.0 && light1 && light2)
 		{
 			double flScale;
 			
-			if (flashlightCharge >= 0)
+			if (flashlightCharge >= 0.0)
 			{	
-				flScale = (flashlightCharge <= maxCharge10Percent * 0.45) ? SimpleSplineRemapVal( flashlightCharge, maxCharge10Percent * 0.45, 0, 1.0, 0.0) : 1.0;
+				flScale = (flashlightCharge <= 4.5) ? SimpleSplineRemapVal(flashlightCharge, 4.5, 0, 1.0, 0.0) : 1.0;
 			}
 			else
 			{
-				flScale = SimpleSplineRemapVal( flashlightCharge, maxCharge10Percent, maxCharge10Percent * 0.48, 1.0, 0.0 );
+				flScale = SimpleSplineRemapVal(flashlightCharge, 10.0, 4.8, 1.0, 0.0);
 			}
 			
 			flScale = clamp(flScale, 0.0, 1.0);
 			
-			if (flScale < 0.80)
+			if (flScale < 0.35)
 			{
-				float flFlicker = cos(gametic * 6.0) * sin(gametic * 15.0);
+				//float flFlicker = cos(gametic * 6.0) * sin(gametic * 15.0);
+				double flFlicker = frandom(-1.0, 1.0);
 				
 				if(flFlicker > 0.25 && flFlicker < 0.75)
 				{
@@ -180,14 +190,25 @@ class PB_FPP_Holder : Inventory
 			}
 			else
 			{
-				float flNoise = cos(gametic * 7.0) * sin(gametic * 25.0);
+				//float flNoise = cos(gametic * 7.0) * sin(gametic * 25.0);
+				double flNoise = frandom(-1.0, 1.0);
 				
 				light1.args[3] = light1.spIntensity * flScale + 1.5 * flNoise;
 				light2.args[3] = light2.sp2Intensity * flScale + 1.5 * flNoise;
 			}
 			
-			light1.SpotOuterAngle = light1.spOuterAngle - ( 16.0 * (1.0 - flScale));
+			light1.SpotInnerAngle = light1.spInnerAngle - (16.0 * (1.0 - flScale));
+			light2.SpotInnerAngle = light2.sp2InnerAngle - (16.0 * (1.0 - flScale));
+			
+			//Don't go negative.
+			light1.SpotInnerAngle = clamp(light1.SpotInnerAngle, 0, light1.spInnerAngle);
+			light2.SpotInnerAngle = clamp(light2.SpotInnerAngle, 0, light2.sp2InnerAngle);
+			
+			light1.SpotOuterAngle = light1.spOuterAngle - (16.0 * (1.0 - flScale));
 			light2.SpotOuterAngle = light2.sp2OuterAngle - (16.0 * (1.0 - flScale));
+			
+			light1.SpotOuterAngle = clamp(light1.SpotOuterAngle, 0, light1.spOuterAngle);
+			light2.SpotOuterAngle = clamp(light2.SpotOuterAngle, 0, light2.sp2OuterAngle);
 			
 			bFlicker = true;
 		}
@@ -197,6 +218,9 @@ class PB_FPP_Holder : Inventory
 			light1.args[3] = light1.spIntensity;
 			light2.args[3] = light2.sp2Intensity;
 			
+			light1.SpotInnerAngle = light1.spInnerAngle;
+			light2.SpotInnerAngle = light2.sp2InnerAngle;
+			
 			light1.SpotOuterAngle = light1.spOuterAngle;
 			light2.SpotOuterAngle = light2.sp2OuterAngle;
 		}
@@ -204,7 +228,8 @@ class PB_FPP_Holder : Inventory
 		if(flashlightCharge <= 0)
 		{
 			Disable();
-			owner.A_StartSound("Sparks/Spawn", CHAN_AUTO, CHANF_LOCAL, 0.20);
+			flOutOfBatteryPenalty = true;
+			owner.A_StartSound("PB/FlashlightOff", CHAN_AUTO);
 		}
 	}
 	
@@ -246,7 +271,7 @@ class PB_FPP_Holder : Inventory
 		light1 = null;
 		light2 = null;
 		on = false;
-		flashlightCharge = 1400;
+		flashlightCharge = flashlightChargeMax;
 		return self;
 	}
 	
@@ -261,13 +286,16 @@ class PB_FPP_Holder : Inventory
 	
 	void ToggleFlashlight()
 	{
-		if(on) {
-			Disable();
-			PlayFlashlightToggleSound(false);
-		}
-		else if(flashlightCharge > 0) {
-			Enable();
-			PlayFlashlightToggleSound(true);
+		if(owner.health > 0)
+		{
+			if(on) {
+				Disable();
+				PlayFlashlightToggleSound(false);
+			}
+			else if(flashlightCharge > 0 && flOutOfBatteryPenalty == false) {
+				Enable();
+				PlayFlashlightToggleSound(true);
+			}
 		}
 	}
 	
@@ -290,7 +318,6 @@ class PB_FPP_Holder : Inventory
 
 extend class PB_EventHandler
 {
-	
 	PB_FPP_Holder setupFlashlightHolder(PlayerPawn p)
 	{
 		PB_FPP_Holder holder = PB_FPP_Holder(p.GiveInventoryType("PB_FPP_Holder"));
