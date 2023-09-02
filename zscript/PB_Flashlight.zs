@@ -70,12 +70,12 @@ class PB_FPP_Light : Spotlight
 						
 			BlockThingsIterator it = BlockThingsIterator.Create(self, distanceToWake);
 			
-			while (it.Next())
+			while(it.Next())
 			{
 					Actor mo = it.thing;
 					
 					//only consider monsters, not yet alerted:
-					if (mo.bIsMonster)
+					if(mo && mo.bIsMonster)
 					{
 						Vector3 vectorToMonster = self.Vec3To(mo).unit();
 						
@@ -83,7 +83,7 @@ class PB_FPP_Light : Spotlight
 					double cosAngleMonsterBeam = vectorToMonster dot vectorBeamDirection;
 						
 					//also check real sight
-					if ((cosAngleMonsterBeam >= cosBeamAngle) && (self.distance3DSquared(mo) <= distanceToWake **2) && self.CheckSight(mo))
+					if((cosAngleMonsterBeam >= cosBeamAngle) && (self.distance3DSquared(mo) <= distanceToWake **2) && self.CheckSight(mo))
 					{
 						//mark as last heard to ping them
 						//no need to do: self.toFollow.SoundAlert(mo, false,1.0);
@@ -159,7 +159,7 @@ class PB_FPP_Holder : Inventory
 		{
 			double flScale;
 			
-			if (flashlightCharge >= 0.0)
+			if(flashlightCharge >= 0.0)
 			{	
 				flScale = (flashlightCharge <= 4.5) ? SimpleSplineRemapVal(flashlightCharge, 4.5, 0, 1.0, 0.0) : 1.0;
 			}
@@ -170,7 +170,7 @@ class PB_FPP_Holder : Inventory
 			
 			flScale = clamp(flScale, 0.0, 1.0);
 			
-			if (flScale < 0.35)
+			if(flScale < 0.35)
 			{
 				//float flFlicker = cos(gametic * 6.0) * sin(gametic * 15.0);
 				double flFlicker = frandom(-1.0, 1.0);
