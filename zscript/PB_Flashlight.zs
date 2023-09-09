@@ -14,6 +14,7 @@ class PB_FPP_Light : Spotlight
 	PlayerInfo toInfo;
 	
 	Vector3 offset;
+	color baseColor;
 	
 	const spIntensity = 128.0;
 	const spInnerAngle = 15.0;
@@ -31,11 +32,11 @@ class PB_FPP_Light : Spotlight
 		toFollow = p;
 		toInfo = p.player;
 		
-		Color c = beamColor;
+		baseColor = beamColor;
 		
-		args[0] = c.r;
-		args[1] = c.g;
-		args[2] = c.b;
+		args[0] = baseColor.r;
+		args[1] = baseColor.g;
+		args[2] = baseColor.b;
 		args[3] = second ? sp2Intensity : spIntensity;
 		
 		SpotInnerAngle = second ? sp2InnerAngle : spInnerAngle;
@@ -141,9 +142,10 @@ class PB_FPP_Holder : Inventory
 		else if(on)
 			flashlightCharge -= (debuggerMode == 1 && flashlightCharge > 10.0) ? 1.0 : flashlightDrainTime;
 		
-		if(debuggerMode == 1)
+		if(light1 && light2 && debuggerMode == 1)
 		{
 			console.printf("Charge: ".."%f".." percent out of 100.", flashlightCharge);
+			console.printf("\ca%d \cd%d \cn%d", light1.args[0], light1.args[1], light1.args[2]);
 		}
 		
 		if(flashlightCharge >= flashlightChargeMax && flOutOfBatteryPenalty)
@@ -154,10 +156,11 @@ class PB_FPP_Holder : Inventory
 		//Source SDK Copyright(c) Valve Corp.
 
 		bool bFlicker = false;
-		
+
 		if(flashlightCharge <= 10.0 && light1 && light2)
 		{
 			double flScale;
+			
 			
 			if(flashlightCharge >= 0.0)
 			{	
@@ -178,14 +181,24 @@ class PB_FPP_Holder : Inventory
 				if(flFlicker > 0.25 && flFlicker < 0.75)
 				{
 					// On
-					light1.args[3] = light1.spIntensity * flScale;
-					light2.args[3] = light2.sp2Intensity * flScale;
+					light1.args[0] = light1.baseColor.r * flScale;
+					light1.args[1] = light1.baseColor.g * flScale;
+					light1.args[2] = light1.baseColor.b * flScale;
+
+					light2.args[0] = light2.baseColor.r * flScale;
+					light2.args[1] = light2.baseColor.g * flScale;
+					light2.args[2] = light2.baseColor.b * flScale;
 				}
 				else
 				{
 					// Off
-					light1.args[3] = 0.0;
-					light2.args[3] = 0.0;
+					light1.args[0] = 0;
+					light1.args[1] = 0;
+					light1.args[2] = 0;
+					
+					light2.args[0] = 0;
+					light2.args[1] = 0;
+					light2.args[2] = 0;
 				}
 			}
 			else
@@ -193,8 +206,13 @@ class PB_FPP_Holder : Inventory
 				//float flNoise = cos(gametic * 7.0) * sin(gametic * 25.0);
 				double flNoise = frandom(-1.0, 1.0);
 				
-				light1.args[3] = light1.spIntensity * flScale + 1.5 * flNoise;
-				light2.args[3] = light2.sp2Intensity * flScale + 1.5 * flNoise;
+				light1.args[0] = light1.baseColor.r * flScale + 1.5 * flNoise;
+				light1.args[1] = light1.baseColor.g * flScale + 1.5 * flNoise;
+				light1.args[2] = light1.baseColor.b * flScale + 1.5 * flNoise;
+
+				light2.args[0] = light2.baseColor.r * flScale + 1.5 * flNoise;
+				light2.args[1] = light2.baseColor.g * flScale + 1.5 * flNoise;
+				light2.args[2] = light2.baseColor.b * flScale + 1.5 * flNoise;
 			}
 			
 			light1.SpotInnerAngle = light1.spInnerAngle - (16.0 * (1.0 - flScale));
@@ -215,8 +233,13 @@ class PB_FPP_Holder : Inventory
 		
 		if(bFlicker == false && light1 && light2)
 		{
-			light1.args[3] = light1.spIntensity;
-			light2.args[3] = light2.sp2Intensity;
+			light1.args[0] = light1.baseColor.r;
+			light1.args[1] = light1.baseColor.g;
+			light1.args[2] = light1.baseColor.b;
+
+			light2.args[0] = light2.baseColor.r;
+			light2.args[1] = light2.baseColor.g;
+			light2.args[2] = light2.baseColor.b;
 			
 			light1.SpotInnerAngle = light1.spInnerAngle;
 			light2.SpotInnerAngle = light2.sp2InnerAngle;
@@ -224,7 +247,7 @@ class PB_FPP_Holder : Inventory
 			light1.SpotOuterAngle = light1.spOuterAngle;
 			light2.SpotOuterAngle = light2.sp2OuterAngle;
 		}
-			
+
 		if(flashlightCharge <= 0)
 		{
 			Disable();
