@@ -1,0 +1,159 @@
+class PB_BlackHole : Actor
+{
+  Default
+  {
+    Radius 20;
+    Height 20;
+    Speed 0;
+    Projectile;
+    +NOBLOCKMAP;
+    +DONTHARMSPECIES;
+    +NODAMAGETHRUST;
+    -THRUGHOST;
+    +Ripper;
+    +NOBOSSRIP;
+    +ForcePain;
+    +FORCEYBILLBOARD;
+    +FORCERADIUSDMG;
+    +NOEXTREMEDEATH;
+    +Friendly;
+    +DONTSPLASH;
+    +RollSprite;
+    RenderStyle "Normal";
+    DamageType "BlackHole";
+    Scale 0.05;
+    ReactionTime 360;
+    Obituary "%o got absorbed by the darkness.";
+  }
+	
+
+	States
+	{
+		Spawn:
+		//	TNT1 A 0 A_StartSound("weapons/bh_sucksound", CHAN_7, CHANF_LOOPING);
+			TNT1 A 0;
+			TNT1 A 0 A_StartSound("bh_EXPLONG", CHAN_6, 1.0, ATTN_NORM, false);
+			TNT1 A 0 A_StartSound("bh_Sound", CHAN_7, 1.0, ATTN_NORM, false);
+			TNT1 A 0 A_SetScale(3.0);
+			QHOL ABCDEFGHIJKLMNOP 1 BRIGHT Light("BlackholeVoid") {
+				A_Explode(20,200);
+				A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+			}
+			
+			TNT1 A 0 A_SetRoll(0);
+		Exist:
+			VHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright Light("BlackholeVoid") {
+				//A_SetRoll(roll-10);
+				A_Explode(20,200);
+				A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+				A_CountDown();
+			}
+			WHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright Light("BlackholeVoid") {
+				//A_SetRoll(roll-10);
+				A_Explode(20,200);
+				A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+				A_CountDown();
+			}
+			ZHOL ABCDEFGHIJKLMNOPQR 1 Bright Light("BlackholeVoid") {
+				//A_SetRoll(roll-10);
+				A_Explode(20,200);
+				A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+				A_CountDown();
+			}
+			
+			TNT1 A 0 A_Jump(249, 2);
+			TNT1 A 0 {
+				//A_StartSound("DMBall/Impact", CHAN_AUTO, CHANF_OVERLAP);
+				A_SpawnItemEx("BlackHoleLightning", random(-120, 120), random(-120, 120), random(-5, 120));
+				A_Quake(8,4,0,400, "None");
+			}
+			TNT1 A 0 ;
+			Loop;
+		
+		Death:
+			TNT1 A 0 A_StopSound(CHAN_7);
+			TNT1 A 0 A_StopSound(CHAN_6);
+			TNT1 A 0 A_StartSound("BHole/Explosion", CHAN_AUTO);
+			TNT1 A 0 Bright A_SpawnItem("PurpleShockWave",0,0,0); //PurpleTrailSparks
+			BHOL AAAAAAAAAAAAAAAAAA 0 A_SpawnItemEx("PurpleTrailSparks", 0, 0, 0, 0, 0, 0, 0, 128);
+			EHOL ABCDEFGHIJKLMNO 1 Bright Light("BlackholeVoid"){
+				A_FadeOut(0.06);
+			}
+			Stop;
+	
+	}
+	
+    override void Tick() 
+    {
+        Super.Tick();
+		
+
+        // Define the pull radius and outer radius
+        double pullRadius = 1024.0;
+        double outerRadius = 256.0;
+        double scaleFactor = 60.0;  // Adjust this value to change the exponential effect
+
+        ThinkerIterator it = ThinkerIterator.Create("Actor");
+
+        Actor act;
+        while ( act = Actor(it.Next()) )
+        {
+            // Ensure it is really an Actor before proceeding
+            if (!act) continue;
+
+            // Calculate distance to the actor
+            double dx = pos.x - act.pos.x;
+            double dy = pos.y - act.pos.y;
+          //  double distance = sqrt(dx*dx + dy*dy);
+			double distance = Distance3D(act);
+
+            // Skip this iteration if actor is the BlackHole itself, out of range, or other specific conditions
+            if (act == self || distance > outerRadius || act is "PB_BlackHole" || act is "PlayerPawn") 
+            {
+                continue;
+            }
+
+            // Logic for actors within the pull radius
+            if (distance <= pullRadius) 
+            {
+                double force = exp(-(distance / scaleFactor));
+                
+             //   act.Vel.X += dx * force;
+             //   act.Vel.Y += dy * force;
+
+                // If it's a projectile and close enough, just delete it
+                if (act.bMissile && distance < 60.0)
+                {
+                    act.Destroy();
+                }
+				else if (act.bMissile && distance > 60.0)
+				{
+					act.Vel.X += dx * force;
+					act.Vel.Y += dy * force;
+				}
+				
+				
+				
+            } 
+            else 
+            {
+                // Change the projectile's velocity for the slingshot effect
+                if (act.bMissile) 
+                {
+					
+					Vector2 slingVelocity = (dx, dy);
+                    double slingFactor = 0.05;  // Adjust to change the strength of the slingshot
+                    act.Vel.X += slingVelocity.x * slingFactor;
+                    act.Vel.Y += slingVelocity.y * slingFactor;
+				//	 let dir = Level.Vec3Diff(act.pos, self.pos).Unit();
+				//	 act.vel = dir * 50;
+                }
+            }
+        }
+    }
+
+
+
+
+}
+	
