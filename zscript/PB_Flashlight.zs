@@ -7,32 +7,46 @@ class PB_FPP_Light : Spotlight
 	Default 
 	{
 		+NOINTERACTION;
-		+DYNAMICLIGHT.ATTENUATE; //more realistic light dropoff
+		//+DYNAMICLIGHT.ATTENUATE; //more realistic light dropoff, disabled for making the lights way too dark
 	}
 	
 	PlayerPawn toFollow;
 	PlayerInfo toInfo;
 	
 	Vector3 offset;
-	color baseColor;
+	color baseColor, fCol;
+	bool thisIsLight2;
 	
-	const spIntensity = 128.0;
-	const spInnerAngle = 15.0;
-	const spOuterAngle = 45.0;
+	const spIntensity = sp2Intensity;
+	const spInnerAngle = 30.0;
+	const spOuterAngle = 35.0;
 	
 	const sp2Intensity = 584.0;
 	const sp2InnerAngle = 0.0;
 	const sp2OuterAngle = 25.0;
 	
-	const beamColor = "ff f4 da";
+	const beamColor = 0xECF1FF;
+	
+	const darkenSpillMod = 3;
 	
 	//This is run whenever the flashlight is turned on.
 	PB_FPP_Light Init(PlayerPawn p, bool second)
 	{
 		toFollow = p;
 		toInfo = p.player;
+		thisIsLight2 = second; //ignore monster alerting on the second light for optimization purposes
 		
-		baseColor = beamColor;
+		if(second) {
+			baseColor = beamColor;
+			bNOSHADOWMAP = true;
+		}
+		else {
+			fCol = beamColor;
+			baseColor = color(255, 
+			fCol.r / darkenSpillMod, 
+			fCol.g / darkenSpillMod, 
+			fCol.b / darkenSpillMod);
+		}
 		
 		args[0] = baseColor.r;
 		args[1] = baseColor.g;
@@ -61,7 +75,7 @@ class PB_FPP_Light : Spotlight
         
         //BD:BE monster alerting stuff, this was a nightmare to implement
         //Credits to Blackmore1014 for this
-        if(gametic % 15 == 0 && SpotOuterAngle > 0)
+        if(!thisIsLight2 && gametic % 15 == 0 && SpotOuterAngle > 0)
         {
 		    double cosBeamAngle = cos(SpotOuterAngle);
 			double distanceToWake = args[3] / sqrt(1.0 - cosBeamAngle);
@@ -137,21 +151,28 @@ class PB_FPP_Holder : Inventory
 	{
 		Super.DoEffect();
 		
-		if(on == false && flashlightCharge < flashlightChargeMax && owner.health > 0)
-			flashlightCharge += flOutOfBatteryPenalty ? flashlightChargeTimeSlow : flashlightChargeTime;
+		if(on == false && flashlightCharge < flashlightChargeMax && owner.health > 0) {
+			if(debuggerMode == 0)
+				flashlightCharge += flOutOfBatteryPenalty ? flashlightChargeTimeSlow : flashlightChargeTime;
+			else if(debuggerMode == 1)
+				flashlightCharge = flashlightChargeMax;
+		}
+				
 		else if(on)
 			flashlightCharge -= (debuggerMode == 1 && flashlightCharge > 10.0) ? 1.0 : flashlightDrainTime;
 		
-		if(light1 && light2 && debuggerMode == 1)
+		if(debuggerMode == 1 && light1 && light2)
 		{
-			console.printf("Charge: ".."%f".." percent out of 100.", flashlightCharge);
-			console.printf("\ca%d \cd%d \cn%d", light1.args[0], light1.args[1], light1.args[2]);
+			console.printf("Charge: %f", flashlightCharge);
+			console.printf("light1: \ca%03i \cd%03i \cn%03i", light1.args[0], light1.args[1], light1.args[2]);
+			console.printf("light2: \ca%03i \cd%03i \cn%03i", light2.args[0], light2.args[1], light2.args[2]);
+			console.printf("oang, iang: l1 %f %f, l2 %f %f", light1.SpotOuterAngle, light1.SpotInnerAngle, light2.SpotOuterAngle, light2.SpotInnerAngle);
 		}
 		
 		if(flashlightCharge >= flashlightChargeMax && flOutOfBatteryPenalty)
 			flOutOfBatteryPenalty = false;
 			
-		//adapted from half-life 2, available at https://github.com/ValveSoftware/source-sdk-2013/blob/master/sp/src/game/client/flashlighteffect.cpp#L273
+		//adapted from half-life 2, available at https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/client/flashlighteffect.cpp#L273
 
 		//Source SDK Copyright(c) Valve Corp.
 
@@ -160,7 +181,6 @@ class PB_FPP_Holder : Inventory
 		if(flashlightCharge <= 10.0 && light1 && light2)
 		{
 			double flScale;
-			
 			
 			if(flashlightCharge >= 0.0)
 			{	
@@ -173,9 +193,8 @@ class PB_FPP_Holder : Inventory
 			
 			flScale = clamp(flScale, 0.0, 1.0);
 			
-			if(flScale < 0.35)
+			if(flScale < 0.7)
 			{
-				//float flFlicker = cos(gametic * 6.0) * sin(gametic * 15.0);
 				double flFlicker = frandom(-1.0, 1.0);
 				
 				if(flFlicker > 0.25 && flFlicker < 0.75)
@@ -203,7 +222,6 @@ class PB_FPP_Holder : Inventory
 			}
 			else
 			{
-				//float flNoise = cos(gametic * 7.0) * sin(gametic * 25.0);
 				double flNoise = frandom(-1.0, 1.0);
 				
 				light1.args[0] = light1.baseColor.r * flScale + 1.5 * flNoise;
@@ -215,15 +233,15 @@ class PB_FPP_Holder : Inventory
 				light2.args[2] = light2.baseColor.b * flScale + 1.5 * flNoise;
 			}
 			
-			light1.SpotInnerAngle = light1.spInnerAngle - (16.0 * (1.0 - flScale));
-			light2.SpotInnerAngle = light2.sp2InnerAngle - (16.0 * (1.0 - flScale));
+			light1.SpotInnerAngle = light1.spInnerAngle - (10.0 * (1.0 - flScale));
+			light2.SpotInnerAngle = light2.sp2InnerAngle - (10.0 * (1.0 - flScale));
 			
 			//Don't go negative.
 			light1.SpotInnerAngle = clamp(light1.SpotInnerAngle, 0, light1.spInnerAngle);
 			light2.SpotInnerAngle = clamp(light2.SpotInnerAngle, 0, light2.sp2InnerAngle);
 			
-			light1.SpotOuterAngle = light1.spOuterAngle - (16.0 * (1.0 - flScale));
-			light2.SpotOuterAngle = light2.sp2OuterAngle - (16.0 * (1.0 - flScale));
+			light1.SpotOuterAngle = light1.spOuterAngle - (10.0 * (1.0 - flScale));
+			light2.SpotOuterAngle = light2.sp2OuterAngle - (10.0 * (1.0 - flScale));
 			
 			light1.SpotOuterAngle = clamp(light1.SpotOuterAngle, 0, light1.spOuterAngle);
 			light2.SpotOuterAngle = clamp(light2.SpotOuterAngle, 0, light2.sp2OuterAngle);
