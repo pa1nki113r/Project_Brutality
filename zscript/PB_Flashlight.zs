@@ -7,7 +7,7 @@ class PB_FPP_Light : Spotlight
 	Default 
 	{
 		+NOINTERACTION;
-		//+DYNAMICLIGHT.ATTENUATE; //more realistic light dropoff, disabled for making the lights way too dark
+		+DYNAMICLIGHT.ATTENUATE;
 	}
 	
 	PlayerPawn toFollow;
@@ -18,14 +18,14 @@ class PB_FPP_Light : Spotlight
 	bool thisIsLight2;
 	
 	const spIntensity = sp2Intensity;
-	const spInnerAngle = 30.0;
-	const spOuterAngle = 35.0;
+	const spInnerAngle = 35.0;
+	const spOuterAngle = 40.0;
 	
 	const sp2Intensity = 584.0;
 	const sp2InnerAngle = 0.0;
-	const sp2OuterAngle = 25.0;
+	const sp2OuterAngle = 30.0;
 	
-	const beamColor = 0xECF1FF;
+	const beamColor = 0xFFF4DA;
 	
 	const darkenSpillMod = 3;
 	
@@ -56,7 +56,7 @@ class PB_FPP_Light : Spotlight
 		SpotInnerAngle = second ? sp2InnerAngle : spInnerAngle;
 		SpotOuterAngle = second ? sp2OuterAngle : spOuterAngle;
         
-		offset = (-5, 0, (toFollow.height / 10) - 5);
+		offset = (-5, toFollow.radius -2, (toFollow.height / 10) - 5);
 		
 		return self;
 	}
@@ -66,11 +66,12 @@ class PB_FPP_Light : Spotlight
 		super.Tick();
     	if (toFollow && toFollow.player)
     	{
+    		//console.printf("\cax: %f\cj, \cdy: %f", (90 + -abs(toFollow.pitch)) / 90.0, -toFollow.Pitch / 90.0);
         	A_SetAngle(toFollow.angle, SPF_INTERPOLATE);
         	A_SetPitch(toFollow.pitch, SPF_INTERPOLATE);
         	A_SetRoll(toFollow.roll, SPF_INTERPOLATE);
         	
-        	SetOrigin(toFollow.pos + (RotateVector((offset.x, offset.y), toFollow.angle - 90.0), toFollow.player.viewheight + offset.z), true);
+        	SetOrigin(toFollow.pos + (RotateVector((offset.x, offset.y * ((90 + -abs(toFollow.pitch)) / 90.0)), toFollow.angle - 90.0), toFollow.player.viewheight + offset.z + (offset.y * (-toFollow.Pitch / 90.0))), true);
         }
         
         //BD:BE monster alerting stuff, this was a nightmare to implement
@@ -193,7 +194,7 @@ class PB_FPP_Holder : Inventory
 			
 			flScale = clamp(flScale, 0.0, 1.0);
 			
-			if(flScale < 0.7)
+			if(flScale < 0.5)
 			{
 				double flFlicker = frandom(-1.0, 1.0);
 				
