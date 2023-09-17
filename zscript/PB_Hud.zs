@@ -284,7 +284,7 @@ class PB_Hud_ZS : BaseStatusBar
         }
     }
 
-    void PBHud_DrawImage(String texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 box = (-1, -1), Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25) 
+    void PBHud_DrawImage(String texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 box = (-1, -1), Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25, ERenderStyle style = STYLE_Translucent)
     {
         double IntMSway = mSwayInterpolator.GetValue();
         double IntMPitch = mPitchInterpolator.GetValue();
@@ -327,10 +327,10 @@ class PB_Hud_ZS : BaseStatusBar
             }
         }
 
-        DrawImage(texture, pos, flags, (m0to1Float * Alpha), box, scale);
+        DrawImage(texture, pos, flags, (m0to1Float * Alpha), box, scale, style);
     }
     
-    void PBHud_DrawImageManualAlpha(String texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 box = (-1, -1), Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25)
+    void PBHud_DrawImageManualAlpha(String texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 box = (-1, -1), Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25, ERenderStyle style = STYLE_Translucent)
     {
         double IntMSway = mSwayInterpolator.GetValue();
         double IntMPitch = mPitchInterpolator.GetValue();
@@ -357,7 +357,7 @@ class PB_Hud_ZS : BaseStatusBar
             }
         }
 
-        DrawImage(texture, pos, flags, Alpha, box, scale);
+        DrawImage(texture, pos, flags, Alpha, box, scale, style);
     }
     
     /*
@@ -863,12 +863,12 @@ class PB_Hud_ZS : BaseStatusBar
                     PBHud_DrawImageManualAlpha("HUDT2POF", (35 + m32to0, -9 - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, cplayer.mo.cursector.lightlevel / 255.0, scale: (0.7, 0.7));  
                    	PBHud_DrawImageManualAlpha("HUDBOT2F", (35 + m32to0, 9 + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, cplayer.mo.cursector.lightlevel / 255.0, scale: (0.7, 0.7));
                     
-                    PBHud_DrawImageManualAlpha("HUDTFLAR", (-35 - m32to0, -9 - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7));  
+                    PBHud_DrawImageManualAlpha("HUDTFLAR", (-35 - m32to0, -9 - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7), style: STYLE_Add);  
 
-                    PBHud_DrawImageManualAlpha("HUDBFLAR", (-35 - m32to0, 9 + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7));
+                    PBHud_DrawImageManualAlpha("HUDBFLAR", (-35 - m32to0, 9 + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7), style: STYLE_Add);
 
-                    PBHud_DrawImageManualAlpha("HUDTFLA2", (35 + m32to0, -9 - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7));  
-                   	PBHud_DrawImageManualAlpha("HUDBFLA2", (35 + m32to0, 9 + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7));
+                    PBHud_DrawImageManualAlpha("HUDTFLA2", (35 + m32to0, -9 - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7), style: STYLE_Add);  
+                   	PBHud_DrawImageManualAlpha("HUDBFLA2", (35 + m32to0, 9 + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1float * ( 1.0 - (cplayer.mo.cursector.lightlevel / 255.0)), scale: (0.7, 0.7), style: STYLE_Add);
                     
                     /* offsets looked a bit off, would love to revisit this sometime as it does look better
                     
@@ -879,10 +879,10 @@ class PB_Hud_ZS : BaseStatusBar
                     ); 
                     */
                     
-                    PBHud_DrawImageManualAlpha("HUDTOP", (-35, -9) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1Float, scale: (0.7, 0.7));  
-                    PBHud_DrawImageManualAlpha("HUDBOTOM", (-35, 9) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1Float, scale: (0.7, 0.7));   
-                    PBHud_DrawImageManualAlpha("HUDT2P", (35, -9), DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1Float, scale: (0.7, 0.7));  
-                    PBHud_DrawImageManualAlpha("HUDBOT2M", (35, 9) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1Float, scale: (0.7, 0.7));
+                    PBHud_DrawImageManualAlpha("HUDTOP", (-35, -9) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1Float, scale: (0.7, 0.7), style: STYLE_Add);  
+                    PBHud_DrawImageManualAlpha("HUDBOTOM", (-35, 9) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1Float, scale: (0.7, 0.7), style: STYLE_Add);   
+                    PBHud_DrawImageManualAlpha("HUDT2P", (35, -9), DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1Float, scale: (0.7, 0.7), style: STYLE_Add);  
+                    PBHud_DrawImageManualAlpha("HUDBOT2M", (35, 9) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1Float, scale: (0.7, 0.7), style: STYLE_Add);
                 }
             }
 
