@@ -65,6 +65,8 @@ class PB_Hud_ZS : BaseStatusBar
     bool hudDynamics, inPain;
     double dashIndAlpha, flashlightBatteryAlpha;
     int healthFontCol, keyamount;
+    array<PB_HudMessageStorage> messageArray;
+    double deltatime;
 
     //CVars
     int hudXMargin, hudYMargin;
@@ -121,12 +123,18 @@ class PB_Hud_ZS : BaseStatusBar
 
         customPBMugshot = CVar.GetCvar("pb_newmugshot", CPlayer).GetBool();
 	}
+	
+	double Lerp(double start, double end, double time)
+	{
+		return ((1.0 - time) * start) + (time * end);
+	}
 
 	override void Draw(int state, double TicFrac)
 	{
 		Super.Draw(state, TicFrac);
 
         GatherCvars();
+        deltatime = ticfrac;
         
         if(state != HUD_None)
 		{
@@ -155,6 +163,81 @@ class PB_Hud_ZS : BaseStatusBar
         mSwayInterpolator.Reset(0);
         mPitchInterpolator.Reset(0);
         mFOffsetInterpolator.Reset(0);
+	}
+	
+	override bool ProcessNotify(EPrintLevel printlevel, string outline)
+	{
+		bool logprint = (printlevel & PRINT_LOG);
+		bool chatmsg  = (printlevel & (PRINT_CHAT|PRINT_TEAMCHAT));
+		bool validprint = (logprint && chatmsg) || (printlevel < PRINT_HIGH);
+		if(!validprint) 
+			return false;
+		
+		PB_HudMessageStorage message = PB_HudMessageStorage.Init(outline, 1, (15, 80));
+		message.pos = message.newPos;
+		PushMessageToMessageArray(message);
+		return true;
+	}
+	
+	void PushMessageToMessageArray(PB_HudMessageStorage msg, double newLineStep = 14, int maxPastMessages = 4) //maxpastmessages does not count the latest message
+	{
+		int count = messageArray.Size() - 1;
+		if(count >= maxPastMessages) //delete the oldest message
+		{
+			messageArray.Delete(0);
+			count--;
+		}
+		
+		if(messageArray.Size() > 0)
+		{
+			for(int i = 0; i <= count; i++)
+				messageArray[i].newPos.y += newLineStep;
+		}
+		messageArray.Push(msg);
+	}
+	
+	void DrawMessagesInArray()
+	{
+		int count = messageArray.Size() - 1;
+		for(int i = count; i >= 0; i--) //go through list backwards
+		{
+			PB_HudMessageStorage msg = messageArray[i];
+
+			double animspeed = 0.25 * deltatime;
+				
+			if(msg.msgStr == "") 
+			{
+				messageArray.Delete(i);
+				continue;
+			}
+			
+			msg.pos.x = Lerp(msg.pos.x, msg.newpos.x, animspeed);
+			msg.pos.y = Lerp(msg.pos.y, msg.newpos.y, animspeed);
+			msg.scale.x = Lerp(msg.scale.x, msg.newscale.x, animspeed);
+			msg.scale.y = Lerp(msg.scale.y, msg.newscale.y, animspeed);
+				
+			PBHud_DrawString(mBoldFont, msg.msgStr, msg.pos, DI_SCREEN_LEFT_TOP | DI_TEXT_ALIGN_LEFT, Font.CR_UNTRANSLATED, msg.alpha, scale: msg.scale);
+				
+			switch(msg.stage)
+			{
+				case 0:
+					if(abs(msg.scale.Length() - msg.newScale.Length()) <= 0.01)
+					{
+						msg.newScale *= 0.9;
+						msg.stage = 1;
+					}
+					msg.alpha = Lerp(msg.alpha, msg.newalpha, animspeed);
+					break;
+				case 1:
+					msg.alpha = 3;
+					msg.stage = 2;
+					break;
+				case 2:
+					msg.alpha -= 0.02 * deltatime;
+					if(alpha <= 0) msg.msgStr = "";
+					break;
+			}
+		}
 	}
 
 	override void Tick()
@@ -236,8 +319,6 @@ class PB_Hud_ZS : BaseStatusBar
         	DeathFadeDone = False;
     	}
     }
-    
-    
     
     void CalculateSway() {
         //Limit so it only counts when the player strafes.
@@ -994,6 +1075,8 @@ class PB_Hud_ZS : BaseStatusBar
 				PBHud_DrawString(mBoldFont, FormatNumber(Level.found_secrets,0,5).." / "..FormatNumber(Level.total_secrets,0,5), (35, 55), 0, Font.CR_PURPLE, scale: (0.6, 0.6));
 			}
 			
+			DrawMessagesInArray();
+			
             if(CPlayer.Health <= 0) 
             {
               DeathSequence(true);
@@ -1322,4 +1405,25 @@ class PB_Hud_ZS : BaseStatusBar
             }
         }
     }
+}
+
+class PB_HudMessageStorage ui
+{
+	vector2 pos, newPos, scale, newScale;
+	double alpha, newAlpha;
+	string msgStr;
+	int stage;
+	
+	static PB_HudMessageStorage Init(string message, double malpha, vector2 mpos, vector2 mscale = (1, 1), class<PB_HudMessageStorage> storageClass = "PB_HudMessageStorage")
+	{
+		PB_HudMessageStorage msg = PB_HudMessageStorage(new(storageClass));
+		if(msg) {
+			msg.newAlpha = malpha;
+			msg.msgStr = message;
+			msg.newPos = mpos;
+			msg.newScale = mscale;
+		}
+		
+		return msg;
+	}
 }
