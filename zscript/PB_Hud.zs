@@ -25,6 +25,9 @@ James Paddock
 
 Severin Meyer
 -Oxanium font
+
+Lewisk3
+-Messages base
 */
 
 class PB_Hud_ZS : BaseStatusBar
@@ -64,14 +67,15 @@ class PB_Hud_ZS : BaseStatusBar
     string leftAmmoAmount;
     bool hudDynamics, inPain;
     double dashIndAlpha, flashlightBatteryAlpha;
-    int healthFontCol, keyamount;
+    int healthFontCol, keyamount, hudState;
     array<PB_HudMessageStorage> messageArray;
-    double deltatime;
+    double deltaTime, prevMS;
 
     //CVars
-    int hudXMargin, hudYMargin;
+    int hudXMargin, hudYMargin, playerMsgPrint;
     bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot;
     double playerAlpha, playerBoxAlpha;
+    bool centerNotify;
     
 	override void Init()
 	{
@@ -122,6 +126,8 @@ class PB_Hud_ZS : BaseStatusBar
         playerBoxAlpha = CVar.GetCvar("pb_hudboxalpha", CPlayer).GetFloat();
 
         customPBMugshot = CVar.GetCvar("pb_newmugshot", CPlayer).GetBool();
+        centerNotify = CVar.GetCVar("con_centernotify", CPlayer).GetBool();
+        playerMsgPrint = CVar.GetCVar("msg").GetInt();
 	}
 	
 	double Lerp(double start, double end, double time)
@@ -134,9 +140,14 @@ class PB_Hud_ZS : BaseStatusBar
 		Super.Draw(state, TicFrac);
 
         GatherCvars();
-        deltatime = ticfrac;
         
-        if(state != HUD_None)
+        hudState = state;
+        
+        double ftime = MsTimeF() - prevMS;
+        prevMS = MsTimeF();
+        deltaTime = ftime / (1000.0 / 60.0);
+    	
+        if(hudState != HUD_None)
 		{
 			BeginHUD();
 			DrawFullScreenStuff();
@@ -167,19 +178,27 @@ class PB_Hud_ZS : BaseStatusBar
 	
 	override bool ProcessNotify(EPrintLevel printlevel, string outline)
 	{
-		bool logprint = (printlevel & PRINT_LOG);
-		bool chatmsg  = (printlevel & (PRINT_CHAT|PRINT_TEAMCHAT));
-		bool validprint = (logprint && chatmsg) || (printlevel < PRINT_HIGH);
-		if(!validprint) 
+		int mprintlevel = printlevel & PRINT_TYPES;
+		if(mprintlevel & PRINT_LOG || mprintlevel & PRINT_NONOTIFY || mprintlevel < playerMsgPrint || mprintlevel > PRINT_HIGH)
 			return false;
 		
-		PB_HudMessageStorage message = PB_HudMessageStorage.Init(outline, 1, (15, 80));
+		PB_HudMessageStorage message;
+		
+		if(!centerNotify)
+			message = PB_HudMessageStorage.Init(outline, 1, showLevelStats ? (15, 80) : (15, 15), printlevel);
+		else
+			message = PB_HudMessageStorage.Init(outline, 1, (15, 15), printlevel);
+		
+		if(!message) 
+			return false;
+		
 		message.pos = message.newPos;
+		message.scale = message.newScale;
 		PushMessageToMessageArray(message);
 		return true;
 	}
 	
-	void PushMessageToMessageArray(PB_HudMessageStorage msg, double newLineStep = 14, int maxPastMessages = 4) //maxpastmessages does not count the latest message
+	void PushMessageToMessageArray(PB_HudMessageStorage msg, double newLineStep = 17, int maxPastMessages = 4) //maxpastmessages does not count the latest message
 	{
 		int count = messageArray.Size() - 1;
 		if(count >= maxPastMessages) //delete the oldest message
@@ -203,20 +222,35 @@ class PB_Hud_ZS : BaseStatusBar
 		{
 			PB_HudMessageStorage msg = messageArray[i];
 
-			double animspeed = 0.25 * deltatime;
+			double animspeed = 0.25 * deltaTime;
 				
 			if(msg.msgStr == "") 
 			{
 				messageArray.Delete(i);
+				msg.Destroy();
 				continue;
 			}
 			
-			msg.pos.x = Lerp(msg.pos.x, msg.newpos.x, animspeed);
-			msg.pos.y = Lerp(msg.pos.y, msg.newpos.y, animspeed);
-			msg.scale.x = Lerp(msg.scale.x, msg.newscale.x, animspeed);
-			msg.scale.y = Lerp(msg.scale.y, msg.newscale.y, animspeed);
-				
-			PBHud_DrawString(mBoldFont, msg.msgStr, msg.pos, DI_SCREEN_LEFT_TOP | DI_TEXT_ALIGN_LEFT, Font.CR_UNTRANSLATED, msg.alpha, scale: msg.scale);
+			if(deltatime >= 1.0)
+			{
+				//if the delta time is too high, just give up
+				//prevents massive text on a lag spike
+				//https://github.com/ValveSoftware/source-sdk-2013/blob/0d8dceea4310fde5706b3ce1c70609d72a38efdf/sp/src/game/server/player.cpp#L8421
+				msg.scale = msg.newscale;
+				msg.pos = msg.newpos;
+			}
+			else
+			{
+				msg.pos.x = Lerp(msg.pos.x, msg.newpos.x, animspeed);
+				msg.pos.y = Lerp(msg.pos.y, msg.newpos.y, animspeed);
+				msg.scale.x = Lerp(msg.scale.x, msg.newscale.x, animspeed);
+				msg.scale.y = Lerp(msg.scale.y, msg.newscale.y, animspeed);
+			}
+			
+			if(!centerNotify)
+				PBHud_DrawString(mBoldFont, string.Format(msg.msgStr), msg.pos, DI_SCREEN_LEFT_TOP | DI_TEXT_ALIGN_LEFT, msg.fontColor, msg.alpha, scale: msg.scale);
+			else
+				PBHud_DrawString(mBoldFont, string.Format(msg.msgStr), msg.pos, DI_SCREEN_CENTER_TOP | DI_TEXT_ALIGN_CENTER, msg.fontColor, msg.alpha, scale: msg.scale);
 				
 			switch(msg.stage)
 			{
@@ -233,8 +267,9 @@ class PB_Hud_ZS : BaseStatusBar
 					msg.stage = 2;
 					break;
 				case 2:
-					msg.alpha -= 0.02 * deltatime;
-					if(alpha <= 0) msg.msgStr = "";
+					msg.alpha -= (msg.alpha <= 1.0 ? 0.02 : 0.005) * deltaTime;
+					if(alpha <= 0) 
+						msg.msgStr = "";
 					break;
 			}
 		}
@@ -479,6 +514,7 @@ class PB_Hud_ZS : BaseStatusBar
         double IntMSway = mSwayInterpolator.GetValue();
         double IntMPitch = mPitchInterpolator.GetValue();
         double IntMOfs = mFOffsetInterpolator.GetValue();
+        vector2 basepos = pos;
             
         if(lowresfont && (font != mLowResFont))
         {
@@ -487,13 +523,15 @@ class PB_Hud_ZS : BaseStatusBar
             pos += (0, 2);
         }
 
-        if(pos.x > 0) {
-            pos.x += HUDXMargin;
-        }
-            
-        if(pos.x < 0) {
-            pos.x -= HUDXMargin;
-        }
+		if(!(flags & DI_SCREEN_HCENTER)) {
+	        if(pos.x > 0) {
+	            pos.x += HUDXMargin;
+	        }
+	            
+	        if(pos.x < 0) {
+	            pos.x -= HUDXMargin;
+	        }
+	    }
         
         if(pos.y > 0) {
 			pos.y += HUDYMargin;
@@ -507,13 +545,15 @@ class PB_Hud_ZS : BaseStatusBar
             pos.x += IntMSway * Parallax;
             pos.y -= IntMPitch * Parallax;
 
-            if(pos.x > 0) {
-                pos.x += (IntMOfs * Parallax2);
-            }
-            
-            if(pos.x < 0) {
-                pos.x -= (IntMOfs * Parallax2);
-            }
+			if(!(flags & DI_SCREEN_HCENTER)) {
+	            if(pos.x > 0) {
+	                pos.x += (IntMOfs * Parallax2);
+	            }
+	            
+	            if(pos.x < 0) {
+	                pos.x -= (IntMOfs * Parallax2);
+	            }
+	        }
             
             if(pos.y > 0) {
                 pos.y += (IntMOfs * Parallax2);
@@ -1413,8 +1453,9 @@ class PB_HudMessageStorage ui
 	double alpha, newAlpha;
 	string msgStr;
 	int stage;
+	int fontColor;
 	
-	static PB_HudMessageStorage Init(string message, double malpha, vector2 mpos, vector2 mscale = (1, 1), class<PB_HudMessageStorage> storageClass = "PB_HudMessageStorage")
+	static PB_HudMessageStorage Init(string message, double malpha, vector2 mpos, EPrintLevel printlevel, vector2 mscale = (1, 1), class<PB_HudMessageStorage> storageClass = "PB_HudMessageStorage")
 	{
 		PB_HudMessageStorage msg = PB_HudMessageStorage(new(storageClass));
 		if(msg) {
@@ -1422,6 +1463,11 @@ class PB_HudMessageStorage ui
 			msg.msgStr = message;
 			msg.newPos = mpos;
 			msg.newScale = mscale;
+			
+			if(printlevel <= 4)
+				msg.fontColor = CVar.GetCVar("msg"..String.Format("%i", printlevel).."color").GetInt();
+			else
+				msg.fontColor = 0;
 		}
 		
 		return msg;
