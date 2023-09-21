@@ -178,16 +178,15 @@ class PB_Hud_ZS : BaseStatusBar
 	
 	override bool ProcessNotify(EPrintLevel printlevel, string outline)
 	{
-		int mprintlevel = printlevel & PRINT_TYPES;
-		if(mprintlevel & PRINT_LOG || mprintlevel & PRINT_NONOTIFY || mprintlevel < playerMsgPrint || mprintlevel > PRINT_HIGH)
+		if(printlevel == PRINT_LOG || printlevel & PRINT_NONOTIFY || printlevel < playerMsgPrint || printlevel > PRINT_HIGH)
 			return false;
 		
 		PB_HudMessageStorage message;
 		
 		if(!centerNotify)
-			message = PB_HudMessageStorage.Init(outline, 1, showLevelStats ? (15, 80) : (15, 15), printlevel);
+			message = PB_HudMessageStorage.Init(outline, 1, showLevelStats ? (15, 80) : (15, 17), printlevel);
 		else
-			message = PB_HudMessageStorage.Init(outline, 1, (15, 15), printlevel);
+			message = PB_HudMessageStorage.Init(outline, 1, (0, 17), printlevel);
 		
 		if(!message) 
 			return false;
