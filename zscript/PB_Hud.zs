@@ -68,8 +68,8 @@ class PB_Hud_ZS : BaseStatusBar
     bool hudDynamics, inPain;
     double dashIndAlpha, flashlightBatteryAlpha;
     int healthFontCol, keyamount, hudState;
-    array<PB_HudMessageStorage> messageArray;
-    double deltaTime, prevMS;
+    //array<PB_HudMessageStorage> messageArray;
+    //double deltaTime, prevMS;
 
     //CVars
     int hudXMargin, hudYMargin, playerMsgPrint;
@@ -129,11 +129,11 @@ class PB_Hud_ZS : BaseStatusBar
         centerNotify = CVar.GetCVar("con_centernotify", CPlayer).GetBool();
         playerMsgPrint = CVar.GetCVar("msg").GetInt();
 	}
-	
-	double Lerp(double start, double end, double time)
+
+	/*double Lerp(double start, double end, double time)
 	{
 		return ((1.0 - time) * start) + (time * end);
-	}
+	}*/
 
 	override void Draw(int state, double TicFrac)
 	{
@@ -143,9 +143,9 @@ class PB_Hud_ZS : BaseStatusBar
         
         hudState = state;
         
-        double ftime = MsTimeF() - prevMS;
+        /*double ftime = MsTimeF() - prevMS;
         prevMS = MsTimeF();
-        deltaTime = ftime / (1000.0 / 60.0);
+        deltaTime = ftime / (1000.0 / 60.0);*/
     	
         if(hudState != HUD_None)
 		{
@@ -175,8 +175,8 @@ class PB_Hud_ZS : BaseStatusBar
         mPitchInterpolator.Reset(0);
         mFOffsetInterpolator.Reset(0);
 	}
-	
-	override bool ProcessNotify(EPrintLevel printlevel, string outline)
+
+	/*override bool ProcessNotify(EPrintLevel printlevel, string outline)
 	{
 		if(printlevel == PRINT_LOG || printlevel & PRINT_NONOTIFY || printlevel < playerMsgPrint || printlevel > PRINT_HIGH)
 			return false;
@@ -272,7 +272,7 @@ class PB_Hud_ZS : BaseStatusBar
 					break;
 			}
 		}
-	}
+	}*/
 
 	override void Tick()
 	{
@@ -522,7 +522,6 @@ class PB_Hud_ZS : BaseStatusBar
             pos += (0, 2);
         }
 
-		if(!(flags & DI_SCREEN_HCENTER)) {
 	        if(pos.x > 0) {
 	            pos.x += HUDXMargin;
 	        }
@@ -530,7 +529,6 @@ class PB_Hud_ZS : BaseStatusBar
 	        if(pos.x < 0) {
 	            pos.x -= HUDXMargin;
 	        }
-	    }
         
         if(pos.y > 0) {
 			pos.y += HUDYMargin;
@@ -544,7 +542,6 @@ class PB_Hud_ZS : BaseStatusBar
             pos.x += IntMSway * Parallax;
             pos.y -= IntMPitch * Parallax;
 
-			if(!(flags & DI_SCREEN_HCENTER)) {
 	            if(pos.x > 0) {
 	                pos.x += (IntMOfs * Parallax2);
 	            }
@@ -552,7 +549,6 @@ class PB_Hud_ZS : BaseStatusBar
 	            if(pos.x < 0) {
 	                pos.x -= (IntMOfs * Parallax2);
 	            }
-	        }
             
             if(pos.y > 0) {
                 pos.y += (IntMOfs * Parallax2);
@@ -1114,7 +1110,7 @@ class PB_Hud_ZS : BaseStatusBar
 				PBHud_DrawString(mBoldFont, FormatNumber(Level.found_secrets,0,5).." / "..FormatNumber(Level.total_secrets,0,5), (35, 55), 0, Font.CR_PURPLE, scale: (0.6, 0.6));
 			}
 			
-			DrawMessagesInArray();
+			//DrawMessagesInArray();
 			
             if(CPlayer.Health <= 0) 
             {
@@ -1446,7 +1442,7 @@ class PB_Hud_ZS : BaseStatusBar
     }
 }
 
-class PB_HudMessageStorage ui
+/*class PB_HudMessageStorage ui
 {
 	vector2 pos, newPos, scale, newScale;
 	double alpha, newAlpha;
@@ -1471,4 +1467,4 @@ class PB_HudMessageStorage ui
 		
 		return msg;
 	}
-}
+}*/
