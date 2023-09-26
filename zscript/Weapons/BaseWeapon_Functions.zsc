@@ -67,6 +67,97 @@ extend class PB_WeaponBase
 				
 	}
 	
+	action void Saw_SwingDirection()
+	{
+		int direction;
+			
+		let cmd = player.cmd;
+			
+		if (cmd.forwardmove||-cmd.forwardmove) direction = 1;
+		else if (cmd.sidemove||-cmd.sidemove) direction = 2;
+		else direction = 3;
+		
+		let psp = player.FindPSprite(PSP_WEAPON);
+			if (!psp) return;
+
+		let wep = player.ReadyWeapon;
+		if (!wep) return;
+			
+		State 	RightAttack = wep.FindState('RightAttack1Stop'), 
+				LeftAttack = wep.FindState('LeftAttack1Stop');
+			
+		bool bIsSwingR = RightAttack != NULL && InStateSequence(psp.CurState, RightAttack);
+		bool bIsSwingL = LeftAttack != NULL && InStateSequence(psp.CurState, LeftAttack);
+		
+		switch (direction)
+		{			
+			case (1):
+			{
+				direction = cmd.forwardmove;
+				if (PressingFire() && direction > 0)
+				{
+					//return resolvestate("ForwardAttackClean");
+					psp.SetState(ResolveState("ForwardAttackClean"));
+				}
+				else if (PressingFire() && direction < 0)
+				{
+					//return resolvestate("BackwardAttackClean");
+					psp.SetState(ResolveState("BackwardAttackClean"));
+				}
+				else if (PressingFire() && direction == 0)
+					//return resolvestate("CleanAttack");
+					psp.SetState(ResolveState("CleanAttack"));
+			}
+			break;
+			case (2):
+			{
+				direction = cmd.sidemove;
+				if (PressingFire() && direction > 0)
+				{
+					//return resolvestate("RightAttackClean");
+					if( bIsSwingR )
+						psp.SetState(ResolveState("RightAttackClean2"));
+					else
+						psp.SetState(ResolveState("RightAttackClean"));
+				}
+				else if (PressingFire() && direction < 0)
+				{
+					//return resolvestate("LeftAttackClean");
+					if( bIsSwingL )
+						psp.SetState(ResolveState("LeftAttackClean2"));
+					else
+						psp.SetState(ResolveState("LeftAttackClean"));
+				}
+				else if (PressingFire() && direction == 0)
+					//return resolvestate("CleanAttack");
+					psp.SetState(ResolveState("CleanAttack"));
+			}
+			break;
+			case (3):
+			{
+				if (PressingFire() && direction == 0)
+					psp.SetState(ResolveState("CleanAttack"));
+			}
+			break;
+		}
+	}		
+	
+	action bool PlayerForwardBack()
+	{
+		float direction;
+		direction = player.cmd.forwardmove;
+		console.printf('' .. direction);
+		return direction;
+	}
+	
+	action bool PlayerLeftRight()
+	{
+		float direction;
+		direction = player.cmd.sidemove;
+		console.printf('' .. direction);
+		return direction;
+	}
+	
 	override void Tick()
 	{
 		Super.Tick();
