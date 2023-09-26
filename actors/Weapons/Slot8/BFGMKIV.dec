@@ -13,7 +13,7 @@ Actor BlackHoleDetonator : Inventory
 Inventory.MaxAmount 1
 }
 
-ACTOR PB_BFG9000: PB_Weapon //Replaces BFG9000
+ACTOR PB_BFG9000: PB_Weapon Replaces BFG9000
 {
 	//$Category Project Brutality - Weapons
 	//$Sprite 097GA0
@@ -271,7 +271,7 @@ ACTOR PB_BFG9000: PB_Weapon //Replaces BFG9000
 				A_StartSound("bfg/fire_primary", CHAN_WEAPON);
 			}
 			015G I 1 BRIGHT {
-				A_FireCustomMissile("SuperBFGBall");
+				A_FireCustomMissile("PB_SuperBFGBall");
 				A_TakeInventory("PB_Cell", 50);
 				A_ZoomFactor(0.92, ZOOM_INSTANT);
 			}
@@ -284,14 +284,18 @@ ACTOR PB_BFG9000: PB_Weapon //Replaces BFG9000
 			TNT1 A 0 {
 				A_StopSound(CHAN_WEAPON);
 				//A_StartSound("weapons/bh_primary1", CHAN_BODY);
-				A_StartSound("weapons/bh_primary2", CHAN_5);
-				A_StartSound("weapons/bfg_chargeloop", CHAN_6);
-				A_StartSound("DSVBH", CHAN_7);
+			///	A_StartSound("weapons/bh_primary2", CHAN_5);
+			///	A_StartSound("weapons/bfg_chargeloop", CHAN_6);
+			///	A_StartSound("DSVBH", CHAN_7);
+				A_StartSound("bh_Charge", CHAN_WEAPON,1.0, ATTN_NORM, false); //CHAN_WEAPON
+				
+				
 			}
 			023G ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 BRIGHT 
 			024G ABCDEFGH 1 BRIGHT
 			TNT1 A 0 {
-				A_StartSound("weapons/bh_primary3", CHAN_6);
+	///			A_StartSound("weapons/bh_primary3", CHAN_6);
+				
 				
 			}
 			024G IJKLMNOPQRSTUVWXYZ 1 BRIGHT
@@ -304,7 +308,7 @@ ACTOR PB_BFG9000: PB_Weapon //Replaces BFG9000
 				//A_StopSound(CHAN_BODY);
 				A_StopSound(CHAN_6);
 				A_StopSound(CHAN_7);
-				A_StartSound("DMC/Fire", CHAN_WEAPON);
+		///		A_StartSound("DMC/Fire", CHAN_WEAPON);
 				A_FireCustomMissile("Blackhole_Ball",0,1,0,0);
 				A_TakeInventory("PB_Cell", 100);
 			}
@@ -644,12 +648,16 @@ Actor Blackhole_Ball
 	Damagetype BlackHole
 	Scale 0.26
 	DeathSound "weapons/bh_blast"
+	seeSound "bh/Fire"
 	States
 	{
 		Spawn:
 			TNT1 A 0
-			TNT1 A 0 A_StartSound("DSKTESLA", CHAN_5, CHANF_LOOPING)
+		//	TNT1 A 0 A_StartSound("DSKTESLA", CHAN_5, CHANF_LOOPING)
+			
+			
 		Fly:
+			//TNT1 A 0 NoDelay A_StartSound("bh/Fire ", 3, 1.0, ATTN_NORM, false)
 			029G ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright Light("BlackholeBall") {
 				if(CountInv("BlackHoleDetonator", AAPTR_TARGET) >=1) 
 				{return resolvestate("GoExplode");}
@@ -679,10 +687,62 @@ Actor Blackhole_Ball
 				A_SetScale(ScaleX-0.02, ScaleY-0.02);
 				Radius_Quake (8, 16, 0, 200, 0);//(intensity, duration, damrad, tremrad, tid)
 			}
-			TNT1 A 0 A_SpawnItem("BlackHole",0,0,0)
+			TNT1 A 0 A_SpawnItem("PB_BlackHole",0,0,0)
 			Stop
 		}
 }
+
+
+
+actor BlackHOL
+{
++CLIENTSIDEONLY
++NOINTERACTION
++NOBLOCKMAP
++NOGRAVITY
++NOTELEPORT
+//+FORCEXYBILLBOARD
++DONTSPLASH
+Radius 13
+Height 8
+Speed 0
+Damage 50
+Projectile
+//+FORCERADIUSDMG
+-THRUGHOST
+Damagetype BlackHole
+	States
+	{
+		Spawn:
+
+		TNT1 A 0
+		TNT1 A 1 A_StartSound("bh_Charge", CHAN_5, 1.0, ATTN_NORM, false)
+		TNT1 A 150 A_StartSound("bh/Fire", 3, 1.0, ATTN_NORM, false)
+		
+		TNT1 A 300 A_StartSound("bh_EXPLONG", CHAN_6, 1.0, ATTN_NORM, false)
+		TNT1 A 300 A_StartSound("bh_Sound", CHAN_7, 1.0, ATTN_NORM, false)
+		
+		VHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright
+		WHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright
+		ZHOL ABCDEFGHIJKLMNOPQR 1 Bright
+		
+		VHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright
+		WHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright
+		ZHOL ABCDEFGHIJKLMNOPQR 1 Bright
+		
+		VHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright
+		WHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright
+		ZHOL ABCDEFGHIJKLMNOPQR 1 Bright
+//		TNT1 A 0 A_StopSound(CHAN_5)
+//		TNT1 A 0 A_StopSound(CHAN_6)
+//		TNT1 A 0 A_StopSound(CHAN_7)
+		Stop
+		
+		
+	}
+}
+
+
 
 Actor BlackHole
 {
@@ -706,6 +766,7 @@ Actor BlackHole
 	+DONTSPLASH
 	+RollSprite
 	RenderStyle Normal
+//	RenderStyle Add
 	Damagetype BlackHole
 	Scale 0.05
 	ReactionTime 360
@@ -713,24 +774,40 @@ Actor BlackHole
 	States
 	{
 		Spawn:
+		//	TNT1 A 0 A_StartSound("weapons/bh_sucksound", CHAN_7, CHANF_LOOPING)
 			TNT1 A 0
-			TNT1 A 0 A_StartSound("weapons/bh_sucksound", CHAN_7, CHANF_LOOPING)
-			B0H0 AAAAAAAAAAAAAAAA 1 BRIGHT Light("BlackholeVoid") {
-				A_SetScale(ScaleX+0.025, ScaleY+0.025);
-				A_SetRoll(roll-10);
+			TNT1 A 0 A_StartSound("bh_EXPLONG", CHAN_6, 1.0, ATTN_NORM, false)
+			TNT1 A 0 A_StartSound("bh_Sound", CHAN_7, 1.0, ATTN_NORM, false)
+			TNT1 A 0 A_SetScale(3.0)
+			QHOL ABCDEFGHIJKLMNOP 1 BRIGHT Light("BlackholeVoid") {
 				A_Explode(20,200);
 				A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
 			}
+			
+			TNT1 A 0 A_SetRoll(0)
 		Exist:
-			B0H0 A 1 BRIGHT Light("BlackholeVoid") {
-				A_SetRoll(roll-10);
+			VHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright Light("BlackholeVoid") {
+				//A_SetRoll(roll-10);
 				A_Explode(20,200);
 				A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
 				A_CountDown;
 			}
+			WHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright Light("BlackholeVoid") {
+				//A_SetRoll(roll-10);
+				A_Explode(20,200);
+				A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+				A_CountDown;
+			}
+			ZHOL ABCDEFGHIJKLMNOPQR 1 Bright Light("BlackholeVoid") {
+				//A_SetRoll(roll-10);
+				A_Explode(20,200);
+				A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+				A_CountDown;
+			}
+			
 			TNT1 A 0 A_Jump(249, 2)
 			TNT1 A 0 {
-				A_StartSound("DMBall/Impact", CHAN_AUTO, CHANF_OVERLAP);
+				//A_StartSound("DMBall/Impact", CHAN_AUTO, CHANF_OVERLAP);
 				A_SpawnItemEx("BlackHoleLightning", random(-120, 120), random(-120, 120), random(-5, 120));
 				A_Quake(8,4,0,400, "None");
 			}
@@ -738,18 +815,21 @@ Actor BlackHole
 			Loop
 		
 	Death:
-		TNT1 A 0 A_StopSoundEx(CHAN_7)
+		TNT1 A 0 A_StopSound(CHAN_7)
+		TNT1 A 0 A_StopSound(CHAN_6)
 		TNT1 A 0 A_StartSound("BHole/Explosion", CHAN_AUTO)
 		TNT1 A 0 Bright A_SpawnItem("PurpleShockWave",0,0,0)//PurpleTrailSparks
 		BHOL AAAAAAAAAAAAAAAAAA 0 A_SpawnItemEx("PurpleTrailSparks", 0, 0, 0, 0, 0, 0, 0, 128)
-		B0H0 AAAAAAAAAAAAAAAAAAAAAA 1 Bright Light("BlackholeVoid"){
-			A_SetScale(ScaleX-0.03, ScaleY-0.03);
+		EHOL ABCDEFGHIJKLMNO 1 Bright Light("BlackholeVoid"){
 			A_FadeOut(0.06);
 		}
 		Stop
 	
 	}
 }
+
+
+
 
 
 
