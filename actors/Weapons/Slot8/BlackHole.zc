@@ -1,69 +1,71 @@
 class PB_BlackHole : Actor
 {
-  Default
-  {
-    Radius 20;
-    Height 20;
-    Speed 0;
-    Projectile;
-    +NOBLOCKMAP;
-    +DONTHARMSPECIES;
-    +NODAMAGETHRUST;
-    -THRUGHOST;
-    +Ripper;
-    +NOBOSSRIP;
-    +ForcePain;
-    +FORCEYBILLBOARD;
-    +FORCERADIUSDMG;
-    +NOEXTREMEDEATH;
-    +Friendly;
-    +DONTSPLASH;
-    +RollSprite;
-    RenderStyle "Normal";
-    DamageType "BlackHole";
-    Scale 0.05;
-    ReactionTime 360;
-    Obituary "%o got absorbed by the darkness.";
-  }
+	Default
+	{
+		Radius 20;
+		Height 20;
+		Speed 0;
+		Projectile;
+		+NOBLOCKMAP;
+		+DONTHARMSPECIES;
+		+NODAMAGETHRUST;
+		-THRUGHOST;
+		+Ripper;
+		+NOBOSSRIP;
+		+ForcePain;
+		+FORCEYBILLBOARD;
+		+FORCERADIUSDMG;
+		+NOEXTREMEDEATH;
+		+Friendly;
+		+DONTSPLASH;
+		+RollSprite;
+		RenderStyle "Normal";
+		DamageType "BlackHole";
+		Scale 0.05;
+		ReactionTime 360;
+		Obituary "%o got absorbed by the darkness.";
+	}
 	
-
+	Bool Succ;
+	
 	States
 	{
 		Spawn:
-		//	TNT1 A 0 A_StartSound("weapons/bh_sucksound", CHAN_7, CHANF_LOOPING);
 			TNT1 A 0;
 			TNT1 A 0 A_StartSound("bh_EXPLONG", CHAN_6, 1.0, ATTN_NORM, false);
 			TNT1 A 0 A_StartSound("bh_Sound", CHAN_7, 1.0, ATTN_NORM, false);
 			TNT1 A 0 A_SetScale(3.0);
-			QHOL ABCDEFGHIJKLMNOP 1 BRIGHT Light("BlackholeVoid") {
-				A_Explode(20,200);
-				A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+			QHOL ABCDEFGHIJKLMNOP 1 BRIGHT Light("BlackholeVoid")
+			{
+				Succ = True;
+				//A_Explode(20,200);
+				//A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
 			}
 			
 			TNT1 A 0 A_SetRoll(0);
 		Exist:
 			VHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright Light("BlackholeVoid") {
 				//A_SetRoll(roll-10);
-				A_Explode(20,200);
-				A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+				//A_Explode(20,200);
+				//A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
 				A_CountDown();
 			}
 			WHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright Light("BlackholeVoid") {
 				//A_SetRoll(roll-10);
-				A_Explode(20,200);
-				A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+				//A_Explode(20,200);
+				//A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
 				A_CountDown();
 			}
 			ZHOL ABCDEFGHIJKLMNOPQR 1 Bright Light("BlackholeVoid") {
 				//A_SetRoll(roll-10);
-				A_Explode(20,200);
-				A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+				//A_Explode(20,200);
+				//A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
 				A_CountDown();
 			}
 			
 			TNT1 A 0 A_Jump(249, 2);
-			TNT1 A 0 {
-				//A_StartSound("DMBall/Impact", CHAN_AUTO, CHANF_OVERLAP);
+			TNT1 A 0
+			{
 				A_SpawnItemEx("BlackHoleLightning", random(-120, 120), random(-120, 120), random(-5, 120));
 				A_Quake(8,4,0,400, "None");
 			}
@@ -76,84 +78,87 @@ class PB_BlackHole : Actor
 			TNT1 A 0 A_StartSound("BHole/Explosion", CHAN_AUTO);
 			TNT1 A 0 Bright A_SpawnItem("PurpleShockWave",0,0,0); //PurpleTrailSparks
 			BHOL AAAAAAAAAAAAAAAAAA 0 A_SpawnItemEx("PurpleTrailSparks", 0, 0, 0, 0, 0, 0, 0, 128);
-			EHOL ABCDEFGHIJKLMNO 1 Bright Light("BlackholeVoid"){
-				A_FadeOut(0.06);
-			}
+			EHOL ABCDEFGHIJKLMNO 1 Bright Light("BlackholeVoid") A_FadeOut(0.067);
 			Stop;
-	
 	}
 	
     override void Tick() 
     {
         Super.Tick();
-		
+		If (IsFrozen() || !Succ) Return; //Don't do this if frozen.
 
         // Define the pull radius and outer radius
-        double pullRadius = 1024.0;
-        double outerRadius = 256.0;
-        double scaleFactor = 60.0;  // Adjust this value to change the exponential effect
+        double pullRadius = 512.0;
+        double outerRadius = 1024.0;
+        double scaleFactor = 80.0;  // Adjust this value to change the exponential effect
+		double DeathRadius = 200; //[inkoalawetrust] The radius in which actors are harmed. Once we finally decide to move to 4.11, just use A_Explode with XF_THRUSTLESS and XF_CIRCULAR !
 
         ThinkerIterator it = ThinkerIterator.Create("Actor");
 
         Actor act;
-        while ( act = Actor(it.Next()) )
+        while (act = Actor(it.Next()))
         {
-            // Ensure it is really an Actor before proceeding
-            if (!act) continue;
+            // Ensure it exists, is not an item is not yourself, is not another black hole, and is actually affected by thrust.
+            if (!act || act is "Inventory" || act == self || act is "PB_BlackHole") continue;
 
-            // Calculate distance to the actor
-            double dx = pos.x - act.pos.x;
-            double dy = pos.y - act.pos.y;
-          //  double distance = sqrt(dx*dx + dy*dy);
-			double distance = Distance3D(act);
+			double distance = Distance3DSquared(act);
 
-            // Skip this iteration if actor is the BlackHole itself, out of range, or other specific conditions
-            if (act == self || distance > outerRadius || act is "PB_BlackHole" || act is "PlayerPawn") 
-            {
+            // Skip this iteration if out of range.
+            if (distance > OuterRadius*OuterRadius ) 
                 continue;
-            }
-
+			
+			double dx = pos.x - act.pos.x;
+			double dy = pos.y - act.pos.y;
+			Double DistSQ = Distance != 0 ? Distance / Distance : 0; //Un-squared distance
+			
+			//Fade screen to purple the closer the player is.
+			If (Act.Player)
+			{
+				Double Intensity = PB_Math.LinearMap (Distance3D (Act), PullRadius, 0, 0.0, 0.8); //Map the distance to the black hole to an alpha range of 0.0 to 0.8.
+				//console.printf ("player black hole fade intensity %.4f, intensity with alpha included is %.4f",intensity,intensity*alpha);
+				Let Urple = Color (0, 128, 0, 128);
+				Act.Player.BlendA = Intensity*Alpha; //Ignore the alpha component (Of the color variable).
+				Act.Player.BlendR = Urple.R;
+				Act.Player.BlendG = Urple.G;
+				Act.Player.BlendB = Urple.B;
+			}
+			
+			// [inkoalawetrust] Hurt everything, including monsters with NORADIUSDMG, since this technically isn't an explosion.
+			If (!Act.bMissile && !Act.bNoBlockmap)
+				Act.DamageMobj (Self,Target,GetRadiusDamage (Act,20,DistSQ),DamageType,DMG_THRUSTLESS);
+			
             // Logic for actors within the pull radius
-            if (distance <= pullRadius) 
+            if (distance <= PullRadius*PullRadius) 
             {
-                double force = exp(-(distance / scaleFactor));
-                
-             //   act.Vel.X += dx * force;
-             //   act.Vel.Y += dy * force;
-
+                Double MissileForce = Exp(-(DistSQ / (ScaleFactor * 0.0001)));
                 // If it's a projectile and close enough, just delete it
-                if (act.bMissile && distance < 60.0)
-                {
+                if (act.bMissile && distance < 60.0*60.0)
                     act.Destroy();
-                }
-				else if (act.bMissile && distance > 60.0)
+				else if (act.bMissile && distance > 60.0*60.0)
 				{
-					act.Vel.X += dx * force;
-					act.Vel.Y += dy * force;
+					act.Vel.X += dx * MissileForce;
+					act.Vel.Y += dy * MissileForce;
 				}
-				
-				
-				
+				else if (!act.bMissile && !act.bNoBlockmap)
+				{
+					Vector3 ActorForce = PB_Math.AngleToVector3D (AngleTo(Act),-PitchTo (Act,Height/2,Height/2),-Exp(-(DistSQ / ScaleFactor)));
+					//console.printf ("pushing non-projectile actor %s with a force of %.2f %.2f %.2f",act.getclassname(),actorforce);
+					Act.Vel += ActorForce;
+				}
             } 
             else 
             {
                 // Change the projectile's velocity for the slingshot effect
                 if (act.bMissile) 
                 {
-					
 					Vector2 slingVelocity = (dx, dy);
-                    double slingFactor = 0.05;  // Adjust to change the strength of the slingshot
+                    double slingFactor = 0.005;  // Adjust to change the strength of the slingshot
                     act.Vel.X += slingVelocity.x * slingFactor;
                     act.Vel.Y += slingVelocity.y * slingFactor;
-				//	 let dir = Level.Vec3Diff(act.pos, self.pos).Unit();
-				//	 act.vel = dir * 50;
+					//TODO: Shouldn't this also affect vertical velocity ?
                 }
             }
         }
     }
-
-
-
-
 }
 	
