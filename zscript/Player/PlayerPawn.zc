@@ -47,6 +47,7 @@ class PlayerPawnBase : PlayerPawn
 	vector2	Acceleration;
 	vector3	Acceleration3;
 	playerinfo ZMPlayer;
+	double 	ssup;
 	
 	//////////////////
 	
@@ -194,13 +195,31 @@ class PlayerPawnBase : PlayerPawn
 		GetFloorInfo();
 		MaxGroundSpeed = pb_maxgroundspeed * ActualSpeed;
 		Pain = InStateSequence(CurState, FindState("Pain"));
-		Player.OnGround = Pos.Z <= FloorZ || bONMOBJ || bMBFBOUNCER || (Player.Cheats & CF_NOCLIP2);
+		Player.OnGround = (Pos.Z <= FloorZ) || bONMOBJ || bMBFBOUNCER || (Player.Cheats & CF_NOCLIP2);
 		StrafeRunning = cmd.forwardmove && cmd.sidemove;
 		ZMoveFactor = ZMScale();
 		
 		
 		//Execute Player tic cycle
 		Super.PlayerThink();
+		
+		bool wasOnGround = player.onGround;
+
+        // Stick player to ground when going down stairs
+        if (wasOnGround && !player.onGround && pos.z - GetZAt() < maxDropOffHeight && vel.z <= 0)
+        {
+            //player.viewHeight += (pos.z - GetZAt());
+            //player.deltaViewHeight -= (pos.z - GetZAt()) / 8;
+            //SetZ(GetZAt());
+			// may revisit this -BROS_ETT_311
+			ssup = max(0,(pos.z-floorz));
+			SetOrigin(Vec2OffsetZ(0,0,floorz),true);
+            player.onGround = true;
+        }
+
+        // I'm not sure how this is done in PlayerPawn
+        // Put player back in idle state after moving
+        if (!player.cmd.forwardMove && !player.cmd.sideMove && (!player.onGround || !player.vel.Length())) PlayIdle();
 		
 		//Bob weapon stuff
 		BobWeaponAuxiliary();
@@ -398,7 +417,10 @@ class PlayerPawnBase : PlayerPawn
 		}
 			
 		//Let's highlight the important stuff shall we?
-		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0., 1.5));
+		player.viewz = pos.Z + player.viewheight + (bob * clamp(ViewBob, 0., 1.5)); // [SP] Allow DECORATE changes to view bobbing speed.
+		// handle smooth step down (hacky but looks ok)
+		player.viewz += ssup;
+		ssup = max(0,(ssup*0.7)-0.25);
 		
 		if(Floorclip && player.playerstate != PST_DEAD && pos.Z <= floorz) { player.viewz -= Floorclip; }
 		if(player.viewz > ceilingz - 4) { player.viewz = ceilingz - 4; }
