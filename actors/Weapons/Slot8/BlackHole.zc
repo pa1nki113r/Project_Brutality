@@ -13,7 +13,7 @@ class PB_BlackHole : Actor
 		-THRUGHOST;
 		+Ripper;
 		+NOBOSSRIP;
-		+ForcePain;
+		//+ForcePain;
 		+FORCEYBILLBOARD;
 		+FORCERADIUSDMG;
 		+NOEXTREMEDEATH;
@@ -30,6 +30,7 @@ class PB_BlackHole : Actor
 	}
 	
 	Bool Succ;
+	Array <Actor> affectedActors; // Create a list to hold affected actors
 	
 	States
 	{
@@ -97,6 +98,8 @@ class PB_BlackHole : Actor
 		double DeathRadius = 200; //[inkoalawetrust] The radius in which actors are harmed. Once we finally decide to move to 4.11, just use A_Explode with XF_THRUSTLESS and XF_CIRCULAR !
 		Double EventHorizon = 60;
 		
+		
+
         ThinkerIterator it = ThinkerIterator.Create("Actor");
 
         Actor act;
@@ -134,6 +137,11 @@ class PB_BlackHole : Actor
 				Act.DamageMobj (Self,Target,GetRadiusDamage (Act,20,Distance),DamageType,DMG_THRUSTLESS);
 				If (Distance <= EventHorizon) //Stop all velocity, so that things don't go flying in and out of the "event horizon".
 					Act.A_Stop();
+				if(!act.bISMONSTER && !Act.Player)
+				{
+					act.Destroy();
+				}
+				
 			}
 			
             // Logic for actors within the pull radius
@@ -148,13 +156,48 @@ class PB_BlackHole : Actor
 					act.Vel.X += dx * MissileForce;
 					act.Vel.Y += dy * MissileForce;
 				}
-				else if (!act.bMissile && !act.bNoBlockmap)
+				else if (!act.bMissile && !act.bNoBlockmap && !act.Player)
 				{
 					Vector3 ActorForce = PB_Math.AngleToVector3D (AngleTo(Act),-PitchTo (Act,Height/2,Height/2),-Exp(-(Distance / ScaleFactor)) );
 					//console.printf ("pushing non-projectile actor %s with a force of %.2f %.2f %.2f",act.getclassname(),actorforce);
-					Act.Vel += ActorForce.PlusZ (Act.GetGravity()); //Also counter gravity when succ.
+				//	Act.Vel += ActorForce.PlusZ (Act.GetGravity()); //Also counter gravity when succ.
+				
+					//Act.Vel += ActorForce;
+					
+
+					
+					//Console.Printf("Actor %s is added", act.GetClass());
+					if (affectedActors.Find(act) == affectedActors.Size())
+					{
+						affectedActors.Push(act);
+						act.bTHRUACTORS = True;
+						act.bTHRUSPECIES = True;
+					}
+					
+
+
+					double actorForceMagnitude = Exp(-(distance / scaleFactor)); // You may need to adjust the function and scaleFactor
+
+					// Normalize the direction vector
+					double length = sqrt(dx * dx + dy * dy);
+					double dz = pos.z - act.pos.z;
+					dx /= length;
+					dy /= length;
+					dz /= length;
+					
+
+					// Apply the force to the actor's velocity
+					Act.Vel.X += dx * actorForceMagnitude;
+					Act.Vel.Y += dy * actorForceMagnitude;
+					//Act.Vel.Z += dz ;
+					Act.Vel.Z += ActorForce.z ;
+
 				}
-            }
+				else if (act.Player)
+				{
+					Vector3 ActorForce = PB_Math.AngleToVector3D (AngleTo(Act),-PitchTo (Act,Height/2,Height/2),-Exp(-(Distance / ScaleFactor)) );
+					Act.Vel += ActorForce.PlusZ (Act.GetGravity() );}
+			}
 			//If in the outer radius.
             else
             {
@@ -166,6 +209,27 @@ class PB_BlackHole : Actor
                 }
             }
         }
+    }
+	
+	override void OnDestroy()
+    {
+        // Insert the code to run when the actor is about to be removed here.
+        // For example, you could spawn particles, play a sound, or perform other cleanup tasks.
+
+        Super.OnDestroy(); // Calls the OnDestroy function of the superclass (important!)
+		
+		for (int i = 0; i < affectedActors.Size(); i++)
+		{
+			Actor act = affectedActors[i];
+			
+			if (act)
+			{
+				Console.Printf("Actor: %s", act.GetClassName());
+				act.bTHRUACTORS = False;
+				act.bTHRUSPECIES = False;
+			}
+		}
+		
     }
 }
 	
