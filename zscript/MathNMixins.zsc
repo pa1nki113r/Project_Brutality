@@ -5,6 +5,41 @@ class PB_Math abstract
 		double cosp = cos(pitch);
 		return (cos(angle)*cosp, sin(angle)*cosp, -sin(pitch)) * mag;
 	}
+	
+	//[inkoalawetrust] Written by Agent_Ash, makes the Val ranging from O_Min to O_Man be crushed down to the range of N_Min and N_Max.
+	//Useful for example for compressing distances to a range of 0 to 1.0.
+	ClearScope Static Double LinearMap (Double Val, Double O_Min, Double O_Max, Double N_Min, Double N_Max) 
+	{
+		Return (Val - O_Min) * (N_Max - N_Min) / (O_Max - O_Min) + N_Min;
+	}
+	
+	//CREDIT: RicardoLuis0
+	ClearScope Static Vector3 AngleToVector3D(Double Angle, Double Pitch, Double Len = 1.0)
+	{
+		Return (Cos(Angle)*Cos(Pitch)*Len,Sin(Angle)*Cos(Pitch)*Len,Sin(Pitch)*Len);
+	}
+}
+
+//[inkoalawetrust] CheckActorExists(), IsDead(), and IsInState() are copied from my KAI library.
+Mixin Class PB_CheckFunctions
+{
+	ClearScope Bool CheckActorExists (Name ActorClass)
+	{
+		Class<Actor> Act = ActorClass;
+		Return !!Act;
+	}
+	
+	ClearScope Bool IsDead (Actor Other)
+	{
+		If (!Other) Return False;
+		Return (Other.Player ? Other.Player.PlayerState == PST_DEAD : Other.Health <= 0);
+	}
+	
+	ClearScope Bool IsInState (Actor Other, StateLabel CheckFor = "Spawn", Bool Exact = False, Bool FromWeapon = False)
+	{
+		If (!Other) Return False;
+		Return (Other.InStateSequence(Other.CurState,Other.FindState (CheckFor,Exact)));
+	}
 }
 
 mixin class PB_BetterPickupSound
@@ -35,4 +70,113 @@ mixin class PB_PowerupTimer
 	
 	void EndBlend(color c)
 	{ owner.A_SetBlend(c,0.85,35); }
+}
+
+mixin class PB_RandomZombieNameHandler
+{	
+    static const String PB_ZombiemanFirstNames[] =
+	{
+        "John",
+		"Jeff",
+		"Chris",
+		"Marcus",
+		"Donovan",
+		"Dominic",
+		"Johnny",
+		"Tyrone",
+		"Ashton",
+		"Bob"
+    };
+    
+    static const String PB_ZombiemanLastNames[] =
+    {
+        "Doe",
+		"Ortega",
+		"Ramirez",
+		"Fernandez",
+		"Price",
+		"Huff",
+		"Barley"
+    };
+	
+	static const String PB_CivvieRanks[] = //Jobs??
+    {
+        "Mechanic",
+		"Electrician",
+		"Engineer",
+		"IT Technician"
+    };
+	
+    static const String PB_ZombiemanRanks[] =
+    {
+        "PFC",
+		"SPC",
+		"CPL",
+		"SGT",
+		"MSG",
+		"CSM",
+		"LT",
+		"CPT",
+		"MAJ",
+		"COL",
+		"GEN"
+    };
+	
+	static const String PB_ScientistRanks[] =
+    {
+        "Trainee",
+		"IAN",
+		"Dr"
+    };
+	
+	static const String PB_CultistRanks[] = //will need expanding possibly
+    {
+        "Cultist",
+		"Templar",
+		"Priest",
+		"Inquisitor",
+		"Wizard",
+		"Lord",
+		"Grand Master",
+		"Grand Mage",
+		"Grand Inquisitor",
+		"Grand Lord",
+		"Shadow Wizard" //money gang
+    };
+	
+	Enum FormerHumanRanks
+	{
+		RANK_CIVILIAN,
+		RANK_MILITARY,
+		RANK_CULTIST,
+		RANK_DOKTOR,
+	}
+    
+    //put in monster's PostBeginPlay() virtual
+    void PickRandomName(int rankType = RANK_MILITARY) //0 civvie, 1 military, 2 cultists, 3 DOKTOR (that is turning off my pain inhibitors)
+    {
+		string mRank;
+		switch(rankType)
+		{
+			default:
+			case RANK_CIVILIAN:
+				mRank = PB_CivvieRanks[random(0, PB_CivvieRanks.Size() - 1)];
+				break;
+			case RANK_MILITARY:
+				mRank = PB_ZombiemanRanks[random(0, PB_ZombiemanRanks.Size() - 1)];
+				break;
+			case RANK_CULTIST:
+				mRank = PB_CultistRanks[random(0, PB_CultistRanks.Size() - 1)];
+				break;
+			case RANK_DOKTOR:
+				mRank = PB_ScientistRanks[random(0, PB_ScientistRanks.Size() - 1)];
+				break;
+		}
+		
+        string mFirstName = PB_ZombiemanFirstNames[random(0, PB_ZombiemanFirstNames.Size() - 1)];
+        string mLastName = PB_ZombiemanLastNames[random(0, PB_ZombiemanLastNames.Size() -1 )];
+        
+    
+        SetTag(mRank.." "..mFirstName.." "..string.Format("%c", random[PBRand]("A", "Z"))..". "..mLastName);
+    }
 }
