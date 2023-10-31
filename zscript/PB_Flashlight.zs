@@ -76,7 +76,7 @@ class PB_FPP_Light : Spotlight
         
         //BD:BE monster alerting stuff, this was a nightmare to implement
         //Credits to Blackmore1014 for this
-        if(!thisIsLight2 && gametic % 15 == 0 && SpotOuterAngle > 0)
+        if(!thisIsLight2 && level.time >= 10 * TICRATE /*10 seconds of grace period so the player can disable the light before any monsters get alerted in maps that have monsters right at the start */ && gametic % 15 == 0 && SpotOuterAngle > 0)
         {
 		    double cosBeamAngle = cos(SpotOuterAngle);
 			double distanceToWake = args[3] / sqrt(1.0 - cosBeamAngle);
