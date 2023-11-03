@@ -363,7 +363,8 @@ ACTOR PB_Shotgun : PB_Weapon //Replaces Shotgun
 		Goto BeginInsertion
 		
 	SelectAnimation:	
-        TNT1 A 0 A_PlaySoundEx("weapons/shotgun/equip", "Auto")
+        TNT1 A 0 A_TakeInventory("Zoomed", 1)
+		TNT1 A 0 A_PlaySoundEx("weapons/shotgun/equip", "Auto")
 		SH00 JKGHI 1
 	Ready3:
 		TNT1 A 0 {
@@ -447,43 +448,43 @@ ACTOR PB_Shotgun : PB_Weapon //Replaces Shotgun
 		
 	HandleUpgradeSpecial:
 		TNT1 A 0 {
-			 if (CountInv("SelectShotgun_No") >= 1 ) { 
+			if (CountInv("SelectShotgun_No") >= 1 ) { 
 				A_Log("Ammo type not available");
 				A_TakeInventory("SelectShotgun_Buckshot", 1);
 				A_TakeInventory("SelectShotgun_Slugshot", 1);
 				A_TakeInventory("SelectShotgun_Dragonsbreath", 1);
 				A_TakeInventory("SelectShotgun_No", 1);
 				return state("Ready3"); 
-			 }
-			 if (CountInv("HasSlugs") >= 1 && CountInv("SelectShotgun_Slugshot") >= 1 ) { 
+			}
+			if (CountInv("HasSlugs") >= 1 && CountInv("SelectShotgun_Slugshot") >= 1 ) { 
 				A_Log("Ammo type already selected");
 				A_TakeInventory("SelectShotgun_Buckshot", 1);
 				A_TakeInventory("SelectShotgun_Slugshot", 1);
 				A_TakeInventory("SelectShotgun_Dragonsbreath", 1);
 				A_TakeInventory("SelectShotgun_No", 1);
 				return state("Ready3"); 
-			 }
-			 if (CountInv("HasDragonBreath") >= 1 && CountInv("SelectShotgun_Dragonsbreath") >= 1) { 
+			}
+			if (CountInv("HasDragonBreath") >= 1 && CountInv("SelectShotgun_Dragonsbreath") >= 1) { 
 				A_Log("Ammo type already selected");
 				A_TakeInventory("SelectShotgun_Buckshot", 1);
 				A_TakeInventory("SelectShotgun_Slugshot", 1);
 				A_TakeInventory("SelectShotgun_Dragonsbreath", 1);
 				A_TakeInventory("SelectShotgun_No", 1);
 				return state("Ready3"); 
-			 }
-			 if (CountInv("HasBuckShot") && CountInv("SelectShotgun_Buckshot") >= 1) { 
+			}
+			if (CountInv("HasBuckShot") && CountInv("SelectShotgun_Buckshot") >= 1) { 
 				A_Log("Ammo type already selected");
 				A_TakeInventory("SelectShotgun_Buckshot", 1);
 				A_TakeInventory("SelectShotgun_Slugshot", 1);
 				A_TakeInventory("SelectShotgun_Dragonsbreath", 1);
 				A_TakeInventory("SelectShotgun_No", 1);
 				return state("Ready3"); 
-			 }
+			}
 			if(GetCvar("pb_SGAltAmmoSwap") >= 1)
 				{Return State("AltTubeAmmoSwap");}
-			
-			 return state("");
+			return state("");
 		}
+		TNT1 A 0 A_Setinventory("CantWeaponSpecial", 1)
 		SHTZ P 0 {
 			if(CountInv("SelectShotgun_Slugshot")>=1)
 			{	
@@ -549,11 +550,14 @@ ACTOR PB_Shotgun : PB_Weapon //Replaces Shotgun
 			A_TakeInventory("SelectShotgun_Slugshot", 1);
 			A_TakeInventory("SelectShotgun_Dragonsbreath", 1);
 			A_TakeInventory("SelectShotgun_No", 1);
+			A_Setinventory("GoWeaponSpecialAbility", 0);
+			A_Setinventory("CantWeaponSpecial" , 0);
 		}
 		Goto Ready3
 	
 //Start of transplant
 	AltTubeAmmoSwap:
+		TNT1 A 0 A_Setinventory("CantWeaponSpecial", 1)
 		TNT1 A 0 A_JumpIfInventory("DragonBreathUpgrade",1,"AltMagAmmoSwap")
 		TNT1 A 0 {
 		 If((CountInv("PB_Shell") <=2) && (CountInv("ShotgunAmmo") <=2)) 
@@ -720,11 +724,27 @@ ACTOR PB_Shotgun : PB_Weapon //Replaces Shotgun
 		 A_Giveinventory("ShotgunAmmo",1);
 		 A_Takeinventory("PB_Shell",1);
 		}
+		TNT1 A 0 {
+			A_Setinventory("SelectShotgun_Buckshot", 0); 
+			A_Setinventory("SelectShotgun_Slugshot", 0); 
+			A_Setinventory("SelectShotgun_Dragonsbreath", 0);
+			A_Setinventory("SelectShotgun_No", 0);
+			A_Setinventory("GoWeaponSpecialAbility",0);
+			A_Setinventory("CantWeaponSpecial" , 0);
+		}
 		SSHR A 0 A_Refire
         TNT1 A 0 A_DoPBWeaponAction(WRF_NOBOB)
 		goto LoadTube
 	TubeSwapFinal:
 		SHTG IHGFEDCB 1
+		TNT1 A 0 {
+			A_Setinventory("SelectShotgun_Buckshot", 0); 
+			A_Setinventory("SelectShotgun_Slugshot", 0); 
+			A_Setinventory("SelectShotgun_Dragonsbreath", 0);
+			A_Setinventory("SelectShotgun_No", 0);
+			A_Setinventory("GoWeaponSpecialAbility",0);
+			A_Setinventory("CantWeaponSpecial" , 0);
+		}
 		goto Ready3
 	
 	AltMagAmmoSwap:
@@ -873,6 +893,14 @@ ACTOR PB_Shotgun : PB_Weapon //Replaces Shotgun
 		 A_Takeinventory("PB_LockScreenTilt",1);
 		 A_Takeinventory("PBPumpShotgunHasUnloaded",1);
 		 A_SetRoll(0,SPF_INTERPOLATE);
+		}
+		TNT1 A 0 {
+			A_Setinventory("SelectShotgun_Buckshot", 0); 
+			A_Setinventory("SelectShotgun_Slugshot", 0); 
+			A_Setinventory("SelectShotgun_Dragonsbreath", 0);
+			A_Setinventory("SelectShotgun_No", 0);
+			A_Setinventory("GoWeaponSpecialAbility",0);
+			A_Setinventory("CantWeaponSpecial" , 0);
 		}
 		TNT1 A 0 A_Refire
 		Goto Ready3	
