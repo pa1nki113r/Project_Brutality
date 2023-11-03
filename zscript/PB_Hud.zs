@@ -949,8 +949,6 @@ class PB_Hud_ZS : BaseStatusBar
 			int Armor = GetAmount("BasicArmor");
 			int IntArmor = mArmorInterpolator.GetValue();
 			int MaxArmor = GetMaxAmount("BasicArmor");
-			
-			int AxeCount = CPlayer.mo.CountInv("PB_Axe");
 
             //WARNING: vile
             if(!CheckInventory("sae_extcam") && !automapactive) {
@@ -1029,11 +1027,6 @@ class PB_Hud_ZS : BaseStatusBar
             }
             
             PBHud_DrawBar(inPain ? "HOBAR" : "HPBAR", "BGBARL", IntHealth, min(MaxHealth, 100), (112, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
-            
-			for (AxeCount > 0; AxeCount--;)
-			{
-				PBHud_DrawImage("AXECOUNT", (96 + (AxeCount * 8), -75), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1, (56, 85), (0.35, 0.35));
-			}
 			
             if(Health > 100) {
             	PBHud_DrawBar("HLBAR", "BGBARL", IntHealth - 100, min(MaxHealth, 200), (112, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
@@ -1436,6 +1429,15 @@ class PB_Hud_ZS : BaseStatusBar
                     PBHud_DrawString(mDefaultFont, Formatnumber(Primary.Amount), (-207, -48), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
                     //Icon
                     PBHud_DrawImage("AMMOIC6", (-77, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
+                }
+                if(CheckWeaponSelected("PB_Axe"))
+                {
+                	int AxeCount = CPlayer.mo.CountInv("PB_Axe");
+                	
+                	for (AxeCount > 0; AxeCount--;)
+					{
+						PBHud_DrawImage("AXECOUNT", (-80 + (-8* AxeCount), -28), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM | DI_MIRROR, scale: (0.5, 0.5));
+					}
                 }
             }
         }
