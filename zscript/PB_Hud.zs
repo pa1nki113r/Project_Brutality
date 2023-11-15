@@ -67,7 +67,9 @@ class PB_Hud_ZS : BaseStatusBar
     string leftAmmoAmount;
     bool hudDynamics, inPain;
     double dashIndAlpha, flashlightBatteryAlpha;
-    int healthFontCol, keyamount, hudState;
+    int healthFontCol, keyamount, hudState, oldDashCharge;
+    double dashScale1, dashScale2;
+    DEDashJump Dasher;
     //array<PB_HudMessageStorage> messageArray;
     //double deltaTime, prevMS;
 
@@ -105,7 +107,6 @@ class PB_Hud_ZS : BaseStatusBar
 		hudDynamicsCvar = CVar.GetCvar("PB_HudDynamics", CPlayer).GetBool();
 
         hudDynamics = automapactive ? false : hudDynamicsCvar;
-
 
         hudXMargin = Cvar.GetCvar("pb_hudxmargin", CPlayer).GetInt();
         hudYMargin = CVar.GetCvar("pb_hudymargin", CPlayer).GetInt();
@@ -170,7 +171,9 @@ class PB_Hud_ZS : BaseStatusBar
         m0to1Float = 0;
         dashIndAlpha = 0;
         flashlightBatteryAlpha = 0;
-
+        dashScale1 = 0;
+        dashScale2 = 0;
+        
         GatherCvars();
         
         mHealthInterpolator.Reset(0);
@@ -288,6 +291,23 @@ class PB_Hud_ZS : BaseStatusBar
         if(!CheckInventory("sae_extcam") && !HasCompletedHelmetSequence)
         {
             From32to0Slow();    
+        }
+        
+        Dasher = DEDashJump(CPlayer.mo.FindInventory("DEDashJump"));
+        if(Dasher)
+        {
+	        //console.printf("%i %i", oldDashCharge, Dasher.DashCharge);
+	        if(oldDashCharge == 16 && Dasher.DashCharge == 17)
+	            dashScale1 = 0.2;
+	        if(oldDashCharge == 34 && Dasher.DashCharge == 35)
+	            dashScale2 = 0.2;
+	        
+	        if(dashScale1 > 0.0)
+	        	dashScale1 -= 0.02;
+	
+	        if(dashScale2 > 0.0)
+	            dashScale2 -= 0.02;
+	        oldDashCharge = Dasher.DashCharge;
         }
 
         if(CPlayer.Health <= 25)
@@ -971,11 +991,14 @@ class PB_Hud_ZS : BaseStatusBar
             else
 				PBHud_DrawImage(inPain ? "BZRKHUD" : "HLTHHUD", (82, -51), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, box: (19, 19));
 
-            DEDashJump Dasher = DEDashJump(CPlayer.mo.FindInventory("DEDashJump"));
-                
+            
             if(dasher) {
-                PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge, 35, (252, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);
-                
+                /*PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge, 17.5, (252, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);
+                PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge - 17.5, 17.5, (261, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);*/
+               
+                PBHud_DrawImage(Dasher.DashCharge >= 17.5 ? "DASHHUD2" : "DASHHUD1", (251 - 9 * dashScale2, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_LEFT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale1, 1 + dashScale1));
+                PBHud_DrawImage(Dasher.DashCharge >= 35 ? "DASHHUD2" : "DASHHUD1", (275 + 9 * dashScale1, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_RIGHT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale2, 1 + dashScale2));
+            	
                 if(Dasher.DashCharge != 35 && dashIndAlpha < 1)
                     dashIndAlpha = 5.0;
             }
