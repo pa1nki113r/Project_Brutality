@@ -1,6 +1,6 @@
 class PB_Math abstract
 {
-	static vector3 VecFromAngles(double angle, double pitch, double mag = 1.)
+	ClearScope Static Vector3 VecFromAngles (double angle, double pitch, double mag = 1.)
 	{
 		double cosp = cos(pitch);
 		return (cos(angle)*cosp, sin(angle)*cosp, -sin(pitch)) * mag;
@@ -17,6 +17,32 @@ class PB_Math abstract
 	ClearScope Static Vector3 AngleToVector3D(Double Angle, Double Pitch, Double Len = 1.0)
 	{
 		Return (Cos(Angle)*Cos(Pitch)*Len,Sin(Angle)*Cos(Pitch)*Len,Sin(Pitch)*Len);
+	}
+	
+	Enum Vec3RelFlags
+	{
+		V3R_NOANGLE = 1 << 1, //Do not rotate based on angle.
+		V3R_NOPITCH = 1 << 2, //Do not rotate based on pitch.
+		V3R_NOROLL	= 1 << 3, //Do not rotate based on roll.
+		
+		V3R_ANGLEONLY = V3R_NOPITCH|V3R_NOROLL
+	}
+	
+	//Like Vec3Offset, but also rotates the output vector based on the callers' angle.
+	//Other: The actor to offset from.
+	//Offs: The vector3 offsets to use.
+	//NoPortal: Should the function account for static portals or not ?
+	//Flags: See above for list of flags.
+	ClearScope Static Vector3 Vec3OffsetRelative (Actor Other, Vector3 Offs, Bool NoPortal = False, Int Flags = 0)
+	{
+		If (!Other) Return (Double.NaN,Double.NaN,Double.NaN);
+		Double Angle, Pitch, Roll;
+		If (!(Flags & V3R_NOANGLE)) Angle = Other.Angle;
+		If (!(Flags & V3R_NOPITCH)) Pitch = Other.Pitch;
+		If (!(Flags & V3R_NOROLL)) Roll = Other.Roll;
+		
+		Quat Dir = Quat.FromAngles (Angle,Pitch,Roll);
+		Return Level.Vec3Offset (Other.Pos,Dir * Offs,NoPortal);
 	}
 }
 
