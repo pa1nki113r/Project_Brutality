@@ -78,61 +78,45 @@ class PB_Projectile : FastProjectile abstract
 		return -1;
 	}
 	
-	//[inkoalawetrust] The ripping code is just ripped (Lol) from my AI library.
-	Override Bool CanCollideWith (Actor Other, Bool Passive)
-	{
-		//Don't collide with actors you already ripped.
-		If (!Passive && bRipper && bRipOnce /*&& RippedAlready (Other)*/ && Other && (Other == LastRipped || Other == PreLastRipped))
-			Return False;
-		
-		Return Super.CanCollideWith (Other, Passive);
-	}
-	
 	override int SpecialMissileHit(Actor victim)
 	{
-		if (victim == Target && !bHitOwner) return 1; //[inkoalawetrust] //This is default behavior though ?
-		
-		Handle_MissileHit(victim);
-		//Assume the actor will be hit and ripped. For overrides, this will need to be set manually, if some child class code says it shouldn't collide.
-		/*BUG: The RipDepth code is somewhat buggy, it doesn't necessarily rip through however many actors specified when they are tightly packed together.
-		And will sometimes do 2-3 rips on victims in despite the RipOnce flag. I've tried a few fixes, including using an array, but they made things worse.*/
-		IncrementRipDepth (Victim, False);
-		StoreLastRipped (Victim);
-		Return -1;
-	}
-	
-	Void StoreLastRipped (Actor Victim)
-	{
-		//If (bRipper && Victim && !RippedAlready(Victim))
-		//	Ripees.Push(Victim);
-		If (bRipper && LastRipped != Victim && PreLastRipped != Victim)
+		if (victim == Target && !bHitOwner)
 		{
-			PreLastRipped = LastRipped;
-			LastRipped = Victim;
+			return 1; //[inkoalawetrust] //This is default behavior though ?
 		}
+		
+		if (bRIPPER)
+		{
+			if (ripAmount < 0)
+			{
+				return 0; // [Ace] We must use 0 here or else the projectile will keep ripping. Removing the ripper flag does not take effect until the next tic because of how ripping works.
+			}
+			//LastActor != victim && victim //oldif statement check
+			if (LastActor != victim && Victim)
+			{
+				ripAmount = ripAmount - 1;
+				//IncrementRipDepth (Victim, False);
+				Handle_MissileHit(victim);
+				LastActor = victim;
+				//StoreLastRipped (Victim);
+			}
+			else
+			{
+				return 1;
+			}
+		}
+		Return -1;
 	}
 	
 	Void IncrementRipDepth (Actor Victim, Bool FromOverride)
 	{
-		If (!Default.RipAmount || !Victim || !bRipper) Return;
-		/*If (RippedAlready(Victim)) Return;
-		If (FromOverride) Ripees.Pop(); //Undo the rip from Super.SpecialMissileHit() if called from an override to that virtual.
-		If (Ripees.Size()-1 <= RipDepth+1)
-		{
-			Ripees.Clear();
-			a_log ("no more ripping");
-			bRipper = False;
-			Return;
-		}*/
-		
-		If (Victim == LastRipped || Victim == PreLastRipped) Return;
+		If (!Default.RipAmount || !Victim || RipAmount < 1) Return;
 		If (FromOverride) RipAmount++; //Undo the rip from Super.SpecialMissileHit() if called from an override to that virtual.
 		RipAmount--;
 		If (RipAmount <= 1)
 		{
 			RipAmount--; //Now the depth is 0.
 			//a_log ("no more ripping");
-			bRipper = False;
 			Return;
 		}
 		
@@ -394,9 +378,10 @@ class PB_Projectile : FastProjectile abstract
 
 	bool MustExplode;
 	double ExtraDamageFactor;
+	protected Actor LastActor;
 	
-	//Array<Actor> act_hits;
-	//Actor hitactor;
+	Array<Actor> act_hits;
+	Actor hitactor;
 	Actor LastRipped, PreLastRipped; //The actor that a ripper last hit. Used for the RIPONCE flag.
 	int ripamount;
 	Property RipperCount : ripamount;
