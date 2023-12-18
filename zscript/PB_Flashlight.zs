@@ -76,7 +76,7 @@ class PB_FPP_Light : Spotlight
         
         //BD:BE monster alerting stuff, this was a nightmare to implement
         //Credits to Blackmore1014 for this
-        if(!thisIsLight2 && level.time >= 10 * TICRATE /*10 seconds of grace period so the player can disable the light before any monsters get alerted in maps that have monsters right at the start */ && gametic % 15 == 0 && SpotOuterAngle > 0)
+        if(!thisIsLight2 && level.time >= 5 * TICRATE && gametic % 15 == 0 && SpotOuterAngle > 0)
         {
 		    double cosBeamAngle = cos(SpotOuterAngle);
 			double distanceToWake = args[3] / sqrt(1.0 - cosBeamAngle);
@@ -133,7 +133,7 @@ class PB_FPP_Holder : Inventory
 	
 	double SimpleSpline(double value)
 	{
-		double valueSquared = value * value;
+		double valueSquared = value ** 2;
 		
 		// Nice little ease-in, ease-out spline-like curve
 		return (3 * valueSquared - 2 * valueSquared * value);
@@ -271,7 +271,10 @@ class PB_FPP_Holder : Inventory
 		{
 			Disable();
 			flOutOfBatteryPenalty = true;
-			owner.A_StartSound("PB/FlashlightOff", CHAN_AUTO);
+			
+			owner.A_StartSound("PLSOFF", CHAN_AUTO);
+			owner.A_StartSound("BEPBEP", CHAN_AUTO);
+			owner.A_StartSound("weapons/plasma/fancybutton", CHAN_AUTO);
 		}
 	}
 	
