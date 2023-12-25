@@ -21,7 +21,7 @@ extend class PB_HUD_ZS
 	
 	override bool ProcessNotify(EPrintLevel printlevel,string outline)
 	{
-		if(gamestate != GS_LEVEL || consoleState == c_up) return false;
+		if(gamestate != GS_LEVEL || consoleState == c_down) return false;
 		int rprintlevel = printlevel&PRINT_TYPES;
 		if((rprintlevel < PRINT_LOW)||(rprintlevel > PRINT_TEAMCHAT)) rprintlevel = PRINT_HIGH;
 		outline.DeleteLastCharacter(); let m = new("MsgLine");
