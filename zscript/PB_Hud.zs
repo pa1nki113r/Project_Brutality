@@ -393,10 +393,16 @@ class PB_Hud_ZS : BaseStatusBar
         DrawImage(texture, pos, flags, Alpha, box, scale, style);
     }
     
+    bool PBHud_FlagCheck(int flags, int flag)
+    {
+    	return ( flags & flag ) == flag;
+    }
+    
     void PBHud_DrawString(HUDFont font, String string, Vector2 pos, int flags = 0, int translation = Font.CR_UNTRANSLATED, double Alpha = 1., int wrapwidth = -1, int linespacing = 4, Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25) 
     {       
         int fakeflags; //because my dumb ass didn't add screen alignment flags when i made this
-        if (!(fakeflags & DI_SCREEN_MANUAL_ALIGN))
+        
+        if ( !PBHud_FlagCheck(flags, DI_SCREEN_MANUAL_ALIGN) ) // don't need to do this if there are already alignment flags
         {
             if (pos.x < 0) 
                 fakeflags |= DI_SCREEN_RIGHT;
@@ -408,6 +414,8 @@ class PB_Hud_ZS : BaseStatusBar
             else 
                 fakeflags |= DI_SCREEN_TOP;
         }
+        else
+        	fakeflags = flags;
 
         if(lowresfont && (font != mLowResFont)) {
             font = mLowResFont;
