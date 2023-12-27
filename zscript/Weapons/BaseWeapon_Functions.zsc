@@ -1162,4 +1162,65 @@ extend class PB_WeaponBase
 			return invoker.A_Jump(256,"SelectAnimation");
 		}
 	}
+	
+	
+	
+	//temporal thing for the bfg alt fire, move this to the bfg when/if it gets rewritten in zscript
+	const bfgpartstep = 30;
+	action void PB_FireAltBFGRail()
+	{
+		//the first option is a lineattack cuz linetrace acts weird in some tipes of geometry (try one with the kinsie test map, in the elevator or the pool)
+		Actor p = LineAttack(angle,8000,pitch,20,'Disintegrate',"BFGBeamPuff",LAF_NOIMPACTDECAL|LAF_NORANDOMPUFFZ);
+		vector3 destpos;
+		
+		if(p) 
+		{
+			p.target = self;
+			destpos = (p.pos.XY,p.pos.z + p.height);
+		}
+		else //no puff spawned, probably fired at the sky, so fire a linetrace to draw the rail anyway
+		{
+			FLineTraceData t;
+			bool hit = linetrace(angle,8000,pitch,0,height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor,data:t);
+			if(hit)
+				destpos = t.hitlocation;
+				
+		}
+		
+		vector3 dif = levellocals.vec3diff((pos.XY,pos.z + height * 0.5),destpos);
+		vector3 dir = dif.unit();
+		double dis = dif.length();
+		
+		int q = int(dis / bfgpartstep) + 1; //bfgpartstep is an arbitrary value representing the distance between particles, basically get the divide the total distance / steps between particles to get the number of particles
+			
+		vector3 actpos = (pos.XY,pos.z + height * 0.5);
+		for(int i = 1; i <= q; i++)
+		{
+			actpos += (dir * bfgpartstep);
+			PB_Drawrailparticle(actpos);
+		}
+
+	}
+	
+	action void PB_Drawrailparticle(vector3 where)
+	{
+		FSpawnParticleParams bfgrail;
+		int fm = random(1,5);
+		bfgrail.Texture = TexMan.CheckForTexture ("DLI"..fm.."G0R0");
+		bfgrail.Color1 = "FFFFFF";
+		bfgrail.Style = STYLE_Add;
+		bfgrail.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		bfgrail.Vel = (random(-1,1),random(-1,1),random(-1,1)); 
+		bfgrail.Startroll = random(0,360);
+		bfgrail.RollVel = 0;
+		bfgrail.StartAlpha = 1.0;
+		bfgrail.FadeStep = -0.05;
+		bfgrail.Size = random(32,42);
+		bfgrail.SizeStep = -12;
+		bfgrail.Lifetime = random (2,3); 
+		bfgrail.Pos = where;
+		Level.SpawnParticle(bfgrail);
+	}
+	
+	
 }
