@@ -21,7 +21,7 @@ extend class PB_HUD_ZS
 	
 	override bool ProcessNotify(EPrintLevel printlevel,string outline)
 	{
-		if(gamestate != GS_LEVEL) return false;
+		if(gamestate != GS_LEVEL || consoleState == c_down) return false;
 		int rprintlevel = printlevel&PRINT_TYPES;
 		if((rprintlevel < PRINT_LOW)||(rprintlevel > PRINT_TEAMCHAT)) rprintlevel = PRINT_HIGH;
 		outline.DeleteLastCharacter(); let m = new("MsgLine");
@@ -50,7 +50,7 @@ extend class PB_HUD_ZS
 	void PBHUD_DrawMessages()
 	{
 		if(MainQueue.Size()<=0) return;
-		int mstart = max(0,MainQueue.Size()-MAXSHOWN); int yy = 10;
+		int mstart = max(0,MainQueue.Size()-MAXSHOWN); int yy = 0;
 		for(int i=mstart;i<MainQueue.Size();i++)
 		{
 			let l = MainQueue[i].l;
@@ -61,7 +61,10 @@ extend class PB_HUD_ZS
 			alph = clamp(curtime/20.,0.,1.);
 			for(int j=0;j<l.Count();j++)
 			{
-				PBHud_DrawString(mBoldFont,l.StringAt(j), (0,yy), DI_SCREEN_CENTER_TOP | DI_TEXT_ALIGN_CENTER,MainQueue[i].fcol,alph);
+				if(centerNotify)
+					PBHud_DrawString(mBoldFont,l.StringAt(j), (0,17 + yy * messageSize), DI_SCREEN_CENTER_TOP | DI_ITEM_TOP | DI_TEXT_ALIGN_CENTER,MainQueue[i].fcol,alph,scale: (messageSize, messageSize));
+				else
+					PBHud_DrawString(mBoldFont,l.StringAt(j), (15,17 + (showLevelStats ? 55 : 0) + yy * messageSize), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP | DI_TEXT_ALIGN_LEFT,MainQueue[i].fcol,alph,scale: (messageSize, messageSize));
 				yy+=20;
 			}
 		}

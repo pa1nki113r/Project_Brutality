@@ -74,13 +74,13 @@ class PB_Hud_ZS : BaseStatusBar
     //CVars
     int hudXMargin, hudYMargin, playerMsgPrint;
     bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot;
-    double playerAlpha, playerBoxAlpha;
+    float playerAlpha, playerBoxAlpha, messageSize;
     bool centerNotify;
     
 	override void Init()
 	{
 		Super.Init();
-		SetSize(0, 320, 240);
+		SetSize(0, 320, 540);
 		
         mDefaultFont = HUDFont.Create("PBFONT");
         mBoldFont = HUDFont.Create("PBBOLD");
@@ -125,8 +125,10 @@ class PB_Hud_ZS : BaseStatusBar
         playerBoxAlpha = CVar.GetCvar("pb_hudboxalpha", CPlayer).GetFloat();
 
         customPBMugshot = CVar.GetCvar("pb_newmugshot", CPlayer).GetBool();
+
         centerNotify = CVar.GetCVar("con_centernotify", CPlayer).GetBool();
         playerMsgPrint = CVar.GetCVar("msg").GetInt();
+        messageSize = CVar.GetCVar("pb_messagesize", CPlayer).GetFloat();
 	}
 
 	override void Draw(int state, double TicFrac)
@@ -150,7 +152,6 @@ class PB_Hud_ZS : BaseStatusBar
 		{
 			BeginHUD();
 			DrawFullScreenStuff();
-			PBHUD_DrawMessages();
         }
 	}
 
@@ -326,77 +327,73 @@ class PB_Hud_ZS : BaseStatusBar
     double IntMPitch;
     double IntMOfs;
 
-    void PBHud_DrawImage(String texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 box = (-1, -1), Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25, ERenderStyle style = STYLE_Translucent)
+    // [gng] pass the x and y parts of the vector to this function individually
+    // you can't use the out keyword with vectors, so i had to improvise
+    void SetSway(out double posX, out double posY, int flags, double parallax, double parallax2, bool applyDeadZone = true)
     {
-        switch(flags & DI_SCREEN_HMASK) {
-            case DI_SCREEN_LEFT:
-                pos.x += HUDXMargin; break;
-            case DI_SCREEN_RIGHT:
-                pos.x -= HUDXMargin; break;
-            default: break;
-        }
-        switch(flags & DI_SCREEN_VMASK) {
-            case DI_SCREEN_TOP:
-                pos.y += HUDYMargin; break;
-            case DI_SCREEN_BOTTOM:
-                pos.y -= HUDYMargin; break;
-            default: break;
-        }
+		if(applyDeadZone) {
+			switch(flags & DI_SCREEN_HMASK) {
+				case DI_SCREEN_LEFT:
+					posX += HUDXMargin; break;
+				case DI_SCREEN_RIGHT:
+					posX -= HUDXMargin; break;
+				default: break;
+			}
+			switch(flags & DI_SCREEN_VMASK) {
+				case DI_SCREEN_TOP:
+					posY += HUDYMargin; break;
+				case DI_SCREEN_BOTTOM:
+					posY -= HUDYMargin; break;
+				default: break;
+			}
+		}
         
         if(HudDynamics) {
-            pos.x += IntMSway * Parallax;
-            pos.y -= IntMPitch * Parallax;
+            posX += IntMSway * Parallax;
+            posY -= IntMPitch * Parallax;
 
             switch(flags & DI_SCREEN_HMASK) {
                 case DI_SCREEN_LEFT:
-                    pos.x += (IntMOfs * Parallax2); break;
+                    posX += (IntMOfs * Parallax2); break;
                 case DI_SCREEN_RIGHT:
-                    pos.x -= (IntMOfs * Parallax2); break;
+                    posX -= (IntMOfs * Parallax2); break;
                 default: break;
             }
 
             switch(flags & DI_SCREEN_VMASK) {
                 case DI_SCREEN_TOP:
-                    pos.y += (IntMOfs * Parallax2); break;
+                    posY += (IntMOfs * Parallax2); break;
                 case DI_SCREEN_BOTTOM:
-                    pos.y -= (IntMOfs * Parallax2); break;
+                    posY -= (IntMOfs * Parallax2); break;
                 default: break;
             }
         }
+    }
+
+    void PBHud_DrawImage(String texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 box = (-1, -1), Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25, ERenderStyle style = STYLE_Translucent)
+    {
+        SetSway(pos.x, pos.y, flags, parallax, parallax2);
 
         DrawImage(texture, pos, flags, (m0to1Float * Alpha), box, scale, style);
     }
     
     void PBHud_DrawImageManualAlpha(String texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 box = (-1, -1), Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25, ERenderStyle style = STYLE_Translucent)
     {
-        if(HudDynamics) {    
-            pos.x += IntMSway * Parallax;
-            pos.y -= IntMPitch * Parallax;
-
-            switch(flags & DI_SCREEN_HMASK) {
-                case DI_SCREEN_LEFT:
-                    pos.x += (IntMOfs * Parallax2); break;
-                case DI_SCREEN_RIGHT:
-                    pos.x -= (IntMOfs * Parallax2); break;
-                default: break;
-            }
-
-            switch(flags & DI_SCREEN_VMASK) {
-                case DI_SCREEN_TOP:
-                    pos.y += (IntMOfs * Parallax2); break;
-                case DI_SCREEN_BOTTOM:
-                    pos.y -= (IntMOfs * Parallax2); break;
-                default: break;
-            }
-        }
+        SetSway(pos.x, pos.y, flags, parallax, parallax2, false);
 
         DrawImage(texture, pos, flags, Alpha, box, scale, style);
+    }
+    
+    bool PBHud_FlagCheck(int flags, int flag)
+    {
+    	return ( flags & flag ) == flag;
     }
     
     void PBHud_DrawString(HUDFont font, String string, Vector2 pos, int flags = 0, int translation = Font.CR_UNTRANSLATED, double Alpha = 1., int wrapwidth = -1, int linespacing = 4, Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25) 
     {       
         int fakeflags; //because my dumb ass didn't add screen alignment flags when i made this
-        if (!(fakeflags & DI_SCREEN_MANUAL_ALIGN))
+        
+        if ( !PBHud_FlagCheck(flags, DI_SCREEN_MANUAL_ALIGN) ) // don't need to do this if there are already alignment flags
         {
             if (pos.x < 0) 
                 fakeflags |= DI_SCREEN_RIGHT;
@@ -408,48 +405,16 @@ class PB_Hud_ZS : BaseStatusBar
             else 
                 fakeflags |= DI_SCREEN_TOP;
         }
+        else
+        	fakeflags = flags;
 
         if(lowresfont && (font != mLowResFont)) {
             font = mLowResFont;
             scale *= 1.8;
             pos += (0, 2);
         }
-        
-        switch(fakeflags & DI_SCREEN_HMASK) {
-            case DI_SCREEN_LEFT:
-                pos.x += HUDXMargin; break;
-            case DI_SCREEN_RIGHT:
-                pos.x -= HUDXMargin; break;
-            default: break;
-        }
-        switch(fakeflags & DI_SCREEN_VMASK) {
-            case DI_SCREEN_TOP:
-                pos.y += HUDYMargin; break;
-            case DI_SCREEN_BOTTOM:
-                pos.y -= HUDYMargin; break;
-            default: break;
-        }
-        
-        if(HudDynamics) {
-            pos.x += IntMSway * Parallax;
-            pos.y -= IntMPitch * Parallax;
 
-            switch(fakeflags & DI_SCREEN_HMASK) {
-                case DI_SCREEN_LEFT:
-                    pos.x += (IntMOfs * Parallax2); break;
-                case DI_SCREEN_RIGHT:
-                    pos.x -= (IntMOfs * Parallax2); break;
-                default: break;
-            }
-
-            switch(fakeflags & DI_SCREEN_VMASK) {
-                case DI_SCREEN_TOP:
-                    pos.y += (IntMOfs * Parallax2); break;
-                case DI_SCREEN_BOTTOM:
-                    pos.y -= (IntMOfs * Parallax2); break;
-                default: break;
-            }
-        }
+        SetSway(pos.x, pos.y, fakeflags, parallax, parallax2);
 
         DrawString(font, string, pos, flags, translation, (m0to1Float * Alpha), wrapwidth, linespacing, scale);
     }
@@ -474,41 +439,7 @@ class PB_Hud_ZS : BaseStatusBar
     
     void PBHud_DrawBar(String ongfx, String offgfx, double curval, double maxval, Vector2 pos, int border, int vertical, int flags = 0, double alpha = 1.0, double Parallax = 0.75, double Parallax2 = 0.25, bool slanted = true) 
     {
-        switch(flags & DI_SCREEN_HMASK) {
-            case DI_SCREEN_LEFT:
-                pos.x += HUDXMargin; break;
-            case DI_SCREEN_RIGHT:
-                pos.x -= HUDXMargin; break;
-            default: break;
-        }
-        switch(flags & DI_SCREEN_VMASK) {
-            case DI_SCREEN_TOP:
-                pos.y += HUDYMargin; break;
-            case DI_SCREEN_BOTTOM:
-                pos.y -= HUDYMargin; break;
-            default: break;
-        }
-        
-        if(HudDynamics) {
-            pos.x += IntMSway * Parallax;
-            pos.y -= IntMPitch * Parallax;
-
-            switch(flags & DI_SCREEN_HMASK) {
-                case DI_SCREEN_LEFT:
-                    pos.x += (IntMOfs * Parallax2); break;
-                case DI_SCREEN_RIGHT:
-                    pos.x -= (IntMOfs * Parallax2); break;
-                default: break;
-            }
-
-            switch(flags & DI_SCREEN_VMASK) {
-                case DI_SCREEN_TOP:
-                    pos.y += (IntMOfs * Parallax2); break;
-                case DI_SCREEN_BOTTOM:
-                    pos.y -= (IntMOfs * Parallax2); break;
-                default: break;
-            }
-        }
+        SetSway(pos.x, pos.y, flags, parallax, parallax2);
         
         if(slanted)
             PBHUD_DrawSlantedBar(ongfx, offgfx, curval, maxval, pos, border, vertical, flags, (m0to1Float * Alpha));
@@ -518,41 +449,7 @@ class PB_Hud_ZS : BaseStatusBar
 
     void PBHud_DrawTexture(TextureID texture, Vector2 pos, int flags = 0, double Alpha = 1., Vector2 box = (-1, -1), Vector2 scale = (1, 1), double Parallax = 0.75, double Parallax2 = 0.25) 
     {
-        switch(flags & DI_SCREEN_HMASK) {
-            case DI_SCREEN_LEFT:
-                pos.x += HUDXMargin; break;
-            case DI_SCREEN_RIGHT:
-                pos.x -= HUDXMargin; break;
-            default: break;
-        }
-        switch(flags & DI_SCREEN_VMASK) {
-            case DI_SCREEN_TOP:
-                pos.y += HUDYMargin; break;
-            case DI_SCREEN_BOTTOM:
-                pos.y -= HUDYMargin; break;
-            default: break;
-        }
-        
-        if(HudDynamics) {
-            pos.x += IntMSway * Parallax;
-            pos.y -= IntMPitch * Parallax;
-
-            switch(flags & DI_SCREEN_HMASK) {
-                case DI_SCREEN_LEFT:
-                    pos.x += (IntMOfs * Parallax2); break;
-                case DI_SCREEN_RIGHT:
-                    pos.x -= (IntMOfs * Parallax2); break;
-                default: break;
-            }
-
-            switch(flags & DI_SCREEN_VMASK) {
-                case DI_SCREEN_TOP:
-                    pos.y += (IntMOfs * Parallax2); break;
-                case DI_SCREEN_BOTTOM:
-                    pos.y -= (IntMOfs * Parallax2); break;
-                default: break;
-            }
-        }
+        SetSway(pos.x, pos.y, flags, parallax, parallax2);
 
         DrawTexture(texture, pos, flags, (m0to1Float * Alpha), box, scale);
     }
@@ -872,6 +769,8 @@ class PB_Hud_ZS : BaseStatusBar
                     PBHud_DrawImageManualAlpha("HUDBOT2M", (35, 9) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1Float, scale: (0.7, 0.7), style: STYLE_Add);
                 }
             }
+
+            PBHUD_DrawMessages();
 
             //Healthbar
 			if(GetAirTime() < 700)
