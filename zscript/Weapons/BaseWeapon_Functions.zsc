@@ -1158,7 +1158,12 @@ extend class PB_WeaponBase
 		}
 	}
 	
+	//Rails / Beams things
+	//all this is done this way cause ideally, every weapon should have its own specific functions, though a generic version of this could be made for addons use or simple "laser" like things
 	
+	//////////////////////////////////////////////////////////
+	//BFG
+	//////////////////////////////////////////////////////////
 	
 	//temporal thing for the bfg alt fire, move this to the bfg when/if it gets rewritten in zscript
 	const bfgpartstep = 30;
@@ -1192,12 +1197,12 @@ extend class PB_WeaponBase
 		for(int i = 1; i <= q; i++)
 		{
 			actpos += (dir * bfgpartstep);
-			PB_Drawrailparticle(actpos);
+			PB_DrawBFGrailparticle(actpos);
 		}
 
 	}
 	
-	action void PB_Drawrailparticle(vector3 where)
+	action void PB_DrawBFGrailparticle(vector3 where)
 	{
 		FSpawnParticleParams bfgrail;
 		int fm = random(1,5);
@@ -1215,6 +1220,163 @@ extend class PB_WeaponBase
 		bfgrail.Lifetime = random (2,3); 
 		bfgrail.Pos = where;
 		Level.SpawnParticle(bfgrail);
+	}
+	
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//RailGun
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	///////////////////////////////////////////////////////////////////////
+	//Red
+	/////////////////////////////////////////////////////////////////
+	
+	const RedRail_Aim = 0;
+	const RedRail_Fire = 1;
+	const railpartstep = 20;
+	const railpartstepaim = 15;
+	
+	Action Void PB_VisualRailRed(int BeamType = RedRail_Aim,int power = 0)
+	{
+		FLineTraceData t;
+		double vz = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) - 8; //little offset
+		//double vz = height * 0.5;
+		bool hit = linetrace(angle,8000,pitch,0,vz,data:t);
+		
+		vector3 spos = (pos.xy,pos.z + vz);
+		vector3 fpos = t.HitLocation;
+		fpos -= t.hitdir; //step back 1 map unit, not necessary now, but for spawning something at hitlocation is useful
+		
+		vector3 dif = levellocals.Vec3diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dis = dif.length();
+		
+		int q = int(dis / (BeamType ? railpartstep : railpartstepaim)) + 1; //+ 1 to ensure its always more than 0, since distance cant be negative but can be 0
+		
+		double alfa = BeamType ? 2.0 : frandom(0.2,0.3);
+		for(int i = 0; i < q; i++)
+		{
+			spos += (dr * (BeamType ? railpartstep : railpartstepaim));
+			if(i > 0) //skip the first iteration, so it doesnt spawn a particle blocking the view
+				PB_DrawRailFx1(spos,BeamType,alfa);
+			
+			if(Beamtype && (i % 4 == 0) && power > 45)
+				PB_SpawnRailShockWave(spos,1,i);
+		}
+	}
+	
+	Action Void PB_DrawRailFx1(vector3 where,int BeamType = RedRail_Aim, double alfa = 1.0)
+	{
+		FSpawnParticleParams RedRailPx;
+		int fm = random(1,4);
+		string fsp =  "RedR"..fm;
+		string spt = BeamType ? fsp : "CPSQB0";
+		RedRailPx.Texture = TexMan.CheckForTexture(spt);
+		RedRailPx.Color1 = "FFFFFF";
+		RedRailPx.Style = STYLE_Add;
+		RedRailPx.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		RedRailPx.Vel = (0,0,0); 
+		RedRailPx.Startroll = randompick(0,180);
+		RedRailPx.RollVel = 0;
+		RedRailPx.StartAlpha = alfa;
+		RedRailPx.FadeStep = BeamType ? -0.05 : 0;
+		RedRailPx.Size = BeamType ? 60 : 12;
+		RedRailPx.SizeStep = BeamType ? -2 : 0;
+		RedRailPx.Lifetime = BeamType ? random(30,40) : 1; 
+		RedRailPx.Pos = where;
+		Level.SpawnParticle(RedRailPx);
+	}
+	
+	Action Void PB_SpawnRailShockWave(vector3 where,bool red = 0,int it = 0)
+	{
+		FSpawnParticleParams ShockWv;
+		string tx = red ? "PBSWV1" : "PBSWV2";
+		ShockWv.Texture = TexMan.CheckForTexture(tx);
+		ShockWv.Style = STYLE_ADD;
+		ShockWv.Color1 = "FFFFFF";
+		ShockWv.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		ShockWv.Startroll = randompick(0,360);
+		ShockWv.RollVel = 0;
+		ShockWv.StartAlpha = 1.0;
+		ShockWv.FadeStep = 0.04;
+		ShockWv.Size = red ? 20 : 5;
+		ShockWv.SizeStep = red ? 10 : 5;
+		ShockWv.Lifetime =(25 + it); 
+		ShockWv.Pos = where;
+		Level.SpawnParticle(ShockWv);
+	}
+	
+	//////////////////////////////////////////////////////////////////////////
+	//Blue Rail Fire mode
+	//////////////////////////////////////////////////////////////////
+	
+	Action Void PB_VisualRailBlue()
+	{
+		FLineTraceData t;
+		double vz = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) - 8; //little offset
+		//double vz = height * 0.5;
+		bool hit = linetrace(angle,8000,pitch,0,vz,data:t);
+		
+		vector3 spos = (pos.xy,pos.z + vz);
+		vector3 fpos = t.HitLocation;
+		fpos -= t.hitdir; //step back 1 map unit, not necessary now, but for spawning something at hitlocation is useful
+		
+		vector3 dif = levellocals.Vec3diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dis = dif.length();
+		
+		int q = int(dis / railpartstep) + 1; //+ 1 to ensure its always more than 0, since distance cant be negative but can be 0
+		
+		for(int i = 0; i < q; i++)
+		{
+			spos += (dr * railpartstep);
+			if(i > 0)
+				PB_DrawRailFxBlue(spos);
+			
+			if(i % 4 == 0)
+				PB_SpawnRailShockWave(spos,0,i);
+		}
+	}
+	
+	Action Void PB_DrawRailFxBlue(vector3 where)
+	{
+		FSpawnParticleParams BlueRailPx;
+		int fm = random(1,4);
+		BlueRailPx.Texture = TexMan.CheckForTexture("BlueR"..fm);
+		BlueRailPx.Color1 = "FFFFFF";
+		BlueRailPx.Style = STYLE_Add;
+		BlueRailPx.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		BlueRailPx.Vel = (0,0,0); 
+		BlueRailPx.Startroll = randompick(0,180);
+		BlueRailPx.RollVel = 0;
+		BlueRailPx.StartAlpha = 1.0;
+		BlueRailPx.FadeStep = -0.05;
+		BlueRailPx.Size = 50;
+		BlueRailPx.SizeStep = -2;
+		BlueRailPx.Lifetime = random(30,40); 
+		BlueRailPx.Pos = where;
+		Level.SpawnParticle(BlueRailPx);
+		
+		
+		FSpawnParticleParams BlueRailSmoke;
+		string f = String.Format("%c", int("A") + random(0,3)); //this feels so illegal :p
+		BlueRailSmoke.Texture = TexMan.CheckForTexture("SMO1"..f..0);
+		BlueRailSmoke.Color1 = "33B2FF";
+		BlueRailSmoke.Style = STYLE_ADD;
+		BlueRailSmoke.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		vector3 offsv = (random(-5,5),random(-5,5),random(-5,5)); 
+		BlueRailSmoke.Vel = (0,0,0);
+		BlueRailSmoke.Startroll = randompick(0,180);
+		BlueRailSmoke.RollVel = random(-2,2);
+		BlueRailSmoke.StartAlpha = 0.66;
+		BlueRailSmoke.FadeStep = -0.01;
+		BlueRailSmoke.Size = random(20,35);
+		BlueRailSmoke.SizeStep = -0.5;
+		BlueRailSmoke.Lifetime = random(70,105); 
+		//spawn 2
+		BlueRailSmoke.Pos = where + offsv;
+		Level.SpawnParticle(BlueRailSmoke);
+		BlueRailSmoke.Pos = where - offsv;
+		Level.SpawnParticle(BlueRailSmoke);
 	}
 	
 	
