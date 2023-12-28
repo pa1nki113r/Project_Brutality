@@ -778,15 +778,6 @@ class PB_Hud_ZS : BaseStatusBar
 
             PBHud_DrawImage(inPain ? "BARBCK1L" : "BARBACK1", (73, -50), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
             
-            if(CheckInventory("PB_PowerStrength"))
-				PBHud_DrawImage("HUDBESRK", (80, -65), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, box: (30, 30));
-
-            if(Health > 100)
-				PBHud_DrawImage("OVERHUD", (82, -51), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, box: (19, 19));
-            else
-				PBHud_DrawImage(inPain ? "BZRKHUD" : "HLTHHUD", (82, -51), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, box: (19, 19));
-
-            
             if(dasher) {
                 /*PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge, 17.5, (252, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);
                 PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge - 17.5, 17.5, (261, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);*/
@@ -807,6 +798,22 @@ class PB_Hud_ZS : BaseStatusBar
                 
             //Armorbar
             PBHud_DrawImage("BARBACK2", (72, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
+            
+            // health indicator is here because sometimes it overlaps the armor bar
+            if(CheckInventory("PB_PowerStrength"))
+            {
+				// the stupid fucking berserk indicator that i spent too much time on
+				// should i start using floats for inconsequential effects like these?
+				float gameTicRadians = (gameTic * 57.296) * 0.2;
+				float berserkBeat = 0.1 * ((((sin(gameTicRadians) ** 13) * sin((gameTicRadians) + 85.944)) / 0.2096) + (sin(gameTicRadians - 286.48) ** 16) * 0.2);
+				
+				PBHud_DrawImage("BZRKHUD",  (92, -62), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_CENTER, scale: (0.6 + berserkBeat, 0.6 + berserkBeat));
+			}
+
+            if(Health > 100)
+				PBHud_DrawImage("OVERHUD", (92, -62), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_CENTER, scale: (0.5, 0.5));
+            else
+				PBHud_DrawImage(inPain ? "LHLTHHUD" : "HLTHHUD", (92, -62), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_CENTER, scale: (0.5, 0.5));
             
             PBHud_DrawBar("APBAR", "BGBARL", IntArmor, min(MaxArmor, 100), (112, -30), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
             
