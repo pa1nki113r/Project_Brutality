@@ -851,10 +851,64 @@ extend class PB_WeaponBase
 		invoker.lastGrenadeType = type;
 	}
 	
+	const frozenspacepx = 15;
 	action void PB_FireCryoRifleBeam()
 	{
-		let laserproj = A_FireProjectile("CryoRifleBeam");
-		let laser = MWLaser (laserproj);
+		FLineTraceData t;
+		double zoff = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) - 9;
+		bool hit = LineTrace(angle,8000,pitch,TRF_NOSKY ,zoff,data:t);
+		
+		vector3 fpos = t.hitlocation - t.hitdir; //substract one to the final pos so the puff doesnt spawn in the wall and therefore in a higher sector if any
+		vector3 spos = (pos.xy, pos.z + zoff);
+		
+		vector3 dif = levellocals.Vec3Diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dist = dif.length();
+		
+		int steps = int(dist / frozenspacepx) + 1;
+		
+		FSpawnParticleParams FrostBeam;
+		FrostBeam.Texture = TexMan.CheckForTexture("X027A0"); //FIR5G0 also looks cool
+		FrostBeam.Color1 = "FFFFFF";
+		FrostBeam.Style = STYLE_Add;
+		FrostBeam.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		FrostBeam.Vel = (0,0,0); 
+		FrostBeam.Startroll =random(0,360); //randompick(0,90,180,270,360);
+		FrostBeam.RollVel = 0;
+		FrostBeam.StartAlpha = 0.90;
+		FrostBeam.FadeStep = -0.1;
+		FrostBeam.Size = 20;
+		FrostBeam.SizeStep = 0;
+		FrostBeam.Lifetime = 1; 
+		
+		//basically, simulate a hitscan attack by damaging the actor the trace hits, spawning a puff and spraying a decal
+		//damage victim (if any)
+		if(t.hitactor)
+		{
+			actor v = t.hitactor;
+			if(v && v.bismonster && v.health > 0 && !isfriend(v))
+				v.damagemobj(self,self,2,"Freeze",DMG_THRUSTLESS);
+		}
+		
+		//spawn puff if hit anything that is not sky
+		if(hit)
+		{
+			actor p = Spawn("CryoRifleBeamPuff",fpos);
+			if(p)
+			{
+				p.target = self; //no self damage
+				p.A_SprayDecal("FreezerBurnSmall",2,(0,0,0),t.hitdir); //spray the decal manually
+			}
+		}
+		
+		for(int i = 0; i < steps; i++)
+		{
+			spos += (dr * frozenspacepx);
+			FrostBeam.Pos = spos;
+			if(i > 0) //skip the first iteration
+				Level.SpawnParticle(FrostBeam);
+		}
+		
 	}
 	
 	action string PB_GetCurrentRocketMode()
@@ -1257,14 +1311,14 @@ extend class PB_WeaponBase
 		{
 			spos += (dr * (BeamType ? railpartstep : railpartstepaim));
 			if(i > 0) //skip the first iteration, so it doesnt spawn a particle blocking the view
-				PB_DrawRailFx1(spos,BeamType,alfa);
+				PB_DrawRailFx1(spos,BeamType,alfa,power);
 			
-			if(Beamtype && (i % 4 == 0) && power > 45)
-				PB_SpawnRailShockWave(spos,1,i);
+			if(Beamtype && (i % 4 == 0) && power >= 60) //appear the shockwave every 4 iterations if its not an aiming beam and its fullpower
+				PB_SpawnRailShockWave(spos,1,i/4);
 		}
 	}
 	
-	Action Void PB_DrawRailFx1(vector3 where,int BeamType = RedRail_Aim, double alfa = 1.0)
+	Action Void PB_DrawRailFx1(vector3 where,int BeamType = RedRail_Aim, double alfa = 1.0, int power = 0)
 	{
 		FSpawnParticleParams RedRailPx;
 		int fm = random(1,4);
@@ -1278,10 +1332,11 @@ extend class PB_WeaponBase
 		RedRailPx.Startroll = randompick(0,180);
 		RedRailPx.RollVel = 0;
 		RedRailPx.StartAlpha = alfa;
-		RedRailPx.FadeStep = BeamType ? -1 : 0;
+		//fadestep and lifetime controls how fast it dissappears
+		RedRailPx.FadeStep = BeamType ? (power >= 60 ? -0.08 : -0.15) : 0;
 		RedRailPx.Size = BeamType ? 60 : 12;
-		RedRailPx.SizeStep = 0.005;
-		RedRailPx.Lifetime = BeamType ? random(10,14) : 1; 
+		RedRailPx.SizeStep = 0.01;
+		RedRailPx.Lifetime = BeamType ? (power >= 60 ? random(15,17) : random(8,10)) : 1;  //i dislike chained ternary operators like this, but it is what it is
 		RedRailPx.Pos = where;
 		Level.SpawnParticle(RedRailPx);
 	}
@@ -1297,10 +1352,13 @@ extend class PB_WeaponBase
 		ShockWv.Startroll = randompick(0,360);
 		ShockWv.RollVel = 0;
 		ShockWv.StartAlpha = 1.0;
-		ShockWv.FadeStep = 0.04;
+		//this looks cool, the shockwave grows with the distance, and first fades out the nearest ones, but pb ones are really fast and all with the same size
+		//ShockWv.Lifetime = (20 + it); //adds the actual iteration to the life time
+		//ShockWv.FadeStep = (1.0 / ShockWv.Lifetime); //then just do default particle fade thing (alpha / lifetime)
+		ShockWv.Lifetime = 20;
+		ShockWv.FadeStep = 0.05;
 		ShockWv.Size = red ? 20 : 5;
 		ShockWv.SizeStep = red ? 10 : 5;
-		ShockWv.Lifetime =(25 + it); 
 		ShockWv.Pos = where;
 		Level.SpawnParticle(ShockWv);
 	}
@@ -1333,7 +1391,7 @@ extend class PB_WeaponBase
 				PB_DrawRailFxBlue(spos);
 			
 			if(i % 4 == 0)
-				PB_SpawnRailShockWave(spos,0,i);
+				PB_SpawnRailShockWave(spos,0,i/4);
 		}
 	}
 	
