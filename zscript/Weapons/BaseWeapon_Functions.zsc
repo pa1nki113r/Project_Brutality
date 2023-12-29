@@ -1212,6 +1212,71 @@ extend class PB_WeaponBase
 		}
 	}
 	
+	//custom function to spawn a rail using textured particles, basically a generic version of what the functions above do
+	//draws the rail and returns a pointer to the spawned puff (if any), useful if you want to do something else with the puff / hit location, like spawning something
+	//also saves the hitactor in the puff's tracer pointer.
+	//this doesnt fully replace A_RailAttack, but its useful to replace the visual part of it
+	//this should be usable in decorate
+	Action Actor PB_LightVisualRail(string pufftype = "BulletPuff", int maxdis = 8000, int distparticles = 30, String PTexture = "TNT1A0", int dmg = 1, name damagetype = "Normal", int Xofs = 0, int Yofs = 0, int Zofs = 0, int linetflags = TRF_NOSKY, int pxlifetime = 1,int pxsize = 10,int pxrenderstyle = STYLE_ADD, int pxflags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE,double salpha = 1.0, double fadestps = -0.1, int sizesteps = -1, vector3 vels = (0,0,0), int startrol = 0, int rollspd = 0)
+	{
+		FLineTraceData t;
+		//vz is used to make the linetrace start from the view of the player, use zofs to move it from there
+		double vz = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) + Zofs;
+		
+		//fire the line trace, store the hit data in t
+		bool hit = linetrace(angle,maxdis,pitch,linetflags,vz,Yofs,Xofs,data:t);
+		//get the actual position (+ the args offsets)
+		vector3 spos = (pos.x + Xofs,pos.y + Yofs,pos.z + vz);
+		//get the last position, where the line trace stopped, by default it stops at any actor or in sky, change
+		vector3 fpos = t.HitLocation;
+		fpos -= t.hitdir; //step back 1 map unit, ensures that spawning something in fpos wont spawn at the higher sector
+		
+		vector3 dif = levellocals.Vec3diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dis = dif.length();
+		
+		int q = int(dis / distparticles) + 1; //+ 1 to ensure its always more than 0, since distance cant be negative but can be 0
+		
+		FSpawnParticleParams GenRail;
+		GenRail.Texture = TexMan.CheckForTexture (PTexture);
+		GenRail.Color1 = "FFFFFF";
+		GenRail.Style = pxrenderstyle;
+		GenRail.Flags = pxflags;
+		GenRail.Vel = vels; 
+		GenRail.Startroll = startrol;
+		GenRail.RollVel = rollspd;
+		GenRail.StartAlpha = salpha;
+		GenRail.FadeStep = fadestps;
+		GenRail.Size = pxsize;
+		GenRail.SizeStep = sizesteps;
+		GenRail.Lifetime = pxlifetime; 
+		
+		for(int i = 0; i < q; i++)
+		{
+			spos += (dr * distparticles);
+			if(i > 0)
+			{
+				GenRail.Pos = spos;
+				Level.SpawnParticle(GenRail);
+			}
+		}
+		
+		if(hit)
+		{
+			Actor p = spawn(pufftype,fpos);
+			if(p)
+			{
+				p.target = self;
+				p.tracer = t.hitactor ? t.hitactor : null;
+			}
+			if(t.hitactor != null && !t.hitactor.isfriend(self) && t.hitactor.health > 0)
+				t.hitactor.damagemobj(p ? p : self,self,dmg,damagetype);
+			
+			return p;
+		}
+		return null;
+	}
+	
 	//Rails / Beams things
 	//all this is done this way cause ideally, every weapon should have its own specific functions, though a generic version of this could be made for addons use or simple "laser" like things
 	
@@ -1437,5 +1502,129 @@ extend class PB_WeaponBase
 		Level.SpawnParticle(BlueRailSmoke);
 	}
 	
+	//
+	//Plasma M2 lightning mode
+	//
+	
+	const distlgtngun = 60;
+	Action Void PB_FireM2Lightning()
+	{
+		FLineTraceData t;
+		double vz = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) - 8; 
+		bool hit = linetrace(angle,8000,pitch,TRF_NOSKY,vz,data:t);
+		
+		vector3 spos = (pos.xy,pos.z + vz);
+		vector3 fpos = t.HitLocation;
+		fpos -= t.hitdir;
+		
+		vector3 dif = levellocals.Vec3diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dis = dif.length();
+		
+		int q = int(dis / distlgtngun) + 1; //+ 1 to ensure its always more than 0, since distance cant be negative but can be 0
+		
+		FSpawnParticleParams m2Lightpx;
+		int fm;
+		m2Lightpx.Color1 = "FFFFFF";
+		m2Lightpx.Style = STYLE_Add;
+		m2Lightpx.Flags = SPF_ROLL|SPF_FULLBRIGHT;
+		m2Lightpx.Vel = (0,0,0); 
+		m2Lightpx.RollVel = 0;
+		m2Lightpx.StartAlpha = 1.0;
+		
+		for(int i = 0; i < q; i++)
+		{
+			m2Lightpx.Size = random(20,30);
+			m2Lightpx.FadeStep = -0.02;
+			m2Lightpx.SizeStep = random(10,15);
+			m2Lightpx.Lifetime = random(5,8); 
+			m2Lightpx.Startroll = randompick(0,90,180,270,360);
+			
+			fm = random(6,9);
+			m2Lightpx.Texture = TexMan.CheckForTexture("DLI"..fm.."G0R0");
+			
+			spos += (dr * distlgtngun); //some offsets to the final position would make it look better, ig, for now its too similar to the bfg one
+			m2Lightpx.Pos = spos;
+		
+			if(i > 0)
+				Level.SpawnParticle(m2Lightpx);
+		}
+		
+		//LightningGunPuff
+		if(hit)
+		{
+			actor p = Spawn("LightningGunPuff",fpos);
+			if(p)
+			{
+				p.A_Explode(random(12,15), 80); //tecnically this puff explodes 2 times 
+				p.target = self;
+			}
+		}
+		spawn("BlueFlare",fpos);
+	}
+	
+	//
+	//Unmaker beam
+	//
+	
+	Action void PB_UnmkrBeam(bool overcharge = false,double angofs = 0,double pofs = 0)
+	{
+		FLineTraceData t;
+		double vz = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) - 8;
+		bool hit = linetrace(angle + angofs,8000,pitch + pofs,TRF_NOSKY,vz,data:t);
+		
+		vector3 spos = (pos.xy,pos.z + vz);
+		vector3 fpos = t.HitLocation;
+		fpos -= t.hitdir; 
+		
+		vector3 dif = levellocals.Vec3diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dis = dif.length();
+		int q = int(dis / railpartstepaim) + 1;
+		
+		FSpawnParticleParams UnmkBm;
+		string tx = overcharge ? "PBALK0" : "PBALJ0";
+		UnmkBm.Texture = TexMan.CheckForTexture(tx);
+		UnmkBm.Color1 = "FFFFFF";
+		UnmkBm.Style = overcharge ? STYLE_Add : STYLE_TRANSLUCENT;
+		UnmkBm.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		UnmkBm.Vel = (0,0,0); 
+		UnmkBm.StartAlpha = 1.0;
+		UnmkBm.FadeStep = -0.05;
+		UnmkBm.Size = 20;
+		UnmkBm.SizeStep = -5;
+		UnmkBm.Lifetime = overcharge ? 2 : 1; 
+		
+		bool randomizebeam = randompick(0,0,0,0,0,0,1);
+		
+		for(int i = 0; i < q; i++)
+		{
+			UnmkBm.Startroll = randompick(0,360);
+			UnmkBm.RollVel = random(-5,5);
+			spos += (dr * railpartstepaim);
+			if(randomizebeam)
+				spos += (random(-2,2),random(-2,2),random(-2,2));
+			UnmkBm.Pos = spos;
+			if(i > 0)
+				Level.SpawnParticle(UnmkBm);
+		}
+		string THEpuff = overcharge ? "UnmakerOverchargePuff" : "UnmakerBeamPuff";
+		Actor p;
+		if(hit) //the trace hit anything that is not a sky
+		{
+			p = Spawn(THEpuff,fpos);
+			if(p)
+			{
+				p.target = self;
+				if(overcharge && t.hitactor && !t.hitactor.bnoblood)
+					p.SetStateLabel("Xdeath"); //no bleeding actors makes the puff jump to xdeath state
+					
+				p.A_SprayDecal("Scorch",2,(0,0,0),t.hitdir); 
+			}
+		}
+		
+		if(t.hitactor)
+			t.hitactor.damagemobj(p ? p : self, self, overcharge ? 25 : 15,overcharge ? "ExplosiveImpact" : "Fire");
+	}
 	
 }
