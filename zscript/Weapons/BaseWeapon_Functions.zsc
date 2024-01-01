@@ -153,25 +153,59 @@ extend class PB_WeaponBase
 	}
 	
 	//- L, 0 C, + R
-	Action void PB_GunSmoke(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "GunFireSmoke1")
+	// [gng] credits to jaih1r0 for the position calculation, modified by me to fix the pitch bug
+	Action void PB_GunSmoke(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
 	{
 		double PVZ;
 		PB_PlayerPawn plr = PB_PlayerPawn(invoker.owner);
 		PlayerInfo Playa = Player;
 		if(Playa)
 		{
-			PVZ = (Playa.ViewZ - FloorZ) + plr.YBob - 5;
+			PVZ = (Playa.ViewZ - FloorZ) - 6;
 		}
-		Vector3 CPos = (d2 + Invoker.Owner.Radius, -d1 + plr.XBob, PVZ);
+
+		d2 += plr.Radius;
+		d3 -= 6;
+		vector3 direction = ((self.AngleToVector(angle,cos(pitch)), sin(-pitch)));
+        
+        //got this from KeksDose -> https://forum.zdoom.org/viewtopic.php?t=63552&p=1090328 its very useful for this, at least now that i dont understand quats xD
+        vector3 fw = (cos(angle),sin(angle),0); //forward offset
+        vector3 sd = (cos(angle - 90),sin(angle - 90),0); //side offset
+        
+        //get the pitch and adjust the forward offset if looking up/down, so the smoke doesnt appear in front of the player from thin air in those cases
+        //cos(pitch) < 1.0, and get closer to 0 when looking up/down, ig sin(pitch) ** 2 could also work (yes,this time the calculator wasnt in radians :D)
+        double pt = cos(pitch);
+		double pt2 = sin(pitch);
+
+        fw *= d2 * (((0.45 + (pt2 * 0.15)) * -pt2) + pt);
+		d3 -= d2 * pt2;
+
+		//console.printf("%f %f %f", fw.x, fw.y, fw.z);
+		//console.printf("%f %f %f", sd.x, sd.y, sd.z);
+        
+        //get a vector3 with the total offsets
+        vector3 offs = fw + (sd * -d1);
+        //add the offsets to the current position
+        vector3 spos = self.vec3offset(offs.x, offs.y, offs.z);
+        
+        //add the view value
+        spos.z += (height * 0.5 - floorclip + player.mo.AttackZOffset * player.crouchFactor) + d3;
+
+		//Vector3 CPos = (d2, -d1, d3 - 6);
 		
-		Actor Smoke = Spawn(SActor,PB_Math.Vec3OffsetRelative(Invoker.Owner,CPos), ALLOW_REPLACE);
+		PB_GunFireSmoke Smoke = PB_GunFireSmoke(Spawn(SActor, spos));
+
+		//PB_GunFireSmoke pSmoke = PB_GunFireSmoke(Smoke);
 		
 		If(Smoke)
 		{
-			Smoke.Vel = PB_Math.AngleToVector3D(self.Angle, -self.Pitch);
-			Smoke.A_ChangeVelocity(Invoker.Owner.Vel.X / 3, Invoker.Owner.Vel.Y / 3, Invoker.Owner.Vel.Z / 3, CVF_RELATIVE);
+			Smoke.master = invoker.owner;
+			//Smoke.Vel = PB_Math.AngleToVector3D(self.Angle, -self.Pitch);
+			vector3 momentum = plr.vel;
+			Smoke.A_ChangeVelocity(momentum.X, momentum.Y, 0, CVF_RELATIVE);
 			Smoke.A_FaceMovementDirection();
-			Smoke.Scale = (frandom(0.15,0.25),frandom(0.15,0.25));
+			double m_flScale = frandom(0.10,0.12);
+			Smoke.Scale = (m_flScale, m_flScale);
 			Smoke.A_SetRoll(random(0, 359));
 		}
 	}
