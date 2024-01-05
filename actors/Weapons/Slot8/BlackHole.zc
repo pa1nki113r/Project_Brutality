@@ -31,6 +31,7 @@ class PB_BlackHole : Actor
 	
 	Bool Succ;
 	Array <Actor> affectedActors; // Create a list to hold affected actors
+	actor SuckedPlayer; //used if the player was affected to save a pointer to it, this isnt multiplayer friendly anyways, so just a single pointer and not an array
 	
 	States
 	{
@@ -99,20 +100,25 @@ class PB_BlackHole : Actor
 		Double EventHorizon = 60;
 		
 		
-
+		//probably a BlockThingsIterator would be a lot more performance friendly than a full range ThinkerIterator (specially when it runs every tick)
+		//or even setting the statnum check of the thinkeriterator to STAT_DEFAULT 
         ThinkerIterator it = ThinkerIterator.Create("Actor");
-
         Actor act;
         while (act = Actor(it.Next()))
         {
             // Ensure it exists, is not an item is not yourself, is not another black hole, and is actually affected by thrust.
-            if (!act || act is "Inventory" || act == self || act is "PB_BlackHole" || act.bDontThrust) continue;
+			//also check for bNoSector to avoid sucking teleportdests or similar invisible things, bNoClip to avoid sucking spawnshots and bActLikeBridge to not suck actor bridges 
+            if (!act || act is "Inventory" || act == self || act is "PB_BlackHole" || act.bDontThrust || act.bNoSector || act.bNoClip || act.bActLikeBridge) continue;
 
 			double distance = Distance3D(act);
 
             // Skip this iteration if out of range.
             if (distance > OuterRadius) 
                 continue;
+			
+			//only pull and damage things that can see the blackhole, unless they are really close to it
+			//if(!checksight(act) && distance > DeathRadius) //this makes it feel kinda weak, and doesnt really helps with performance:(
+			//	continue;
 			
 			double dx = pos.x - act.pos.x;
 			double dy = pos.y - act.pos.y;
@@ -122,6 +128,7 @@ class PB_BlackHole : Actor
 			//effects don't set their own blend colors for some reason. So it'll probably be best to make this into a RenderOverlay or some shit.
 			If (Act.Player)
 			{
+				SuckedPlayer = act;
 				Double Intensity = PB_Math.LinearMap (Distance, PullRadius, 0, 0.0, 0.8); //Map the distance to the black hole to an alpha range of 0.0 to 0.8.
 				//console.printf ("player black hole fade intensity %.4f, intensity with alpha included is %.4f",intensity,intensity*alpha);
 				Let Urple = Color (0, 128, 0, 128);
@@ -211,6 +218,16 @@ class PB_BlackHole : Actor
         // For example, you could spawn particles, play a sound, or perform other cleanup tasks.
 
         Super.OnDestroy(); // Calls the OnDestroy function of the superclass (important!)
+		
+		//temp fix ig, this ensures the player screen wont be purple forever 
+		//its better than jumping into the blackhole to clean the screen
+		if(SuckedPlayer)
+		{
+			SuckedPlayer.Player.BlendA = 0.0;
+			SuckedPlayer.Player.BlendR = 0.0;
+			SuckedPlayer.Player.BlendG = 0.0;
+			SuckedPlayer.Player.BlendB = 0.0;
+		}
 		
 		for (int i = 0; i < affectedActors.Size(); i++)
 		{
