@@ -21,6 +21,7 @@ extend class PB_WeaponBase
 		
 		A_WeaponOffset(frandom(-invoker.horizontalOffsetRecoil, invoker.horizontalOffsetRecoil) * invoker.exaggerationMultiplier, frandom(1, invoker.verticalOffsetRecoil) * invoker.exaggerationMultiplier + 32, WOF_INTERPOLATE);
 		A_SetRoll(roll + frandom(-invoker.horizontalOffsetRecoil, invoker.horizontalOffsetRecoil) * invoker.exaggerationMultiplier, SPF_INTERPOLATE);
+		PB_QuakeCamera(2,3);
 	}
 	
 	action bool PB_ChainsawHealthRestore(){
@@ -714,7 +715,7 @@ extend class PB_WeaponBase
 			}
 		}
 		
-		
+	
 	//[Pop] This is a hack, ideally we shouldnt have to do this and once weapons are fully ZScript each one
 	//will have its own function for firing that gets called. Even after it may be good to keep this for 
 	//weapon addons that stay in DECORATE. Thanks to ADMERAL for throwing this together.
@@ -724,6 +725,17 @@ extend class PB_WeaponBase
 		{
 			A_FireProjectile(type,(frandom(angle,angle * -1)),0,offs,height,FPF_NOAUTOAIM,(frandom(pitch,pitch * -1)));
 		}
+	}
+	
+	//[Pop]This function is so we can replace all of the shitty A_Quake or QuakeEx
+	//whatever the fucks in the mod, ESPECIALLY on the weapon front
+	//no more of these SHAKEYOURASSMINOR and SHAKEYOURASSMAJOR actor spawning garbage
+	//its pretty bare bones but maybe we can extend it in the future if we need it
+	action void PB_QuakeCamera(int qDur, float camRoll)
+	{
+		A_QuakeEx(0, 0, 0, qDur, 0, 100, "", 0, 1, 0, 0, 0, 0, (camRoll / 2), 1, 0, 0, 0);
+		//also, camroll / 2, 2 should be made a scaling CVar at some point, or attach it to some other cvar
+		//DONT FORGET DIPSHIT
 	}
 	
 	//Checks if the owner has a berserk
@@ -832,15 +844,6 @@ extend class PB_WeaponBase
 			A_SetInventory("sae_extcam", 0);
 			A_SetInventory("sae_deathcam", 0);
 			A_SetInventory(wepToken,1);
-			
-			if(pb_ScaleXWeapons)
-			{
-				invoker.WeaponScaleX = 1.2;
-			}
-			else
-			{
-				invoker.WeaponScaleX = 1;
-			}
 	}
 	
 	//Special Modes
@@ -1202,7 +1205,7 @@ extend class PB_WeaponBase
 		}
 	}
 	
-	//weapons should ALWAYS bob, fucking fight me -popguy
+	//[Pop]weapons should ALWAYS bob, fucking fight me
 	override void DoEffect()
 	{
 		super.DoEffect();
@@ -1210,6 +1213,15 @@ extend class PB_WeaponBase
 		if (player && player.readyweapon)
 		{
 			player.WeaponState |= WF_WEAPONBOBBING;
+		}
+		
+		if(pb_ScaleXWeapons)
+		{
+			WeaponScaleX = 1.2;
+		}
+		else
+		{
+			WeaponScaleX = 1;
 		}
 	}
 	
