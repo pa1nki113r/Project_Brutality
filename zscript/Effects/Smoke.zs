@@ -72,9 +72,11 @@ class PB_GunFireSmoke: Actor
 
                     if (alpha < 0.1)
                         A_FadeOut(0.005, FTF_CLAMP);
+                        
+                    if (alpha <= 0.0)
+                    	self.Destroy();
                 }
             }
             Loop;
     }
 }
-
