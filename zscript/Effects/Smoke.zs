@@ -44,7 +44,7 @@ class PB_GunFireSmoke: Actor
                 invoker.frame = invoker.m_sprite;
                 if(GetAge() < 18) 
                 {
-                    A_Fadeout(0.015, FTF_CLAMP);
+                    A_Fadeout(0.015, FTF_CLAMP|FTF_REMOVE);
                     scale *= 1.02;
                     vel *= 0.85;
                     roll += dissipateRotation;
@@ -58,7 +58,7 @@ class PB_GunFireSmoke: Actor
                 }
                 else
                 {
-                    A_Fadeout(0.01 , FTF_CLAMP);
+                    A_Fadeout(0.01 , FTF_CLAMP|FTF_REMOVE);
                     scale *= 1.01;
                     vel *= 0.7;
                     roll += dissipateRotation;
@@ -71,10 +71,9 @@ class PB_GunFireSmoke: Actor
                     }
 
                     if (alpha < 0.1)
-                        A_FadeOut(0.005, FTF_CLAMP);
+                        A_FadeOut(0.005, FTF_CLAMP|FTF_REMOVE);
                 }
             }
             Loop;
     }
 }
-

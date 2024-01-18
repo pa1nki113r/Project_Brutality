@@ -38,7 +38,7 @@ class PB_FPP_Light : Spotlight
 		
 		if(second) {
 			baseColor = beamColor;
-			bNOSHADOWMAP = true;
+			//bNOSHADOWMAP = true;
 		}
 		else {
 			fCol = beamColor;

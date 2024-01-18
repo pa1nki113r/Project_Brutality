@@ -7,6 +7,12 @@ class PB_Projectile : FastProjectile abstract
 		EType_BleedingActor
 	}
 	
+	override void PostBeginPlay()
+	{
+		super.PostBeginPlay();
+		startPos = pos;
+	}
+	
 	virtual int Handle_MissileHit(Actor victim)
 	{
 		double scaled_damage = truedamage;
@@ -172,6 +178,12 @@ class PB_Projectile : FastProjectile abstract
 					if (--ripcount <= 0)
 					{
 						tm.ClearLastRipped();	// [RH] Do rip damage each step, like Hexen
+					}
+
+					if( bRANGED && Level.Vec3Diff( pos, startPos ).Length() > destroyRange )
+					{
+						self.Destroy();
+						return;
 					}
 					
 					if (!TryMove (Pos.XY + frac.XY, true, false, tm))
@@ -368,6 +380,9 @@ class PB_Projectile : FastProjectile abstract
 	int ripamount;
 	Property RipperCount : ripamount;
 	
+	int destroyRange;
+	Property ProjectileRange : destroyRange;
+	
 	double truedamage;
 	Property BaseDamage : truedamage;
 	
@@ -376,13 +391,16 @@ class PB_Projectile : FastProjectile abstract
 	flagdef Omnidirectional: BehaviorFlags, 1;
 	flagdef InvisiblePuff: BehaviorFlags, 2;
 	flagdef RipOnce: BehaviorFlags, 3;
+	flagdef RANGED: BehaviorFlags, 4;
+	
+	vector3 startPos;
 
 	Default
 	{
 		// [Ace] Speedy projectiles with a large radius are more performant, but they don't work so well with switches that rely on hitscan activation
 		// if the linedefs are packed right in front of a wall. Normally this shouldn't be a problem, but in some cases it is, such as Sigil's E5M1 switch at map start.
 		Speed 320;
-		Mass 75;
+		Mass 25;
 		Radius 1;
 		Height 2;
 		Projectile;
@@ -403,7 +421,7 @@ class PB_Projectile : FastProjectile abstract
 		Scale 0.15;
 		PB_Projectile.RipperCount 1;
 		PB_Projectile.BaseDamage 5;
-		Gravity 1.0;
+		Gravity 0.5;
 	}
 	
 	States
