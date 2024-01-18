@@ -7,6 +7,12 @@ class PB_Projectile : FastProjectile abstract
 		EType_BleedingActor
 	}
 	
+	override void PostBeginPlay()
+	{
+		super.PostBeginPlay();
+		startPos = pos;
+	}
+	
 	virtual int Handle_MissileHit(Actor victim)
 	{
 		double scaled_damage = truedamage;
@@ -172,6 +178,12 @@ class PB_Projectile : FastProjectile abstract
 					if (--ripcount <= 0)
 					{
 						tm.ClearLastRipped();	// [RH] Do rip damage each step, like Hexen
+					}
+
+					if( bRANGED && Level.Vec3Diff( pos, startPos ).Length() > destroyRange )
+					{
+						self.Destroy();
+						return;
 					}
 					
 					if (!TryMove (Pos.XY + frac.XY, true, false, tm))
@@ -368,6 +380,9 @@ class PB_Projectile : FastProjectile abstract
 	int ripamount;
 	Property RipperCount : ripamount;
 	
+	int destroyRange;
+	Property ProjectileRange : destroyRange;
+	
 	double truedamage;
 	Property BaseDamage : truedamage;
 	
@@ -376,6 +391,9 @@ class PB_Projectile : FastProjectile abstract
 	flagdef Omnidirectional: BehaviorFlags, 1;
 	flagdef InvisiblePuff: BehaviorFlags, 2;
 	flagdef RipOnce: BehaviorFlags, 3;
+	flagdef RANGED: BehaviorFlags, 4;
+	
+	vector3 startPos;
 
 	Default
 	{
