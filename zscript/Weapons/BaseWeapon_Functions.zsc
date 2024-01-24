@@ -1359,22 +1359,14 @@ extend class PB_WeaponBase
 	action void PB_FireAltBFGRail()
 	{
 		//the first option is a lineattack cuz linetrace acts weird in some tipes of geometry (try one with the kinsie test map, in the elevator or the pool)
-		Actor p = LineAttack(angle,8000,pitch,20,'Disintegrate',"BFGBeamPuff",LAF_NOIMPACTDECAL|LAF_NORANDOMPUFFZ);
+		//Actor p = LineAttack(angle,8000,pitch,20,'Disintegrate',"BFGBeamPuff",LAF_NOIMPACTDECAL|LAF_NORANDOMPUFFZ);
+		//nvm just needed to substract hitdir to hitlocation, so it doesnt spawn in the wall
 		vector3 destpos;
+		FLineTraceData t;
+		bool hit = linetrace(angle,8000,pitch,0,height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor,data:t);
 		
-		if(p) 
-		{
-			p.target = self;
-			destpos = (p.pos.XY,p.pos.z + p.height);
-		}
-		else //no puff spawned, probably fired at the sky, so fire a linetrace to draw the rail anyway
-		{
-			FLineTraceData t;
-			bool hit = linetrace(angle,8000,pitch,0,height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor,data:t);
-			if(hit)
-				destpos = t.hitlocation;
-				
-		}
+		destpos = t.hitlocation;
+		destpos -= (t.hitdir * 2);
 		
 		vector3 dif = levellocals.vec3diff((pos.XY,pos.z + height * 0.5),destpos);
 		vector3 dir = dif.unit();
@@ -1387,6 +1379,24 @@ extend class PB_WeaponBase
 		{
 			actpos += (dir * bfgpartstep);
 			PB_DrawBFGrailparticle(actpos);
+		}
+		
+		//damage victim (if any)
+		if(t.hitactor)
+		{
+			actor v = t.hitactor;
+			int dmg = 40 * random(1,2); //so this is why it feels weaker, the original projectile deals 20 * random(1,8) damage, and damagemobj doesnt add randomization, so a little randomization may help here
+			if(v && v.bismonster && v.health > 0 && !isfriend(v))
+				v.damagemobj(self,self,dmg,'Disintegrate');
+		}
+		
+		//spawn puff if hit anything
+		if(hit)
+		{
+			actor p = Spawn("BFGBeamPuff",destpos);
+			if(p)
+				p.target = self;
+			
 		}
 
 	}
