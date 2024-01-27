@@ -2694,161 +2694,155 @@ class DEDashJumpHandler : EventHandler
 	}
 }
 
-
-Class DEDashJump : Inventory 						///Dash and double jump code by TheCamaleonMaligno ( https://www.youtube.com/watch?v=mTfGxY_Afhs )
+/// Dash and double jump code by malingo ( https://www.youtube.com/watch?v=mTfGxY_Afhs )
+class DEDashJump : Inventory
 {
-	Double DashDir, DashSpeed;
-	Int DashTics, DashCharge, AirTics;
-	Bool DJump, Waiting;
-	/*Default
-	{
-		Inventory.MaxAmount 1;
-		+INVENTORY.AUTOACTIVATE
-	}*/
-	Override Void Tick()
+	double dashDir, dashSpeed;
+	int dashTics, dashCharge, airTics;
+	bool dJump, waiting;
+	
+	const DASHMAXCHARGE = 35;
+
+	override void Tick()
 	{
 		Super.Tick();
-		If(!Owner || Owner && (!Owner.Player || Owner.Health<1)) Return;
-		PlayerInfo P=Owner.Player;
 		
+		if( !owner || owner && ( !owner.player || owner.health < 1 ) ) 
+			return;
+			
+		PlayerInfo plr = owner.player;
+		int plrCmd = plr.cmd.buttons;
 		
-		
-		Int BT=P.cmd.buttons;
-		
-		Int DashMaxCharge=35;
-		
-		If(!Waiting && (BT & BT_USER3) && DashCharge>=DashMaxCharge/2 && !DashTics && !Owner.CheckInventory("IsSlideKicking", 1))
+		if( !waiting && ( plrCmd & BT_USER3 ) && dashCharge >= DASHMAXCHARGE / 2 && !dashTics && !owner.CheckInventory( "IsSlideKicking", 1 ) )
 		{
-			DashDir=0;
-			If(BT & BT_FORWARD) DashDir=0;
-			If(BT & BT_BACK) DashDir=180;
-			If(BT & BT_MOVELEFT) DashDir=90;
-			If(BT & BT_MOVERIGHT) DashDir=-90;
-			If((BT & BT_FORWARD) && (BT & BT_MOVELEFT)) DashDir=45;
-			If((BT & BT_FORWARD) && (BT & BT_MOVERIGHT)) DashDir=-45;
-			If((BT & BT_BACK) && (BT & BT_MOVELEFT)) DashDir=180-45;
-			If((BT & BT_BACK) && (BT & BT_MOVERIGHT)) DashDir=180+45;
-			DashDir+=Owner.Angle;
-			If(DashCharge<DashMaxCharge) { Waiting=True; DashCharge=0; }
-			DashCharge=Max(0,DashCharge-DashMaxCharge/2);
-			DashSpeed=70;//35;
-			DashTics=10;
-			EventHandler.SendNetworkEvent("PB_DashWhatchamacallit");
-			Owner.A_StartSound("player/dash",69,CHANF_OVERLAP);
-			//Owner.A_QuakeEx(2,2,2,15,0,1,"",QF_SCALEDOWN);
-			Owner.A_QuakeEx(1,1,1,5,0,1,"",QF_SCALEDOWN);
-			Actor C=Spawn("DashCollisionChecker",Owner.Pos);
-			C.bSolid=True;
-			C.Master=Self;
-			C.Target=Owner;
-			C.A_SetSize(Owner.Radius,Owner.Height);
-			C.bNoTImeFreeze=True;
-			GiveInventory("EvadeCheck", 1);
-		}
-		
-		if(Owner.CheckInventory("ExecutionToken", 1)) {
-				Owner.vel.x = 0;
-				Owner.vel.y = 0;
-				DashTics = 0;
-				TakeInventory("EvadeCheck", 2);
-				TakeInventory("EvadeHold", 2);
+			// [gng] thanks to kodi and lewisk3, analog compatible dash direction
+			dashDir = DeltaAngle( atan2( plr.cmd.sidemove, plr.cmd.forwardmove ), owner.angle );
+			
+			if( DashCharge < DASHMAXCHARGE ) 
+			{ 
+				waiting = true; 
+				dashCharge = 0; 
 			}
-		
-		If(DashTics)
-		{
-			//If(P.OnGround) {P.OnGround=False; Owner.AddZ(1); }
 			
+			dashCharge = max( 0, dashCharge - DASHMAXCHARGE / 2 );
 			
+			dashSpeed = 100;
+			dashTics = 10;
 			
+			EventHandler.SendNetworkEvent( "PB_DashWhatchamacallit" );
+			owner.A_StartSound( "player/dash", 69, CHANF_OVERLAP );			
+			owner.A_QuakeEx( 2, 2, 2, dashTics, 0, 1, "", QF_SCALEDOWN, rollintensity: 0.2 );	
 			
-			DashTics--;
-			Owner.VelFromAngle(DashSpeed,DashDir);
-			If(DashTics<=5) DashSpeed*=0.65;//0.8;
-			Owner.Vel.Z=0;
-			level.airControl = 0.25;
-			Owner.vel.x *= 0.50;
-			Owner.vel.y *= 0.50;
-			GiveInventory("EvadeHold", 1);
-		}
-		If(P.onGround)
-		{
-			DJump=True;
-			AirTics=0;
-			level.airControl = 0.00390625;
-		}
-		//Else If(!(Owner.GetPlayerInput(MODINPUT_OLDBUTTONS) & BT_JUMP) && (Owner.GetPlayerInput(MODINPUT_BUTTONS) & BT_JUMP) && DJump && AirTics>=5)
-		//{
-		
-			//Owner.Vel.Z=Max(Owner.Vel.Z+8,8);
-			//Float DoubleJumpVelZ = /*5.5*/7.4 * 1.2;
-			//Owner.Vel.Z = DoubleJumpVelZ;
-			//Owner.A_StartSound("JMPBOOT",69,CHANF_OVERLAP);
-			
-			//DJump=False;
-			
-		//}
-		Else AirTics++;
-		If(DashCharge<DashMaxCharge)
-		{
-			DashCharge++;
-			If(DashCharge==DashMaxCharge && !P.OnGround) DashCharge=DashMaxCharge-1;
-			If(DashCharge==DashMaxCharge)
+			Actor pCollide = Spawn( "DashCollisionChecker", owner.Pos );
+			if( pCollide )
 			{
-				Waiting=False;
-				Owner.A_StartSound("player/dashready",69,CHANF_OVERLAP);
-				TakeInventory("EvadeCheck", 2);
-				TakeInventory("EvadeHold", 2);
+				pCollide.bSOLID = true;
+				pCollide.bNOTIMEFREEZE = true;
+				
+				pCollide.master = self;
+				pCollide.target = owner;
+				
+				pCollide.A_SetSize( owner.radius, owner.height );
+				
+				GiveInventory( "EvadeCheck", 1 );
+			}
+		}
+		
+		if( owner.CheckInventory( "ExecutionToken", 1 ) ) 
+		{
+			owner.vel.xy *= 0;
+			dashTics = 0;
+			TakeInventory( "EvadeCheck", 2 );
+			TakeInventory( "EvadeHold", 2 );
+		}
+		
+		if( dashTics )
+		{
+			dashTics--;
+			
+			if( dashTics == 3 )
+				dashSpeed *= 0.4;
+			
+			owner.VelFromAngle( DashSpeed * 0.5, DashDir );
+							
+			//owner.vel.xy *= 0.50;
+			owner.vel.z = 0;
+			
+			level.airControl = 0.25; // disgusting
+			
+			GiveInventory( "EvadeHold", 1 );
+		}
+		
+		if( plr.onGround )
+		{
+			dJump = true;
+			airTics = 0;
+			level.airControl = 0.00390625; // also disgusting
+		}
+		else
+		{
+			airTics++;
+		}	
+			
+		// [gng] recharge the dash
+		if( dashCharge < DASHMAXCHARGE )
+		{
+			dashCharge++;
+			
+			if( dashCharge == DASHMAXCHARGE && !plr.onGround ) 
+				dashCharge = DASHMAXCHARGE - 1;
+				
+			if( dashCharge == DASHMAXCHARGE )
+			{
+				waiting = false;
+				owner.A_StartSound( "player/dashready", 69, CHANF_OVERLAP );
+				TakeInventory( "EvadeCheck", 2 );
+				TakeInventory( "EvadeHold", 2 );
 			}
 		}
 	}
 }
 
-
-
-Class DashCollisionChecker : Actor
+class DashCollisionChecker : Actor
 {
-	DEDashJump je;
-	Override Void PostBeginPlay()
+	DEDashJump dasher;
+	
+	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
-		let sas=DEDashJump(Master);
-		je=sas;
+		
+		if( master )
+			DEDashJump dasher = DEDashJump( master );
 	}
-	Override bool CanCollideWith(Actor other, bool passive)
+	
+	override bool CanCollideWith( Actor other, bool passive )
 	{
-		If(Other==target || Other.bMissile)
-		Return False;
-		If(Pos.Z>Other.Pos.Z+Other.Height || Other.Pos.Z>Pos.Z+Height) Return False;
-		If(Other.bSolid && Other.bShootable && Other.CanCollideWith(Self,0))
-		Tracer=Other;
-		Return False;
+		if( ( other == target || other.bMISSILE ) || ( pos.z > other.pos.z + other.height || other.pos.z > pos.z + height ) )
+			return false;
+		
+		if( other.bSOLID && other.bSHOOTABLE && other.CanCollideWith( Self, 0 ) )
+			tracer = other;
+		
+		return false;
 	}
-	Override VOid Tick()
+	
+	override void Tick()
 	{
-		Super.TIck();
-		If(!target || !je || je && !je.dashtics) { Destroy(); Return; }
-		SetOrigin(Target.Pos+Target.Vel*0.1,0);
-		Vel=Target.Vel;
-		If(Tracer)
+		Super.Tick();
+		
+		if( !target || !dasher || dasher && !dasher.dashTics ) 
+		{ 
+			Destroy(); 
+			return; 
+		}
+		
+		SetOrigin( target.pos + target.vel * 0.1, 0 );
+		vel = target.vel;
+		
+		if( tracer )
 		{
-			bThruActors=True;
-			/*
-			Let Cg=Weapon_Chaingun(Target.player.ReadyWeapon);
-			If(Cg && Cg.Tracer)
-			{
-				bForcePain=True;
-				Target.Vel*=0;
-				Tracer.DamageMobj(Self,Target,75,'Normal',0,Target.Angle);
-				Tracer.ApplyKickback(Target,Target,300,Target.Angle,'Normal',0);
-				Tracer.A_TakeInventory("DashStun");
-				Tracer.A_GiveInventory("DashStun");
-				Target.A_StartSound("Weapons/DE/ChaingunShieldDash",9,CHANF_OVERLAP,0.5);
-				Target.A_QuakeEx(1,1,1,8,0,1,"",QF_SCALEDOWN);
-				Cg.DashImpact();
-				Cg.DashImpact();
-			}
-			*/
-			je.DashSpeed=0;
+			bTHRUACTORS = true;
+			dasher.dashSpeed = 0;
 			Destroy();
 		}
 	}
