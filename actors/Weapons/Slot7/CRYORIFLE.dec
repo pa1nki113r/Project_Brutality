@@ -1,4 +1,3 @@
-Actor CryoRiflePistolToken : Inventory {inventory.maxamount 1}
 ACTOR FireModeCryoRifleMissile : Inventory { Inventory.MaxAmount 1 }
 ACTOR FireModeCryoRifleBeam : Inventory { Inventory.MaxAmount 1 }
 ACTOR FireModeCryoRifleSpear : Inventory { Inventory.MaxAmount 1 }
@@ -112,8 +111,6 @@ Actor PB_CryoRifle: PB_Weapon
 					A_StartSound("weapons/CryoRifle/idle", CHAN_6, CHANF_LOOPING|CHANF_OVERLAP);
 					A_StartSound("PLSIDLE", CHAN_7, CHANF_LOOPING|CHANF_OVERLAP);
 					}
-				TNT1 A 0 A_JumpIfInventory("CryoRiflePistolToken", 1, "Ready2")
-				TNT1 A 0 A_JumpIfInventory("HasUnloadedCryoRifle", 1, "GunEmpty")
 				TNT1 A 0 A_JumpIfInventory("HasUnloadedCryoRifle", 1, "GunEmpty")
 			ReadyToFire1:
 				FR03 EFGHIJKLMMLKJIHGFE 1 {
@@ -153,31 +150,6 @@ Actor PB_CryoRifle: PB_Weapon
 				}
 				Goto GunEmpty+3
 			
-			//Pistol Drawn
-			Ready2:
-				FR30 I 1 {
-				A_FireCustomMissile("TinyGunSmoker", 0, 0, -4, -6, 0, 0);
-				if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR39");}
-				
-				if(GetCvar("pb_toggle_aim_hold")) {
-					if ((PressingFire() || JustPressed(BT_ATTACK)) && PressingAltfire()){
-						return state("FirePistol");
-					}
-					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){
-						return state("UnequipPistol");
-					}
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE, CheckUnloaded("HasUnloadedCryoRifle"));
-				}
-				else {
-					if (PressingFire() && CountInv("PrimaryPistolAmmo") > 0 ){
-						return state("FirePistol");
-					}
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("HasUnloadedCryoRifle"));
-				}
-				return state("");
-			}
-			Loop
-			
 			WeaponSpecial:
 				TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
 				TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
@@ -189,11 +161,6 @@ Actor PB_CryoRifle: PB_Weapon
 					PB_HandleCrosshair(5);
 					A_ZoomFactor(1.0);
 					A_ClearOverlays(10,11);
-					if (CountInv("CryoRiflePistolToken") >= 1)
-					{
-						return state("UnequipPistol");
-					}
-					return state("");
 				}
 			SwitchMode:
 				TNT1 A 0 {
@@ -314,13 +281,6 @@ Actor PB_CryoRifle: PB_Weapon
 					A_StopSound(CHAN_6);
 					A_StopSound(CHAN_7);
 				}
-				TNT1 A 0 A_JumpIfInventory("CryoRiflePistolToken",1,1)
-				Goto FinalDeselect
-				FR30 JKLMNOPQ 1 {
-					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR39");}
-				}
-			FinalDeselect:
-				TNT1 A 0 A_Takeinventory("CryoRiflePistolToken",1)
 				FR93 NOPQ 0
 				FR03 NOPQ 1 {
 					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR93");}
@@ -339,7 +299,6 @@ Actor PB_CryoRifle: PB_Weapon
 				TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
 				TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
 				TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
-				TNT1 A 0 A_JumpIfInventory("CryoRiflePistolToken",1,"FirePistol")
 				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleBeam",1,"FireBeam")
 			FireMissile:
 				TNT1 A 0  {
@@ -492,107 +451,18 @@ Actor PB_CryoRifle: PB_Weapon
 			Muzzle7:
 				FR12 G 1 BRIGHT
 				Stop
-			
-			FirePistol:
-				TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo", 1, 1)
-				Goto ReloadPistol
-				TNT1 A 0 A_GunFlash("FlashFirePistol")
-				FR30 Z 5 {
-// 					A_GunFlash("FlashFirePistol");
-					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR39");}
-				}
-				Goto Ready2
-			FlashFirePistol:
-				TNT1 A 0 A_Overlay(-6, "PistolFlash", true)
-				D2RF A 1 BRIGHT {
-					A_OverlayOffset(PSP_FLASH,-6,32,WOF_KEEPY);
-					A_FireBullets (0.1, 0.1, -1, 15, "HitPuff", FBF_NORANDOM,8192,"Tracer", -1,4);
-					A_ZoomFactor(0.985);
-					A_PlaySound("weapons/pistol");
-					A_AlertMonsters;
-					PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 1, 1, 0, 0);
-					A_FireCustomMissile("YellowFlareSpawn", 0, 0, 1, 1, 0, 0);
-					A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
-					A_FireCustomMissile("PistolCasingSpawner", 0,0,0,2);
-					A_Takeinventory("PrimaryPistolAmmo",1);
-					PB_WeaponRecoil(-0.18,-0.08);
-				}
-				D2RF B 1 BRIGHT {
-					A_ZoomFactor(0.99);
-					A_OverlayOffset(PSP_FLASH,-6,32,WOF_KEEPY);
-					PB_WeaponRecoil(-0.18,-0.08);
-				}
-				D2RF C 1 A_ZoomFactor(1.0)
-				D2RF D 1
-				D2RF E 1
-				Stop
-			
-		//Pistol flashes, taken from Pistol.
-		PistolFlash:
-		"####" A 0 A_OverlayOffset(-6, -6, 32, WOF_KEEPY)
-//		TNT1 A 0 A_JumpIfInventory("SilencerEquipped", 1, 2)
-		TNT1 A 0 A_Jump(256, "PistolFlash1", "PistolFlash2")
-		TNT1 A 1
-		Stop
-		PistolFlash1:
-		D2RM A 1 Bright
-		TNT1 A 0 A_Jump(256, "PistolBigFlash1", "PistolBigFlash2", "PistolBigFlash3")
-		Stop
-		PistolFlash2:
-		D2RM C 1 Bright
-		TNT1 A 0 A_Jump(256, "PistolBigFlash1", "PistolBigFlash2", "PistolBigFlash3")
-		Stop
-		PistolBigFlash1:
-		D2RM B 1 bright
-		Stop
-		PistolBigFlash2:
-		D2RM D 1 bright
-		Stop
-		PistolBigFlash3:
-		D2RM E 1 bright
-		Stop
-
-			AltFire: //drawing pistol with full CryoRifle
+				
+			AltFire: //No moar pistol
 				TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
 				TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
 				TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
-				TNT1 A 0 {
-					A_WeaponOffset(0,32);
-					A_SetRoll(0);
-					PB_HandleCrosshair(79);
-					A_TakeInventory("PB_LockScreenTilt",1);
-				}
-				TNT1 A 0 A_JumpIfInventory("CryoRiflePistolToken",1,"UnequipPistol")
-				TNT1 A 0 {	
-					A_GiveInventory("CryoRiflePistolToken", 1);
-					A_PlaySoundEx("Ironsights", "Auto");
-					A_PlaySoundEx("weapons/pistolup", "Auto");
-					A_Giveinventory("ADSmode",1);
-				}
-				FR39 ABCDEFGHIJKLMNOPQZ 0
-				FR30 ABCDEFGH 1 {
-					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR39");}
-				}
-				Goto Ready2
-			UnequipPistol:
-				TNT1 A 0 {
-					A_WeaponOffset(0,32);
-					A_TakeInventory("CryoRiflePistolToken", 1);
-					A_Takeinventory("ADSmode",1);
-					A_PlaySoundEx("Ironsights", "Auto");
-				}
-				FR30 JKLMNOPQ 1 {
-					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR39");}
-				}
 				Goto Ready3
-				
-        A1F3 CBA 1
-        Goto Ready3
+//         A1F3 CBA 1
+//         Goto Ready3
 			Reload:
 				TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
 				TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
 				TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
-				TNT1 A 0 A_JumpIfInventory("CryoRiflePistolToken",1,"ReloadPistol")
 				TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",60,"Ready3")
 				TNT1 A 0 A_JumpIfInventory("HasUnloadedCryoRifle",1,"ReloadUnloaded")
 				TNT1 A 0 A_JumpIfInventory("PB_Cell",1,1)
@@ -694,37 +564,8 @@ Actor PB_CryoRifle: PB_Weapon
 					A_Takeinventory("PB_Cell",1);
 					}
 				Goto InsertBullets	
-			ReloadPistol:
-				TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo", 16, "Ready3")
-				TNT1 A 0 A_JumpIfInventory("PB_LowCalMag", 1, 1)
-				Goto Ready2
-				TNT1 A 0 {
-					A_SetCrosshair(5);
-					A_Giveinventory("PB_LockScreenTilt",1);
-					}
-				TNT1 A 0 A_PlaySoundEx("PSRLOUT", "Auto")
-				D5GB A 1 A_SetRoll(roll+.5, SPF_INTERPOLATE) 
-				TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",-80,0,3,-4,0,-45)
-				D5GB BCD 1 A_SetRoll(roll+.5, SPF_INTERPOLATE)
-				D5GB EFGHI 1 A_SetRoll(roll-.5, SPF_INTERPOLATE)
-				TNT1 A 0 A_PlaySoundEx("PSRLIN", "Auto")
-				D5GB KKLMNOPQRS 1 A_SetRoll(roll-.1, SPF_INTERPOLATE)
-				D5GB TUVWX 1 A_SetRoll(roll+0.2, SPF_INTERPOLATE)
-				TNT1 A 0 A_SetRoll(0, SPF_INTERPOLATE)
-				TNT1 A 0 A_Takeinventory("PB_PistolHasUnloaded",1)
-			InsertBulletsChamber:
-				TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",16, "Ready3")
-				TNT1 A 0 A_JumpIfInventory("PB_LowCalMag", 1, 1)
-				Goto Ready3
-				TNT1 A 0 {	
-					A_Giveinventory("PrimaryPistolAmmo",1);
-					A_Takeinventory("PB_LowCalMag",1);
-					}
-				Loop
 			Unload:
-				TNT1 A 0 A_Takeinventory("CryoRiflePistolToken",1)
 				TNT1 A 0 A_Takeinventory("ADSmode",1)
-				TNT1 A 0 A_Takeinventory("CryoRiflePistolToken",1)
 				TNT1 A 0 A_Takeinventory("Unloading",1)
 				FR03 E 1 A_JumpIfInventory("HasUnloadedCryoRifle", 1, "Ready3")
 				TNT1 A 0 A_StopSound(6)
