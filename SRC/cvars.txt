@@ -9,10 +9,6 @@ script "ChangeCamera" (int cameratid)
 {
 	ChangeCamera(cameratid,0,0);
 }
-script "CheckMarinesOnLevelEntrance" enter
-{
-    GiveInventory("CheckMarines", 1);
-}
 script "UnRoll" (void)
 {
 	GiveInventory("PB_LockScreenTilt",1);
@@ -69,73 +65,6 @@ Script "ProximityMindHotkey" (void) NET
 int current_player_health = 0;
 int current_player_armor = 0;
 
-script "DemonMorphHealthReset" (VOID) NET
-{
-	SetActorProperty(0, APROP_HEALTH, current_player_health);
-	GiveInventory("ArmorBonus", current_player_armor);
-}
-
-script "DemonMorphTimer" (VOID) NET
-{
-	int demon_timer = 0;
-	while(demon_timer < 2500)
-	{	
-		demon_timer++;
-		if (CheckInventory("HasUnmorphed")) Terminate;
-		delay(1);
-		if (CheckInventory("HasUnmorphed")) Terminate;
-	}
-	delay(1);
-	ACS_NamedExecuteAlways("DemonMorphHealthReset",0);
-}
-
-script "BaronMorphModeEnable" (VOID) NET
-{
-	current_player_health = GetActorProperty(0,APROP_Health);
-	current_player_armor = CheckInventory("Armor");
-	delay(1);
-	MorphActor(0, "BaronPlayer", "", 2500, 0,"none","none");
-	GiveInventory("DemonVision", 1);
-	ACS_NamedExecuteAlways("DemonMorphTimer",0);
-}
-
-script "RevenantMorphModeEnable" (VOID) NET
-{
-	current_player_health = GetActorProperty(0,APROP_Health);
-	current_player_armor = CheckInventory("Armor");
-	delay(1);
-	MorphActor(0, "RevenantPlayer", "", 2500, 0,"none","none");
-	GiveInventory("DemonVision", 1);
-	ACS_NamedExecuteAlways("DemonMorphTimer",0);
-}
-
-script "BaronMorphModeDisable" (VOID) NET
-{
-	UnMorphActor(0, TRUE);
-	ACS_NamedTerminate("DemonMorphTimer",0);
-	TakeInventory("HasSpawnedAsBaronDemon", 1);
-	TakeInventory("DemonVision", 1);
-	GiveInventory("HasUnmorphed", 1);
-	Delay(1);
-	TakeInventory("HasUnmorphed", 1);
-	ACS_NamedExecuteAlways("DemonMorphHealthReset",0);
-}
-
-
-script "RevenantMorphModeDisable" (VOID) NET
-{
-	UnMorphActor(0, TRUE);
-	ACS_NamedTerminate("DemonMorphTimer",0);
-	TakeInventory("HasSpawnedAsRevenantDemon", 1);
-	TakeInventory("DoomerJetpackActivated", 1);
-	TakeInventory("PowerFlight2", 1);
-	TakeInventory("DemonVision", 1);
-	GiveInventory("HasUnmorphed", 1);
-	Delay(1);
-	TakeInventory("HasUnmorphed", 1);
-	ACS_NamedExecuteAlways("DemonMorphHealthReset",0);
-}
-
 
 script "PlayerEnterLevelScript" enter NET
 {
@@ -165,17 +94,9 @@ script "PlayerEnterLevelScript" enter NET
 		HealThing(100);
 	}
 	
-	if	(GetCvar("sv_corpsequeuesize") < 128 && GetCvar("sv_corpsequeuesize") >= 0)
-	{
-	delay(120);
-	//print (s:"Warning: sv_corpsequeuesize set at low value. This means that you will not see persistent gore. This can be changed in Project Brutality -> Rendering Settings");
-	}
-	
-	//Sets the player's TID to a number, useful for functions that indirectly reference players
-	Thing_ChangeTID(0, 800 + PlayerNumber());
-	Terminate;
-}
 
+}
+	
 script "PBUpgradeChecker_LMG" (void)
 {
 	for (int p = 0; p < 8; p++) {
@@ -260,51 +181,12 @@ script "PBUpgradeChecker_M2Upgrade" (void)
 	}
 }
 
-
-Script "CheckIfSinglePlayerGame" (VOID) NET
-{
-	if	(GameType() != GAME_SINGLE_PLAYER)
-	{ 
-		SetActorState(0, "MultiplayerSpawn");
-	}
-}
-
 Script "DetermineUserBloodAmount" (VOID)
-{
-
-if
-	(GetCvar("isrunningzandronum") == 1)
-{
-if	(GetCvar("pb_bloodamount") == 0) { SetActorState(0,"LowBlood"); }
-if	(GetCvar("pb_bloodamount") == 1) { SetActorState(0,"LowBlood"); }
-if	(GetCvar("pb_bloodamount") == 3) { SetActorState(0,"LotsOfBlood"); }
-if	(GetCvar("pb_bloodamount") >= 4) { SetActorState(0,"AbsurdBlood"); }
-}
-
-
-if
-	(GetCvar("isrunningzandronum") == 0)
 {
 if	(GetCvar("zdoombrutalblood") == 0) { SetActorState(0,"LowBlood"); }
 if	(GetCvar("zdoombrutalblood") == 1) { SetActorState(0,"LowBlood"); }
 if	(GetCvar("zdoombrutalblood") == 3) { SetActorState(0,"LotsOfBlood"); }
 if	(GetCvar("zdoombrutalblood") >= 4) { SetActorState(0,"AbsurdBlood"); }
-}
-
-
-if
-	(GetCvar("isrunningzandronum") == 1)
-{
-if	(GetCvar("pb_bloodamount") == 666)
-	{
-	SetActorState(0,"AbsurdBlood"); 
-	GiveInventory("AnimuGore", 1);
-	}
-}
-
-if
-	(GetCvar("isrunningzandronum") == 0)
-{
 if	(GetCvar("zdoombrutalblood") == 666)
 	{
 	SetActorState(0,"AbsurdBlood"); 
@@ -312,8 +194,6 @@ if	(GetCvar("zdoombrutalblood") == 666)
 	}
 }
 
-
-}
 
 Script 798 (VOID)
 {
@@ -327,27 +207,6 @@ Script 797 (VOID)
 if	(GetCvar("pb_bloodamount") == 1) { SetActorState(0,"Vanish"); }
 if	(GetCvar("pb_bloodamount") == 0) { SetActorState(0,"Vanish"); }
     Terminate;
-}
-
-
-Script 796 (VOID)
-{
-if	(GetCvar("pb_classicmonsters") == 1) { SetActorState(0,"ReplaceVanilla"); }
-    Terminate;
-}
-
-Script 719 (VOID)
-{
-if	(GameType () == GAME_NET_DEATHMATCH) 
-	SetActorState(0,"DM"); 
-Terminate;
-}
-
-Script 728 (VOID)
-{
-if	(GetCvar("pb_nobulletpenetration") == 0) { TakeInventory("nopenetration", 1);}
-if	(GetCvar("pb_nobulletpenetration") == 1) { GiveInventory("nopenetration", 1);}
-Terminate;
 }
 
 Script "EquipmentHotkey" (VOID) NET
@@ -405,11 +264,6 @@ script "DemonSoulSeeker" (void)
 script "WeaponSwapSound" (VOID) NET
 {
 		ActivatorSound("weapons/swapping",127);
-}
-
-Script "ReplaceMarines" (VOID) NET
-{
-if	(GetCvar("pb_replacemarines") == 1) { SetActorState(0,"ReplaceMarine"); }
 }
 
 Script 363 (VOID) NET
@@ -942,8 +796,8 @@ Script "ToggleHelmetAnimation" (VOID) NET
 script "CombatBackPack" (void)
 {
 	SetAmmoCapacity("PistolBullets", 600);
-	SetAmmoCapacity("NewClip", 800);
-	SetAmmoCapacity("NewShell", 150);
+	SetAmmoCapacity("PB_Clip", 800);
+	SetAmmoCapacity("PB_Shell", 150);
 	SetAmmoCapacity("RocketAmmo", 125);
 	SetAmmoCapacity("HandGrenadeAmmo", 18);
 	SetAmmoCapacity("Cell", 800);
@@ -953,8 +807,8 @@ script "CombatBackPack" (void)
 	GiveInventory("Medikit",2);
 	GiveInventory("Backpack",1);
 	GiveInventory("BulletKit", 4);
-	GiveInventory("NewClip", 200);
-	GiveInventory("NewShell",50); 
+	GiveInventory("PB_Clip", 200);
+	GiveInventory("PB_Shell",50); 
 	GiveInventory("Rocketbox",20);
 	GiveInventory("HandGrenadeAmmo", 8);
 	
@@ -1152,12 +1006,3 @@ Script "ToggleWeaponRailgun" (VOID) NET
 if	(GetCvar("pb_NoRailgunWeapon") == 1) { SetActorState(0,"ReplaceToggle"); }
 }
 
-Script "ToggleWeaponBFGBeam" (VOID) NET
-{
-if	(GetCvar("pb_NoBFGBeamWeapon") == 1) { SetActorState(0,"ReplaceToggle"); }
-}
-
-Script "ToggleWeaponBlackhole" (VOID) NET
-{
-if	(GetCvar("pb_NoBlackholeWeapon") == 1) { SetActorState(0,"ReplaceToggle"); }
-}

@@ -1,4 +1,4 @@
-actor PB_DarkImpNether : PB_Monster Replaces DoomImp
+actor PB_DarkImpNether : PB_Monster //Replaces DoomImp
 {
 	//$Title Dark Imp Nether
 	//$Category Project Brutality - Monsters/Imps
@@ -43,15 +43,15 @@ actor PB_DarkImpNether : PB_Monster Replaces DoomImp
 	ActiveSound "dimp/active"
     damagefactor "Kick", 0.5
     damagefactor "SSG", 5.0
-	DropItem "DemonStrengthRune" 1
 	damagefactor "explosiveimpact", 2.0
 	MaxStepHeight 24
 	MaxDropOffHeight 32
 	//+MISSILEMORE
-	+DONTHURTSPECIES
+	+DONTHARMSPECIES
+	+DONTHARMCLASS
 	+SLIDESONWALLS
 	PainChance "Trample", 255
-	Species Imp
+	Species "Imp"
     Obituary "%o was cursed by a dark imp."
     HitObituary "%o was touched by a dark imp."
     MissileType "InfernoBall"
@@ -62,6 +62,19 @@ actor PB_DarkImpNether : PB_Monster Replaces DoomImp
 	DropItem "Demonpickup" 225
     States
     {
+	
+	Death.Execution:
+		TNT1 A 0 {
+// 			A_Stop;
+ 			A_Stopsound;
+			A_FaceTarget;
+			A_NoBlocking;
+		}
+		DRKF IJ 4 
+		TNT1 A 0 A_Pain
+		DRKF H 21
+		TNT1 A 0 A_Recoil(4)
+		Goto Death.SSG
 	
 	Death.Shrink:
 		TNT1 A 1 A_PlaySound("Shrink", 3)
@@ -89,7 +102,7 @@ actor PB_DarkImpNether : PB_Monster Replaces DoomImp
 	
     Spawn:
 		TNT1 A 0
-		TNT1 A 0 ACS_ExecuteAlways(796, 0, 0, 0, 0)//Check if Vanilla Mode is activated
+		
 		TNT1 A 0 A_GiveInventory("SKImp", 1)
         TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
 		Goto Stand
@@ -209,7 +222,7 @@ actor PB_DarkImpNether : PB_Monster Replaces DoomImp
         TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
 		//TNT1 A 0 A_JumpIf(MomZ < 0, "FallingAfterImpact")// funny thing I tried, better not implement
 		
-        TNT1 A 0 A_SpawnItemEx("FootStep", 0, 0, 10, 0, 0)
+        
         //TNT1 A 0 A_JumpIf(waterlevel == 2, "Swim")
 		//TNT1 A 0 A_JumpIf(waterlevel == 3, "Swim")
 		TNT1 A 0 A_SpawnItem("HeadshotTarget4", 0, 48,0)
@@ -540,19 +553,10 @@ actor PB_DarkImpNether : PB_Monster Replaces DoomImp
 		TNT1 A 0 A_ChangeFlag("CEILINGHUGGER", 0)
 		TNT1 D 0
 		DRKF H 2
-		TNT1 A 0 A_JumpIfInventory ("SKImp", 1, "GotoStealthKill")
 		DRKF H 2 A_Pain
 		Goto SeeContinue
 		
-	GotoStealthKill:
-		TNT1 A 1
-		TNT1 A 0 A_GiveToTarget("SKDarkImpNether")
-		TNT1 A 0 A_GiveToTarget("GoFatality", 1)
-		TNT1 A 1 A_Die("Stealthy")
-		Stop
-		Death.Stealthy:	
-		TNT1 A 0 A_NoBlocking
-		Stop
+
 		
 	Possession:
 		TNT1 A 0 A_SetInvulnerable
@@ -621,7 +625,6 @@ actor PB_DarkImpNether : PB_Monster Replaces DoomImp
 		TNT1 A 0 A_JumpIfInventory ("FallingHeight", 7, "FallingDeath")
 		GetUp:
 		TNT1 A 0
-		TNT1 A 0 A_SpawnItem("SmallUnderwaterExplosion")
 		TNT1 A 0 A_JumpIfInventory ("FallingHeight", 5, "FallingDie")
 		D2S1 CCC 5 A_JumpIf(momz < 0, "FallingAfterImpact")
 		TNT1 A 0 A_TakeInventory("FallingHeight", 100)
@@ -668,6 +671,7 @@ actor PB_DarkImpNether : PB_Monster Replaces DoomImp
 		Stop
 		
     Death.fire:
+	Death.FireExplosion:
 	Death.Flames:
 	Death.Burn:
 		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate")
@@ -683,10 +687,10 @@ actor PB_DarkImpNether : PB_Monster Replaces DoomImp
 		TNT1 A 1 A_SpawnItemEx("BurningImpBig",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION)
         Stop
 		 
-	Death.Desintegrate:
+	Death.Disintegrate:
         TNT1 A 0 A_Scream
         TNT1 A 0 A_NoBlocking
-        TNT1 A 0 A_SpawnItem("DesintegratedHuman")
+        TNT1 A 1 A_SpawnItem("DisintegratedHuman")
       Stop
 	  
 	Death.GreenFire:
@@ -704,16 +708,9 @@ actor PB_DarkImpNether : PB_Monster Replaces DoomImp
 		EXPL AAAAAAAAAAAAAAAAAAAAAAAA 0 A_CustomMissile ("GreenFlameTrails", 50, 0, random (0, 360), 2, random (0, 360))
 		XBRN AAAA 2 BRIGHT A_SpawnItem("GreenFlare",0,43)
         Stop
-	
-	Death.IceBeam:
-	TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0)
-	TNT1 A 0 A_ChangeFlag("SOLID", 0)
-	TNT1 A 0 A_SpawnItem("FrozenDarkImpNether")
-	TNT1 A 0 A_SpawnItem("IceCrystalGround")
-	TNT1 A 0 A_SpawnItem("IceCrystalGround")
-	Stop
-	
+
 	Death.Ice:
+	Death.IceExplosion:
 	Death.Freeze:
 	Death.Frost:
 		TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0)
@@ -821,9 +818,16 @@ actor PB_DarkImpNether : PB_Monster Replaces DoomImp
 		Stop
 		
 	FatalityMarine:
+		TNT1 A 0
+		{
+			A_StopSound(5);
+			A_StopSound(6);
+			A_StopSound(1);
+			A_StopSound(7);
+		}
        TNT1 A 0 A_SetInvulnerable
        F1D1 BCDE 4
-       TNT1 A 0 A_SpawnItemEx("FootStep5", 0, 0, 40, 0, 0)
+       
        F1D1 E 6
 	   TNT1 A 0 A_PlaySound("dimp/active",2)
        F1D1 F 6
@@ -1113,7 +1117,7 @@ Goto SeeContinue
 		TNT1 AA 0 A_CustomMissile ("xdeath4", 32, 0, random (170, 190), 2, random (0, 40))
 		TNT1 AAA 0 A_CustomMissile ("xdeath2", 32, 0, random (0, 360), 2, random (0, 160))
 		TNT1 A 0 A_CustomMissile ("XDeath3", 32, 0, random (170, 190), 2, random (0, 40))
-		TNT1 A 0 A_CustomMissile ("LivingHeart", 32, 0, random (170, 190), 2, random (0, 40))
+		
 		TNT1 AAA 0 A_CustomMissile ("Instestin", 32, 0, random (150, 210), 2, random (0, 40))
 		TNT1 AAAA 0 A_CustomMissile ("brutal_FlyingBlood", 32, 0, random (170, 190), 2, random (0, 40))
 		TNT1 AAAA 0 A_CustomMissile ("brutal_FlyingBloodFaster", 32, 0, random (170, 190), 2, random (0, 40))
@@ -1141,7 +1145,7 @@ Goto SeeContinue
 		//TNT1 A 0 A_Jump(128, "Death.Blast2")
 		TNT1 AAA 0 A_CustomMissile ("Instestin", 32, 0, random (150, 210), 2, random (0, 40))
 		TNT1 AAA 0 A_CustomMissile ("XDeath1", 32, 0, random (150, 210), 2, random (0, 40))
-		TNT1 A 0 A_CustomMissile ("XDeathImpArm", 32, 0, random (150, 210), 2, random (0, 40))
+		TNT1 A 0 A_CustomMissile ("XDeathDarkImpArm1", 32, 0, random (150, 210), 2, random (0, 40))
 		TNT1 A 0 A_CustomMissile ("XDeathDarkImpHead1", 32, 0, random (150, 210), 2, random (0, 40))
 		TNT1 AAA 0 A_CustomMissile ("Xdeath3", 16, 0, random (170, 190), 2, random (0, 40))
 		TNT1 AAAA 0 A_CustomMissile ("Brutal_FlyingBlood", 32, 0, random (170, 190), 2, random (0, 40))
@@ -1309,7 +1313,7 @@ actor InfernoBall
     Height 6
     Speed 14
     Damage 6
-	DamageType Desintegrate
+	DamageType Disintegrate
     PROJECTILE
     RENDERSTYLE ADD
     ALPHA 0.67
@@ -1427,7 +1431,6 @@ actor NetherLightningSpark
 
 Actor Vanilla_NetherDarkImp : PB_DarkImpNether
 {
-	DropItem "DemonStrengthRune" 1
 	States
 	{
 		Spawn:
