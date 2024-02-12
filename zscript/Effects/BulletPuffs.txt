@@ -246,6 +246,11 @@ Class LightningGunPuff : Actor
 			TNT1 A 1;
 		Death:
 		Die:
+			TNT1 A 0 { 
+				if((pos.z <= (floorz + 4) || waterlevel > 0) && PB_ActorPosInfo.Mobj_isOnLiquid(self))
+					return resolvestate("ConductiveDeath");
+				return resolvestate(null);
+			}
 			DB08 AB 1 bright A_SetScale(Scale.X+frandom(0.04,0.08), Scale.Y+frandom(0.04,0.08));
 			TNT1 A 0 FireLightbeams();
 			DB08 CDEFGHIJKLM 1 bright A_SetScale(Scale.X+frandom(0.04,0.08), Scale.Y+frandom(0.04,0.08));
@@ -256,16 +261,14 @@ Class LightningGunPuff : Actor
 				}
 			Stop;
 			
-		FloorCheck:
-			TNT1 A 2;			
-			TNT1 A 1;
-			Goto Die; //guess ill die	
-			
 		ConductiveDeath:
-			TNT1 A 0 BRIGHT A_SpawnItem("LightningGunPuff_Big",0);
-			TNT1 A 0 BRIGHT A_SpawnItem("ElectroBombFX",0);
-			TNT1 A 0 BRIGHT A_SpawnItem("BlueFlare",0);
-			TNT1 A 0 A_explode(random(30,35), 240,0,0,200);
+			TNT1 A 0 BRIGHT {
+				A_SpawnItem("LightningGunPuff_Big",0);
+				A_SpawnItem("BlueFlare",0);
+				if(randompick(0,1,0,0) == 1) //this look pretty bad if fired for more than a tic, due to additive rendering it just get white, so i reduced its spawn rate to 1/4
+					A_SpawnItem("ElectroBombFX",0);
+			}
+			TNT1 A 0 FireLightbeams(240,12);
 			TNT1 AA 0 A_SpawnProjectile("ElectroBlastTrail3",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(30,270));
 			TNT1 AAAAA 0 A_SpawnProjectile ("BluePlasmaParticle", 0, 0, random (0, 360), 2, random (0, 360));
 			TNT1 A 1 Light("LightningImpactLight");
