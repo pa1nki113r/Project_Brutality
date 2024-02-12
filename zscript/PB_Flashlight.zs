@@ -116,8 +116,7 @@ class PB_FPP_Light : Spotlight
 	}
 }
 
-//Holder
-
+// Holder
 class PB_FPP_Holder : Inventory 
 {
 	PB_FPP_Light light1;
@@ -364,8 +363,7 @@ class PB_FPP_Holder : Inventory
 	}
 }
 
-//Handler
-
+// Handler
 extend class PB_EventHandler
 {
 	PB_FPP_Holder setupFlashlightHolder(PlayerPawn p)
