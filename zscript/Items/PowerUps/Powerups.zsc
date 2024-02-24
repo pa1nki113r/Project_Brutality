@@ -1,0 +1,469 @@
+//Invuln
+class PB_Invul : PB_Inventory replaces invulnerabilitysphere
+{
+	Default
+	{
+		Inventory.PickupMessage "Invulnerability Sphere!";
+		Inventory.PickupSound "INVUL";
+		+FLOATBOB
+		floatbobstrength .4;
+		Scale .22;
+	}
+
+	override bool Use(bool pickup)
+	{
+		owner.A_SetBlend("DarkGreen",0.75,16);
+		owner.A_GiveInventory("PB_InvulGiver");
+		if(pb_newmugshot) owner.A_SetMugshotState("Grin");
+		return true;
+	}
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		scale.x *= 1.2;
+	}
+	States
+	{
+	Spawn:
+		PINV ABCDEFGHIJ 3;
+		loop;
+	}
+}
+
+class PB_InvulGiver : PB_PowerupGiver { Default { Powerup.Type "PB_PowerInvul"; } }
+
+class PB_PowerInvul : PowerInvulnerable
+{
+	mixin PB_PowerupTimer;
+	
+	override void InitEffect()
+	{
+		Super.InitEffect();
+		if(!Owner) return;
+		owner.bNOBLOOD = true;
+		owner.A_AttachLightDef("InvulnLight","InvulLight");
+	}
+	
+	override void DoEffect()
+	{
+		Super.DoEffect();
+		PowerupTimer("DarkGreen");
+	}
+
+	override void EndEffect()
+	{
+		Super.EndEffect();
+		if(!Owner) return;
+		EndBlend("DarkGreen");
+		owner.bNOBLOOD = false;
+		owner.A_RemoveLight("InvulnLight");
+	}
+}
+
+class PB_NoEffectInvul : PowerInvulnerable {}
+
+//Rad suit
+class PB_RadSuit : PB_Inventory replaces radsuit
+{
+	Default
+	{
+		Height 46;
+		Inventory.PickupMessage "Radiation Suit!";
+		Inventory.PickupSound "misc/radsuit_PickUp";
+		-BRIGHT
+		-COUNTITEM
+		Scale .2;
+	}
+
+	override bool Use(bool pickup)
+	{
+		owner.A_SetBlend("Green",0.75,16);
+		owner.A_GiveInventory("PB_SuitGiver");
+		return true;
+	}
+
+	States
+	{
+	Spawn:
+		SUIT A -1;
+		stop;
+	}
+}
+
+class PB_SuitGiver : PB_PowerupGiver { Default { Powerup.Type "PB_PowerIronFeet"; } }
+
+class PB_PowerIronFeet : PowerIronFeet
+{
+	mixin PB_PowerupTimer;
+	Default { Powerup.Color "000000",0; }
+
+	//fuck you leaky suit, go away
+	override void AbsorbDamage(int damage,name damageType,out int newdamage)
+	{if((damagetype == 'Slime')||(damagetype == 'Drowning')) newdamage = 0; }
+	
+	Override Void ModifyDamage (Int Damage, Name DamageType, Out Int NewDamage, Bool Passive, Actor Inflictor, Actor Source, Int Flags)
+	{
+		If (Passive)
+		{
+			If (DamageType == 'Ice' || DamageType == 'Fire' || DamageType == 'Flames' || DamageType == 'Flame' || DamageType == 'Burn' || DamageType == 'Electric')
+			{
+				NewDamage = Damage * 0.75;
+				//console.printf ("PB_Radsuit: Took %d %s damage from %s, reduced it to %d damage",damage,damageType,inflictor.getclassname(),newdamage);
+				Return;
+			}
+			If (DamageType == 'PoisonCloud' || DamageType == 'Poison' && Source ||
+			DamageType == 'Disintegrate') //The Daedabus uses fucking disintegrating damage for some stupid reason.
+			{
+				NewDamage = Damage * 0;
+				//console.printf ("PB_Radsuit: Took %d %s damage, reduced it to %d damage",damage,damageType,newdamage);
+				Return;
+			}
+		}
+	}
+	
+	override void DoEffect()
+	{
+		Super.DoEffect();
+		PowerupTimer("Green");
+	}
+	
+	override void EndEffect()
+	{
+		Super.EndEffect();
+		if(!owner) return;
+		EndBlend("Green");
+	}
+}
+
+//Partial Invis
+class PB_BlurSphere : PB_Inventory replaces blursphere
+{
+	Default
+	{
+		RenderStyle "Translucent";
+		Inventory.PickupMessage "Partial Invisibility!";
+		Inventory.PickupSound "INVISIBL";
+		+FLOATBOB
+		floatbobstrength .4;
+		Scale .22;
+	}
+
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		scale.x *= 1.2;
+	}
+
+	override bool Use(bool pickup)
+	{
+		owner.A_SetBlend("Red",0.75,16,"Blue");
+		owner.A_GiveInventory("PB_InvisGiver");
+		return true;
+	}
+
+	States
+	{
+	Spawn:
+		PINS ABCBJBABCJBCDEFGHIBJ 3;
+		loop;
+	}
+}
+
+class PB_InvisGiver : PB_PowerupGiver { Default { Powerup.Type "PB_PowerInvis"; } }
+
+class PB_PowerInvis : PowerInvisibility
+{
+	mixin PB_PowerupTimer;
+	
+	override void DoEffect()
+	{
+		Super.DoEffect();
+		PowerupTimer("Red", "Blue");
+	}
+	
+	override void EndEffect()
+	{
+		Super.EndEffect();
+		if(!owner) return;
+		EndBlend("Red", "Blue");
+	}
+}
+
+//Light amp goggles
+class PB_Infrared : PB_Inventory replaces infrared
+{
+	Default
+	{
+		-BRIGHT
+		Inventory.PickupMessage "Light Amp Goggles!";
+		Inventory.PickupSound "RA1IF1";
+		Scale .3;
+	}
+
+	override bool Use(bool pickup)
+	{
+		owner.A_SetBlend("Black",0.75,16);
+		owner.A_GiveInventory("PB_InfraredGiver");
+		return true;
+	}
+
+	States
+	{
+	Spawn:
+		PVIS A -1;
+		stop;
+	}
+}
+
+class PB_InfraredGiver : PB_PowerupGiver { Default { Powerup.Type "PB_PowerLightAmp"; } }
+
+class PB_PowerLightAmp : PowerLightAmp
+{
+	mixin PB_PowerupTimer;
+	Default { +INVENTORY.NOSCREENBLINK }
+	
+	override void DoEffect()
+	{
+		Super.DoEffect();
+		PowerupTimer("Black");
+	}
+	
+	override void EndEffect()
+	{
+		Super.EndEffect();
+		if(!owner) return;
+		EndBlend("Black");
+	}
+}
+
+//Soulsphere & Megasphere
+class PB_Soulsphere : PB_Inventory replaces soulsphere
+{
+	Default
+	{
+		Inventory.PickupMessage "Soulsphere!";
+		Inventory.PickupSound "SSPH";
+		+FLOATBOB
+		floatbobstrength .4;
+		Scale .22;
+	}
+
+	override bool Use(bool pickup)
+	{
+		owner.A_SetBlend("Blue",0.75,16);
+		owner.GiveBody(100,200);
+		if(pb_newmugshot) owner.A_SetMugshotState("SoulsphereGrin");
+		return true;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		scale.x *= 1.2;
+	}
+
+	States
+	{
+	Spawn:
+		SOUL ABCDEFGHIJ 3;
+		loop;
+	}
+}
+
+class PB_Megasphere : PB_Inventory replaces megasphere
+{
+	Default
+	{
+		Inventory.PickupMessage "Megasphere!";
+		Inventory.PickupSound "MEGASPH";
+		+FLOATBOB
+		floatbobstrength .4;
+		Scale .22;
+	}
+
+	override bool Use(bool pickup)
+	{
+		owner.A_SetBlend("White",0.75,16);
+		owner.A_GiveInventory("PB_BlueArmor");
+		owner.GiveBody(200,200);
+		if(pb_newmugshot) owner.A_SetMugshotState("MegasphereGrin");
+		return true;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		scale.x *= 1.2;
+	}
+
+	States
+	{
+	Spawn:
+		MEGA ABCDEFGHIJ 3;
+		loop;
+	}
+}
+
+//Berserk and AllMap
+class PB_PowerStrength : PowerStrength { Default { Powerup.Color "000000",0; } }
+
+class PB_Berserk : PB_Inventory replaces Berserk
+{
+	Default
+	{
+		-BRIGHT
+		Inventory.PickupMessage "Berserk Pack!";
+    	Inventory.PickupSound "BERSPKUP";
+		Scale .3;
+	}
+
+	override bool Use(bool pickup)
+	{
+		owner.A_GiveInventory("PB_PowerStrength");
+		owner.GiveBody(100,0);
+		owner.A_SetBlend("Red",0.75,16);
+		owner.A_Print("Press Weapon Special key to swap modes");
+		if(pb_newmugshot) owner.A_SetMugshotState("BerserkGrin");
+		return true;
+	}
+
+	States
+	{
+	Spawn:
+		PSTR A -1;
+		stop;
+	}
+}
+
+class PB_AllMap : AllMap replaces AllMap
+{
+	mixin PB_BetterPickupSound;
+	Default 
+	{ 
+		Inventory.PickupSound "misc/map_PickUp"; 
+		Scale .31;
+	}
+	States
+	{
+	Spawn:
+		PMAP AFFAAAFFAFAFAFBCDEF 2 BRIGHT;
+		loop;
+	}
+}
+
+//Doomsphere
+class PB_Doomsphere : PB_Inventory
+{
+	Default
+	{
+		//$Title Doomsphere
+		//$Category Powerups
+		Translation "0:255=%[0,0,0]:[1,0,1]";
+		Inventory.PickupMessage "Doomsphere!";
+		Inventory.PickupSound "DDMGPU";
+		-COUNTITEM
+		+FLOATBOB
+		floatbobstrength .4;
+	}
+
+	override bool Use(bool pickup)
+	{
+		owner.A_SetBlend("Purple",0.75,16);
+		owner.A_GiveInventory("PB_DoomGiver");
+		return true;
+	}
+
+	States
+	{
+	Spawn:
+		DDMG ABCD 6;
+		loop;
+	}
+}
+
+class PB_DoomGiver : PB_PowerupGiver { Default { Powerup.Type "PB_PowerDoomDamage"; } }
+
+class PB_PowerDoomDamage : PowerDamage
+{
+	mixin PB_PowerupTimer;
+	Default { DamageFactor "normal",4; Powerup.Duration -30; }
+
+	override void InitEffect()
+	{
+		Super.InitEffect();
+		if(!Owner) return;
+		owner.A_AttachLightDef("DoomLight","DoomLight");
+	}
+	
+	override void DoEffect()
+	{
+		Super.DoEffect();
+		PowerupTimer("Purple");
+	}
+
+	override void EndEffect()
+	{
+		Super.EndEffect();
+		if(!Owner) return;
+		EndBlend("Purple");
+		owner.A_RemoveLight("DoomLight");
+	}
+}
+
+//Haste sphere
+class PB_Haste : PB_Inventory
+{
+	Default
+	{
+		//$Title Hastesphere
+		//$Category Powerups
+		Inventory.PickupMessage "Haste!";
+		Inventory.PickupSound "DEM";
+		-COUNTITEM
+		+FLOATBOB
+		floatbobstrength .4;
+	}
+
+	override bool Use(bool pickup)
+	{
+		owner.A_SetBlend("Yellow",0.75,16);
+		owner.A_GiveInventory("PB_HasteGiver");
+		return true;
+	}
+
+	States
+	{
+	Spawn:
+		HAST ABC 6;
+		loop;
+	}
+}
+
+class PB_HasteGiver : PB_PowerupGiver { Default { Powerup.Type "PB_PowerSpeed"; } }
+
+class PB_PowerSpeed : PowerSpeed
+{
+	mixin PB_PowerupTimer;
+	Default { Powerup.Duration -30; }
+
+	override void InitEffect()
+	{
+		Super.InitEffect();
+		if(!Owner) return;
+		owner.A_AttachLightDef("HasteLight","HasteLight");
+	}
+	
+	override void DoEffect()
+	{
+		Super.DoEffect();
+		PowerupTimer("Yellow");
+	}
+
+	override void EndEffect()
+	{
+		Super.EndEffect();
+		if(!Owner) return;
+		EndBlend("Yellow");
+		owner.A_RemoveLight("HasteLight");
+	}
+}

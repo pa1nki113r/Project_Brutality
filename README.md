@@ -29,7 +29,7 @@ Any suggestions, opinions, or questions should be posted on the [discord server]
 
 ## Add-ons and Mods
   
-Looking for add-ons or a place to share your personal PB add-on? Between the discord server, [The Project Brutality Website](https://projectbrutality.com/), and [The Brutal Repository](https://brutalrepository.pl/) <!--, and [The Moddb Page](https://www.moddb.com/mods/project-brutality)--> have you covered. Just please respect other modders and use proper modder's etiquette.
+Looking for add-ons or a place to share your personal PB add-on? The Discord server, [The Project Brutality Website](https://projectbrutality.com/), and [The ModDB Page](https://www.moddb.com/mods/project-brutality) have you covered. Just please respect other modders and use proper modder's etiquette.
 - If possible, ask for permission. If they say no, respect their decision.
 - In cases where the modder is not around or available to ask, be sure to credit them. If the modder is unknown but not you, do not claim it as your own.
 - If the modder asks you to remove their stuff from your add-on, Please do so.
