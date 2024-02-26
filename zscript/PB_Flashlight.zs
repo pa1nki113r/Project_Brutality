@@ -26,7 +26,7 @@ class PB_FPP_Light : Spotlight
 	const spInnerAngle = 35.0;
 	const spOuterAngle = 40.0;
 	
-	const sp2Intensity = 584.0;
+	const sp2Intensity = /*584.0*/ 256.0;
 	const sp2InnerAngle = 0.0;
 	const sp2OuterAngle = 30.0;
 	
