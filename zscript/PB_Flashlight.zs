@@ -1,11 +1,22 @@
+/* Flashlight++, an extended version of Flashlight+ with extra customizability.
+Copyright (C) 2024  generic name guy
+
+This program is free software: you can redistribute it and/or modify
+it under the terms of the GNU Lesser General Public License as published by
+the Free Software Foundation, either version 3 of the License, or
+(at your option) any later version.
+
+This program is distributed in the hope that it will be useful,
+but WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+GNU Lesser General Public License for more details.
+
+You should have received a copy of the GNU Lesser General Public License
+along with this program.  If not, see <https://www.gnu.org/licenses/>. */
+
 // Modified version of Flashlight++, available at https://forum.zdoom.org/viewtopic.php?t=75585
 // Adapted for Project Brutality by generic name guy
-
-// Flashlight++ copyright (c) 2024 generic name guy, zlib license
-// Flashlight+ made by RicardoLuis0, released under The Unlicense
-
-// A copy of the zlib license is included at the bottom of this file
-
+
 // Light
 class PB_FPP_Light : Spotlight
 {
