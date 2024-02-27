@@ -103,6 +103,7 @@ ACTOR PB_Deagle : PB_Weapon
 		D0E2 ABCDE 1 A_DoPBWeaponAction
 		Goto Ready3
 	SelectAnimation:
+		TNT1 A 0 A_TakeInventory("Zoomed",1)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingDeagles", 1, "SelectAnimationDualWield")
 		TNT1 A 0 A_PlaySoundEx("weapons/deagle/equip", "Auto")
         D4E0 ABCD 1
@@ -168,19 +169,31 @@ ACTOR PB_Deagle : PB_Weapon
 			if(CountInv("LeftDeagleAmmo") < CountInv("DeagleAmmo")){
 				A_GiveInventory("DualFiring",1);
 			}
-			if(CountInv("PB_LowCalMag")>0){
-				if(CountInv("LeftDeagleAmmo")<=0){
-					A_GiveInventory("DualFireReload",1);
-				}
-				if(CountInv("DeagleAmmo")<=0){
-					A_GiveInventory("DualFireReload",1);
-				}
-			}
+// 			if(CountInv("PB_LowCalMag")>0){
+// 				if(CountInv("LeftDeagleAmmo")<=0){
+// 					A_GiveInventory("DualFireReload",1);
+// 				}
+// 				if(CountInv("DeagleAmmo")<=0){
+// 					A_GiveInventory("DualFireReload",1);
+// 				}
+// 			}
 			A_Overlay(10, "IdleLeft_Overlay", false);
 			A_Overlay(11, "IdleRight_Overlay", false);
 			}
 	ReadyToFireDualWield:
-		TNT1 A 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE)
+		TNT1 A 1 {
+			if(CountInv("PB_LowCalMag")>0){
+				if(CountInv("LeftDeagleAmmo")<=0 || CountInv("DeagleAmmo")<=0){
+					if(CountInv("LeftDeagleAmmo")<=0 && CountInv("DeagleAmmo")<=0){
+						A_SetInventory("DualFireReload",2);
+					}
+					else{
+						A_SetInventory("DualFireReload",1);
+					}
+				}
+			}
+			return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+		}
 		Loop
 		
 //Jesus Christ this took a while to figure out.
@@ -271,7 +284,8 @@ ACTOR PB_Deagle : PB_Weapon
 		D6E1 A 1 BRIGHT{
 			//A_FireBullets (0.1, 0.1, -1, 75, "BulletPuff", FBF_NORANDOM,8192,"Tracer", -1,-4);
 			A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
-			A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
+			PB_GunSmoke(4,0,0);
 			A_FireCustomMissile("DeagleCasingLeft",0,0,-12,-5);
 			A_PlaySoundEx("weapons/deagle/fire", "Weapon");
 			A_TakeInventory("PB_DeagleFireAnimation1",1);
@@ -326,7 +340,8 @@ ACTOR PB_Deagle : PB_Weapon
 		D6E0 A 1 BRIGHT {
 			//A_FireBullets (0.1, 0.1, -1, 75, "BulletPuff", FBF_NORANDOM,8192,"Tracer", -1,4);
 			A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
+			PB_GunSmoke(-4,0,0);
 			A_FireCustomMissile("DeagleCasingRight",0,0,12,-5);
 			A_PlaySoundEx("weapons/deagle/fire", "Weapon");
 			A_ZoomFactor(0.985);
@@ -481,7 +496,8 @@ ACTOR PB_Deagle : PB_Weapon
 				A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 				A_AlertMonsters;
 				A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
-				A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+				//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+				PB_GunSmoke(0,0,0);
 				A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
 				A_FireCustomMissile("DeagleCasingRight", 0,0,-2,-1);
 				A_Takeinventory("DeagleAmmo",1);
@@ -522,7 +538,8 @@ ACTOR PB_Deagle : PB_Weapon
 				A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 				A_AlertMonsters;
 				A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
-				A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+				//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+				PB_GunSmoke(0,0,0);
 				A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
 				A_FireCustomMissile("DeagleCasingRight",0,0,-2,1);
 				A_Takeinventory("DeagleAmmo",1);
@@ -691,8 +708,9 @@ ACTOR PB_Deagle : PB_Weapon
 		TNT1 A 0 A_JumpIfInventory("DualWieldingDeagles", 1, "ReloadDualWield")
 		TNT1 A 0 A_JumpIf(Countinv("DeagleAmmo") >= 1,"Reload2")
 
-        D1E0 ABCDEFG 1
-		TNT1 A 0 A_PlaySoundEx("weapons/deagle/magout", "Auto") 
+		D1E0 ABCDEFG 1
+		TNT1 A 0 A_JumpIf(Countinv("DeagleHasUnloaded") >= 1, 10)
+        TNT1 A 0 A_PlaySoundEx("weapons/deagle/magout", "Auto") 
 		TNT1 A 0 A_PlaySoundEx("PSRLOUT", "Auto") 
 		D1E0 HIJKLM 1 
         TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",5,0,12,-4)
@@ -756,12 +774,14 @@ ACTOR PB_Deagle : PB_Weapon
 			A_PlaySoundEx("Ironsights", "Auto");
 			A_ClearOverlays(10,11);
 			}
+		TNT1 A 0 A_JumpIfInventory("DeagleHasUnloaded", 1, "ReloadDualWieldUnloaded")
 		D6E3 ABCDEFGHI 1
 		TNT1 A 0 A_PlaySoundEx("PSRLOUT", "Auto") 
 		D6E3 JK 1 
 		TNT1 A 0 A_PlaySoundEx("PSRLOUT", "Auto") 
         TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",5,0,12,-4)
         TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",5,0,-12,-4)
+	ReloadDualWieldUnloaded:
 		D6E3 LMMMNOPQ 1 
 		TNT1 A 0 A_PlaySoundEx("weapons/deagle/magin", "Auto") 
 		TNT1 A 0 A_PlaySoundEx("RIFCL_IN", "Auto") 

@@ -369,8 +369,9 @@ ACTOR PB_BFG9000: PB_Weapon Replaces BFG9000
 		BeamLoop:
 			016G FGHIJKL 1 BRIGHT {
 				PB_FireOffset;
-				A_FireCustomMissile ("BFG_BeamProjectile", 0, 0, 0, -8, 0,0);
-				A_RailAttack(0, 0, 0,"None", "Green", RGF_SILENT || RGF_NOPIERCING || RGF_FULLBRIGHT, 2.0, "NullPuff", 0, 0, 0, 0, 10.0, 1.0, "BFGLightningTrial_Small", -7,0,0);
+				//A_FireCustomMissile ("BFG_BeamProjectile", 0, 0, 0, -8, 0,0);
+				PB_FireAltBFGRail();  //function defined in BaseWeapon_Function.zsc to replace the rail and the projectilew
+				//A_RailAttack(0, 0, 0,"None", "Green", RGF_SILENT || RGF_NOPIERCING || RGF_FULLBRIGHT, 2.0, "NullPuff", 0, 0, 0, 0, 10.0, 1.0, "BFGLightningTrial_Small", -7,0,0);
 				A_TakeInventory("PB_Cell", 1);
 				
 				if(CountInv("PB_Cell") < 1) {
@@ -517,7 +518,7 @@ ACTOR BlackHole_GravityBomb
 			}
 			TNT1 A 0 A_Explode(220, 120, 0, 0, 120)
 			031G ABCDEFGHIJK 1 BRIGHT Light("BlackholeBallSmall") 
-			TNT1 A 1 Light("BlackholeBallSmall") {A_Blast (0,80,800,25);} //Push away even harder.
+      TNT1 A 1 Light("BlackholeBallSmall") {A_Blast (BF_ONLYVISIBLETHINGS,80,800,25);} //Push away even harder.
 			Stop
 		}
 }
@@ -589,7 +590,7 @@ ACTOR BFG_BeamProjectile : MageWandMissile
   Speed 400
   Radius 13
   Height 8
-  Damage 20
+  //Damage 20
   Decal "none"
   damagetype Disintegrate
   RenderStyle Add
@@ -618,6 +619,45 @@ ACTOR BFG_BeamProjectile : MageWandMissile
     HSPL ABCDEFGHIJ 1 bright Light("BFGALT") A_SetScale(ScaleX -0.1, ScaleY -0.1)
     stop
   }
+}
+
+
+//this puff is to replace the projectile above
+Actor BFGBeamPuff : Actor 
+{
+	Radius 13
+	Height 8
+	Damage 20
+	Decal "none"
+	damagetype Disintegrate
+	RenderStyle Add
+	Alpha .85
+	Translation "0:255=%[0,0,0]:[0,1,0]"
+	-RIPPER
+	-NOBOSSRIP
+	-CANNOTPUSH
+	-NODAMAGETHRUST
+	+BLOODLESSIMPACT
+	+FORCERADIUSDMG
+	-BLOODSPLATTER
+	+DontHurtSpecies
+	Species "Marine"
+
+	states
+	{
+		Spawn:
+			TNT1 B 0 nodelay A_Explode(10,80,0, 1, 80)
+			TNT1 A 0 {
+				A_SpawnItem("GreenFlare",0,0);
+				A_SpawnItemEx("SmallGreenFlameTrails", 0, 0, 0, 0, 0, 0, 0, 128);
+				A_SpawnItem("BFGAltShockWave",0,0);
+				A_SpawnItemEx("BFGLightningTrial", 0, random(-1,1), random(4,6));
+				A_SpawnItemEx("NewBFGTrailGreen", 0, random(8,-8), random(8,-8), 0, 0, 0, 0, 128, 0);
+				A_SpawnItemEx("BFGFOG", 0, 0);
+			}
+			HSPL ABCDEFGHIJ 1 bright Light("BFGALT") A_SetScale(ScaleX - 0.1, ScaleY - 0.1)
+			stop
+	}
 }
 
 Actor Blackhole_Ball
