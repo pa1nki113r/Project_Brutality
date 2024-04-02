@@ -1114,6 +1114,20 @@ extend class PB_WeaponBase
 	}
 	
 	
+	action bool PB_WeaponIsInSlidingState()
+	{
+		State PSPState = invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate;
+		if (InStateSequence(PSPState,invoker.ResolveState("FlashSlideKicking"))||
+			InStateSequence(PSPState,invoker.ResolveState("FlashSlideKickingDW"))||
+			InStateSequence(PSPState,invoker.ResolveState("FlashSlideKicking2"))||
+			InStateSequence(PSPState,invoker.ResolveState("DualFlashSlideKicking"))||
+			InStateSequence(PSPState,invoker.ResolveState("FlashSlideKickingAkimbo"))||
+			InStateSequence(PSPState,invoker.ResolveState("FlashSlideKickingDualWield"))||
+			InStateSequence(PSPState,invoker.ResolveState("DualWieldFlashSlideKicking"))
+		) return true;
+		return false;
+	}
+	
 	action state A_DoPBWeaponAction(int weapflags = WRF_ALLOWRELOAD, int pbFlags = 0, string unloadtoken = "HasUnloaded", bool noReload = false)
 	{
 		static const string PBWeapEmptyToken[] = 
@@ -1189,11 +1203,51 @@ extend class PB_WeaponBase
 			}
 		}
 		
+		if (!noReload) {
+			noReload = ((PressingFire() || JustPressed(BT_ATTACK)) || (ResolveState("AltFire") && (PressingAltFire() || JustPressed(BT_ALTATTACK))));
+		}
+		
 		if (noReload) {
-			A_WeaponReady();
+			if (PB_usingKick()) {
+				if (weapflags == (WRF_NOFIRE| WRF_NOSWITCH) || 
+					weapflags == (WRF_NOFIRE| WRF_NOSWITCH| WRF_NOBOB) ||
+					weapflags == (WRF_NOSWITCH| WRF_NOPRIMARY| WRF_NOBOB) || weapflags == (WRF_NOSWITCH| WRF_NOSECONDARY| WRF_NOBOB) ||
+					weapflags == (WRF_NOSWITCH| WRF_NOPRIMARY| WRF_NOSECONDARY| WRF_NOBOB) ||
+					weapflags == (WRF_NOSWITCH| WRF_NOPRIMARY) || weapflags == (WRF_NOSWITCH| WRF_NOSECONDARY) ||
+					weapflags == (WRF_NOSWITCH| WRF_NOPRIMARY| WRF_NOSECONDARY)
+				) {
+					A_WeaponReady(weapflags);
+				} else {
+					A_WeaponReady(WRF_NOFIRE| WRF_NOSWITCH);
+				}
+ 			} else {
+				if (weapflags == (WRF_NOFIRE| WRF_ALLOWRELOAD) || weapflags == (WRF_NOPRIMARY| WRF_NOSECONDARY| WRF_ALLOWRELOAD)) {
+					A_WeaponReady(WRF_NOFIRE);
+				} else if(weapflags == (WRF_NOFIRE| WRF_ALLOWRELOAD| WRF_NOBOB) || weapflags == (WRF_NOPRIMARY| WRF_NOSECONDARY| WRF_ALLOWRELOAD| WRF_NOBOB)) {
+					A_WeaponReady(WRF_NOFIRE| WRF_NOBOB);
+				} else if(weapflags == (WRF_NOPRIMARY| WRF_ALLOWRELOAD)) {
+					A_WeaponReady(WRF_NOPRIMARY);
+				} else if(weapflags == (WRF_NOPRIMARY| WRF_ALLOWRELOAD| WRF_NOBOB)) {
+					A_WeaponReady(WRF_NOPRIMARY| WRF_NOBOB);
+				} else if(weapflags == (WRF_NOSECONDARY| WRF_ALLOWRELOAD)) {
+					A_WeaponReady(WRF_NOSECONDARY);
+				} else if(weapflags == (WRF_NOSECONDARY| WRF_ALLOWRELOAD| WRF_NOBOB)) {
+					A_WeaponReady(WRF_NOSECONDARY| WRF_NOBOB);
+				} else {
+					A_WeaponReady();
+				}
+			}
 		}
 		else {
-			A_WeaponReady(weapflags);
+			if (PB_usingKick()) {
+				if (CountInv("IsSlideKicking") >= 1) {
+					A_WeaponReady(weapflags|WRF_NOFIRE|WRF_NOSWITCH);
+				} else {
+					A_WeaponReady(weapflags|WRF_NOSWITCH);
+				}
+			} else {
+				A_WeaponReady(weapflags);
+			}
 		}
 		return null;
 	}
