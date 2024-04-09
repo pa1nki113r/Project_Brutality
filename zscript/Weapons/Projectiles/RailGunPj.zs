@@ -79,3 +79,37 @@ Class RailgunLaserBlast1 : FastProjectile
 		Level.SpawnParticle(LaserGun);
 	}
 }
+
+
+//this is basically the same as above, just made the effect a little smaller
+Class EnemyRailPj : FastProjectile
+{
+	override void Effect()
+	{
+		double hitz = pos.z - 8;
+		if (hitz < floorz)
+		{
+			hitz = floorz;
+		}
+		// Do not clip this offset to the floor.
+		hitz += MissileHeight;
+		
+		SpawnLaserTrail((pos.xy, hitz));
+	}
+	
+	void SpawnLaserTrail(vector3 where)
+	{
+		FSpawnParticleParams LaserGun;
+		LaserGun.Texture = TexMan.CheckForTexture("YAE4A0");
+		LaserGun.Style = STYLE_ADD;
+		LaserGun.Color1 = "FFFFFF";
+		LaserGun.Flags =SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		LaserGun.StartAlpha = 1.0;
+		LaserGun.FadeStep = -0.25;
+		LaserGun.Size = 125;
+		LaserGun.SizeStep = -10;
+		LaserGun.Lifetime = 10; 
+		LaserGun.Pos = where;
+		Level.SpawnParticle(LaserGun);
+	}
+}
