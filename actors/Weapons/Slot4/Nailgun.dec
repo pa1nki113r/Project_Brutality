@@ -1141,6 +1141,9 @@ Actor JavelinProjectile
 	DeathSound "Weapons/NailHit"
 	Decal BulletChip
 	Gravity 0.14
+	
+	VAR INT USER_LIFETIME;
+	
 	States
 	{
 		Spawn:
@@ -1148,17 +1151,32 @@ Actor JavelinProjectile
 			Loop
 		Crash:
 		Death:
+			
 			TNT1 A 0 { 
-			A_ChangeFlag("NOGRAVITY",1);
-			A_SpawnItem("HitPuff");
-			A_Stop;
+				A_ChangeFlag("NOGRAVITY",1);
+				A_SpawnItem("HitPuff");
+				A_Stop;
 			}
 			TNT1 AAAA 0 A_CustomMissile ("HitSpark", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360))
 			TNT1 AAAA 0 A_CustomMissile ("HitSpark22", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360))
 			TNT1 AAAA 0 A_CustomMissile ("HitSpark23", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360))
-			NAIL B 70 
-			NAIL BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB 1 A_FadeOut(0.02)
-			Stop
+// 			NAIL B 70
+// 			NAIL BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB 1 A_FadeOut(0.02)
+// 			Stop
+		Hanging:
+			NAIL B 10
+			TNT1 A 0 {
+				USER_LIFETIME--;
+				A_JumpIf(USER_LIFETIME <= 0, "Fade");
+				return A_CheckBlock("Hanging", 0, 0, (RADIUS / 2) + 1);
+			}
+		Drop:
+			TNT1 A 0 A_ChangeFlag(NOINTERACTION, false)
+			TNT1 A 0 A_ChangeFlag(NOGRAVITY, false)
+			TNT1 A 0 A_ChangeFlag(THRUACTORS, true)
+		Fade:
+			NAIL B 1 A_FadeOut(0.2, FTF_CLAMP| FTF_REMOVE)
+			Wait
 		Disappear:
 			TNT1 A 0 A_SpawnItem("HitPuff")
 			Stop
@@ -1172,6 +1190,7 @@ Actor JavelinProjectile_Hot : JavelinProjectile
 {
 	Speed 100
 	Damage 90
+	
 	States 
 	{
 		Spawn:
@@ -1179,18 +1198,33 @@ Actor JavelinProjectile_Hot : JavelinProjectile
 			Loop
 		Crash:
 		Death:
+			TNT1 A 0 A_ChangeFlag(MOVEWITHSECTOR, true)
+			TNT1 A 0 A_SetUserVar("USER_LIFETIME", 7)
 			TNT1 A 0 { 
-			A_ChangeFlag("NOGRAVITY",1);
-			A_SpawnItem("HitPuff");
-			A_Stop;
+				A_ChangeFlag("NOGRAVITY",1);
+				A_SpawnItem("HitPuff");
+				A_Stop;
 			}
 			TNT1 AAAA 0 A_CustomMissile ("HitSpark", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360))
 			TNT1 AAAA 0 A_CustomMissile ("HitSpark22", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360))
 			TNT1 AAAA 0 A_CustomMissile ("HitSpark23", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360))
-
-			NAIL B 70 
-			NAIL BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB 1 A_FadeOut(0.02)
-			Stop
+// 			NAIL B 70
+// 			NAIL BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB 1 A_FadeOut(0.02)
+// 			Stop
+		Hanging:
+			NAIL B 10
+			TNT1 A 0 {
+				USER_LIFETIME--;
+				A_JumpIf(USER_LIFETIME <= 0, "Fade");
+				return A_CheckBlock("Hanging", 0, 0, (RADIUS / 2) + 1);
+			}
+		Drop:
+			TNT1 A 0 A_ChangeFlag(NOINTERACTION, false)
+			TNT1 A 0 A_ChangeFlag(NOGRAVITY, false)
+			TNT1 A 0 A_ChangeFlag(THRUACTORS, true)
+		Fade:
+			NAIL B 1 A_FadeOut(0.2, FTF_CLAMP| FTF_REMOVE)
+			Wait
 	}
 }
 
@@ -1210,6 +1244,9 @@ Actor EnemyNail
 	SeeSound ""
 	DeathSound "Weapons/NailHit"
 	Decal BulletChip
+	
+	VAR INT USER_LIFETIME;
+	
 	States
 	{
 		Spawn:
@@ -1218,11 +1255,24 @@ Actor EnemyNail
 			Wait
 		Crash:
 		Death:
+			TNT1 A 0 A_ChangeFlag(MOVEWITHSECTOR, true)
+			TNT1 A 0 A_SetUserVar("USER_LIFETIME", 10)
 			TNT1 A 0 A_StopSound(CHAN_BODY)
 			TNT1 A 0 A_SpawnItem("HitPuff")
-			NLPJ A 200
-			NLPJ AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 A_FadeOut(0.02)
-			Stop
+		Hanging:
+			NLPJ A 20
+			TNT1 A 0 {
+				USER_LIFETIME--;
+				A_JumpIf(USER_LIFETIME <= 0, "Fade");
+				return A_CheckBlock("Hanging", 0, 0, (RADIUS / 2) + 1);
+			}
+		Drop:
+			TNT1 A 0 A_ChangeFlag(NOINTERACTION, false)
+			TNT1 A 0 A_ChangeFlag(NOGRAVITY, false)
+			TNT1 A 0 A_ChangeFlag(THRUACTORS, true)
+		Fade:
+			NLPJ A 1 A_FadeOut(0.2, FTF_CLAMP| FTF_REMOVE)
+			Wait
 		XDeath:
 			TNT1 A 0 A_StopSound(CHAN_BODY)
 			NLPJ B 0 A_PlaySound("Weapons/NailHitBleed")
