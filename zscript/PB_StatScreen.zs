@@ -207,7 +207,7 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 
 	override void drawEL()
 	{
-		PB_DrawText(452,pbcv_inter?300:0,"Next stop");
+		PB_DrawText(502,pbcv_inter?300:0,"Next stop");
 		PB_DrawName(pbcv_inter?370:70,wbs.LName1,lnametexts[1]);
 	}
 
@@ -215,11 +215,11 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 	{
 		int lh = IntFont.GetHeight()*3/2;
 		double xx = 50; double yy = xx*6+30;
-		double x1 = xx*5+13; double x2 = xx*12;
+		double x1 = xx*6+13; double x2 = xx*13;
 		int ck = cnt_kills[0]; int tk = wbs.maxkills;
 		int ci = cnt_items[0]; int ti = wbs.maxitems;
 		int cs = cnt_secret[0]; int ts = wbs.maxsecret;
-		PB_DrawText(xx*8+1,pbcv_inter?70:0,"You survived");
+		PB_DrawText(xx*9+1,pbcv_inter?70:0,"You survived");
 		PB_DrawName(pbcv_inter?140:70,wbs.LName0,lnametexts[0]);
 		//Kills/Items/Secrets row
 		if(st>=2) PB_DrawText(x1,yy,"Kills");
@@ -227,8 +227,8 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 		if(st>=6) PB_DrawText(x1,yy,"Items");
 		if(st>=8) PB_DrawText(x2,yy,CountStats(ci,ti),AllStats(ci,ti)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=2.5*lh;
 		if(st>=10) PB_DrawText(x1,yy,"Secrets");
-		if(st>=12) PB_DrawText(x2,yy,CountStats(cs,ts),AllStats(cs,ts)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=5*lh;
-		if(st>=14&&Perfect()) PB_DrawText(xx*9,yy,"\cfPERFECT!"); yy+=5*lh;
+		if(st>=12) PB_DrawText(x2,yy,CountStats(cs,ts),AllStats(cs,ts)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=3.5*lh;
+		if(st>=14&&Perfect()) PB_DrawText(xx*10,yy,"\cfPERFECT!"); yy+=3.5*lh;
 		if(st>=16) //Time row
 		{
 			PB_DrawText(x1,yy,"Time"); yy+=2.5*lh;
