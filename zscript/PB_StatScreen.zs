@@ -207,8 +207,8 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 
 	override void drawEL()
 	{
-		EVP_DrawText(452,pbcv_inter?300:0,"Next stop");
-		EVP_DrawName(pbcv_inter?370:70,wbs.LName1,lnametexts[1]);
+		PB_DrawText(452,pbcv_inter?300:0,"Next stop");
+		PB_DrawName(pbcv_inter?370:70,wbs.LName1,lnametexts[1]);
 	}
 
 	override void drawStats()
