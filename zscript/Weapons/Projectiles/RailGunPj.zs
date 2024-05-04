@@ -71,7 +71,7 @@ Class RailgunLaserBlast1 : FastProjectile
 		LaserGun.Color1 = "FFFFFF";
 		LaserGun.Flags =SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
 		LaserGun.StartAlpha = 1.0;
-		LaserGun.FadeStep = -0.25;
+		LaserGun.FadeStep = 0.25;
 		LaserGun.Size = 220;
 		LaserGun.SizeStep = -10;
 		LaserGun.Lifetime = 10; 
@@ -105,7 +105,7 @@ Class EnemyRailPj : FastProjectile
 		LaserGun.Color1 = "FFFFFF";
 		LaserGun.Flags =SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
 		LaserGun.StartAlpha = 1.0;
-		LaserGun.FadeStep = -0.25;
+		LaserGun.FadeStep = 0.25;
 		LaserGun.Size = 125;
 		LaserGun.SizeStep = -10;
 		LaserGun.Lifetime = 10; 
