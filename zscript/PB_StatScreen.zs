@@ -11,6 +11,7 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 		st = sp_state;
 		fa = 1; fade = false;
 		flash = TexMan.CheckForTexture("Graphics/intnone.png");
+		SetSize(1280,1024);
 	}
 	
 	override void Ticker()
@@ -186,10 +187,9 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 		if(tex.IsValid())
 		{
 			let size = TexMan.GetScaledSize(tex);
-			screen.DrawTexture(tex,false,(cwidth-size.x*scaleFactorX)/2-183,y,
-			DTA_VirtualWidth,1280,DTA_VirtualHeight,1024,
-			DTA_FullScreenScale,FSMode_ScaleToFit43,
-			DTA_ScaleX,3.4,DTA_ScaleY,3.4);
+			double x = (cwidth-size.x*scaleFactorX)/2-136;
+			screen.DrawTexture(tex,false,x,y,DTA_VirtualWidth,1280,DTA_VirtualHeight,1024,
+			DTA_FullScreenScale,FSMode_ScaleToFit43,DTA_ScaleX,3.4,DTA_ScaleY,3.4);
 			if(size.y>50) size.y = TexMan.CheckRealHeight(tex);
 		}
 		else if(levelname.Length()>0)
@@ -198,7 +198,8 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 			BrokenLines lines = mapname.mFont.BreakLines(levelname,wrapwidth/scaleFactorX);
 			for(int i=0;i<lines.Count();i++)
 			{
-				screen.DrawText(mapname.mFont,mapname.mColor,(cwidth-lines.StringWidth(i)*scaleFactorX)/2-196,y+h,lines.StringAt(i),
+				double x = (cwidth-lines.StringWidth(i)*scaleFactorX)/2-219;
+				screen.DrawText(mapname.mFont,mapname.mColor,x,y+h,lines.StringAt(i),
 				DTA_VirtualWidth,1280,DTA_VirtualHeight,1024,DTA_FullScreenScale,FSMode_ScaleToFit43,
 				DTA_ScaleX,3.4,DTA_ScaleY,3.4); h+=lumph;
 			}
