@@ -11,6 +11,7 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 		st = sp_state;
 		fa = 1; fade = false;
 		flash = TexMan.CheckForTexture("Graphics/intnone.png");
+		SetSize(1280,1024);
 	}
 	
 	override void Ticker()
@@ -50,12 +51,6 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 	{
 		if(cnt_kills[0]==wbs.maxkills&&cnt_items[0]==wbs.maxitems&&cnt_secret[0]==wbs.maxsecret) return true;
 		else return false;
-	}
-	
-	override void drawEL()
-	{
-		DrawMiscText(115,pbcv_inter?40:-47,"Next stop");
-		DrawName((pbcv_inter?110:20)*scaleFactorY,wbs.LName1,lnametexts[1]);
 	}
 	
 	override bool OnEvent(InputEvent evt)
@@ -159,53 +154,95 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 				if(acceleratestage) { PlaySound("inter_nextlevel"); initShowNextLoc(); } break;
 		}
 	}
-	
-	void DrawMiscText(int x,int y, string s)
-	{ screen.DrawText(IntFont,Font.CR_UNTRANSLATED,x,y,s,DTA_Clean,true,DTA_Shadow,true); }
-	
-	void DrawStatCount(int a,int b,int y)
+
+	private int GetPercent(int a,int b)
 	{
-		if(!b) DrawMiscText(290-SP_STATSX,y,"\cfN/A");
-		else DrawPercent(IntFont,320-SP_STATSX,y,a,b,true,(a>=b)?Font.CR_GOLD:Font.CR_UNTRANSLATED);
+		if(a<0) return 0; if(b<=0) return 100;
+		return (a*100)/b;
 	}
 	
-	void DrawStatText(int y,string s)
-	{ screen.DrawText(IntFont,Font.CR_UNTRANSLATED,SP_STATSX,y,s,DTA_Clean,true,DTA_Shadow,true); }
-	
-	void DrawStatTime(int a,int y,bool tfc)
+	private string CountStats(int a,int b)
 	{
-		int fc;
-		if(tfc) fc = (wbs.partime&&(cnt_time<=(wbs.partime/GameTicRate)))?Font.CR_GOLD:(cnt_time>=3600)?Font.CR_RED:Font.CR_UNTRANSLATED;
-		else fc = Font.CR_UNTRANSLATED;
-		DrawTimeFont(IntFont,320-SP_STATSX,y,a,fc);
+		if(!b) return "\cfN/A";
+		return max(a,0).."\cj/\c-"..b.." \cj(\c-"..GetPercent(a,b).."%\cj)";
+	}
+	
+	private string TimeString(int t)
+	{
+		t= max(t,0); int h = t/3600; int m = (t/60)%60; int s = t%60;
+		if(h) return String.Format("%02d:%02d:%02d",h,m,s);
+		return String.Format("%02d:%02d",m,s);
+	}
+	
+	private bool AllStats(int a,int b) { return a>=b; }
+
+	private void PB_DrawText(int x,int y, string s,int f = Font.CR_UNTRANSLATED)
+	{
+		screen.DrawText(IntFont,f,x,y,s,DTA_VirtualWidth,1280,DTA_VirtualHeight,1024,
+		DTA_FullScreenScale,FSMode_ScaleToFit43,DTA_ScaleX,3.4,DTA_ScaleY,3.4);
+	}
+	
+	private void PB_DrawName(int y,textureID tex,string levelname)
+	{
+		if(tex.IsValid())
+		{
+			let size = TexMan.GetScaledSize(tex);
+			double x = (cwidth-size.x*scaleFactorX)/2-136;
+			screen.DrawTexture(tex,false,x,y,DTA_VirtualWidth,1280,DTA_VirtualHeight,1024,
+			DTA_FullScreenScale,FSMode_ScaleToFit43,DTA_ScaleX,3.4,DTA_ScaleY,3.4);
+			if(size.y>50) size.y = TexMan.CheckRealHeight(tex);
+		}
+		else if(levelname.Length()>0)
+		{
+			int h = 0; int lumph = mapname.mFont.GetHeight()*scaleFactorY;
+			BrokenLines lines = mapname.mFont.BreakLines(levelname,wrapwidth/scaleFactorX);
+			for(int i=0;i<lines.Count();i++)
+			{
+				double x = (cwidth-lines.StringWidth(i)*scaleFactorX)/2-219;
+				screen.DrawText(mapname.mFont,mapname.mColor,x,y+h,lines.StringAt(i),
+				DTA_VirtualWidth,1280,DTA_VirtualHeight,1024,DTA_FullScreenScale,FSMode_ScaleToFit43,
+				DTA_ScaleX,3.4,DTA_ScaleY,3.4); h+=lumph;
+			}
+		}
+	}
+
+	override void drawEL()
+	{
+		PB_DrawText(502,pbcv_inter?300:0,"Next stop",Font.CR_CYAN);
+		PB_DrawName(pbcv_inter?370:70,wbs.LName1,lnametexts[1]);
 	}
 
 	override void drawStats()
 	{
-		int lh = IntermissionFont.GetHeight() * 3 / 2;
-		DrawMiscText(100,-30,"You survived");
-		DrawName((40)*scaleFactorY,wbs.LName0,lnametexts[0]);
+		int lh = IntFont.GetHeight()*3/2;
+		double xx = 50; double yy = xx*6+30;
+		double x1 = xx*6+13; double x2 = xx*13;
+		int ck = cnt_kills[0]; int tk = wbs.maxkills;
+		int ci = cnt_items[0]; int ti = wbs.maxitems;
+		int cs = cnt_secret[0]; int ts = wbs.maxsecret;
+		PB_DrawText(xx*9+1,pbcv_inter?70:0,"You survived",Font.CR_CYAN);
+		PB_DrawName(pbcv_inter?140:70,wbs.LName0,lnametexts[0]);
 		//Kills/Items/Secrets row
-		if(st >= 2) DrawStatText(SP_STATSY-3,"Kills");
-		if(st >= 4) DrawStatCount(cnt_kills[0],wbs.maxkills,SP_STATSY-3);
-		if(st >= 6) DrawStatText(SP_STATSY+lh-3,"Items");
-		if(st >= 8) DrawStatCount(cnt_items[0],wbs.maxitems,SP_STATSY+lh-3);
-		if(st >= 10) DrawStatText(SP_STATSY+2*lh-3,"Secrets");
-		if(st >= 12) DrawStatCount(cnt_secret[0],wbs.maxsecret,SP_STATSY+2*lh-3);
-		if(st >= 14 && Perfect()) DrawMiscText(120,SP_STATSY+3*lh,"\cfPERFECT!");
-		if(st >= 16) //Time row
+		if(st>=2) PB_DrawText(x1,yy,"Kills",Font.CR_CYAN);
+		if(st>=4) PB_DrawText(x2,yy,CountStats(ck,tk),AllStats(ck,tk)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=2.5*lh;
+		if(st>=6) PB_DrawText(x1,yy,"Items",Font.CR_CYAN);
+		if(st>=8) PB_DrawText(x2,yy,CountStats(ci,ti),AllStats(ci,ti)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=2.5*lh;
+		if(st>=10) PB_DrawText(x1,yy,"Secrets",Font.CR_CYAN);
+		if(st>=12) PB_DrawText(x2,yy,CountStats(cs,ts),AllStats(cs,ts)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=3.5*lh;
+		if(st>=14&&Perfect()) PB_DrawText(xx*10,yy,"\cfPERFECT!"); yy+=3.5*lh;
+		if(st>=16) //Time row
 		{
-			DrawStatText(SP_STATSY+4*lh-3,"Time");
-			if(wi_showtotaltime) DrawStatText(SP_STATSY+5*lh-3,"Total");
-			if(wbs.partime) DrawStatText(SP_STATSY+6*lh-3,"Par");
+			PB_DrawText(x1,yy,"Time",Font.CR_CYAN); yy+=2.5*lh;
+			PB_DrawText(x1,yy,"Total",Font.CR_CYAN); yy+=2.5*lh;
+			if(wbs.partime) PB_DrawText(x1,yy,"Par",Font.CR_CYAN); yy-=5*lh;
 		}
-		if(st >= 18)
-		{	
-			DrawStatTime(cnt_time,SP_STATSY+4*lh-3,true);
-			if(wi_showtotaltime) DrawStatTime(cnt_total_time,SP_STATSY+5*lh-3,false);
-			if(wbs.partime) DrawStatTime(cnt_par,SP_STATSY+6*lh-3,false);
-			//Display "Sucks" if map time > 1 hour
-			if(cnt_time>=3600) DrawMiscText(50+SP_STATSX,SP_STATSY+4*lh-3,"\cgSucks");
+		if(st>=18)
+		{
+			int fc = (wbs.partime&&(cnt_time<=(wbs.partime/GameTicRate)))?Font.CR_GOLD:(cnt_time>=3600)?Font.CR_RED:Font.CR_UNTRANSLATED;
+			PB_DrawText(x2+xx*2,yy,TimeString(max(cnt_time,0)),fc);
+			if(cnt_time>=3600) PB_DrawText(xx*9,yy,"\cgSucks"); yy+=2.5*lh;
+			PB_DrawText(x2+xx*2,yy,TimeString(max(cnt_total_time,0))); yy+=2.5*lh;
+			if(wbs.partime) PB_DrawText(x2+xx*2,yy,TimeString(max(cnt_par,0)));
 		}
 	}
 }

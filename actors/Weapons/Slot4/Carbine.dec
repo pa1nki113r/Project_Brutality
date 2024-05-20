@@ -87,6 +87,7 @@ ACTOR PB_Carbine : PB_Weapon
 			Goto Ready
 		
 		Ready:
+			TNT1 A 0 A_JumpIf(GetCvar("pb_UpgradeLMG")==0, 2)
 			TNT1 A 0 A_SelectWeapon("PB_LMG")
 			TNT1 A 0 PB_RespectIfNeeded
 		WeaponRespect:
@@ -150,6 +151,8 @@ ACTOR PB_Carbine : PB_Weapon
 				}
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReadyDualWield")
 		ReadyToFire:
+			TNT1 A 0 A_JumpIf(GetCvar("pb_UpgradeLMG")==0, 2)
+			TNT1 A 0 A_SelectWeapon("PB_LMG")
 			4AFG A 1 
 			{
 				A_SetInventory("CarbineBurstCounter",0);
@@ -220,6 +223,8 @@ ACTOR PB_Carbine : PB_Weapon
 			A_Overlay(11, "IdleRight_Overlay", false);
 			}
 	ReadyToFireDualWield:
+		TNT1 A 0 A_JumpIf(GetCvar("pb_UpgradeLMG")==0, 2)
+		TNT1 A 0 A_SelectWeapon("PB_LMG")
 		TNT1 A 1 {
 			if(CountInv("PB_HighCalMag")>0){
 				if(CountInv("LeftXRifleAmmo")<=0 || CountInv("XRifleAmmo")<=0){
@@ -390,6 +395,8 @@ ACTOR PB_Carbine : PB_Weapon
 			A_SetCrosshair(5);
 			}
 	ReadyToFire2:
+		TNT1 A 0 A_JumpIf(GetCvar("pb_UpgradeLMG")==0, 2)
+		TNT1 A 0 A_SelectWeapon("PB_LMG")
 		4A2G A 1 {
 			if(Countinv("Semifire")==1)
 			{
@@ -398,8 +405,11 @@ ACTOR PB_Carbine : PB_Weapon
 			A_OverlayPivotAlign(6,PSPA_CENTER,PSPA_CENTER);
 			A_Overlayscale(6,0.78,0.65 );
 			}
+		}
+		TNT1 A 0 {
 			//Updated code for far superior smooth gameplay
-			A_SetInventory("CarbineBurstCounter",0);
+			if (!PressingFire())
+			{A_SetInventory("CarbineBurstCounter",0);}
 			if (CountInv("CarbineBarrelHeat") >= 60) {
 				A_Gunflash("BarrelSmoke2");
 			}
@@ -410,14 +420,16 @@ ACTOR PB_Carbine : PB_Weapon
 					return state("Zoomout");
 				}
 				if (PressingFire() && PressingAltfire() && CountInv("XRifleAmmo") > 0){
-						if(CountInv("CarbineFullAuto") >= 1) 
+						if(CountInv("CarbineFullAuto") >= 1 || (CountInv("SemiFire") >= 1 && JustPressed(BT_ATTACK))) 
 							{Return State("Fire2");}
 						
-						if(CountInv("BurstFire") >= 1) 
-							{
+						if(CountInv("BurstFire") >= 1)
+							{		
+								//if(CountInv("CarbineBurstCounter") >= 2) 
+								//{A_SetInventory("CarbineBurstCounter",0); Return State("ReadyToFire2");}	
 								if(CountInv("CarbineBurstCounter") >= 2) 
-								{A_SetInventory("CarbineBurstCounter",0); Return State("ReadyToFire2");}
-								//else{Return State("Fire2");}
+								{Return State("ReadyToFire2");}	
+								else{Return State("Fire2");}
 							}
 				
 				}
@@ -458,7 +470,7 @@ ACTOR PB_Carbine : PB_Weapon
 			A_Takeinventory("Zoomed",1);
 			A_Takeinventory("ADSmode",1);
 		}
-		
+		TNT1 A 0 A_JumpIf(GetCvar("pb_UpgradeLMG")==0, 2)
 		TNT1 A 0 A_JumpIfInventory("PB_LMG",1,"DeselectUpgrade")
 		TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DeselectAkimbo")
         4A1S EDCBA 1
@@ -600,6 +612,7 @@ ACTOR PB_Carbine : PB_Weapon
 		
 		Goto SelectFirstPersonLegs
 		SelectContinue:
+		TNT1 A 0 A_JumpIf(GetCvar("pb_UpgradeLMG")==0, 2)
 		TNT1 A 0 A_SelectWeapon("PB_LMG")
 		TNT1 A 0 PB_WeapTokenSwitch("CarbineSelected")
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
