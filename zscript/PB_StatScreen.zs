@@ -224,25 +224,24 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 		PB_DrawName(pbcv_inter?140:70,wbs.LName0,lnametexts[0]);
 		//Kills/Items/Secrets row
 		if(st>=2) PB_DrawText(x1,yy,"Kills",Font.CR_CYAN);
-		if(st>=4) PB_DrawText(x2,yy,CountStats(ck,tk),AllStats(ck,tk)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=2.5*lh;
+		if(st>=4) PB_DrawText(x2,yy,CountStats(ck,tk),AllStats(ck,tk)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=2*lh;
 		if(st>=6) PB_DrawText(x1,yy,"Items",Font.CR_CYAN);
-		if(st>=8) PB_DrawText(x2,yy,CountStats(ci,ti),AllStats(ci,ti)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=2.5*lh;
+		if(st>=8) PB_DrawText(x2,yy,CountStats(ci,ti),AllStats(ci,ti)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=2*lh;
 		if(st>=10) PB_DrawText(x1,yy,"Secrets",Font.CR_CYAN);
-		if(st>=12) PB_DrawText(x2,yy,CountStats(cs,ts),AllStats(cs,ts)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=3.5*lh;
-		if(st>=14&&Perfect()) PB_DrawText(xx*10,yy,"\cfPERFECT!"); yy+=3.5*lh;
+		if(st>=12) PB_DrawText(x2,yy,CountStats(cs,ts),AllStats(cs,ts)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=3*lh;
+		if(st>=14&&Perfect()) PB_DrawText(xx*10,yy,"\cfPERFECT!"); yy+=3*lh;
 		if(st>=16) //Time row
 		{
-			PB_DrawText(x1,yy,"Time",Font.CR_CYAN); yy+=2.5*lh;
-			PB_DrawText(x1,yy,"Total",Font.CR_CYAN); yy+=2.5*lh;
-			if(wbs.partime) PB_DrawText(x1,yy,"Par",Font.CR_CYAN); yy-=5*lh;
+			PB_DrawText(x1,yy,"Time",Font.CR_CYAN); yy+=2*lh;
+			PB_DrawText(x1,yy,"Total",Font.CR_CYAN); yy+=2*lh;
+			if(wbs.partime) PB_DrawText(x1,yy,"Par",Font.CR_CYAN); yy-=4*lh;
 		}
 		if(st>=18)
 		{
 			int fc = (wbs.partime&&(cnt_time<=(wbs.partime/GameTicRate)))?Font.CR_GOLD:(cnt_time>=3600)?Font.CR_RED:Font.CR_UNTRANSLATED;
-			PB_DrawText(x2+xx*2,yy,TimeString(max(cnt_time,0)),fc);
-			if(cnt_time>=3600) PB_DrawText(xx*9,yy,"\cgSucks"); yy+=2.5*lh;
-			PB_DrawText(x2+xx*2,yy,TimeString(max(cnt_total_time,0))); yy+=2.5*lh;
-			if(wbs.partime) PB_DrawText(x2+xx*2,yy,TimeString(max(cnt_par,0)));
+			PB_DrawText(x2,yy,TimeString(max(cnt_time,0)),fc); yy+=2*lh;
+			PB_DrawText(x2,yy,TimeString(max(cnt_total_time,0))); yy+=2*lh;
+			if(wbs.partime) PB_DrawText(x2,yy,TimeString(max(cnt_par,0)));
 		}
 	}
 }
