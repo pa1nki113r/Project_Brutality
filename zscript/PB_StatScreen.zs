@@ -1,7 +1,7 @@
 Class PB_DoomStatusScreen : DoomStatusScreen
 {
 	bool fade; double fa;
-	font IntFont; int st,hs;
+	font IntFont; int st;
 	textureid flash;
 	
 	override void Start(wbstartstruct wbstartstruct)
@@ -11,8 +11,6 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 		st = sp_state;
 		fa = 1; fade = false;
 		flash = TexMan.CheckForTexture("Graphics/intnone.png");
-		SetSize(1280,1024);
-		hs = CleanXFac_1;
 	}
 	
 	override void Ticker()
@@ -188,9 +186,9 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 		if(tex.IsValid())
 		{
 			let size = TexMan.GetScaledSize(tex);
-			double x = 640-size.x*hs+50;
-			screen.DrawTexture(tex,false,x,y,DTA_VirtualWidth,1280,DTA_VirtualHeight,1024,
-			DTA_FullScreenScale,FSMode_ScaleToFit43,DTA_ScaleX,3.4,DTA_ScaleY,3.4);
+			double x = 160-(size.x*0.5);
+			screen.DrawTexture(tex,false,x,y,DTA_VirtualWidth,320,DTA_VirtualHeight,200,
+			DTA_FullScreenScale,FSMode_ScaleToFit43,DTA_ScaleX,1,DTA_ScaleY,0.8);
 			if(size.y>50) size.y = TexMan.CheckRealHeight(tex);
 		}
 		else if(levelname.Length()>0)
@@ -199,10 +197,10 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 			BrokenLines lines = mapname.mFont.BreakLines(levelname,wrapwidth/scaleFactorX);
 			for(int i=0;i<lines.Count();i++)
 			{
-				double x = 640-lines.StringWidth(i)*hs+60;
+				double x = 160-(lines.StringWidth(i)*0.5);
 				screen.DrawText(mapname.mFont,mapname.mColor,x,y+h,lines.StringAt(i),
-				DTA_VirtualWidth,1280,DTA_VirtualHeight,1024,DTA_FullScreenScale,FSMode_ScaleToFit43,
-				DTA_ScaleX,3.4,DTA_ScaleY,3.4); h+=lumph;
+				DTA_VirtualWidth,320,DTA_VirtualHeight,200,DTA_FullScreenScale,FSMode_ScaleToFit43,
+				DTA_ScaleX,1,DTA_ScaleY,0.8); h+=lumph;
 			}
 		}
 	}
@@ -210,7 +208,7 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 	override void drawEL()
 	{
 		PB_DrawText(502,pbcv_inter?300:0,"Next stop",Font.CR_CYAN);
-		PB_DrawName(pbcv_inter?370:70,wbs.LName1,lnametexts[1]);
+		PB_DrawName(pbcv_inter?70:13,wbs.LName1,lnametexts[1]);
 	}
 
 	override void drawStats()
@@ -222,7 +220,7 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 		int ci = cnt_items[0]; int ti = wbs.maxitems;
 		int cs = cnt_secret[0]; int ts = wbs.maxsecret;
 		PB_DrawText(xx*9+1,pbcv_inter?70:0,"You survived",Font.CR_CYAN);
-		PB_DrawName(pbcv_inter?140:70,wbs.LName0,lnametexts[0]);
+		PB_DrawName(pbcv_inter?27:13,wbs.LName0,lnametexts[0]);
 		//Kills/Items/Secrets row
 		if(st>=2) PB_DrawText(x1,yy,"Kills",Font.CR_CYAN);
 		if(st>=4) PB_DrawText(x2,yy,CountStats(ck,tk),AllStats(ck,tk)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=2*lh;
