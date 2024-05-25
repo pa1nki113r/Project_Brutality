@@ -73,8 +73,9 @@ class PB_Hud_ZS : BaseStatusBar
 
     //CVars
     int hudXMargin, hudYMargin, playerMsgPrint;
-    bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot;
-    float playerAlpha, playerBoxAlpha, messageSize;
+    bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks;
+    float playerAlpha, playerBoxAlpha, messageSize, bloodDropsAlpha, glassCracksAlpha;
+
     bool centerNotify;
     
 	override void Init()
@@ -129,6 +130,12 @@ class PB_Hud_ZS : BaseStatusBar
         centerNotify = CVar.GetCVar("con_centernotify", CPlayer).GetBool();
         playerMsgPrint = CVar.GetCVar("msg").GetInt();
         messageSize = CVar.GetCVar("pb_messagesize", CPlayer).GetFloat();
+
+        showBloodDrops = CVar.GetCVar("pb_showblooddrops", CPlayer).GetBool();
+        showGlassCracks = CVar.GetCVar("pb_showglasscracks", CPlayer).GetBool();
+
+        bloodDropsAlpha = CVar.GetCVar("pb_blooddropsalpha", CPlayer).GetFloat();
+        glassCracksAlpha = CVar.GetCVar("pb_glasscracksalpha", CPlayer).GetFloat();
 	}
 
 	override void Draw(int state, double TicFrac)
@@ -147,6 +154,9 @@ class PB_Hud_ZS : BaseStatusBar
             IntMPitch = mPitchInterpolator.GetValue();
             IntMOfs = mFOffsetInterpolator.GetValue();
         }
+
+        DrawBloodDrops();
+        DrawGlassCracks();
     	
         if(hudState != HUD_None)
 		{
@@ -184,6 +194,8 @@ class PB_Hud_ZS : BaseStatusBar
 		Super.Tick();
         
 		PBHUD_TickMessages();
+        TickBloodDrops();
+        TickGlassCracks();
 		
         if(!CheckInventory("sae_extcam") && !HasCompletedHelmetSequence)
         {
@@ -329,7 +341,7 @@ class PB_Hud_ZS : BaseStatusBar
 
     // [gng] pass the x and y parts of the vector to this function individually
     // you can't use the out keyword with vectors, so i had to improvise
-    void SetSway(out double posX, out double posY, int flags, double parallax, double parallax2, bool applyDeadZone = true)
+    void SetSway(out double posX, out double posY, int flags, double parallax, double parallax2, bool applyDeadZone = true, bool applySpeedShift = true)
     {
 		if(applyDeadZone) {
 			switch(flags & DI_SCREEN_HMASK) {
@@ -351,6 +363,9 @@ class PB_Hud_ZS : BaseStatusBar
         if(HudDynamics) {
             posX += IntMSway * Parallax;
             posY -= IntMPitch * Parallax;
+
+            if(!applySpeedShift)
+                return;
 
             switch(flags & DI_SCREEN_HMASK) {
                 case DI_SCREEN_LEFT:
