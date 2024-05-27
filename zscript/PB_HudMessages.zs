@@ -127,6 +127,6 @@ class MsgLine
 		if(stack > 1) 
 			nstring.AppendFormat("\cj (%dx)",stack);
 		
-		brokentext =  Font.GetFont('SmallFont').BreakLines(nstring, (type == PRINT_LOW) ? 384 : 464);
+		brokentext = Font.GetFont('SmallFont').BreakLines(nstring, (type == PRINT_LOW) ? 384 : 464);
 	}
 }
