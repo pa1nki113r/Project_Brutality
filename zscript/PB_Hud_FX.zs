@@ -255,10 +255,13 @@ class PB_HUDFXHandler : EventHandler
 	
 	override void InterfaceProcess(consoleEvent e)
 	{
-		PB_Hud_ZS sb = PB_Hud_ZS(statusbar);
+		let sb = PB_Hud_ZS(statusbar);
 		
-		//if(!sb.CheckInventory("sae_extcam"))
-		//	return;
+		if(!sb)
+			return;
+		
+		if(sb.CheckInventory("sae_extcam"))
+			return;
 
 		if(e.name == "PB_HUDBloodDroplet")	
 			sb.CreateBloodDrop(e.args[0]);
