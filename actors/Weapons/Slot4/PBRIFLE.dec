@@ -137,29 +137,30 @@ ACTOR HalfTicCounter : Inventory { Inventory.MaxAmount 1 }
 //This actor can be uncommented when it's completed.
 Actor RifleUpgrade: PB_UpgradeItem
 {
-//$Category Ammunition
+	//$Title Heavy DMR Upgrade
+	//$Category Project Brutality - Weapon Upgrades
+	//$Sprite HIFLA0
 	Game Doom
 	//SpawnID 9410
 	Height 24
 	//-COUNTITEM
-    Scale 0.43
+	Scale 0.43
 	+INVENTORY.ALWAYSPICKUP
 	+COUNTITEM
 	Inventory.Pickupsound "weapons/rifle/up"
-	Inventory.PickupMessage "You got the Heavy DMR!!!"
+	Inventory.PickupMessage "Heavy DMR (Slot 4, Upgrade)"
 	States
 	{
-	Spawn:
-		VHFL A 0 NODELAY
-		HIFL A 10 A_PBVPFramework("VHFL")
-		"####" "#" 0 A_PbvpInterpolate()
-	Loop
-	
-    Pickup:
-	  TNT1 A 0
-	  TNT1 A 0 A_SetInventory("UnderBarrelGrenadeLoaded", 1)
-	  TNT1 A 0 A_SetInventory("DMRUpgraded", 1)
-      Stop
+		Spawn:
+			VHFL A 0 NODELAY
+			HIFL A 10 A_PBVPFramework("VHFL")
+			"####" "#" 0 A_PbvpInterpolate()
+			Loop
+		Pickup:
+			TNT1 A 0
+			TNT1 A 0 A_SetInventory("UnderBarrelGrenadeLoaded", 1)
+			TNT1 A 0 A_SetInventory("DMRUpgraded", 1)
+			Stop
 	}
 }
 
@@ -190,19 +191,14 @@ Actor UpgradeInspect: Inventory
 // --------------------------------------------------------------------------
 ACTOR Rifle : PB_Weapon
 {
-	//$Title Rifle
-	//$Category Weapons
+	//$Category Project Brutality - Weapons
 	//$Sprite RIFLA0
 	SpawnID 9420
-	Weapon.BobRangeX 0.3
-	Weapon.BobRangeY 0.5
-	Weapon.BobStyle InverseSmooth
-	Weapon.BobSpeed 2.4
 	Weapon.AmmoUse1 0
 	Weapon.AmmoGive1 10
 	Weapon.AmmoUse2 0
 	Weapon.AmmoGive2 0
-	Weapon.AmmoType1 "NewClip"
+	Weapon.AmmoType1 "PB_HighCalMag"
 	Weapon.AmmoType2 "RifleAmmo"
 	Inventory.MaxAmount 3
 	Inventory.Amount 1
@@ -211,7 +207,7 @@ ACTOR Rifle : PB_Weapon
 	Obituary "%o was shot down by %k's DMR."
     AttackSound "None"
     Inventory.PickupSound "CLIPIN"
-	Inventory.Pickupmessage "You got the UAC-30 DMR! (Slot 4)"
+	Inventory.Pickupmessage "UAC-30 DMR (Slot 4)"
 	+WEAPON.WIMPY_WEAPON
     +WEAPON.NOAUTOAIM
     +WEAPON.NOALERT
@@ -222,6 +218,8 @@ ACTOR Rifle : PB_Weapon
 	PB_WeaponBase.UnloaderToken "HasUnloadedDMR"
 	Inventory.AltHUDIcon "RIFLA0"
 	PB_WeaponBase.respectItem "RespectRifle"
+	PB_WeaponBase.OffsetRecoilX 2.5
+	PB_WeaponBase.OffsetRecoilY 3
 	
 	States
 	{
@@ -241,7 +239,19 @@ ACTOR Rifle : PB_Weapon
 					A_ClearOverlays(10,11);
 				}
 			}
-			R5F4 ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
+			R5F4 ABCDEFGHIJKL 1 A_DoPBWeaponAction
+		InspectUpgradeContinue:
+			TNT1 A 0 {
+				A_SetCrosshair(5);
+				A_GiveInventory("UpgradeInspect");
+				A_GiveInventory("PB_LockScreenTilt",1);
+				A_TakeInventory("DualWieldingDMRs", 1);
+				
+				if(CountInv("DualWieldingDMRs") == 1) {
+					A_ClearOverlays(10,11);
+				}
+			}
+			R5F4 MNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
 			TNT1 A 0 A_PlaySoundEx("IronSights", "Auto")
 			R5F5 ABCDEF 1 A_DoPBWeaponAction
 			TNT1 A 0 A_PlaySoundEx("MP4DGG", "Auto")
@@ -299,7 +309,7 @@ ACTOR Rifle : PB_Weapon
 			H0F0 ABCDE 0 // Load Upgrades sprites into memory
 			H3F0 ABCDE 0 // Load Upgrades sprites into memory
 			TNT1 A 0 A_TakeInventory("SniperFiringCooldown", 1)
-			TNT1 A 0 A_GiveInventory("RifleSelected",1)
+			TNT1 A 0 PB_WeapTokenSwitch("RifleSelected")
 			TNT1 A 0 PB_RespectIfNeeded
 		WeaponRespect:
 			TNT1 A 0 {
@@ -308,6 +318,7 @@ ACTOR Rifle : PB_Weapon
 				A_GiveInventory("PB_LockScreenTilt",1);
 				A_PlaySoundEx("weapons/carbine/up", "Auto");
 			}
+			TNT1 A 0 A_JumpIfInventory("DMRUpgraded",1,"InspectUpgrade")
 			R0F0 ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
 			R0F1 ABCDEF 1 A_DoPBWeaponAction
 			TNT1 A 0 A_PlaySoundEx("LIGHTON", "Auto")
@@ -336,6 +347,9 @@ ACTOR Rifle : PB_Weapon
 			R0F5 STUVWXY 1 A_DoPBWeaponAction
 			Goto Ready3
 		SelectAnimation:
+			TNT1 A 0 A_TakeInventory("Zoomed",1)
+			TNT1 A 0 A_JumpIfInventory("UpgradeInspect",1,2)
+			TNT1 A 0 A_JumpIfInventory("DMRUpgraded",1,"InspectUpgrade")
 			TNT1 A 0 A_PlaySoundEx("weapons/rifle/up", "Auto")
 			TNT1 A 0 A_JumpIfInventory("DualWieldingDMRs", 1, "SelectAnimationDualWield")
 			R0F6 ABCD 1 {
@@ -347,13 +361,12 @@ ACTOR Rifle : PB_Weapon
 				A_TakeInventory("PB_LockScreenTilt",1);
 				PB_HandleCrosshair(58);
 				}
-			TNT1 A 0 A_JumpIf(CountInv("UpgradeInspect") == 0 && CountInv("DMRUpgraded") == 1, "InspectUpgrade")
-			TNT1 A 0 A_JumpIf(PressingAltfire() && CountInv("HDMRGrenadeMode") == 1, "PrepareRifleGrenadeFire")
+			TNT1 A 0 A_JumpIf(CountInv("UpgradeInspect") == 0 && CountInv("DMRUpgraded") == 1, "InspectUpgradeContinue")
 			TNT1 A 0 A_JumpIfInventory("Zoomed",1,"Ready2")
 			TNT1 A 0 A_JumpIfInventory("DualWieldingDMRs", 1, "ReadyDualWield")
 			
 		ReallyReady:
-			TNT1 A 0 A_JumpIf(CountInv("UpgradeInspect") == 0 && CountInv("DMRUpgraded") == 1, "InspectUpgrade")
+			TNT1 A 0 A_JumpIf(CountInv("UpgradeInspect") == 0 && CountInv("DMRUpgraded") == 1, "InspectUpgradeContinue")
 			
 			R0F6 E 1 {
 				if (CountInv("DMRUpgraded") == 1) {A_SetWeaponSprite("H0F0");}
@@ -511,55 +524,6 @@ ACTOR Rifle : PB_Weapon
 			}
 			Loop
 			
-		ReadyGrenade:
-			TNT1 A 0 A_JumpIf(!GetCvar("pb_toggle_aim_hold"), "ReadyGrenadeToggle")
-			H0F0 E 0
-			R0F6 E 1 {
-				
-				if (CountInv("DMRUpgraded") == 1) {A_SetWeaponSprite("H0F0");}
-				if (CountInv("HDMRSniperMode") == 1) {A_SetWeaponSprite("H3F0");}
-			
-				//Updated code for far superior smooth gameplay
-				if(GetCvar("pb_toggle_aim_hold")) {
-					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){
-						PB_HandleCrosshair(58);
-						A_ZoomFactor(1.0);
-						A_TakeInventory("FiringUnderBarrelGrenadeLauncher", 1);
-						A_StartSound("IronSights", 0);
-						return state("Ready3");
-					}
-			
-					if (PressingFire() && PressingAltfire()){
-							return state("FireGrenade");
-					}
-					
-					
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
-					
-				}
-				else {
-					if (PressingFire()){
-						return state("FireGrenade");
-					}
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
-				}
-				return state("");
-			}
-			Loop
-		
-		ReadyGrenadeToggle:
-			TNT1 A 0 A_JumpIfInventory("FiringUnderBarrelGrenadeLauncher", 1, 1)
-			Goto ReallyReady
-			R0F6 E 1 {
-				if (CountInv("DMRUpgraded") == 1) {A_SetWeaponSprite("H0F0");}
-				if (CountInv("HDMRSniperMode") == 1) {A_SetWeaponSprite("H3F0");}
-				if (PressingFire() || JustPressed(BT_ATTACK)){
-						return state("FireGrenade");
-					}
-				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
-			}
-			Loop
-			
 		IdleLeft_Overlay:
 			H7F2 B 0
 			H7F3 B 0
@@ -582,9 +546,21 @@ ACTOR Rifle : PB_Weapon
 				if(CountInv("LeftRifleAmmo")<=0 && CountInv("RifleAmmo")>0){
 					A_GiveInventory("DualFiring",1);
 				}
-				if(CountInv("DualFiring")==0 || CountInv("RifleAmmo")<=0 || GetCvar("SingleDualFire")==1){
-					if(PressingFire() || JustPressed(BT_ATTACK)){
-						if(CountInv("HDMRSniperMode") == 1 && CountInv("LeftRifleAmmo") > 0) {
+				if((PressingAltFire() || JustPressed(BT_ALTATTACK)) && GetCvar("SingleDualFire") == 2){
+					if(CountInv("HDMRSniperMode") == 1 && CountInv("LeftRifleAmmo") > 0) {
+							return state("FireLeft_Sniper_Overlay");
+					}
+					if(CountInv("LeftRifleAmmo") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+				if(CountInv("DualFiring")==0  || CountInv("DualFiring")==0 && CountInv("RifleAmmo")<=0 || GetCvar("SingleDualFire")==1){
+					if((PressingFire() || JustPressed(BT_ATTACK)) && GetCvar("SingleDualFire") < 2){
+						if(CountInv("HDMRSniperMode") == 1 && CountInv("LeftRifleAmmo") > 0 ) {
 							return state("FireLeft_Sniper_Overlay");
 						}
 						if(CountInv("LeftRifleAmmo") > 0){
@@ -625,7 +601,7 @@ ACTOR Rifle : PB_Weapon
 				if(CountInv("LeftRifleAmmo")>0 && CountInv("RifleAmmo")<=0){
 					A_TakeInventory("DualFiring",1);
 				}
-				if(CountInv("DualFiring")==1 || CountInv("LeftRifleAmmo")<=0){
+				if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1 && CountInv("LeftRifleAmmo")<=0 || GetCvar("SingleDualFire")==1)){
 					if((PressingFire() || JustPressed(BT_ATTACK)) && GetCvar("SingleDualFire")==0){
 						if(CountInv("HDMRSniperMode") == 1 && CountInv("RifleAmmo") > 0) {
 							return state("FireRight_Sniper_Overlay");
@@ -651,9 +627,18 @@ ACTOR Rifle : PB_Weapon
 						return state("");
 					}
 				}
-				
-				
-			
+				if((PressingFire() || JustPressed(BT_ATTACK)) && GetCvar("SingleDualFire")==2){
+					if(CountInv("HDMRSniperMode") == 1 && CountInv("RifleAmmo") > 0) {
+						return state("FireRight_Sniper_Overlay");
+					}
+					if(CountInv("RifleAmmo") > 0){
+						return state("FireRight_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}	
 				if(CountInv("DualWieldingDMRs") == 0) {
 					return state("CancelOverlay");
 				}
@@ -681,10 +666,17 @@ ACTOR Rifle : PB_Weapon
 			}
 		
 			
-			if (CountInv("DMRUpgraded") == 1) {A_FireBullets (0.1, 0.1, -1, 30, "HitPuff", FBF_NORANDOM,8192,"Tracer", -4,-8);}
-			else { A_FireBullets (0.1, 0.1, -1, 22, "HitPuff", FBF_NORANDOM,8192,"Tracer", -4,-8);}
+			if(CountInv("DMRUpgraded") == 1) {
+				A_FireProjectile("PB_762x51mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
+				PB_LowAmmoSoundWarning("hdmr", "LeftRifleAmmo");
+			}
+			else { 
+				A_FireProjectile("PB_556x45mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
+				PB_LowAmmoSoundWarning("default", "LeftRifleAmmo");
+			}
 			
-			A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
+			PB_GunSmoke(4,0,0);
 			A_AlertMonsters;
 			A_ZoomFactor(0.98);
 			A_Takeinventory("LeftRifleAmmo",1);
@@ -738,10 +730,17 @@ ACTOR Rifle : PB_Weapon
 			
 			
 			
-			if (CountInv("DMRUpgraded") == 1) {A_FireBullets (0.1, 0.1, -1, 30, "HitPuff", FBF_NORANDOM,8192,"Tracer", -4, 8);}
-			else { A_FireBullets (0.1, 0.1, -1, 22, "HitPuff", FBF_NORANDOM,8192,"Tracer", -4,8);}
+			if (CountInv("DMRUpgraded") == 1) {
+				A_FireProjectile("PB_762x51mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
+				PB_LowAmmoSoundWarning(hdmr);
+			}
+			else { 
+				A_FireProjectile("PB_556x45mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
+				PB_LowAmmoSoundWarning;
+			}
 			
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
+			PB_GunSmoke(-4,0,0);
 			A_AlertMonsters;
 			A_ZoomFactor(0.98);
 			A_Takeinventory("RifleAmmo",1);
@@ -786,19 +785,23 @@ ACTOR Rifle : PB_Weapon
 			
 			if(GetCvar("PB_alttracer") >=1) {
 				A_RailAttack(0, 0, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0, none,0.1,0.1,700,0,1,1.0,"Tracer_Trail",-6,0,0);
-				A_FireBullets (0, 0, -1, 165, "HitPuff", FBF_NORANDOM,8192,none, 0,0);
+				A_FireProjectile("PB_762x51mmAP", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			}
 			else { 
-				A_FireBullets (0, 0, -1, 165, "HitPuff", FBF_NORANDOM,8192,none, 0,0);
+				A_FireProjectile("PB_762x51mmAP", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			}
 			A_AlertMonsters;
+			PB_LowAmmoSoundWarning("sniper");
 			A_Takeinventory("RifleAmmo",2);
 			PB_SpawnCasing("LMGCasingStandard",17.5, 0.5, 32,frandom(0,2),frandom(3,5),frandom(4,7));
 			A_Giveinventory("SniperFiringCooldown",1);
 			A_FireCustomMissile("ShakeYourAssQuad", 0, 0, 0, 0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
+			PB_GunSmoke(4,0,0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
+			PB_GunSmoke(4,0,0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
+			PB_GunSmoke(4,0,0);
 			A_FireCustomMissile("YellowFlareSpawn",0,0,4,0);
 			//A_Overlay(-51, "SniperFireCooldown");
 			A_Overlay(-42,"DualRightMuzzleFlashHandler_Sniper");
@@ -838,24 +841,27 @@ ACTOR Rifle : PB_Weapon
 		H7F6 A 1 BRIGHT {
 			A_ZoomFactor(0.98);
 			A_PlaySoundEx("weapons/rifle/sniperfire", "Weapon");
-			
+			PB_LowAmmoSoundWarning("sniper", "LeftRifleAmmo");
 			if(GetCvar("PB_alttracer") >=1) {
 				A_RailAttack(0, 0, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0, none,0.1,0.1,700,0,1,1.0,"Tracer_Trail",-6,0,0);
-				A_FireBullets (0, 0, -1, 165, "HitPuff", FBF_NORANDOM,8192,none, 0,0);
+				A_FireProjectile("PB_762x51mmAP", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			}
 			else { 
-				A_FireBullets (0, 0, -1, 165, "HitPuff", FBF_NORANDOM,8192,none, 0,0);
+				A_FireProjectile("PB_762x51mmAP", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			}
 			A_AlertMonsters;
 			A_Takeinventory("LeftRifleAmmo",2);
 			PB_SpawnCasing("LMGCasingStandard",17.5, 0.5, 32,frandom(0,2),frandom(3,5),frandom(4,7));
 			A_Giveinventory("LeftSniperFiringCooldown",1);
 			A_FireCustomMissile("ShakeYourAssQuad", 0, 0, 0, 0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
+			PB_GunSmoke(-4,0,0);
+			PB_GunSmoke(-4,0,0);
+			PB_GunSmoke(-4,0,0);
 			A_FireCustomMissile("YellowFlareSpawn",0,0,-4,0);
-			A_Overlay(-42,"DualLeftMuzzleFlashHandler_Sniper");
+			A_Overlay(-41,"DualLeftMuzzleFlashHandler_Sniper");
 			//A_Overlay(-52, "LeftSniperFireCooldown");
             PB_WeaponRecoil(-6.4,1.2);
 			
@@ -1036,33 +1042,6 @@ ACTOR Rifle : PB_Weapon
 		MZ43 O 1 BRIGHT
 		stop
 		
-	//Right DMR flash
-	DualRightMuzzleFlashHandler:
-		TNT1 A 0 A_Jump(256, "RightFlash1", "RightFlash2", "RightFlash3")
-	RightFlash1:
-		MZ13 A 1 BRIGHT 
-		TNT1 A 0 A_Jump(256, "RightFlashEnd1", "RightFlashEnd2", "RightFlashEnd3", "RightFlashEnd4")
-		stop
-	RightFlash2:
-		MZ13 B 1 BRIGHT
-		TNT1 A 0 A_Jump(256, "RightFlashEnd1", "RightFlashEnd2", "RightFlashEnd3", "RightFlashEnd4")
-		stop
-	RightFlash3:
-		MZ13 C 1 BRIGHT
-		TNT1 A 0 A_Jump(256, "RightFlashEnd1", "RightFlashEnd2", "RightFlashEnd3", "RightFlashEnd4")
-		stop
-	RightFlashEnd1:
-		MZ13 D 1 BRIGHT
-		stop
-	RightFlashEnd2:
-		MZ13 E 1 BRIGHT
-		stop
-	RightFlashEnd3:
-		MZ13 F 1 BRIGHT
-		stop
-	RightFlashEnd4:
-		MZ13 G 1 BRIGHT
-		stop
 	//Right HDMR flash
 	DualRightMuzzleFlashHandler_Upgraded:
 		TNT1 A 0 A_Jump(256, "RightFlash1_Upgraded", "RightFlash2_Upgraded", "RightFlash3_Upgraded", "RightFlash4_Upgraded", "RightFlash5_Upgraded")
@@ -1169,14 +1148,14 @@ ACTOR Rifle : PB_Weapon
 			if(CountInv("LeftRifleAmmo") < CountInv("RifleAmmo")){
 				A_GiveInventory("DualFiring",1);
 			}
-			if(CountInv("NewClip")>0){
-				if(CountInv("LeftRifleAmmo")<=0){
-					A_GiveInventory("DualFireReload",1);
-				}
-				if(CountInv("RifleAmmo")<=0){
-					A_GiveInventory("DualFireReload",1);
-				}
-			}
+// 			if(CountInv("PB_HighCalMag")>0){
+// 				if(CountInv("LeftRifleAmmo")<=0){
+// 					A_GiveInventory("DualFireReload",1);
+// 				}
+// 				if(CountInv("RifleAmmo")<=0){
+// 					A_GiveInventory("DualFireReload",1);
+// 				}
+// 			}
 			
 			// ******** IMPORTANT, SET NOOVERRIDE TO FALSE ********
 			A_Overlay(10, "IdleLeft_Overlay", false);
@@ -1184,10 +1163,25 @@ ACTOR Rifle : PB_Weapon
 			}
 	ReadyToFireDualWield:
 		TNT1 A 0 A_JumpIf(CountInv("UpgradeInspect") == 0 && CountInv("DMRUpgraded") == 1, "InspectUpgrade")
-		TNT1 A 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE)
+		TNT1 A 1 {
+			if(CountInv("PB_HighCalMag")>0){
+				if(CountInv("LeftRifleAmmo")<=0 || CountInv("Rifle")<=0){
+					if(CountInv("LeftRifleAmmo")<=0 && CountInv("RifleAmmo")<=0){
+						A_SetInventory("DualFireReload",2);
+					}
+					else{
+						A_SetInventory("DualFireReload",1);
+					}
+				}
+			}
+			return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+		}
 		Loop
 		
 	Deselect:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
@@ -1203,7 +1197,7 @@ ACTOR Rifle : PB_Weapon
 			A_ZoomFactor(1.0);
 			A_PlaySoundEx("weapons/changing", "Auto");
 			}
-		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
+		
         TNT1 A 0 A_JumpIfInventory("DualWieldingDMRs",1,"DeselectAnimationDualWield")
 		H0F4 ABCD 0
 		H3F4 ABCD 0
@@ -1248,6 +1242,9 @@ ACTOR Rifle : PB_Weapon
 		Wait
 		
 	WeaponSpecial:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 {
 			A_Takeinventory("GoWeaponSpecialAbility",1);
 			A_Takeinventory("Zoomed",1);
@@ -1284,20 +1281,20 @@ ACTOR Rifle : PB_Weapon
 			// If 30+1 round chamber, recover the extra round
 			if(CountInv("RifleAmmo") >= 31) {
 				A_TakeInventory("RifleAmmo", 1);
-				A_GiveInventory("NewClip", 1);
+				A_GiveInventory("PB_HighCalMag", 1);
 			}
 			if(CountInv("LeftRifleAmmo") >= 31) {
 				A_TakeInventory("LeftRifleAmmo", 1);
-				A_GiveInventory("NewClip", 1);
+				A_GiveInventory("PB_HighCalMag", 1);
 			}
 		}
 	RefreshAmmo_NtoS:
 		TNT1 A 0 A_JumpIfInventory("RifleAmmo",30,"Continue_NtoS")
-		TNT1 A 0 A_JumpIfInventory("NewCLip",1,1)
+		TNT1 A 0 A_JumpIfInventory("PB_HighCalMag",1,1)
 		Goto Continue_NtoS
 		TNT1 A 0 {
 			A_Giveinventory("RifleAmmo",1);
-			A_Takeinventory("NewCLip",1);
+			A_Takeinventory("PB_HighCalMag",1);
 			}
 		Goto RefreshAmmo_NtoS
 	Continue_NtoS:
@@ -1352,11 +1349,11 @@ ACTOR Rifle : PB_Weapon
 		}
 	RefreshAmmo_StoN:
 		TNT1 A 0 A_JumpIfInventory("RifleAmmo",30,"Continue_StoN")
-		TNT1 A 0 A_JumpIfInventory("NewCLip",1,1)
+		TNT1 A 0 A_JumpIfInventory("PB_HighCalMag",1,1)
 		Goto Continue_StoN
 		TNT1 A 0 {
 			A_Giveinventory("RifleAmmo",1);
-			A_Takeinventory("NewCLip",1);
+			A_Takeinventory("PB_HighCalMag",1);
 			}
 		Goto RefreshAmmo_StoN
 	Continue_StoN:
@@ -1510,6 +1507,12 @@ ACTOR Rifle : PB_Weapon
 			A_TakeInventory("PB_LockScreenTilt",1);
 			A_ZoomFactor(1);
 		}
+		TNT1 A 0 A_TakeInventory("HasBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
 		Goto SelectFirstPersonLegs
 		SelectContinue:
 		TNT1 A 1 ACS_NamedExecuteAlways("ToggleCarbineUpgraded",0) //For people who want this weapon to replace another
@@ -1544,7 +1547,8 @@ ACTOR Rifle : PB_Weapon
 				}
 			A_Overlay(-40, "MuzzleFlash1");
 			A_ZoomFactor(1.0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			PB_GunSmoke(0,0,0);
 			A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
 			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
 			A_FireCustomMissile("PB_FragGrenade", 0, 0, 0, 0);
@@ -1560,22 +1564,22 @@ ACTOR Rifle : PB_Weapon
 		}
 		Goto ReloadGrenadeLauncher
 	ReloadGrenadeLauncher:
-        TNT1 A 0 A_JumpIfInventory("UnderBarrelGrenadeLoaded",1,"ReadyGrenade")
-		TNT1 A 0 A_JumpIfInventory("RocketAmmo",1,3)
+        TNT1 A 0 A_JumpIfInventory("UnderBarrelGrenadeLoaded",1,"Ready3")
+		TNT1 A 0 A_JumpIfInventory("PB_RocketAmmo",1,3)
 		TNT1 A 0 {
 			if(GetCvar("pb_toggle_aim_hold")) {
 				A_TakeInventory("FiringUnderBarrelGrenadeLauncher",1);
 			}
 		}
 		TNT1 A 0 A_PlaySoundEx("weapons/empty", "Auto")
-		Goto ReadyGrenade
+		Goto Ready3
 		H0F0 E 1 {
 			if (CountInv("HDMRSniperMode") == 1) {A_SetWeaponSprite("H4F4");}
 			
 			A_ZoomFactor(1.0);
 			A_Takeinventory("ADSmode",1);
 			A_Takeinventory("Zoomed",1);
-			A_TakeInventory("RocketAmmo",1);
+			A_TakeInventory("PB_RocketAmmo",1);
 			A_PlaySoundEx("Ironsights", CHAN_AUTO);
 		}
 		H1F3 HIJKLMNOPQ 1 { 
@@ -1602,7 +1606,8 @@ ACTOR Rifle : PB_Weapon
 		H1F4 FGHIJKLMNOPQRSTUV 1 { 
 			if (CountInv("HDMRSniperMode") == 1) {A_SetWeaponSprite("H4F5");}
 		}
-		Goto ReadyGrenade
+		TNT1 A 0 A_ReFire("FireGrenade")
+		Goto Ready3
 	
 	MuzzleFlashHandler:
 		TNT1 A 0 A_JumpIfInventory("DMRUpgraded",1,1)
@@ -1715,6 +1720,9 @@ ACTOR Rifle : PB_Weapon
 	
 		
     Fire:
+		"####" "#" 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+		"####" "#" 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+		"####" "#" 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
 		"####" "#" 0 A_JumpIfInventory("FiringUnderBarrelGrenadeLauncher", 1, "FireGrenade")
 		"####" "#" 0 {
 			A_WeaponOffset(0,32);
@@ -1728,6 +1736,7 @@ ACTOR Rifle : PB_Weapon
         "####" "#" 0 A_JumpIfInventory("RifleAmmo",1,2)
 		"####" "#" 0 A_PlaySoundEx("weapons/empty", "Auto")
         Goto Reload
+		TNT1 A 0 PB_FireOffset
 		H0F1 ABCDE 0
 		
 		R0F8 A 1 BRIGHT {
@@ -1748,28 +1757,38 @@ ACTOR Rifle : PB_Weapon
 				PB_SpawnCasing("EmptyBrass",28,0,30,3,Frandom(5,8),Frandom(1,4));
 			}
 		
-			if(GetCvar("PB_alttracer") >=1)
-				{
+			if(GetCvar("PB_alttracer") >=1) {
 				 A_RailAttack(0, 0, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0, none,0.1,0.1,700,0,1,1.0,"Tracer_Trail",-6,0,0);
 				 
-				 
-				if (CountInv("DMRUpgraded") == 1) {A_FireBullets (0.1, 0.1, -1, 30, "HitPuff", FBF_NORANDOM,8192,none, -2,0);}
-				else { A_FireBullets (0.1, 0.1, -1, 22, "HitPuff", FBF_NORANDOM,8192,none, -2,0);}
-				 
+				if (CountInv("DMRUpgraded") == 1) {
+					A_FireProjectile("PB_762x51mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
+					PB_LowAmmoSoundWarning(hdmr);
 				}
+				else { 
+					A_FireProjectile("PB_556x45mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
+					PB_LowAmmoSoundWarning;
+				}
+			}
 			else {
 				
-				if (CountInv("DMRUpgraded") == 1) {A_FireBullets (0.1, 0.1, -1, 30, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);}
-				else { A_FireBullets (0.1, 0.1, -1, 22, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);}
-				
+				if (CountInv("DMRUpgraded") == 1) {
+					A_FireProjectile("PB_762x51mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
+					PB_LowAmmoSoundWarning(hdmr);
+				}
+				else { 
+					A_FireProjectile("PB_556x45mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
+					PB_LowAmmoSoundWarning;
+				}
 			}
+
 			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, FPF_NOAUTOAIM, 0);
+			PB_GunSmoke(0,0,0);
 			//A_FireCustomMissile("RifleCaseSpawn",5,0,8,-9);
 			A_Takeinventory("RifleAmmo",1);
 			A_AlertMonsters;
 			A_ZoomFactor(0.98);
-			A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY);
+			A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY|WRF_NOBOB);
 			A_Giveinventory("DMRBarrelHeat",10);
 			A_GunFlash;
             PB_WeaponRecoil(-0.36,-0.02);
@@ -1780,7 +1799,7 @@ ACTOR Rifle : PB_Weapon
 			}
 			
 			A_ZoomFactor(0.99);
-			A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY);
+			A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY|WRF_NOBOB);
             PB_WeaponRecoil(-0.36,-0.02);
 			}
 		R0F8 C 1{
@@ -1788,19 +1807,19 @@ ACTOR Rifle : PB_Weapon
 				A_SetWeaponSprite("H0F1");
 			}
 			A_ZoomFactor(1.0);
-			A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY);
+			A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY|WRF_NOBOB);
 			}
 		R0F8 D 1 { 
 			if (CountInv("DMRUpgraded") == 1) {
 				A_SetWeaponSprite("H0F1");
 			}
-			A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY);
+			A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY|WRF_NOBOB);
 		}
 		R0F6 E 1 { 
 			if (CountInv("DMRUpgraded") == 1) {
 				A_SetWeaponSprite("H0F1");
 			}
-			A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY);
+			A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY|WRF_NOBOB);
 		}
 		TNT1 A 0 A_Refire
 		Goto Ready3
@@ -1829,28 +1848,32 @@ ACTOR Rifle : PB_Weapon
 			if(GetCvar("PB_alttracer") >=1) {
 				A_RailAttack(0, 0, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0, none,0.1,0.1,700,0,1,1.0,"Tracer_Trail",-6,0,0);
 				
-				A_FireBullets (0, 0, -1, 165, "HitPuff", FBF_NORANDOM,8192,none, 0,0);
+				A_FireProjectile("PB_762x51mmAP", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			}
 			else { 				
-				A_FireBullets (0, 0, -1, 165, "HitPuff", FBF_NORANDOM,8192,none, 0,0);
+				A_FireProjectile("PB_762x51mmAP", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			}
 			PB_SpawnCasing("LMGCasingStandard",17.5, 0.5, 32,frandom(0,2),frandom(3,5),frandom(4,7));
+			PB_LowAmmoSoundWarning("sniper");
 			A_Takeinventory("RifleAmmo",2);
 			//A_Giveinventory("SniperFiringCooldown",1);
 			A_FireCustomMissile("ShakeYourAssQuad", 0, 0, 0, 0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			PB_GunSmoke(0,0,0);
+			PB_GunSmoke(0,0,0);
+			PB_GunSmoke(0,0,0);
 			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
 			PB_WeaponRecoil(-15.65,-0.22);
 		}
 		H4F8 B 1 BRIGHT 
-		H4F8 CEGIK 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY)
+		H4F8 CEGIK 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY|WRF_NOBOB)
 		H4F8 K 1 Offset(0,34)
 		H4F8 K 2 Offset(0,36)
 		H4F8 K 3 Offset(0,38)
 		H4F8 K 1 Offset(0,34)
-		H4F8 JJIHGFED 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY)
+		H4F8 JJIHGFED 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY|WRF_NOBOB)
 		Goto Ready3
 	//Fire_Cooldown:
 		//H3F0 E 1 
@@ -1869,19 +1892,23 @@ ACTOR Rifle : PB_Weapon
 			
 			if(GetCvar("PB_alttracer") >=1) {
 				A_RailAttack(0, 0, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0, none,0.1,0.1,700,0,1,1.0,"Tracer_Trail",-6,0,0);
-				A_FireBullets (0, 0, -1, 165, "HitPuff", FBF_NORANDOM,8192,none, 0,0);
+				A_FireProjectile("PB_762x51mmAP", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			}
 			else { 
 // 				A_FireBullets (0, 0, -1, 0, "HitPuff", FBF_NORANDOM,8192,none, 0,0);
-				A_FireBullets (0, 0, -1, 165, "HitPuff", FBF_NORANDOM,8192,none, 0,0);
+				A_FireProjectile("PB_762x51mmAP", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			}
 			PB_SpawnCasing("LMGCasingStandard",17.5, 0.5, 32,frandom(0,2),frandom(3,5),frandom(4,7));
+			PB_LowAmmoSoundWarning("sniper");
 			A_Takeinventory("RifleAmmo",2);
 			A_Giveinventory("SniperFiringCooldown",1);
 			A_FireCustomMissile("ShakeYourAssQuad", 0, 0, 0, 0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			PB_GunSmoke(0,0,0);
+			PB_GunSmoke(0,0,0);
+			PB_GunSmoke(0,0,0);
 			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
 			
 		}
@@ -1907,6 +1934,7 @@ ACTOR Rifle : PB_Weapon
         "####" "#" 0 A_JumpIfInventory("RifleAmmo",1,5)
 		"####" "#" 0 A_PlaySoundEx("weapons/empty", "Auto")
         Goto Reload
+		TNT1 A 0 PB_FireOffset
 		R1F1 AB 0
 		R1F2 AB 0
 		H0F3 ABCD 0
@@ -1933,21 +1961,29 @@ ACTOR Rifle : PB_Weapon
 				{
 				 A_RailAttack(0, 0, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0, none,0.1,0.1,700,0,1,1.0,"Tracer_Trail",-6,0,0);
 				 
-				 
-				 
-				if (CountInv("DMRUpgraded") == 1) {A_FireBullets (0.1, 0.1, -1, 30, "HitPuff", FBF_NORANDOM,8192,none, -2,0);}
-				else { A_FireBullets (0.1, 0.1, -1, 22, "HitPuff", FBF_NORANDOM,8192,none, -2,0);}
-				 
+				if (CountInv("DMRUpgraded") == 1) {
+					A_FireProjectile("PB_762x51mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
+					PB_LowAmmoSoundWarning(hdmr);
 				}
+				else { 
+					A_FireProjectile("PB_556x45mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
+					PB_LowAmmoSoundWarning;
+				}
+			}
 			else {
-			
-				
-				if (CountInv("DMRUpgraded") == 1) {A_FireBullets (0.1, 0.1, -1, 30, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);}
-				else { A_FireBullets (0.1, 0.1, -1, 22, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);}
+				if (CountInv("DMRUpgraded") == 1) {
+					A_FireProjectile("PB_762x51mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
+					PB_LowAmmoSoundWarning(hdmr);
+				}
+				else { 
+					A_FireProjectile("PB_556x45mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
+					PB_LowAmmoSoundWarning;
+				}
 			}
 			A_AlertMonsters;
 			A_Takeinventory("RifleAmmo",1);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 3, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 3, 0, 0);
+			PB_GunSmoke(0,0,0);
 			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
 			A_ZoomFactor(2.485);
 			A_Giveinventory("DMRBarrelHeat",10);
@@ -2025,24 +2061,6 @@ ACTOR Rifle : PB_Weapon
 		}
 		Goto Ready2
 		
-	PrepareRifleGrenadeFire:
-		TNT1 A 0 {
-				if(CountInv("FiringUnderBarrelGrenadeLauncher") != 1) {
-					PB_HandleCrosshair(89);
-					A_GiveInventory("FiringUnderBarrelGrenadeLauncher", 1);
-					A_StartSound("IronSights", 0);
-					A_PlaySoundEx("weapons/sgl/inspect2", CHAN_AUTO);
-				}
-				else {
-					PB_HandleCrosshair(58);
-					A_ZoomFactor(1.0);
-					A_TakeInventory("FiringUnderBarrelGrenadeLauncher", 1);
-					A_StartSound("IronSights", 0);
-				}
-		}
-		TNT1 A 0 A_JumpIf(!GetCvar("pb_toggle_aim_hold"), "ReadyGrenadeToggle")
-		Goto ReadyGrenade
-	
 	ZoomIn_Sniper:
 		TNT1 A 0 A_StartSound("IronSights", 0)
 		TNT1 A 0 A_JumpIfInventory("Zoomed",1,"Zoomout_Sniper")
@@ -2087,6 +2105,9 @@ ACTOR Rifle : PB_Weapon
 		Goto Ready3
 	
     AltFire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		TNT1 A 0 {
 			A_GunFlash("LightDone",GFF_NOEXTCHANGE);
 			A_WeaponOffset(0,32);
@@ -2190,10 +2211,16 @@ ACTOR Rifle : PB_Weapon
 		Goto FinishingReload
 		
 	ReloadUnloaded:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 A_JumpIfInventory("DMRUpgraded",1,"HDMRReloadUnloaded")
 		R5F3 ABCDEFGHIJKL 1
 		Goto ResumeReload
     Reload:
+		"####" "#" 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		"####" "#" 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		"####" "#" 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		"####" "#" 0 {
 			A_ZoomFactor(1.0);
 			A_Takeinventory("ADSmode",1);
@@ -2212,10 +2239,10 @@ ACTOR Rifle : PB_Weapon
 			}
 		
 		
-			if (CountInv("HDMRSniperMode") == 1 && CountInv("NewClip") >= 2) {
+			if (CountInv("HDMRSniperMode") == 1 && CountInv("PB_HighCalMag") >= 2) {
 				return state("ContinueReloading");
 			}
-			else if (CountInv("HDMRSniperMode") == 0 && CountInv("NewClip") >= 1){
+			else if (CountInv("HDMRSniperMode") == 0 && CountInv("PB_HighCalMag") >= 1){
 				return state("ContinueReloading");
 			}
 			return state("");
@@ -2291,7 +2318,7 @@ ACTOR Rifle : PB_Weapon
 			A_PlaySoundEx("weapons/rifle/magchange", "Auto");
 		}
 		TNT1 A 0 {
-			if(CountInv("RifleAmmo") < 1 && CountInv("DMRUpgraded") != 1) {
+			if(CountInv("RifleAmmo") < 1 && CountInv("HDMRSniperMode") != 1) {
 				PB_SpawnCasing("EmptyDMRMag",38,26,7,frandom(0, 3.5),frandom(-7.2, -3.3),frandom(3,7));
 				}
 			if(CountInv("RifleAmmo") < 1 && CountInv("DMRUpgraded") == 1 && CountInv("HDMRSniperMode") == 1) {
@@ -2418,14 +2445,18 @@ ACTOR Rifle : PB_Weapon
 		Goto InsertBullets2
 	SkipLeftReload:
 		R2F6 ABCD 1
- 		Goto InsertBullets4
-		
+ 		Goto InsertBullets4		
 		
 	SkipRightReload:
 		R2F7 ABCD 1
 		Goto ReloadLeftGun
+	
+	NoAmmoDualSniper:
+		H6F4 E 1
+		Goto ReadyDualWield	
+		
 	ReloadDualWield:
-        TNT1 A 0 A_JumpIfInventory("NewClip",1,1)
+        TNT1 A 0 A_JumpIfInventory("PB_HighCalMag",1,1)
         Goto ReadyDualWield
 		TNT1 A 0 {
 			A_Takeinventory("Zoomed",1);
@@ -2435,10 +2466,16 @@ ACTOR Rifle : PB_Weapon
 			A_SetCrosshair(5);
 			A_ClearOverlays(10,11);
 			}
+		TNT1 A 0 
+		{
+			if(CountInv("HDMRSniperMode") >= 1 && CountInv("PB_HighCalMag") < 2)
+			{
+				return state("NoAmmoDualSniper");
+			}
+			return state("");
+		}
 		TNT1 A 0 A_JumpIfInventory("DMRUpgraded", 1, "Upgraded_DWReloadUnloaded")
 		TNT1 A 0 A_JumpIfInventory("HasUnloadedDMR", 1, "DWReloadUnloaded")
-		
-		
 		
 		TNT1 A 0 {
 			if (CountInv("RifleAmmo") >= 31 && CountInv("LeftRifleAmmo") >= 31) {
@@ -2453,9 +2490,14 @@ ACTOR Rifle : PB_Weapon
 		R3F0 OPQRSTUVW 1
 		TNT1 A 0 {
 			if(CountInv("RifleAmmo") < 1) {
-				PB_SpawnCasing("EmptyDMRMag",38,26,7,frandom(0, 3.5),frandom(-7.2, -3.3),frandom(3,7));
+				if(CountInv("DMRUpgraded") != 1 || CountInv("HDMRSniperMode") != 1) {
+					PB_SpawnCasing("EmptyDMRMag",38,26,7,frandom(0, 3.5),frandom(-7.2, -3.3),frandom(3,7));
+				}
+				else {
+					PB_SpawnCasing("EmptyHDMRMag_Sniper",38,18,7,frandom(0, 3.5),frandom(-7.2, -3.3),frandom(3,7));
 				}
 			}
+		}
 		R3F0 XYZ 1 
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/magchange", "Auto")
 		R3F1 ABCD 1 
@@ -2532,6 +2574,7 @@ ACTOR Rifle : PB_Weapon
 		
 	Upgraded_DWReloadUnloaded:
 		H8F4 ABCDEFGHIJKLMNYZ 0
+		H9F4 ABCDEFGHIJKLMNYZ 0
 		H90F ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
 		H91F ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
 		H92F ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
@@ -2562,18 +2605,18 @@ ACTOR Rifle : PB_Weapon
 		
 		
 		H8F0 ABCDEFGHIJKLMN 1 {
-				if(CountInv("HDMRSniperMode") == 1) {
-					A_SetWeaponSprite("H90F");
-				}
 				if(CountInv("HasUnloadedDMR") == 1) {
-					if(CountInv("HDMRSniperMode") == 1) {
-					A_SetWeaponSprite("H94F");
-				}
-					else {
+					if(CountInv("HDMRSniperMode") == 1)
+					{A_SetWeaponSprite("H9F4");}
+					else
+					{
 						A_SetWeaponSprite("H8F4");
 					}
 				}
-		}
+				if(CountInv("HDMRSniperMode") == 1 && CountInv("HasUnloadedDMR") != 1) {
+					A_SetWeaponSprite("H90F");
+				}			
+			}
 		TNT1 A 0 A_JumpIfInventory("HasUnloadedDMR",1,"Continue_DWUpgradedReloadRight")
 		H8F0 OPQRS 1 {
 			if(CountInv("HDMRSniperMode") == 1) {
@@ -2653,7 +2696,7 @@ ACTOR Rifle : PB_Weapon
 						A_SetWeaponSprite("H8F6");
 					}
 			if(CountInv("HDMRSniperMode") == 1 && CountInv("HasUnloadedDMR") == 1) {
-				A_SetWeaponSprite("H96F");
+				A_SetWeaponSprite("H9F6");
 			}
 			if(CountInv("HDMRSniperMode") == 1 && CountInv("HasUnloadedDMR") != 1) {
 					A_SetWeaponSprite("H92F");
@@ -2714,7 +2757,8 @@ ACTOR Rifle : PB_Weapon
  		Goto Upgraded_InsertBullets4
 		
 	Reload_LeftUpgradedUnload:
-		H96F A 0 A_JumpIfInventory("HDMRSniperMode",1,2)
+		TNT1 A 0
+		H9F6 A 0 A_JumpIfInventory("HDMRSniperMode",1,2)
 		H8F6 A 0
 		"####" ABCDEFG 1
 		"####" A 0 A_StartSound("weapons/rifle/magin", 0)
@@ -2723,63 +2767,32 @@ ACTOR Rifle : PB_Weapon
 		
 	InsertBulletsSniper:
 		TNT1 A 0 A_JumpIfInventory("RifleAmmo",30,"Ready3")
-		TNT1 A 0 A_JumpIfInventory("NewCLip",2,1)
+		TNT1 A 0 A_JumpIfInventory("PB_HighCalMag",2,1)
 		Goto FinishInsertBullets
 		TNT1 A 0 {
 			A_Giveinventory("RifleAmmo",2);
-			A_Takeinventory("NewCLip",2);
+			A_Takeinventory("PB_HighCalMag",2);
 			}
 		Goto InsertBulletsSniper
 
 	InsertBullets:
-		TNT1 A 0 A_JumpIfInventory("RifleAmmo",30,"Ready3")
-		TNT1 A 0 A_JumpIfInventory("NewCLip",1,1)
+		TNT1 A 0 PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,1)
 		Goto FinishInsertBullets
-		TNT1 A 0 {
-			A_Giveinventory("RifleAmmo",1);
-			A_Takeinventory("NewCLip",1);
-			}
-		Goto InsertBullets
+		
 	InsertBullets2:
-		TNT1 A 0 A_JumpIfInventory("RifleAmmo",31,"Ready3")
-		TNT1 A 0 A_JumpIfInventory("NewCLip",1,1)
+		TNT1 A 0 PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",31,1)
 		Goto FinishInsertBullets 
-		TNT1 A 0 {
-			A_Giveinventory("RifleAmmo",1);
-			A_Takeinventory("NewCLip",1);
-		}
-		Goto InsertBullets2
 		
 	InsertBullets3:
-		TNT1 A 0 A_JumpIfInventory("RifleAmmo",30,"InsertBullets6")
-		TNT1 A 0 A_JumpIfInventory("NewCLip",1,1)
-		Goto InsertBullets6
-		TNT1 A 0 {
-			A_Giveinventory("RifleAmmo",1);
-			A_Takeinventory("NewCLip",1);
-		}
-		Goto InsertBullets3
+		TNT1 A 0 PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,1)
+		TNT1 A 0 PB_AmmoIntoMag("LeftRifleAmmo","PB_HighCalMag",30,1)
+		Goto FinishInsertBullets
 		
 	InsertBullets4:
-		TNT1 A 0 A_JumpIfInventory("RifleAmmo",31,"InsertBullets5")
-		TNT1 A 0 A_JumpIfInventory("NewCLip",1,1)
-		Goto InsertBullets5
-		TNT1 A 0 {
-			A_Takeinventory("NewCLip",1);
-			A_Giveinventory("RifleAmmo",1);
-		}
-		Goto InsertBullets4
-	
-	InsertBullets5:
-		TNT1 A 0 A_JumpIfInventory("LeftRifleAmmo",31,"FinishInsertBullets")
-		TNT1 A 0 A_JumpIfInventory("NewCLip",1,1)
+		TNT1 A 0 PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",31,1)
+		TNT1 A 0 PB_AmmoIntoMag("LeftRifleAmmo","PB_HighCalMag",31,1)
 		Goto FinishInsertBullets
-		TNT1 A 0 {
-			A_Giveinventory("LeftRifleAmmo",1);
-			A_Takeinventory("NewCLip",1);
-		}
-		Goto InsertBullets5
-		
+
 	Upgraded_InsertBullets4:
 		TNT1 A 0 {
 			if (CountInv("RifleAmmo") >= 31 && CountInv("HDMRSniperMode") != 1) {
@@ -2791,10 +2804,10 @@ ACTOR Rifle : PB_Weapon
 			}
 			return state("");
 		} 
-		TNT1 A 0 A_JumpIfInventory("NewCLip",1,1)
+		TNT1 A 0 A_JumpIfInventory("PB_HighCalMag",1,1)
 		Goto Upgraded_InsertBullets5
 		TNT1 A 0 {
-			A_Takeinventory("NewCLip",1);
+			A_Takeinventory("PB_HighCalMag",1);
 			A_Giveinventory("RifleAmmo",1);
 		}
 		Goto Upgraded_InsertBullets4
@@ -2810,21 +2823,21 @@ ACTOR Rifle : PB_Weapon
 			}
 			return state("");
 		} 
-		TNT1 A 0 A_JumpIfInventory("NewCLip",1,1)
+		TNT1 A 0 A_JumpIfInventory("PB_HighCalMag",1,1)
 		Goto FinishInsertBullets
 		TNT1 A 0 {
 			A_Giveinventory("LeftRifleAmmo",1);
-			A_Takeinventory("NewCLip",1);
+			A_Takeinventory("PB_HighCalMag",1);
 		}
 		Goto Upgraded_InsertBullets5
 		
 	InsertBullets6:
 		TNT1 A 0 A_JumpIfInventory("LeftRifleAmmo",30,"FinishInsertBullets")
-		TNT1 A 0 A_JumpIfInventory("NewCLip",1,1)
+		TNT1 A 0 A_JumpIfInventory("PB_HighCalMag",1,1)
 		Goto FinishInsertBullets
 		TNT1 A 0 {
 			A_Giveinventory("LeftRifleAmmo",1);
-			A_Takeinventory("NewCLip",1);
+			A_Takeinventory("PB_HighCalMag",1);
 		}
 		Goto InsertBullets6
 		
@@ -2938,7 +2951,7 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 
 		{
 			A_Takeinventory("RifleAmmo",1);
-			A_Giveinventory("NewClip",1);
+			A_Giveinventory("PB_HighCalMag",1);
 		}
 		Goto RemoveBullets
 	
@@ -3020,7 +3033,7 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 
 		{
 			A_Takeinventory("RifleAmmo",1);
-			A_Giveinventory("NewClip",1);
+			A_Giveinventory("PB_HighCalMag",1);
 		}
 		Goto RemoveBulletsDualWield
 		
@@ -3030,10 +3043,11 @@ ACTOR Rifle : PB_Weapon
 		TNT1 A 0 
 		{
 			A_Takeinventory("LeftRifleAmmo",1);
-			A_Giveinventory("NewClip",1);
+			A_Giveinventory("PB_HighCalMag",1);
 		}
 		Goto RemoveBulletsDualWield2
 	FinishUnloadDualWield:
+		TNT1 A 0
 		TNT1 A 0 A_GiveInventory("HasUnloadedDMR", 1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		Goto Ready3
@@ -3046,6 +3060,9 @@ ACTOR Rifle : PB_Weapon
 
 			
 	FlashKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingDMRs", 1, "FlashKicking2")
 		H1F0 ABCDEFGGHIJKLM 0 // HDMR - Normal Mode
@@ -3090,6 +3107,9 @@ ACTOR Rifle : PB_Weapon
 		Goto Ready3
 		
 	FlashAirKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")	
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingDMRs", 1, "FlashAirKicking2")
 		H1F0 ABCDEFGGHIJKLM 0 // HDMR - Normal Mode
@@ -3130,6 +3150,9 @@ ACTOR Rifle : PB_Weapon
 		Goto Ready3
 		
 	FlashSlideKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingDMRs",1,"FlashSlideKicking2")
 		H1F1 ABCDEFGHIJKLMNOPQRSTUVWX 0
@@ -3167,6 +3190,9 @@ ACTOR Rifle : PB_Weapon
 		Goto Ready3
 		
 	FlashSlideKickingStop:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingDMRs", 1, "FlashSlideKickingStop2")
 		R4F3 RSTUVWX 1 {
@@ -3209,6 +3235,9 @@ ACTOR Rifle : PB_Weapon
 		Goto Ready3
 		
 	FlashPunching:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingDMRs", 1, "FlashPunching2")
 		H1F2 ABCDEFGHIJKLMN 0 
@@ -3254,65 +3283,5 @@ ACTOR LeftRifleAmmo : Ammo
    Ammo.BackpackAmount 0
    Ammo.BackpackMaxAmount 30
    Inventory.Icon "RIFLA0"
-   +INVENTORY.IGNORESKILL
-}
-
-ACTOR MeatshieldGunAmmo : Ammo
-{
-   Inventory.Amount 0
-   Inventory.MaxAmount 30
-   Ammo.BackpackAmount 0
-   Ammo.BackpackMaxAmount 30
-   Inventory.Icon "RIFLA0"
-   +INVENTORY.IGNORESKILL
-}
-
-ACTOR MeatshieldPistolAmmo : Ammo
-{
-   Inventory.Amount 0
-   Inventory.MaxAmount 15
-   Ammo.BackpackAmount 0
-   Ammo.BackpackMaxAmount 15
-   Inventory.Icon "DEGTA0"
-   +INVENTORY.IGNORESKILL
-}
-
-ACTOR MeatshieldASGAmmo : Ammo
-{
-   Inventory.Amount 0
-   Inventory.MaxAmount 12
-   Ammo.BackpackAmount 0
-   Ammo.BackpackMaxAmount 12
-   Inventory.Icon "AUSCA0"
-   +INVENTORY.IGNORESKILL
-}
-
-ACTOR MeatshieldCarbineAmmo : Ammo
-{
-   Inventory.Amount 0
-   Inventory.MaxAmount 40
-   Ammo.BackpackAmount 0
-   Ammo.BackpackMaxAmount 40
-   Inventory.Icon "CB00Z0"
-   +INVENTORY.IGNORESKILL
-}
-
-ACTOR MeatshieldPlasmaAmmo : Ammo
-{
-   Inventory.Amount 0
-   Inventory.MaxAmount 50
-   Ammo.BackpackAmount 0
-   Ammo.BackpackMaxAmount 50
-   Inventory.Icon "PLASA0"
-   +INVENTORY.IGNORESKILL
-}
-
-ACTOR MeatAmmo : Ammo
-{
-   Inventory.Amount 0
-   Inventory.MaxAmount 100
-   Ammo.BackpackAmount 0
-   Ammo.BackpackMaxAmount 100
-   Inventory.Icon "5DUNA0"
    +INVENTORY.IGNORESKILL
 }

@@ -1,0 +1,332 @@
+extend class PB_WeaponBase
+{
+    States
+    {
+        // The quick melee is going to be reworked, knife combos are tacky and bloat the code
+		// The quick melee should have a primary purpose of executing enemies or finishing them off to the point where they can be executed
+		QuickMelee:
+			#### A 0 {
+				A_StopSound(CHAN_WEAPON);
+				A_StopSound(CHAN_VOICE);
+				A_StopSound(CHAN_6);
+				A_StopSound(CHAN_7);
+			}
+			TNT1 A 0 A_JumpIfInventory("CantDoAction",1,"FailOverlay");
+			TNT1 A 0 A_JumpIfHealthLower(0, "FailOverlay");
+			TNT1 A 0 {
+				A_ClearOverlays(-10,65);
+				A_Gunflash("Null");
+			}
+			#### AAA 0 PB_Execute(); // Check if monster can be executed, jump to execution handler instead
+		GoMeleeInstead:
+			TNT1 A 0 {
+				A_Overlay(PSP_FLASH, "FlashPunching");
+				A_GiveInventory("HasCutingWeapon", 1);
+				A_TakeInventory("Zoomed",1);
+				A_ZoomFactor(1.0);
+				A_TakeInventory("ADSmode",1);
+				A_StartSound("KNIFSWNG", 1);
+				A_Overlay(-10, "FirstPersonLegsStand");
+			}
+			MC3S AB 1 {
+				if(JustPressed(BT_USER2)) return PB_Execute();
+				return ResolveState(null);
+			}
+			MC3S C 1 {
+				if(JustPressed(BT_USER2)) return PB_Execute();
+				return ResolveState(null);
+			}
+			MC3S D 1 {
+				if(JustPressed(BT_USER2)) return PB_Execute();
+				return ResolveState(null);
+			}
+			TNT1 A 0 {
+			if(CountInv("PB_PowerStrength") == 1) A_FireProjectile("SuperKnifeSwing",0,0,0,0,0,0);
+			else A_FireProjectile("KnifeSwing",0,0,0,0,0,0);
+			PB_UseLine(64);
+			}
+			MC3S EFGHIJ 1 {
+				if(JustPressed(BT_USER2)) return PB_Execute();
+				return ResolveState(null);
+			}
+			TNT1 AAAA 1 {
+				if(JustPressed(BT_USER2)) return PB_Execute();
+				return ResolveState(null);
+			}
+			TNT1 A 0 {
+				A_TakeInventory("KnifeHasHit",1);
+				A_TakeInventory("HasCutingWeapon", 1);
+				PB_SetUsingMelee(false);
+			}
+			TNT1 A 0 A_JumpIfInventory("GrabbedBarrel", 1, "IdleBarrel");
+			TNT1 A 0 A_JumpIfInventory("GrabbedFlameBarrel", 1, "IdleFlameBarrel");
+			TNT1 A 0 A_JumpIfInventory("GrabbedIceBarrel", 1, "IdleIceBarrel");
+			Goto Ready3;
+		//Kicks
+		DoKick:
+			TNT1 A 0 A_JumpIfInventory("Kicking",1,"FailOverlay");
+			TNT1 A 0 A_JumpIfInventory("PlayerIsDead",1,"FailOverlay");
+			TNT1 A 0 A_JumpIfHealthLower(0, "FailOverlay");
+			TNT1 A 0 {
+				A_Overlay(-10, "FirstPersonLegsKickRight");
+				A_TakeInventory("Zoomed",1);
+				A_TakeInventory("ADSmode",1);
+				//A_ZoomFactor(1.0);
+				A_GiveInventory("Kicking",1);
+			}
+			TNT1 A 0 A_JumpIfInventory("PlayerDashed", 1, "DropKick");
+			TNT1 A 0 A_JumpIfInventory("CanSlideKick", 1, "SlideKick");
+			TNT1 A 0 A_JumpIf (vel.Z != 0, "AirKick");
+			TNT1 A 0 A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, true);
+			KIC1 A 1 {
+				A_StartSound("KICK",0);
+				SetPlayerProperty(0,1,0);
+				if(CountInv("GrabbedBarrel") == 1 || CountInv("GrabbedIceBarrel") == 1 || CountInv("GrabbedFlameBarrel") == 1)
+					A_Overlay(PSP_WEAPON, "FlashBarrelKicking");
+				else if(PB_WeaponIsInReadyState() && invoker.FindState("FlashKicking"))
+				{
+					A_Overlay(PSP_WEAPON, "FlashKicking");
+					A_OverlayOffset(PSP_WEAPON, 0, 32);
+					A_GunFlash("Null");
+				}
+				A_SetAngle(-0.5 + angle, SPF_INTERPOLATE);
+				A_SetPitch(+0.5 + pitch, SPF_INTERPOLATE);
+				A_SetRoll(roll-2);
+				//A_ZoomFactor(0.98);
+			}
+			KIC1 B 1 {
+				A_SetAngle(-0.5 + angle, SPF_INTERPOLATE);
+				A_SetPitch(+0.5 + pitch, SPF_INTERPOLATE);
+				A_SetRoll(roll-2);
+				//A_ZoomFactor(0.970);
+			}
+			KIC1 C 1 {
+				A_SetAngle(-0.5 + angle, SPF_INTERPOLATE);
+				A_SetPitch(+0.5 + pitch, SPF_INTERPOLATE);
+				A_SetRoll(roll-2);
+				//A_ZoomFactor(0.965);
+			}
+			KIC1 D 1 { 
+				A_SetPitch(+1.25 + pitch, SPF_INTERPOLATE);
+				//A_ZoomFactor(0.950);
+			}
+			KIC1 E 1 A_Recoil(-1);
+			KIC1 F 1 { //No more unneeded Super states here, this now unified into a single state with an if else statement.
+				if(CountInv("PB_PowerStrength") == 1) A_FireProjectile("SuperKickAttack", 0, 0, 0, -7);
+				else A_FireProjectile("KickAttack", 0, 0, 0, -7);
+				PB_UseLine(64);
+			}
+			KIC1 GG 1;
+			KIC1 I 1 {
+				//A_ZoomFactor(0.965);
+				A_SetAngle(+1 + angle, SPF_INTERPOLATE);
+			}
+			KIC1 H 1 {
+				A_SetPitch(-0.5 + pitch, SPF_INTERPOLATE);
+				A_SetAngle(+1 + angle, SPF_INTERPOLATE);
+				A_SetRoll(roll+2);
+				//A_ZoomFactor(0.970);
+			}
+			KIC1 J 1 {
+				A_SetPitch(-0.5 + pitch, SPF_INTERPOLATE);
+				A_SetRoll(roll+2);
+				A_SetAngle(+0.5 + angle, SPF_INTERPOLATE);
+				//A_ZoomFactor(0.98);
+			}
+			KIC1 K 1 {
+				A_SetPitch(-0.5 + pitch, SPF_INTERPOLATE);
+				A_SetRoll(roll+2);
+				A_SetAngle(+0.5 + angle, SPF_INTERPOLATE);
+				//A_ZoomFactor(0.99);
+			}
+			KIC1 L 1 {
+				A_SetAngle(+0.5 + angle, SPF_INTERPOLATE);
+				A_SetPitch(-0.5 + pitch, SPF_INTERPOLATE);
+				//A_ZoomFactor(1.0);
+			}
+			KIC1 A 1 {
+				A_SetAngle(-0.5 + angle, SPF_INTERPOLATE);
+				A_SetPitch(-1.25 + pitch, SPF_INTERPOLATE);
+				SetPlayerProperty(0,0,0);
+				PB_SetUsingKick(false);
+			}
+			TNT1 A 0 {
+				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, false);
+				A_Overlay(-10, "FirstPersonLegsStand");
+				A_TakeInventory("Kicking",1);
+			}
+			Stop;
+		FailOverlay:
+			TNT1 A 0 {
+				A_StopSound(CHAN_WEAPON);
+				A_StopSound(CHAN_VOICE);
+				A_StopSound(CHAN_6);
+				A_StopSound(CHAN_7);
+			}
+			TNT1 A 0 A_JumpIfInventory("CantDoAction",1,1);
+			Goto StopFail;
+			TNT1 A 0 A_JumpIf(invoker.Health > 0, 2);
+			TNT1 A 1 {
+				PB_SetUsingKick(false);
+				PB_SetUsingMelee(false);
+				PB_SetUsingEquipment(false);
+				PB_SetExecutingEnemy(false);
+				}
+			Loop;
+		StopFail:
+			TNT1 A 1 A_SetInventory("CantDoAction",0);
+			Stop;
+		SlideKick:
+			TNT1 A 0 {
+				A_GiveInventory("KeepLaserDeactivated",1);
+				A_GiveInventory("IsSlideKicking", 1);
+				if(CountInv("GrabbedBarrel") == 1 || CountInv("GrabbedIceBarrel") == 1 || CountInv("GrabbedFlameBarrel") == 1)
+					A_Overlay(PSP_WEAPON, "FlashBarrelSlideKicking");
+				else if(PB_WeaponIsInReadyState() && invoker.FindState("FlashSlideKicking"))
+				{
+					A_Overlay(PSP_WEAPON, "FlashSlideKicking");
+					A_GunFlash("Null");
+					A_OverlayOffset(PSP_WEAPON, 0, 32);
+				}
+				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, true);
+			}
+// 			SLDK A 1 A_ZoomFactor(0.98);
+// 			SLDK B 1 A_ZoomFactor(0.96);
+// 			SLDK C 1 A_ZoomFactor(0.94);
+// 			SLDK D 1 A_ZoomFactor(0.92);
+			SLDK ABCDEF 1;
+			TNT1 A 0 A_JumpIf(Height > 54, "LowerKick");
+			TNT1 A 0 A_JumpIfInventory("KickHasHitAnObject", 1, "LowerKick");
+			SLDK GHIJKLMNMLKJ 1 {
+				if(CountInv("PB_PowerStrength") == 1) A_FireProjectile("SuperKickAttack", 0, 0, 0, -31);
+				else A_FireProjectile("KickAttack", 0, 0, 0, -31);
+				if(CountInv("KickHasHitAnObject") == 1) return ResolveState("LowerKick");
+				if(Height > 50) return ResolveState("LowerKick");
+				return ResolveState(null);
+			}
+		LowerKick:
+			TNT1 A 0 {
+				if(CountInv("GrabbedBarrel") == 1 || CountInv("GrabbedIceBarrel") == 1 || CountInv("GrabbedFlameBarrel") == 1) {
+					A_Overlay(PSP_WEAPON, "FlashBarrelSlideKickingStop");
+				} else if((/*PB_WeaponIsInReadyState() ||*/PB_WeaponIsInSlidingState()) && invoker.FindState("FlashSlideKickingStop"))
+				{
+					A_Overlay(PSP_WEAPON, "FlashSlideKickingStop");
+					A_GunFlash("Null");
+					A_OverlayOffset(PSP_WEAPON, 0, 32);
+				}
+				//A_ZoomFactor(1.0);
+				A_StartSound("SlideKick/End",0);
+				A_Takeinventory("KickHasHitAnObject",1);
+				A_TakeInventory("IsSlideKicking", 1);
+				A_Takeinventory("PB_LockScreenTilt",1);
+				PB_SetUsingKick(false);
+				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, true);
+			}
+			SLDK OPQRSTU 1;
+			TNT1 A 0 {
+				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, false);
+				A_Overlay(-10, "FirstPersonLegsStand");
+				A_Takeinventory("Kicking",1);
+			}
+			Stop;
+		DropKick:
+			TNT1 A 0 {
+				A_StartSound("KICK", 6);
+				A_ChangeVelocity(10, 0, 4, CVF_RELATIVE);
+				if(CountInv("GrabbedBarrel") == 1 || CountInv("GrabbedIceBarrel") == 1 || CountInv("GrabbedFlameBarrel") == 1)
+					A_Overlay(PSP_WEAPON, "FlashBarrelAirKicking");
+				else if(PB_WeaponIsInReadyState() && invoker.FindState("FlashAirKicking"))
+				{
+					A_Overlay(PSP_WEAPON, "FlashAirKicking");
+					A_GunFlash("Null");
+					A_OverlayOffset(PSP_WEAPON, 0, 32);
+				}
+				A_OverlayOffset(PSP_WEAPON, 0, 32);
+				A_ZoomFactor(0.95);
+				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, true);
+			}
+			KIC5 AB 1 A_SetRoll(roll+2, SPF_INTERPOLATE);
+			KIC5 CD 1 A_SetRoll(roll+4, SPF_INTERPOLATE);
+			KIC5 EE 1 A_SetRoll(roll+6, SPF_INTERPOLATE);
+			KIC5 FF 1 A_SetRoll(roll-6, SPF_INTERPOLATE);
+			RIFF A 0 {
+				A_FireProjectile("SuperAirKickAttack", 0, 0, 0, -31);
+				PB_UseLine(64);
+				A_ZoomFactor(0.975);
+			}
+			KIC5 GH 1 A_SetRoll(roll-12, SPF_INTERPOLATE);
+			KIC5 H 1
+			{
+				A_SetRoll(roll-16, SPF_INTERPOLATE);
+				A_ChangeVelocity(0,0,-16, CVF_RELATIVE | CVF_REPLACE);
+			}
+			KIC5 H 1 A_SetRoll(roll-16, SPF_INTERPOLATE);
+			KIC5 HI 1 A_SetRoll(roll-12, SPF_INTERPOLATE);
+			KIC5 JK 1
+			{
+				A_SetRoll(roll-4, SPF_INTERPOLATE);
+				A_ChangeVelocity(0,0,0, CVF_REPLACE | CVF_RELATIVE);
+			}
+			KIC5 LM 1
+			{
+				A_SetRoll(roll+6, SPF_INTERPOLATE);
+				A_ChangeVelocity(-4,0,0, CVF_RELATIVE);
+			}
+			TNT1 A 1 {
+				A_SetRoll(roll+2, SPF_INTERPOLATE);
+				A_ZoomFactor(1.0);
+				A_Takeinventory("PB_LockScreenTilt",1);
+				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, false);
+				PB_SetUsingKick(false);
+				A_Overlay(-10, "FirstPersonLegsStand");
+				A_TakeInventory("Kicking",1);
+			}
+			Stop;
+		AirKick:
+			TNT1 A 0 {
+				A_StartSound("KICK", 6);
+				A_Recoil (-6);
+				if(CountInv("GrabbedBarrel") == 1 || CountInv("GrabbedIceBarrel") == 1 || CountInv("GrabbedFlameBarrel") == 1)
+					A_Overlay(PSP_WEAPON, "FlashBarrelAirKicking");
+				else if(PB_WeaponIsInReadyState() && invoker.FindState("FlashAirKicking"))
+				{
+					A_Overlay(PSP_WEAPON, "FlashAirKicking");
+					A_GunFlash("Null");
+					A_OverlayOffset(PSP_WEAPON, 0, 32);
+				}
+				A_OverlayOffset(PSP_WEAPON, 0, 32);
+				A_ZoomFactor(0.95);
+				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, true);
+			}
+			AKCK ABC 1 A_SetRoll(roll-2, SPF_INTERPOLATE);
+			AKCK DEFGH 1;
+			RIFF A 0 {
+				if(CountInv("PB_PowerStrength") == 1) A_FireProjectile("SuperAirKickAttack", 0, 0, 0, -31);
+				else A_FireProjectile("AirKickAttack", 0, 0, 0, -31);
+				PB_UseLine(64);
+				A_ZoomFactor(0.975);
+			}
+			AKCK IJ 1;
+			AKCK K 1; //A_ZoomFactor(0.995);
+			AKCK LM 1;
+			AKCK NO 1 A_SetRoll(roll+2, SPF_INTERPOLATE);
+			TNT1 A 1 {
+				A_SetRoll(roll+2, SPF_INTERPOLATE);
+				A_ZoomFactor(1.0);
+				A_Takeinventory("PB_LockScreenTilt",1);
+				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, false);
+				PB_SetUsingKick(false);
+				A_Overlay(-10, "FirstPersonLegsStand");
+				A_TakeInventory("Kicking",1);
+			}
+			Stop;
+		GrabEnemy:	
+			TNT1 A 0 {
+				A_ClearOverlays(-10,65);
+				A_StartSound("weapons/fistwhoosh");
+			}
+			PKUP ABCDEF 1;
+			TNT1 AAAAAAAAAAAAAAAAAAA 0 A_Lower;
+			Wait;
+    }
+}

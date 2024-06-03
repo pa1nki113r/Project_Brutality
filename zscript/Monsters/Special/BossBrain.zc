@@ -1,0 +1,114 @@
+Class PB_BossBrain : PB_Monster replaces BossBrain
+{
+	Default
+	{
+		Radius 16;
+		Height 16;
+		Mass 100;
+		PainSound "monsters/zombie/pain";
+		DeathSound "monsters/zombie/death";
+		Health 3000;
+		PainChance 255;
+		PainChance "Avoid", 64;
+		PainChance "Head", 255;
+		PainChance "Kick", 255;
+		PainChance "ExtremePunches", 255;
+		PainChance "Melee", 255;
+		PainChance "Taunt", 255;
+		PainChance "MonsterKnocked", 255;
+		PainChance "ExplosiveImpact", 255;
+		PainChance "Trample", 255;
+		PainChance "Stun", 255;
+		PainChance "Siphon", 255;
+		damagefactor "Crush", 5.0;
+		damagefactor "Avoid", 1.0;
+		damagefactor "GibRemoving", 0.0;
+		damagefactor "DontCallTheBaron", 0.0;
+		damagefactor "Blood", 0.0; damagefactor "BlueBlood", 0.0; damagefactor "GreenBlood", 0.0;
+		damagefactor "Kick", 0.4;
+		damagefactor "Shrapnel", 0.4;
+		damagefactor "killme", 0.0;
+		damagefactor "Taunt", 1.0;
+		damagefactor "ExplosiveImpact", 2.2;
+		damagefactor "Explosive", 2.2;
+		DamageFactor "CauseObjectsToSplash", 0.0;
+		damagefactor "SSG", 50.0;
+		damagefactor "Shotgun", 1.2;
+		damagefactor "Saw", 0.5;
+		damagefactor "Cut", 0.75;
+		damagefactor "Tear", 0.25;
+		damagefactor "TeleportRemover", 0.0;
+		damagefactor "Execution", 1000.0;
+		DamageFactor "TeleportRemover", 0.0;
+		
+		+SOLID;
+		+SHOOTABLE;
+		+NOICEDEATH;
+		+OLDRADIUSDMG;
+		+DONTTHRUST;
+		
+		-COUNTKILL
+		-CANPUSHWALLS
+		-CANUSEWALLS
+		-CANPASS
+		-ACTIVATEMCROSS
+		-ISMONSTER
+		-NODAMAGE
+		
+		Species "Icon Of Sin";
+	}
+		
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay(); // call the super function for virtual functions so we don't break shit if GZdoom update.
+		HitBoxSpawned = False;
+		DamageTimer = 0;
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+	}
+	
+	int DamageTimer;
+	
+	States
+	{
+		Spawn:
+			BBRN A 1;
+			Loop;
+		Pain:
+			BBRN A 35 A_BrainPain();
+			Goto Spawn;
+		Death:
+			BBRN A 100
+			{
+				A_BrainScream();
+				PB_EverythingDies();
+			}
+			BBRN AAA 10;
+			BBRN A -1 A_BrainDie;
+			Stop;
+	}
+	
+	void PB_EverythingDies()
+    {
+        let ti = ThinkerIterator.Create("Actor");
+        Actor a;
+        while(a = Actor(ti.Next()))
+        {
+            //remove all of the BossEye and SpawnShot actors in a map
+            if(a is 'BossEye') a.SetStateLabel("Null");
+            else if(a is 'SpawnShot')
+            {
+                a.Spawn("SpawnFire",a.pos,ALLOW_REPLACE);
+                a.SetStateLabel("Null");
+            }
+            //kill all monsters (map placed or boss spawned)
+            else if((a.Health > 0)&&(a.bBOSSSPAWNED||a.bCOUNTKILL))
+            {
+                a.DamageMobj(self,self,a.Health,"IOS",DMG_FORCED|DMG_THRUSTLESS);
+            }
+        }
+    }
+}

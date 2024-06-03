@@ -1,0 +1,373 @@
+class PB_EventHandler : EventHandler
+{
+	string NextMap;
+	PB_GlobalStats Stats;
+	
+	double dashAlpha;
+	int tick;
+	bool dasheffect;
+	
+	bool HatExists;
+	int HatMonth;
+	
+	int taunttimer;
+	const tauntcooldown = 40;
+	
+	///////////////////////////////////////////////////////////////////////////
+	
+	override void WorldTick()
+	{
+		tick++;
+		
+		playerinfo plr = players[consoleplayer];
+        if (!plr)
+            return;
+		
+		if(tick % 35 == 0)
+			dashEffect = cvar.GetCvar("pb_dasheffect", plr).GetBool();
+		
+		if(dashAlpha > 0.0000000)
+			dashAlpha -= 0.2;
+			
+		if(taunttimer > 0)
+			taunttimer--;
+	}
+	
+	override void NetworkProcess(ConsoleEvent e)
+	{
+		if(e.name == "PB_DashWhatchamacallit")
+		{
+			dashAlpha = 1.0;
+		}
+		
+		if (e.Name == "PB_MonthCheck")
+		{
+			HatMonth = e.Args[0];
+			return;
+		}
+		
+		let pm = players[e.Player].mo;
+		if(!pm)
+			return;
+		
+		if (e.Name ~== "RequestTaunt")
+		{	
+			if(taunttimer == 0)
+			{
+				let pbweap = PB_WeaponBase(pm.player.readyweapon);
+				/*if(pbweap)
+					console.printf("the prev weapon is "..pbweap.getclassname());*/
+				
+				//only if the weapon is in ready state or in pb_Ready state hehe
+				if((players[e.Player].weaponstate & WF_WEAPONREADY) || (pbweap && pbweap.PB_WeaponIsInReadyState() ))
+				{
+					//set the cooldown
+					taunttimer = tauntcooldown;
+					
+					//give the taunt weapon and cast it to pass the actual weapon
+					//so it can return to it later
+					pm.giveinventory("Pb_TauntWeapon",1);
+					let wp = PB_TauntWeapon(pm.findinventory("PB_TauntWeapon"));
+					
+					//only save the prev weapon if its not the taunt weapon (so it doesn't returns infinitelly to itself)
+					if(!(pm.player.readyweapon is "PB_TauntWeapon"))
+						wp.PrevWeapon = pm.player.readyweapon;
+					
+					//set the taunt weapon as the actual weapon
+					pm.player.readyweapon = wp;
+					pm.player.SetPSprite(PSP_WEAPON, wp.FindState("Ready"));
+				}
+			}
+		}
+		
+		if( e.name == "pb_flashlight_toggle" )
+		{
+			PlayerPawn plr = players[e.player].mo;
+			if(plr)
+            {
+				// [gng] Helmet animation item, don't turn on if it's present because that means the player doesn't have his helmet on
+				if( plr.FindInventory( "sae_extcam" ) ) 
+					return;
+					
+				PB_FPP_Holder holder = PB_FPP_Holder( plr.FindInventory( "PB_FPP_Holder" ) );
+				if( !holder )
+					holder=setupFlashlightHolder( plr );
+					
+				holder.ToggleFlashlight();
+			}
+		}
+	}
+	
+	override void RenderOverlay(RenderEvent e)
+	{
+		if(gamestate == GS_TITLELEVEL)
+            return;
+            
+    	let pmo = players[consoleplayer].mo;
+        if (!pmo)
+            return;
+            
+        let texture = TexMan.CheckForTexture("Graphics/HUD/FULLSCRN/PB_DashOverlay.png");
+        
+        if(dashAlpha > 0.00000 && dashEffect)
+        	screen.DrawTexture(texture, false, 0, 0, DTA_DestWidthF, Screen.GetWidth(), DTA_DestHeightF, Screen.GetHeight(), DTA_Alpha, dashAlpha);
+	}
+	
+	///////////////////////////////////////////////////////////////////////////
+	
+	override void NewGame()
+	{
+		if (!Stats)
+		{
+			Stats = PB_GlobalStats.Get();
+		}
+		
+		Stats.Counters[PB_GlobalStats.Counter_LevelsCompleted]++;
+	}
+	
+	override void PlayerEntered(PlayerEvent e)
+	{
+		let plr = PlayerPawnBase(players[e.PlayerNumber].mo);
+		if (plr)
+		{
+			plr.GiveInventory("ResetKick",1);
+			plr.GiveInventory("ResetZoom",1);
+			plr.TakeInventory("KnifeHasHit",1);
+			plr.TakeInventory("PB_NoEffectInvul",1);
+			plr.TakeInventory("HasCutingWeapon", 1);
+			plr.TakeInventory("PB_LockScreenTilt",1);
+			
+			plr.TakeInventory("HasBarrel",1);
+			plr.TakeInventory("HasIceBarrel",1);
+			plr.TakeInventory("HasFlameBarrel",1);
+			plr.TakeInventory("GrabbedBarrel",1);
+			plr.TakeInventory("GrabbedIceBarrel",1);
+			plr.TakeInventory("GrabbedFlameBarrel",1);
+			for(int i=8;i>0;i--)
+			{
+				plr.TakeInventory("Grab"..i,1);
+				plr.TakeInventory("IGrab"..i,1);
+				plr.TakeInventory("FGrab"..i,1);
+			}
+			
+			plr.A_SetRoll(0);
+			plr.A_SetPitch(0);
+			plr.A_OverlayFlags(-9,PSPF_PLAYERTRANSLATED, false);
+			plr.A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, false);
+			plr.A_SetBlend("black",1.0,70);
+			plr.TakeInventory("ExecutionToken",1);
+			players[e.PlayerNumber].cheats &= ~CF_TOTALLYFROZEN;
+			plr.bNODAMAGE = false;
+		}
+		
+		//Foostep handled here
+		
+		let steps = PB_Footsteps(Actor.Spawn("PB_Footsteps"));
+		if (steps)
+		{
+			steps.Init(players[e.playerNumber].mo);
+			steps.fplayer = players[e.playerNumber];
+		}
+		
+		/////////////////////
+	}
+	
+	//BUG: This somehow does not stop the death fader from fading the view to black even after resurrecting.
+	//[J1H0] Discovered this acs function very useful for that :D
+	//Sounds hacky, but i think its actually really clean (and its the only way i found that really works)
+	override void PlayerRespawned (PlayerEvent e)
+	{
+		let plr = PlayerPawnBase(players[e.PlayerNumber].mo);
+		let plinf = plr.player;
+		if (plr)
+		{
+			Plr.A_TakeInventory ("PlayerIsDead",1); //this was causing resurrection without kicks
+			Plr.A_TakeInventory ("DeathFader",1);
+			Plr.ACS_NamedExecuteAlways("UnFadder");
+			
+			Plr.A_TakeInventory("HasBarrel",1);
+			Plr.A_TakeInventory("HasIceBarrel",1);
+			Plr.A_TakeInventory("HasFlameBarrel",1);
+			Plr.A_TakeInventory("GrabbedBarrel",1);
+			Plr.A_TakeInventory("GrabbedIceBarrel",1);
+			Plr.A_TakeInventory("GrabbedFlameBarrel",1);
+			for(int i=8;i>0;i--)
+			{
+				Plr.A_TakeInventory("Grab"..i,1);
+				Plr.A_TakeInventory("IGrab"..i,1);
+				Plr.A_TakeInventory("FGrab"..i,1);
+			}
+			
+			//clean the first person deaths from here when resurrected, if -for some reason- resurrecting skips the spawn state from the player, the overlay is already cleaned here
+			if(plinf)
+			{
+				Psprite ps = plinf.FindPSprite(66);
+				if(ps)
+					ps.Destroy(); //i guess A_clearoverlays(66,66) would suffice also, but its cooler to destroy it directly
+			}
+		}
+	}
+	
+	override void WorldLoaded(WorldEvent e)
+	{
+		if (!Stats)
+		{
+			Stats = PB_GlobalStats.Get();
+		}
+		
+		if(e.IsReopen)
+		{
+			PB_FPP_Light hl=null;
+			for(let it=ThinkerIterator.Create("PB_FPP_Light");hl=PB_FPP_Light(it.next());)
+			{
+				hl.destroy();
+				//prevents duplicate flashlights for hub-world maps
+			}
+		}
+		for(int i=0;i<MAXPLAYERS;i++)
+		{
+			if(playeringame[i])
+			{
+				PlayerPawn p=players[i].mo;
+				PB_FPP_Holder holder=PB_FPP_Holder(p.FindInventory("PB_FPP_Holder"));
+				if(holder)
+				{
+					holder.FixState();
+				}
+			}
+		}
+		PB_FPP_Holder holder=null;
+		for(let it=ThinkerIterator.Create("PB_FPP_Holder");holder=PB_FPP_Holder(it.next());)
+		{
+			holder.FixState();
+		}
+	}
+	override void WorldUnloaded(WorldEvent e)
+	{
+		// [Ace] Hack to work around death exits.
+		// This used to be in Deathstriders Player Class, but it did not
+		// function correctly in multiplayer because the players had already been revived by that point.
+		/* [Pop] Commented out for when we move to 4.10 or higher
+		foreach (p : players)
+		{
+			if (p.mo && p.mo.Health <= 0)
+			{
+				p.Resurrect();
+			}
+		}
+		*/
+		
+		for(int i = 0 ; i < MAXPLAYERS; ++i)
+		{
+			PlayerInfo p = players[i];
+			if(p.mo && p.mo.Health <= 0)
+			{
+				p.Resurrect();
+			}
+		}
+
+		if (Stats.ProgressedMaps.Find(Level.MapName) == Stats.ProgressedMaps.Size())
+		{
+			Stats.ProgressedMaps.Push(Level.MapName);
+			if (Level.total_monsters > 0&&level.mapname!="HUBMAP")
+			{
+				Stats.Counters[PB_GlobalStats.Counter_LevelsCompleted]++;
+			}
+		}
+	}
+	
+	override void PlayerDisconnected(PlayerEvent e)
+	{ 
+	//reset state on player disconnect
+		PB_FPP_Light hl=null;
+		for(let it=ThinkerIterator.Create("PB_FPP_Light");hl=PB_FPP_Light(it.next());)
+		{
+			hl.destroy();
+		}
+		PB_FPP_Holder holder=null;
+		for(let it=ThinkerIterator.Create("PB_FPP_Holder");holder=PB_FPP_Holder(it.next());)
+		{
+			if(holder.owner&&!playeringame[holder.owner.PlayerNumber()])continue;
+			holder.FixState();
+		}
+	}
+	
+	//Festive Hats handling
+	
+	Override Void WorldThingSpawned(WorldEvent e)
+	{
+		if(!e.Thing.bCORPSE && !e.Thing.bFRIENDLY && e.thing is 'PB_Monster')
+		{
+			CVar HatsEnabled = Cvar.FindCvar("PB_HatExtravaganza");
+			if(HatsEnabled)
+			{
+				if(HatsEnabled.GetInt() == 1)
+				{
+					vector3 spawnPos = (0,0,0);
+					Actor LeFunnyHat = Actor.Spawn("FunnyHat",SpawnPos);
+					if(LeFunnyHat)
+					{
+						LeFunnyHat.master = e.Thing;
+					}
+				}
+			}
+		}
+		if (e.Thing is 'FunnyHat')
+		{
+			HatExists = true;
+		}
+	}
+	
+	//////////////////////
+	
+	override void UiTick()
+	{
+		if (HatExists && level.time % 35 == 0)
+		{
+			string HatMonthString = SystemTime.Format("%m", SystemTime.Now());
+			//Console.Printf("Current month is %s", HatMonthString);
+			int HatMonthInt = HatMonthString.ToInt();
+			HatMonthInt = HatMonthString.ToInt(10);
+			EventHandler.SendNetworkEvent("PB_MonthCheck", HatMonthInt);
+		}
+	}
+	
+	//
+	// for correct special level monster handling
+	//
+	// [J1H0] This is basically telling "x is a replacement for y" so if a level special (like Doom II map07) requires all 'y' to die to activate a platform it'll also count for 'x'
+	//	*this doesnt include all current pb monsters, just the ones that usually cause errors for replacing the og monster (and impeding you finish the level correctly)
+	override void CheckReplacee(ReplacedEvent e)
+	{
+		switch(e.replacement.getclassname())
+		{
+			//cyberdemon
+			case 'PB_Annihilator': e.replacee = 'Cyberdemon'; Break;
+			case 'PB_Cyberdemon': e.replacee = 'Cyberdemon'; Break;
+			
+			//mastermind
+			case 'PB_Demolisher': e.replacee = 'SpiderMastermind'; Break;
+			case 'PB_Juggernaut': e.replacee = 'SpiderMastermind'; Break;
+			case 'PB_Mastermind': e.replacee = 'SpiderMastermind'; Break;
+			
+			//barons
+			case 'PB_Infernus': e.replacee = 'BaronOfHell'; Break;
+			case 'PB_CyberBaron': e.replacee = 'BaronofHell'; Break;
+			case 'PB_Belphegor': e.replacee = 'BaronofHell'; Break;
+			case 'PB_Baron': e.replacee = 'BaronofHell'; Break;
+			
+			//spiders
+			case 'PB_Arachnophyte': e.replacee = 'Arachnotron'; Break;
+			case 'PB_Arachnotron': e.replacee = 'Arachnotron'; Break;
+			case 'Aracnorb': e.replacee = 'Arachnotron'; Break;
+			case 'PB_EliteArachnotron': e.replacee = 'Arachnotron'; Break;
+			case 'PB_InfernalArachnotron': e.replacee = 'Arachnotron'; Break;
+			
+			//mancubi
+			case 'PB_Daedabus': e.replacee = 'Fatso'; Break;
+			case 'PB_Mancubus': e.replacee = 'Fatso'; Break;
+			case 'PB_Volcabus': e.replacee = 'Fatso'; Break;
+		}
+	}
+	
+}

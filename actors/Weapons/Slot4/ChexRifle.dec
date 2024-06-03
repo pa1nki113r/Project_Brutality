@@ -157,7 +157,7 @@ States
 	
 	Spawn:
 		TNT1 A 0
-		TNT1 A 0 ACS_ExecuteAlways(719, 0, 0, 0, 0)//Check if Coop
+		TNT1 A 0 
 
 	Spawn1:
 		PBAL D 1 BRIGHT light("TracerGlowChexRed")
@@ -223,7 +223,7 @@ Death:
   }
 }
 
-ACTOR ChexRifle : PB_Weapon 
+ACTOR PB_ChexRifle : PB_Weapon 
 {
 	Weapon.SelectionOrder 1300
 	Weapon.AmmoUse1 0
@@ -231,9 +231,9 @@ ACTOR ChexRifle : PB_Weapon
 	Weapon.AmmoGive1 42
 	Weapon.AmmoGive2 0
 	Scale 0.50
-	Weapon.AmmoType1 "Cell"
+	Weapon.AmmoType1 "PB_Cell"
 	Weapon.AmmoType2 "ChexRifleAmmo"
-	Inventory.PickupMessage "You got the Zorch Rifle! (Slot 4)"
+	Inventory.PickupMessage "Zorch Rifle (Slot 4)"
     Inventory.PickupSound "weapons/chexrifle/in"
 	Obituary "%k got a Chex-weapon somehow and killed %o"
     AttackSound "None"
@@ -243,12 +243,14 @@ ACTOR ChexRifle : PB_Weapon
 	+WEAPON.NOAUTOFIRE
 	+WEAPON.AMMO_OPTIONAL
 	+WEAPON.CHEATNOTWEAPON
+	+DONTGIB
 	States
 	{
 	Spawn:
 		CRRS A -1 
 		Loop
 	Select:
+		TNT1 A 0 A_TakeInventory("Zoomed",1)
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
@@ -256,6 +258,14 @@ ACTOR ChexRifle : PB_Weapon
 			A_TakeInventory("PB_LockScreenTilt",1);
 			A_ClearOverlays(10,11);
 		}
+		
+		TNT1 A 0 A_TakeInventory("HasBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
+		
 		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
 		TNT1 A 0 A_Takeinventory("HasUnloaded",1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
@@ -278,7 +288,7 @@ ACTOR ChexRifle : PB_Weapon
 		TNT1 A 0 A_TakeInventory("SGLSelected",1)
 		TNT1 A 0 A_GiveInventory("PlasmaGunSelected",1)
 		TNT1 A 0 A_TakeInventory("M2Selected",1)	
-		TNT1 A 0 A_TakeInventory("FreezerSelected",1)
+		TNT1 A 0 A_TakeInventory("CryoRifleSelected",1)
 		TNT1 A 0 A_TakeInventory("RailGunSelected",1)
 		TNT1 A 0 A_TakeInventory("BFGSelected",1)
 		TNT1 A 0 A_TakeInventory("BFGBeamSelected",1)
@@ -291,7 +301,8 @@ ACTOR ChexRifle : PB_Weapon
 		TNT1 A 0 A_TakeInventory("SubMachineGunSelected",1)
 		TNT1 A 0 A_TakeInventory("LostSoulSelected",1)
 		TNT1 A 0 A_TakeInventory("HasBarrel",1)
-		TNT1 A 0 A_TakeInventory("HasBurningBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
 		TNT1 A 0 A_GiveInventory ("JustGotAChexWeapon")
 		TNT1 A 0 A_Giveinventory("HasPlasmaWeapon",1)
 		TNT1 A 0 A_Raise
@@ -340,6 +351,13 @@ ACTOR ChexRifle : PB_Weapon
 	Unloaded:
 		CRR2 N 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD)
 		loop
+		
+	AltFire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+		Goto Ready3
+		
 	/*
 	AltFire:
 		TNT1 A 0 A_JumpIfInventory("ChexRifleAmmo", 1, 2)
@@ -369,6 +387,9 @@ ACTOR ChexRifle : PB_Weapon
 		TNT1 A 0 A_Refire
 	*/
 	Fire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
 		TNT1 A 0 A_JumpIfInventory("ChexRifleAmmo", 1, 2)
 		Goto Reload
 		TNT1 AAA 0
@@ -395,12 +416,16 @@ ACTOR ChexRifle : PB_Weapon
 			A_ZoomFactor(.985);
 			A_WeaponReady(WRF_NOPRIMARY);
 		}
+		TNT1 A 0 PB_LowAmmoSoundWarning("hdmr")
 		TNT1 A 0 A_Takeinventory("ChexRifleAmmo",1)
 		CHRE I 1 BRIGHT A_WeaponReady(WRF_NOPRIMARY)
 		TNT1 A 0 A_ZoomFactor (1)
 		TNT1 A 0 A_Refire
 		Goto RealReady
 	Deselect:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		CXSU A 0 A_JumpIfInventory("UnloadedChexRifle",1,2)
 		CHRS A 0
 		"####" ABC 1
@@ -409,9 +434,12 @@ ACTOR ChexRifle : PB_Weapon
 		TNT1 A 0 A_Lower
 		Wait
 	Reload:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 A_TakeInventory ("Reloading")
 		TNT1 A 0 A_JumpIfInventory ("ChexRifleAmmo", 42, "RealReady")
-		TNT1 A 0 A_JumpIf(CountInv("Cell") <= 0, "RealReady")
+		TNT1 A 0 A_JumpIf(CountInv("PB_Cell") <= 0, "RealReady")
 		//Goto RealReady
 	ReloadAnimation:
 		TNT1 A 0 A_JumpIfInventory ("UnloadedChexRifle",1,"ReloadAnimationIfUnloaded")
@@ -439,17 +467,20 @@ ACTOR ChexRifle : PB_Weapon
 		CXR3 HIJK 1
 		TNT1 A 0 A_SetRoll (0)
 	ReloadSequence:
-		TNT1 A 0 A_JumpIfInventory ("Cell", 1, 2)
+		TNT1 A 0 A_JumpIfInventory ("PB_Cell", 1, 2)
 		Goto RealReady
 		TNT1 A 0
 		TNT1 A 0
 		TNT1 A 0 A_JumpIfInventory ("ChexRifleAmmo", 42, "RealReady")
 		TNT1 A 0 {
 			A_GiveInventory ("ChexRifleAmmo",1);
-			A_TakeInventory ("Cell",1);
+			A_TakeInventory ("PB_Cell",1);
 		}
 		loop
 	WeaponSpecial:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 A_TakeInventory ("GoWeaponSpecialAbility")
 		Goto RealReady
 	ReloadAnimationIfUnloaded:
@@ -486,12 +517,15 @@ ACTOR ChexRifle : PB_Weapon
 		TNT1 A 0
 		TNT1 A 0
 		TNT1 A 0 {
-			A_GiveInventory ("Cell",1);
+			A_GiveInventory ("PB_Cell",1);
 			A_TakeInventory ("ChexRifleAmmo",1);
 		}
 		Loop
 		
 	FlashKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
 	    TNT1 A 0 A_WeaponOffset(0,32)
 		CXR1 BCDEFG 1
 		CXR1 H 2
@@ -499,6 +533,9 @@ ACTOR ChexRifle : PB_Weapon
 		Stop
 		
 	FlashAirKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")	
 	    TNT1 A 0 A_WeaponOffset(0,32)
 		CRR4 N 1
 		CRR4 M 1 
@@ -516,12 +553,18 @@ ACTOR ChexRifle : PB_Weapon
 		Stop
 		
 	FlashSlideKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
 	    TNT1 A 0 A_WeaponOffset(0,32)
 		CRR4 ML 2
 		CRR4 JIIIIIII 2 A_WeaponOffset(random(-2,2),random(32,34)) 
 		Stop
 		
 	FlashSlideKickingStop:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
 		TNT1 A 0 A_WeaponOffset(0,32)
 		CRR4 I 2
 		CRR4 JKLM 1 
@@ -529,6 +572,9 @@ ACTOR ChexRifle : PB_Weapon
 		Stop
 		
 	FlashPunching:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
 		TNT1 A 0 A_WeaponOffset(0,32)
 		S4T2 B 1 
 		S4T2 C 1 

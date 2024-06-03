@@ -1,0 +1,973 @@
+ACTOR PB_NukageBarrel : SwitchableDecoration Replaces ExplosiveBarrel
+{
+	//$Title Nukage Barrel
+	Game Doom
+	scale 0.9
+	Health 25
+	Radius 12
+	Height 29
+    Mass 200
+	Speed 0
+	MaxTargetRange 200
+	PainSound "Barrel/pain"
+	Deathsound "Barrel/Pain"
+	-COUNTKILL
+	+NOBLOOD
+	+FRIENDLY
+	+NOICEDEATH
+	+LOOKALLAROUND
+	+SHOOTABLE
+//	+GHOST
+	+CANPASS
+	+SOLID
+	+PUSHABLE
+	+SLIDESONWALLS
+	+WINDTHRUST
+	+TELESTOMP
+	+NOBLOCKMONST
+	+MISSILEMORE
+	+MISSILEEVENMORE
+	+EXTREMEDEATH
+	-DONTHARMCLASS
+	+DOHARMSPECIES
+	+ACTIVATEMCROSS
+	//+FIXMAPTHINGPOS
+	+usespecial
+	Activation THINGSPEC_Activate | THINGSPEC_ThingTargets | THINGSPEC_NoDeathSpecial | THINGSPEC_Switch
+    damagefactor "Melee", 0.1 damagefactor "Fatality", 0.1 damagefactor "Extremepunches", 0.1 damagefactor "Kick", 0.1 damagefactor "LowKick", 0.1
+	damagefactor "Cut", 0.1 damagefactor "Saw", 0.1 damagefactor "Massacre", 0.1
+	damagefactor "Fire", 0.1 damagefactor "Flames", 0.1 damagefactor "Burn", 0.1 damagefactor "FireExplosion", 3.5
+	damagefactor "Ice", 0.1 damagefactor "Freeze", 0.1 damagefactor "Frost", 0.1 damagefactor "IceExplosion", 3.5
+	damagefactor "GibRemoving", 0.0 DamageFactor "BHFT", 500.0 damagefactor "BHFTOnBarrel", 500.0 damagefactor "Trample", 0.0
+    damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood", 0.0    damagefactor "Avoid", 0.0
+    damagefactor "Shrapnel", 0.0	damagefactor "KillMe", 0.0  damagefactor "TeleportRemover", 0.0
+	Painchance "Blood", 255 Painchance "BlueBlood",255 Painchance "GreenBlood", 255 PainChance "DontCallTheBaron", 255
+	Painchance "Melee", 255 Painchance "Extremepunches", 255 Painchance "Kick", 255 Painchance "LowKick", 255
+	Painchance "Ice", 256 Painchance "Freeze", 256 Painchance "Frost", 256 Painchance "IceExplosion", 256
+	Painchance "Fire", 256 Painchance "Flames", 256 Painchance "Burn", 256 Painchance "FireExplosion", 256
+	Obituary "$OB_BARREL"
+	Painchance 255
+		States {
+
+/////IDLE STATES////////////////////////////////////////////////////////////////////////////////
+			Spawn:
+				BAR5 A 1
+				Goto Spawn2
+			Spawn2:
+				"####" "#" 0 A_JumpIfInventory("BloodyBarrel",1,"BloodSplatters")
+				"####" "#" 0 A_JumpIfInventory("GreenBloodyBarrel",1,"BloodSplatters")
+				"####" "#" 0 A_JumpIfInventory("BlueBloodyBarrel",1,"BloodSplatters")
+				Goto Spawn3
+			Spawn3:
+				"####" "#" 0 ACS_NamedExecuteAlways("BaronBarrelFun", 0) 
+				"####" "#" 0 A_GiveInventory("TargetIsAnExplosiveBarrel", 1)
+				//Drained//
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"DrainedSpriteHoles")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"DrainedSpriteCut")
+				//Damage//
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"HolesAnimation")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"CutAnimation")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"GiveDent")
+				BIR1 A 0 A_JumpIfInventory("BarrelIsFlaming",1,3)
+				BFR1 A 0 A_JumpIfInventory("BarrelIsFrozen",1,2)
+				BAR1 A 0
+				Goto See
+			See:
+				"####" "#" 0 A_ChangeFlag("USESPECIAL", 1)
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"Pain.Ice")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"Pain.Fire")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"SeeEmpty")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"SeeEmpty")
+				"####" ABCDEF 2 
+				Goto BloodChecker 
+			SeeIce:
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"SeeFlame")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"SeeEmpty")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"SeeEmpty")
+				"####" "#" 6
+				"####" "#" 0 A_SpawnItemEx("CryoSmoke",0,0,5)
+				Goto BloodChecker
+			SeeFlame:
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"SeeIce")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"SeeEmpty")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"SeeEmpty")
+				"####" "#" 0 A_SpawnItemEx("BarrelTopFire2", random(-2,2), random(-2,2), 30,0,0,0,0,SXF_SETMASTER|SXF_NOCHECKPOSITION)
+				"####" "#" 7
+				"####" "#" 0 bright A_CustomMissile ("BigBlackSmokePillarShort", 30, 0, random (40, 180), 2, random (60, 120))
+				"####" "#" 0 A_CustomMissile ("RealisticFireSparks1", 30, 0, random (0, 140), 2, random (0, 160))
+				"####" "#" 7
+				"####" "#" 0 bright A_CustomMissile ("BigBlackSmokePillarShort", 30, 0, random (40, 180), 2, random (60, 120))
+				"####" "#" 0 A_CustomMissile ("RealisticFireSparks1", 30, 0, random (0, 140), 2, random (0, 160))
+				Goto BloodChecker
+			SeeEmpty:
+				"####" "#" 6
+				Goto BloodChecker
+			BloodChecker:
+				"####" "#" 0 A_JumpIfInventory("HasBlood",1,"See")
+				"####" "#" 0{
+					if(CountInv("RedBloodSplatterz") == 1 ){
+						return state("BloodSplatters");
+						}
+					if(CountInv("BlueBloodSplatterz") == 1){
+						return state("BloodSplatters");
+						}
+					if(CountInv("GreenBloodSplatterz") == 1){
+						return state("BloodSplatters");
+						}
+						return state("");
+				}
+			Goto See
+				
+/////BARON BARRELS////////////////////////////////////////////////////////////////////////////
+			Missile:
+				"####" "#" 0 A_JumpIfInTargetInventory("BarrelIsFrozen", 1, "SeeIce")
+				"####" "#" 0 A_JumpIfInTargetInventory("BarrelIsFlaming", 1, "SeeFlame")
+				"####" "#" 0 A_ClearTarget
+				Goto See
+			TauntTheBaron:
+				"####" "#" 0 A_JumpIfCloser(280, 1)
+				Goto See
+				"####" "#" 0 A_JumpIfInTargetInventory("ComingToGetTheBarrel", 1, "See")
+				"####" "#" 0 A_GiveInventory("TargetIsANExplosiveBarrel", 1)
+				"####" "#" 0 A_FaceTarget
+				"####" "#" 0 A_CustomMissile("BaronBarrelCall", 36, 0, 0, 1)
+				"####" "#" 0 A_GiveToTarget("ComingTOGetTheBarrel", 1)
+				
+/////Blood Stuff is Prepped To Integrate Blood Colours////////////////////////////////////////////////////////////////////////////////
+			BloodSplatters:
+				"####" "#" 0 A_JumpIfInventory("HasBlood",1,"See")
+				"####" "#" 0 A_GiveInventory("HasBlood",1)
+			////The Magical Sprite Transition Stuff////
+				//Blood//
+				"####" "#" 0 A_TakeInventory("GreenBloodyBarrel",1)
+				"####" "#" 0 A_TakeInventory("BlueBloodyBarrel",1)
+				"####" "#" 0 A_GiveInventory("BloodyBarrel",1)
+				//Drained//
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"BloodSplattersEmpty")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"BloodSplattersEmptyCut")
+				//Elements//
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"BloodSplattersIce")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"BloodSplattersFlame")
+				//Damage//
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"BloodSplattersHoles")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"BloodSplattersCut")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"BloodSplattersDent")
+				//Transitions//
+				BAR5 A 0
+				Goto See
+			BloodSplattersHoles:
+				BAR6 A 0
+				Goto See
+			BloodSplattersCut:
+				BAR7 A 0
+				Goto See
+			BloodSplattersDent:
+				BAR8 A 0
+				Goto See
+			BloodSplattersIce:
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"BloodSplattersHolesIce")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"BloodSplattersCutIce")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"BloodSplattersDentIce")
+				BIR5 A 0
+				Goto See
+			BloodSplattersHolesIce:
+				BIR6 A 0
+				Goto See
+			BloodSplattersCutIce:
+				BIR7 A 0
+				Goto See
+			BloodSplattersDentIce:
+				BIR8 A 0
+				Goto See
+			BloodSplattersFlame:
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"BloodSplattersHolesFlame")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"BloodSplattersCutFlame")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"BloodSplattersDentFlame")
+				BFR5 A 0
+				Goto See
+			BloodSplattersHolesFlame:
+				BFR6 A 0
+				Goto See
+			BloodSplattersCutFlame:
+				BFR7 A 0
+				Goto See
+			BloodSplattersDentFlame:
+				BFR8 A 0
+				Goto See
+			BloodSplattersEmpty:
+				BAR6 K 0
+				Goto See
+			BloodSplattersEmptyCut:
+				BAR7 N 0
+				Goto See
+
+
+				
+/////Punches Can Dent/////////////////////////////////////////////////////////////////////////////////////////
+			Pain.Melee:
+				//Checking If It Needs To Transition//
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"KnockedOver")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"KnockedOver")
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"KnockedOver")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"KnockedOver")
+				"####" "#" 0 A_JumpIfInventory("TimesPunched",8,"KnockedOver")
+				"####" "#" 0 A_JumpIfInventory("TimesPunched",5,"GiveDent")
+				Goto RecoilFromMelee
+			RecoilFromMelee:
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"RecoilFromMeleeIce")
+				"####" "#" 0 A_Changeflag("FRIENDLY", 0)
+				"####" "#" 0 A_GiveInventory("TimesPunched",1)
+				"####" "#" 1 A_Pain
+				"####" "#" 0 A_Chase("","")
+				"####" "#" 1 A_FaceTarget
+				"####" "#" 0 ThrustThing(angle*256/360+128, 5, 0, 0)
+				"####" "#" 0 ThrustThingZ(0,10,0,1)
+				"####" "#" 0 A_Changeflag("FRIENDLY", 1)
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"SeeFlame")
+				Goto See
+			RecoilFromMeleeIce:
+				"####" "#" 0 A_Changeflag("FRIENDLY", 0)
+				"####" "#" 0 A_GiveInventory("TimesPunched",1)
+				"####" "#" 1 A_Pain
+				"####" "#" 0 A_Chase("","")
+				"####" "#" 1 A_FaceTarget
+				"####" "#" 0 ThrustThing(angle*256/360+128, 8, 0, 0)
+				"####" "#" 0 ThrustThingZ(0,10,0,1)
+				"####" "#" 0 A_Changeflag("FRIENDLY", 1)
+				Goto See	
+				
+/////Kicks Cause Recoil and Dents/////////////////////////////////////////////////////////////////////////////////////////////	
+			Pain.Kick:
+			Pain.SuperKick:
+			Pain.ExtremePunches:
+			Pain.SuperPunch:
+			Pain.Fatality:
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"KnockedOver")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"KnockedOver")
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"KnockedOver")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"KnockedOver")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"KnockedOver")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"KnockedOver")
+				"####" "#" 0 A_JumpIfInventory("TimesPunched",8,"KnockedOver")
+				"####" "#" 0 A_JumpIfInventory("TimesPunched",5,"GiveDent")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"RecoilFromKickIce")
+				"####" "#" 0 A_Changeflag("FRIENDLY", 0)
+				"####" "#" 0 A_GiveInventory("TimesPunched",1)
+				"####" "#" 1 A_Pain
+				"####" "#" 0 A_Chase("","")
+				"####" "#" 0 ThrustThingZ(0,8,0,1)
+				"####" "#" 1 A_FaceTarget
+				"####" "#" 0 ThrustThing(angle*256/360+128, 10, 0, 0)
+				"####" "#" 0 ThrustThingZ(0,8,0,1)
+				"####" "#" 0 A_Changeflag("FRIENDLY", 1)
+				Goto See
+			RecoilFromKickIce:
+				"####" "#" 0 A_Changeflag("FRIENDLY", 0)
+				"####" "#" 0 A_GiveInventory("TimesPunched",1)
+				"####" "#" 1 A_Pain
+				"####" "#" 0 A_Chase("","")
+				"####" "#" 0 ThrustThingZ(0,8,0,1)
+				"####" "#" 1 A_FaceTarget
+				"####" "#" 0 ThrustThing(angle*256/360+128, 15, 0, 0)
+				"####" "#" 0 ThrustThingZ(0,8,0,1)
+				"####" "#" 0 A_Changeflag("FRIENDLY", 1)
+				Goto See
+			
+			GiveDent:
+				"####" "#" 0 A_PlaySound("barrel/pain")
+				"####" "#" 0 A_GiveInventory("HasDent",1)
+				//Blood//
+				"####" "#" 0 A_JumpIfInventory("BloodyBarrel",1,"BloodDent")
+				"####" "#" 0 A_JumpIfInventory("GreenBloodyBarrel",1,"BloodDent")
+				"####" "#" 0 A_JumpIfInventory("BlueBloodyBarrel",1,"BloodDent")
+				//Elements//
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"DentIce")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"DentFlame")
+				//Transition//
+				BAR4 A 0
+				Goto RecoilFromMelee
+			DentIce:
+				BIR4 A 0
+				Goto RecoilFromMeleeIce
+			DentFlame:
+				BFR4 A 0
+				Goto RecoilFromMelee
+			BloodDent:
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"BloodDentIce")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"BloodDentFlame")
+				BAR8 A 0
+				Goto RecoilFromMelee
+			BloodDentIce:
+				BIR8 A 0
+				Goto RecoilFromMeleeIce
+			BloodDentFlame:
+				BFR8 A 0
+				Goto RecoilFromMelee
+
+/////Bullets Cause Holes//////////////////////////////////////////////////////////////////////////////////////
+			Pain:
+			Pain.Shotgun:
+			Pain.SSG:
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"RecoilFromPainIce")
+				"####" "#" 0 A_Changeflag("FRIENDLY", 0)
+				"####" "#" 1 A_Pain
+				"####" "#" 0 A_Chase("","")
+				"####" "#" 1 A_FaceTarget
+				"####" "#" 0 ThrustThing(angle*256/360+128, 1, 0, 0)
+				"####" "#" 0 ThrustThingZ(0,10,0,1)
+				"####" "#" 0 A_Changeflag("FRIENDLY", 1)
+				"####" "#" 0 A_PlaySound("barrel/pain")
+				Goto PainTransitionCheck
+			RecoilFromPainIce:
+				"####" "#" 0 A_Changeflag("FRIENDLY", 0)
+				"####" "#" 1 A_Pain
+				"####" "#" 0 A_Chase("","")
+				"####" "#" 1 A_FaceTarget
+				"####" "#" 0 //ThrustThing(angle*256/360+128, 2, 0, 0)
+				"####" "#" 0 //ThrustThingZ(0,10,0,1)
+				"####" "#" 0 A_Changeflag("FRIENDLY", 1)
+				Goto PainTransitionCheck
+			PainTransitionCheck:
+				//Checking If It Needs To Transition//
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"Death")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"Death")
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"Death")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"Death")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"Death")
+			GiveHoles:
+				"####" "#" 0 A_GiveInventory("HasHoles",1)
+				//Blood//
+				"####" "#" 0 A_JumpIfInventory("BloodyBarrel",1,"BloodHoles")
+				"####" "#" 0 A_JumpIfInventory("GreenBloodyBarrel",1,"BloodHoles")
+				"####" "#" 0 A_JumpIfInventory("BlueBloodyBarrel",1,"BloodHoles")
+				//Elements//
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"HolesIce")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"HolesFlame")
+				//Transition//
+				BAR2 AAAAAAAAAAAAAAAAAAAABBBBBBCCCCCCDDDDDDEEEEEEFFFFFFGGGGGGHHHHHH 2
+				"####" "#" 0 A_SpawnItem("GrowingNukagePool")
+				"####" "#" 0 A_GiveInventory("DrainedBarrel",1)
+				BAR2 IIIIIIJJJJJJK 2
+				Goto SeeEmpty
+			DrainedSpriteHoles:
+				BAR2 K 0
+				Goto SeeEmpty
+			HolesIce:
+				BIR2 A 0
+				Goto SeeIce
+			HolesFlame:
+				BFR2 A 0
+				Goto SeeFlame
+			BloodHoles:
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"BloodHolesIce")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"BloodHolesFlame")
+				BAR6 AAAAAAAAAAAAAAAAAAAABBBBBBCCCCCCDDDDDDEEEEEEFFFFFFGGGGGGHHHHHH 2
+				"####" "#" 0 A_SpawnItem("GrowingNukagePool")
+				"####" "#" 0 A_GiveInventory("DrainedBarrel",1)
+				BAR6 IIIIIIJJJJJJK 2
+				Goto SeeEmpty
+			DrainedSpriteHolesBloody:
+				BAR6 K 0
+				Goto SeeEmpty
+			BloodHolesIce:
+				BIR6 A 0
+				Goto SeeIce
+			BloodHolesFlame:
+				BFR6 A 0
+				Goto SeeFlame
+
+/////Blades, Nails, & Flak will Cut///////////////////////////////////////////////////////////////////////////
+			Pain.cut:
+			Pain.saw:
+			Pain.cutless:
+			Pain.Massacre:
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"RecoilFromCutIce")
+				"####" "#" 0 A_Changeflag("FRIENDLY", 0)
+				"####" "#" 1 A_Pain
+				"####" "#" 0 A_Chase("","")
+				"####" "#" 1 A_FaceTarget
+				"####" "#" 0 ThrustThing(angle*256/360+128, 2, 0, 0)
+				"####" "#" 0 ThrustThingZ(0,10,0,1)
+				"####" "#" 0 A_Changeflag("FRIENDLY", 1)
+				Goto CutTransitionCheck
+			RecoilFromCutIce:
+				"####" "#" 0 A_Changeflag("FRIENDLY", 0)
+				"####" "#" 1 A_Pain
+				"####" "#" 0 A_Chase("","")
+				"####" "#" 1 A_FaceTarget
+				"####" "#" 0 ThrustThing(angle*256/360+128, 3, 0, 0)
+				"####" "#" 0 ThrustThingZ(0,10,0,1)
+				"####" "#" 0 A_Changeflag("FRIENDLY", 1)
+				Goto CutTransitionCheck
+			CutTransitionCheck:
+				//Checking If It Needs To Transition//
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"Death")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"Death")
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"Death")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"Death")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"Death")
+				"####" "#" 0 A_PlaySound("barrel/pain")
+			GiveCut:
+				"####" "#" 0 A_GiveInventory("HasCut",1)
+				//Blood//
+				"####" "#" 0 A_JumpIfInventory("BloodyBarrel",1,"BloodCut")
+				"####" "#" 0 A_JumpIfInventory("GreenBloodyBarrel",1,"BloodCut")
+				"####" "#" 0 A_JumpIfInventory("BlueBloodyBarrel",1,"BloodCut")
+				//Elements//
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"CutIce")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"CutFlame")
+				//Transition//
+			CutAnimation:
+				BAR3 AAAAAAAAAAAAAAAAABBCDEFG 2
+				"####" "#" 0 A_SpawnItem("GrowingNukagePool")
+				"####" "#" 0 A_GiveInventory("DrainedBarrelCut",1)
+				BAR3 HIJKLLMMN 2 
+				Goto SeeEmpty
+			DrainedSpriteCut:
+				BAR3 N 0
+				Goto SeeEmpty
+			CutIce:
+				BIR3 A 0
+				Goto SeeIce
+			CutFlame:
+				BFR3 A 0
+				Goto SeeFlame
+			BloodCut:
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"BloodCutIce")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"BloodCutFlame")
+			CutAnimationBlood:
+				BAR7 AAAAAAAAAAAAAAAAABBBCDEFG 2
+				"####" "#" 0 A_SpawnItem("GrowingNukagePool")
+				"####" "#" 0 A_GiveInventory("DrainedBarrelCut",1)
+				BAR7 HIJKLLMMN 2
+				Goto SeeEmpty
+			DrainedSpriteCutBloody:
+				BAR7 N 0
+				Goto SeeEmpty
+			BloodCutIce:
+				BIR7 A 0
+				Goto SeeIce
+			BloodCutFlame:
+				BFR7 A 0
+				Goto SeeFlame
+				
+////Ice Weapons Freeze It////////////////////////////////////////////////////////////////////////////
+			Pain.Ice:
+			Pain.Freeze:
+			Pain.Frost:
+				//Checking If It Needs To Transition//
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"SeeIce")
+				"####" "#" 0 A_TakeInventory("BarrelIsFlaming",1)
+				"####" "#" 0 A_GiveInventory("BarrelIsFrozen",1)
+				//Blood//
+				"####" "#" 0 A_JumpIfInventory("BloodyBarrel",1,"IceTransitionBlood")
+				"####" "#" 0 A_JumpIfInventory("GreenBloodyBarrel",1,"IceTransitionBlood")
+				"####" "#" 0 A_JumpIfInventory("BlueBloodyBarrel",1,"IceTransitionBlood")
+				//Damage//
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"IceTransitionHolesEmpty")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"IceTransitionCutEmpty")
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"IceTransitionHoles")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"IceTransitionCut")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"IceTransitionDent")
+				//Transition//
+				BIR1 A 0
+				"####" "#" 0 A_PlaySound("weapons/CryoRifle/freezeobject")
+				Goto SeeIce
+			IceTransitionHoles:
+				BIR2 A 0
+				"####" "#" 0 A_PlaySound("weapons/CryoRifle/freezeobject")
+				Goto SeeIce
+			IceTransitionCut:
+				BIR3 A 0
+				"####" "#" 0 A_PlaySound("weapons/CryoRifle/freezeobject")
+				Goto SeeIce
+			IceTransitionHolesEmpty:
+				"####" "#" 0 A_GiveInventory("DrainedBarrel",1)
+				BIR2 B 0
+				"####" "#" 0 A_PlaySound("weapons/CryoRifle/freezeobject")
+				Goto SeeEmpty
+			IceTransitionCutEmpty:
+				"####" "#" 0 A_GiveInventory("DrainedBarrelCut",1)
+				BIR3 B 0
+				"####" "#" 0 A_PlaySound("weapons/CryoRifle/freezeobject")
+				Goto SeeEmpty
+			IceTransitionDent:
+				BIR4 A 0
+				"####" "#" 0 A_PlaySound("weapons/CryoRifle/freezeobject")
+				Goto SeeIce
+			IceTransitionBlood:
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"IceTransitionBloodHolesEmpty")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"IceTransitionBloodCutEmpty")
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"IceTransitionBloodHoles")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"IceTransitionBloodCut")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"IceTransitionBloodDent")
+				BAR5 A 0
+				"####" "#" 0 A_PlaySound("weapons/CryoRifle/freezeobject")
+				Goto SeeIce
+			IceTransitionBloodHoles:
+				BIR6 A 0
+				"####" "#" 0 A_PlaySound("weapons/CryoRifle/freezeobject")
+				Goto SeeIce
+			IceTransitionBloodCut:
+				BIR7 A 0
+				"####" "#" 0 A_PlaySound("weapons/CryoRifle/freezeobject")
+				Goto SeeIce
+			IceTransitionBloodHolesEmpty:
+				"####" "#" 0 A_GiveInventory("DrainedBarrel",1)
+				BIR6 B 0
+				"####" "#" 0 A_PlaySound("weapons/CryoRifle/freezeobject")
+				Goto SeeEmpty
+			IceTransitionBloodCutEmpty:
+				"####" "#" 0 A_GiveInventory("DrainedBarrelCut",1)
+				BIR7 B 0
+				"####" "#" 0 A_PlaySound("weapons/CryoRifle/freezeobject")
+				Goto SeeEmpty
+			IceTransitionBloodDent:
+				BIR8 A 0
+				"####" "#" 0 A_PlaySound("weapons/CryoRifle/freezeobject")
+				Goto SeeIce
+				
+////Flame Weapons Light It Up////////////////////////////////////////////////////////////////////////////
+			Pain.Fire:
+			Pain.Burn:
+			Pain.Flames:
+				//Checking If It Needs To Transition//
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"SeeFlame")
+				"####" "#" 0 A_TakeInventory("BarrelIsFrozen",1)
+				"####" "#" 0 A_GiveInventory("BarrelIsFlaming",1)
+				//Blood//
+				"####" "#" 0 A_JumpIfInventory("BloodyBarrel",1,"FlameTransitionBlood")
+				"####" "#" 0 A_JumpIfInventory("GreenBloodyBarrel",1,"FlameTransitionBlood")
+				"####" "#" 0 A_JumpIfInventory("BlueBloodyBarrel",1,"FlameTransitionBlood")
+				//Damage//
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"FlameTransitionHolesEmpty")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"FlameTransitionCutEmpty")
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"FlameTransitionHoles")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"FlameTransitionCut")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"FlameTransitionDent")
+				//Transition//
+				BFR1 A 0
+				"####" "#" 0 A_PlaySound("barrel/flameon")
+				Goto SeeFlame
+			FlameTransitionHoles:
+				BFR2 A 0
+				"####" "#" 0 A_PlaySound("barrel/flameon")
+				Goto SeeFlame
+			FlameTransitionCut:
+				BFR3 A 0
+				"####" "#" 0 A_PlaySound("barrel/flameon")
+				Goto SeeFlame
+			FlameTransitionHolesEmpty:
+				"####" "#" 0 A_GiveInventory("DrainedBarrel",1)
+				BFR2 B 0
+				"####" "#" 0 A_PlaySound("barrel/flameon")
+				Goto SeeEmpty
+			FlameTransitionCutEmpty:
+				"####" "#" 0 A_GiveInventory("DrainedBarrelCut",1)
+				BFR3 B 0
+				Goto SeeEmpty
+			FlameTransitionDent:
+				BFR4 A 0
+				"####" "#" 0 A_PlaySound("barrel/flameon")
+				Goto SeeFlame
+			FlameTransitionBlood:
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"FlameTransitionHolesEmpty")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"FlameTransitionCutEmpty")
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"FlameTransitionBloodHoles")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"FlameTransitionBloodCut")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"FlameTransitionBloodDent")
+				BFR1 A 0
+				"####" "###" 0 A_SpawnItemEx ("BloodMistBig",0,0,5,random (5, -5),random (5, -5),random (5, 8),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "#" 0 A_PlaySound("barrel/flameon")
+				"####" "#" 0 A_TakeInventory("BloodyBarrel")
+				"####" "#" 0 A_TakeInventory("RedBloodSplatterz")
+				"####" "#" 0 A_TakeInventory("GreenBloodSplatterz")
+				"####" "#" 0 A_TakeInventory("BlueBloodSplatterz")
+				Goto SeeFlame
+			FlameTransitionBloodHoles:
+				BFR2 A 0
+				"####" "###" 0 A_SpawnItemEx ("BloodMistBig",0,0,5,random (5, -5),random (5, -5),random (5, 8),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "#" 0 A_PlaySound("barrel/flameon")
+				"####" "#" 0 A_TakeInventory("BloodyBarrel")
+				"####" "#" 0 A_TakeInventory("RedBloodSplatterz")
+				"####" "#" 0 A_TakeInventory("GreenBloodSplatterz")
+				"####" "#" 0 A_TakeInventory("BlueBloodSplatterz")
+				Goto SeeFlame
+			FlameTransitionBloodCut:
+				BFR3 A 0
+				"####" "###" 0 A_SpawnItemEx ("BloodMistBig",0,0,5,random (5, -5),random (5, -5),random (5, 8),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "#" 0 A_PlaySound("barrel/flameon")
+				"####" "#" 0 A_TakeInventory("BloodyBarrel")
+				"####" "#" 0 A_TakeInventory("RedBloodSplatterz")
+				"####" "#" 0 A_TakeInventory("GreenBloodSplatterz")
+				"####" "#" 0 A_TakeInventory("BlueBloodSplatterz")
+				Goto SeeFlame
+			FlameTransitionBloodHolesEmpty:
+				"####" "#" 0 A_GiveInventory("DrainedBarrel",1)
+				BFR2 B 0
+				"####" "###" 0 A_SpawnItemEx ("BloodMistBig",0,0,5,random (5, -5),random (5, -5),random (5, 8),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "#" 0 A_PlaySound("barrel/flameon")
+				"####" "#" 0 A_TakeInventory("BloodyBarrel")
+				"####" "#" 0 A_TakeInventory("RedBloodSplatterz")
+				"####" "#" 0 A_TakeInventory("GreenBloodSplatterz")
+				"####" "#" 0 A_TakeInventory("BlueBloodSplatterz")
+				Goto SeeEmpty
+			FlameTransitionBloodCutEmpty:
+				"####" "#" 0 A_GiveInventory("DrainedBarrelCut",1)
+				BFR3 B 0
+				"####" "###" 0 A_SpawnItemEx ("BloodMistBig",0,0,5,random (5, -5),random (5, -5),random (5, 8),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "#" 0 A_PlaySound("barrel/flameon")
+				"####" "#" 0 A_TakeInventory("BloodyBarrel")
+				"####" "#" 0 A_TakeInventory("RedBloodSplatterz")
+				"####" "#" 0 A_TakeInventory("GreenBloodSplatterz")
+				"####" "#" 0 A_TakeInventory("BlueBloodSplatterz")
+				Goto SeeEmpty
+			FlameTransitionBloodDent:
+				BFR4 A 0
+				"####" "###" 0 A_SpawnItemEx ("BloodMistBig",0,0,5,random (5, -5),random (5, -5),random (5, 8),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "#" 0 A_PlaySound("barrel/flameon")
+				"####" "#" 0 A_TakeInventory("BloodyBarrel")
+				"####" "#" 0 A_TakeInventory("RedBloodSplatterz")
+				"####" "#" 0 A_TakeInventory("GreenBloodSplatterz")
+				"####" "#" 0 A_TakeInventory("BlueBloodSplatterz")
+				Goto SeeFlame
+				
+/////Knocked Over When Drained/////////////////////////////////////////////////////////////////////////////////////////////////
+			Death.Kick:
+			Death.Melee:
+			Death.ExtremePunches:
+			Death.Fatality:
+			KnockedOver:
+				"####" "#" 0 A_Changeflag("FRIENDLY", 0)
+				"####" "#" 0 A_Chase("","")
+				"####" "#" 1 A_FaceTarget
+				"####" "#" 0 A_Changeflag("FRIENDLY", 1)
+				"####" "#" 0 A_Changeflag ("Shootable", false)
+				"####" "#" 0 A_NoBlocking
+				"####" "#" 0 A_ChangeFlag("THRUACTORS", 1)
+				"####" "#" 0 A_PlaySound("barrel/pain")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"KnockedOverIce")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"KnockedOverFlame")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"KnockedOverNukageEmpty")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"KnockedOverNukageEmpty")
+				"####" "#" 0 A_SpawnItem("GrowingNukagePool")
+				"####" "#" 0 A_SpawnItemEx ("KickedBarrel",0,0,15,-5,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Stop
+			KnockedOverNukageEmpty: 
+				"####" "#" 0 A_SpawnItemEx ("KickedBarrel",0,0,15,-5,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Stop
+			KnockedOverIce:
+				"####" "#" 0 A_SpawnItemEx ("KickedBarrelIce",0,0,15,-8,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "#########################################" 0 A_CustomMissile ("IceShard7", 12, 0, random (150, 210), 2, random (0, 40))
+				"####" "#########################################" 0 A_CustomMissile ("IceShard10", 12, 0, random (150, 210), 2, random (0, 40))
+				Stop
+			KnockedOverFlame:
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"KnockedOverFlameEmpty")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"KnockedOverFlameEmpty")
+				"####" "#" 0 A_SpawnItemEx ("KickedBarrelFlame",0,0,15,-5,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "#" 0 A_PlaySound("barrel/flameon")
+				"####" "#####" 0 A_CustomMissile ("Flames", 24, 0, random (150, 210), 2, random (0, 40))
+				"####" "###########" 0 A_CustomMissile ("BarrelFireSpawner", 12, 0, random (150, 210), 2, random (0, 40))
+				"####" "######################" 0 A_CustomMissile ("BarrelFireSpawner", 24, 0, random (150, 210), 2, random (0, 40))
+				Stop
+			KnockedOverFlameEmpty:
+				"####" "#" 0 A_SpawnItemEx ("KickedBarrelFlame",0,0,15,-5,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Stop
+
+/////General Death States////////////////////////////////////////////////////////////////////////////////				
+			Death:	
+			Death.IceExplosion:
+			Death.FireExplosion:
+			Death.Explosive:
+			Death.Explosiveimpact:
+			Death.Shotgun:
+			Death.SSG:
+				"####" "#" 0 A_Changeflag ("Shootable", false)
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"EmptyDeath")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1,"EmptyDeath")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"IceDeath")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"FlameDeath")
+				BBLA AAABBC 1 BRIGHT 
+				"####" "#" 0 A_SpawnItemEx ("BarrelBlast",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+				Goto SpawnRemains
+			IceDeath:
+				"####" "#" 0 A_SpawnItemEx ("IceBarrelBlast",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Goto SpawnRemains
+			FlameDeath:
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_SpawnItemEx ("FlameBarrelBlast",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Goto SpawnRemains
+			EmptyDeath:
+				"####" "#" 0 A_Changeflag ("Shootable", false)
+				"####" "#" 0 A_PlaySound("barrel/pain")
+				"####" "###" 0 A_SpawnItemEx ("BarrelShrapnel1",0,0,5,random (5, -5),random (5, -5),random (5, 8),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "###" 0 A_SpawnItemEx ("BarrelShrapnel2",0,0,5,random (5, -5),random (5, -5),random (5, 8),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "###" 0 A_SpawnItemEx ("BarrelShrapnel3",0,0,5,random (5, -5),random (5, -5),random (5, 8),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Goto SpawnRemains
+			
+			Death.Plasma:	
+			Death.BFG:
+				"####" "#" 0 A_Changeflag ("Shootable", false)
+				TNT1 A 0 A_SpawnItemEx ("StunGrenadeExplosion",0,0,10,0,0,0,0,SXF_NOCHECKPOSITION,0)
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"EmptyDeath")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"IceDeathPlasma")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"FlameDeathPlasma")
+				BBLA AAABBC 1 BRIGHT 
+				"####" "#" 0 A_SpawnItemEx ("BarrelBlast",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+				Goto SpawnRemains
+			IceDeathPlasma:
+				"####" "#" 0 A_SpawnItemEx ("IceBarrelBlast",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Goto SpawnRemains
+			FlameDeathPlasma:
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_SpawnItemEx ("FlameBarrelBlast",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Goto SpawnRemains
+
+			Death.Desintigrate:
+				"####" "#" 0 A_Changeflag ("Shootable", false)
+				"####" "#" 0 A_SpawnItemEx ("BFGAltShockwave",0,0,30,0,0,0,0,SXF_NOCHECKPOSITION,0)
+				TNT1 A 0 A_SpawnItem("ACIDFOG",0,5)
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1,"EmptyDeath")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"IceDeathAcid")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"FlameDeathAcid")
+				BBLA AAABBC 1 BRIGHT 
+				"####" "#" 0 A_SpawnItemEx ("BarrelBlast",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+				Goto SpawnRemains
+			IceDeathAcid:
+				"####" "#" 0 A_SpawnItemEx ("IceBarrelBlast",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Goto SpawnRemains
+			FlameDeathAcid:
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_SpawnItemEx ("FlameBarrelBlast",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Goto SpawnRemains
+
+			Death.Blackhole:
+				"####" "#" 0 A_Changeflag ("Shootable", false)
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"BlackHoleIce")
+				"####" "#" 0 A_JumpIfInventory("BloodyBarrel",1,"BlackHoleBloody")
+				"####" "#" 0 A_JumpIfInventory("GreenBloodyBarrel",1,"BlackHoleBloody")
+				"####" "#" 0 A_JumpIfInventory("BlueBloodyBarrel",1,"BlackHoleBloody")
+				BARV ABCDEFGH 3
+				Stop
+			BlackHoleIce:
+				BARV IJKLMFGH 3
+				Stop
+			BlackHoleBloody:
+				BARV NOPDEFGH 3
+				Stop
+				
+			Death.Crush:
+				BBLA AAABC 1 BRIGHT 
+				"####" "#" 0 A_SpawnItemEx ("BarrelBlast",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"CrushIce")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"CrushFlame")
+			CrushNukage:
+				BAR9 A 0
+				Goto CrushEffects
+			CrushIce:
+				BIR9 A 0
+				Goto CrushEffects
+			CrushFlame:
+				BFR9 A 0
+				Goto CrushEffects
+			CrushEffects:
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_Changeflag ("Shootable", false)
+				"####" "#" 0 A_NoBlocking
+				"####" "#" 0 A_ChangeFlag("THRUACTORS", 1)
+				"####" "#" 0 A_PlaySound("barrel/pain")
+				"####" "#" 0 A_SpawnItem("GrowingNukagePool")
+				"####" "###" 0 A_SpawnItemEx ("BarrelShrapnel1",0,0,5,random (2, -2),random (2, -2),random (2, 4),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "###" 0 A_SpawnItemEx ("BarrelShrapnel2",0,0,5,random (2, -2),random (2, -2),random (2, 4),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "###" 0 A_SpawnItemEx ("BarrelShrapnel3",0,0,5,random (2, -2),random (2, -2),random (2, 4),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "#" 8
+				"####" "#" 0 A_PlaySound("barrel/pain")
+				"####" "###" 0 A_SpawnItemEx ("BarrelShrapnel1",0,0,5,random (5, -5),random (5, -5),random (5, 8),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "###" 0 A_SpawnItemEx ("BarrelShrapnel2",0,0,5,random (5, -5),random (5, -5),random (5, 8),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				"####" "###" 0 A_SpawnItemEx ("BarrelShrapnel3",0,0,5,random (5, -5),random (5, -5),random (5, 8),0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Goto SpawnRemains
+				
+			Death.BHFT:
+			Death.BHFTOnBarrel:
+				"####" "#" 0 A_Changeflag ("Shootable", false)
+				"####" "#" 0 A_GiveToTarget("HasExplosiveBarrel", 1)
+				"####" "#" 0 A_NoBlocking
+				"####" "#" 1
+				Stop 
+				
+			SpawnRemains:
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"SpawnRemainsIce")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"SpawnRemainsFlame")
+				TNT1 A 5
+				"####" "#" 0 A_SpawnItemEx ("BarrelRemains",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Stop
+			SpawnRemainsIce:
+				TNT1 A 5
+				"####" "#" 0 A_SpawnItemEx ("BarrelRemainsIce",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Stop
+			SpawnRemainsFlame:
+				TNT1 A 5
+				"####" "#" 0 A_SpawnItemEx ("BarrelRemainsFlame",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION | SXF_SETMASTER,0)
+				Stop
+////Insane Barrel Grabber Stuff////////////////////////////////////////////////////////////////////////////////
+			Inactive:
+			Active:
+				"####" "#" 0 A_ChangeFlag("USESPECIAL", 0)
+				"####" "#" 0 A_JumpIfInTargetInventory("CantDoAction",1, "See")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrel",1, "See")
+				"####" "#" 0 A_JumpIfInventory("DrainedBarrelCut",1, "See")
+				"####" "#" 0 A_JumpIfInTargetInventory("HasIceBarrel",1, "See")
+				"####" "#" 0 A_JumpIfInTargetInventory("HasBarrel",1, "See")
+				"####" "#" 0 A_JumpIfInTargetInventory("HasFlameBarrel",1, "See")
+				"####" "#" 0 A_JumpIfInTargetInventory("GrabbedIceBarrel",1, "See")
+				"####" "#" 0 A_JumpIfInTargetInventory("GrabbedBarrel",1, "See")
+				"####" "#" 0 A_JumpIfInTargetInventory("GrabbedFlameBarrel",1, "See")
+				"####" "#" 1 A_FaceTarget
+				"####" "#" 0 A_NoBlocking
+				"####" "#" 0 A_ChangeFlag("SHOOTABLE", false)
+				"####" "#" 0 A_PlaySound("barrel/pain")
+				//Elements//
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFrozen",1,"IceGrab")
+				"####" "#" 0 A_JumpIfInventory("BarrelIsFlaming",1,"FlameGrab")
+				//Blood//
+				"####" "#" 0 A_JumpIfInventory("BloodyBarrel",1,"BloodyGrab")
+				"####" "#" 0 A_JumpIfInventory("GreenBloodyBarrel",1,"BloodyGrab")
+				"####" "#" 0 A_JumpIfInventory("BlueBloodyBarrel",1,"BloodyGrab")
+				//Damage//
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"GrabHoles")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"GrabCut")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"GrabDent")
+			Grab:
+				"####" "#" 0 A_GiveToTarget("HasBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("Grab1", 1)
+				Stop
+			GrabHoles:
+				"####" "#" 0 A_GiveToTarget("HasBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("Grab2", 1)	
+				Stop
+			GrabCut:
+				"####" "#" 0 A_GiveToTarget("HasBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("Grab3", 1)	
+				Stop
+			GrabDent:
+				"####" "#" 0 A_GiveToTarget("HasBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("Grab4", 1)	
+				Stop
+			BloodyGrab:
+				//Damage//
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"BloodyGrabHoles")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"BloodyGrabCut")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"BloodyGrabDent")
+				"####" "#" 0 A_GiveToTarget("HasBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("Grab5", 1)	
+				Stop
+			BloodyGrabHoles:
+				"####" "#" 0 A_GiveToTarget("HasBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("Grab6", 1)	
+				Stop
+			BloodyGrabCut:
+				"####" "#" 0 A_GiveToTarget("HasBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("Grab7", 1)	
+				Stop
+			BloodyGrabDent:
+				"####" "#" 0 A_GiveToTarget("HasBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("Grab8", 1)	
+				Stop
+			IceGrab:
+				//Blood//
+				"####" "#" 0 A_JumpIfInventory("BloodyBarrel",1,"IceBloodyGrab")
+				"####" "#" 0 A_JumpIfInventory("GreenBloodyBarrel",1,"IceBloodyGrab")
+				"####" "#" 0 A_JumpIfInventory("BlueBloodyBarrel",1,"IceBloodyGrab")
+				//Damage//
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"IceGrabHoles")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"IceGrabCut")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"IceGrabDent")
+				"####" "#" 0 A_GiveToTarget("HasIceBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("IGrab1", 1)
+				Stop
+			IceGrabHoles:
+				"####" "#" 0 A_GiveToTarget("HasIceBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("IGrab2", 1)	
+				Stop
+			IceGrabCut:
+				"####" "#" 0 A_GiveToTarget("HasIceBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("IGrab3", 1)	
+				Stop
+			IceGrabDent:
+				"####" "#" 0 A_GiveToTarget("HasIceBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("IGrab4", 1)	
+				Stop
+			IceBloodyGrab:
+				//Damage//
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"IceBloodyGrabHoles")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"IceBloodyGrabCut")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"IceBloodyGrabDent")
+				"####" "#" 0 A_GiveToTarget("HasIceBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("IGrab5", 1)	
+				Stop
+			IceBloodyGrabHoles:
+				"####" "#" 0 A_GiveToTarget("HasIceBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("IGrab6", 1)	
+				Stop
+			IceBloodyGrabCut:
+				"####" "#" 0 A_GiveToTarget("HasIceBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("IGrab7", 1)	
+				Stop
+			IceBloodyGrabDent:
+				"####" "#" 0 A_GiveToTarget("HasIceBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("IGrab8", 1)	
+				Stop
+			FlameGrab:
+				//Blood//
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_JumpIfInventory("BloodyBarrel",1,"FlameBloodyGrab")
+				"####" "#" 0 A_JumpIfInventory("GreenBloodyBarrel",1,"FlameBloodyGrab")
+				"####" "#" 0 A_JumpIfInventory("BlueBloodyBarrel",1,"FlameBloodyGrab")
+				//Damage//
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"FlameGrabHoles")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"FlameGrabCut")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"FlameGrabDent")
+				"####" "#" 0 A_GiveToTarget("HasFlameBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("FGrab1", 1)
+				Stop
+			FlameGrabHoles:
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_GiveToTarget("HasFlameBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("FGrab2", 1)	
+				Stop
+			FlameGrabCut:
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_GiveToTarget("HasFlameBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("FGrab3", 1)	
+				Stop
+			FlameGrabDent:
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_GiveToTarget("HasFlameBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("FGrab4", 1)	
+				Stop
+			FlameBloodyGrab:
+				//Damage//
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_JumpIfInventory("HasHoles",1,"FlameBloodyGrabHoles")
+				"####" "#" 0 A_JumpIfInventory("HasCut",1,"FlameBloodyGrabCut")
+				"####" "#" 0 A_JumpIfInventory("HasDent",1,"FlameBloodyGrabDent")
+				"####" "#" 0 A_GiveToTarget("HasFlameBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("FGrab5", 1)	
+				Stop
+			FlameBloodyGrabHoles:
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_GiveToTarget("HasFlameBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("FGrab6", 1)	
+				Stop
+			FlameBloodyGrabCut:
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_GiveToTarget("HasFlameBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("FGrab7", 1)	
+				Stop
+			FlameBloodyGrabDent:
+				"####" "#" 0 A_RemoveChildren(TRUE,RMVF_MISC)
+				"####" "#" 0 A_GiveToTarget("HasFlameBarrel", 1)
+				"####" "#" 0 A_GiveToTarget("FGrab8", 1)	
+				Stop
+}}

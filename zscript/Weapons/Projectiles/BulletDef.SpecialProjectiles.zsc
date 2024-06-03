@@ -1,0 +1,411 @@
+//[inkoalawetrust]: Make the ripping nailgun projectiles stick on the last actor they rip.
+//NOTE: This uses the tracer pointer because PB_Projectile has +HITTRACER on by default.
+//TODO: Somehow make them move relative to moving sectors like doors and lifts ? Also have them break or something if they end up moving into the floor.
+Mixin Class PB_NailgunGlue
+{
+	Override Void OnExplode (Int Type)
+	{
+		Super.OnExplode (Type);
+		
+		bNoGravity = True;
+		//IDEA: Maybe for bleeding actors have the nail spawn the actors' blood occasionally on the spot it landed at ? Especially for larger ones like javelins.
+		//BUG: Due to Brutal Spaghetti, this will often lead to nails sticking on those stupid headshot targets that immediately despawn. No way around it.
+		If ((Type == EType_Actor || Type == EType_BleedingActor))
+		{
+			StickOnVictim = True;
+			HitOffsets = Level.Vec3Diff (Tracer.Pos,Pos);
+			If (Type == EType_BleedingActor && GetClassName() != "PB_MGNailHot" && GetClassName() != "PB_JavelinProjectile_Hot")
+				BleedAmount = Random (16,32);
+		}
+	}
+	
+	Bool StickOnVictim;
+	Vector3 HitOffsets;
+	Int BleedAmount; //How many times the final victim of the nail should bleed. Only appears on standard nails and javelins.
+	
+	Override Void Tick()
+	{
+		Super.Tick();
+		
+		//If you are supposed to stick on victims, check if you hit (No longer a missile), and if you have a pointer to the victim.
+		If ((!IsFrozen() || Tracer && Tracer.bNoTimeFreeze) && StickOnVictim && !bMissile && Tracer && Tracer.bSolid)
+		{
+			SetOrigin (PB_Math.Vec3OffsetRelative (Tracer,HitOffsets),True); //https://www.youtube.com/watch?v=EXjfvx-k1Ms
+			If (BleedAmount && Random (0, 255) < 16)
+			{
+				BleedAmount--;
+				SpawnBlood (Pos,AngleTo (Tracer),20);
+			}
+		}
+		
+		If (bNoGravity && StickOnVictim && Tracer && !Tracer.bSolid) //Victim died and fell, fall down too now that you're unstuck.
+		{
+			bNoGravity = StickOnVictim = False;
+			Gravity = 1.0;
+		}
+	}
+}
+
+class PB_MGNail : PB_Projectile
+{
+	INT LIFETIME;
+
+	Default
+	{
+		PB_Projectile.BaseDamage 20;
+		PB_Projectile.RipperCount 5;
+		Damagetype "Nail";
+		DeathSound "Weapons/NailHit";
+		Scale 0.5;
+		Gravity 0.75;
+		Speed 100;
+		RenderStyle "Normal";
+		
+		Obituary "%o was filled with nails by %k.";
+	}
+	
+	Mixin PB_NailgunGlue;
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0;
+			NLPJ A 1 A_StartSound("Weapons/NailFlight", CHAN_BODY, CHANF_LOOP, 1.0 );
+			Goto Fly;
+		Fly:
+			TNT1 A 0;
+			NLPJ A 1;
+			Loop;
+		Crash:
+		Death:
+			TNT1 A 0 { LIFETIME = 10; }
+			TNT1 A 0 A_StopSound(CHAN_BODY);
+			TNT1 A 0 A_SpawnItemEx("HitPuff");
+			TNT1 A 0 A_Stop();
+			NLPJ A 70;
+// 			NLPJ A 4200;
+// 			NLPJ AAAAA 1 A_FadeOut(0.2,FTF_REMOVE | FTF_CLAMP);
+// 			Stop;
+		Hanging:
+			NLPJ A 20;
+			TNT1 A 0 {
+				LIFETIME--;
+				A_JumpIf(LIFETIME <= 0, "Fade");
+				return A_CheckBlock("Hanging", 0, 0, (RADIUS / 2) + 1);
+			}
+		Drop:
+			TNT1 A 0 {
+				bNOINTERACTION = false;
+				bNOGRAVITY = false;
+				bTHRUACTORS = true;
+			}
+		Fade:
+			NLPJ A 1 A_FadeOut(0.2,FTF_REMOVE | FTF_CLAMP);
+			Wait;
+		XDeath:
+			TNT1 A 0 A_StopSound(CHAN_BODY);
+			NLPJ A 0 A_StartSound("Weapons/NailHitBleed");
+			NLPJ A 70;
+			NLPJ A 4200;
+			NLPJ A 1 A_FadeOut(0.2,FTF_REMOVE | FTF_CLAMP);
+			Wait;
+	}
+}
+
+class PB_MGNailHot : PB_MGNail
+{
+	Default
+	{
+		PB_Projectile.BaseDamage 25;
+		PB_Projectile.RipperCount 6;
+		
+		Damagetype "Nail";
+		Speed 120;
+		Obituary "%o was filled with hot nails by %k.";
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0;
+			NLPJ B 1 BRIGHT A_StartSound("Weapons/NailFlight", CHAN_BODY, CHANF_LOOP, 1.0 );
+			Goto Fly;
+		Fly:
+			TNT1 A 0;
+			NLPJ B 1 BRIGHT A_SpawnItemEx("GunFireSmoke",0,0,-2,-7);
+			Loop;
+		Crash:
+		Death:
+			TNT1 A 0 { LIFETIME = 10; }
+			TNT1 A 0 A_StopSound(CHAN_BODY);
+			TNT1 A 0 A_SpawnItemEx("HitPuff");
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-45, 45), random (-45, 45));
+			TNT1 A 0 A_SpawnItem("ExplosionParticleSpawner");
+			TNT1 A 0 A_Stop();
+			TNT1 A 0 A_SpawnItemEx("GunFireSmoke",0,0,-2,-7);
+			NLPJ B 70 BRIGHT A_SpawnItemEx("GunFireSmoke",0,0,-2,-7);
+			TNT1 A 0 A_SpawnItemEx("GunFireSmoke",0,0,-2,-7);
+// 			NLPJ A 4200;
+// 			NLPJ AAAAA 1 A_FadeOut(0.2,FTF_REMOVE | FTF_CLAMP);
+// 			Stop;
+		Hanging:
+			NLPJ A 20;
+			TNT1 A 0 {
+				LIFETIME--;
+				A_JumpIf(LIFETIME <= 0, "Fade");
+				return A_CheckBlock("Hanging", 0, 0, (RADIUS / 2) + 1);
+			}
+		Drop:
+			TNT1 A 0 {
+				bNOINTERACTION = false;
+				bNOGRAVITY = false;
+				bTHRUACTORS = true;
+			}
+		Fade:
+			NLPJ A 1 A_FadeOut(0.2,FTF_REMOVE | FTF_CLAMP);
+			Wait;
+		XDeath:
+			TNT1 A 0 A_StopSound(CHAN_BODY);
+			NLPJ B 0 A_StartSound("Weapons/NailHitBleed");
+			NLPJ B 70;
+			NLPJ B 4200;
+			NLPJ B 1 A_FadeOut(0.2,FTF_REMOVE | FTF_CLAMP);
+			Wait;
+	}
+}
+
+class PB_JavelinProjectile : PB_Projectile
+{
+	INT LIFETIME;
+	
+	Default
+	{
+		PB_Projectile.BaseDamage 360;
+		PB_Projectile.RipperCount 4;
+		
+		Damagetype "Blast";
+		DeathSound "Weapons/NailHit";
+		Scale 1.2;
+		Speed 75;
+		Radius 6;
+		Height 6;
+		RenderStyle "Normal";
+		Gravity 0.10;
+		
+		Obituary "%o was nailed by %k.";
+	}
+	
+	Mixin PB_NailgunGlue;
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0;
+			NAIL B 1 BRIGHT A_StartSound("Weapons/NailFlight", CHAN_BODY,CHANF_LOOP, 1.0);
+			Goto Fly;
+		Fly:
+			TNT1 A 0;
+			NAIL B 1;
+			Loop;
+		Crash:
+		Death:
+			TNT1 A 0 { LIFETIME = 10; }
+			TNT1 A 0
+			{
+				A_StopSound(CHAN_BODY);
+				bNOGRAVITY = true;
+				A_SpawnItemEx("HitPuff");
+				A_Stop();
+				
+				for(int i = 0; i < 4; i++)
+				{
+					A_SpawnProjectile ("HitSpark", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
+					A_SpawnProjectile ("HitSpark22", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
+					A_SpawnProjectile ("HitSpark23", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
+				}
+			}
+// 			NAIL B 70 ;
+// 			NAIL BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB 1 A_FadeOut(0.02);
+// 			Stop;
+		Hanging:
+			NAIL B 20;
+			TNT1 A 0 {
+				LIFETIME--;
+				A_JumpIf(LIFETIME <= 0, "Fade");
+				return A_CheckBlock("Hanging", 0, 0, (RADIUS / 2) + 1);
+			}
+		Drop:
+			TNT1 A 0 {
+				bNOINTERACTION = false;
+				bNOGRAVITY = false;
+				bTHRUACTORS = true;
+			}
+		Fade:
+			NAIL B 1 A_FadeOut(0.2,FTF_REMOVE | FTF_CLAMP);
+			Wait;
+		XDeath:
+			TNT1 A 0 A_StopSound(CHAN_BODY);
+			NAIL B 0 A_StartSound("Weapons/NailHitBleed");
+			NAIL B 70 ;
+			Goto Fade;
+	}
+}
+
+class PB_JavelinProjectile_Hot : PB_Projectile
+{
+	INT LIFETIME;
+	
+	Default
+	{
+		PB_Projectile.BaseDamage 420; //Extra devious blunt.
+		PB_Projectile.RipperCount 7;
+		
+		Damagetype "Blast";
+		DeathSound "Weapons/NailHit";
+		Scale 1.2;
+		Speed 100;
+		Radius 6;
+		Height 6;
+		RenderStyle "Normal";
+		Gravity 0.10;
+		
+		Obituary "%o was crucified by %k.";
+	}
+	
+	Mixin PB_NailgunGlue;
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0;
+			NAIL A 1 BRIGHT A_StartSound("Weapons/NailFlight", CHAN_BODY, CHANF_LOOP, 1.0);
+			Goto Fly;
+		Fly:
+			TNT1 A 0;
+			NAIL A 1 BRIGHT A_SpawnItemEx("GunFireSmoke",0,0,-2,-7);
+			Loop;
+		Crash:
+		Death:
+			TNT1 A 0 { LIFETIME = 10; }
+			TNT1 A 0
+			{
+				A_StopSound(CHAN_BODY);
+				bNOGRAVITY = true;
+				A_SpawnItem("HitPuff");
+				A_Stop();
+				
+				for(int i = 0; i < 4; i++)
+				{
+					A_SpawnProjectile ("HitSpark", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
+					A_SpawnProjectile ("HitSpark22", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
+					A_SpawnProjectile ("HitSpark23", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
+					A_SpawnItemEx("TinyBurningPiece", random (-45, 45), random (-45, 45));
+				}
+			}
+			TNT1 A 0 A_SpawnItemEx ("RedFlare",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			TNT1 A 0 A_SpawnItem("ExplosionParticleSpawner");
+//			NAIL B 70 ;
+// 			NAIL BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB 1 A_FadeOut(0.02);
+// 			Stop;
+		Hanging:
+			NAIL B 20;
+			TNT1 A 0 {
+				LIFETIME--;
+				A_JumpIf(LIFETIME <= 0, "Fade");
+				return A_CheckBlock("Hanging", 0, 0, (RADIUS / 2) + 1);
+			}
+		Drop:
+			TNT1 A 0 {
+				bNOINTERACTION = false;
+				bNOGRAVITY = false;
+				bTHRUACTORS = true;
+			}
+		Fade:
+			NAIL B 1 A_FadeOut(0.2,FTF_REMOVE | FTF_CLAMP);
+			Wait;
+		XDeath:
+			TNT1 A 0 A_StopSound(CHAN_BODY);
+			NAIL A 0 A_StartSound("Weapons/NailHitBleed");
+			NAIL B 70 ;
+			Goto Fade;
+	}
+}
+
+class PB_MicroMissileProjectile : PB_Projectile
+{
+	Default
+	{
+		Radius 6;
+		Height 6;
+		Speed 45;
+		DamageType "Explosive";
+		Gravity 0.1;
+		Scale 0.38;
+		Decal "Scorch";
+		SeeSound "weapons/RLL";
+		Obituary "$OB_MPROCKET";
+		-NOGRAVITY;
+		
+		PB_Projectile.BaseDamage 35;
+		PB_Projectile.RipperCount 0;
+	}
+	
+	States
+	{
+		Spawn:
+			MICR A 1 BRIGHT;
+			MICR A 1 BRIGHT A_StartSound("weapons/rocketloop",105,CHANF_LOOP);
+		Fly:
+			MICR AAAABBBBCCCCAAAABBBBCCCC 1 Bright Light("ROCKET")
+			{
+				if(waterlevel < 1)
+					A_SpawnItemEx("RocketTrailSparks",-10,0,0,-5,0,0);
+			}
+		Fly2: //for makin it fly off in different directions
+			MICR AAABBBCCC 1 Bright Light("ROCKET")
+			{
+				A_Weave(3,3,frandom(-5,5),frandom(-5,5));
+				if(waterlevel < 1)
+					A_SpawnItemEx("RocketTrailSparks",-10,0,0,-5,0,0);
+			}
+			loop;
+		Crash:
+		XDeath:
+		Death:
+			TNT1 A 0 {
+				A_Stop();
+				bNOINTERACTION = true;
+				bNOGRAVITY = true;
+			}
+			TNT1 A 0;
+			TNT1 A 0
+			{
+				A_Explode((90), 60);
+				A_StopSound(105);
+				A_StartSound("FAREXPL", CHAN_AUTO,CHANF_OVERLAP,0.5,0,1.1);
+				Radius_Quake (2, 4, 0, 7, 0);
+				A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("LiquidExplosionEffectSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnProjectile ("ExplosionSmokeFast22", 0, 0, random (0, 360), 2, random (0, 360));
+				A_SpawnProjectile ("MediumExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360));
+				A_SpawnProjectile ("PBExplosionparticles", 0, 0, random (0, 360), 2, random (40, 90));
+				A_SpawnProjectile ("PBExplosionparticles2", 0, 0, random (0, 360), 2, random (40, 90));
+				A_SpawnProjectile ("PBExplosionparticles3", 10, 0, random (0, 360), 2, random (40, 90));
+			}
+			TNT1 A 0 A_Jump(256, "Spawn1", "Spawn2", "Spawn3");
+		Spawn1:
+			X004 ABCDE 1 bright Light("EXPLOSIONFLASH");
+			X004 FGHIJKLMNOPQ 1 bright;
+			stop;
+		Spawn2:
+			X003 ABCDE 1 bright Light("EXPLOSIONFLASH");
+			X003 FGHIJKLMNOPQRSTUVWXYZ 1 bright;
+			stop;
+		Spawn3:
+			X125 ABCDE 1 bright Light("EXPLOSIONFLASH");
+			X125 FGHIJKLMNOPQR 1 bright;
+			Stop;
+	}
+}

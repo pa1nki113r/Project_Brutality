@@ -1,3 +1,5 @@
+//This script is only for token purposes only.
+
 Actor UseEquipment: Inventory {Inventory.maxamount 1}
 Actor ToggleEquipment: Inventory{Inventory.maxamount 1}
 
@@ -19,9 +21,12 @@ Actor DualFireReload: Inventory {Inventory.maxamount 2}
 //Actions observed by the AI!
 Actor PlayerIsThrowingAGrenade : Inventory {inventory.maxamount 1}
 Actor CantWeaponSpecial : Inventory {inventory.maxamount 1}
+Actor DoingHelmetAnim : Inventory {inventory.maxamount 1}
 
 
-
+// All of this is no longer used!
+// PB_Weapon has been moved to ZScript, thanks to A_D_M_E_R_A_L.
+/*
 Actor PB_Weapon : PB_WeaponBase
 {
 
@@ -65,14 +70,18 @@ States
 	Melee_Equipment_Handler_Overlay:
 		TNT1 A 1 {
 			
-			if(JustPressed(BT_USER1) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment()) {
+			if(JustPressed(BT_USER1) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() &&
+			!CheckInventory("GoFatality",1) && !CheckInventory("CantDoAction",1)) 
+			{
 				A_OverlayOffset(PSP_WEAPON, 0, 32);
 				PB_SetUsingEquipment(true);
 				A_Overlay(PSP_WEAPON, "UseEquipment");
 				A_OverlayOffset(PSP_WEAPON, 0, 32);
 			}
 		
-			if(JustPressed(BT_USER2) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() && !CheckInventory("Zoomed", 1)) {
+			if(JustPressed(BT_USER2) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() && !CheckInventory("Zoomed", 1)
+			&& !CheckInventory("GoFatality",1) && !CheckInventory("CantDoAction",1)) 
+			{
 				A_OverlayOffset(PSP_WEAPON, 0, 32);
 				PB_SetUsingMelee(true);
 				A_Overlay(PSP_WEAPON, "QuickMelee");
@@ -82,8 +91,9 @@ States
 		Loop
 	KickHandler_Overlay:
 		TNT1 A 1 {
-			if(JustPressed(BT_USER4) && !PB_usingKick() && !PB_executingEnemy() && !CheckInventory("Zoomed", 1) && PB_MeleeAttackKickCheck()
-			) {
+			if(JustPressed(BT_USER4) && !PB_usingKick() && !PB_executingEnemy() && !CheckInventory("Zoomed", 1) && PB_MeleeAttackKickCheck() &&
+			!CheckInventory("GoFatality",1)) 
+			{
 				PB_SetUsingKick(true);
 				A_OverlayOffset(-999, 0, 32);
 				A_Overlay(-999, "DoKick");
@@ -94,6 +104,9 @@ States
 		
 	// Initialize Weapon upon selection
 	GoingToReady:
+		TNT1 A 0 A_JumpIfInventory ("HasBarrel", 1, "ReadyBarrel")
+		TNT1 A 0 A_JumpIfInventory ("HasFlameBarrel", 1, "ReadyFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("HasIceBarrel", 1, "ReadyIceBarrel")
 	SelectingAnimation:
 		//TNT1 A 0 A_ClearOverlays(2)
 		TNT1 A 0 {
@@ -119,8 +132,10 @@ States
 	// This will make combat more responsive and help with players reloading in a pinch
 	SelectFirstPersonLegs:
 	    TNT1 A 0 A_StopSound(1)
+		TNT1 A 0 A_StopSound(CHAN_VOICE)
 		TNT1 A 0 A_StopSound(5)
 		TNT1 A 0 A_StopSound(6)
+		TNT1 A 0 A_StopSound(7)
 		TNT1 A 0 A_TakeInventory("Spin",1)
 		//TNT1 A 0 A_Overlay(10, "Flash")
 		TNT1 A 0 A_TakeInventory("CantWeaponSpecial",1) //Fixes bug with Weapon Special Key no longer working when changing SGL grenade type or RL missile mode
@@ -158,7 +173,13 @@ States
 		Loop
 		
 	Steady:
-		TNT1 A 1
+		TNT1 A 1 {
+			// New 
+			PB_SetUsingKick(false);
+			PB_SetUsingMelee(false);
+			PB_SetUsingEquipment(false);
+			PB_SetExecutingEnemy(false);
+		}
 		Goto GoingToReady
 		
 	//First Person Legs in Doom
@@ -332,18 +353,25 @@ States
 			
 		//NEW EQUIPMENT SYSTEM
 		UseEquipment:
+			TNT1 A 0 A_JumpIfInventory("CantDoAction",1,"FailOverlay")
+			TNT1 A 0 A_JumpIfHealthLower(0, "FailOverlay")
 			TNT1 A 0 {
-// 				A_ClearOverlays(10,11);
-// 				A_ClearOverlays(3,4);
-				A_ClearOverlays(3,65);
+				A_ClearOverlays(-10,65);
 				A_GunFlash("Null"); //Fixes the Minigun heat overlay oversight
 				A_TakeInventory("Zoomed", 1);
 				A_TakeInventory("RailgunInfrared", 1);
 				A_Zoomfactor(1.0);
 				A_GiveInventory("KeepLaserDeactivated",1);
+				A_StopSound(CHAN_WEAPON);
+				A_StopSound(CHAN_VOICE);
+				A_StopSound(CHAN_6);
+				A_StopSound(CHAN_7);
 			}
 			TNT1 A 0 A_TakeInventory("UseEquipment", 1)
 			TNT1 A 0 A_GiveInventory("KeepLaserDeactivated",1)
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 			TNT1 A 0 A_JumpIfInventory("FragGrenadeSelected", 1, "ThrowGrenade")
 			TNT1 A 0 A_JumpIfInventory("ProximityMineSelected", 1, "ThrowMine")
 			TNT1 A 0 A_JumpIfInventory("StunGrenadeSelected", 1, "ThrowStun")
@@ -353,7 +381,7 @@ States
 			
 			
 			Goto GoingToReady
-		
+			
 		WheelCancelEquipment:
 			TNT1 A 0
 				{
@@ -584,6 +612,7 @@ States
 		
 	ThrowGrenade:
 		TNT1 A 0 A_StopSound(6)
+		TNT1 A 0 A_StopSound(CHAN_VOICE)
 		TNT1 A 0 A_ZoomFactor(1.0)
 		TNT1 A 0 A_TakeInventory("ADSMode", 1)
 		TNT1 A 0 A_TakeInventory("UseEquipment", 1)
@@ -592,9 +621,21 @@ States
 		Goto GoingToReady
 // 		TNT1 A 0 A_Giveinventory("PB_LockScreenTilt",1)
 		TNT1 A 0 A_Giveinventory("PlayerIsThrowingAGrenade",1)
-		HNDF ABCDEFGHI 1 A_SetRoll(roll+2.0, SPF_INTERPOLATE)
+		
+		HNDF ABCDE 1 A_SetRoll(roll+2.0, SPF_INTERPOLATE)
+		HNDF FGHI 1 {
+			A_SetRoll(roll+2.0, SPF_INTERPOLATE);
+			if(JustPressed(BT_USER1)) {
+				A_GiveInventory("UseEquipment",1);
+				}
+			}
 		TNT1 A 0 A_PlaySoundEx("OPNGRN", "Auto")
-		HNDF JKLMNOPQR 1 A_SetRoll(roll+2.0, SPF_INTERPOLATE)
+		HNDF JKLMNOPQR 1 {
+			A_SetRoll(roll+2.0, SPF_INTERPOLATE);
+			if(JustPressed(BT_USER1)) {
+				A_GiveInventory("UseEquipment",1);
+				}
+			}
 		TNT1 A 0 A_JumpIfInventory("UseEquipment", 1, "TossGrenade")
 		TNT1 A 1 A_SetRoll(roll-18.0)
 		HND1 I 1 A_PlaySoundEx("THRGRN", "Auto")
@@ -654,11 +695,18 @@ States
 	// The quick melee is going to be reworked, knife combos are tacky and bloat the code
 	// The quick melee should have a primary purpose of executing enemies or finishing them off to the point where they can be executed
 	QuickMelee:
-		
-		TNT1 AAA 1 PB_Execute() // Check if monster can be executed, jump to execution handler instead
-		
+		TNT1 A 0 A_StopSound(CHAN_WEAPON)
+		TNT1 A 0 A_StopSound(CHAN_VOICE)
+		TNT1 A 0 A_StopSound(CHAN_6)
+		TNT1 A 0 A_StopSound(CHAN_7)
+		TNT1 A 0 A_JumpIfInventory("CantDoAction",1,"FailOverlay")
+		TNT1 A 0 A_JumpIfHealthLower(0, "FailOverlay")
+		TNT1 A 0 A_ClearOverlays(-10,65)
+		TNT1 A 0 A_Gunflash("Null")
+		TNT1 AAA 0 PB_Execute() // Check if monster can be executed, jump to execution handler instead
+	GoMeleeInstead:
 		TNT1 A 0 {
-			A_Overlay(4, "FlashPunching");
+			A_Overlay(PSP_FLASH, "FlashPunching");
 			A_GiveInventory("HasCutingWeapon", 1);
 			//A_GiveInventory("Punching",1);
 			A_TakeInventory("Zoomed",1);
@@ -706,12 +754,17 @@ States
 			A_TakeInventory("HasCutingWeapon", 1);
 			PB_SetUsingMelee(false);
 		}
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		Goto Ready3
 	
 		
 ////////////////////////////////////////////////KNIFE COMBO//////////////////////////////////////////////////////////////
 		
     DoKick:
+		TNT1 A 0 A_JumpIfInventory("PlayerIsDead",1,"FailOverlay")
+		TNT1 A 0 A_JumpIfHealthLower(0, "FailOverlay")
 		TNT1 A 0 {
 			//A_Giveinventory("PB_LockScreenTilt",1);
 			A_Overlay(-10, "FirstPersonLegsKickRight");
@@ -727,10 +780,20 @@ States
 		KIC1 A 1 {
 			A_PlaySoundEx("KICK", "Auto");
 			SetPlayerProperty(0,1,0);
-			if(PB_WeaponIsInReadyState())
+			if(CountInv("GrabbedBarrel") == 1) {
+				A_Overlay(PSP_WEAPON, "FlashBarrelKicking");
+			}
+			if(CountInv("GrabbedIceBarrel") == 1) {
+				A_Overlay(PSP_WEAPON, "FlashBarrelKicking");
+			}
+			if(CountInv("GrabbedFlameBarrel") == 1) {
+				A_Overlay(PSP_WEAPON, "FlashBarrelKicking");
+			}
+			else if(PB_WeaponIsInReadyState())
 			{
 				A_Overlay(PSP_WEAPON, "FlashKicking");
 				A_OverlayOffset(PSP_WEAPON, 0, 32);
+				A_GunFlash("Null");
 			}
 			A_SetAngle(-0.5 + angle, SPF_INTERPOLATE);
 			A_SetPitch(+0.5 + pitch, SPF_INTERPOLATE);
@@ -803,19 +866,47 @@ States
 			A_Overlay(-10, "FirstPersonLegsStand");
 		}
 		Stop
+	
+	FailOverlay:
+		TNT1 A 0 A_StopSound(CHAN_WEAPON)
+		TNT1 A 0 A_StopSound(CHAN_VOICE)
+		TNT1 A 0 A_StopSound(CHAN_6)
+		TNT1 A 0 A_StopSound(CHAN_7)
+		TNT1 A 0 A_JumpIfInventory("CantDoAction",1,1)
+		Goto StopFail
+		TNT1 A 0 A_JumpIf(Health > 0, 2)
+		TNT1 A 1 {
+			PB_SetUsingKick(false);
+			PB_SetUsingMelee(false);
+			PB_SetUsingEquipment(false);
+			PB_SetExecutingEnemy(false);
+			}
+		Loop
+	StopFail:
+		TNT1 AA 0
+		TNT1 A 1 A_SetInventory("CantDoAction",0)
+		TNT1 A 1
+		Stop
 		
 	SlideKick:
 		TNT1 A 0 {
 			A_GiveInventory("KeepLaserDeactivated",1);
 			A_GiveInventory("IsSlideKicking", 1);
-			if(PB_WeaponIsInReadyState())
+			if(CountInv("GrabbedBarrel") == 1) {
+				A_Overlay(PSP_WEAPON, "FlashBarrelSlideKicking");
+			}
+			if(CountInv("GrabbedIceBarrel") == 1) {
+				A_Overlay(PSP_WEAPON, "FlashBarrelSlideKicking");
+			}
+			if(CountInv("GrabbedFlameBarrel") == 1) {
+				A_Overlay(PSP_WEAPON, "FlashBarrelSlideKicking");
+			}
+			else if(PB_WeaponIsInReadyState())
 			{
 				A_Overlay(PSP_WEAPON, "FlashSlideKicking");
+				A_GunFlash("Null");
 				A_OverlayOffset(PSP_WEAPON, 0, 32);
 			}
-			
-			
-			
 			A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, true);
 			}
 		SLDK A 1 A_ZoomFactor(0.90)
@@ -838,9 +929,19 @@ States
 		}
 	LowerKick:
 		TNT1 A 0 {
-			if(PB_WeaponIsInReadyState())
+			if(CountInv("GrabbedBarrel") == 1) {
+				A_Overlay(PSP_WEAPON, "FlashBarrelSlideKickingStop");
+			}
+			if(CountInv("GrabbedIceBarrel") == 1) {
+				A_Overlay(PSP_WEAPON, "FlashBarrelSlideKickingStop");
+			}
+			if(CountInv("GrabbedFlameBarrel") == 1) {
+				A_Overlay(PSP_WEAPON, "FlashBarrelSlideKickingStop");
+			}
+			else if(PB_WeaponIsInReadyState())
 			{
 				A_Overlay(PSP_WEAPON, "FlashSlideKickingStop");
+				A_GunFlash("Null");
 				A_OverlayOffset(PSP_WEAPON, 0, 32);
 			}
 			A_ZoomFactor(1.0);
@@ -862,9 +963,19 @@ States
 		TNT1 A 0 {
 			A_PlaySound("KICK", 6);
 			A_Recoil (-6);
-			if(PB_WeaponIsInReadyState())
+			if(CountInv("GrabbedBarrel") == 1) {
+				A_Overlay(PSP_WEAPON, "FlashBarrelAirKicking");
+			}
+			if(CountInv("GrabbedIceBarrel") == 1) {
+				A_Overlay(PSP_WEAPON, "FlashBarrelAirKicking");
+			}
+			if(CountInv("GrabbedFlameBarrel") == 1) {
+				A_Overlay(PSP_WEAPON, "FlashBarrelAirKicking");
+			}
+			else if(PB_WeaponIsInReadyState())
 			{
 				A_Overlay(PSP_WEAPON, "FlashAirKicking");
+				A_GunFlash("Null");
 				A_OverlayOffset(PSP_WEAPON, 0, 32);
 			}
 			A_OverlayOffset(PSP_WEAPON, 0, 32);
@@ -902,27 +1013,419 @@ States
 		
 	GrabEnemy:	
 	    TNT1 A 0
-		TNT1 A 0 A_ClearOverlays(3,65)
+		TNT1 A 0 A_ClearOverlays(-10,65)
 	    TNT1 A 0 A_PlaySound("weapons/fistwhoosh")
         PKUP ABCDEF 1
 		TNT1 AAAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
-	GrabBarrel:
-		TNT1 A 0 A_ClearOverlays(3,65)
+	
+	
+	
+	/////BARREL THROWER BY PopeOfDope69///////////////////////////////////////////////////////////////
+//There is so much shit i had to cram into the weapons to make this 
+//convoluted daisy chain of code function, but on god i feel untouchable
+
+//Raise		
+	ReadyBarrel:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_ClearOverlays(-10,65)
+		TNT1 A 0 A_ClearOverlays(10,11)
+		TNT1 A 0 A_Stopsound(1)
+		TNT1 A 0 A_StopSound(CHAN_VOICE)
+		TNT1 A 0 A_Stopsound(5)
+		TNT1 A 0 A_StopSound(6)
 		TNT1 A 0 A_Takeinventory("HasUnloaded",1)
 		TNT1 A 0 A_Takeinventory("Unloading",1)
 		TNT1 A 0 A_Takeinventory("Zoomed",1)
-        TNT1 A 0 A_ZoomFactor(1.0)
-	    TNT1 A 0 A_PlaySound("weapons/fistwhoosh")
-		TNT1 A 0 A_TakeInventory("GrabbedBarrel", 1)
-		TNT1 A 0 A_TakeInventory("GrabbedIceBarrel", 1)
-		TNT1 A 0 A_TakeInventory("GrabbedBurningBarrel", 1)
-		PKPB ABC 1
-		TNT1 A 0 A_PlaySound("weapons/ultrwhoosh", 5)
-		PKPB DEFGH 1
-		TNT1 A 0 A_SelectWeapon("BarrelThrower")
-		TNT1 AAAAAAAAAAAAAAAAAAA 0 A_Lower
-		Wait
+		TNT1 A 0 A_ZoomFactor(1.0)
+		BANE ABCDEFG 1
+		TNT1 A 0 A_TakeInventory("HasBarrel",1)
+		TNT1 A 0 A_GiveInventory("GrabbedBarrel", 1)
+		goto IdleBarrel
+	
+	ReadyFlameBarrel:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_ClearOverlays(-10,65)
+		TNT1 A 0 A_ClearOverlays(10,11)
+		TNT1 A 0 A_Stopsound(1)
+		TNT1 A 0 A_StopSound(CHAN_VOICE)
+		TNT1 A 0 A_Stopsound(5)
+		TNT1 A 0 A_StopSound(6)
+		TNT1 A 0 A_Takeinventory("HasUnloaded",1)
+		TNT1 A 0 A_Takeinventory("Unloading",1)
+		TNT1 A 0 A_Takeinventory("Zoomed",1)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		BAFE ABCDEFG 1
+		TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
+		TNT1 A 0 A_GiveInventory("GrabbedFlameBarrel", 1)
+		goto IdleFlameBarrel
+	
+	ReadyIceBarrel:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleIceBarrel")
+		TNT1 A 0 A_ClearOverlays(-10,65)
+		TNT1 A 0 A_ClearOverlays(10,11)
+		TNT1 A 0 A_Stopsound(1)
+		TNT1 A 0 A_StopSound(CHAN_VOICE)
+		TNT1 A 0 A_Stopsound(5)
+		TNT1 A 0 A_StopSound(CHAN_6)
+		TNT1 A 0 A_Takeinventory("HasUnloaded",1)
+		TNT1 A 0 A_Takeinventory("Unloading",1)
+		TNT1 A 0 A_Takeinventory("Zoomed",1)
+		TNT1 A 0 A_ZoomFactor(1.0)
+		BAIE ABCDEFG 1
+		TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
+		TNT1 A 0 A_GiveInventory("GrabbedIceBarrel", 1)
+		goto IdleIceBarrel
+
+//Idle		
+	IdleBarrel:
+		TNT1 A 0 {
+			A_Takeinventory("GoWeaponSpecialAbility",1);
+			A_Takeinventory("Zoomed",1);
+			A_Takeinventory("ADSmode",1);
+			A_ZoomFactor(1.0);
+			A_ClearOverlays(10,11);
+			}
+        THRG LKJIHIJKL 2 {	
+					A_WeaponReady (WRF_ALLOWRELOAD);
+					return A_DoPBWeaponAction (WRF_ALLOWRELOAD); }
+		loop
+		
+	IdleFlameBarrel:
+		TNT1 A 0 {
+			A_Takeinventory("GoWeaponSpecialAbility",1);
+			A_Takeinventory("Zoomed",1);
+			A_Takeinventory("ADSmode",1);
+			A_ZoomFactor(1.0);
+			A_ClearOverlays(10,11);
+			}
+        THRG DEFGFED 2 {	
+					A_WeaponReady (WRF_ALLOWRELOAD);
+					return A_DoPBWeaponAction (WRF_ALLOWRELOAD); }
+		loop
+		
+	IdleIceBarrel:
+		TNT1 A 0 {
+			A_Takeinventory("GoWeaponSpecialAbility",1);
+			A_Takeinventory("Zoomed",1);
+			A_Takeinventory("ADSmode",1);
+			A_ZoomFactor(1.0);
+			A_ClearOverlays(10,11);
+			}
+        THRG M 1 {	
+					A_WeaponReady (WRF_ALLOWRELOAD);
+					return A_DoPBWeaponAction (WRF_ALLOWRELOAD); }
+		loop
+
+//Throw
+	ThrowBarrel:
+		TNT1 A 0 A_JumpIfInventory("PowerStrength",1,1)
+		Goto IdleBarrel
+		TNT1 A 0
+		BANE HIJKLMN 1
+		TNT1 A 0 A_PlaySound("weapons/fistwhoosh")
+		BANE ONLJH 1
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		TNT1 A 0 A_FireCustomMissile("ThrownBarrel", 0, 1, 0, 0, FPF_NOAUTOAIM)
+		TNT1 A 0 A_TakeInventory("Grab1",1)
+		TNT1 A 0 A_TakeInventory("Grab2",1)
+		TNT1 A 0 A_TakeInventory("Grab3",1)
+		TNT1 A 0 A_TakeInventory("Grab4",1)
+		TNT1 A 0 A_TakeInventory("Grab5",1)
+		TNT1 A 0 A_TakeInventory("Grab6",1)
+		TNT1 A 0 A_TakeInventory("Grab7",1)
+		TNT1 A 0 A_TakeInventory("Grab8",1)
+		TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
+        THRF ABCDEF 2
+		goto GoingToReady
+		
+	ThrowFlameBarrel:
+		TNT1 A 0 A_JumpIfInventory("PowerStrength",1,1)
+		Goto IdleFlameBarrel
+		TNT1 A 0
+		BAFE HIJKLMN 1
+		TNT1 A 0 A_PlaySound("weapons/fistwhoosh")
+		BAFE ONLJH 1
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		TNT1 A 0 A_FireCustomMissile("ThrownFlameBarrel", 0, 1, 0, 0, FPF_NOAUTOAIM)
+		TNT1 A 0 A_TakeInventory("FGrab1",1)
+		TNT1 A 0 A_TakeInventory("FGrab2",1)
+		TNT1 A 0 A_TakeInventory("FGrab3",1)
+		TNT1 A 0 A_TakeInventory("FGrab4",1)
+		TNT1 A 0 A_TakeInventory("FGrab5",1)
+		TNT1 A 0 A_TakeInventory("FGrab6",1)
+		TNT1 A 0 A_TakeInventory("FGrab7",1)
+		TNT1 A 0 A_TakeInventory("FGrab8",1)
+		TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
+        THRF ABCDEF 2
+		goto GoingToReady
+		
+	ThrowIceBarrel:
+		TNT1 A 0 A_JumpIfInventory("PowerStrength",1,1)
+		Goto IdleIceBarrel
+		TNT1 A 0
+		BAIE HIJKLMN 1
+		TNT1 A 0 A_PlaySound("weapons/fistwhoosh")
+		BAIE ONLJH 1
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		TNT1 A 0 A_FireCustomMissile("ThrownIceBarrel", 0, 1, 0, 0, FPF_NOAUTOAIM)
+		TNT1 A 0 A_TakeInventory("IGrab1",1)
+		TNT1 A 0 A_TakeInventory("IGrab2",1)
+		TNT1 A 0 A_TakeInventory("IGrab3",1)
+		TNT1 A 0 A_TakeInventory("IGrab4",1)
+		TNT1 A 0 A_TakeInventory("IGrab5",1)
+		TNT1 A 0 A_TakeInventory("IGrab6",1)
+		TNT1 A 0 A_TakeInventory("IGrab7",1)
+		TNT1 A 0 A_TakeInventory("IGrab8",1)
+		TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
+        THRF ABCDEF 2
+		goto GoingToReady
+		
+//Place
+	PlaceBarrel:
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		BANE GFEDCBA 1
+		TNT1 A 0 A_JumpIfInventory("Grab1", 1, "BarrelPlacement1")
+		TNT1 A 0 A_JumpIfInventory("Grab2", 1, "BarrelPlacement2")
+		TNT1 A 0 A_JumpIfInventory("Grab3", 1, "BarrelPlacement3")
+		TNT1 A 0 A_JumpIfInventory("Grab4", 1, "BarrelPlacement4")
+		TNT1 A 0 A_JumpIfInventory("Grab5", 1, "BarrelPlacement5")
+		TNT1 A 0 A_JumpIfInventory("Grab6", 1, "BarrelPlacement6")
+		TNT1 A 0 A_JumpIfInventory("Grab7", 1, "BarrelPlacement7")
+		TNT1 A 0 A_JumpIfInventory("Grab8", 1, "BarrelPlacement8")
+		
+	BarrelPlacement1:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_NukageBarrel",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	BarrelPlacement2:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_NukageBarrelHoles",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	BarrelPlacement3:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_NukageBarrelCut",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	BarrelPlacement4:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_NukageBarrelDented",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	BarrelPlacement5:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_NukageBarrel_RedBlood",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	BarrelPlacement6:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_NukageBarrelHoles_RedBlood",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	BarrelPlacement7:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_NukageBarrelCut_RedBlood",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	BarrelPlacement8:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_NukageBarrelDented_RedBlood",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+
+	PlaceFlameBarrel:
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		BAFE GFEDCBA 1
+		TNT1 A 0 A_JumpIfInventory("FGrab1", 1, "FBarrelPlacement1")
+		TNT1 A 0 A_JumpIfInventory("FGrab2", 1, "FBarrelPlacement2")
+		TNT1 A 0 A_JumpIfInventory("FGrab3", 1, "FBarrelPlacement3")
+		TNT1 A 0 A_JumpIfInventory("FGrab4", 1, "FBarrelPlacement4")
+		TNT1 A 0 A_JumpIfInventory("FGrab5", 1, "FBarrelPlacement5")
+		TNT1 A 0 A_JumpIfInventory("FGrab6", 1, "FBarrelPlacement6")
+		TNT1 A 0 A_JumpIfInventory("FGrab7", 1, "FBarrelPlacement7")
+		TNT1 A 0 A_JumpIfInventory("FGrab8", 1, "FBarrelPlacement8")
+		
+	FBarrelPlacement1:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_FlameBarrel",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	FBarrelPlacement2:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_FlameBarrelHoles",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	FBarrelPlacement3:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_FlameBarrelCut",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	FBarrelPlacement4:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_FlameBarrelDented",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	FBarrelPlacement5:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_FlameBarrel_RedBlood",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	FBarrelPlacement6:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_FlameBarrelHoles_RedBlood",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	FBarrelPlacement7:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_FlameBarrelCut_RedBlood",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	FBarrelPlacement8:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_FlameBarrelDented_RedBlood",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+
+		
+	PlaceIceBarrel:
+		BAIE GFEDCBA 1
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		TNT1 A 0 A_JumpIfInventory("IGrab1", 1, "IBarrelPlacement1")
+		TNT1 A 0 A_JumpIfInventory("IGrab2", 1, "IBarrelPlacement2")
+		TNT1 A 0 A_JumpIfInventory("IGrab3", 1, "IBarrelPlacement3")
+		TNT1 A 0 A_JumpIfInventory("IGrab4", 1, "IBarrelPlacement4")
+		TNT1 A 0 A_JumpIfInventory("IGrab5", 1, "IBarrelPlacement5")
+		TNT1 A 0 A_JumpIfInventory("IGrab6", 1, "IBarrelPlacement6")
+		TNT1 A 0 A_JumpIfInventory("IGrab7", 1, "IBarrelPlacement7")
+		TNT1 A 0 A_JumpIfInventory("IGrab8", 1, "IBarrelPlacement8")
+		
+	IBarrelPlacement1:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_IceBarrel",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	IBarrelPlacement2:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_IceBarrelHoles",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	IBarrelPlacement3:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_IceBarrelCut",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	IBarrelPlacement4:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_IceBarrelDented",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+
+	IBarrelPlacement5:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_IceBarrel_RedBlood",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	IBarrelPlacement6:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_IceBarrelHoles_RedBlood",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	IBarrelPlacement7:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_IceBarrelCut_RedBlood",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	IBarrelPlacement8:
+		PKPB HGFEDCBA 1
+		TNT1 A 0 A_SpawnItemEx ("PB_IceBarrelDented_RedBlood",17,0,0,12,0,0,0,SXF_NOCHECKPOSITION,0)
+		Goto CompletePlacement
+		
+	CompletePlacement:
+		TNT1 A 0 A_PlaySound("barrel/pain")
+		TNT1 A 0 A_TakeInventory("Grab1",1)
+		TNT1 A 0 A_TakeInventory("Grab2",1)
+		TNT1 A 0 A_TakeInventory("Grab3",1)
+		TNT1 A 0 A_TakeInventory("Grab4",1)
+		TNT1 A 0 A_TakeInventory("Grab5",1)
+		TNT1 A 0 A_TakeInventory("Grab6",1)
+		TNT1 A 0 A_TakeInventory("Grab7",1)
+		TNT1 A 0 A_TakeInventory("Grab8",1)
+		TNT1 A 0 A_TakeInventory("IGrab1",1)
+		TNT1 A 0 A_TakeInventory("IGrab2",1)
+		TNT1 A 0 A_TakeInventory("IGrab3",1)
+		TNT1 A 0 A_TakeInventory("IGrab4",1)
+		TNT1 A 0 A_TakeInventory("IGrab5",1)
+		TNT1 A 0 A_TakeInventory("IGrab6",1)
+		TNT1 A 0 A_TakeInventory("IGrab7",1)
+		TNT1 A 0 A_TakeInventory("IGrab8",1)
+		TNT1 A 0 A_TakeInventory("FGrab1",1)
+		TNT1 A 0 A_TakeInventory("FGrab2",1)
+		TNT1 A 0 A_TakeInventory("FGrab3",1)
+		TNT1 A 0 A_TakeInventory("FGrab4",1)
+		TNT1 A 0 A_TakeInventory("FGrab5",1)
+		TNT1 A 0 A_TakeInventory("FGrab6",1)
+		TNT1 A 0 A_TakeInventory("FGrab7",1)
+		TNT1 A 0 A_TakeInventory("FGrab8",1)
+		TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
+		TNT1 A 2 
+		goto GoingToReady
+		
+//Flashes
+	FlashBarrelKicking:
+		BAIE A 0 A_JumpIfInventory("GrabbedIceBarrel", 1, 3)
+		BAFE A 0 A_JumpIfInventory("GrabbedFlameBarrel", 1, 2)
+		BANE A 0
+		"####" IJKLMNOONMLKJI 1 A_DoPBWeaponAction
+		TNT1 A 0 A_JumpIfInventory("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory("GrabbedIceBarrel", 1, "IdleIceBarrel")
+		TNT1 A 0 A_JumpIfInventory("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		Stop
+	FLASHBarrelPUNCHING: 
+		BAIQ I 0 A_JumpIfInventory("GrabbedIceBarrel", 1, 3)
+		BAFQ I 0 A_JumpIfInventory("GrabbedFlameBarrel", 1, 2)
+		BANQ I 0
+		"####" I 1 A_DoPBWeaponAction
+		"####" J 1 A_DoPBWeaponAction
+		"####" K 1 A_DoPBWeaponAction
+		"####" L 1 A_DoPBWeaponAction
+		"####" M 6 A_DoPBWeaponAction
+		"####" L 1 A_DoPBWeaponAction
+		"####" K 1 A_DoPBWeaponAction
+		"####" J 1 A_DoPBWeaponAction
+		"####" I 1 A_DoPBWeaponAction
+		Stop
+	FlashBarrelAirKicking:
+		BAIE A 0 A_JumpIfInventory("GrabbedIceBarrel", 1, 3)
+		BAFE A 0 A_JumpIfInventory("GrabbedFlameBarrel", 1, 2)
+		BANE A 0
+		"####" IJKLMNOOOOONMLKJI 1 A_DoPBWeaponAction
+		TNT1 A 0 A_JumpIfInventory("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory("GrabbedIceBarrel", 1, "IdleIceBarrel")
+		TNT1 A 0 A_JumpIfInventory("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		Stop
+	FlashBarrelSlideKicking:
+		BAIE A 0 A_JumpIfInventory("GrabbedIceBarrel", 1, 3)
+		BAFE A 0 A_JumpIfInventory("GrabbedFlameBarrel", 1, 2)
+		BANE A 0
+		"####" IJKLMNOOOOO 1 A_DoPBWeaponAction
+		"####" OOOOOOOOOOOOOOO 1 A_DoPBWeaponAction
+		TNT1 A 0 A_JumpIfInventory("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory("GrabbedIceBarrel", 1, "IdleIceBarrel")
+		TNT1 A 0 A_JumpIfInventory("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		Stop
+	FlashBarrelSlideKickingStop:
+		BAIE A 0 A_JumpIfInventory("GrabbedIceBarrel", 1, 3)
+		BAFE A 0 A_JumpIfInventory("GrabbedFlameBarrel", 1, 2)
+		BANE A 0
+		"####" ONMLKJI 1 A_DoPBWeaponAction
+		TNT1 A 0 A_JumpIfInventory("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory("GrabbedIceBarrel", 1, "IdleIceBarrel")
+		TNT1 A 0 A_JumpIfInventory("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		Stop
+	
+	
+	
 		
 	Steady:
 	TNT1 A 1
@@ -1603,6 +2106,299 @@ States
 					A_GiveInventory("Stimpack", 2);
 				}
 				Goto GoingToReady2
+				
+		Execution_Imp2:
+				TNT1 A 0  {
+					A_SpawnItemEx("PB_Imp_Execution_2", 41, 0,0,0,0,0,0,SXF_NOCHECKPOSITION|SXF_SETMASTER);
+					A_SetPitch(0, SPF_INTERPOLATE);
+					A_ZoomFactor(1.2, ZOOM_INSTANT);
+// 					A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, true);
+					A_StartSound("KNIFUP", CHAN_AUTO);
+				}
+				
+				TNT1 A 0 A_SetPitch(pitch+19)
+				
+				// Frame 1: 9 Ticks
+				TNT1 AAA 1 {
+					A_SetRoll(roll-75);
+					A_SetPitch(pitch-4);
+					A_SetAngle(angle+9);
+				}
+				TNT1 A 0 {
+					A_ZoomFactor(1.4, ZOOM_INSTANT);
+					A_StartSound("KNIFSWNG", CHAN_AUTO);
+				}
+				MC3S ABCDEF 1 {
+					A_SetRoll(roll+6);
+					A_SetPitch(pitch+1);
+					A_SetAngle(angle-4);
+				}
+				
+				// Frame 2: 4 Ticks
+				TNT1 A 0 A_StartSound("Machete/Yum", CHAN_AUTO)
+				MC3S GHIJ 1 {
+					A_SetRoll(roll+6);
+					A_SetPitch(pitch+2);
+					A_SetAngle(angle-6);
+				}
+				TNT1 A 0 {
+					A_ZoomFactor(1.15, ZOOM_INSTANT);
+					A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, true);
+					A_StartSound("KICK", CHAN_AUTO);
+				}
+				// Frame 3: 12 Ticks
+				KIC4 ABCDE 1 {
+					A_SetRoll(roll-3);
+					A_SetPitch(pitch-1);
+					A_SetAngle(angle+2);
+				}
+				TNT1 A 0 A_ZoomFactor(1.05, ZOOM_INSTANT)
+				KIC4 FFFF 1 {
+					A_SetPitch(pitch-3);
+					A_SetAngle(angle+4);
+				}
+				TNT1 A 0 A_ZoomFactor(1.5, ZOOM_INSTANT)
+				KIC4 GHI 1 {
+					A_SetRoll(roll+6);
+					A_SetPitch(pitch-3);
+					A_SetAngle(angle-3);
+				}
+				TNT1 A 0 {
+					A_StartSound("gore/heavyimpact", CHAN_AUTO);
+					A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
+				}
+				TNT1 A 0 A_ZoomFactor(1.1)
+				
+				KIC4 JKLM 1
+				TNT1 A 0 A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, false)
+				
+				
+				
+				
+				TNT1 A 0 {
+					PB_UnsetPlayerExecutionProperties();
+					A_SetRoll(0, SPF_INTERPOLATE);
+					A_SetPitch(0, SPF_INTERPOLATE);
+					A_ZoomFactor(1.0);
+					A_GiveInventory("Stimpack", 2);
+				}
+				Goto GoingToReady2
+		
+		
+			Execution_Imp3_Overlay1:
+				G003 ABCDEFGHIJKLMNOP 1
+				Stop
+			
+			Execution_Imp3_Overlay2:
+				P6NA CDEFGGGG 1
+				Stop
+		
+		Execution_Imp3:
+				TNT1 A 0  {
+					A_SetAngle(angle-180);
+					A_SpawnItemEx("PB_Imp_Execution_3", 8, 4,-52,0,0,0,0,SXF_NOCHECKPOSITION|SXF_SETMASTER);
+					A_SetPitch(35);
+					A_ZoomFactor(2.6,ZOOM_INSTANT);
+					A_StartSound("player/cyborg/fist", CHAN_AUTO);
+					A_Overlay(9,"Execution_Imp3_Overlay1");
+					A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, true);
+				}
+				// Frame 1: 12 ticks
+				TNT1 A 0 A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0)
+				SLDK ABCDE 1 {
+					A_SetPitch(pitch+6);
+					ThrustThingZ(0,25, 1,0);
+					A_SetRoll(roll-4);
+					//A_SetAngle(angle+2);
+				}
+				SLDK FGHI 1 { 	
+					A_SetRoll(roll+5);
+					A_SetPitch(pitch+9);
+				}
+				
+				TNT1 A 0 {
+					A_ZoomFactor(2.5,ZOOM_INSTANT);
+					A_StartSound("NECK_BRK", CHAN_AUTO );
+					A_StartSound("BODYF", CHAN_AUTO );
+				}
+				TNT1 A 0 A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0)
+				// Frame 2: 8 ticks
+				SLDK O 1
+				TNT1 A 0 A_ZoomFactor(2.25, ZOOM_INSTANT)
+				SLDK P 1 {
+					A_SetPitch(pitch-3);
+					//A_SetAngle(angle-1);
+				}
+				SLDK Q 1 {
+					A_SetPitch(pitch-3);
+					//A_SetAngle(angle-1);
+				}
+				TNT1 A 0 A_ZoomFactor(2.10, ZOOM_INSTANT)
+				SLDK R 1 {
+					A_SetPitch(pitch-4);
+					//A_SetAngle(angle-1);
+				}
+				SLDK S 1 {
+					A_SetPitch(pitch-4);
+					//A_SetAngle(angle-1);
+				}
+				TNT1 A 0 A_ZoomFactor(1.8, ZOOM_INSTANT)
+				SLDK T 1 {
+					A_SetPitch(pitch-5);
+				}
+				SLDK U 1 {
+					A_SetPitch(pitch-5);
+				}
+				TNT1 A 0 A_ZoomFactor(1.6, ZOOM_INSTANT)
+				
+				// Frame 3: 
+				TNT1 A 1 Offset(0,32) {
+					A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, true);
+					A_ZoomFactor(1.86);
+				}
+				
+				
+				// Frame 3: 8
+				PUNS JIH 1
+				TNT1 A 0 A_StartSound("weapons/fistwhoosh", CHAN_AUTO)
+				P1NN ABC 1 {
+					A_SetAngle(angle+3);
+					A_SetPitch(pitch-2);
+				}
+				TNT1 A 0 A_StartSound("execution/impact", CHAN_AUTO)
+				P2NN DE 1 {
+					A_SetAngle(angle+2);
+					A_SetPitch(pitch+4);
+				}
+				
+				TNT1 AAAA 1 {
+					A_SetAngle(angle-1);
+					A_SetPitch(pitch-3);
+				}
+				
+				// Frame 4: 6
+				TNT1 A 0 A_StartSound("weapons/ultrwhoosh", CHAN_AUTO)
+				P2NK ABCD 1 {
+					A_SetAngle(angle-1);
+					A_SetPitch(pitch-4);
+					A_SetRoll(roll-2);
+				}
+				P2NK EF 1 {
+					A_SetAngle(angle+4);
+					A_SetPitch(pitch+6);
+					A_SetRoll(roll-1);
+				}
+				
+				TNT1 A 0 A_StartSound("execution/impact", CHAN_AUTO)
+				// Frame 5: 13
+				P2NK GHIJ 1 {
+					A_SetAngle(angle-3);
+					A_SetPitch(pitch+3);
+					A_SetRoll(roll+4);
+				}
+				P2NK KLMNO 1 {
+					A_SetAngle(angle-3);
+					A_SetPitch(pitch+2);
+					A_SetRoll(roll+2);
+				}
+				
+				P2NK P 1 {
+					A_SetAngle(angle+2);
+					A_SetPitch(pitch-2);
+					A_SetRoll(roll-9);
+					A_Zoomfactor(1.7, ZOOM_INSTANT);
+				}
+				P2NK Q 1 {
+					A_SetAngle(angle+2);
+					A_SetPitch(pitch-2);
+					A_SetRoll(roll-9);
+					A_Zoomfactor(1.6, ZOOM_INSTANT);
+				}
+				P2NK R 1 {
+					A_SetAngle(angle+2);
+					A_SetPitch(pitch-2);
+					A_SetRoll(roll-9);
+					A_Zoomfactor(1.5, ZOOM_INSTANT);
+				}
+				P2NK S 1 {
+					A_SetAngle(angle+2);
+					A_SetPitch(pitch-2);
+					A_SetRoll(roll-9);
+					A_Zoomfactor(1.4, ZOOM_INSTANT);
+				}
+				
+				TNT1 A 0 {
+					A_Overlay(9,"Execution_Imp3_Overlay2");
+					A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, true);
+					
+				}
+				
+				// Frame 6: 13
+				TNT1 A 0 {
+					A_SetPitch(pitch-3);
+					A_StartSound("KICK", CHAN_AUTO);
+				}
+				KIC1 A 1 {
+					A_SetPitch(pitch-2);
+					A_SetRoll(roll-1);
+					A_Zoomfactor(1.35, ZOOM_INSTANT);
+				}
+				KIC1 B 1 {
+					A_SetPitch(pitch-2);
+					A_SetRoll(roll-1);
+					A_Zoomfactor(1.3, ZOOM_INSTANT);
+				}
+				KIC1 C 1 {
+					A_SetPitch(pitch-4);
+					A_SetRoll(roll-2);
+					A_Zoomfactor(1.25, ZOOM_INSTANT);
+				}
+				KIC1 D 1 {
+					A_SetPitch(pitch-4);
+					A_SetRoll(roll-2);
+					A_Zoomfactor(1.2, ZOOM_INSTANT);
+				}
+				KIC1 EE 1 A_Zoomfactor(1.1, ZOOM_INSTANT)
+				KIC1 E 1 {
+					A_SetPitch(pitch+5);
+					A_SetAngle(angle+3);
+					A_SetRoll(roll-3);
+				}
+				
+				TNT1 A 0 A_Zoomfactor(1.8)
+				KIC1 FG 1 {
+					A_SetPitch(pitch+5);
+					A_SetAngle(angle+3);
+					A_SetRoll(roll-3);
+				}
+				
+				TNT1 A 0 {
+					A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
+					A_SpawnItemEx("BigBloodSpot", 15, 0, 25);
+					
+				}
+				TNT1 A 0 A_StartSound("gore/heavyimpact", CHAN_AUTO)
+				KIC1 HHHHHHHH 1
+				TNT1 A 0 A_Zoomfactor(1.2)
+				
+				
+				// Frame 7: 13
+				KIC1 HIJKL 1 {
+					A_SetPitch(pitch-1);
+					A_SetRoll(roll+1);
+				}
+				TNT1 AAAAAAAA 1 A_SetPitch(pitch-10, SPF_INTERPOLATE)
+				
+				TNT1 A 0 {
+					PB_UnsetPlayerExecutionProperties();
+					A_SetRoll(0, SPF_INTERPOLATE);
+					A_SetPitch(0, SPF_INTERPOLATE);
+					A_ZoomFactor(1.0);
+					A_GiveInventory("Stimpack", 2);
+					A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, false);
+				}
+				Goto GoingToReady2
+				
 			
 		Execution_ShotgunGuy1:
 			TNT1 A 0  {
@@ -1672,7 +2468,7 @@ States
 		Goto GoingToReady
 	}
 }
-
+*/
 
 ACTOR MagTG
 {

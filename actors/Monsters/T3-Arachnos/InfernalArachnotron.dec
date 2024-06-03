@@ -3,23 +3,26 @@
 // Arachnotron
 //
 //===========================================================================
-ACTOR PB_InfernalArachnotron: Arachnotron replaces Arachnotron
+ACTOR PB_InfernalArachnotron: Arachnotron //replaces Arachnotron
 {
 	//$Title Infernal Arachnotron
 	//$Category Project Brutality - Monsters/Arachnotrons
 	//$Sprite RSPIA1D1
 	Tag "Infernal Arachnotron"
 	Health 550
-	Scale 1.30
+	Scale 1
+	Radius 60
+	Height 64
 	SpawnID 1610
 	Species "Arachnotron"
 	+DONTHARMCLASS
-	+DONTHURTSPECIES
+	+DONTHARMSPECIES
 	Obituary "%o was incinerated by an Infernal Arachnotron."
 	DamageFactor "Blood", 0.0 DamageFactor "BlueBlood", 0.0 DamageFactor "GreenBlood", 0.0
-	DropItem "DemonStrengthRune" 8
-	DropItem "HasteSphere" 8
-	DropItem "DoubleSphere" 7
+	damagefactor "TeleportRemover", 0.0
+	
+	DropItem "PB_Haste" 8
+	DropItem "PB_DoomSphere" 7
 	DropItem "Demonpickup2" 255
 	DropItem "Demonpickup" 55
 	DropItem "Demonpickup" 55
@@ -27,6 +30,18 @@ ACTOR PB_InfernalArachnotron: Arachnotron replaces Arachnotron
 	PainChance "Siphon", 255
 	States
 	{
+	Death.Execution:
+		TNT1 A 0 {
+ 			A_Stopsound;
+			A_FaceTarget;
+			A_NoBlocking;
+		}
+		RSPI AG 4 
+		TNT1 A 0 A_Pain
+		RSPI I 21
+		TNT1 A 0 A_Recoil(4)
+		Goto Death
+	
 	Death.Blackhole:
 		TNT1 A 1 A_BossDeath
         TNT1 A 0 A_NoBlocking
@@ -40,28 +55,25 @@ ACTOR PB_InfernalArachnotron: Arachnotron replaces Arachnotron
 		Stop
 	
 	Spawn:
-	TNT1 A 0 ACS_ExecuteAlways(796, 0, 0, 0, 0)//Check if Vanilla Mode is activated
-	    TNT1 AA 0
 		RSPI AB 10 A_Look
-		Goto Spawn+2
+		Loop
 	See:
-		RSPI A 20
 		RSPI A 3 A_BabyMetal
 		RSPI ABBCC 3 A_Chase
 		RSPI D 3 A_BabyMetal
 		RSPI DEEFF 3 A_Chase
-		Goto See+1
+		Loop
 	Missile:
 		RSPI A 10 A_FaceTarget
 		RSPI G 0 A_PlaySound("HRFire")
 		RSPI G 2 BRIGHT A_CustomMissile("Demonicbullet", 25, 2, 0, 0)
 		RSPI H 2
 		RSPI H 2 A_SpidRefire
-		Goto Missile+1
+		Goto See
 	Pain:
 		RSPI I 3
 		RSPI I 3 A_Pain
-		Goto See+1
+		Goto See
 		
 	Possession:
     TNT1 A 0 A_SetInvulnerable
@@ -88,7 +100,7 @@ ACTOR PB_InfernalArachnotron: Arachnotron replaces Arachnotron
 		Goto See
 	
 	Pain.Siphon:
-        TNT1 A 0 A_SpawnItem ("HeadshotTarget30", 0, 45,0)
+        TNT1 A 0 
 		
 		TNT1 AAA 0 A_SpawnItemEx ("RedLightning_Small", random (-12, 12), random (-12, 12), random (16, 52), 0, 0)
 		RSPI I 1 
@@ -148,8 +160,7 @@ ACTOR PB_InfernalArachnotron: Arachnotron replaces Arachnotron
 Death.SuperPlasma:
     Death.Plasma: Death.Plasma2:
         TNT1 A 0 A_BossDeath
-		TNT1 A 0 A_BossDeath
-        TNT1 A 0 A_Scream
+		TNT1 A 0 A_Scream
         TNT1 A 0 A_NoBlocking
         TNT1 AAA 0 A_CustomMissile ("Brutal_FlyingBlood", 50, 0, random (0, 360), 2, random (0, 160))
 	    TNT1 AA 0 A_CustomMissile ("XDeathBurnedMeat3", 32, 0, random (0, 360), 2, random (0, 160))
@@ -159,6 +170,7 @@ Death.SuperPlasma:
         Stop
 		
 		Death.Fire:
+		Death.FireExplosion:
         TNT1 A 0
 		TNT1 A 0 A_BossDeath
 		TNT1 A 0 A_Scream
@@ -287,17 +299,9 @@ Stop
 		TNT1 A 0 A_SpawnItem ("GrowingBloodPool")
         TNT1 A 0 A_SpawnItem ("XDeadSpider", 1)
        Goto XBurns
-	  
-	  Death.IceBeam:
-	TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0)
-	TNT1 A 0 A_ChangeFlag("SOLID", 0)
-	TNT1 A 0 A_SpawnItem("FrozenDemonicArachnotron")
-	TNT1 A 0 A_SpawnItem("IceCrystalGround")
-	TNT1 A 0 A_SpawnItem("IceCrystalGround")
-	TNT1 A 0 A_SpawnItem("IceCrystalGround")
-	Stop
-	  
+
 	Death.Ice:
+	Death.IceExplosion:
 	Death.Freeze:
 	Death.Frost:
 	TNT1 A 0 A_BossDeath
@@ -384,17 +388,7 @@ ACTOR CrawlingDyingSpider2
     {
 	
     Spawn:
-	NAHD B 1 A_Look
-	Goto See
-    See:
-		NAHD ABCD 10 A_Chase
-        NAHD A 0 A_Pain
-		TNT1 A 0 A_SpawnItemEx("Brutal_FlyingBlood", 0, 0, 10, 0, 0)
-	    
-		TNT1 A 0 A_GiveInventory("DeathTimer1", 1)
-		TNT1 A 0 A_JumpIfInventory("DeathTimer1", 12, "GotoDeath")
-		Loop
-		
+	NAHD B 1 A_NoBlocking	
 	GotoDeath:
 	TNT1 A 0
 	TNT1 A 0 A_ChangeFlag("NOPAIN", 1)
@@ -407,35 +401,16 @@ ACTOR CrawlingDyingSpider2
 		TNT1 AAAAAAAAAAAA 0 A_CustomMissile ("SmallBrainPiece", 10, 0, random (0, 360), 2, random (0, 160))
 		TNT1 AAAA 0 A_CustomMissile ("XDeath1", 10, 0, random (0, 360), 2, random (0, 160))
 		NAHD IJKLMN 5
-		NAHD N -5
+		NAHD N -1
 		Stop
-	Pain.SuperPunch:
-	Pain.SuperKick:
-	Pain.Kick:
-	Pain.Extremepunches:
-	TNT1 A 0 A_FaceTarget
-	NAHB A 1 A_Pain
-	TNT1 A 0 ThrustThing(angle*256/360+128, 5, 0, 0)
-	Pain.ExplosiveImpact:
-	TNT1 A 0 ThrustThingZ(0,50,0,1)
-	
-	NAHB A 2 A_FaceTarget
-	Goto Fly
-	
-	Fly:
-	NAHB ABCDEFGH 3 A_CheckFloor("See")
-	NULL A 0 A_JumpIf (momz == 0, "See")
-	TNT1 A 0
-	Loop
-	
 	}
 }
 
 ///////////////////////////======VANILLA======//////////////////////////////////
 
-Actor Vanilla_ArachnotronX : PB_InfernalArachnotron replaces Arachnotron
+Actor Vanilla_ArachnotronX : PB_InfernalArachnotron //replaces Arachnotron
 {
-	DropItem "DemonStrengthRune" 5
+	
 	States
 	{
 		Spawn:

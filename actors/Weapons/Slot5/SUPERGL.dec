@@ -71,13 +71,9 @@ Actor SGLUnloaded : Inventory
 ACTOR PB_SuperGL: PB_Weapon
 {
 	//$Title Automatic Grenade Launcher
-	//$Category Weapons
+	//$Category Project Brutality - Weapons
 	//$Sprite SGL0Z0
 	SpawnID 9520
-	Weapon.BobRangeX 0.3
-	Weapon.BobRangeY 0.5
-	Weapon.BobStyle InverseSmooth
-	Weapon.BobSpeed 2.4
 	Game Doom
 	SpawnID 29
 	Speed 20
@@ -88,14 +84,15 @@ ACTOR PB_SuperGL: PB_Weapon
 	Weapon.AmmoUse2 0
 	Weapon.AmmoGive2 0
 	Weapon.AmmoGive1 6
-	Weapon.AmmoType1 "RocketAmmo" // Grenade launcher will share same ammo as rocket launcher
+	Weapon.AmmoType1 "PB_RocketAmmo" // Grenade launcher will share same ammo as rocket launcher
 	Weapon.AmmoType2 "GrenadeRounds"
     Inventory.PickupSound "misc/rockboxa"
     +WEAPON.NOAUTOAIM
 	+WEAPON.EXPLOSIVE
 	+WEAPON.NOALERT
+	+WEAPON.NOAUTOFIRE
 	+FLOORCLIP
-	Inventory.PickupMessage "You got the UAC-MGL automatic grenade launcher! (Slot 6)"
+	Inventory.PickupMessage "UAC-MGL Automatic Grenade Launcher (Slot 6)"
 	Tag "Super Grenade Launcher"
 	Inventory.AltHUDIcon "SGL0Z0"
 	PB_WeaponBase.respectItem "RespectSGL"
@@ -119,61 +116,60 @@ ACTOR PB_SuperGL: PB_Weapon
 			TNT1 A 0 {
 				A_GiveInventory("RespectSGL");
 				A_Giveinventory("PB_LockScreenTilt",1);
-				A_PlaySoundEx("weapons/sgl/inspect1", CHAN_AUTO);
+				A_StartSound("weapons/sgl/inspect1", CHAN_AUTO);
 				A_SetCurrentGrenadeType("Impact");
 			}
 			SL00 ABCDEFGHIJKLMNOP 1 { 
-				A_DoPBWeaponAction;
 				A_SetRoll(roll+0.8,SPF_INTERPOLATE);
+				return A_DoPBWeaponAction;
 			}
 				
-			TNT1 A 0 A_PlaySoundEx("weapons/carbine/fancybutton", CHAN_AUTO)
+			TNT1 A 0 A_StartSound("weapons/carbine/fancybutton", CHAN_AUTO)
 			
 			SL00 QRSTUVWV 1 {
-				A_DoPBWeaponAction;
 				A_SetRoll(roll-1.6,SPF_INTERPOLATE);
+				return A_DoPBWeaponAction;
 			}
 			
-			TNT1 A 0 A_PlaySoundEx("Ironsights", CHAN_AUTO)
+			TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO)
 			SL00 XYZ 1 {
-				A_DoPBWeaponAction;
 				A_SetRoll(roll-0.4,SPF_INTERPOLATE);
+				return A_DoPBWeaponAction;
 			}
 			SL01 ABCD 1 {
-				A_DoPBWeaponAction;
 				A_SetRoll(roll+0.4,SPF_INTERPOLATE);
+				return A_DoPBWeaponAction;
 			}
 			TNT1 A 0 {
-				A_DoPBWeaponAction;
-				A_PlaySoundEx("LIGHTON", CHAN_AUTO);
+				A_StartSound("LIGHTON", CHAN_AUTO);
 				A_SetRoll(roll+0.7,SPF_INTERPOLATE);
+				return A_DoPBWeaponAction;
 			}
 			TNT1 A 0 {
 				A_SetPitch(pitch-4.2, SPF_INTERPOLATE);
 				A_SetAngle(angle-4.2, SPF_INTERPOLATE);
 			}
 			SL01 EFGHIJK 1 {
-					A_DoPBWeaponAction;
 					A_SetRoll(roll-0.1,SPF_INTERPOLATE);
+					return A_DoPBWeaponAction;
 			}
-			TNT1 A 0 A_PlaySoundEx("Ironsights", CHAN_AUTO)
+			TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO)
 			SL01 LMNOPQR 1 {
-					A_DoPBWeaponAction;
 					A_SetPitch(pitch+0.6, SPF_INTERPOLATE);
 					A_SetAngle(angle+0.6, SPF_INTERPOLATE);
 					A_SetRoll(roll-0.15,SPF_INTERPOLATE);
-					
+					return A_DoPBWeaponAction;		
 			}
 			SL01 ST 1 {
-					A_DoPBWeaponAction;
 					A_SetRoll(0,SPF_INTERPOLATE);
-					
+					return A_DoPBWeaponAction;
 			}
 			Goto Ready3
 			
 		SelectAnimation:
 			TNT1 A 0 A_JumpIfInventory("GoFatality",1,"Steady")
 			TNT1 A 0 A_PlaySoundEx("weapons/sgl/inspect2", CHAN_AUTO)
+			TNT1 A 0 A_TakeInventory("CycleAnimation", 1)
 			SL02 ABCD 1 {
 				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL02");}
 				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL12");}
@@ -187,6 +183,7 @@ ACTOR PB_SuperGL: PB_Weapon
 				A_SetRoll(0);
 				PB_HandleCrosshair(89);
 				A_TakeInventory("PB_LockScreenTilt",1);
+				A_TakeInventory("CycleAnimation", 1);
 			}
 		ReadyToFire:
 			SL02 E 1 {
@@ -196,16 +193,22 @@ ACTOR PB_SuperGL: PB_Weapon
 				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL32");}
 				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL42");}
 				if (CountInv("SGLUnloaded") == 1) {A_SetWeaponSprite("S001");}
+				if (PressingFire() && CountInv("GrenadeRounds") > 0){
+					return state("Fire");
+				}
 				return A_DoPBWeaponAction(WRF_ALLOWRELOAD); //CheckUnloaded("blahblahblah"));
 			}
 			Loop
 			
 		Deselect:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 			TNT1 A 0 {
 				A_TakeInventory("CycleAnimation", 1);
 				A_TakeInventory("HasExplosiveWeapon", 1);
 			}
-			TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
+			
 			SL02 FGHI 1 {
 				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL02");}
 				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL12");}
@@ -219,17 +222,28 @@ ACTOR PB_SuperGL: PB_Weapon
 
 		Select:
 			TNT1 A 0
+			
+			TNT1 A 0 A_TakeInventory("HasBarrel",1)
+			TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
+			TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
+			TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
+			TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
+			TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
+			
 			Goto SelectFirstPersonLegs
 			SelectContinue:
 			TNT1 A 0
 			TNT1 A 0 PB_WeapTokenSwitch("SGLSelected")
 			TNT1 A 0 A_TakeInventory("GrenadeDetonator",1)
+			TNT1 A 0 A_TakeInventory("CantWeaponSpecial",1)
 			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
 			TNT1 AAAAAAAA 1 A_Raise
 			Wait
 				
 		WeaponSpecial:
-			//First, check if player selected different grenade type
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 			TNT1 A 0 {
 				A_GiveInventory("CantWeaponSpecial" ,1 );
 				A_Giveinventory("PB_LockScreenTilt",1);
@@ -300,6 +314,7 @@ ACTOR PB_SuperGL: PB_Weapon
 			SL46 ABCDEFGHIJKL 0 
 			
 			//Unload Previous Ammo Type
+			TNT1 A 0 A_JumpIf(CountInv("SGLUnloaded") >= 1, "LoadNewAmmoType")
 			TNT1 A 0 A_StartSound("Ironsights",15 )
 			TNT1 A 0 {
 				if(CountInv("GrenadeTypeImpact") == 1) {A_Print("$PB_SGLIMPACT", 2);}
@@ -336,7 +351,7 @@ ACTOR PB_SuperGL: PB_Weapon
 			}
 			
 			
-			SL03 UVWXYZ 1 {
+			SL03 WXYZ 1 {
 				A_SetRoll(roll+0.8,SPF_INTERPOLATE);
 				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL03");}
 				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL14");}
@@ -344,6 +359,10 @@ ACTOR PB_SuperGL: PB_Weapon
 				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL34");}
 				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL44");}
 			}
+			
+		LoadNewAmmoType:
+			TNT1 A 0 A_JumpIf(CountInv("SGLUnloaded") <= 0, 5)
+			S003 ABCD 1
 			SL04 ABCDEF 1 {
 				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL04");}
 				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL15");}
@@ -450,6 +469,9 @@ ACTOR PB_SuperGL: PB_Weapon
 		// A more elegant approach instead of having tons of states for different variations
 		// Shoutout to Galdoc for the modular design of these animations
 		Fire:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				A_SetRoll(0);
@@ -522,8 +544,6 @@ ACTOR PB_SuperGL: PB_Weapon
 			
 		CyclingAnimation:
 			TNT1 A 0 A_GiveInventory("CycleAnimation", 1)
-			
-			
 			TNT1 A 0 A_StartSound("RLCYCLE2", 13)
 			SL60 DEFGHIJKLMNOPQ 1 {
 				if (A_GetCurrentGrenadeType() == "Impact") {A_SetFlashWeaponSprite("SL60");}
@@ -531,7 +551,7 @@ ACTOR PB_SuperGL: PB_Weapon
 				if (A_GetCurrentGrenadeType() == "Acid") {A_SetFlashWeaponSprite("SL62");}
 				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetFlashWeaponSprite("SL63");}
 				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetFlashWeaponSprite("SL64");}
-				A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH);
+				return A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH); //A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH);
 			}
 			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 9)
 			SL60 RSTUVWX 1 {
@@ -540,7 +560,7 @@ ACTOR PB_SuperGL: PB_Weapon
 				if (A_GetCurrentGrenadeType() == "Acid") {A_SetFlashWeaponSprite("SL62");}
 				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetFlashWeaponSprite("SL63");}
 				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetFlashWeaponSprite("SL64");}
-				A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH);
+				return A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH); //A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH);
 			}
 			TNT1 A 0 A_TakeInventory("CycleAnimation", 1)
 			SL02 E 1 {
@@ -562,10 +582,13 @@ ACTOR PB_SuperGL: PB_Weapon
 			Stop
 			
 		AltFire:
-			TNT1 A 0 A_JumpIfInventory("SGLUnloaded",1,"Ready3")
-			TNT1 A 0 A_JumpIfInventory("SGLDetonateSoundCooldown",1,3)
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+			TNT1 A 0 A_JumpIfInventory ("SGLUnloaded", 1, "Ready3")
+			TNT1 A 0 A_JumpIfInventory ("SGLDetonateSoundCooldown", 1, 3)
 			TNT1 A 0 A_PlaySoundEx ("weapons/pbarm", CHAN_BODY)
-			TNT1 A 0 A_GiveInventory("SGLDetonateSoundCooldown",22)
+			TNT1 A 0 A_GiveInventory ("SGLDetonateSoundCooldown", 22)
 		AltHold:
 			TNT1 A 0 A_GiveInventory("GrenadeDetonator",1)
 			TNT1 E 1 {
@@ -599,6 +622,7 @@ ACTOR PB_SuperGL: PB_Weapon
 					A_SetWeaponSprite("SL42");
 					return state("CycleDone");
 				}
+				if (PressingAltFire()) { return state("AltFire"); }
 				return state("");
 			}
 			Loop
@@ -621,9 +645,12 @@ ACTOR PB_SuperGL: PB_Weapon
 		
 		
 		Reload:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 
 			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",7,"Ready3")
-			TNT1 A 0 A_JumpIfInventory("RocketAmmo",1,1)
+			TNT1 A 0 A_JumpIfInventory("PB_RocketAmmo",1,1)
 			Goto Ready3
 			TNT1 A 0 {
 				A_ZoomFactor(1.0);
@@ -790,12 +817,12 @@ ACTOR PB_SuperGL: PB_Weapon
 			}
 		InsertBullets:
 			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",6,"Ready3")
-			TNT1 A 0 A_JumpIfInventory("RocketAmmo",1,2)
+			TNT1 A 0 A_JumpIfInventory("PB_RocketAmmo",1,2)
 			TNT1 A 0 A_PlaySoundEx("weapons/empty", "Weapon")
 			Goto Ready3
 			TNT1 A 0 {
 				A_Giveinventory("GrenadeRounds",1);
-				A_Takeinventory("RocketAmmo",1);
+				A_Takeinventory("PB_RocketAmmo",1);
 				A_Takeinventory("SGLUnloaded",1);
 				}
 			Loop
@@ -828,11 +855,11 @@ ACTOR PB_SuperGL: PB_Weapon
 			}
 		InsertBullets2:
 			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",7,"Ready3")
-			TNT1 A 0 A_JumpIfInventory("RocketAmmo",1,1)
+			TNT1 A 0 A_JumpIfInventory("PB_RocketAmmo",1,1)
 			Goto Ready3
 			TNT1 A 0 {
 				A_Giveinventory("GrenadeRounds",1);
-				A_Takeinventory("RocketAmmo",1);
+				A_Takeinventory("PB_RocketAmmo",1);
 				A_Takeinventory("SGLUnloaded",1);
 				}
 			Loop
@@ -953,7 +980,7 @@ ACTOR PB_SuperGL: PB_Weapon
 			Goto FinishUnload
 			TNT1 A 0 {
 				A_Takeinventory("GrenadeRounds",1);
-				A_Giveinventory("RocketAmmo",1);
+				A_Giveinventory("PB_RocketAmmo",1);
 				}
 			Loop
 		
@@ -969,6 +996,9 @@ ACTOR PB_SuperGL: PB_Weapon
 			Stop
 		
 		FlashKicking:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
 			S006 ABCDEFGGGHIJKLM 0
 			S007 ABCDEFGGGHIJKLM 0
 			S019 ABCDEFGGGHIJKLM 0
@@ -985,6 +1015,9 @@ ACTOR PB_SuperGL: PB_Weapon
 			Goto Ready3
 		
 		FlashAirKicking:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")	
 			S006 ABCDEFGGGHIJKLM 0
 			S007 ABCDEFGGGHIJKLM 0
 			S019 ABCDEFGGGHIJKLM 0
@@ -1001,6 +1034,9 @@ ACTOR PB_SuperGL: PB_Weapon
 			Goto Ready3
 			
 	FlashSlideKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
 			S020 ABCDEFGHIJKLMNOPQRSSSTUVWX 0
 			S021 ABCDEFGHIJKLMNOPQRSSSTUVWX 0
 			S022 ABCDEFGHIJKLMNOPQRSSSTUVWX 0
@@ -1017,6 +1053,9 @@ ACTOR PB_SuperGL: PB_Weapon
 			}
 			Goto Ready3
 	FlashSlideKickingStop:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
 			S020 TTTUVWX 1 {
 				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S020");}
 				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S021");}
@@ -1027,6 +1066,9 @@ ACTOR PB_SuperGL: PB_Weapon
 			Goto Ready3
 	
 	FlashPunching:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
 			S030 ABCDEFGHIJKLM 0
 			S031 ABCDEFGHIJKLM 0
 			S032 ABCDEFGHIJKLM 0
@@ -1058,6 +1100,10 @@ ACTOR PB_FragGrenade
 	+FORCEXYBILLBOARD
 	+CANBOUNCEWATER
 	+DONTBOUNCEONSHOOTABLES
+	+USEBOUNCESTATE
+	+BOUNCEONWALLS
+	+BOUNCEONFLOORS
+	+BOUNCEONCEILINGS
 	Bouncetype "Doom"
 	BounceFactor 0.5
 	Scale .35
@@ -1072,18 +1118,30 @@ ACTOR PB_FragGrenade
 		Spawn:
 			TNT1 A 0 {
 				if(waterlevel > 1) {A_SpawnItem ("RocketSmokeTrail52"); }
-				else {A_CustomMissile ("BUBULZ", 0, 0, random (0, 360), 2, random (0, 180));}
 				A_SpawnItem("YellowFlareSmall",0,0);
 			}
 			GRNP A 1 Bright Light("SGL_FRAG") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
 			Loop
-	
+		Bounce:
+			TNT1 A 0
+			TNT1 A 0 {
+			if(GetCvar("pb_sglgrenadeimpact") == 1)
+			{ return state("Death");}
+			else if(GetCvar("pb_sglgrenadeimpact") >=2)
+			{
+				A_Stop;
+				return state("Rest");
+			 }
+			return state("");
+			}
+			Goto spawn
+		Rest:
+		GRNP A 35 Bright Light("SGL_FRAG") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
 		Detonate:
 			TNT1 A 0
 			TNT1 A 0 A_PlaySound("Explosion")
 		Death:
 		XDeath:
-			TNT1 A 0 A_SpawnItem ("BigRicoChet", 0, -30)
 			TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
 			TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
 			TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
@@ -1124,7 +1182,6 @@ ACTOR PB_StickyGrenade: PB_FragGrenade
 		Spawn:
 			TNT1 A 0 {
 				if(waterlevel > 1) {A_SpawnItem ("RocketSmokeTrail52"); }
-				else {A_CustomMissile ("BUBULZ", 0, 0, random (0, 360), 2, random (0, 180));}
 				A_SpawnItem("RedFlareSmall",0,0);
 			}
 			GRNP A 1 Bright Light("SGL_STICKY") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
@@ -1135,6 +1192,7 @@ ACTOR PB_StickyGrenade: PB_FragGrenade
 		Crash:
 			TNT1 A 0 {
 				user_stickycounter = 0;
+				if (AAPTR_TRACER && CheckClass ("SwitchableDecoration", AAPTR_TRACER, TRUE)) { user_stuckEnemy = 1; }
 				A_NoGravity;
 				A_ScaleVelocity(0);
 			}
@@ -1144,7 +1202,8 @@ ACTOR PB_StickyGrenade: PB_FragGrenade
 				if(user_stuckEnemy == 1) {
 
 					if(AAPTR_TRACER) {
-						A_Warp(AAPTR_TRACER,0,0,20,0,WARPF_NOCHECKPOSITION);
+						//A_Warp(AAPTR_TRACER,0,0,20,0,WARPF_NOCHECKPOSITION);
+						A_Warp(AAPTR_TRACER,0,0,0,0,WARPF_NOCHECKPOSITION,"",0.5);
 					}
 					else {
 						A_Fall;
@@ -1182,7 +1241,6 @@ ACTOR PB_StickyGrenade: PB_FragGrenade
 		Detonate:
 			TNT1 A 0 A_StopSound(6)
 			TNT1 A 0 A_PlaySound("Explosion",4)
-			TNT1 A 0 A_SpawnItem ("BigRicoChet", 0, -30)
 			EXPL AAA 0 A_CustomMissile ("BigNeoSmoke", 0, 0, random (0, 360), 2, random (0, 360))
 			TNT1 AAA 0 A_CustomMissile ("ExplosionSmoke", 22, 0, random (0, 360), 2, random (0, 360))
 			TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
@@ -1235,11 +1293,9 @@ ACTOR IncendiaryGrenadeExplosion
 {
     Radius 2
     Height 1
-	//Alpha .8
 	Decal "Scorch"
-	//RenderStyle Translucent
 	Damage 1
-	DamageType "Desintegrate"
+	DamageType "Fire"
 	Scale 1.32
 	Speed 0
 	Gravity 0
@@ -1257,27 +1313,52 @@ ACTOR IncendiaryGrenadeExplosion
     States
     {
 		Spawn:
-			TNT1 A 0
+			TNT1 A 0 A_Explode(100, 150)
 			TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
-			TNT1 A 0 A_SpawnItem ("BigRicoChet", 0, -30)
-			TNT1 AAAA 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
-			EXPL A 0 A_SpawnItem("ExplosionParticleSpawner")
-			TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+						
 			TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
-			TNT1 A 0 A_SpawnItemEx ("IncendiaryGrenadeFX", 0, 0, 0)
-			TNT1 AAAA 0 A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60))
-			EXPL AAAAAAAAAA 0 A_CustomMissile ("FireballExplosionFlamesBig", 6, 0, random (0, 360), 2, random (0, 360))
-			FRFX ZZZ 0 BRIGHT A_CustomMissile ("BigNeoSmoke", 2, 0, random (0, 360), 2, random (0, 360))
-			EXPL A 0 A_CustomMissile ("FlyingBurningFuel", 12, 0, 90, 2, random (50, 130))
-			EXPL A 0 A_CustomMissile ("FlyingBurningFuel", 12, 0, 270, 2, random (50, 130))
-			EXPL AAA 0 A_CustomMissile ("FlyingBurningFuelSmall", 12, 0, random (0, 360), 2, random (50, 130))
-			EXPL AA 0 A_CustomMissile ("FlyingBurningFuelSmall", 12, 0, random (0, 360), 2, random (50, 130))
-			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-25, 25), random (-15, 15))
-			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15))
-			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15))
-			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35))
-			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35))
-			EXPL AA 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (10, 90))
+			FRFX ZZ 0 BRIGHT A_CustomMissile ("BigNeoSmoke", 2, 0, random (0, 360), 2, random (0, 360))
+			EXPL AAAAA 0 A_CustomMissile ("FT_GroundFireSpawner", 12, random(-20,20), random (0, 360), 2, random (40, 60))
+			EXPL AAAAA 0 A_CustomMissile ("FT_GroundFireSpawner", 12, random(-20,20), random (0, 360), 2, random (50, 130))
+		
+		Death:
+			TNT1 A 0
+			Stop
+    }
+}
+
+ACTOR CryoGrenadeExplosion
+{
+    Radius 2
+    Height 1
+	Decal "FreezerBurn"
+	Damage 1
+	DamageType "Ice"
+	Scale 1.32
+	Speed 0
+	Gravity 0
+    +NOBLOCKMAP
+    +NOTELEPORT
+	+NOEXTREMEDEATH
+	-EXTREMEDEATH
+	+FORCEXYBILLBOARD
+	+ALLOWPARTICLES
+    +CLIENTSIDEONLY
+	+DONTSPLASH
+	+PAINLESS
+	-CAUSEPAIN
+	-FORCEPAIN
+    States
+    {
+		Spawn:
+			TNT1 A 0 Bright A_Explode(100,150,0,0,150)
+			TNT1 AAAA 0 Bright A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
+			TNT1 AAAA 0 Bright A_SpawnItemEx("CryoSmoke3", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
+			TNT1 AAA 0 Bright A_SpawnItemEx("CryoRifleTrailSparksSmall", random(5,-5), random(5,-5), random(5,-5), random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
+			TNT1 AAAA 0 Bright A_SpawnItemEx("CryoSmoke2", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
+			TNT1 AAA 0 Bright A_SpawnItemEx("IceExplosionImpact", random(-2,2), random(-2,2), random(-2,2), 0, 0, 0, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
+			TNT1 AAAAAAAAAA 0 A_SpawnItemEx ("DetectFloorIce",random(-150,150), random(-150,150),1,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterIce",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
 		Death:
 			TNT1 A 0
 			Stop
@@ -1295,21 +1376,34 @@ ACTOR PB_IncendiaryGrenade : PB_FragGrenade
 		Spawn:
 			TNT1 A 0 {
 				if(waterlevel > 1) {A_SpawnItem ("BurningEmberParticlesFloating_Bigger"); }
-				else {A_CustomMissile ("BUBULZ", 0, 0, random (0, 360), 2, random (0, 180));}
 				A_SpawnItem("OrangeFlareSmall",0,0);
 			}
 			GRNP A 1 Bright Light("SGL_INCENDIARY") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
 			Loop
+			
+		Bounce:
+			TNT1 A 0
+			TNT1 A 0 {
+			if(GetCvar("pb_sglgrenadeimpact") == 1)
+			{ return state("Death");}
+			else if(GetCvar("pb_sglgrenadeimpact") >=2)
+			{
+				A_Stop;
+				return state("Rest");
+			 }
+			return state("");
+			}
+			Goto spawn
 		
+		Rest:
+		GRNP A 35 Bright Light("SGL_INCENDIARY") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
 		Detonate:
 			TNT1 A 0
 			TNT1 A 0 A_Playsound("weapons/sgl/incendiary")
 		Death:
 		XDeath:
-			TNT1 A 0 A_Explode(70, 145)
+			TNT1 A 0 A_Explode(100, 100)
 			TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
-			TNT1 A 0 A_SpawnItem ("BigRicoChet", 0, -30)
-			TNT1 AAAA 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
 			EXPL A 0 A_SpawnItem("ExplosionParticleSpawner")
 			TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
 			TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
@@ -1317,16 +1411,8 @@ ACTOR PB_IncendiaryGrenade : PB_FragGrenade
 			TNT1 AAAA 0 A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60))
 			EXPL AAAAAAAAAA 0 A_CustomMissile ("FireballExplosionFlamesBig", 6, 0, random (0, 360), 2, random (0, 360))
 			FRFX ZZZ 0 BRIGHT A_CustomMissile ("BigNeoSmoke", 2, 0, random (0, 360), 2, random (0, 360))
-			EXPL A 0 A_CustomMissile ("FlyingBurningFuel", 12, 0, 90, 2, random (50, 130))
-			EXPL A 0 A_CustomMissile ("FlyingBurningFuel", 12, 0, 270, 2, random (50, 130))
-			EXPL AAA 0 A_CustomMissile ("FlyingBurningFuelSmall", 12, 0, random (0, 360), 2, random (50, 130))
-			EXPL AA 0 A_CustomMissile ("FlyingBurningFuelSmall", 12, 0, random (0, 360), 2, random (50, 130))
-			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-25, 25), random (-15, 15))
-			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15))
-			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15))
-			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35))
-			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35))
-			EXPL AA 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (10, 90))
+			EXPL AAAAA 0 A_CustomMissile ("FT_GroundFireSpawner", 12, random(-32,32), random (0, 360), 2, random (40, 60))
+			EXPL AAAAAAAAAA 0 A_CustomMissile ("FT_GroundFireSpawner", random(-32,32), 0, random (0, 360), 2, random (50, 130))
 			Stop
 	}
 }
@@ -1334,7 +1420,7 @@ ACTOR PB_IncendiaryGrenade : PB_FragGrenade
 ACTOR PB_CryoGrenade: PB_FragGrenade
 {
 	DamageType "Freeze"
-	DeathSound "weapons/cryobowhit"
+	DeathSound "weapons/CryoRifle/missiledeath"
 	Decal "FreezerBurn"
 	+NODAMAGETHRUST
 	+FORCEXYBILLBOARD
@@ -1344,30 +1430,44 @@ ACTOR PB_CryoGrenade: PB_FragGrenade
 	
 		Spawn:
 			TNT1 A 0 {
-				if(waterlevel > 1) {A_SpawnItem ("FreezerTrailSparksSmall"); }
-				else {A_CustomMissile ("BUBULZ", 0, 0, random (0, 360), 2, random (0, 180));}
+				if(waterlevel > 1) {A_SpawnItem ("CryoRifleTrailSparksSmall"); }
 				A_SpawnItem("BlueFlareSmall",0,0);
 			}
 			GRNP A 1 Bright Light("SGL_CRYO") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
 			Loop
+			
+		Bounce:
+			TNT1 A 0
+			TNT1 A 0 {
+			if(GetCvar("pb_sglgrenadeimpact") == 1)
+			{ return state("Death");}
+			else if(GetCvar("pb_sglgrenadeimpact") >=2)
+			{
+				A_Stop;
+				return state("Rest");
+			 }
+			return state("");
+			}
+			Goto spawn
 		
+		Rest:
+		GRNP A 35 Bright Light("SGL_CRYO") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
 		Detonate:
 			TNT1 A 0
-			TNT1 A 0 A_Playsound("weapons/cryobowhit")
+			TNT1 A 0 A_Scream
 		Death:
 		XDeath:
-			TNT1 A 0 A_SpawnItemEx ("DetectFloorIce",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
-			TNT1 A 0 A_SpawnItemEx ("DetectCeilIce",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
 			TNT1 A 0 Bright A_StopSound(CHAN_BODY)
 			TNT1 A 0 Bright A_ChangeFlag("ICEDAMAGE", 1)
-			TNT1 A 0 Bright A_ChangeFlag("NODAMAGETHRUST", 0)
-			TNT1 A 0 Bright A_Explode(150,100, 0)  
-			TNT1 A 0 Bright A_Explode(90, 190)
-			TNT1 AAAAAAAAAAA 0 Bright A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
-			TNT1 AAAAA 0 Bright A_SpawnItemEx("CryoSmoke3", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
-			TNT1 AAAAAAA 0 Bright A_SpawnItemEx("FreezerTrailSparksSmall", random(5,-5), random(5,-5), random(5,-5), random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
-			TNT1 AAAAAAA 0 Bright A_SpawnItemEx("CryoSmoke2", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
-			TNT1 AAAA 0 Bright A_SpawnItemEx("IceExplosionImpact", random(-2,2), random(-2,2), random(-2,2), 0, 0, 0, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
+			TNT1 A 0 Bright A_ChangeFlag("NODAMAGETHRUST", 0) 
+			TNT1 A 0 Bright A_Explode(200,120, 0, 0, 120)
+			TNT1 AAA 0 Bright A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
+			TNT1 AAA 0 Bright A_SpawnItemEx("CryoSmoke3", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
+			TNT1 AAA 0 Bright A_SpawnItemEx("CryoRifleTrailSparksSmall", random(5,-5), random(5,-5), random(5,-5), random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
+			TNT1 AAA 0 Bright A_SpawnItemEx("CryoSmoke2", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
+			TNT1 AAA 0 Bright A_SpawnItemEx("IceExplosionImpact", random(-2,2), random(-2,2), random(-2,2), 0, 0, 0, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
+			TNT1 AAAAA 0 A_SpawnItemEx ("DetectFloorIce",random(-150,150), random(-150,150),1,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterIce",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
 			Stop
 	}
 }
@@ -1375,7 +1475,7 @@ ACTOR PB_CryoGrenade: PB_FragGrenade
 ACTOR PB_AcidGrenade : PB_FragGrenade
 {
 	Damage 15
-	DamageType "Desintegrate"
+	DamageType "Disintegrate"
     Decal "Scorch"
 	DeathSound "Daedabus/impact"
 	Obituary "$OB_MPROCKET"
@@ -1384,12 +1484,27 @@ ACTOR PB_AcidGrenade : PB_FragGrenade
 		Spawn:
 			TNT1 A 0 {
 				if(waterlevel > 1) {A_SpawnItem ("GreenTrailSparks"); }
-				else {A_CustomMissile ("BUBULZ", 0, 0, random (0, 360), 2, random (0, 180));}
 				A_SpawnItem("GreenFlareSmall",0,0);
 			}
 			GRNP A 1 Bright Light("SGL_ACID") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
 			Loop
 		
+		Bounce:
+			TNT1 A 0
+			TNT1 A 0 {
+			if(GetCvar("pb_sglgrenadeimpact") == 1)
+			{ return state("Death");}
+			else if(GetCvar("pb_sglgrenadeimpact") >=2)
+			{
+				A_Stop;
+				return state("Rest");
+			 }
+			return state("");
+			}
+			Goto spawn
+		
+		Rest:
+		GRNP A 35 Bright Light("SGL_ACID") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
 		Detonate:
 			TNT1 A 0
 			TNT1 A 0 A_Playsound("Daedabus/impact")
@@ -1412,7 +1527,7 @@ ACTOR ACIDFOG
 	Decal "Scorch"
 	//RenderStyle Translucent
 	Damage 1
-	DamageType "Desintegrate"
+	DamageType "Disintegrate"
 	Scale 1.32
 	Speed 0
 	Gravity 0
@@ -1429,21 +1544,29 @@ ACTOR ACIDFOG
 	-FORCEPAIN
     States
     {
-		Spawn:
+			Spawn:
 			TNT1 A 0 A_SpawnItemEx("PlasmaParticleSpawner", 0, 0, 0, 6, 6, 6, 0, 128)
-			TNT1 A 0 A_Explode ( 50, 190 )
-			TNT1 AAAAAAAA 0 A_SpawnItemEx("GreenCloudLarge", random(3,-3), random(3,-3), random(3,-3), random(1,-1), random(1,-1), 0, 0, SXF_NOCHECKPOSITION, 0)
-			TNT1 AAAAAAAA 0 A_SpawnItemEx("GreenCloudMedium", random(3,-3), random(3,-3), random(3,-3), random(1,-1), random(1,-1), 0, 0, SXF_NOCHECKPOSITION, 0)
-			TNT1 AAAAAAAA 0 A_SpawnItemEx("GreenCloudSmall", random(3,-3), random(3,-3), random(3,-3), random(1,-1), random(1,-1), 0, 0, SXF_NOCHECKPOSITION, 0)
-			TNT1 AAAAAAAAAAAA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+			TNT1 A 0 A_Explode ( 100, 120, 0, 0, 90 )
+			TNT1 AAAAAA 0 A_SpawnItemEx("GreenCloudLarge", random(3,-3), random(3,-3), random(3,-3), random(1,-1), random(1,-1), 0, 0, SXF_NOCHECKPOSITION, 0)
+			TNT1 AAAAAA 0 A_SpawnItemEx("GreenCloudMedium", random(3,-3), random(3,-3), random(3,-3), random(1,-1), random(1,-1), 0, 0, SXF_NOCHECKPOSITION, 0)
+			TNT1 AAAAAA 0 A_SpawnItemEx("GreenCloudSmall", random(3,-3), random(3,-3), random(3,-3), random(1,-1), random(1,-1), 0, 0, SXF_NOCHECKPOSITION, 0)
+			TNT1 AAAAA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
 			
-			TNT1 A 0 A_SpawnItem("NewAcidExplosionSmoke", 0, 0)
+			TNT1 A 0 A_SpawnItemEx("NewAcidExplosionSmoke", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION, 0)
 			TNT1 AAAA 2 BRIGHT Light("BARONBALL") A_SpawnItem("GreenFlare",0,20)
 			Goto Death
 			
 		Death:
 			TNT1 A 60
 			Stop
+    }
+}
+
+ACTOR ACIDFOG_GASPIPE : ACIDFOG {
+    States {
+		Spawn:
+			TNT1 A 0 A_Explode ( 50, 100 )
+			Goto Death	
     }
 }
 
@@ -1467,13 +1590,14 @@ ACTOR GreenCloudSmall
 	-CAUSEPAIN
 	-FORCEPAIN
 	-SOLID
-	Radius 0
+    Radius 0
 	Height 0
+	Scale 0.85
 	PoisonDamage 1
-	DamageType "Desintegrate"
-	PoisonDamageType "Desintegrate"
+	DamageType "Disintegrate"
+	PoisonDamageType "Disintegrate"
 	Speed 1
-	Alpha 0.6
+	Alpha 0.55
 	RenderStyle add
 	Seesound "redburn"
 	
@@ -1481,59 +1605,46 @@ ACTOR GreenCloudSmall
 	{
 	
 	Spawn:
-		GTXL ABCDEFGHIJ 1 
-		TNT1 A 0 A_Explode ( 2, 100 )
-		GTXL JIHGFEDCBA 1 
-		TNT1 A 0 A_Explode ( 2, 100 )
-		GTXL ABCDEFGHIJ 1 
-		TNT1 A 0 A_Explode ( 2, 100 )
-		GTXL JIHGFEDCBA 1 
-		TNT1 A 0 A_Explode ( 2, 100 )
-		GTXL ABCDEFGHIJ 1 
-		TNT1 A 0 A_Explode ( 2, 100 )
-		GTXL JIHGFEDCBA 1 
-		TNT1 A 0 A_Explode ( 2, 100 )
-		GTXL ABCDEFGHIJ 1 
-		TNT1 A 0 A_Explode ( 2, 100 )
-		GTXL JIHGFEDCBA 1 
-		TNT1 A 0 A_Explode ( 2, 100 )
-		GTXL ABCDEFGHIJ 1 
-		TNT1 A 0 A_Explode ( 2, 100 )
-		GTXL JIHGFEDCBA 1 
-		TNT1 A 0 A_Explode ( 2, 100 )
-		GTXL ABCDEFGHIJ 1  A_FadeOut( 0.10)
+		GTXL KLMNOPQRST 1 
+		{
+			if(CountInv("Timer555") < 1)
+			{
+				A_FadeIn(0.10);
+			}
+		}
+		TNT1 A 0 A_GiveInventory("Timer555",1)
+		TNT1 A 0 A_Explode ( 7, 100, 0, 40)
+		GTXL TSRQPONMLK 1 
+		TNT1 A 0 A_Explode ( 7, 100, 0, 40 )
+		TNT1 A 0 A_JumpIfInventory("Timer555",5,1)
+		Loop
+		TNT1 AA 0
+		GTXL KLMNOPQRST 1  A_FadeOut( 0.10)
 		Stop
 	}
 }
 
 ACTOR GreenCloudMedium : GreenCloudSmall
 {
-	Scale 1.3
-//	Translation "0:255=%[0,0,0]:[0,1,0]"
-	DamageType "Desintegrate"
+	Scale 1.3	
+	DamageType "Disintegrate"
 	States
 	{
 	Spawn:
 		GTXL KLMNOPQRST 1 
-		TNT1 A 0 A_Explode ( 4, 100 )
+		{
+			if(CountInv("Timer555") < 1)
+			{
+				A_FadeIn(0.10);
+			}
+		}
+		TNT1 A 0 A_GiveInventory("Timer555",1)
+		TNT1 A 0 A_Explode ( 9, 100, 0, 60)
 		GTXL TSRQPONMLK 1 
-		TNT1 A 0 A_Explode ( 4, 100 )
-		GTXL KLMNOPQRST 1 
-		TNT1 A 0 A_Explode ( 4, 100 )
-		GTXL TSRQPONMLK 1 
-		TNT1 A 0 A_Explode ( 4, 100 )
-		GTXL KLMNOPQRST 1 
-		TNT1 A 0 A_Explode ( 4, 100 )
-		GTXL TSRQPONMLK 1 
-		TNT1 A 0 A_Explode ( 4, 100 )
-		GTXL KLMNOPQRST 1 
-		TNT1 A 0 A_Explode ( 4, 100 )
-		GTXL TSRQPONMLK 1 
-		TNT1 A 0 A_Explode ( 4, 100 )
-		GTXL KLMNOPQRST 1 
-		TNT1 A 0 A_Explode ( 4, 100 )
-		GTXL TSRQPONMLK 1 
-		TNT1 A 0 A_Explode ( 4, 100 )
+		TNT1 A 0 A_Explode ( 9, 100, 0, 60)
+		TNT1 A 0 A_JumpIfInventory("Timer555",5,1)
+		Loop
+		TNT1 AA 0
 		GTXL KLMNOPQRST 1  A_FadeOut( 0.10)
 		Stop
 	}
@@ -1542,8 +1653,7 @@ ACTOR GreenCloudMedium : GreenCloudSmall
 ACTOR GreenCloudLarge : GreenCloudSmall
 {
 	Scale 1.55
-//	Translation "0:255=%[0,0,0]:[0,1,0]"
-	DamageType "Desintegrate"
+	DamageType "Disintegrate"
 	SeeSound "world/barrelloop"
 	States
 	{
@@ -1551,36 +1661,23 @@ ACTOR GreenCloudLarge : GreenCloudSmall
 	Spawn:
 		TNT1 A 0
 		TNT1 A 0 A_Playsound("world/barrelloop", 4, 1, 1)
+	SpawnLoop:
 		GTXL KLMNOPQRST 1 
+		{
+			if(CountInv("Timer555") < 1)
+			{
+				A_FadeIn(0.10);
+			}
+		}
+		TNT1 A 0 A_GiveInventory("Timer555",1)
 		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
-		TNT1 A 0 A_Explode ( 8, 100 )
+		TNT1 A 0 A_Explode ( 12, 100, 0, 80)
 		GTXL TSRQPONMLK 1 
 		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
-		TNT1 A 0 A_Explode ( 8, 100 )
-		GTXL KLMNOPQRST 1 
-		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
-		TNT1 A 0 A_Explode ( 8, 100 )
-		GTXL TSRQPONMLK 1 
-		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
-		TNT1 A 0 A_Explode ( 8, 100 )
-		GTXL KLMNOPQRST 1 
-		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
-		TNT1 A 0 A_Explode ( 8, 100 )
-		GTXL TSRQPONMLK 1 
-		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
-		TNT1 A 0 A_Explode ( 8, 100 )
-		GTXL KLMNOPQRST 1 
-		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
-		TNT1 A 0 A_Explode ( 8, 100 )
-		GTXL TSRQPONMLK 1 
-		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
-		TNT1 A 0 A_Explode ( 8, 100 )
-		GTXL KLMNOPQRST 1 
-		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
-		TNT1 A 0 A_Explode ( 8, 100 )
-		GTXL TSRQPONMLK 1 
-		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
-		TNT1 A 0 A_Explode ( 8, 100 )
+		TNT1 A 0 A_Explode ( 12, 100, 0, 80)
+		TNT1 A 0 A_JumpIfInventory("Timer555",5,1)
+		Loop
+		TNT1 AA 0
 		TNT1 A 0 A_StopSound(4)
 		GTXL KLMNOPQRST 1  A_FadeOut( 0.10)
 		Stop
@@ -1599,15 +1696,14 @@ ACTOR GreenCloudMissile
 	+THRUACTORS
 	Damage 0
 	RenderStyle add
-	DamageType "Desintegrate"
+	DamageType "Disintegrate"
 	Speed 12
 	Scale 0.25
 	Alpha 0.7
-//	Translation "0:255=%[0,0,0]:[0,1,0]"
+	Seesound "redburn"
 	States
 	{
 	Spawn:
-		TNT1 A 0 A_PlaySound("redburn",CHAN_AUTO,1)
 		GTXL KLMNOPQRST 1 BRIGHT Light("BARONBALL") A_SetScale(ScaleX+0.05, ScaleY+0.05)
 		TNT1 A 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
 		TNT1 A 0 A_Explode ( 20, 100, 0)
@@ -1635,11 +1731,10 @@ ACTOR GreenCloudMissile
 
 ACTOR GreenCloudMissile_Enemy : GreenCloudMissile
 {
-	DamageType "Desintegrate"
+	DamageType "Disintegrate"
 	Speed 10
 	Scale 0.15
 	Alpha 0.3
-//	Translation "0:255=%[0,0,0]:[0,1,0]"
 	Seesound "redburn"
 	-RIPPER
 	-SOLID
@@ -1672,6 +1767,7 @@ ACTOR GreenCloudMissile_Enemy : GreenCloudMissile
 		Stop
 	}
 }
+
 
 
 ACTOR FlakShell

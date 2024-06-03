@@ -6,34 +6,45 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			//$Category Project Brutality - Monsters/Former Humans/Zombiemen
 			//$Sprite 5CZAB1
 			Health 125;
-			MeleeRange 200;
-			DropItem "Gas", 96;
+			MaxTargetRange 200;
+			MeleeRange 90;
+			DropItem "PB_Fuel", 96;
+			DropItem "PB_Stimpack", 22;
 		}
 		States
 		{
+			Death.Execution:
+				TNT1 A 0 {
+					A_Stopsound();
+					A_FaceTarget();
+					A_NoBlocking();
+				}
+				5CZA GH 4 ;
+				TNT1 A 0 A_Pain;
+				5OSH ABA 7;
+				TNT1 A 0 A_Recoil(4);
+				Goto Death.SSG;
+		
 			Spawn:
 				5CZA A 1;
-				TNT1 A 0 A_GiveInventory("SKChainsawZombie", 1);
 			Stand:
 				5CZA A 10 A_Look();
 				Loop;
 			See:
 				TNT1 A 0 {
-					A_TakeInventory("SKChainsawZombie", 1);
 					EnemyLastSighted = Level.MapTime;
 				}
 			SeeContinue:
 				TNT1 A 0 A_StartSound("weapons/chainsaw/idle",7);
-				5CZA AABB 2 A_SmartChase();
+				5CZA AAABBB 1 A_SmartChase();
 				TNT1 A 0 A_StartSound("humans/step", 3);
-				5CZA CCDD 2 A_SmartChase();
+				5CZA CCCDDD 1 A_SmartChase();
 				TNT1 A 0 A_StartSound("humans/step",3);
-				TNT1 A 0 A_JumpIfInventory("Wandering",16,"LookAround");
+				TNT1 A 0 A_JumpIf(CountInv("Wandering") == 71 && !OnPatrol,"LookAround");
 				Loop;
 			LookAround:
 				TNT1 A 0 A_ClearTarget();
-				TNT1 A 0 A_TakeInventory("Wandering", 36);
-				TNT1 A 0 A_GiveInventory("SKChainsawZombie", 1);
+				TNT1 A 0 A_TakeInventory("Wandering", 71);
 				TNT1 A 0 A_Jump(200, 2);
 				TNT1 A 0 A_StartSound("monsters/zombie/searching", CHAN_AUTO);
 				5CZA AAAA 10 A_Look();
@@ -44,12 +55,11 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			//Attack Logic// 
 			////////////////
 			
+			Missile:
 			Melee:
-				TNT1 A 0 A_JumpIfInventory ("SKLabGuy", 1, "Stand");
 				TNT1 A 0 A_Jump(224, 2);
 				TNT1 A 0 A_CombatDialogueHandler();
-				
-				TNT1 A 0 A_JumpIfCloser(80, "MeleeStart");
+				TNT1 A 0 A_JumpIfInTargetLOS("MeleeStart",0, JLOSF_DEADNOJUMP, 60);	
 				TNT1 A 0 A_StartSound("sawswing", 6, CHANF_DEFAULT, 0.5);
 			MeleeRushStart:
 				TNT1 A 0 A_StartSound("weapons/chainsaw/loop3", 7, CHANF_DEFAULT, 0.7,1);
@@ -88,9 +98,10 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				TNT1 A 0 A_StartSound("weapons/chainsaw/loop", 7, CHANF_DEFAULT, 0.5);
 				5CZA EFGHGF 3 { 
 					A_FaceTarget();
-					A_SpawnProjectile("ZombieChainsawAttack",20,0,0,0);
+					A_CustomMeleeAttack(3, "Machete/Yum", "", "Cut");
+					//A_SpawnProjectile("ZombieChainsawAttack",20,0,0,0);
 				}
-				TNT1 A 0 A_JumpIfCloser(90, "MeleeLoop");
+				TNT1 A 0 A_JumpIfTargetInLOS("MeleeLoop",0,JLOSF_DEADNOJUMP,90);
 				TNT1 A 0 A_StopSound(7);
 				TNT1 A 0 A_StartSound("CSAWSTAT", 7);
 				Goto See;
@@ -126,38 +137,21 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				TNT1 AA 0 A_SpawnProjectile ("PB_Teeth", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				5OSH ABBBA 4;
 				TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-				TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+				
 				TNT1 A 0 A_Jump(180, "See");
 				TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 				Goto See;
 				
 		Pain.Melee:
-			TNT1 A 0 A_JumpIfInventory ("SKChainsawZombie", 1, "StealthKill");
 			Pain:
 				TNT1 A 0 A_StopSound(7);
 				TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
 				5CZA I 6 A_Pain();
 				TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-				TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+				
 				TNT1 A 0 A_Jump(180, "See");
 				TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 				Goto See;
-			StealthKill:
-				TNT1 A 0 A_TakeInventory("SKChainsawZombie", 1);
-				5CZA I 1 A_FaceTarget();
-				TNT1 A 0 A_JumpIfInTargetInventory("FistsSelected", 1, 2);
-				5CZA I 1;
-				Goto Pain;
-				TNT1 A 0 {
-					A_GiveToTarget("GoFatality", 1);
-					A_GiveToTarget("SKChainsawZombie", 1);
-					A_NoBlocking();
-					A_Die("Stealthy");
-				}
-				Stop;
-			Death.Stealthy:
-				TNT1 A 0;
-				Stop;
 				
 			Downed:
 				5S11 C 4;
@@ -173,7 +167,6 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			5CZA G 1 {
 					bNODROPOFF = false;
 					bFORCEXYBILLBOARD = true;
-					A_TakeInventory("SKZombieman", 1);
 					A_GiveInventory("IsDown", 1);
 					A_Pain();
 					A_facetarget();
@@ -191,7 +184,6 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			5PO4 U 1 {
 					bNODROPOFF = false;
 					bFORCEXYBILLBOARD = true;
-					A_TakeInventory("SKZombieman", 1);
 					A_GiveInventory("IsDown", 1);
 					A_Pain();
 					ThrustThingZ(0,40,0,1);
@@ -210,7 +202,6 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		
 		
 		GetUp:
-			TNT1 A 0 A_SpawnItem("LargeMassWaterImpact");
 			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 16, "FallingDie");
 			TNT1 A 0 {
 				A_TakeInventory("FallingHeight", 100);
@@ -226,7 +217,7 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			5CZC F 6;
 			5CZA A 6;
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+			
 			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 			Goto See;
 		 
@@ -358,7 +349,12 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		Pain.Avoid:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "PlayerActionDialogue");
+		Roll:
 		Avoid:
+			TNT1 A 0
+			{
+				avoidCooldown = 175;
+			}
 			TNT1 A 0 A_Jump(256, "DiveLeft", "DiveRight", "DiveLeft", "DiveRight", "DiveFront");
 			Goto DiveFront;
 			
@@ -380,7 +376,13 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		Death:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 A_Jump(24, "DeathAccident");
-			TNT1 A 0 A_Jump(96, "Death.Arm", "DeathNoGuts");
+			TNT1 A 0 A_DeathWepCheck("ShotgunSelected", 400, "Death.Shotgun");
+			TNT1 A 0 A_DeathWepCheck("ASGSelected", 400, "Death.Shotgun");
+			TNT1 A 0 A_DeathWepCheck("SSGSelected", 200, "Death.SSG");
+			TNT1 A 0 A_DeathWepCheck("MinigunSelected", 1000, "Death.Minigun");
+			TNT1 A 0 A_DeathWepCheck("NewChaingunSelected", 750, "Death.Nailgun");
+			//TNT1 A 0 A_Jump(96, "Death.Arm", "DeathNoGuts");
+			TNT1 A 0 A_Jump(96, "DeathNoGuts");
 			TNT1 A 0 A_Jump(256, "DeathMirror", "Death2", "BaseDeath");
 		BaseDeath:
 			5SMS H 5;
@@ -424,18 +426,18 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
 			TNT1 A 0 A_StartSound("BODYF",6);
-			TNT1 A 0 A_SpawnItem ("ZombieScientistChainsawDyingGuts");
+			TNT1 A 0 A_SpawnItemEx ("ZombieScientistChainsawDyingGuts", 0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 			
 		DeathAccident:
 			TNT1 A 0 A_Scream();
 			TNT1 A 0 A_NoBlocking();
 			//TNT1 A 0 A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
-			TNT1 A 0 A_SpawnItem ("DyingChainsawScientistAccident");
+			TNT1 A 0 A_SpawnItemEx ("DyingChainsawScientistAccident", 0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 			
-
-		 Death.Arm:
+		Death.ArmHitbox:
+		Death.Arm:
 			TNT1 A 0 {
 				A_SpawnProjectile ("XDeathLabGuyArm", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnProjectile ("PB_SmallGib", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
@@ -446,7 +448,7 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 				A_Scream();
 			}
 			5PO5 F 6;
-			TNT1 A 0 A_SpawnItem ("DyingFormerScientistChainsawNoArm");
+			TNT1 A 0 A_SpawnItemEx ("DyingFormerScientistChainsawNoArm", 0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 			
 			
@@ -521,7 +523,7 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_SpawnItem("DeadScientistTornApart");
 			Stop;
 
-		
+		Death.HeadHitbox:
 		Death.Head:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 A_FaceTarget();
@@ -529,8 +531,8 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_JumpIfInTargetInventory("HasPlasmaWeapon", 1, "Death.Plasma");
 			TNT1 A 0 A_JumpIfInTargetInventory("HasCutingWeapon", 1, "Death.Decapitate");
 			TNT1 A 0 A_JumpIfInTargetInventory("RandomHeadExploder", 1, "HeadExplode");
-			TNT1 A 0 A_JumpIfHealthLower(-600, "HeavyHead");
-			TNT1 A 0 A_JumpIfHealthLower(-90, "HeadExplode");
+			TNT1 A 0 A_JumpIfHealthLower(-100, "HeavyHead");
+			TNT1 A 0 A_JumpIfHealthLower(-60, "HeadExplode");
 		HeadMinor:
 			TNT1 A 0 A_StartSound("MinorHeadshot");
 			TNT1 A 0 A_Jump (256, "DeathMinorhead1", "DeathMinorhead2", "DeathMinorHead3");
@@ -562,7 +564,7 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood2", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_Jump(200, "DeathMinorHead2Short");
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_SpawnItem ("DyingChainsawZombieLostTeeth");
+			TNT1 A 0 A_SpawnItemEx ("DyingChainsawZombieLostTeeth", 0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 			
 		DeathMinorHead2Short:
@@ -675,7 +677,8 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			FSAD EEEEEEEEEEEEEEEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
 			TNT1 A 0 A_SpawnItem ("DeadLabguyFSADE");
 			Stop;
-			
+		
+		Death.LegHitbox:
 		Death.Leg:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 A_JumpIfHealthLower(-100,"DoubleLegRemove");
@@ -866,21 +869,23 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			Stop;
 			
 		Death.fire:
+		Death.FireExplosion:
 		Death.Flames:
 		Death.Burn:
+			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 			TNT1 A 1 {
 				A_StopSound(CHAN_7);
-				A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
+				A_SpawnProjectile("DroppedChainsaw", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 				A_ScreamAndUnblock();
 				A_SpawnItemEx("BurningLabGuy",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
 			}
 			Stop;
 		  
-		Death.Desintegrate:
+		Death.Disintegrate:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 A_Scream();
 			TNT1 A 0 A_NoBlocking();
-			TNT1 A 0 A_SpawnItem("DesintegratedHuman");
+			TNT1 A 1 A_SpawnItem("DisintegratedHuman");
 			Stop;
 			
 		Death.Blackhole:
@@ -1011,8 +1016,7 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		Death.Melee:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down");
-			TNT1 A 0 A_JumpIfInventory ("SKChainsawZombie", 1, "StealthKill");
-        Death.Kick:
+		 Death.Kick:
 			TNT1 A 0 A_StopSound(7);
 			TNT1 A 0 {
 				bNODROPOFF = false;
@@ -1234,8 +1238,8 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 			TNT1 A 0 A_StopSound(7);
 		TNT1 A 0 A_FaceTarget();
 		TNT1 A 0 A_Jump(12, "Death.Arm");
-		TNT1 A 0 A_NoBlocking();
 		TNT1 A 0 A_Jump(128, "Death.Blast2");
+		TNT1 A 0 A_NoBlocking();
 		TNT1 A 0 {
 			A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
@@ -1270,6 +1274,7 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 	    Stop;
 		
 	Death.Blast2:
+	TNT1 A 0 A_NoBlocking();
 	    TNT1 A 0 {
 			A_XScream();
 			NashGoreGibs.SpawnGibs(self);
@@ -1313,7 +1318,7 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 	Death.SSG:
 			TNT1 A 0 A_StopSound(7);
 	    LP07 A 1 {
-				A_Recoil(-20);
+				ThrustThing(angle * 256 / 360 + 128, 22, 0, 0);
 				A_FaceTarget();
 				NashGoreGibs.SpawnGibs(self);
 				for (int i = 0; i < 5; i++) {	
@@ -1344,7 +1349,8 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		Stop;
 		
 	XDeath:
-			TNT1 A 0 A_StopSound(7);
+		TNT1 A 0 A_StopSound(7);
+		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 		TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG");
 		TNT1 A 0 { 
 			NashGoreGibs.SpawnGibs(self);
@@ -1365,20 +1371,11 @@ Class PB_ZombieScientistChainsaw : PB_ZombieScientist
 		Stop;
 		
 		Raise:
-			POSS KJIH 5;
+			5CZA KJIH 5;
 			Goto See;
-		
-		Death.IceBeam:
-			TNT1 A 0 {
-				bSHOOTABLE = false;
-				bSOLID = false;
-				A_SpawnItem("FrozenChainsawZombie");
-				A_SpawnItem("IceCrystalGround");
-				A_SpawnItem("IceCrystalGround");
-			}
-			Stop;
-		
+
 		Death.Ice:
+		Death.IceExplosion:
 		Death.Freeze:
 		Death.Frost:
 			TNT1 A 0 {

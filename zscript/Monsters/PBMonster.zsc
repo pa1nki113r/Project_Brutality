@@ -1,0 +1,396 @@
+class PB_Monster : Actor abstract
+{
+	mixin PB_RandomZombieNameHandler;
+	Mixin PB_CheckFunctions;
+	
+	int	HitBoxTimerNew;
+	int HitBoxTimerOld;
+	int EnemyLastSighted;
+	bool HitBoxSpawned;
+	bool Wandering;
+	bool OnPatrol;
+	bool willBeLooking;
+	int heardOpponent;
+	int patrolTimer;
+	
+	int avoidCooldown;
+	
+	int enemyRange;
+	Property AttackRange : enemyRange;
+	//the enemies attack range, in case you wanted some enemies to be CQC mainly, or snipe
+	
+	bool canRoll;
+	property CanIRoll : canRoll;
+	bool canFallback;
+	property CanIFallback : canFallback;
+	//bools controlling whether an enemy can Dodge if the player is looking at them
+	
+	double combatSpeed;
+	double chaseSpeed;
+	double searchSpeed;
+	double patrolSpeed;
+	property PBMonSpeed : combatSpeed, chaseSpeed, searchSpeed, patrolSpeed;
+	//These are used for dynamically changing a monsters movement speed on the fly
+	//because why would a zombieman still be running around full speed if its not actively
+	//in combat with you.
+	
+	double dmgHeadMult; //1.25
+	double dmgTorsoMult; //1.1
+	double dmgArmMult; //0.70
+	double dmgLowTorsoMult; //1.0
+	double dmgDickMult; //0.95
+	double dmgLegMult; //0.80
+	
+	property MonDMGMult : dmgHeadMult, dmgTorsoMult, dmgArmMult, dmgLowTorsoMult, dmgDickMult, dmgLegMult;
+	
+	double posHeadHB; //0.8
+	double posTorsoHB; //0.65
+	double posDickHB; //0.38
+	double posLegHB; //0.40
+	
+	property MonPosHB : posHeadHB, posTorsoHB, posDickHB, posLegHB;
+	
+	//The main custom A_Chase function
+	
+	void A_SmartChase(statelabel s1 = "Missile", statelabel s2 = "Melee", int flags = 0)
+	{
+		//A_LogFloat(self.speed);
+		//A_LogFloat(self.fastspeed);
+		
+		if (willBeLooking)
+			return;
+		
+		if (target && (target is "PossessionWarperA" || isFriend(target)))
+		{
+			A_ClearTarget();
+			A_ClearLastHeard();
+			A_ClearSoundTarget();
+			target = NULL;
+		}
+		
+		if (target == NULL || Wandering == true || (target && (target.health <= 0)))
+		{
+			Wandering == true;
+			A_GiveInventory("Wandering",1);
+			if(patrolTimer > 700)
+			{
+				self.Speed = self.patrolSpeed;
+				//self.FastSpeed = self.patrolSpeed * 2;
+				OnPatrol = true;
+				A_SetTics(2);
+			}
+			else
+			{
+				self.Speed = self.searchSpeed;
+				//self.FastSpeed = self.searchSpeed * 2;
+			}
+			A_Wander();
+			A_LookEx();
+			patrolTimer++;
+			return;
+		}
+
+		if (target && target.Health > 0)
+		{
+			Double Dist = Distance3DSquared (Target);
+			
+			if (Dist <= 150*150 && Dist >= 50*50 && CheckSight(target))
+			{
+				if(canFallback)
+					SetStateLabel("Fallback");
+			}
+			
+			if(waterlevel >= 1 && Target.Pos.Z > (self.Pos.Z + 10))
+			{
+				A_Chase(s2, s1, flags);
+				A_FaceTarget(30);
+				A_Recoil(-3);
+				ThrustThingZ(0, 5, 0, 1);
+			}
+			
+			if (Dist <= 3000*3000 && CheckSight(target))
+			{
+				double dist = Distance3D(target);
+				let aimActor = AimTarget();
+				let fw = 33;
+				
+				//check if sight the player is close enough to "hear" them for memory
+				if (Dist <= 150*150)
+				{
+					EnemyLastSighted = Level.MapTime;
+					Wandering == false;
+					OnPatrol = false;
+					patrolTimer == 0;
+				}
+				
+				self.Speed = self.combatSpeed;
+				//self.FastSpeed = self.combatSpeed * 2;
+				
+				if(canRoll)
+				{
+					//dodging system check
+					LookExParams look;
+					look.FOV = 2;
+					int chance = (random(1,30));
+					if(target != NULL)
+					{
+						if(Dist <= 1500*1500 && Chance <= 5 && target.IsVisible(self, false, look))
+						{
+							if(GetCVar("pb_disabledynamicavoid") == 0)
+							{
+								A_FaceTarget();
+								SetStateLabel("Roll");
+							}
+						}
+					}
+				}
+				A_Chase(s2, s1, flags);
+			}
+			else if (abs(Level.MapTime - EnemyLastSighted) < 360 && !CheckSight(target))
+			{
+				self.Speed = self.chaseSpeed;
+				//self.FastSpeed = self.chaseSpeed * 2;
+				A_Chase(s2, s1, flags);
+				
+				int chanceR = (random(1,10));
+				
+				if(bFRIGHTENED && chanceR <= 5)
+				{
+					SetStateLabel("Reload");
+				}
+			}
+			else
+			{
+				Wandering == true;
+				self.Speed = self.searchSpeed;
+				//self.FastSpeed = self.searchSpeed * 2;
+				A_ClearTarget();
+				A_ClearLastHeard();
+				A_ClearSoundTarget();
+				target == NULL;
+			}
+		}
+	}
+	
+	//Extra functions for firing checks and pain checks
+	
+	void A_CheckLOFRanged(statelabel jumpstate, statelabel dodgestate)
+	{
+		double dist = Distance3D(target);
+		let aimActor = AimTarget();
+		int chance = (random(1,4));
+		
+		A_FaceTarget(0, 180, 0, 0, FAF_TOP);
+		
+		if(dist > self.enemyRange) // Too far away.
+		{
+			//Console.PrintF("Not Closer");
+			SetStateLabel("SeeContinue");
+		}
+		else if(CheckLOF() && dist <= self.enemyRange) /*(aimActor is "PlayerPawn" && dist <= self.enemyRange)*/ // Can aim at the player.
+		{
+			//Console.PrintF("Closer and LOF");
+			SetStateLabel(jumpstate);
+		}
+		else if(chance == 1)  //theyre zombie and feral demons, sometimes theyre just stupid yea?
+		{
+			//Console.PrintF("Attempting Anyways");
+			SetStateLabel(jumpstate);
+		}
+		else // Aim obstructed
+		{
+			//Console.PrintF("Else Failed, Dodging");
+			if(self.canRoll == true)
+			{
+				SetStateLabel(dodgestate);
+			}
+			else
+			{
+				SetStateLabel("SeeContinue");
+			}
+		}
+	}
+	
+	void A_DeathWepCheck(string tokenName, double unitDist, statelabel deathState)
+	{
+		if(target && Distance2D(target) < unitDist && CountInv(tokenName, AAPTR_TARGET) >= 1)
+		{
+			SetStateLabel(deathState);
+		}
+		return;
+	}
+	
+	void ExecutionHandler() {
+		if(CheckInventory("ExecutionToken",1)) {
+			SetState(FindState("Execution"));
+		}
+	}
+	
+	void HitboxerHandler() {
+		
+		if (HitBoxSpawned == True){
+			HitBoxTimerNew = Level.MapTime;
+			if(abs(HitBoxTimerNew - HitBoxTimerOld) > 350) {
+				A_TakeInventory("HeadshotToken",1);
+				HitBoxSpawned = False;
+				Wandering = False;
+			}
+		}
+		
+		if (CheckInventory("HeadshotToken",1) && HitBoxSpawned == False) {
+			//A_SpawnItem("PB_HeadshotHitbox");
+			if (!CheckInventory("IsProning", 1)){
+				//A_SpawnItem("PB_LegHitbox");
+			}
+			HitBoxSpawned = True;
+			HitBoxTimerOld = Level.MapTime;
+		}
+		
+	}
+	
+	double A_PrepairDrop()
+	{
+		vector2 aimbak =(self.angle,self.pitch);
+		self.A_FaceTarget(0,0);
+		self.angle=aimbak.x;
+		self.pitch=aimbak.y;
+		
+		double targdist=(self.target?distance3d(self.target):4096);
+		vector2 leadoffset;
+		if(targdist>2000) leadoffset=(frandom(-2.,2),frandom(-1.,1.));
+		else leadoffset=(
+			deltaangle(aimbak.x,aimbak.x),
+			deltaangle(aimbak.y,aimbak.y)
+		)*targdist*frandom(0.055,0.067);
+
+		self.angle += leadoffset.x;
+		self.pitch += leadoffset.y;
+		return targdist;
+	}
+
+	void A_DropAdjust(class<actor> missiletype, class<actor> missiletype2,double offX, double offY, double offZ,double PredAngle=0,
+						double dist=0,double speedmult=1.,double gravity=0,actor target=null,double spawnOffsetY=0,bool flipped=0,int minRange=0,int maxRange=1000)
+	{
+		if (getdefaultbytype(missiletype).gravity != 0) { PredAngle = ACS_NamedExecuteWithResult("PredictAim", 1, 20, 32); }	//(int retAngle, int projectileSpeed, int projectileZ)
+		else {PredAngle = ACS_NamedExecuteWithResult("PredictAim", 1, getdefaultbytype(missiletype).speed, offZ);}	//(int retAngle, int projectileSpeed, int projectileZ)
+			
+		if(!target)target=self.target;
+		if(!target)return;
+		double ceil = self.CeilingZ - self.pos.z;
+		
+		double tarDist = self.A_PrepairDrop();
+		if(ceil < 80 || (tarDist > maxRange || tarDist < minRange))
+		{
+			self.A_SpawnProjectile(missiletype2,offZ);
+			return;
+		}
+		if(dist<1) dist=max(1,(target?self.distance2d(target):1));
+		if(!gravity)gravity=getdefaultbytype(missiletype).gravity;
+		double spd=getdefaultbytype(missiletype).speed*speedmult;
+		if(getdefaultbytype(missiletype).gravity&&dist>spd)
+		{
+			
+			int ticstotake=dist/spd;
+            int dropamt=0;
+            for(int i=1;i<=ticstotake;i++)
+			{
+                dropamt+=i;
+            }
+            self.pitch -= min(atan(dropamt*gravity/dist),30);
+        }
+
+        //because we don't shoot from height 32 but 42
+        if(dist>0 && gravity != 0) {self.pitch += atan(10/dist);}
+		else { self.pitch = 0;}
+		
+		double finalAngle =  PredAngle+1024;
+		
+		if(flipped) {
+			finalAngle = PredAngle-1024;
+		}
+		else {
+			finalAngle = PredAngle+1024;
+		}
+		
+		self.A_DropProjectile(missiletype,offX,offY,offZ,tarDist,finalAngle, spawnOffsetY);
+    }
+	
+	void A_DropProjectile(class<actor> missiletype, double offX, double offY, double offZ, double targdist, double PredictAngle, double spawnOffsetY=0.0)
+	{
+			
+			if(!getdefaultbytype(missiletype).gravity) {
+				self.A_SpawnProjectile(missiletype,offZ, offX, PredictAngle*360/65536);
+			}
+			else {
+				self.A_SpawnItemEx(
+					missiletype,offX,offY,offZ,
+					cos(pitch)*abs(offY),0,-sin(pitch)*abs(offY),
+					PredictAngle*360/65536,												// atan(offY/targdist)
+					flags:SXF_NOCHECKPOSITION|SXF_SETTARGET|SXF_TRANSFERPITCH
+				);
+			}
+	}
+	
+	action void A_WallCheck(int side, statelabel Roll, statelabel NoCanDo)
+	{
+		FLineTraceData dt1;
+		
+		self.LineTrace(self.Angle + 90 * side, self.Radius * 6, self.Pitch, TRF_NOSKY | TRF_THRUACTORS, self.Height * 0.95, data: dt1);
+		
+		bool Wall = dt1.HitType == FLineTraceData.TRACE_HitWall;
+		
+		if(!Wall)
+		{
+			SetStateLabel(Roll);
+		}
+		else
+		{
+			SetStateLabel(NoCanDo);
+		}
+		return;
+	}
+	
+	//Tick and PostBeginPlay stuff
+
+	override void Tick()
+	{
+		Super.Tick();
+		//HitboxerHandler();
+		ExecutionHandler();
+		
+		if(avoidCooldown > 0)
+		{
+			avoidCooldown--;
+		}
+	}
+
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		heardOpponent = 0;
+		HitBoxSpawned = False;
+		avoidCooldown = 0;
+	}
+	
+	Default
+	{
+		Monster;
+		+FLOORCLIP;
+		+SLIDESONWALLS;
+		+DOHARMSPECIES;
+		+HARMFRIENDS;
+		+ROLLSPRITE;
+		+ROLLCENTER;
+		+FORCEPAIN;
+		+JUMPDOWN;
+		-MISSILEMORE;
+		-MISSILEEVENMORE;
+		BloodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
+		PB_Monster.CanIRoll true;
+		PB_Monster.CanIFallback true;
+		PB_Monster.MonDMGMult 1.25, 1.1, 0.70, 1.0, 0.95, 0.80;
+		PB_Monster.MonPosHB 0.8, 0.65, 0.38, 0.40;
+		PB_Monster.AttackRange 5000;
+		PB_Monster.PBMonSpeed 4, 3, 1.5, 2; //this should be the baseline, especially for zombies
+	}
+}

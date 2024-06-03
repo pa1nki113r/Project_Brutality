@@ -1,0 +1,1802 @@
+extend class PB_WeaponBase
+{
+	action void PB_LowAmmoSoundWarning(string type = "default", string ammoItem = "SuperMario64ForTheXboxOne")
+	{
+		Ammo count;
+		if(ammoItem == "SuperMario64ForTheXboxOne")
+			count = invoker.ammo2;
+		else
+			count = Ammo(FindInventory(ammoItem));
+			
+		if(!count)
+		{
+			console.printf("PB_LowAmmoSoundWarning: Invalid ammo class");
+			return;
+		}
+		
+		int lowammocount = ceil(count.maxamount * 0.25);
+		int currentammocount = count.amount;
+
+		sound sndName = "weapons/lowammo/"..type;
+		
+		if(currentammocount <= lowammocount)
+		{
+			double clickvolume = PB_Math.LinearMap(currentammocount, 1.0, lowammocount, 1.0, 0.5);
+			A_StartSound(sndName, CHAN_AUTO, CHANF_OVERLAP, clickvolume, ATTN_STATIC, frandompick(0.98, 1.0));
+			
+			if(currentammocount == 1)
+				A_StartSound("weapons/lowammo/sweetener", CHAN_AUTO, CHANF_OVERLAP, 1.0, ATTN_STATIC);
+			
+			//console.printf("%f %i %i", clickvolume, lowammocount, currentammocount);
+			if(currentammocount == 0)
+				console.printf("PB_LowAmmoSoundWarning: Ammo count is 0 instead of 1, was the function called after the ammo item was taken?");
+		}
+	}
+	
+	action void PB_UseLine(int range = 64)
+    {
+        double pz = height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor;
+        FLineTraceData ltd;
+        LineTrace(angle, range, pitch, offsetz: pz, data: ltd);
+        if (ltd.HitLine)
+        {
+            ltd.HitLine.Activate(player.mo, ltd.LineSide, SPAC_Use);
+        }
+    }
+    
+    action void PB_FireOffset(bool interp = true) 
+	{
+		if( !cvar.GetCVar("PB_ExaggeratedRecoil", invoker.owner.player).GetBool() )
+			return;
+
+		invoker.exaggerationMultiplier = cvar.GetCVar("PB_ExaggeratedRecoilMul", invoker.owner.player).GetFloat();
+		
+		if(invoker.exaggerationMultiplier == 0) 
+		{
+			invoker.exaggerationMultiplier = 0.1;
+		}
+		
+		A_WeaponOffset(frandom(-invoker.horizontalOffsetRecoil, invoker.horizontalOffsetRecoil) * invoker.exaggerationMultiplier, frandom(1, invoker.verticalOffsetRecoil) * invoker.exaggerationMultiplier + 32, WOF_INTERPOLATE);
+		A_SetRoll(roll + frandom(-invoker.horizontalOffsetRecoil, invoker.horizontalOffsetRecoil) * invoker.exaggerationMultiplier, SPF_INTERPOLATE);
+		PB_QuakeCamera(2,3);
+	}
+	
+	action bool PB_ChainsawHealthRestore(){
+		return invoker.chainsawMode;
+	}
+	
+	action void PB_SetChainsawHealthRestore(bool type){
+		invoker.executingEnemy = type;
+	}
+	
+	action void PB_SawAttack(bool verticalCut = 0, bool stealArmor = 0)
+	{
+		double playerHealth = self.health;
+		Actor target = self.GetPointer(AAPTR_PLAYER_GETTARGET);
+		
+		if(target)
+		{
+			if(CountInv("ChainsawResourceGather") == 1 && (target is "PB_Monster" || target.bCountKill == true) && CountInv("PB_Fuel") > 0 && playerHealth < 200) {
+				
+				double coefficient = 0.015;
+				if (playerHealth < 100) {coefficient = 0.03;}
+					
+				double healingFactor = coefficient*sqrt(200-playerHealth);
+				
+				if(verticalCut)
+					A_Saw("", "Machete/Yum", 2, "SSawPuff3", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS, 80, 3, 0, healingFactor, 200);
+				else
+					A_Saw("", "Machete/Yum", 2, "SSawPuff2", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS, 80, 3, 0, healingFactor, 200);
+			
+			}
+			else
+			{
+				if(verticalCut)
+					A_Saw("", "Machete/Yum", 2, "SSawPuff3", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS|SF_NOUSEAMMO , 80, 3, 0);
+				else
+					A_Saw("", "Machete/Yum", 2, "SSawPuff2", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS|SF_NOUSEAMMO , 80, 3, 0);
+			}
+		}
+	}
+	
+	action void Saw_SwingDirection()
+	{
+		int direction;
+			
+		usercmd pcmd = player.cmd;
+			
+		if (pcmd.forwardmove||-pcmd.forwardmove) direction = 1;
+		else if (pcmd.sidemove||-pcmd.sidemove) direction = 2;
+		else direction = 3;
+		
+		let psp = player.FindPSprite(PSP_WEAPON);
+			if (!psp) return;
+
+		let wep = player.ReadyWeapon;
+		if (!wep) return;
+			
+		State 	RightAttack = wep.FindState('RightAttack1Stop'), 
+				LeftAttack = wep.FindState('LeftAttack1Stop');
+			
+		bool bIsSwingR = RightAttack != NULL && InStateSequence(psp.CurState, RightAttack);
+		bool bIsSwingL = LeftAttack != NULL && InStateSequence(psp.CurState, LeftAttack);
+		
+		switch (direction)
+		{			
+			case (1):
+			{
+				direction = pcmd.forwardmove;
+				if (PressingFire() && direction > 0)
+				{
+					//return resolvestate("ForwardAttackClean");
+					psp.SetState(ResolveState("ForwardAttackClean"));
+				}
+				else if (PressingFire() && direction < 0)
+				{
+					//return resolvestate("BackwardAttackClean");
+					psp.SetState(ResolveState("BackwardAttackClean"));
+				}
+				else if (PressingFire() && direction == 0)
+					//return resolvestate("CleanAttack");
+					psp.SetState(ResolveState("CleanAttack"));
+			}
+			break;
+			case (2):
+			{
+				direction = pcmd.sidemove;
+				if (PressingFire() && direction > 0)
+				{
+					//return resolvestate("RightAttackClean");
+					if( bIsSwingR )
+						psp.SetState(ResolveState("RightAttackClean2"));
+					else
+						psp.SetState(ResolveState("RightAttackClean"));
+				}
+				else if (PressingFire() && direction < 0)
+				{
+					//return resolvestate("LeftAttackClean");
+					if( bIsSwingL )
+						psp.SetState(ResolveState("LeftAttackClean2"));
+					else
+						psp.SetState(ResolveState("LeftAttackClean"));
+				}
+				else if (PressingFire() && direction == 0)
+					//return resolvestate("CleanAttack");
+					psp.SetState(ResolveState("CleanAttack"));
+			}
+			break;
+			case (3):
+			{
+				if (PressingFire() && direction == 0)
+					psp.SetState(ResolveState("CleanAttack"));
+			}
+			break;
+		}
+	}		
+	
+	action bool PlayerForwardBack()
+	{
+		float direction;
+		direction = player.cmd.forwardmove;
+		console.printf('' .. direction);
+		return direction;
+	}
+	
+	action bool PlayerLeftRight()
+	{
+		float direction;
+		direction = player.cmd.sidemove;
+		console.printf('' .. direction);
+		return direction;
+	}
+	
+	//- L, 0 C, + R
+	// [gng] credits to jaih1r0 for the position calculation, modified by me to fix the pitch bug
+	Action void PB_GunSmoke(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
+	{
+		double PVZ;
+		PB_PlayerPawn plr = PB_PlayerPawn(invoker.owner);
+		PlayerInfo Playa = Player;
+		if(Playa)
+		{
+			PVZ = (Playa.ViewZ - FloorZ) - 6;
+		}
+
+		d2 += plr.Radius;
+		d3 -= 6;
+		vector3 direction = ((self.AngleToVector(angle,cos(pitch)), sin(-pitch)));
+        
+        //got this from KeksDose -> https://forum.zdoom.org/viewtopic.php?t=63552&p=1090328 its very useful for this, at least now that i dont understand quats xD
+        vector3 fw = (cos(angle),sin(angle),0); //forward offset
+        vector3 sd = (cos(angle - 90),sin(angle - 90),0); //side offset
+        
+        //get the pitch and adjust the forward offset if looking up/down, so the smoke doesnt appear in front of the player from thin air in those cases
+        //cos(pitch) < 1.0, and get closer to 0 when looking up/down, ig sin(pitch) ** 2 could also work (yes,this time the calculator wasnt in radians :D)
+        double pt = cos(pitch);
+		double pt2 = sin(pitch);
+
+        fw *= d2 * (((0.45 + (pt2 * 0.15)) * -pt2) + pt);
+		d3 -= d2 * pt2;
+
+		//console.printf("%f %f %f", fw.x, fw.y, fw.z);
+		//console.printf("%f %f %f", sd.x, sd.y, sd.z);
+        
+        //get a vector3 with the total offsets
+        vector3 offs = fw + (sd * -d1);
+        //add the offsets to the current position
+        vector3 spos = self.vec3offset(offs.x, offs.y, offs.z);
+        
+        //add the view value
+        spos.z += (height * 0.5 - floorclip + player.mo.AttackZOffset * player.crouchFactor) + d3;
+
+		//Vector3 CPos = (d2, -d1, d3 - 6);
+		
+		PB_GunFireSmoke Smoke = PB_GunFireSmoke(Spawn(SActor, spos));
+
+		//PB_GunFireSmoke pSmoke = PB_GunFireSmoke(Smoke);
+		
+		If(Smoke)
+		{
+			Smoke.master = invoker.owner;
+			//Smoke.Vel = PB_Math.AngleToVector3D(self.Angle, -self.Pitch);
+			vector3 momentum = plr.vel;
+			Smoke.A_ChangeVelocity(momentum.X, momentum.Y, 0, CVF_RELATIVE);
+			Smoke.A_FaceMovementDirection();
+			double m_flScale = frandom(0.10,0.12);
+			Smoke.Scale = (m_flScale, m_flScale);
+			Smoke.A_SetRoll(random(0, 359));
+		}
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		let plr = PlayerPawnBase(Owner);
+		if (!plr)
+		{
+			GunBraced = false;
+			return;
+		}
+		
+		if (plr.Player.ReadyWeapon != self)
+		{
+			GunBraced = false;
+			return;
+		}
+		
+		if (CountInv("ResetZoom") >= 1) {
+			A_TakeInventory("ResetZoom", 1);
+			A_ZoomFactor(1.0, ZOOM_INSTANT);
+		}
+		
+		FLineTraceData dt1, dt2, dt3, dt4, dt5, dt6;
+		plr.LineTrace(plr.Angle, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95, offsetside: -plr.Radius / 2, data: dt1);
+		plr.LineTrace(plr.Angle, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95 * 0.75, data: dt2);
+		plr.LineTrace(plr.Angle, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95, offsetside: plr.Radius / 2, data: dt3);
+		
+		plr.LineTrace(plr.Angle + 90, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95, data: dt4);
+		plr.LineTrace(plr.Angle + 180, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95 * 0.75, data: dt5);
+		plr.LineTrace(plr.Angle - 90, plr.Radius * 3, plr.Pitch, TRF_NOSKY | TRF_THRUACTORS, plr.Height * 0.95, data: dt6);
+		
+		bool geometryBrace = dt1.HitType == FLineTraceData.TRACE_HitWall || dt2.HitType == FLineTraceData.TRACE_HitWall || dt3.HitType == FLineTraceData.TRACE_HitWall || dt4.HitType == FLineTraceData.TRACE_HitWall || dt5.HitType == FLineTraceData.TRACE_HitWall || dt6.HitType == FLineTraceData.TRACE_HitWall;
+		
+		if (!bMELEEWEAPON && (plr.Player.crouchfactor == 0.5 || geometryBrace) && plr.Vel.Length() < 6)
+		{
+			BraceTicker++;
+			if (BraceTicker == 10)
+			{
+				GunBraced = true;
+				plr.A_SetPitch(plr.Pitch - 0.2);
+				Owner.A_StartSound("Weapon/Bracing", 19, 0, 0.30);
+			}
+			if (BraceTicker == 11)
+			{
+				plr.A_SetPitch(plr.Pitch + 0.2);
+			}
+		}
+		else
+		{
+			GunBraced = false;
+		}
+
+		if (!GunBraced && BraceTicker > 13)
+		{
+			BraceTicker = 0;
+		}
+	}
+	
+	action bool PB_usingEquipment(){
+		return invoker.usingEquipment;
+	}
+	
+	action void PB_SetUsingEquipment(bool type){
+		invoker.usingEquipment = type;
+	}
+	
+	action bool PB_usingMelee(){
+		return invoker.usingMelee;
+	}
+	
+	action void PB_SetUsingMelee(bool type){
+		invoker.usingMelee = type;
+	}
+	
+	
+	action bool PB_usingKick(){
+		return invoker.usingKick;
+	}
+	
+	action void PB_SetUsingKick(bool type){
+		invoker.usingKick = type;
+	}
+	
+	
+	action bool PB_executingEnemy(){
+		return invoker.executingEnemy;
+	}
+	
+	action void PB_SetExecutingEnemy(bool type){
+		invoker.executingEnemy = type;
+	}
+	
+	
+	action bool PB_GetExecutionBlueBlood(){
+		return invoker.executionBlueBlood;
+	}
+	
+	action void PB_SetExecutionBlueBlood(bool type){
+		invoker.executionBlueBlood = type;
+	}
+	
+	action bool PB_GetExecutionGreenBlood(){
+		return invoker.executionGreenBlood;
+	}
+	action void PB_SetExecutionGreenBlood(bool type){
+		invoker.executionGreenBlood = type;
+	}
+		
+	action StateLabel PB_ExecuteGeneric() {
+		StateLabel result;
+		int selector = (random(1,4));
+		FLineTraceData RemoteRay;
+		bool wallcheck = LineTrace(
+		   angle,
+		   120,
+		   pitch,
+		   TRF_THRUACTORS,
+		   offsetz: height-12,
+		   data: RemoteRay
+		);
+		
+		result = "Execution_Generic";
+		return result;
+	}
+	
+	action StateLabel PB_ExecuteZombieMan() {
+		StateLabel result;
+		int selector = (random(1,4));
+		FLineTraceData RemoteRay;
+		bool wallcheck = LineTrace(
+		   angle,
+		   120,
+		   pitch,
+		   TRF_THRUACTORS,
+		   offsetz: height-12,
+		   data: RemoteRay
+		);
+		
+		// Drop Kick Fatality
+		if((Pos.Z-floorz) > 8) {
+			A_Warp(AAPTR_PLAYER_GETTARGET, 0, 0, 54, WARPF_USECALLERANGLE|WARPF_NOCHECKPOSITION);
+			result = "Execution_Zombieman4";
+			return result;
+		}
+		
+		// Wall Kick Fatality
+		if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
+			result = "Execution_Zombieman3";
+			return result;
+		}
+		
+		// Generic Fatalities
+		switch(selector){
+			case 1:
+				result = "Execution_Zombieman1";
+				break;
+			case 2:
+				result = "Execution_Zombieman2";
+				break;
+			case 3:
+				result = "Execution_Zombieman5";
+				break;
+			case 4:
+				result = "Execution_Zombieman6";
+				break;
+		}
+		return result;
+	}
+	
+	action StateLabel PB_ExecuteShotguny() {
+		//A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
+		StateLabel result;
+		int selector = (random(1,4));
+		FLineTraceData RemoteRay;
+		bool wallcheck = LineTrace(
+		   angle,
+		   120,
+		   pitch,
+		   TRF_THRUACTORS,
+		   offsetz: height-12,
+		   data: RemoteRay
+		);
+		
+		// Drop Kick Fatality
+		if((Pos.Z-floorz) > 8) {
+			A_Warp(AAPTR_PLAYER_GETTARGET, 0, 0, 54, WARPF_USECALLERANGLE|WARPF_NOCHECKPOSITION);
+			result = "Execution_ShotgunGuy4";
+			return result;
+		}
+		
+		// Wall Kick Fatality
+		if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
+			result = "Execution_ShotgunGuy3";
+			return result;
+		}
+		
+		// Generic Fatalities
+		switch(selector){
+			case 1:
+				result = "Execution_ShotgunGuy1";
+				break;
+			case 2:
+				result = "Execution_ShotgunGuy2";
+				break;
+			case 3:
+				result = "Execution_ShotgunGuy5";
+				break;
+			case 4:
+				result = "Execution_ShotgunGuy6";
+				break;
+		}
+		return result;
+	}
+	
+	
+	action StateLabel PB_ExecuteImp() {
+		//A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
+		StateLabel result;
+		int selector = (random(1,2));
+// 		int selector = 2;
+		FLineTraceData RemoteRay;
+		bool wallcheck = LineTrace(
+		   angle,
+		   120,
+		   pitch,
+		   TRF_THRUACTORS,
+		   offsetz: height-12,
+		   data: RemoteRay
+		);
+		
+		// Drop Kick Fatality
+		if((Pos.Z-floorz) > 8) {
+			A_Warp(AAPTR_PLAYER_GETTARGET, 0, 0, 54, WARPF_USECALLERANGLE|WARPF_NOCHECKPOSITION);
+			result = "Execution_Imp3";
+			return result;
+		}
+		
+		
+// 		// Wall Kick Fatality
+// 		if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
+// 			result = "Execution_Zombieman3";
+// 			return result;
+// 		}
+		
+		// Generic Fatalities
+		switch(selector){
+			case 1:
+				result = "Execution_Imp1";
+				break;
+			case 2:
+				result = "Execution_Imp2";
+				break;
+		}
+		return result;
+	}
+		
+	action StateLabel PB_ExecutionHandlerString(Actor monster) {
+	
+		name enemy = monster.getClassName();
+// 		A_print(enemy);
+		
+		switch(enemy){
+			// Zombieman
+			case 'PB_Zombieman':
+				return PB_ExecuteZombieMan();
+			case 'PB_PistolZombieman1':
+				return PB_ExecuteZombieMan();
+			case 'PB_HelmetZombieman':
+				return PB_ExecuteZombieMan();
+			case 'PB_PistolZombieman2':
+				return PB_ExecuteZombieMan();
+			
+			// Imp
+			case 'PB_Imp1':
+				return PB_ExecuteImp();
+				
+			//Shotgun Guy
+			case 'PB_ShotgunGuy':
+				return PB_ExecuteShotguny();
+				
+			default:
+// 				A_Print("Execution Failed");
+				return PB_ExecuteGeneric();
+		}
+	}
+	
+	action void PB_SetPlayerExecutionProperties() {
+		A_GiveInventory("ExecutionToken", 1); // When dashing, make sure to STOP player momentum, or else it fucks with the execution. Using a token for now.
+		A_GiveInventory("PB_NoEffectInvul", 1); // So we don't break invulnerability
+		A_ClearOverlays(10,11);
+		A_StopSound(CHAN_7);
+		A_StopSound(CHAN_WEAPON);
+		A_SetCrosshair(5);
+		A_Stop();
+		
+		PlayerInfo plr = PlayerPawn(self).player;
+// 		plr.mo.vel *= 0;
+		//plr.cheats |= CF_TOTALLYFROZEN|CF_NOTARGET|CF_GODMODE|CF_DOUBLEFIRINGSPEED|CF_INSTANTWEAPSWITCH|CF_FRIGHTENING  ;
+		plr.mo.bNODAMAGE = true;
+//		SetPlayerProperty(0, 1, PROP_INVULNERABILITY); //This breaks the invulnerability power up. -JM
+// 		A_GiveInventory("PB_NoEffectInvul",1); //Use PB_NoEffectInvul so that it doesn't break the REAL invulnerability -JM
+// 		SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN );
+// 		SetPlayerProperty(0, 1, PROP_FLY);
+		PB_SetExecutingEnemy(true);
+	}
+	
+	
+	action void PB_UnsetPlayerExecutionProperties() {
+
+		PlayerInfo plr = PlayerPawn(self).player;
+		//plr.cheats &= ~(CF_TOTALLYFROZEN|CF_NOTARGET|CF_GODMODE|CF_INSTANTWEAPSWITCH|CF_DOUBLEFIRINGSPEED|CF_FRIGHTENING  );
+		plr.mo.bNODAMAGE = false;
+		PB_SetExecutingEnemy(false);
+		PB_SetUsingMelee(false);
+		PB_SetExecutionBlueBlood(false);
+		PB_SetExecutionGreenBlood(false);
+		//A_ClearTarget();
+		A_TakeInventory("KnifeHasHit",1);
+		A_TakeInventory("PB_NoEffectInvul",1);
+		A_TakeInventory("HasCutingWeapon", 1);
+		A_TakeInventory("ExecutionToken", 1);
+		A_TakeInventory("PB_LockScreenTilt",1);
+		A_SetRoll(0, SPF_INTERPOLATE);
+		A_SetPitch(0, SPF_INTERPOLATE);
+		A_ZoomFactor(1.0);
+		A_OverlayFlags(-9,PSPF_PLAYERTRANSLATED, false);
+		A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, false);
+		
+		
+		//Determine how much health is returned (risk vs. reward)
+		if (plr.health < 25) {
+			A_GiveInventory("HealthBonus",20);
+		}
+		else if (plr.health < 50 && plr.health >= 25) {
+			A_GiveInventory("HealthBonus",15);
+		}
+		else if (plr.health < 100 && plr.health >= 50) {
+			A_GiveInventory("HealthBonus",10);
+		}
+		else if (plr.health < 200 && plr.health >= 100) {
+			A_GiveInventory("HealthBonus",5);
+		}
+		else {
+			A_GiveInventory("HealthBonus",1);
+		}
+	}
+	
+	action state PB_Execute() {
+		if(CountInv("GrabbedBarrel") >= 1 || CountInv("GrabbedFlameBarrel") >= 1 || CountInv("GrabbedIceBarrel") >= 1) { return null; }
+	
+//         CVar experimental_settings = CVar.FindCVar('pb_experimental');
+		
+// 		if(experimental_settings.GetBool()){
+			//
+			if(GetPointer(AAPTR_PLAYER_GETTARGET) != NULL)
+			{
+				
+				if(GetPointer(AAPTR_PLAYER_GETTARGET).bCountKill)
+				{
+					LookExParams look;
+					look.FOV = 360;
+					
+					Actor monster = GetPointer(AAPTR_PLAYER_GETTARGET);
+
+					if (monster.IsVisible(self, true, look) && Distance3D(monster) < 200 ){
+						
+						int targetMaxHealth = monster.spawnHealth();
+						int targetCurrentHealth = monster.health;
+						
+						if (actorCanBeExecuted(monster)) {
+							
+							// Move Monster and Player toward each other
+							monster.A_Stop();
+							double spd = 27.;
+							vector3 delta = ( monster.pos.x - pos.x, monster.pos.y - pos.y, monster.pos.z - pos.z );
+							double angleToMonster = AngleTo(monster);
+							double pitchToMonster = VectorAngle( sqrt(delta.y * delta.y + delta.x * delta.x), delta.z );
+							monster.A_SetPitch(pitchToMonster, SPF_INTERPOLATE);
+							monster.A_SetAngle(angleToMonster+180,SPF_INTERPOLATE);
+							
+							vector3 neworigin = Vec3Offset(cos(angleToMonster) * spd,  sin(angleToMonster) * spd, sin(pitchToMonster) * spd);
+							monster.SetOrigin(neworigin,true);
+							
+							// Set Player View and Properties
+							int colorGreen = -16711936;
+							int colorBlue = -16776961;
+// 							A_LogInt(monster.BloodColor);
+							if(monster.BloodColor == colorGreen)
+							{
+								PB_SetExecutionGreenBlood(true);
+							}
+							
+							if(monster.BloodColor == colorBlue)
+							{
+								PB_SetExecutionBlueBlood(true);
+							}
+							
+							A_SetAngle(AngleTo(monster));
+							pitchToMonster = VectorAngle( sqrt(delta.y * delta.y + delta.x * delta.x), delta.z );
+							A_SetPitch(-pitchToMonster);
+							PB_SetPlayerExecutionProperties();
+							
+							StateLabel st = PB_ExecutionHandlerString(monster);
+							monster.A_Die("Execution");
+							return ResolveState(st);
+						}
+					}
+				}
+// 			}
+		}
+		return null;
+	}
+	
+	action bool actorCanBeExecuted(Actor monster) {
+		
+		int targetMaxHealth = monster.spawnHealth();
+		int targetCurrentHealth = monster.health;
+		
+		
+		if(CheckInventory("PB_PowerStrength",1) && (targetCurrentHealth <= targetMaxHealth*0.25 || targetCurrentHealth <= 150)) {
+			return true;
+		}
+		
+		if(targetCurrentHealth < targetMaxHealth*0.20 || targetCurrentHealth <= 60) {
+			return true;
+		}
+		
+		return false;
+		
+	}
+	
+	// Shoutout to Matt on ZDoom forums for the helpful weapon functions
+    action bool PressingFire(){return player.cmd.buttons & BT_ATTACK;}
+    action bool PressingAltfire(){return player.cmd.buttons & BT_ALTATTACK;}
+	action bool PressingReload(){return player.cmd.buttons & BT_RELOAD;}
+	action bool PressingUser1(){return player.cmd.buttons & BT_USER1;}
+	action bool PressingUser4(){return player.cmd.buttons & BT_USER4;} //Particularly for the fist combos
+	
+	//Set weapon recoil, factoring in the recoil multiplier cvar
+	//Normally you want to use PB_WeaponRecoil instead, because it accounts for the berserk powerup
+	action void PB_WeaponRecoilBasic(float pitchDelta, float angleDelta = 0)
+	{
+		double fac = 1.0;
+		if (invoker.GunBraced)
+		{
+			fac *= 0.33;
+		}
+		
+        A_SetPitch(self.pitch+(pitchDelta * pb_weapon_recoil_mod_vertical * fac), SPF_INTERPOLATE);
+        A_SetAngle(self.angle+(angleDelta * pb_weapon_recoil_mod_horizontal * fac), SPF_INTERPOLATE);
+	}
+	
+	//Adds weapon recoil, modifying it if the owner has a berserk powerup
+	action void PB_WeaponRecoil(float pitchDelta, float angleDelta, float powerMod = 0.5)
+	{
+        if (invoker.OwnerHasBerserk())
+            PB_WeaponRecoilBasic(pitchDelta * powerMod, angleDelta * powerMod);
+        else
+            PB_WeaponRecoilBasic(pitchDelta, angleDelta);
+	}
+	
+	//This will allow for direct spawning of shell casings and empty magazines without using an intermediary actor.
+	//I highly recommend making cvars for each of the perameters for location and velocity to edit and test live, and with those numbers transpose into the final code.
+	//upon request I also have code for the tactical lean mod out there.
+	Action State PB_SpawnCasing(String Missile,Double ShellX,Double ShellY,Double ShellZ,Double ShellV_X,Double ShellV_Y,Double ShellV_Z)
+	{
+		A_SpawnItemEX(Missile,cos(pitch)*ShellX,ShellY,((ShellZ)*players[consoleplayer].Crouchfactor)-(sin(pitch)*ShellX),ShellV_X,ShellV_Y,ShellV_Z,0,SXF_TRANSFERPITCH,0);
+	Return Null;
+	}
+	
+	//Specific Casing Spawning
+	
+	Action void PB_RevolverCasingSpawn(string AmmoSide)
+	{
+		int CasingCount;
+		CasingCount = 6 - CountInv(AmmoSide);
+		for(CasingCount > 0; CasingCount--;)
+		{
+			A_FireProjectile("MagnumCasing",-5,0,0,-30);
+		}
+	}
+	
+	//A way to perform pretty much take all of the "Insertbullets" states and turn it into a function
+	//An example of this action: PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,1) 
+	action void PB_AmmoIntoMag(String AmmoMag_Action,String AmmoPool_Action,int MagazineMaxFill_Action, int takeReserve)
+		{
+			for(int i = 0; i < MagazineMaxFill_Action; i++)
+			{
+				if((CountInv(AmmoMag_Action) == MagazineMaxFill_Action) || (!CountInv(AmmoPool_Action)))
+					return;
+				
+				A_GiveInventory(AmmoMag_Action, 1);
+				A_TakeInventory(AmmoPool_Action, takeReserve);
+			}
+		}
+	
+	//Copy of Cemtex's PB_AmmoIntoMag but for unloading
+	//A way to perform pretty much take all of the "RemoveBullets" states and turn it into a function	
+	//An example of this action: PB_UnloadMag("RifleAmmo","PB_HighCalMag",1) 
+	action void PB_UnloadMag(String AmmoMag_Action,String AmmoPool_Action, int giveReserve)
+		{
+			int amnt = CountInv(AmmoMag_Action);
+			
+			for(int i = amnt; i > 0; i--)
+			{
+				A_TakeInventory(AmmoMag_Action, 1);
+				A_GiveInventory(AmmoPool_Action, giveReserve);
+			}
+		}
+		
+	
+	//[Pop] This is a hack, ideally we shouldnt have to do this and once weapons are fully ZScript each one
+	//will have its own function for firing that gets called. Even after it may be good to keep this for 
+	//weapon addons that stay in DECORATE. Thanks to ADMERAL for throwing this together.
+	action void PB_FireBullets(string type,int amount,float angle,double offs,double height,float pitch)
+	{
+		for(int i=amount;i>0;i--)
+		{
+			A_FireProjectile(type,(frandom(angle,angle * -1)),0,offs,height,FPF_NOAUTOAIM,(frandom(pitch,pitch * -1)));
+		}
+	}
+	
+	//[Pop]This function is so we can replace all of the shitty A_Quake or QuakeEx
+	//whatever the fucks in the mod, ESPECIALLY on the weapon front
+	//no more of these SHAKEYOURASSMINOR and SHAKEYOURASSMAJOR actor spawning garbage
+	//its pretty bare bones but maybe we can extend it in the future if we need it
+	action void PB_QuakeCamera(int qDur, float camRoll)
+	{
+		A_QuakeEx(0, 0, 0, qDur, 0, 100, "", 0, 1, 0, 0, 0, 0, (camRoll / 2), 1, 0, 0, 0);
+		//also, camroll / 2, 2 should be made a scaling CVar at some point, or attach it to some other cvar
+		//DONT FORGET DIPSHIT
+	}
+	
+	//Checks if the owner has a berserk
+	bool OwnerHasBerserk()
+	{
+        return (owner.CountInv("PB_PowerStrength") >= 1);
+	}
+	
+	//Allows us to specify pitch and angle manually for berserk and non-berserk owners.
+	//Used occasionally where berserk recoil numbers aren't exactly half/double in a few cases, such as the pistol
+	action void PB_WeaponRecoilSpecial(float pitchDelta, float angleDelta, float pitchDeltaBerserk, float angleDeltaBerserk)
+	{
+        if (invoker.OwnerHasBerserk())
+            PB_WeaponRecoilBasic(pitchDeltaBerserk, angleDeltaBerserk);
+        else
+            PB_WeaponRecoilBasic(pitchDelta, angleDelta);
+	}
+	
+    action bool JustPressed(int which) // "which" being any BT_* value, mentioned above or not
+    {
+        return player.cmd.buttons & which && !(player.oldbuttons & which);
+    }
+    action bool JustReleased(int which)
+    {
+        return !(player.cmd.buttons & which) && player.oldbuttons & which;
+    }
+	
+    action bool IsPressingInput(int which){return player.cmd.buttons & which;}
+
+	override void AttachToOwner(Actor Other)
+	{
+		Super.AttachToOwner(other);
+		let toucher = other;
+		bool IsAlreadyPicked = false;
+		/*if (toucher.FindInventory("PB_PDAWeaponContainer",true))
+		{
+			PB_PDAWeaponContainer pdaweapContainer = PB_PDAWeaponContainer(toucher.FindInventory("PB_PDAWeaponContainer",true));
+			pdaweapContainer.CollectedWeapons.Push(self.GetClassName());
+			EventHandler.SendNetworkEvent("Foundweapon:"..self.GetClassName());
+		}*/
+	}
+	
+	//Weapon token take away in one function
+	action void PB_WeapTokenSwitch(name wepToken) 
+	{
+			PB_SetUsingMelee(false); //force to false so that quick melee doesn't break on some weapons
+			PB_SetUsingKick(false); //force to false so that kicking doesn't break on some weapons
+			PB_SetUsingEquipment(false);
+			PB_SetExecutingEnemy(false);
+			SetPlayerProperty(0,0,0); //Force the player to get unstuck
+			A_SetInventory("ADSMode",0);
+			A_SetInventory("Zoomed",0);
+			A_SetInventory("Unloading",0);
+			A_SetInventory("RifleWasEmpty",0);
+			A_SetInventory("RifleSelected",0);
+			A_SetInventory("CarbineSelected",0);
+			A_SetInventory("FistsSelected",0);
+			A_SetInventory("SawSelected",0);
+			A_SetInventory("SledgeSelected",0);
+			A_SetInventory("HandgunSelected",0);
+			A_SetInventory("DualHandgunSelected",0);
+			A_SetInventory("RevolverSelected",0);
+			A_SetInventory("DeagleSelected",0);
+			A_SetInventory("ShotgunSelected",0);
+			A_SetInventory("SSGSelected",0);
+			A_SetInventory("ASGSelected",0);
+			A_SetInventory("QSGSelected",0);
+			A_SetInventory("MinigunSelected",0);
+			A_SetInventory("MG42Selected",0);
+			A_SetInventory("NewChaingunSelected",0);
+			A_SetInventory("RocketLauncherSelected",0);
+			A_SetInventory("GrenadeLauncherSelected",0);
+			A_SetInventory("SGLSelected",0);
+			A_SetInventory("PlasmaGunSelected",0);
+			A_SetInventory("M2Selected",0);
+			A_SetInventory("CryoRifleSelected",0);
+			A_SetInventory("RailGunSelected",0);
+			A_SetInventory("BFGSelected",0);
+			A_SetInventory("BFGBeamSelected",0);
+			A_SetInventory("BHCSelected",0);
+			A_SetInventory("RevenantLauncherSelected",0);
+			A_SetInventory("UnmakerSelected",0);
+			A_SetInventory("FlameCannonSelected",0);
+			A_SetInventory("HellRifleSelected",0);
+			A_SetInventory("LandMineSelected",0);
+			A_SetInventory("UACSMGSelected",0);
+			A_SetInventory("MP40Selected",0);
+			A_SetInventory("AddonSelected",0);
+			A_SetInventory("LostSoulSelected",0);
+			A_SetInventory("CantWeaponSpecial",0);
+			A_SetInventory("HasBarrel",0);
+			A_SetInventory("HasIceBarrel", 0);
+			A_SetInventory("HasFlameBarrel",0);
+			A_SetInventory("GrabbedBarrel",0);
+			A_SetInventory("GrabbedIceBarrel", 0);
+			A_SetInventory("GrabbedFlameBarrel",0);
+			A_SetInventory("HasIncendiaryWeapon", 0);
+			A_SetInventory("HasExplosiveWeapon",0);
+			A_SetInventory("HasPlasmaWeapon",0);
+			A_SetInventory("HasCutingWeapon",0);
+			A_SetInventory("HasFireWeapon",0);
+			A_SetInventory("HasAcidWeapon",0);
+			A_SetInventory("Grabbing_A_Ledge",0);
+			A_SetInventory("CantDoAction",0);
+			A_SetInventory("PB_NoEffectInvul",0);
+			A_SetInventory("sae_extcam", 0);
+			A_SetInventory("sae_deathcam", 0);
+			A_SetInventory(wepToken,1);
+	}
+	
+	//Special Modes
+	action bool A_IsFiringLeftWeapon()
+	{
+		return invoker.FiringLeftWeapon;
+	}
+	
+	action void A_SetFiringLeftWeapon(bool type)
+	{
+		invoker.FiringLeftWeapon = type;
+	}
+	
+	action bool A_IsFiringRightWeapon()
+	{
+		return invoker.FiringRightWeapon;
+	}
+	
+	action void A_SetFiringRightWeapon(bool type)
+	{
+		invoker.FiringRightWeapon = type;
+	}
+	
+	
+	
+	action bool A_CheckAkimbo()
+	{
+		return invoker.akimboMode;
+	}
+	
+	action void A_SetAkimbo(bool type)
+	{
+		invoker.akimboMode = type;
+	}
+		
+	
+	action string A_GetCurrentFireMode()
+	{
+		return invoker.fireMode;
+	}
+	
+	action void A_SetCurrentFireMode(string type)
+	{
+		invoker.fireMode = type;
+	}
+		
+	
+	action string A_GetCurrentRifleMode()
+	{
+		return invoker.upgradedRifleMode;
+	}
+	
+	action void A_SetCurrentRifleMode(string type)
+	{
+		invoker.upgradedRifleMode = type;
+	}
+	
+	
+	action string A_GetCurrentGrenadeType()
+	{
+		return invoker.lastGrenadeType;
+	}
+	
+	action void A_SetCurrentGrenadeType(string type)
+	{
+		invoker.lastGrenadeType = type;
+	}
+	
+	const frozenspacepx = 15;
+	action void PB_FireCryoRifleBeam()
+	{
+		FLineTraceData t;
+		double zoff = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) - 9;
+		bool hit = LineTrace(angle,8000,pitch,TRF_NOSKY ,zoff,data:t);
+		
+		vector3 fpos = t.hitlocation - t.hitdir; //substract one to the final pos so the puff doesnt spawn in the wall and therefore in a higher sector if any
+		vector3 spos = (pos.xy, pos.z + zoff);
+		
+		vector3 dif = levellocals.Vec3Diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dist = dif.length();
+		
+		int steps = int(dist / frozenspacepx) + 1;
+		
+		FSpawnParticleParams FrostBeam;
+		FrostBeam.Texture = TexMan.CheckForTexture("X027A0"); //FIR5G0 also looks cool
+		FrostBeam.Color1 = "FFFFFF";
+		FrostBeam.Style = STYLE_Add;
+		FrostBeam.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		FrostBeam.Vel = (0,0,0); 
+		FrostBeam.Startroll =random(0,360); //randompick(0,90,180,270,360);
+		FrostBeam.RollVel = 0;
+		FrostBeam.StartAlpha = 0.90;
+		FrostBeam.FadeStep = 0.1;
+		FrostBeam.Size = 20;
+		FrostBeam.SizeStep = 0;
+		FrostBeam.Lifetime = 1; 
+		
+		//basically, simulate a hitscan attack by damaging the actor the trace hits, spawning a puff and spraying a decal
+		//damage victim (if any)
+		if(t.hitactor)
+		{
+			actor v = t.hitactor;
+			if(v && v.bismonster && v.health > 0 && !isfriend(v))
+				v.damagemobj(self,self,2,"Freeze",DMG_THRUSTLESS);
+		}
+		
+		//spawn puff if hit anything that is not sky
+		if(hit)
+		{
+			actor p = Spawn("CryoRifleBeamPuff",fpos);
+			if(p)
+			{
+				p.target = self; //no self damage
+				p.A_SprayDecal("FreezerBurnSmall",2,(0,0,0),t.hitdir); //spray the decal manually
+			}
+		}
+		
+		for(int i = 0; i < steps; i++)
+		{
+			spos += (dr * frozenspacepx);
+			FrostBeam.Pos = spos;
+			if(i > 0) //skip the first iteration
+				Level.SpawnParticle(FrostBeam);
+		}
+		
+	}
+	
+	action string PB_GetCurrentRocketMode()
+	{
+		return invoker.rocketLauncherMode;
+	}
+	
+	action void PB_SetCurrentRocketMode(string type)
+	{
+		invoker.rocketLauncherMode = type;
+	}
+
+//I know that two functions are messy but hey, they work like wonders.	
+//Also, a HUGE thank you to both A_D_M_E_R_A_L and DoomKrakken for showing
+//their examples on making the plasma ammo counter! Thanks guys!
+//-JMartinez2098
+//Edit - Thank you A_D_M_E_R_A_L for trimming down both of the functions into one
+	action void PB_SetPRCounter(int layer, name ammotype, name spr, bool isRightDigit = false)
+	{
+		int amount = CountInv(ammotype);
+		int a; //frame number based on ammo count
+		let pl_ws = player.GetPSprite(layer);
+		if(pl_ws) {
+			if(isRightDigit) a = amount % 10;  //check if isRightDigit is true
+			else a = amount / 10;
+			pl_ws.Sprite = GetSpriteIndex(spr);
+			pl_ws.Frame = a;
+		}
+	}
+
+	action void A_DecideSpawnLaserPuff()
+	{
+			if (CountInv("LaserSightActivated")==1 && CountInv("KeepLaserDeactivated") != 1)
+			{
+				//invoker.A_SpawnLaserPuff();
+			}
+			else 
+			{
+				invoker.A_DestroyLaserPuff();
+			}
+	}
+	action void A_DestroyLaserPuff()
+	{
+		if (invoker.laseractor) invoker.laseractor.Destroy();
+	}
+	action Actor A_SpawnLaserPuff(Double jitteramountX,Double jitteramountY,String DotColor)
+	{
+		int integer;
+		Double DotJitterX, DotJitterY;
+		Double FinalAngle, FinalPitch;
+
+		DotJitterX = Frandom(-(jitteramountX),jitteramountX);
+		DotJitterY = Frandom(-(jitteramountY),jitteramountY);
+		FinalAngle = angle + DotJitterX;
+		FinalPitch = Pitch + DotJitterY; 
+
+		[invoker.InvActor, invoker.integer] = LineAttack(Finalangle,4096,Finalpitch,0,'None',"InvisiblePuff",LAF_NORANDOMPUFFZ|LAF_NOINTERACT);
+		if (invoker.InvActor)
+		{
+			invoker.invactorpos = invoker.InvActor.pos;
+			invoker.InvActor.Destroy();
+		}
+		if (!invoker.laseractor) invoker.laseractor = Spawn(DotColor,invoker.invactorpos);
+		else invoker.laseractor.SetOrigin(invoker.invactorpos, true);
+		
+		return invoker.laseractor;
+	}
+	action int CheckUnloaded(string token)
+	{
+		if (CountInv(token) >= 1) return PBWEAP_UNLOADED;
+		return 0;
+	}
+	
+	// Used for interrupting the hand animation when kicking with melee attacks
+	action bool PB_MeleeKickInterruptCheck()
+	{
+		State PSPState = invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate;
+		if( InStateSequence(PSPState,invoker.ResolveState("LeftJab")) ||
+			InStateSequence(PSPState,invoker.ResolveState("LeftHook")) ||
+			InStateSequence(PSPState,invoker.ResolveState("LeftUpperCut")) ||
+			InStateSequence(PSPState,invoker.ResolveState("LeftBackHand")) ||
+			InStateSequence(PSPState,invoker.ResolveState("RightJab"))||
+			InStateSequence(PSPState,invoker.ResolveState("RightHook")) ||
+			InStateSequence(PSPState,invoker.ResolveState("RightUpperCut")) ||
+			InStateSequence(PSPState,invoker.ResolveState("RightBackHand")))
+			return true;
+		return false;
+	}
+	
+	action bool PB_MeleeAttackKickCheck() 
+	{
+		State PSPState = invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate;
+		if( InStateSequence(PSPState,invoker.ResolveState("LeftJab")) ||
+			InStateSequence(PSPState,invoker.ResolveState("LeftHook")) ||
+			InStateSequence(PSPState,invoker.ResolveState("LeftUpperCut")) ||
+			InStateSequence(PSPState,invoker.ResolveState("LeftBackHand")) ||
+			InStateSequence(PSPState,invoker.ResolveState("RightJab"))||
+			InStateSequence(PSPState,invoker.ResolveState("RightHook")) ||
+			InStateSequence(PSPState,invoker.ResolveState("RightUpperCut")) ||
+			InStateSequence(PSPState,invoker.ResolveState("RightBackHand")) ||
+			InStateSequence(PSPState,invoker.ResolveState("SideKickRight")) ||
+			InStateSequence(PSPState,invoker.ResolveState("SideKickLeft")) ||
+			InStateSequence(PSPState,invoker.ResolveState("HookKickLeft")) ||
+			InStateSequence(PSPState,invoker.ResolveState("ThrustKick")) ||
+			InStateSequence(PSPState,invoker.ResolveState("AirKickCombo")) ||
+			InStateSequence(PSPState,invoker.ResolveState("HookKickRight")))
+//			InStateSequence(PSPState,invoker.ResolveState("JavelinReadyToFire"))
+			return false;
+		return true;
+		
+	}
+	
+	action bool PB_WeaponIsInReadyState()
+	{
+		State PSPState = invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate;
+		if ((InStateSequence(PSPState,invoker.ResolveState("Ready")) || 
+		  InStateSequence(PSPState,invoker.ResolveState("ReallyReady")) ||
+		  InStateSequence(PSPState,invoker.ResolveState("ReadyToFireDrum")) ||
+		  InStateSequence(PSPState,invoker.ResolveState("ReallyReady2Loop")) ||
+		  InStateSequence(PSPState,invoker.ResolveState("ReadyToFire"))||
+		  InStateSequence(PSPState,invoker.ResolveState("Ready2"))||
+		  InStateSequence(PSPState,invoker.ResolveState("Ready5"))||
+		  InStateSequence(PSPState,invoker.ResolveState("Ready4"))||
+		  InStateSequence(PSPState,invoker.ResolveState("ReallyReady3"))||
+		  InStateSequence(PSPState,invoker.ResolveState("ActuallyReady3"))||
+		  InStateSequence(PSPState,invoker.ResolveState("Ready3"))||
+		  InStateSequence(PSPState,invoker.ResolveState("JavelinReady3"))|| //Nailgun Gavelin Mode
+		   InStateSequence(PSPState,invoker.ResolveState("ReadyToFire2"))|| //Hell Rifle Green mode
+		   InStateSequence(PSPState,invoker.ResolveState("ReadyMissile"))|| //LMG Micro Missile mode
+		   InStateSequence(PSPState,invoker.ResolveState("ReadyToFire_Red"))) 
+		 ||
+		(InStateSequence(invoker.owner.player.GetPSprite(10).Curstate,invoker.ResolveState("IdleLeft_Overlay")) && 
+		 InStateSequence(invoker.owner.player.GetPSprite(11).Curstate,invoker.ResolveState("IdleRight_Overlay")) && 
+		 InStateSequence(PSPState,invoker.ResolveState("ReadyToFireDualWield"))))
+			return true;
+		return false;
+	}
+	
+	
+	action bool PB_WeaponIsInSlidingState()
+	{
+		State PSPState = invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate;
+		if (InStateSequence(PSPState,invoker.ResolveState("FlashSlideKicking"))||
+			InStateSequence(PSPState,invoker.ResolveState("FlashSlideKickingDW"))||
+			InStateSequence(PSPState,invoker.ResolveState("FlashSlideKicking2"))||
+			InStateSequence(PSPState,invoker.ResolveState("DualFlashSlideKicking"))||
+			InStateSequence(PSPState,invoker.ResolveState("FlashSlideKickingAkimbo"))||
+			InStateSequence(PSPState,invoker.ResolveState("FlashSlideKickingDualWield"))||
+			InStateSequence(PSPState,invoker.ResolveState("DualWieldFlashSlideKicking"))
+		) return true;
+		return false;
+	}
+	
+	action state A_DoPBWeaponAction(int weapflags = WRF_ALLOWRELOAD, int pbFlags = 0, string unloadtoken = "HasUnloaded", bool noReload = false)
+	{
+		static const string PBWeapEmptyToken[] = 
+		{
+			"PB_PistolWasEmpty","RifleWasEmpty","UACSMGWasEmpty"
+		};
+		static const string PBWeapUnloadedToken[] =
+		{
+			"HasUnloaded","PulseCannonHasUnloaded", "HasUnloadedRG"
+		};
+		static const string PBWeapUnloadableClasses [] =
+		{
+			"PB_Weapon","PulseCannon"
+		};
+		static const statelabel PBWeapStatelabels[] =
+		{
+			"Steady", "QuickPunch", //"LedgeClimb",
+			"DoKick", "Taunt", "Salute", "Salute",
+			"UseEquipment", "SwitchEquipment", "DualWieldBaby",
+			"NoDualWield", "WeaponSpecial", "ReadyBarrel", "ReadyBarrel",
+			"ReadyFlameBarrel", "ThrowBarrel", "ThrowIceBarrel", 
+			"ThrowFlameBarrel", "IdleBarrel", "IdleIceBarrel", 
+			"IdleFlameBarrel"
+		};
+		if (!(pbFlags & PBWEAP_UNLOADED)) pbFlags |= CheckUnloaded(invoker.UnloaderToken);
+		if (PB_executingEnemy())
+		{
+			return ResolveState("Steady");
+		}
+		
+		if(((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()) || ((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon())){
+			if(CountInv("DualFireReload") >= 2){
+				A_TakeInventory("DualFireReload",2);
+				return ResolveState("Reload");
+			}
+		}
+		
+		if (CountInv("GoWeaponSpecialAbility")>=1)
+		{
+			if (ResolveState("DualWieldBaby")) return ResolveState("DualWieldBaby");
+			else if (ResolveState("NoDualWield")) return ResolveState("NoDualWield");
+			else return ResolveState("WeaponSpecial");
+		}
+		if (CountInv("HasBarrel")>=1) 
+		{
+			return ResolveState("ReadyBarrel");
+		}
+		if (CountInv("HasFlameBarrel")>=1) 
+		{
+			return ResolveState("ReadyFlameBarrel");
+		}
+		if (CountInv("HasIceBarrel")>=1) 
+		{
+			return ResolveState("ReadyIceBarrel");
+		}
+		if (CountInv("Unloading")>=1 && ResolveState("Unload") && !(pbFlags & PBWEAP_UNLOADED) && CountInv(invoker.UnloaderToken) != 1)
+		{
+			return ResolveState("Unload");
+		}
+		else A_TakeInventory("Unloading", CountInv("Unloading"));
+		if (CountInv(invoker.UnloaderToken) >= 1 && !(pbFlags & PBWEAP_UNLOADED) && !InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("GunEmpty")))
+		{
+			return ResolveState("GunEmpty");
+		}
+		if (ResolveState("LoadChamber"))
+		{
+			for (int i = 0; i < PBWeapEmptyToken.Size(); ++i)
+			{
+				if (CountInv(PBWeapEmptyToken[i]) >= 1)
+				{
+					return ResolveState("LoadChamber");
+				}
+			}
+		}
+		
+		if (!noReload) {
+			noReload = ((PressingFire() || JustPressed(BT_ATTACK)) || (ResolveState("AltFire") && (PressingAltFire() || JustPressed(BT_ALTATTACK))));
+		}
+		
+		if (noReload) {
+			int newflags = WRF_NOSWITCH;
+			if (weapflags & WRF_NOBOB) { newflags = newflags | WRF_NOBOB; }
+			if (weapflags & WRF_NOFIRE) { newflags = newflags | WRF_NOFIRE; }
+			if (weapflags & WRF_NOPRIMARY) { newflags = newflags | WRF_NOPRIMARY; }
+			if (weapflags & WRF_NOSECONDARY) { newflags = newflags | WRF_NOSECONDARY; }
+			if (weapflags & WRF_ALLOWUSER1) { newflags = newflags | WRF_ALLOWUSER1; }
+			if (weapflags & WRF_ALLOWUSER2) { newflags = newflags | WRF_ALLOWUSER2; }
+			if (weapflags & WRF_ALLOWUSER3) { newflags = newflags | WRF_ALLOWUSER3; }
+			if (weapflags & WRF_ALLOWUSER4) { newflags = newflags | WRF_ALLOWUSER4; }
+			if (weapflags & WRF_DISABLESWITCH) { newflags = newflags | WRF_DISABLESWITCH; }
+			if (weapflags & WRF_ALLOWZOOM) { newflags = newflags | WRF_ALLOWZOOM; }
+			if (PB_usingKick()) { newflags = newflags | WRF_NOFIRE; }
+			A_WeaponReady(newflags);
+		}
+		else {
+			if (PB_usingKick()) {
+				if (CountInv("IsSlideKicking") >= 1) {
+					A_WeaponReady(weapflags | WRF_NOFIRE | WRF_NOSWITCH);
+				} else {
+					A_WeaponReady(weapflags | WRF_NOSWITCH);
+				}
+			} else {
+				A_WeaponReady(weapflags);
+			}
+		}
+		return null;
+	}
+	
+	action void PB_HandleCrosshair(int num)
+	{
+        CVar crosshair_settings = CVar.FindCVar('pb_weapon_crosshairs');
+		
+		if(crosshair_settings.GetBool()){
+			A_SetCrosshair(num); // Set crosshair to specific weapon
+		}
+		else {
+			A_SetCrosshair(0); // Set crosshair to universal user setting
+		}
+	}
+	
+	//[Pop]weapons should ALWAYS bob, fucking fight me
+	override void DoEffect()
+	{
+		super.DoEffect();
+		let player = owner.player;
+		if (player && player.readyweapon)
+		{
+			player.WeaponState |= WF_WEAPONBOBBING;
+		}
+		
+		if(pb_ScaleXWeapons)
+		{
+			WeaponScaleX = 1.2;
+		}
+		else
+		{
+			WeaponScaleX = 1;
+		}
+	}
+	
+	action void A_SetOverlaySprite(int layer, String str)
+        {
+                    let psp = player.GetPSprite(layer);
+                    psp.sprite = GetSpriteIndex(str);
+        }
+  
+	action void A_SetWeaponSprite(String str)
+        {
+                    let psp = player.GetPSprite(PSP_WEAPON);
+                  //  let psp = player.GetPSprite(1);
+                    psp.sprite = GetSpriteIndex(str);
+        }
+		
+	action void A_SetFlashWeaponSprite(String str)
+	{
+		let psp = player.GetPSprite(PSP_FLASH);
+		psp.sprite = GetSpriteIndex(str);
+	}
+
+	action void A_SetSpawnSprite(String str)
+	{
+	   sprite = GetSpriteIndex(str);
+	}
+	
+	action void LedgeReach(float HeightDecrease)
+	{
+		let plr = PlayerPawnBase(self);
+		plr.LedgeHeightMax = (plr.LedgeHeight - Height * HeightDecrease * 1.0f);
+		A_Stop();
+		SetOrigin((Pos.X, Pos.Y, plr.LedgeHeightMax), True);
+	}
+	
+	action state PB_RespectIfNeeded()
+	{
+		Actor own = invoker.owner;
+		bool shouldHelmet = ACS_NamedExecuteWithResult("ToggleHelmetAnimation",0,0,0) == 0 && own.CountInv("IntroductionSequence") == 0;
+		bool shouldRespect = invoker.respectInventoryItem != "" && own.CountInv(invoker.respectInventoryItem) == 0;
+		if (shouldHelmet)
+		{
+			own.GiveInventory("IntroductionSequence",1);
+			own.GiveInventory("CantDoAction",1);
+			//Console.printf("Setting State: HelmetAnimation");
+			return invoker.resolveState("HelmetAnimation");
+		}			
+		else if (shouldRespect)
+		{
+			//Console.printf("Setting State: WeaponRespect");
+			own.GiveInventory(invoker.respectInventoryItem,1);
+			return invoker.resolveState("WeaponRespect");
+		}
+		else
+		{
+			//Console.printf("Setting State: SelectAnimation");
+			return invoker.A_Jump(256,"SelectAnimation");
+		}
+	}
+	
+	//custom function to spawn a rail using textured particles, basically a generic version of what the functions above do
+	//draws the rail and returns a pointer to the spawned puff (if any), useful if you want to do something else with the puff / hit location, like spawning something
+	//also saves the hitactor in the puff's tracer pointer.
+	//this doesnt fully replace A_RailAttack, but its useful to replace the visual part of it
+	//this should be usable in decorate
+	Action Actor PB_LightVisualRail(string pufftype = "BulletPuff", int maxdis = 8000, int distparticles = 30, String PTexture = "TNT1A0", int dmg = 1, name damagetype = "Normal", int Xofs = 0, int Yofs = 0, int Zofs = 0, int linetflags = TRF_NOSKY, int pxlifetime = 1,int pxsize = 10,int pxrenderstyle = STYLE_ADD, int pxflags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE,double salpha = 1.0, double fadestps = -0.1, int sizesteps = -1, vector3 vels = (0,0,0), int startrol = 0, int rollspd = 0)
+	{
+		FLineTraceData t;
+		//vz is used to make the linetrace start from the view of the player, use zofs to move it from there
+		double vz = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) + Zofs;
+		
+		//fire the line trace, store the hit data in t
+		bool hit = linetrace(angle,maxdis,pitch,linetflags,vz,Yofs,Xofs,data:t);
+		//get the actual position (+ the args offsets)
+		vector3 spos = (pos.x + Xofs,pos.y + Yofs,pos.z + vz);
+		//get the last position, where the line trace stopped, by default it stops at any actor or in sky, change
+		vector3 fpos = t.HitLocation;
+		fpos -= t.hitdir; //step back 1 map unit, ensures that spawning something in fpos wont spawn at the higher sector
+		
+		vector3 dif = levellocals.Vec3diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dis = dif.length();
+		
+		int q = int(dis / distparticles) + 1; //+ 1 to ensure its always more than 0, since distance cant be negative but can be 0
+		
+		FSpawnParticleParams GenRail;
+		GenRail.Texture = TexMan.CheckForTexture (PTexture);
+		GenRail.Color1 = "FFFFFF";
+		GenRail.Style = pxrenderstyle;
+		GenRail.Flags = pxflags;
+		GenRail.Vel = vels; 
+		GenRail.Startroll = startrol;
+		GenRail.RollVel = rollspd;
+		GenRail.StartAlpha = salpha;
+		GenRail.FadeStep = fadestps;
+		GenRail.Size = pxsize;
+		GenRail.SizeStep = sizesteps;
+		GenRail.Lifetime = pxlifetime; 
+		
+		for(int i = 0; i < q; i++)
+		{
+			spos += (dr * distparticles);
+			if(i > 0)
+			{
+				GenRail.Pos = spos;
+				Level.SpawnParticle(GenRail);
+			}
+		}
+		
+		if(hit)
+		{
+			Actor p = spawn(pufftype,fpos);
+			if(p)
+			{
+				p.target = self;
+				p.tracer = t.hitactor ? t.hitactor : null;
+			}
+			if(t.hitactor != null && !t.hitactor.isfriend(self) && t.hitactor.health > 0)
+				t.hitactor.damagemobj(p ? p : self,self,dmg,damagetype);
+			
+			return p;
+		}
+		return null;
+	}
+	
+	//Rails / Beams things
+	//all this is done this way cause ideally, every weapon should have its own specific functions, though a generic version of this could be made for addons use or simple "laser" like things
+	
+	//////////////////////////////////////////////////////////
+	//BFG
+	//////////////////////////////////////////////////////////
+	
+	//temporal thing for the bfg alt fire, move this to the bfg when/if it gets rewritten in zscript
+	const bfgpartstep = 30;
+	action void PB_FireAltBFGRail()
+	{
+		//the first option is a lineattack cuz linetrace acts weird in some tipes of geometry (try one with the kinsie test map, in the elevator or the pool)
+		//Actor p = LineAttack(angle,8000,pitch,20,'Disintegrate',"BFGBeamPuff",LAF_NOIMPACTDECAL|LAF_NORANDOMPUFFZ);
+		//nvm just needed to substract hitdir to hitlocation, so it doesnt spawn in the wall
+		vector3 destpos;
+		FLineTraceData t;
+		bool hit = linetrace(angle,8000,pitch,0,height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor,data:t);
+		
+		destpos = t.hitlocation;
+		destpos -= (t.hitdir * 2);
+		
+		vector3 dif = levellocals.vec3diff((pos.XY,pos.z + height * 0.5),destpos);
+		vector3 dir = dif.unit();
+		double dis = dif.length();
+		
+		int q = int(dis / bfgpartstep) + 1; //bfgpartstep is an arbitrary value representing the distance between particles, basically get the divide the total distance / steps between particles to get the number of particles
+			
+		vector3 actpos = (pos.XY,pos.z + height * 0.5);
+		for(int i = 1; i <= q; i++)
+		{
+			actpos += (dir * bfgpartstep);
+			PB_DrawBFGrailparticle(actpos);
+		}
+		
+		//damage victim (if any)
+		if(t.hitactor)
+		{
+			actor v = t.hitactor;
+			int dmg = 40 * random(1,2); //so this is why it feels weaker, the original projectile deals 20 * random(1,8) damage, and damagemobj doesnt add randomization, so a little randomization may help here
+			if(v && v.bismonster && v.health > 0 && !isfriend(v))
+				v.damagemobj(self,self,dmg,'Disintegrate');
+		}
+		
+		//spawn puff if hit anything
+		if(hit)
+		{
+			actor p = Spawn("BFGBeamPuff",destpos);
+			if(p)
+				p.target = self;
+			
+		}
+
+	}
+	
+	action void PB_DrawBFGrailparticle(vector3 where)
+	{
+		FSpawnParticleParams bfgrail;
+		int fm = random(1,5);
+		bfgrail.Texture = TexMan.CheckForTexture ("DLI"..fm.."G0R0");
+		bfgrail.Color1 = "FFFFFF";
+		bfgrail.Style = STYLE_Add;
+		bfgrail.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		bfgrail.Vel = (random(-1,1),random(-1,1),random(-1,1)); 
+		bfgrail.Startroll = random(0,360);
+		bfgrail.RollVel = 0;
+		bfgrail.StartAlpha = 1.0;
+		bfgrail.FadeStep = 0.05;
+		bfgrail.Size = random(32,42);
+		bfgrail.SizeStep = -12;
+		bfgrail.Lifetime = random (2,3); 
+		bfgrail.Pos = where;
+		Level.SpawnParticle(bfgrail);
+	}
+	
+	/////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	//RailGun
+	//////////////////////////////////////////////////////////////////////////////////////////////////////////////
+	
+	///////////////////////////////////////////////////////////////////////
+	//Red
+	/////////////////////////////////////////////////////////////////
+	
+	const RedRail_Aim = 0;
+	const RedRail_Fire = 1;
+	const railpartstep = 20;
+	const railpartstepaim = 15;
+	
+	Action Void PB_VisualRailRed(int BeamType = RedRail_Aim,int power = 0)
+	{
+		FLineTraceData t;
+		double vz = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) - 8; //little offset
+		//double vz = height * 0.5;
+		bool hit = linetrace(angle,8000,pitch,0,vz,data:t);
+		
+		vector3 spos = (pos.xy,pos.z + vz);
+		vector3 fpos = t.HitLocation;
+		fpos -= t.hitdir; //step back 1 map unit, not necessary now, but for spawning something at hitlocation is useful
+		
+		vector3 dif = levellocals.Vec3diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dis = dif.length();
+		
+		int q = int(dis / (BeamType ? railpartstep : railpartstepaim)) + 1; //+ 1 to ensure its always more than 0, since distance cant be negative but can be 0
+		
+		double alfa = BeamType ? 1.0 : frandom(0.2,0.3);
+		for(int i = 0; i < q; i++)
+		{
+			spos += (dr * (BeamType ? railpartstep : railpartstepaim));
+			if(i > 0) //skip the first iteration, so it doesnt spawn a particle blocking the view
+				PB_DrawRailFx1(spos,BeamType,alfa,power);
+			
+			if(Beamtype && (i % 4 == 0) && power >= 60) //appear the shockwave every 4 iterations if its not an aiming beam and its fullpower
+				PB_SpawnRailShockWave(spos,1,i/4);
+		}
+	}
+	
+	Action Void PB_DrawRailFx1(vector3 where,int BeamType = RedRail_Aim, double alfa = 1.0, int power = 0)
+	{
+		FSpawnParticleParams RedRailPx;
+		int fm = random(1,4);
+		string fsp =  "RedR"..fm;
+		string spt = BeamType ? fsp : "CPSQB0";
+		RedRailPx.Texture = TexMan.CheckForTexture(spt);
+		RedRailPx.Color1 = "FFFFFF";
+		RedRailPx.Style = STYLE_Add;
+		RedRailPx.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		RedRailPx.Vel = (0,0,0); 
+		RedRailPx.Startroll = randompick(0,180);
+		RedRailPx.RollVel = 0;
+		RedRailPx.StartAlpha = alfa;
+		//fadestep and lifetime controls how fast it dissappears
+		RedRailPx.FadeStep = BeamType ? (power >= 60 ? 0.08 : 0.15) : 0;
+		RedRailPx.Size = BeamType ? 60 : 12;
+		RedRailPx.SizeStep = 0.01;
+		RedRailPx.Lifetime = BeamType ? (power >= 60 ? random(15,17) : random(8,10)) : 1;  //i dislike chained ternary operators like this, but it is what it is
+		RedRailPx.Pos = where;
+		Level.SpawnParticle(RedRailPx);
+	}
+	
+	Action Void PB_SpawnRailShockWave(vector3 where,bool red = 0,int it = 0)
+	{
+		FSpawnParticleParams ShockWv;
+		string tx = red ? "PBSWV1" : "PBSWV2";
+		ShockWv.Texture = TexMan.CheckForTexture(tx);
+		ShockWv.Style = STYLE_ADD;
+		ShockWv.Color1 = "FFFFFF";
+		ShockWv.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		ShockWv.Startroll = randompick(0,360);
+		ShockWv.RollVel = 0;
+		ShockWv.StartAlpha = 1.0;
+		//this looks cool, the shockwave grows with the distance, and first fades out the nearest ones, but pb ones are really fast and all with the same size
+		//ShockWv.Lifetime = (20 + it); //adds the actual iteration to the life time
+		//ShockWv.FadeStep = (1.0 / ShockWv.Lifetime); //then just do default particle fade thing (alpha / lifetime)
+		ShockWv.Lifetime = 20;
+		ShockWv.FadeStep = 0.05;
+		ShockWv.Size = red ? 20 : 5;
+		ShockWv.SizeStep = red ? 10 : 5;
+		ShockWv.Pos = where;
+		Level.SpawnParticle(ShockWv);
+	}
+	
+	//////////////////////////////////////////////////////////////////////////
+	//Blue Rail Fire mode
+	//////////////////////////////////////////////////////////////////
+	
+	Action Void PB_VisualRailBlue()
+	{
+		FLineTraceData t;
+		double vz = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) - 8; //little offset
+		//double vz = height * 0.5;
+		bool hit = linetrace(angle,8000,pitch,0,vz,data:t);
+		
+		vector3 spos = (pos.xy,pos.z + vz);
+		vector3 fpos = t.HitLocation;
+		fpos -= t.hitdir; //step back 1 map unit, not necessary now, but for spawning something at hitlocation is useful
+		
+		vector3 dif = levellocals.Vec3diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dis = dif.length();
+		
+		int q = int(dis / railpartstep) + 1; //+ 1 to ensure its always more than 0, since distance cant be negative but can be 0
+		
+		for(int i = 0; i < q; i++)
+		{
+			spos += (dr * railpartstep);
+			if(i > 0)
+				PB_DrawRailFxBlue(spos);
+			
+			if(i % 4 == 0)
+			{
+				PB_SpawnRailShockWave(spos,0,i/4);
+				//this is the most simple way i can think to do this, but i guess a blockthingsiterator with a small radiuscheck that deals the damage every 10 steps (or so) could work too
+				//not sure if that would be better performance-wise than spawning actors, but bti wouldnt have to go through (post)beginplay, WorldThingSpawned and other functions like that
+				//anyway this is a quick fix, may write a more fancy solution later
+				Actor p = spawn("RailgunAOEPuff",spos); //deals the aoe damage
+				if(p)
+					p.target = self; //no self damage
+			}
+		}
+	}
+	
+	Action Void PB_DrawRailFxBlue(vector3 where)
+	{
+		FSpawnParticleParams BlueRailPx;
+		int fm = random(1,4);
+		BlueRailPx.Texture = TexMan.CheckForTexture("BlueR"..fm);
+		BlueRailPx.Color1 = "FFFFFF";
+		BlueRailPx.Style = STYLE_Add;
+		BlueRailPx.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		BlueRailPx.Vel = (0,0,0); 
+		BlueRailPx.Startroll = randompick(0,180);
+		BlueRailPx.RollVel = 0;
+		BlueRailPx.StartAlpha = 1.0;
+		BlueRailPx.FadeStep = 0.05;
+		BlueRailPx.Size = 50;
+		BlueRailPx.SizeStep = -2;
+		BlueRailPx.Lifetime = random(30,40); 
+		BlueRailPx.Pos = where;
+		Level.SpawnParticle(BlueRailPx);
+		
+		
+		FSpawnParticleParams BlueRailSmoke;
+		string f = String.Format("%c", int("A") + random(0,3)); //this feels so illegal :p
+		BlueRailSmoke.Texture = TexMan.CheckForTexture("SMO1"..f..0);
+		BlueRailSmoke.Color1 = "33B2FF";
+		BlueRailSmoke.Style = STYLE_ADD;
+		BlueRailSmoke.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		vector3 offsv = (random(-5,5),random(-5,5),random(-5,5)); 
+		BlueRailSmoke.Vel = (0,0,0);
+		BlueRailSmoke.Startroll = randompick(0,180);
+		BlueRailSmoke.RollVel = random(-2,2);
+		BlueRailSmoke.StartAlpha = 0.66;
+		BlueRailSmoke.FadeStep = 0.01;
+		BlueRailSmoke.Size = random(20,35);
+		BlueRailSmoke.SizeStep = -0.5;
+		BlueRailSmoke.Lifetime = random(70,105); 
+		//spawn 2
+		BlueRailSmoke.Pos = where + offsv;
+		Level.SpawnParticle(BlueRailSmoke);
+		BlueRailSmoke.Pos = where - offsv;
+		Level.SpawnParticle(BlueRailSmoke);
+	}
+	
+	//
+	//Plasma M2 lightning mode
+	//
+	
+	const distlgtngun = 60;
+	Action Void PB_FireM2Lightning()
+	{
+		FLineTraceData t;
+		double vz = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) - 8; 
+		bool hit = linetrace(angle,8000,pitch,TRF_NOSKY,vz,data:t);
+		
+		vector3 spos = (pos.xy,pos.z + vz);
+		vector3 fpos = t.HitLocation;
+		fpos -= t.hitdir;
+		
+		vector3 dif = levellocals.Vec3diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dis = dif.length();
+		
+		int q = int(dis / distlgtngun) + 1; //+ 1 to ensure its always more than 0, since distance cant be negative but can be 0
+		
+		FSpawnParticleParams m2Lightpx;
+		int fm;
+		m2Lightpx.Color1 = "FFFFFF";
+		m2Lightpx.Style = STYLE_Add;
+		m2Lightpx.Flags = SPF_ROLL|SPF_FULLBRIGHT;
+		m2Lightpx.Vel = (0,0,0); 
+		m2Lightpx.RollVel = 0;
+		m2Lightpx.StartAlpha = 1.0;
+		
+		for(int i = 0; i < q; i++)
+		{
+			m2Lightpx.Size = random(20,30);
+			m2Lightpx.FadeStep = 0.02;
+			m2Lightpx.SizeStep = random(10,15);
+			m2Lightpx.Lifetime = random(5,8); 
+			m2Lightpx.Startroll = randompick(0,90,180,270,360);
+			
+			fm = random(6,9);
+			m2Lightpx.Texture = TexMan.CheckForTexture("DLI"..fm.."G0R0");
+			
+			spos += (dr * distlgtngun); //some offsets to the final position would make it look better, ig, for now its too similar to the bfg one
+			m2Lightpx.Pos = spos;
+		
+			if(i > 0)
+				Level.SpawnParticle(m2Lightpx);
+		}
+		
+		if(t.hitactor != null)
+			t.hitactor.damagemobj(self,self,2,'electric');
+		//LightningGunPuff
+		if(hit)
+		{
+			actor p = Spawn("LightningGunPuff",fpos);
+			if(p)
+				p.target = self;
+			
+		}
+		spawn("BlueFlare",fpos);
+	}
+	
+	//
+	//Unmaker beam
+	//
+	
+	Action void PB_UnmkrBeam(bool overcharge = false,double angofs = 0,double pofs = 0)
+	{
+		FLineTraceData t;
+		double vz = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) - 8;
+		bool hit = linetrace(angle + angofs,8000,pitch + pofs,TRF_NOSKY,vz,data:t);
+		
+		vector3 spos = (pos.xy,pos.z + vz);
+		vector3 fpos = t.HitLocation;
+		fpos -= t.hitdir; 
+		
+		vector3 dif = levellocals.Vec3diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dis = dif.length();
+		int q = int(dis / 40) + 1;
+		
+		FSpawnParticleParams UnmkBm;
+		string tx = overcharge ? "PBALK0" : "PBALJ0";
+		UnmkBm.Texture = TexMan.CheckForTexture(tx);
+		UnmkBm.Color1 = "FFFFFF";
+		UnmkBm.Style = overcharge ? STYLE_Add : STYLE_TRANSLUCENT;
+		UnmkBm.Flags = SPF_ROLL|SPF_FULLBRIGHT;
+		UnmkBm.Vel = (0,0,0); 
+		UnmkBm.StartAlpha = 1.0;
+		UnmkBm.FadeStep = 0.05;
+		UnmkBm.Size = randompick(25,35);
+		UnmkBm.SizeStep = -5;
+		UnmkBm.Lifetime = overcharge ? 2 : 1; 
+		
+		bool randomizebeam = randompick(0,0,0,0,0,0,1);
+		
+		for(int i = 0; i < q; i++)
+		{
+			UnmkBm.Startroll = randompick(0,360);
+			UnmkBm.RollVel = random(-5,5);
+			spos += (dr * 40);
+			if(randomizebeam)
+				spos += (random(-2,2),random(-2,2),random(-2,2));
+			UnmkBm.Pos = spos;
+			if(i > 0)
+				Level.SpawnParticle(UnmkBm);
+		}
+		string THEpuff = overcharge ? "UnmakerOverchargePuff" : "UnmakerBeamPuff";
+		Actor p;
+		if(hit) //the trace hit anything that is not a sky
+		{
+			p = Spawn(THEpuff,fpos);
+			if(p)
+			{
+				p.target = self;
+				if(overcharge && t.hitactor && !t.hitactor.bnoblood)
+					p.SetStateLabel("Xdeath"); //no bleeding actors makes the puff jump to xdeath state
+					
+				p.A_SprayDecal("Scorch",2,(0,0,0),t.hitdir); 
+			}
+		}
+		
+		if(t.hitactor)
+        {
+            t.hitactor.damagemobj(p ? p : self, self, overcharge ? 25 : 15,overcharge ? "ExplosiveImpact" : "Fire");
+            if(t.hitactor.bISMONSTER&&t.hitactor.health <=0&&CountInv("UnmakerOverchargeCounter")<50)
+                GiveInventory("UnmakerOverchargeCounter",1);
+        }
+	}
+}

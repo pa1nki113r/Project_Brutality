@@ -1,20 +1,17 @@
 Class PB_Imp1 : PB_Monster// Replaces DoomImp
 {
-		Default
-		{
+	Default
+	{
 		Monster;
 		Radius 18;
 		Height 56;
-		Speed 8;
-		FastSpeed 8;
-		MaxStepHeight 24;
-		MaxDropOffHeight 32;
+		Speed 5;
+		FastSpeed 10;
 		Mass 100;
 		SeeSound "imp/sight";
 		PainSound "imp/pain";
 		DeathSound "imp/death";
 		ActiveSound "imp/active";
-		BloodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
 		Health 100;
 		PainChance 200;
 		PainChance "Avoid", 64;
@@ -40,6 +37,8 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 		damagefactor "Taunt", 1.0;
 		DamageFactor "CauseObjectsToSplash", 0.0;
 		damagefactor "SSG", 50.0;
+		damagefactor "ExplosiveImpact", 1.9;
+		damagefactor "Explosive", 1.9;
 		damagefactor "Shotgun", 1.2;
 		damagefactor "Saw", 0.5;
 		damagefactor "Cut", 0.75;
@@ -48,289 +47,234 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 		HitObituary "$OB_IMPHIT";
 		Obituary "$OB_IMP";
 		MeleeRange 128;
-		
+		+DONTHARMSPECIES;
+		+DONTHARMCLASS;
 		+FLOORCLIP;
 		+SLIDESONWALLS;
-		+STANDSTILL
+		-STANDSTILL;
 		Species "Imp";
-		}
 		
-		double wallFacingAngle;
-		bool wallClimbFlipped;
-		bool crawlingOnFloor;
+		PB_Monster.CanIFallback false;
+		PB_Monster.PBMonSpeed 5, 4, 2, 2.5;
+	}
+	
+	double wallFacingAngle;
+	bool wallClimbFlipped;
+	bool crawlingOnFloor;
+	
+	bool knockedDown;
+	bool wallGrabbing;
+	bool jumping;
+	
+	//Check if the ceiling is short enough for the Imp to be able to jump on it. And is NOT a sky.
+	bool canJumpOnCeiling(int height)
+	{
+		Return (CeilingPic != SkyFlatNum && CeilingZ - (Pos.Z+Height) <= Height);
+	}
+	
+	bool tooCloseToFloor()
+	{
+		Return (Pos.Z - FloorZ <= 36);
+	}
+	
+	bool touchingWall()
+	{
+		// Walls left of Imp's perspective
+		FLineTraceData RemoteRay;
+		bool wallcheck = LineTrace(
+		   self.angle,
+		   44,
+		   self.pitch,
+		   TRF_THRUACTORS, //Should this check really go through actors ?
+		   offsetz: self.height,
+		   data: RemoteRay
+		);
 		
-		bool canBeStealthKilled;
-		bool knockedDown;
-		bool wallGrabbing;
-		bool jumping;
+		if(wallcheck && RemoteRay.HitType == TRACE_HitWall && !IsSkyLine (RemoteRay.HitLine))
+			return true;
 		
+		return false;
+	}
+	
+	Bool IsSkyLine (Line Linedef)
+	{
+		If (!Linedef)
+			Return False;
 		
-		// Check walls on right/left (from Imp's POV) after facing the player
+		If (Linedef.Special == Line_Horizon) //The line has a horizon special.
+			Return True;
 		
+		//The line is a sky hack, this is the real convoluted shit.
+		If ( Linedef.BackSector && Linedef.BackSector.GetTexture (Sector.Ceiling) == SkyFlatNum && //The sky hack requires a sky ceiling to work in the first place.
+		(Linedef.SideDef[Line.Back].GetTexture(Side.Top).IsNull() || //Check back line.
+		Linedef.SideDef[Line.Back].GetTexture(Side.Top).IsNull())) //Check front line
+			Return True;
 		
-		bool canJumpOnCeiling(int height) {
-			// Is too low to do a jump?
-			FLineTraceData RemoteRayCeiling;
-			bool ceilingcheck = LineTrace(
-			   self.angle,
-			   height,
-			   self.pitch-90,
-			   TRF_THRUACTORS,
-			   offsetz: self.height,
-			   data: RemoteRayCeiling
-			);
-			
-			if(ceilingcheck && RemoteRayCeiling.HitType == TRACE_HitCeiling ) {
-// 				A_PrintBold("Ceiling too low to jump");
-				return true;
-			}
-			return false;
-		}
+		Return False;
+	}
+	
+	//FIXME: Ignore sky lines.
+	//TODO: Merge these into one function. Also, I think the ceiling check doesn't even need a raycast.
+	//Check if there is a wall close to the imp in the specified relative direction.
+	Bool PB_ImpWallCheck (Double Range, Double CheckAngle = -270)
+	{
+		If (CeilingZ - (Pos.Z+Height) <= 128) //Too little space above us.
+			Return False;
 		
-		bool tooCloseToFloor() {
-			
-			FLineTraceData RemoteRayFloor;
-			bool floorcheck = LineTrace(
-			   self.angle,
-			   36,
-			   self.pitch+90,
-			   TRF_THRUACTORS,
-			   offsetz: self.height,
-			   data: RemoteRayFloor
-			);
-			
-			if(floorcheck && RemoteRayFloor.HitType == TRACE_HitFloor ) {
-				A_PrintBold("Floor too close to wall grab");
-				return true;
-			}
-			return false;
-		}
+		FLineTraceData RemoteRay;
+		bool wallcheck = LineTrace(
+		   Angle-CheckAngle,
+		   range,
+		   self.pitch,
+		   TRF_THRUACTORS,
+		   offsetz: self.height,
+		   data: RemoteRay
+		);
 		
-		bool touchingWall(){
-			// Walls left of Imp's perspective
-			FLineTraceData RemoteRay;
-			bool wallcheck = LineTrace(
-			   self.angle,
-			   44,
-			   self.pitch,
-			   TRF_THRUACTORS,
-			   offsetz: self.height,
-			   data: RemoteRay
-			);
-			
-			if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
-				return true;
-			}
-			return false;
-		}
-		
-		bool canJumpOnWallLeft(int range){
-			
-			// Is too low to do a jump?
-			FLineTraceData RemoteRayCeiling;
-			bool ceilingcheck = LineTrace(
-			   self.angle,
-			   128,
-			   self.pitch-90,
-			   TRF_THRUACTORS,
-			   offsetz: self.height,
-			   data: RemoteRayCeiling
-			);
-			
-			if(ceilingcheck && RemoteRayCeiling.HitType == TRACE_HitCeiling ) {
-// 				A_PrintBold("Ceiling too low to jump");
-				return false;
-			}
-			
-		
-			// Walls left of Imp's perspective
-			FLineTraceData RemoteRay;
-			bool wallcheck = LineTrace(
-			   self.angle-270,
-			   range,
-			   self.pitch,
-			   TRF_THRUACTORS,
-			   offsetz: self.height,
-			   data: RemoteRay
-			);
-			
-			if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
-// 				A_PrintBold("Imp Wall Check Left Passed");
-				return true;
-			}
-			return false;
-		}
-		
-		
-		// Check walls on right (from Imp's POV) after facing the player
-		bool canJumpOnWallRight(int range) {
-			// Is too low to do a jump?
-			FLineTraceData RemoteRayCeiling;
-			bool ceilingcheck = LineTrace(
-			   self.angle,
-			   128,
-			   self.pitch-90,
-			   TRF_THRUACTORS,
-			   offsetz: self.height,
-			   data: RemoteRayCeiling
-			);
-			
-			if(ceilingcheck && RemoteRayCeiling.HitType == TRACE_HitCeiling ) {
-// 				A_PrintBold("Ceiling too low to jump");
-				return false;
-			}
-			// Walls right of Imp's perspective
-			FLineTraceData RemoteRay;
-			bool wallcheck = LineTrace(
-			   self.angle-90,
-			   300,
-			   self.pitch,
-			   TRF_THRUACTORS,
-			   offsetz: self.height,
-			   data: RemoteRay
-			);
-			
-			if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
-// 				A_PrintBold("Imp Wall Check Right Passed");
-				return true;
-			}
-			return false;
-		}
-		
-		
-		override void PostBeginPlay() {
-			Super.PostBeginPlay(); // call the super function for virtual functions so we don't break shit if GZdoom update.
-			HitBoxSpawned = False;
-		}
-		
-		
-		override void Tick()
+		//Imps can jump on nearby solid walls as long as they are not a sky hack or horizon.
+		if(wallcheck && RemoteRay.HitType == TRACE_HitWall && !IsSkyLine(RemoteRay.HitLine))
 		{
-			Super.Tick();
-			
-			
-			
-			if( !self.InStateSequence(self.Curstate, self.ResolveState("Spawn")) || 
-				!self.InStateSequence(self.Curstate, self.ResolveState("Stand")) ||
-				!self.InStateSequence(self.Curstate, self.ResolveState("Pain.Melee"))) {
-					canBeStealthKilled = false;
-			}
-			
-			if(!self.InStateSequence(self.Curstate, self.ResolveState("WallLatch_Turret"))) {
-				A_SetScale(1.0);
-				bMISSILEEVENMORE = true;
-				bMISSILEMORE = true;
-			}
-			else {
-				bMISSILEEVENMORE = false;
-				bMISSILEMORE = false;
-			}
-			
-			
-			if( self.InStateSequence(self.Curstate, self.ResolveState("WallLatchLeft")) || 
-				self.InStateSequence(self.Curstate, self.ResolveState("WallLatch_Turret")) ||
-				self.InStateSequence(self.Curstate, self.ResolveState("WallLatch_Missile")) ||
-				self.InStateSequence(self.Curstate, self.ResolveState("SwitchWallRight")) ||
-				self.InStateSequence(self.Curstate, self.ResolveState("SwitchWallLeft")) ||
-				self.InStateSequence(self.Curstate, self.ResolveState("WallLatchRight"))) {
-				bNoGravity = true;
-				bDONTTHRUST = true;
-			}
-			else {
-				bNoGravity = false;
-				bDONTTHRUST = false;
-			}
-			
-			// Update recognition if crouching
-			if(crawlingOnFloor) {
-				self.Height = 28;
-			}
-			else {
-				self.Height = 56;
-			}
-			
-			//Handle Hitbox system
-			HitboxerHandler();
-			
-			//Handle Execution system
-			ExecutionHandler();
+			//A_PrintBold("Imp Wall Check Passed");
+			return true;
 		}
 		
-		States
-		{
+		return false;
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay(); // call the super function for virtual functions so we don't break shit if GZdoom update.
+		HitBoxSpawned = False;
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
 		
-			Execution:
-				TNT1 A 1 A_Die("Execution");
-				Stop;
-			Death.Execution:
-				TNT1 A 0 A_Stopsound();
-				Stop;
+		//if( !IsInState (Self,"Spawn")) || !IsInState (Self,"Stand")) || !IsInState (Self,"Stand")) || !IsInState (Self,"Pain.Melee")))
+		//{ Does nothing ?????
+		//}
+		
+		if(!IsInState (Self,"WallLatch_Turret"))
+		{
+			A_SetScale(1.0);
+			bMISSILEEVENMORE = true;
+			bMISSILEMORE = true;
+		}
+		else
+		{
+			bMISSILEEVENMORE = false;
+			bMISSILEMORE = false;
+		}
+		
+		
+		if( IsInState (Self, "WallLatchLeft") || IsInState (Self, "WallLatch_Turret") ||
+			IsInState (Self, "WallLatch_Missile") ||
+			IsInState (Self, "SwitchWallRight") ||
+			IsInState (Self, "SwitchWallLeft") ||
+			IsInState (Self, "WallLatchRight"))
+		{
+			bNoGravity = true;
+			bDONTTHRUST = true;
+		}
+		else {
+			bNoGravity = false;
+			bDONTTHRUST = false;
+		}
+		
+		// Update recognition if crouching
+		if(crawlingOnFloor) {
+			self.Height = 28;
+		}
+		else {
+			self.Height = 56;
+		}
+		
+		//Handle Hitbox system
+		//HitboxerHandler();
+		
+		//Handle Execution system
+		ExecutionHandler();
+	}
+	
+	States
+	{
+		Execution:
+			TNT1 A 1 A_Die("Execution");
+			Stop;
+		Death.Execution:
+			TNT1 A 0 A_Stopsound();
+			Stop;
+		
+		Spawn:
+			TROS A 1;
+		Stand:
+			TROS AB 10 A_LookEx();
+			Loop;
+		See:
+			TROO A 1 A_SmartChase("Missile", "Melee", 0);
+			TROO AAAAA 1 A_SmartChase(null, null, CHF_DONTTURN);
+			TROO B 1 A_SmartChase("Missile", "Melee", 0);
+			TROO BBBBB 1 A_SmartChase(null, null, CHF_DONTTURN);
+			TNT1 A 0 A_StartSound("flesh/step");
+			TROO C 1 A_SmartChase("Missile", "Melee", 0);
+			TROO CCCCC 1 A_SmartChase(null, null, CHF_DONTTURN);
+			TROO D 1 A_SmartChase("Missile", "Melee", 0);
+			TROO DDDDD 1 A_SmartChase(null, null, CHF_DONTTURN);
+			TNT1 A 0 A_StartSound("flesh/step");
+			Loop;
+		
+		////////////////
+		//Attack Logic// 
+		////////////////
+		Melee:
+			TNT1 A 0 A_JumpIfCloser(80, "Melee2");
+			TNT1 A 0 A_Jump(110, "MeleeRush");
+			TROO E 1 A_StartSound("imp/sight", CHAN_AUTO);
+			TROT C 4 A_FaceTarget();
+			TROT D 4 {
+				ThrustThingZ(0,28,0,1);
+				A_FaceTarget();
+				A_Recoil (-18);
+			}
+			TROT E 2  A_FaceTarget();
+			TROT F 2 { 
+				jumping = true;
+				A_StartSound("weapons/fistwhoosh", CHAN_AUTO);
+				A_FaceTarget();
+			}
+			TROT F 6 A_FaceTarget();
+			TROT GGG 2 A_CustomMeleeAttack(random(1, 8) * 4, "imp/melee", "", "ImpFatalityMarine"); //A_SpawnProjectile("ImpAttack2",10,0,0,0);
+			TNT1 A 0 {jumping = false;}
 				
-				
-			
-			Spawn:
-				TROS A 1 {canBeStealthKilled = true;}
-			Stand:
-				TROS AB 10 A_LookEx();
-				Loop;
-			See:
-				TROO AABB 2 A_Chase();
-				TNT1 A 0 A_StartSound("flesh/step");
-				TROO CCDD 2 A_Chase();
-				TNT1 A 0 A_StartSound("flesh/step");
-				Loop;
-			
-			////////////////
-			//Attack Logic// 
-			////////////////
-			Melee:
-				TNT1 A 0 A_JumpIfCloser(80, "Melee2");
-				TNT1 A 0 A_Jump(110, "MeleeRush");
-				TROO E 1 A_StartSound("imp/sight", CHAN_AUTO);
-				TROT C 4 A_FaceTarget();
-				TROT D 4 {
-					ThrustThingZ(0,28,0,1);
-					A_FaceTarget();
-					A_Recoil (-18);
-				}
-				TROT E 2  A_FaceTarget();
-				TROT F 2 { 
-					jumping = true;
-					A_StartSound("weapons/fistwhoosh", CHAN_AUTO);
-					A_FaceTarget();
-				}
-				TROT F 6 A_FaceTarget();
-				TROT GGG 2 A_SpawnProjectile("ImpAttack2",10,0,0,0);
-				TNT1 A 0 {jumping = false;}
-					
-				TROT HHH 2 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine");
-				Goto See;
-			MeleeRush:
-				TNT1 A 0 A_StartSound("imp/sight", CHAN_AUTO);
-				TROO AABB 1 {
-					A_FaceTarget();
-					A_Recoil(-2);
-				}
-				TNT1 A 0 A_StartSound("flesh/step", CHAN_AUTO);
-				TROO CCDD 1 {
-					A_FaceTarget();
-					A_Recoil(-2);
-				}
-				TNT1 A 0 A_StartSound("flesh/step", CHAN_AUTO);
-			Melee2:
-				TNT1 A 0 {
-					A_StartSound("flesh/step", CHAN_AUTO);
-				}
-				TROO EF 4 A_FaceTarget();
-				TNT1 A 0 A_StartSound("weapons/fistwhoosh", CHAN_AUTO);
-				TROO G 4 A_SpawnProjectile("ImpAttack",10,0,0,0);
-				TROO FE 4 A_FaceTarget();
-				TNT1 A 0 A_Jump(132, "See");
-				TROO I 2 A_FaceTarget(90,45);
-				TNT1 A 0 A_StartSound("weapons/fistwhoosh", CHAN_AUTO);
-				TROA H 6 A_SpawnProjectile("ImpAttack",10,0,0,0);
-				TROO I 2;
-				Goto See;
+			TROT HHH 2 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine");
+			Goto See;
+		MeleeRush:
+			TNT1 A 0 A_StartSound("imp/sight", CHAN_AUTO);
+			TROO AAABBB 1 {
+				A_FaceTarget();
+				A_Recoil(-1);
+			}
+			TNT1 A 0 A_StartSound("flesh/step", CHAN_AUTO);
+			TROO CCCDDD 1 {
+				A_FaceTarget();
+				A_Recoil(-1);
+			}
+			TNT1 A 0 A_StartSound("flesh/step", CHAN_AUTO);
+		Melee2:
+			TNT1 A 0 {
+				A_StartSound("flesh/step", CHAN_AUTO);
+			}
+			TROO EF 5 A_FaceTarget();
+			TNT1 A 0 A_StartSound("weapons/fistwhoosh", CHAN_AUTO);
+			TROO G 4 A_CustomMeleeAttack(random(1, 8) * 4, "imp/melee", "", "Rip"); //A_SpawnProjectile("ImpAttack",10,0,0,0);
+			TROO FE 4 A_FaceTarget();
+			TNT1 A 0 A_Jump(132, "See");
+			TROO I 2 A_FaceTarget(90,45);
+			TNT1 A 0 A_StartSound("weapons/fistwhoosh", CHAN_AUTO);
+			TROA H 6 A_CustomMeleeAttack(random(1, 8) * 4, "imp/melee", "", "Rip"); //A_SpawnProjectile("ImpAttack",10,0,0,0);
+			TROO I 2;
+			Goto See;
 	
 		// Attack Handler
 		Missile:
@@ -338,40 +282,29 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				A_FaceTarget();
 				
 				int jumpChance = (random(1,256));
-				if(jumpChance > 212) {
-					if(canJumpOnWallLeft(300)){
-						return A_Jump(256, "TurnAndJumpLeft");
-					}
-					if(canJumpOnWallRight(300)){
-						return A_Jump(256, "TurnAndJumpRight");
-					}
-					if(canJumpOnWallLeft(650)){
-						return A_Jump(256, "TurnAndJumpLeft_Long");
-					}
-					if(canJumpOnWallRight(650)){
-						return A_Jump(256, "TurnAndJumpRight_Long");
-					}
-					if(canJumpOnCeiling(200)) {
-						return A_Jump(256, "JumpToCeiling");
-					}
+				if(jumpChance > 212)
+				{
+					if(PB_ImpWallCheck(300,-90))
+						Return FindState ("TurnAndJumpLeft");
+					if(PB_ImpWallCheck(300,-270))
+						Return FindState ("TurnAndJumpRight");
+					if(PB_ImpWallCheck(650,-90))
+						Return FindState ("TurnAndJumpLeft_Long");
+					if(PB_ImpWallCheck(650,-270))
+						Return FindState ("TurnAndJumpRight_Long");
+					if(canJumpOnCeiling(200))
+						Return FindState ("JumpToCeiling");
 				}
 				
+				If(Target && Random(1,256) > 192 && Distance3DSquared(Target) < 250*250)
+					Return FindState ("PounceAttack");
 				
-				
-				if(GetDistance(true, AAPTR_TARGET) < 250) {
-					int pounceChance = (random(1,256));
-					if(pounceChance > 192) {
-						return A_Jump(256, "PounceAttack");
-					}
-					
-				}
-				
-				return A_CheckLOF("NormalAttack", CLOFF_MUSTBESOLID|CLOFF_IGNOREGHOST|CLOFF_SKIPOBJECT );
+				Return A_CheckLOF("NormalAttack", CLOFF_MUSTBESOLID|CLOFF_IGNOREGHOST|CLOFF_SKIPOBJECT );
 			}
 			Goto See;
 			
 		PounceAttack:
-			TROT H 2 {
+			TROT H 3 {
 				A_FaceTarget();
 				int direction = (random(0,1));
 				if (direction == 1) {
@@ -382,7 +315,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				}
 				crawlingOnFloor = true;
 			}
-			TROT H 2 A_Recoil(-8);
+			TROT H 3 A_Recoil(-6);
 			TROF DAABBCCBB 2 A_Recoil(-2);
 			TNT1 A 0 {
 				crawlingOnFloor = False;
@@ -397,7 +330,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 					A_FaceTarget();
 					jumping = true;
 			}
-			TROF DDDD 2  A_SpawnProjectile("ImpAttack",10,0,0,0);
+			TROF DDDD 2 A_CustomMeleeAttack(random(1, 8) * 4, "imp/melee", "", "Rip"); //A_SpawnProjectile("ImpAttack",10,0,0,0);
 			
 			PounceLoop:
 				TROF DDDDDDDDDDDDDDDDDDD 2 A_CheckFloor("PounceEnd");
@@ -517,14 +450,10 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			TROF D 8;
 			TROF DDDDDDDDDDDDDDDDDD 1 {
 			
-				if(touchingWall()) {
+				if(touchingWall())
 					SetState(self.ResolveState("WallLatchLeft"));
-				}
-				
-				if(A_CheckFloor("LandingAllFours")) {
+				if(A_CheckFloor("LandingAllFours"))
 					SetState(self.ResolveState("LandingAllFours"));
-				}
-				
 			}
 			TROF C 1 A_Stop();
 			Goto LandingAllFours;
@@ -594,15 +523,13 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 		WallLatch_Turret:
 			IW01 ABCD 0;
 			IW00 A 6 {
-				if (wallClimbFlipped) {
+				if (wallClimbFlipped)
 					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.\
-				}
 			
 				if ( !wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) > 0)) {
 // 					SetState(self.ResolveState("DropFromWall"));
 					SetState(self.ResolveState("SwitchWallRight"));
 				}
-				
 				
 				if ( wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) < 0)) {
 // 					SetState(self.ResolveState("DropFromWall"));
@@ -610,20 +537,18 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				}
 				
 				A_SetScale(scale.X+0.003,Scale.Y+0.01);
-				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
-				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
-				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST);
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST);
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST);
 			}
 			IW00 A 6 {
-				if (wallClimbFlipped) {
+				if (wallClimbFlipped)
 					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.\
-				}
 			
 				if ( !wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) > 0)) {
 // 					SetState(self.ResolveState("DropFromWall"));
 					SetState(self.ResolveState("SwitchWallRight"));
 				}
-				
 				
 				if ( wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) < 0)) {
 // 					SetState(self.ResolveState("DropFromWall"));
@@ -631,21 +556,18 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				}
 				
 				A_SetScale(scale.X+0.003,Scale.Y+0.01);
-				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
-				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
-				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST);
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST);
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST);
 			}
 			IW00 A 6 {
-				if (wallClimbFlipped) {
+				if (wallClimbFlipped)
 					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.
-				}
-				
 			
 				if ( !wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) > 0)) {
 // 					SetState(self.ResolveState("DropFromWall"));
 					SetState(self.ResolveState("SwitchWallRight"));
 				}
-				
 				
 				if ( wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) < 0)) {
 // 					SetState(self.ResolveState("DropFromWall"));
@@ -654,21 +576,18 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				
 				A_SetScale(scale.X-0.003,Scale.Y-0.01);
 			
-				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
-				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
-				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST);
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST);
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST);
 			}
 			IW00 A 6 {
-				if (wallClimbFlipped) {
+				if (wallClimbFlipped)
 					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.
-				}
-				
 				
 				if ( !wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) > 0)) {
 // 					SetState(self.ResolveState("DropFromWall"));
 					SetState(self.ResolveState("SwitchWallRight"));
 				}
-				
 				
 				if ( wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) < 0)) {
 // 					SetState(self.ResolveState("DropFromWall"));
@@ -677,9 +596,9 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				
 				A_SetScale(scale.X-0.003,Scale.Y-0.01);
 			
-				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
-				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
-				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST   );
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST);
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST);
+				A_Chase("WallLatch_Missile", "WallLatch_Missile", CHF_DONTTURN|CHF_DONTMOVE|CHF_NODIRECTIONTURN|CHF_NIGHTMAREFAST);
 			}
 			TNT1 A 0 A_Jump(24, "DropFromWall");
 			Loop;
@@ -689,23 +608,22 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			TNT1 A 0 A_JumpIfCloser(225, "WallPounce");
 			IW00 B 1 BRIGHT {
 			
-				if ( !wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) > 0)) {
+				if ( !wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) > 0))
 					SetState(self.ResolveState("DropFromWall"));
-				}
 				
-				
-				if ( wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) < 0)) {
+				if ( wallClimbFlipped && (target && deltaangle(wallFacingAngle, AngleTo(target)) < 0))
 					SetState(self.ResolveState("DropFromWall"));
-				}
 				
 				
-				if (wallClimbFlipped) {
+				if (wallClimbFlipped)
+				{
 					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.
 					A_FaceTarget();
 					A_Startsound ("IMPCHARG");
 					A_SpawnItemEx("PB_DoomImpBall_Spawn", 1, -24, 27);
 				}
-				else {
+				else
+				{
 					A_FaceTarget();
 					A_Startsound ("IMPCHARG");
 					A_SpawnItemEx("PB_DoomImpBall_Spawn", 1, 24, 27);
@@ -713,7 +631,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			
 			}
 
-			IW00 BBBBBB 1 BRIGHT {
+			IW00 BBBBBBBB 1 BRIGHT {
 				A_FaceTarget(90,45);
 				
 				if (wallClimbFlipped) {
@@ -749,15 +667,12 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			}
 			
 			IW00 DCB 3 {
-				if (wallClimbFlipped) {
+				if (wallClimbFlipped)
 					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.
-				}
-					
 			}
 			IW00 A 1 {
-				if (wallClimbFlipped) {
+				if (wallClimbFlipped)
 					sprite = GetSpriteIndex("IW01"); // Will override the TNT1, replacing it with ZOMB.
-				}
 				//A_SetAngle(angle+15);
 			}
 			TNT1 A 0 A_Jump(12, "DropFromWall");
@@ -770,7 +685,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				A_Recoil (-15);
 				A_FaceTarget();
 			}
-			TROF DDDD 2 A_SpawnProjectile("ImpAttack",10,0,0,0);
+			TROF DDDD 2 A_CustomMeleeAttack(random(1, 8) * 4, "imp/melee", "", "Rip"); //A_SpawnProjectile("ImpAttack",10,0,0,0);
 			TROF DDDDDDDDD 2 A_CheckFloor("LandingAllFours");
 			Goto LandingAllFours;
 			
@@ -812,7 +727,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			
 			
 		NormalAttack:
-			TROO E 1 {
+			TROO E 2 {
 				A_FaceTarget();
 				A_Startsound ("IMPCHARG");
 // 				A_SpawnProjectile ("SmallFlameTrails", 35, 30, random (0, 40), 2, random (0, 160));
@@ -820,7 +735,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				A_SpawnItemEx("PB_DoomImpBall_Spawn", 1, 24, 30);
 			}
 
-			TROO EEE 2 {
+			TROO EEEE 2 {
 				A_FaceTarget(90,45); 
 // 				A_SpawnProjectile ("SmallFlameTrails", 35, 30, random (0, 40), 2, random (0, 160));
 // 				A_SpawnProjectile ("ImBallGettingReady", 35, 30, random (0, 140), 2, random (0, 160));
@@ -840,7 +755,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			Goto See;
 
 		SpecialAttack:
-			TROO F 2 A_FaceTarget(90,45);
+			TROO FF 2 A_FaceTarget(90,45);
 			TROO G 6 {
 				A_DropAdjust("PB_DoomImpBallGravity","PB_DoomImpBall",2,32,32, minRange: 200, maxRange: 600);
 				A_SpawnProjectile ("SmallFlameTrails", 33, 24, random (0, 40), 2, random (0, 160));
@@ -879,7 +794,6 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			Goto See;
 		
 		Pain.Melee:
-			TNT1 A 0 A_JumpIf (canBeStealthKilled, "StealthKill");
 		Pain:
 			TNT1 A 0 A_JumpIf (jumping, "PainMidair");
 			TNT1 A 0 {
@@ -890,21 +804,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			TNT1 A 0 A_JumpIf (knockedDown, "Downed");
 			TROO H 6 A_Pain();
 			Goto See;
-		// Old Stealth System, going to be replaced with something better
-		StealthKill:
-			TROO H 1 A_FaceTarget();
-			TNT1 A 0 A_JumpIfInTargetInventory("Punching",1, 2);
-			TROO H 1;
-			Goto Pain;
-			// This old shit is going to be removed with the new stealth kill system
-			TNT1 A 0 A_GiveToTarget("SKImp", 1);
-			TNT1 A 0 A_NoBlocking();
-			TNT1 A 0 A_Die("Stealthy");
-			TNT1 A 1;
-			Stop;
-		Death.Stealthy:
-			TNT1 A 0;
-			Stop;
+	
 			
         Downed:
 			ID11 D 6 A_Pain();
@@ -969,7 +869,6 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 		
 		
 		GetUp:
-			TNT1 A 0 A_SpawnItem("LargeMassWaterImpact");
 			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 22, "FallingDie");
 			TNT1 A 0 {
 				A_TakeInventory("FallingHeight", 100);
@@ -1063,6 +962,8 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 		
 		//New Evade Animation
 		Pain.Avoid:
+		Roll:
+		Avoid:
 			TNT1 A 0 {
 				crawlingOnFloor = False;
 				jumping = false;
@@ -1091,7 +992,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				crawlingOnFloor = true;
 			}
 			TROT H 2;
-			TROF DAABBCCBBAABB 2 A_Recoil(-4);
+			TROF DAABBCCBBAABB 2 A_Recoil(-3);
 			TNT1 A 0 {
 				crawlingOnFloor = False;
 				A_Stop();
@@ -1118,7 +1019,12 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 		Death:
 			TNT1 A 0 A_JumpIf(jumping, "DeathShotgunFly");
 			TNT1 A 0 A_JumpIf (knockedDown, "Death.Down");
-			TNT1 A 0 A_Jump(32, "Death.Arm");
+			//TNT1 A 0 A_Jump(32, "Death.Arm");
+			TNT1 A 0 A_DeathWepCheck("ShotgunSelected", 400, "Death.Shotgun");
+			TNT1 A 0 A_DeathWepCheck("ASGSelected", 400, "Death.Shotgun");
+			TNT1 A 0 A_DeathWepCheck("SSGSelected", 200, "Death.SSG");
+			TNT1 A 0 A_DeathWepCheck("MinigunSelected", 1000, "Death.Minigun");
+			TNT1 A 0 A_DeathWepCheck("NewChaingunSelected", 750, "Death.Nailgun");
 			TNT1 A 0 A_Jump(24,"DeathNoGuts");
 			TNT1 A 0 A_Jump(26, "Death4");
 			TNT1 A 0 A_Jump(256, "Death1", "Death2", "Death3");
@@ -1169,7 +1075,8 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			ID11 DC 6;
 			TNT1 A 0 A_SpawnItem("DeadImp1");
 			Stop;
-
+		
+		Death.ArmHitbox:
 		Death.Arm:
 			TNT1 A 0 {
 				A_SpawnProjectile ("XDeathImpArm", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
@@ -1181,12 +1088,12 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 A_Jump(96, "Arm2");
 			TR08 A 8;
-			TNT1 A 0 A_SpawnItem ("DyingImpNoArm", 2);
+			TNT1 A 0 A_SpawnItemEx ("DyingImpNoArm",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 		Arm2:
 			TNT1 A 0 A_SpawnProjectile ("MuchBlood", 50, 0, random (0, 360), 2, random (0, 160));
 			T408 A 8 A_SpawnProjectile ("XDeath1", 40, 0, random (0, 360), 2, random (0, 160));
-			TNT1 A 0 A_SpawnItem ("DyingImpNoArm2", 2);
+			TNT1 A 0 A_SpawnItemEx ("DyingImpNoArm2",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 			
 		DeathNoGuts:
@@ -1205,14 +1112,14 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			IMPC B 8 A_NoBlocking();
 			IMPC C 8;
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_SpawnItem ("DyingImp", 2);
+			TNT1 A 0 A_SpawnItemEx ("DyingImp",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 		DeathNoGuts2:
 			I9PC C 8;
 			I9PC D 8 A_Scream();
 			I9PC E 8 A_NoBlocking();
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_SpawnItem ("DyingImp2", 2);
+			TNT1 A 0 A_SpawnItemEx ("DyingImp2",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 	
 		Death.cut:
@@ -1330,12 +1237,13 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 		HeadExploder:
 			TNT1 A 0 A_Jump(72, "HeadExplode");
 			Goto HeadMinor;
+		Death.HeadHitbox:
 		Death.head:
 			TNT1 A 0 A_Stop();
 			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 			TNT1 A 0 A_JumpIfInTargetInventory("HasPlasmaWeapon", 1, "Death.Plasma");
 			TNT1 A 0 A_JumpIfInTargetInventory("HasCutingWeapon", 1, "Death.Decapitate");
-			TNT1 A 0 A_JumpIfHealthLower(-50, "HeadExplode");
+			TNT1 A 0 A_JumpIfHealthLower(-60, "HeadExplode");
 			TNT1 A 0 A_JumpIfInTargetInventory("RandomHeadExploder", 1, "HeadExploder");
 		HeadMinor:
 			TNT1 A 0 {
@@ -1469,7 +1377,8 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			ZL5E EEEEEEEEEEEEEEEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
 			TNT1 A 0 A_SpawnItem ("DeadImp_ZL5EE");
 			Stop;
-			
+		
+	Death.LegHitbox:
     Death.Leg:
 		TNT1 A 0 A_JumpIfHealthLower(-100,"DoubleLegRemove");
 		TNT1 A 0 A_JumpIfHealthLower(-20, "LegRemove");
@@ -1524,8 +1433,8 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 		
 		TR09 A 10;
 		TR09 BC 5;
-        TNT1 A 0 A_SpawnItem ("DyingImpNoLeg", 5);
-        Stop;
+        TNT1 A 0 A_SpawnItemEx ("DyingImpNoLeg",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+		Stop;
 	LegRemoveRare:
         TNT1 A 0 {
 			A_StartSound("gore/minimum");
@@ -1562,7 +1471,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				A_SpawnProjectile ("PB_XDeath2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnProjectile ("PB_Brains2", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnProjectile ("PB_Brains3", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
-				A_SpawnProjectile ("PB_Brains4Green", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains4", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnProjectile ("PB_Brains5", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
 				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
@@ -1610,7 +1519,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				A_SpawnProjectile ("PB_XDeath2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnProjectile ("PB_Brains2", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnProjectile ("PB_Brains3", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
-				A_SpawnProjectile ("PB_Brains4Green", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+				A_SpawnProjectile ("PB_Brains4", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnProjectile ("PB_Brains5", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
 				A_SpawnProjectile ("PB_SmallBrainPieceFast", random (45, 55), random (5, -5), random (170, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-10, 10));
@@ -1675,20 +1584,22 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			
 			
 		Death.fire:
+		Death.FireExplosion:
 		Death.Flames:
 		Death.Burn:
+			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 			TNT1 A 1 {
-				A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 				A_ScreamAndUnblock();
 				A_SpawnItemEx("BurningImpRunning",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
 			}
 			Stop;
 		  
-		Death.Desintegrate:
+		Death.Disintegrate:
 			TNT1 A 1 {
 				A_ScreamAndUnblock();
-				A_SpawnItemEx("DesintegratedHuman",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
+				A_SpawnItemEx("DisintegratedHuman",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
 			}
+			TNT1 A -1;
 			Stop;
 			
 		Death.Blackhole:
@@ -1838,7 +1749,6 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			
 		 Death.Melee:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down");
-			TNT1 A 0 A_JumpIfInventory ("SKZombieMan", 1, "StealthKill");
         Death.Kick:
 			TNT1 A 0 {
 				bNODROPOFF = false;
@@ -2029,8 +1939,8 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 		Death.Blast:
 			TNT1 A 0 A_FaceTarget();
 			TNT1 A 0 A_Jump(12, "Death.Arm");
-			TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 A_Jump(132, "Death.Blast2", "Death.Blast3");
+			TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 {
 				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
@@ -2065,6 +1975,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 			Stop;
 		
 		Death.Blast2:
+		TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 {
 				A_XScream();
 				NashGoreGibs.SpawnGibs(self);
@@ -2106,6 +2017,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				}
 			Stop;
 		Death.Blast3:
+		TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 {
 					A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 					A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
@@ -2141,7 +2053,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 	
 	Death.SSG:
 	    ZZD1 E 1 {
-				A_Recoil(-8);
+				ThrustThing(angle * 256 / 360 + 128, 22, 0, 0);
 				A_FaceTarget();
 				NashGoreGibs.SpawnGibs(self);
 				for (int i = 0; i < 5; i++) {	
@@ -2172,6 +2084,7 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
         Stop;
 		
 	XDeath:
+		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 		TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG");
 		TNT1 A 0 { 
 			NashGoreGibs.SpawnGibs(self);
@@ -2194,18 +2107,9 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 		Raise:
 			POSS KJIH 5;
 			Goto See;
-		
-		Death.IceBeam:
-			TNT1 A 0 {
-				bSHOOTABLE = false;
-				bSOLID = false;
-				A_SpawnItem("FrozenImp");
-				A_SpawnItem("IceCrystalGround");
-				A_SpawnItem("IceCrystalGround");
-			}
-			Stop;
-		
+
 		Death.Ice:
+		Death.IceExplosion:
 		Death.Freeze:
 		Death.Frost:
 			TNT1 A 0 {
@@ -2221,23 +2125,23 @@ Class PB_Imp1 : PB_Monster// Replaces DoomImp
 				TNT1 A 0 A_JumpIfIntargetInventory("FistsSelected", 1, 1);
 				Goto Death.ExplosiveImpact;
 				TNT1 A 0 A_GiveToTarget("GoFatality", 1);
-				TNT1 A 0 A_Jump(256,"Death.Fatality1", "Death.Fatality1", "Death.Fatality2", "Death.Fatality2", "Death.Fatality3", "Death.Fatality4");
+				TNT1 A 0 A_Jump(256,"Death.Fatality1", "Death.Fatality4", "Death.Fatality2", "Death.Fatality2", "Death.Fatality3", "Death.Fatality4", "Death.Fatality5");
 				Goto Death.Fatality1;
 
 		Death.Fatality1:
-			TNT1 A 0 A_GiveToTarget("ZombieManFatality", 1);
+			TNT1 A 0 A_GiveToTarget("ImpFatality", 1);
 			Stop;
 		Death.Fatality2:
-			TNT1 A 0 A_GiveToTarget("ZombieManFatality2", 1);
+			TNT1 A 0 A_GiveToTarget("ImpFatality2", 1);
 			Stop;
 		Death.Fatality3:
-			TNT1 A 0 A_GiveToTarget("ZombieManFatality3", 1);
+			TNT1 A 0 A_GiveToTarget("ImpFatality3", 1);
 			Stop;
 		Death.Fatality4:
-			TNT1 A 0 A_GiveToTarget("ZombieManFatality4", 1);
+			TNT1 A 0 A_GiveToTarget("ImpFatality4", 1);
 			Stop;
 		Death.Fatality5://Didn't like this one, but it gives me an idea...
-			TNT1 A 0 A_GiveToTarget("ZombieManFatality5", 1);
+			TNT1 A 0 A_GiveToTarget("ImpFatality5", 1);
 			Stop;
 		Death.Fatality6:
 			TNT1 A 0 A_GiveToTarget("ZombieManFatality6", 1);

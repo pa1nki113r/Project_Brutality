@@ -95,36 +95,34 @@ ACTOR KeepLaserDeactivated : Inventory {}
 
 ACTOR PB_SMG : PB_Weapon
 {
-	//$Title Submachine Gun
-	//$Category Weapons
+	//$Category Project Brutality - Weapons
 	//$Sprite ATFLA0
 	SpawnID 9200
 	Weapon.AmmoUse1 0
 	Weapon.AmmoGive1 50
 	Weapon.AmmoUse2 0
 	Weapon.AmmoGive2 0
-	Weapon.AmmoType1 "PistolBullets"
+	Weapon.AmmoType1 "PB_LowCalMag"
 	Weapon.AmmoType2 "SMGAmmo"
 	Inventory.MaxAmount 3
 	Inventory.Amount 1
 	+FLOORCLIP
 	+DONTGIB
-	Obituary "%o was shot down by %k's UAC17 Compact Sub-Machine Gun."
+	Obituary "%o was shot down by %k's UAC-17 Compact Sub-Machine Gun."
     Inventory.PickupSound "CLIPIN"
-	Inventory.Pickupmessage "You found the UAC Compact Sub-Machine Gun! (Slot 2)"
+	Inventory.Pickupmessage "UAC Compact Sub-Machine Gun (Slot 2)"
 	Tag "UAC-17 SMG"
     +WEAPON.NOAUTOAIM
     +WEAPON.NOALERT
     +WEAPON.NOAUTOFIRE
-	Weapon.BobRangeX 0.3
-	Weapon.BobRangeY 0.5
-	Weapon.BobStyle InverseSmooth
-	Weapon.BobSpeed 2.4
     Scale 0.4
 	PB_WeaponBase.UnloaderToken "UACSMGHasUnloaded"
 	Inventory.AltHUDIcon "ATFLA0"
-	PB_WeaponBase.respectItem "RespectSMG"
+	PB_WeaponBase.RespectItem "RespectSMG"
 	FloatBobStrength 0.5
+	PB_WeaponBase.OffsetRecoilX 3.0
+	PB_WeaponBase.OffsetRecoilY 2.5
+
 	States
 	{
 	Steady:
@@ -148,7 +146,7 @@ ACTOR PB_SMG : PB_Weapon
 		
 	Ready:
 		TNT1 A 0
-        TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded", 1, "UnloadedReady")
+//        TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded", 1, "UnloadedReady")
 		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
 		TNT1 A 0 PB_RespectIfNeeded
 	WeaponRespect:
@@ -174,10 +172,12 @@ ACTOR PB_SMG : PB_Weapon
 		A1F6 WXYZ 1 A_DoPBWeaponAction
 		A1F7 XY 1 A_DoPBWeaponAction
 		Goto Ready3
-		
+	
 	SelectAnimation:
+		TNT1 A 0 A_TakeInventory("Zoomed",1)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "SelectAnimationDualWield")
 		TNT1 A 0 A_PlaySoundEx("weapons/smg_up", "Auto")
+		TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded",1, "SelectAnimationUnloaded")
         A1F1 ABCD 1
 	Ready3:
 		TNT1 A 0 A_TakeInventory("KeepLaserDeactivated",1)
@@ -234,15 +234,24 @@ ACTOR PB_SMG : PB_Weapon
 			return state("");
 		}
 		Loop
-		
+	SelectAnimationUnloaded:
+		A1F1 A 1
+		A0F1 BCD 1
+		Goto Ready3
 	UnloadedReady:
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "UnloadedReadyDualWield")
 		A1F1 Z 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD, PBWEAP_UNLOADED)
 		Loop
 	
 	SelectAnimationDualWield:
+		TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded", 1, "SelectAnimationDWUnloaded")
 		TNT1 A 0 A_PlaySoundEx("weapons/smg_up", "Auto")
 		A2F3 GFEDCBA 1
+		TNT1 A 0 A_PlaySoundEx("weapons/smg_up", "Auto")
+		Goto ReadyDualWield
+	SelectAnimationDWUnloaded:
+		TNT1 A 0 A_PlaySoundEx("weapons/smg_up", "Auto")
+		A0F2 CDEFGHI 1
 		TNT1 A 0 A_PlaySoundEx("weapons/smg_up", "Auto")
 	ReadyDualWield:
 		TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded", 1, "UnloadedReadyDualWield")
@@ -252,20 +261,32 @@ ACTOR PB_SMG : PB_Weapon
 			if(CountInv("LeftSMGAmmo") < CountInv("SMGAmmo")){
 				A_GiveInventory("DualFiring",1);
 			}
-			if(CountInv("PistolBullets")>0){
-				if(CountInv("LeftSMGAmmo")<=0){
-					A_GiveInventory("DualFireReload",1);
-				}
-				if(CountInv("SMGAmmo")<=0){
-					A_GiveInventory("DualFireReload",1);
-				}
-			}
+// 			if(CountInv("PB_LowCalMag")>0){
+// 				if(CountInv("LeftSMGAmmo")<=0){
+// 					A_GiveInventory("DualFireReload",1);
+// 				}
+// 				if(CountInv("SMGAmmo")<=0){
+// 					A_GiveInventory("DualFireReload",1);
+// 				}
+// 			}
 			A_Overlay(10, "IdleLeft_Overlay", false);
 			A_Overlay(11, "IdleRight_Overlay", false);
 			}
 	ReadyToFireDualWield:
 		TNT1 A 0 A_Overlay(-16,"LaserOverlay")
-		TNT1 A 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE)
+		TNT1 A 1 {
+			if(CountInv("PB_LowCalMag")>0){
+				if(CountInv("LeftSMGAmmo")<=0 || CountInv("SMGAmmo")<=0){
+					if(CountInv("LeftSMGAmmo")<=0 && CountInv("SMGAmmo")<=0){
+						A_SetInventory("DualFireReload",2);
+					}
+					else{
+						A_SetInventory("DualFireReload",1);
+					}
+				}
+			}
+			return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+		}
 		Loop
 		
 		
@@ -275,8 +296,17 @@ ACTOR PB_SMG : PB_Weapon
 			if(CountInv("LeftSMGAmmo")<=0 && CountInv("SMGAmmo")>0){
 				A_GiveInventory("DualFiring",1);
 			}
+			if((PressingAltFire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") == 2){
+					if(CountInv("LeftSMGAmmo") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
 			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("SMGAmmo")<=0) || GetCvar("SingleDualFire")==1){
-				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()){
+				if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") < 2){
 					if(CountInv("LeftSMGAmmo") > 0){
 						return state("FireLeft_Overlay");
 					}
@@ -314,6 +344,15 @@ ACTOR PB_SMG : PB_Weapon
 					return state("");
 				}
 			}
+			if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire")==2){
+				if(CountInv("SMGAmmo") > 0){
+					return state("FireRight_Overlay");
+				}
+				else {
+					A_PlaySoundEx("weapons/empty", "Auto");
+					return state("");
+				}
+			}
 			return state("");
 		}
 		Loop
@@ -322,11 +361,14 @@ ACTOR PB_SMG : PB_Weapon
 		A2F1 D 1 BRIGHT {
 			A_AlertMonsters;
 			A_PlaySoundEx("ZSpecOps/MGun", "SoundSlot7");
-			A_FireBullets (0.1, 0.1, -1, 12, "HitPuff", FBF_NORANDOM,8192,"Tracer", -4, -8);
+			//A_FireBullets (0.1, 0.1, -1, 12, "HitPuff", FBF_NORANDOM,8192,"Tracer", -4, -8);
+			A_FireProjectile("PB_45ACP", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			A_FireCustomMissile("YellowFlareSpawn",0,0,-4,0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, -4, 0, 0, 0);
+			PB_GunSmoke(4,0,0);
 			A_FireCustomMissile("SMGCasingSpawner",5,0,-14,-6);
 			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			PB_LowAmmoSoundWarning("smg", "LeftSMGAmmo");
 			A_Takeinventory("LeftSMGAmmo",1);
 			A_ZoomFactor(0.985);
 			A_GunFlash;
@@ -339,19 +381,7 @@ ACTOR PB_SMG : PB_Weapon
 			}
             PB_WeaponRecoil(-1.1,+0.76);
 			}
-		A2F1 F 1 {
-			A_ZoomFactor(1.0);
-			if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon()){
-				if(CountInv("LeftSMGAmmo") > 0){
-					return state("FireLeft_Overlay");
-				}
-				else {
-					A_PlaySoundEx("weapons/empty", "Auto");
-					return state("");
-				}
-			}
-			return state("");
-		}
+		A2F1 F 1 A_ZoomFactor(1.0)
 		TNT1 A 0 {
 			if(CountInv("LeftSMGAmmo")<=0){
 				A_GiveInventory("DualFireReload",1);
@@ -363,11 +393,14 @@ ACTOR PB_SMG : PB_Weapon
 		A2F1 A 1 BRIGHT {
 			A_AlertMonsters;
 			A_PlaySoundEx("ZSpecOps/MGun", "SoundSlot6");
-			A_FireBullets (0.1, 0.1, -1, 12, "HitPuff", FBF_NORANDOM,8192,"Tracer", -4, 8);
+			//A_FireBullets (0.1, 0.1, -1, 12, "HitPuff", FBF_NORANDOM,8192,"Tracer", -4, 8);
+			A_FireProjectile("PB_45ACP", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			A_FireCustomMissile("YellowFlareSpawn",0,0,4,0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 4, 0, 0, 0);
+			PB_GunSmoke(-4,0,0);
 			A_FireCustomMissile("SMGCasingSpawner",5,0,16,-5);
 			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			PB_LowAmmoSoundWarning("smg");
 			A_Takeinventory("SMGAmmo",1);
 			A_ZoomFactor(0.985);
 			A_GunFlash;
@@ -379,20 +412,8 @@ ACTOR PB_SMG : PB_Weapon
 				A_TakeInventory("DualFiring",1);
 			}
             PB_WeaponRecoil(-1.1,-0.76);
-			}
-		A2F1 C 1 {
-			A_ZoomFactor(1.0);
-			if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon()){
-				if(CountInv("SMGAmmo") > 0){
-					return state("FireRight_Overlay");
-				}
-				else {
-					A_PlaySoundEx("weapons/empty", "Auto");
-					return state("");
-				}
-			}
-			return state("");
 		}
+		A2F1 C 1 A_ZoomFactor(1.0)
 		TNT1 A 0 {
 			if(CountInv("SMGAmmo")<=0){
 				A_GiveInventory("DualFireReload",1);
@@ -412,6 +433,9 @@ ACTOR PB_SMG : PB_Weapon
 		Stop
 		
 	WeaponSpecial:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 {
 			A_Takeinventory("GoWeaponSpecialAbility",1);
 			A_Takeinventory("Zoomed",1);
@@ -446,11 +470,11 @@ ACTOR PB_SMG : PB_Weapon
 				}
 			}
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "ToggleLaserDualWield")
-		A2F4 M 1 Offset(-18, 55)
-		A2F4 MM 1 A_WeaponOffset(-10, 8, WOF_ADD)
-		A2F4 M 1
-		A2F4 M 3 A_StartSound("LIGHTON", CHAN_AUTO)
-		A2F4 MMM 1 A_WeaponOffset(10, -8, WOF_ADD)
+		ATFW B 1 Offset(-18, 55)
+		ATFW BB 1 A_WeaponOffset(-10, 8, WOF_ADD)
+		ATFW B 1
+		ATFW B 3 A_StartSound("LIGHTON", CHAN_AUTO)
+		ATFW BBB 1 A_WeaponOffset(10, -8, WOF_ADD)
 		TNT1 A 0 A_WeaponOffset(0,32)
 		Goto Ready3
 	
@@ -470,19 +494,26 @@ ACTOR PB_SMG : PB_Weapon
 			A_GiveInventory("DualWieldingSMGs", 1);
 			A_PlaySoundEx("weapons/smg_up", "Auto");
 			}
-		A1F2 ABCDEF 1 A_Setroll(roll-0.5, SPF_INTERPOLATE)
-		A1F2 GHI 1 A_Setroll(roll+1.0, SPF_INTERPOLATE)
+		A0F2 A 0 A_JumpIfInventory("UACSMGHasUnloaded",1,2) //Load the unloaded frames into memory
+		A1F2 A 0
+		"####" ABCDEF 1 A_Setroll(roll-0.5, SPF_INTERPOLATE)
+		"####" GHI 1 A_Setroll(roll+1.0, SPF_INTERPOLATE)
 		Goto ReadyDualWield
 	StopDualWield:
 		TNT1 A 0 {
 			A_TakeInventory("DualWieldingSMGs", 1);
 			A_PlaySoundEx("weapons/smg_up", "Auto");
 			}
-		A1F2 IHGFED 1 A_Setroll(roll+0.5, SPF_INTERPOLATE)
-		A1F2 CBA 1 A_Setroll(roll-1.0, SPF_INTERPOLATE)
+		A0F2 A 0 A_JumpIfInventory("UACSMGHasUnloaded",1,2) //Load the unloaded frames into memory
+		A1F2 A 0
+		"####" IHGFED 1 A_Setroll(roll+0.5, SPF_INTERPOLATE)
+		"####" CBA 1 A_Setroll(roll-1.0, SPF_INTERPOLATE)
 		Goto Ready3
 	
 	Deselect:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		TNT1 A 0 {
 			A_DestroyLaserPuff();
 			A_WeaponOffset(0,32);
@@ -495,13 +526,24 @@ ACTOR PB_SMG : PB_Weapon
 		TNT1 A 0 A_Takeinventory("ADSmode",1)
 		TNT1 A 0 A_Overlay(-9, "Null")
         TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "DeselectDualWield")
-        A1F1 DCBA 1
+        TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded",1,"DeselectUnloaded")
+		A1F1 DCBA 1
 		TNT1 A 0 A_DestroyLaserPuff
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
+	DeselectDWUnloaded:
+		A0F2 IHGF 1 A_Lower
+		A0F2 EDC 1
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+		Wait
+	DeselectUnloaded:
+		A0F1 DCB 1
+		A1F1 A 1
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+		Wait
 	DeselectDualWield:
+		TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded",1,"DeselectDWUnloaded")
 		A2F3 ABCDEFG 1
 		TNT1 A 0 A_DestroyLaserPuff
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
@@ -514,6 +556,14 @@ ACTOR PB_SMG : PB_Weapon
 			A_TakeInventory("PB_LockScreenTilt",1);
 			A_ClearOverlays(10,11);
 		}
+		
+		TNT1 A 0 A_TakeInventory("HasBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
+		
 		Goto SelectFirstPersonLegs
 		SelectContinue:
 		TNT1 A 0
@@ -523,6 +573,10 @@ ACTOR PB_SMG : PB_Weapon
 		Wait
 		
     Fire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("DualWieldingSMGs", 1, "ReadyDualWield")
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
@@ -540,13 +594,17 @@ ACTOR PB_SMG : PB_Weapon
 		TNT1 A 0 A_Jump(256, "Flash_Variant1", "Flash_Variant2", "Flash_Variant3", "Flash_Variant4", "Flash_Variant5")
 	ActualFire:
 		"####" "#" 1 BRIGHT {
+			PB_FireOffset;
 			A_AlertMonsters;
 			A_PlaySoundEx("ZSpecOps/MGun", "Weapon");
-			A_FireBullets (0.1, 0.1, -1, 12, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
+			//A_FireBullets (0.1, 0.1, -1, 12, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
+			A_FireProjectile("PB_45ACP", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			PB_GunSmoke(0,0,0);
 			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
 			A_FireCustomMissile("SMGCasingSpawner",5,0,0,-9);
+			PB_LowAmmoSoundWarning("smg");
 			A_Takeinventory("SMGAmmo",1);
 			A_ZoomFactor(0.985);
 			A_GunFlash;
@@ -588,11 +646,14 @@ ACTOR PB_SMG : PB_Weapon
 		A1F3 E 1 BRIGHT {
 			A_AlertMonsters;
 			A_PlaySoundEx("ZSpecOps/MGun", "Weapon");
-			A_FireBullets (0.1, 0.1, -1, 12, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
+			//A_FireBullets (0.1, 0.1, -1, 12, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
+			A_FireProjectile("PB_45ACP", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 			A_FireCustomMissile("YellowFlareSpawn",0,0,0,0);
-			A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 3, 0, 0);
+			//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 3, 0, 0);
+			PB_GunSmoke(0,0,0);
 			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
 			A_FireCustomMissile("SMGCasingSpawner",-2,0,2,0);
+			PB_LowAmmoSoundWarning("smg");
 			A_Takeinventory("SMGAmmo",1);
 			A_ZoomFactor(1.19);
             PB_WeaponRecoil(-0.2,+0.18);
@@ -628,6 +689,10 @@ ACTOR PB_SMG : PB_Weapon
 		Goto Ready2
 	
     AltFire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("DualWieldingSMGs", 1, "ReadyDualWield")
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
@@ -662,14 +727,18 @@ ACTOR PB_SMG : PB_Weapon
         Goto Ready3
 		
 	Reload:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 {
 			A_ZoomFactor(1.0);
 			A_Takeinventory("ADSmode",1);
 			A_Takeinventory("Zoomed",1);
 		}
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "ReloadDualWield")
+		TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded", 1, "ReloadUnloaded")
 		TNT1 A 0 A_JumpIfInventory("SMGAmmo",51,"Ready3")
-        TNT1 A 0 A_JumpIfInventory("PistolBullets",1,2)
+        TNT1 A 0 A_JumpIfInventory("PB_LowCalMag",1,2)
         TNT1 A 0 A_PlaySoundEx("weapons/empty", "Weapon")
         Goto Ready3
 		TNT1 A 0 {
@@ -680,49 +749,70 @@ ACTOR PB_SMG : PB_Weapon
 			A_Giveinventory("PB_LockScreenTilt",1);
 			A_ClearOverlays(10,11);
 			}
-		TNT1 A 0 A_PlaySoundEx("weapons/smg_up", "Auto")
-		TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded", 1, "ReloadUnloaded")
-        A1F4 ABC 1
+		TNT1 A 0 A_JumpIfInventory("SMGAmmo",1,1)
+		Goto Reload2
+        A1F4 ABCD 1
+		A1F4 E 1 Offset(0,34)
 		TNT1 A 0 A_PlaySoundEx("weapons/smg_out", "Auto")
-        A1F4 DEFGHI 1 A_SetRoll(roll+0.4, SPF_INTERPOLATE)
-        TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",0,0,0,-20)
-	ReloadUnloaded:
-        A1F4 J 1
-        A1F4 KLMNNN 1 A_SetRoll(roll-0.4, SPF_INTERPOLATE)
-		A1F4 OPQRS 1 A_SetRoll(roll-0.5, SPF_INTERPOLATE)
+		A1F4 F 1 Offset(0,34)
+		A1F4 F 2 Offset(0,35)
+		A1F4 F 2 Offset(0,36)
+		TNT1 A 0 A_PlaySoundEx("weapons/smg_up", "Auto")
+		A1F4 F 1 Offset(0,34)
+    ReloadUnloaded:
+		TNT1 A 0 A_WeaponOffset(0,32)
+		A1F4 GHIJ 1 A_SetRoll(roll+0.4, SPF_INTERPOLATE)
+		A1F4 KLMNO 1 A_SetRoll(roll-0.4, SPF_INTERPOLATE)
+		A1F4 O 1
+		A1F4 PQRST 1 A_SetRoll(roll-0.5, SPF_INTERPOLATE)
 		TNT1 A 0 {
 			A_PlaySoundEx("weapons/smg_in", "Auto");
 			A_Takeinventory("UACSMGHasUnloaded",1);
-			}
-		A1F4 T 1 A_WeaponOffset(0,32,SPF_INTERPOLATE)
-		A1F4 T 1 A_WeaponOffset(2,34,SPF_INTERPOLATE)
-		A1F4 T 1 A_WeaponOffset(4,36,SPF_INTERPOLATE)
-		A1F4 T 1 A_WeaponOffset(5,40,SPF_INTERPOLATE)
-		A1F4 UV 1 A_WeaponOffset(0,32,SPF_INTERPOLATE)
-		A1F4 WXYZ 1 A_SetRoll(roll+0.5, SPF_INTERPOLATE)
-		TNT1 A 0 A_JumpIfInventory("SMGAmmo",1,"InsertBullets2")//30+1 effect
-		TNT1 A 0 A_GiveInventory("UACSMGWasEmpty", 1)
+		}
+		A1F4 UVWXY 1 A_WeaponOffset(0,32,SPF_INTERPOLATE)
+		A1F4 Z 1 A_SetRoll(roll+0.5, SPF_INTERPOLATE)
+		Goto InsertBullets2 //30+1 effect
+
 	InsertBullets:
 		TNT1 A 0 A_JumpIfInventory("SMGAmmo",50,"Ready3")
-		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,1)
+		TNT1 A 0 A_JumpIfInventory("PB_LowCalMag",1,1)
 		Goto Ready3
 		TNT1 A 0 {
 			A_Giveinventory("SMGAmmo",1);
-			A_Takeinventory("PistolBullets",1);
+			A_Takeinventory("PB_LowCalMag",1);
 			}
 		Loop
-		
 	InsertBullets2:
-		A1F4 CBA 1
+		A2F5 ABCD 1 A_SetRoll(roll+0.5, SPF_INTERPOLATE)
+		A2F5 EFGH 1 A_SetRoll(roll-0.5, SPF_INTERPOLATE)
 	InsertBullets2Loop:
 		TNT1 A 0 A_JumpIfInventory("SMGAmmo",51,"Ready3")
-		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,1)
+		TNT1 A 0 A_JumpIfInventory("PB_LowCalMag",1,1)
 		Goto Ready3
 		TNT1 A 0 {
 			A_Giveinventory("SMGAmmo",1);
-			A_Takeinventory("PistolBullets",1);
+			A_Takeinventory("PB_LowCalMag",1);
 			}
 		Loop
+	Reload2: //Reload and Chamber
+		A1F0 ABCDE 1
+		TNT1 A 0 A_StartSound("RIFCL_CK", CHAN_AUTO)
+		A1F0 FGHIJ 1 A_SetRoll(roll+0.4, SPF_INTERPOLATE)
+		TNT1 A 0 A_StartSound("weapons/smg_out", CHAN_AUTO)
+		A1F0 KL 2
+		TNT1 A 0 A_StartSound("weapons/smg_up", CHAN_AUTO)
+        A1F0 MN 1 A_SetRoll(roll-0.4, SPF_INTERPOLATE)
+//     	TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded",1,2)
+		TNT1 A 0 PB_SpawnCasing("SMGEmptyMagazine",28,0,30,3,Frandom(-8,-5),Frandom(1,4))
+	ReloadUnloaded:
+        A1F0 OPQRSTU 1 A_SetRoll(roll-0.4, SPF_INTERPOLATE)
+		A1F0 U 2
+		A1F0 VWXYZ 1 A_SetRoll(roll-0.5, SPF_INTERPOLATE)
+		TNT1 A 0 A_Takeinventory("UACSMGHasUnloaded",1)
+		A2F4 A 1 A_StartSound("weapons/smg_in", CHAN_AUTO) //A_SetRoll(roll+0.5, SPF_INTERPOLATE)
+		A2F4 BCCCDE 1 A_SetRoll(roll+0.5, SPF_INTERPOLATE)
+		TNT1 A 0 A_GiveInventory("UACSMGWasEmpty", 1)	
+		Goto InsertBullets
 		
 	LoadChamber:
 		TNT1 A 0 {
@@ -733,16 +823,27 @@ ACTOR PB_SMG : PB_Weapon
 			A_Giveinventory("PB_LockScreenTilt",1);
 			A_PlaySoundEx("IronSights", "Auto");
 			}
-		A2F4 NMLKJ 1
-		A2F4 ABCDEF 1 A_SetRoll(roll+0.2, SPF_INTERPOLATE)
+		A2F4 FFGHI 1
 		TNT1 A 0 A_PlaySoundEx("weapons/smg_click", "Auto")
-		A2F4 GH 1
-		A2F4 IJKLMN 1 A_SetRoll(roll-0.2, SPF_INTERPOLATE)
+		A2F4 JK 1 A_SetRoll(roll+0.4, SPF_INTERPOLATE)
+		A2F4 L 1 {
+			A_WeaponOffset(-1,32);
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			}
+		A2F4 M 1 A_SetRoll(roll+0.2, SPF_INTERPOLATE)
+		A2F4 M 1 {
+			A_WeaponOffset(-2,32);
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			}
+		TNT1 A 0 A_WeaponOffset(0,32)
+		A2F4 NOPQR 1 A_SetRoll(roll+0.3, SPF_INTERPOLATE)
+		A2F4 STUV 1 A_SetRoll(roll -0.4, SPF_INTERPOLATE)
 		Goto Ready3
 		
 	ReloadLeftGunOnly:
 		TNT1 A 0 A_PlaySoundEx("weapons/smg_out", "Auto")
-		TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",-5,0,-6,-20)
+		TNT1 A 0 A_JumpIfInventory("LeftSMGAmmo",1,2)
+		TNT1 A 0 A_FireCustomMissile("SMGEmptyMagazine",-5,0,-6,-20)
 		A2F3 ABCDEFG 1
 		TNT1 A 5
 		Goto ReloadLeftGun
@@ -754,7 +855,7 @@ ACTOR PB_SMG : PB_Weapon
 			}
 			return state("");
 		}
-        TNT1 A 0 A_JumpIfInventory("PistolBullets",1,2)
+        TNT1 A 0 A_JumpIfInventory("PB_LowCalMag",1,2)
 		TNT1 A 0 A_PlaySoundEx("weapons/empty", "Auto")
 		Goto Ready3
 		TNT1 A 0 {
@@ -766,35 +867,37 @@ ACTOR PB_SMG : PB_Weapon
 			A_ClearOverlays(10,11);
 			}
 		TNT1 A 0 A_JumpIfInventory("SMGAmmo", 51, "ReloadLeftGunOnly")
+		TNT1 A 0 A_JumpIfInventory("UACSMGHasUnloaded", 1, 9)
 		A3F4 A 1 A_PlaySoundEx("weapons/smg_out", "Auto")
 		A3F4 B 1
 		A3F4 C 1 A_PlaySoundEx("weapons/smg_out", "Auto")
-		TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",5,0,6,-20)
-		TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",-5,0,-6,-20)
+		TNT1 A 0 A_JumpIfInventory("SMGAmmo",1,2)
+		TNT1 A 0 A_FireCustomMissile("SMGEmptyMagazine",5,0,6,-20)
+		TNT1 A 0 A_JumpIfInventory("LeftSMGAmmo",1,2)
+		TNT1 A 0 A_FireCustomMissile("SMGEmptyMagazine",-5,0,-6,-20)
 		A3F4 DEFGHI 1
 		// Normal Reload Frames
-		A1F4 J 1
-        A1F4 KLMNNN 1
-		A1F4 OPQRS 1 
+		A1F4 I 1 Offset (22,36)
+		A1F4 JKL 1 Offset (6,32)
+        A1F4 MNN 1 A_WeaponOffset(0,32)
+		A1F4 OPQRST 1 
 		TNT1 A 0 {
 			A_PlaySoundEx("weapons/smg_in", "Auto");
 			A_Takeinventory("UACSMGHasUnloaded",1);
 			}
-		A1F4 T 1 Offset(0,32)
-		A1F4 T 1 Offset(2,34)
-		A1F4 T 1 Offset(4,36)
-		A1F4 T 1 Offset(5,40)
 		A1F4 UV 1
-		A1F4 WXYZ 1 
+		A1F4 WXYZ 1
+		A2F5 ABC 1
+		A2F5 D 1 Offset(-2,32)
 		// Normal Reload Frames
-		A3F4 JKLMN 1
+		A3F4 KLMN 1 A_WeaponOffset(0,32)
 		TNT1 A 0 A_JumpIf(CountInv("LeftSMGAmmo") < 51,2)
 		TNT1 A 0 A_JumpIfInventory("UACSMGWasEmpty",1,"InsertBullets3")
 		Goto InsertBullets_Right
 	ReloadLeftGun:
 		TNT1 A 3
 		TNT1 A 0 A_PlaySoundEx("weapons/smg_up", "Auto")
-		A3F4 NMLOPQ 1
+		A3F4 UTSROPQ 1
 		// Normal Reload Frames
 		A1F4 J 1
         A1F4 KLMNNN 1
@@ -813,21 +916,21 @@ ACTOR PB_SMG : PB_Weapon
 		A1F2 EFGHI 1
 	InsertBullets_Right:
 		TNT1 A 0 A_JumpIfInventory("SMGAmmo",51,"InsertBullets_Left")
-		TNT1 A 0 A_JumpIfInventory("PistolBullets",2,1)
+		TNT1 A 0 A_JumpIfInventory("PB_LowCalMag",2,1)
 		Goto InsertBullets_Left
 		TNT1 A 0 {
 			A_Giveinventory("SMGAmmo",1);
-			A_Takeinventory("PistolBullets",1);
+			A_Takeinventory("PB_LowCalMag",1);
 		}
 		Goto InsertBullets_Right
 		
 	InsertBullets_Left:
 		TNT1 A 0 A_JumpIfInventory("LeftSMGAmmo",51,"FinishInsertBullets")
-		TNT1 A 0 A_JumpIfInventory("PistolBullets",1,1)
+		TNT1 A 0 A_JumpIfInventory("PB_LowCalMag",1,1)
 		Goto FinishInsertBullets
 		TNT1 A 0 {
 			A_Giveinventory("LeftSMGAmmo",1);
-			A_Takeinventory("PistolBullets",1);
+			A_Takeinventory("PB_LowCalMag",1);
 		}
 		Goto InsertBullets_Left
 	FinishInsertBullets:
@@ -850,16 +953,17 @@ ACTOR PB_SMG : PB_Weapon
 			A_ClearOverlays(10,11);
 			}
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs",1,"UnloadDual")
-		A1F4 ZYXWVUTS 1
-		A1F4 R 1 A_PlaySoundEx("weapons/smg_out", "Auto")
-		A1F4 QPONMLKJ 1
-		A2F4 OPQ 1
+		A4F1 ABCDEF 1
+		A1F4 ZYXWVU 1
+		A1F4 T 1 A_PlaySoundEx("weapons/smg_out", "Auto")
+		A1F4 SRQPONMLKJIH 1
+		A4F1 GH 1
 	RemoveBullets:
 		TNT1 A 0 A_JumpIfInventory("SMGAmmo",1,1)
 		Goto FinishUnload
 		TNT1 A 0 {
 			A_Takeinventory("SMGAmmo",1);
-			A_Giveinventory("PistolBullets",1);
+			A_Giveinventory("PB_LowCalMag",1);
 			}
 		Loop
 	
@@ -882,7 +986,7 @@ ACTOR PB_SMG : PB_Weapon
 		Goto RemoveBullets_Left
 		TNT1 A 0 {
 			A_Takeinventory("SMGAmmo",1);
-			A_Giveinventory("PistolBullets",1);
+			A_Giveinventory("PB_LowCalMag",1);
 			}
 		Loop
 	RemoveBullets_Left:
@@ -890,7 +994,7 @@ ACTOR PB_SMG : PB_Weapon
 		Goto FinishUnloadDual
 		TNT1 A 0 {
 			A_Takeinventory("LeftSMGAmmo",1);
-			A_Giveinventory("PistolBullets",1);
+			A_Giveinventory("PB_LowCalMag",1);
 			}
 		Loop
 	
@@ -909,15 +1013,35 @@ ACTOR PB_SMG : PB_Weapon
 		LOOP
 		
     FlashKicking:
-		TNT1 A 0 A_ClearOverlays(10,11)
+    TNT1 A 0 A_ClearOverlays(10,11)
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "FlashKickingDW")
-		A1F7 ABCDEFGHIJKLMNO 1 A_DoPBWeaponAction
+		A1F7 ABCDEFGGFEDCBA 1 A_DoPBWeaponAction
 		Goto Ready3
+
+
+	FlashPunching:
+		TNT1 A 0 A_ClearOverlays(10,11)
+    TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "FlashPunchingDW")
+		A3F1 ABCDEFGGFEDCBA 1
+		Stop
+   FlashKicking:
+
+		
+
 		
 	FlashAirKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")	
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "FlashAirKickingDW")
-		A1F7 ABCDEFGHIJKLMNOOO 1 A_DoPBWeaponAction
+		A1F7 ABCDEFGGGGFEDCBA 1 A_DoPBWeaponAction
 		Goto Ready3
 		
 	FlashKickingDW:
@@ -927,18 +1051,16 @@ ACTOR PB_SMG : PB_Weapon
 	FlashAirKickingDW:
 		A2F3 ABCDEFGGGFEDCBAAA 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE)
 		Goto Ready3
-		
-		
-	FlashPunching:
-		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "FlashPunchingDW")
-		A1F7 ABCDEFGHIJKLMNO 1
-		Stop
+
 	FlashPunchingDW:
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 15
 		Stop
 		
 	FlashSlideKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "FlashSlideKickingDW")
 		A1F8 ABCDEFGHIJKLLMLKJIHGFEDCBA 1 A_DoPBWeaponAction
@@ -951,6 +1073,9 @@ ACTOR PB_SMG : PB_Weapon
 		Goto Ready3
 		
 	FlashSlideKickingStop:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
 		TNT1 A 0 A_ClearOverlays(10,11)
 		TNT1 A 0 A_JumpIfInventory("DualWieldingSMGs", 1, "FlashSlideKickingStopDW")
 		A1F8 GFEDCBA 1 A_DoPBWeaponAction

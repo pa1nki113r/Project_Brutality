@@ -1,0 +1,90 @@
+class PB_Ammo : Ammo
+{
+    int cap,ca,res; name ammotype; string p;
+	property ammotype : ammotype;
+	
+	mixin PB_BetterPickupSound;
+	
+    Default
+    {
+        +FLOORCLIP
+	    +DONTGIB
+	    +INVENTORY.IGNORESKILL
+    }
+
+    override void PostBeginPlay()
+    {
+        Super.PostBeginPlay();
+        switch(ammotype)
+        {
+            case 'lowcal': sprite = GetSpriteIndex("MBLK"); break;
+            case 'lowcalbox': sprite = GetSpriteIndex("AMOK"); break;
+            case 'highcal': sprite = GetSpriteIndex("CLIP"); break;
+            case 'highcalbox': sprite = GetSpriteIndex("AMMO"); break;
+            case 'shell': sprite = GetSpriteIndex("SHEL"); break;
+            case 'shellbox': sprite = GetSpriteIndex("SBOX"); break;
+            case 'exp': sprite = GetSpriteIndex("R0CK"); break;
+            case 'expbox': sprite = GetSpriteIndex("BROK"); break;
+            case 'cell' : SetStateLabel("SpawnCell"); break;
+			case 'cellpack' : SetStateLabel("SpawnCellPack"); break;
+            case 'fuel': sprite = GetSpriteIndex("GSLN"); break;
+            case 'dtech': SetStateLabel("SpawnDTech"); break;
+			case 'nade': SetStateLabel("SpawnNade"); break;
+			case 'nadestun': sprite = GetSpriteIndex("STNG"); break;
+			case 'proxmine': sprite = GetSpriteIndex("XPFP"); break;
+			case 'ql': SetStateLabel("SpawnQL"); break;
+        }
+    }
+
+    override class<Ammo> GetParentAmmo()
+	{
+		class<Object> type = GetClass();
+		while(type.GetParentClass()!= "PB_Ammo"&&type.GetParentClass()!=null) type = type.GetParentClass();
+		return(class<Ammo>)(type);
+	}
+
+    override bool TryPickup(in out actor toucher)
+	{
+		class<Ammo> type = GetParentAmmo();
+		double factor = G_SkillPropertyFloat(SKILLP_AmmoFactor)*(bDROPPED?-G_SkillPropertyFloat(SKILLP_DropAmmoFactor):1);
+		int aa = self.amount*factor;
+		if(toucher && toucher is "PlayerPawn")
+		{
+			cap = toucher.FindInventory("Backpack",true)?self.BackpackMaxAmount:self.MaxAmount;
+			ca = toucher.CountInv(type);
+		}
+		res = cap-ca;
+		if(res<aa) AmmoCheck();
+		else { res = aa; AmmoCheck(); }
+		return Super.TryPickup(toucher);
+	}
+
+	void AmmoCheck() { if(res==1 || ammotype == "fuel" || ammotype == "dtech" ) p = "+%d %s"; else p = "+%d %ss"; }
+	
+	override string PickupMessage() { return string.format(p,res,GetTag()); }
+
+    States
+	{
+	Spawn:
+		TNT1 A 0;
+		#### A -1;
+		stop;
+	SpawnCell:
+		CELL ABCDEFGH 2;
+		loop;
+	SpawnCellPack:
+		YELP ABCDEFGHIJ 2;
+		loop;
+	SpawnDTech:
+		DB61 ABCDEFGH 2 bright A_FadeOut(.01 * (0.15 / Scale.X), FTF_REMOVE | FTF_CLAMP );
+		loop;
+	SpawnNade:
+		PGRN D -1;
+		stop;
+	SpawnQL:
+		FATB D -1;
+		stop;
+	LoadSprites:
+		MBLK A 0; AMOK A 0; CLIP A 0; AMMO A 0; SHEL A 0; SBOX A 0; ROCK A 0; BROK A 0; GSLN A 0; STNG A 0; XPFP A 0;
+	}
+}

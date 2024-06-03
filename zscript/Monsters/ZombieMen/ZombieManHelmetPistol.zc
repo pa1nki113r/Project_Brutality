@@ -7,6 +7,7 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 		//$Sprite 9OS2B1
 		damagefactor "Head", 0.60;
 		DropItem "PB_Pistol";
+		PB_Monster.MonDMGMult 0.90, 1.1, 0.70, 1.0, 0.95, 0.80;
 	}
 	States
 	{
@@ -24,29 +25,45 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 		Spawn:
 			9OS2 A 1;
 			TNT1 A 0 {
-				A_TakeInventory("ZombiemanAmmo", 20);
-				A_GiveInventory("ZombieManAmmo", random(1,10));
+				A_TakeInventory("EnemyPistolAmmo", 15);
+				A_GiveInventory("EnemyPistolAmmo", random(1,10));
 				A_GiveInventory("SKHelmetZombie1", 1);
 				A_GiveInventory("TypeZombieMan", 1);
 			}
 		Stand:
+			TNT1 A 0;
+			TNT1 A 0 {
+				bNoPain = false;
+				A_SetRoll(0);
+			}
 			9OS2 AA 10 A_Look();
 			Loop;
 		See:
+			TNT1 A 0;
+			TNT1 A 0 {
+				bNoPain = false;
+				A_SetRoll(0);
+			}
 			TNT1 A 0 {
 				A_TakeInventory("SKHelmetZombie1", 1);
 				EnemyLastSighted = Level.MapTime;
 			}
 		SeeContinue:
-			9OS2 AABB 2 A_SmartChase();
+			9OS2 A 1 A_SmartChase("Missile", "Melee", 0);
+			9OS2 AAAAA 1 A_SmartChase(null, null, CHF_DONTTURN);
+			9OS2 B 1 A_SmartChase("Missile", "Melee", 0);
+			9OS2 BBBBB 1 A_SmartChase(null, null, CHF_DONTTURN);
 			TNT1 A 0 A_StartSound("humans/step");
-			9OS2 CCDD 2 A_SmartChase();
+			9OS2 C 1 A_SmartChase("Missile", "Melee", 0);
+			9OS2 CCCCC 1 A_SmartChase(null, null, CHF_DONTTURN);
+			9OS2 D 1 A_SmartChase("Missile", "Melee", 0);
+			9OS2 DDDDD 1 A_SmartChase(null, null, CHF_DONTTURN);
 			TNT1 A 0 A_StartSound("humans/step");
-			TNT1 A 0 A_JumpIfInventory("Wandering",16,"LookAround");
+			TNT1 A 0 A_JumpIf(CountInv("Wandering") == 71 && !OnPatrol,"LookAround");
 			Loop;
 		LookAround:
 			TNT1 A 0 A_ClearTarget();
-			TNT1 A 0 A_TakeInventory("Wandering", 36);
+			TNT1 A 0 A_TakeInventory("Wandering", 71);
 			TNT1 A 0 A_Jump(200, 2);
 			TNT1 A 0 A_StartSound("monsters/zombie/searching", CHAN_AUTO);
 			9OS2 AAAA 10 A_Look();
@@ -123,8 +140,11 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_Jump(224, 2);
 			TNT1 A 0 A_CombatDialogueHandler();
 			ZBS4 A 6 A_FaceTarget();
-			TNT1 A 0 A_StartSound("skeleton/swing");
-			TNT1 A 0 A_SpawnProjectile("ZombieBashAttack",10,0,0,0);
+			TNT1 A 0 {
+				A_StartSound("skeleton/swing");
+				A_CustomMeleeAttack(random(1, 8) * 4, "AxeHit", "", "Normal");
+			}
+			//TNT1 A 0 A_SpawnProjectile("ZombieBashAttack",10,0,0,0);
 			ZBS4 B 6 A_FaceTarget();
 			ZBS4 A 6;
 			Goto See;
@@ -134,13 +154,13 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			Goto MissileContinue;
 		Missile:
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "DialogueCheck");
-			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "DialogueCheck");
+			
 			Goto AttackHandler;
 		MissileContinue:
 			9OS2 E 6 {
 				A_Stop();
 				A_FaceTarget();
-				return A_CheckLOF("AttackHandler");
+				return A_CheckLOFRanged("AttackHandler", "SideHop");
 				}
 			Goto See;
 		AttackHandler:
@@ -152,9 +172,9 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			}
 		//Standard, 1 round attack
 		Attack:
-			9OS2 E 2 A_FaceTarget();
+			9OS2 E 9 A_FaceTarget();
 			9OS2 F 3 BRIGHT {
-				A_SpawnProjectile("MonsterHandgunTracer", 42, 1, random(-10, 10), 1, random(-3, 3));
+				A_SpawnProjectile("PB_PistolBullet", 42, 1, random(-10, 10), 1, random(-3, 3));
 				A_SpawnProjectile("MarineMuzzle1", 47, 1) ;
 				A_SpawnProjectile("OrangeLensFlareAlt", 47, 5, 0, 0);
 				A_StartSound("weapons/pistol");
@@ -162,23 +182,23 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			}
 			9OS2 E 6 {
 				A_FaceTarget();
-				A_GiveInventory("ZombieManAmmo", 2);
-				return A_JumpIfInventory("ZombieManAmmo", 20, "Reload");
+				A_GiveInventory("EnemyPistolAmmo", 1);
+				return A_JumpIfInventory("EnemyPistolAmmo", 15, "Reload");
 			}
 			Goto See;
 		//Standard, 2 round attack
 		Attack1:
-			9OS2 E 2 A_FaceTarget();
+			9OS2 E 8 A_FaceTarget();
 			9OS2 F 3 BRIGHT {
-				A_SpawnProjectile("MonsterHandgunTracer", 42, 1, random(-10, 10), 1, random(-3, 3));
+				A_SpawnProjectile("PB_PistolBullet", 42, 1, random(-10, 10), 1, random(-3, 3));
 				A_SpawnProjectile("MarineMuzzle1", 47, 1) ;
 				A_SpawnProjectile("OrangeLensFlareAlt", 47, 5, 0, 0);
 				A_StartSound("weapons/pistol");
 				A_SpawnItem ("Mp40CaseSpawn", 0, 30,0);
 			}
-			9OS2 E 5 A_FaceTarget();
+			9OS2 E 8 A_FaceTarget();
 			9OS2 F 3 BRIGHT {
-				A_SpawnProjectile("MonsterHandgunTracer", 42, 1, random(-10, 10), 1, random(-3, 3));
+				A_SpawnProjectile("PB_PistolBullet", 42, 1, random(-10, 10), 1, random(-3, 3));
 				A_SpawnProjectile("MarineMuzzle1", 47, 1) ;
 				A_SpawnProjectile("OrangeLensFlareAlt", 47, 5, 0, 0);
 				A_StartSound("weapons/pistol");
@@ -186,31 +206,31 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			}
 			9OS2 E 6 {
 				A_FaceTarget();
-				A_GiveInventory("ZombieManAmmo", 4);
-				return A_JumpIfInventory("ZombieManAmmo", 20, "Reload");
+				A_GiveInventory("EnemyPistolAmmo", 2);
+				return A_JumpIfInventory("EnemyPistolAmmo", 15, "Reload");
 			}
 			Goto See;
 		//Aimed, 3 round attack
 		Attack2:
-			9OS2 L 2 A_FaceTarget();
+			9OS2 L 6 A_FaceTarget();
 			9OS2 M 3 BRIGHT {
-				A_SpawnProjectile("MonsterHandgunTracer", 42, 0, random(-8, 8), 1, random(-3, 3));
+				A_SpawnProjectile("PB_PistolBullet", 42, 0, random(-8, 8), 1, random(-3, 3));
 				A_SpawnProjectile("OrangeLensFlareAlt", 47, 5, 15, 0);
 				A_SpawnProjectile("MarineMuzzle1", 48, 1) ;
 				A_StartSound("weapons/pistol");
 				A_SpawnItem ("Mp40CaseSpawn", 0, 30,0);
 			}
-			9OS2 L 4 A_FaceTarget();
+			9OS2 L 6 A_FaceTarget();
 			9OS2 M 3 BRIGHT {
-				A_SpawnProjectile("MonsterHandgunTracer", 42, 0, random(-8, 8), 1, random(-3, 3));
+				A_SpawnProjectile("PB_PistolBullet", 42, 0, random(-8, 8), 1, random(-3, 3));
 				A_SpawnProjectile("OrangeLensFlareAlt", 47, 5, 15, 0);
 				A_SpawnProjectile("MarineMuzzle1", 48, 1) ;
 				A_StartSound("weapons/pistol");
 				A_SpawnItem ("Mp40CaseSpawn", 0, 30,0);
 			}
-			9OS2 L 4 A_FaceTarget();
+			9OS2 L 6 A_FaceTarget();
 			9OS2 M 3 BRIGHT {
-				A_SpawnProjectile("MonsterHandgunTracer", 42, 0, random(-8, 8), 1, random(-3, 3));
+				A_SpawnProjectile("PB_PistolBullet", 42, 0, random(-8, 8), 1, random(-3, 3));
 				A_SpawnProjectile("OrangeLensFlareAlt", 47, 5, 15, 0);
 				A_SpawnProjectile("MarineMuzzle1", 48, 1) ;
 				A_StartSound("weapons/pistol");
@@ -218,8 +238,8 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			}
 			9OS2 L 6 {
 				A_FaceTarget();
-				A_GiveInventory("ZombieManAmmo", 6);
-				return A_JumpIfInventory("ZombieManAmmo", 20, "Reload");
+				A_GiveInventory("EnemyPistolAmmo", 3);
+				return A_JumpIfInventory("EnemyPistolAmmo", 20, "Reload");
 			}
 			Goto See;
 		Attack3:
@@ -227,31 +247,23 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			Crouching:
 			9OS2 K 6 A_FaceTarget();
 			9OS2 J 2 BRIGHT {
-				A_SpawnProjectile("MonsterHandgunTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
+				A_SpawnProjectile("PB_PistolBullet", 32, 0, random(-4, 4), 1, random(-3, 3));
 				A_SpawnProjectile("OrangeLensFlareAlt", 34, 16, 15, 0);
 				A_SpawnProjectile("MarineMuzzle1", 34, 4) ;
 				A_SpawnItem ("Mp40CaseSpawn", 0, 36,0);
 				A_StartSound("weapons/pistol");
 			}
-			9OS2 K 3 A_FaceTarget();
+			9OS2 K 6 A_FaceTarget();
 			9OS2 J 3 BRIGHT {
-				A_SpawnProjectile("MonsterHandgunTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
+				A_SpawnProjectile("PB_PistolBullet", 32, 0, random(-4, 4), 1, random(-3, 3));
 				A_SpawnProjectile("OrangeLensFlareAlt", 34, 16, 15, 0);
 				A_SpawnProjectile("MarineMuzzle1", 34, 3) ;
 				A_SpawnItem ("Mp40CaseSpawn", 0, 36,0);
 				A_StartSound("weapons/pistol");
 			}
-			9OS2 K 3 A_FaceTarget();
+			9OS2 K 6 A_FaceTarget();
 			9OS2 J 3 BRIGHT {
-				A_SpawnProjectile("MonsterHandgunTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
-				A_SpawnProjectile("OrangeLensFlareAlt", 34, 16, 15, 0);
-				A_SpawnProjectile("MarineMuzzle1", 34, 3) ;
-				A_SpawnItem ("Mp40CaseSpawn", 0, 36,0);
-				A_StartSound("weapons/pistol");
-			}
-			9OS2 K 3 A_FaceTarget();
-			9OS2 J 3 BRIGHT {
-				A_SpawnProjectile("MonsterHandgunTracer", 32, 0, random(-4, 4), 1, random(-3, 3));
+				A_SpawnProjectile("PB_PistolBullet", 32, 0, random(-4, 4), 1, random(-3, 3));
 				A_SpawnProjectile("OrangeLensFlareAlt", 34, 16, 15, 0);
 				A_SpawnProjectile("MarineMuzzle1", 34, 3) ;
 				A_SpawnItem ("Mp40CaseSpawn", 0, 36,0);
@@ -259,8 +271,8 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			}
 			9OS2 K 4  {
 				A_FaceTarget();
-				A_GiveInventory("ZombieManAmmo", 8);
-				return A_JumpIfInventory("ZombieManAmmo", 20, "Reload");
+				A_GiveInventory("EnemyPistolAmmo", 3);
+				return A_JumpIfInventory("EnemyPistolAmmo", 15, "Reload");
 				return A_jump(24, "Attack3");
 			}
 			DoneCrouching:
@@ -269,43 +281,36 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 		Reload:
 			TNT1 A 0 A_StartSound("monsters/zombie/reload",CHAN_AUTO);
 			9OS2 E 4 {
-				A_TakeInventory("ZombieManAmmo", 20);
-				A_SpawnProjectile("EmptyClipMP40", 38, 0, random(-11, 11), 0);
-				A_StartSound("PSRLOUT");
+				A_TakeInventory("EnemyPistolAmmo", 15);
+				//A_StartSound("PSRLOUT");
 				}
-			IDP3 AAB 6;
-			IDP3 C 6 A_StartSound("PSRLFIN");
-			IDP3 A 6;
-			9OS2 A 6;
+			IDP3 AC 5;
+			IDP3 B 5 A_StartSound("PSRLOUT");
+			IDP3 A 5 A_SpawnProjectile("EmptyClipMP40", 38, 0, random(-11, 11), 0);
+			IDP3 B 5;
+			IDP3 C 10 A_StartSound("PSRLIN");
+			IDP3 A 10;
+			9OS2 A 5;
+			IDP3 C 5 A_StartSound("PSRLFIN");
+			9OS2 EA 5;
+			9OS2 A 5;
 			Goto See;
 		
 		////////////////
 		//Pain Logic// 
 		////////////////
 		Pain.Melee:
-			TNT1 A 0 A_JumpIfInventory ("SKHelmetZombie1", 1, "StealthKill");
 		Pain:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
 			9OS2 G 6 A_Pain();
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+			
 			TNT1 A 0 A_Jump(180, "See");
 			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 			Goto See;
 		
 		
-		StealthKill:
-			TNT1 A 0 A_TakeInventory("SKHelmetZombie1", 1);
-			9OS2 G 1 A_FaceTarget();
-			TNT1 A 0 A_JumpIfInTargetInventory("FistsSelected", 1, 2);
-			9OS2 G 1;
-			Goto Pain;
-			TNT1 A 0 A_GiveToTarget("GoFatality", 1);
-			TNT1 A 0 A_GiveToTarget("SKHelmetZombie1", 1);
-			TNT1 A 0 A_NoBlocking();
-			TNT1 A 0 A_Die("Stealthy");
-			TNT1 A 1;
-			Stop;
+	
 		
         Downed:
 			ID31 F 6 A_Pain();
@@ -350,7 +355,6 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			Loop;
 		
 		GetUp:
-			TNT1 A 0 A_SpawnItem("LargeMassWaterImpact");
 			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 16, "FallingDie");
 			TNT1 A 0 {
 				A_TakeInventory("FallingHeight", 100);
@@ -365,7 +369,7 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 				bSOLID = true;
 			}
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+			
 			TNT1 A 0 A_Jump(180, "See");
 			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 			Goto See;
@@ -373,7 +377,7 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 		FallingDie:
 			TNT1 A 0 {
 				bCOUNTKILL = false;
-				bSHOOTABLE = false;
+				bNoPain = true;
 				A_SpawnItem("SplatteredSmall");
 			}
 			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 32, "Death.Stomp");
@@ -446,9 +450,18 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			9OS2 G 1 A_Pain();
 			Goto See;
 		Death:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down");
-			TNT1 A 0 A_Jump(32, "Death.Arm");
+			TNT1 A 0 A_DeathWepCheck("ShotgunSelected", 400, "Death.Shotgun");
+			TNT1 A 0 A_DeathWepCheck("ASGSelected", 400, "Death.Shotgun");
+			TNT1 A 0 A_DeathWepCheck("SSGSelected", 200, "Death.SSG");
+			TNT1 A 0 A_DeathWepCheck("MinigunSelected", 1000, "Death.Minigun");
+			TNT1 A 0 A_DeathWepCheck("NewChaingunSelected", 750, "Death.Nailgun");
+			//TNT1 A 0 A_Jump(32, "Death.Arm");
 		Death.MinorLeg:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			9OS2 H 6 A_NoBlocking();
 			9OS2 I 5 A_Scream();
 			9OS2 Z 5;
@@ -458,8 +471,11 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_StartSound("BODYF",6);
 			TNT1 A 0 A_SpawnItem ("DeadZombieman1");
 			Stop;
-			
+		
+		Death.ArmHitbox:
 		Death.Arm:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 {
 				A_SpawnProjectile ("PB_XDeathArm1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnProjectile ("PB_SmallGib", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
@@ -473,6 +489,8 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			Stop;
 		
 		Death.Saw:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_Jump(96, "Saw2");
 			TNT1 A 0 A_Jump(32, "Death.arm");
 			Goto Death.Tear;
@@ -488,6 +506,8 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 		Death.cut:
 		Death.HKFT:
 			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
+			TNT1 A 0;
 			TNT1 A 0 A_XScream();
 			TNT1 O 0 A_NoBlocking();
 			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood2", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
@@ -501,6 +521,8 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			Stop;
 		
 		Death.Tear:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_XScream();
 			TNT1 O 0 A_NoBlocking();
 			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood", 1, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
@@ -516,19 +538,25 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			Stop;
 			
 		Death.cutless:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down");
 			TNT1 A 0 A_Jump(64, "Death.Rare");
 			TNT1 A 0 A_Jump(16, "Death.Saw");
 			Goto Death.Minigun;
 			
-		 Death.Minigun:
+		Death.Minigun:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_FaceTarget();
 			TNT1 A 0 A_Scream();
 			TNT1 O 0 A_NoBlocking();
 			TNT1 A 0 A_SpawnItem ("BrutalizedHelmetZombieMan1");
 			Stop;
 			
-		 Death.LegMassacre:
+		Death.LegMassacre:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood2", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnItem ("ZombieLegOnFoot");
 			POS7 B 1 A_Scream();
@@ -537,6 +565,8 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			Stop;
 			
 		Death.Decapitate:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 {
 				A_Stop();
 				A_FaceTarget();
@@ -557,8 +587,11 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			ZMAD DDDDEEEEEEEEEEEEEEEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
 			ZMAD E 1 A_SpawnItem ("DeadZombieman_NoHeadFront");
 			Stop;
-						
-		 Death.Leg:
+		
+		Death.LegHitbox:
+		Death.Leg:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_JumpIfHealthLower(-20, "LegRemove");
 			Goto Death.MinorLeg;
 		LegRemove:
@@ -589,8 +622,9 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			
 		Death.Melee:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down");
-			TNT1 A 0 A_JumpIfInventory ("SKHelmetZombie1", 1, "StealthKill");
         Death.Kick:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 {
 				bNODROPOFF = false;
 				bSLIDESONWALLS = true;
@@ -604,18 +638,11 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_StartSound("BODYF");
 			TNT1 A 0 A_SpawnItem("DeadZombieman1");
 			Stop;
-		StealthKill:
-			TNT1 A 0 A_JumpIfInTargetInventory("FistsSelected", 1, 1);
-			Goto Death;
-			TNT1 A 0 {
-				A_GiveToTarget("GoFatality", 1);
-				A_GiveToTarget("SKHelmetZombie1", 1);
-				A_NoBlocking();
-				A_Die("Stealthy");
-			}
-			Stop;
+
 			
 		Death.Incinerate:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 {
 				A_Stop();
 				A_NoBlocking();
@@ -664,6 +691,8 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			stop;
 
 		Death.Shotgun:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_Jump(42, "Death.Shotgunontheface");
 			TNT1 A 0 A_JumpIfCloser(80, "Death.Blast");
 			TNT1 A 0 A_JumpIfCloser(320, "Death.Shotgunontheface");
@@ -756,15 +785,17 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_SpawnItemEx("DeadHelmetZombieman_Slumped", 10);
 			Stop;
 			
-		
+		Death.HeadHitbox:
 		Death.Head:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_FaceTarget();
 			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 			TNT1 A 0 A_JumpIfInTargetInventory("HasPlasmaWeapon", 1, "Death.Plasma");
 			TNT1 A 0 A_JumpIfInTargetInventory("HasCutingWeapon", 1, "Death.Decapitate");
 			TNT1 A 0 A_JumpIfInTargetInventory("RandomHeadExploder", 1, "HeadExplode");
-			TNT1 A 0 A_JumpIfHealthLower(-600, "HeavyHead");
-			TNT1 A 0 A_JumpIfHealthLower(-90, "HeadExplode");
+			TNT1 A 0 A_JumpIfHealthLower(-100, "HeavyHead");
+			TNT1 A 0 A_JumpIfHealthLower(-60, "HeadExplode");
 		HeadMinor:
 			TNT1 A 0 A_StartSound("MinorHeadshot");
 			TNT1 A 0 A_Jump (256, "DeathMinorhead1", "DeathMinorhead2", "DeathMinorhead3", "DeathMinorhead4", "DeathMinorhead5");
@@ -835,12 +866,13 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			TNT1 A 0 A_SpawnItem ("DeadZombieman_PXS4");
 			Stop;
 		
-	   DeathMinorHead5:
+		DeathMinorHead5:
 			TNT1 A 0 A_NoBlocking();
-			TNT1 A 0 A_SpawnItem("DyingHelmetZombiemanLostTeeth");
+			TNT1 A 0 A_SpawnItemEx ("DyingHelmetZombiemanLostTeeth", 0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 		
 		XDeath:
+			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 			TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG");
 			TNT1 A 0 { 
 				NashGoreGibs.SpawnGibs(self);
@@ -861,8 +893,10 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			Stop;
 			
 		Death.SSG:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			ZZD1 E 1 {
-					A_Recoil(-20);
+					ThrustThing(angle * 256 / 360 + 128, 22, 0, 0);
 					A_FaceTarget();
 					NashGoreGibs.SpawnGibs(self);
 					for (int i = 0; i < 5; i++) {	
@@ -897,10 +931,12 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 		Death.Railgun:
 			TNT1 A 0 A_Jump(96, "Death.SSG");
 		Death.Blast:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_FaceTarget();
 			TNT1 A 0 A_Jump(12, "Death.Arm");
-			TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 A_Jump(128, "Death.Blast2");
+			TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 {
 				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 				A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
@@ -936,6 +972,8 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 			
 			
 		Death.Nailgun:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_Jump(256,
 				"Naildeath1", "Naildeath1",
 				"Naildeath2", "Naildeath2",
@@ -1076,24 +1114,102 @@ Class PB_PistolZombieman2: PB_Zombieman //Replaces ZombieMan
 		Pain.Avoid:
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "PlayerActionDialogue");
 		Avoid:
+			TNT1 A 0
+			{
+				avoidCooldown = 175;
+			}
 			TNT1 A 0 A_Jump(256, "DiveLeft", "DiveRight", "DiveLeft", "DiveRight", "DiveFront");
 			Goto DiveFront;
-		
-		Death.IceBeam:
-			TNT1 A 0 {
-				bSHOOTABLE = false;
-				bSOLID = false;
-				A_SpawnItem("FrozenPistolZombieman2");
-				A_SpawnItem("IceCrystalGround");
-				A_SpawnItem("IceCrystalGround");
+		Roll:
+			TNT1 A 0;
+			TNT1 A 0 A_DeathWepCheck("MinigunSelected", 2000, "Avoid");
+			TNT1 A 0 A_DeathWepCheck("RocketLauncherSelected", 2000, "Avoid");
+			TNT1 A 0 A_DeathWepCheck("SGLSelected", 2000, "Avoid");
+			TNT1 A 0 A_DeathWepCheck("PlayerIsThrowingAGrenade", 2000, "Avoid");
+			TNT1 A 0 A_Jump(256, "RollR", "RollL");
+		RollL:
+			TNT1 A 0 A_WallCheck(2, "RollLNow", "See");
+		RollLNow:
+			TNT1 AAA 0 A_FaceTarget(0);
+			5RO1 A 1 A_FaceTarget(0);
+			TNT1 A 0
+			{
+				ThrustThing(angle * 256 / 360 + 192, 13, 0, 0);
+				//Play the Roll sound
+				bNoPain = true;
+				bNODROPOFF = true;
 			}
-			Stop;
+			5RO1 AAAAAAAAAAAAAAAA 1 A_SetRoll(roll+22, SPF_INTERPOLATE);
+			5RO1 A 1
+			{
+				//A_Stop();
+				A_SetRoll(0);
+				bNoPain = false;
+				bNODROPOFF = false;
+			}
+			5RO1 A 1;
+			goto See;
+		RollR:
+			TNT1 A 0 A_WallCheck(2, "RollLNow", "See");
+		RollRNow:
+			TNT1 AAA 0 A_FaceTarget(0);
+			5RO2 A 1 A_FaceTarget(0);
+			TNT1 A 0
+			{
+				ThrustThing(angle * 256 / 360 + 64, 13, 0, 0);
+				//Play the Roll sound
+				bNoPain = true;
+				bNODROPOFF = true;
+			}
+			5RO2 AAAAAAAAAAAAAAAA 1 A_SetRoll(roll-22, SPF_INTERPOLATE);
+			5RO2 A 1
+			{
+				//A_Stop();
+				A_SetRoll(0);
+				bNoPain = false;
+				bNODROPOFF = false;
+			}
+			5RO2 A 1;
+			goto See;
+		SideStep:
+			//Undone
+		SideHop:
+			TNT1 A 0 A_Jump(256, "SHR", "SHL");
+		SHR:
+			9OS2 A 3 A_FaceTarget;
+			9OS2 E 3 A_FaceTarget;
+			TNT1 A 0 ThrustThingZ(0, 20, 0, 0);
+			TNT1 A 0 ThrustThing(angle*256/360+192, 8, 0, 0);
+			5RO1 A 12;
+		SHRL:
+			5RO1 A 1 A_CheckFloor("SHRE");
+			5RO1 A 1;
+			Loop;
+		SHRE:
+			5RO1 A 1 A_FaceTarget;
+			TNT1 A 0 A_Jump(256, "RollR", "See", "Missile");
+			Goto See;
+		SHL:
+			9OS2 A 3 A_FaceTarget;
+			9OS2 E 3 A_FaceTarget;
+			TNT1 A 0 ThrustThingZ(0, 20, 0, 0);
+			TNT1 A 0 ThrustThing(angle*256/360+64, 8, 0, 0);
+			5RO2 A 12;
+		SHLL:
+			5RO2 A 1 A_CheckFloor("SHLE");
+			5RO2 A 1 A_CheckCeiling("SHLE");
+			Loop;
+		SHLE:
+			5RO2 A 1 A_FaceTarget;
+			TNT1 A 0 A_Jump(256, "RollL", "See", "Missile");
+			Goto See;
 		
 		Death.Ice:
+		Death.IceExplosion:
 		Death.Freeze:
 		Death.Frost:
 			TNT1 A 0 {
-				bSHOOTABLE = false;
+				bShootable = false;
 				bSOLID = false;
 				A_SpawnItem("FrozenPistolZombieman2");
 			}

@@ -1,0 +1,541 @@
+class PB_Projectile : FastProjectile abstract
+{
+	enum ExplosionType
+	{
+		EType_Geometry,
+		EType_Actor,
+		EType_BleedingActor
+	}
+	
+	override void PostBeginPlay()
+	{
+		super.PostBeginPlay();
+		startPos = pos;
+	}
+	
+	virtual int Handle_MissileHit(Actor victim)
+	{
+		double scaled_damage = truedamage;
+		Name dmgType = DamageType;
+		double ang;
+		
+		if(target)
+		{
+			ang = AbsAngle(victim.Angle, AngleTo(target));
+		}
+		
+		let ptrPBMon = PB_Monster(victim);
+		
+		if (!bNOCRITICALS && (ang < 30 || ang > 150) && Pos.Z > victim.Pos.Z + victim.Height * ((ptrPBMon) ? ptrPBMon.posTorsoHB : 0.65))
+		{
+			//Console.Printf("Critical");
+			scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgTorsoMult : 1.1);
+			dmgtype = damagetype;
+			if (Pos.Z > victim.Pos.Z + victim.Height * ((ptrPBMon) ? ptrPBMon.posHeadHB : 0.80))
+			{
+				//Console.Printf("Headshot");
+				dmgtype = "Head";
+				//A_StartSound("headshotmarker", CHAN_AUTO, CHAN_UI);
+				scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgHeadMult : 1.25);
+			}
+			else
+			{
+				//A_StartSound("torsshotmarker", CHAN_AUTO, CHAN_UI);
+			}
+		}
+		else if (Pos.Z < victim.Pos.Z + victim.Height * ((ptrPBMon) ? ptrPBMon.posLegHB : 0.40))
+		{
+			if (Pos.Z > victim.Pos.Z + victim.Height * ((ptrPBMon) ? ptrPBMon.posDickHB : 0.38))
+			{
+				//Console.Printf("Dick Shot");
+				//A_StartSound("apenshotmarker", CHAN_AUTO, CHAN_UI);
+				dmgtype = "Dick";
+				scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgDickMult : 0.95);
+			}
+			else
+			{
+				//Console.Printf("Legshot");
+				//A_StartSound("apenshotmarker", CHAN_AUTO, CHAN_UI);
+				dmgtype = "Leg";
+				scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgLegMult : 0.8);
+			}
+		}
+		else if (!bOMNIDIRECTIONAL && ang > 50 && ang < 130)
+		{
+			//Console.Printf("Armshot");
+			//A_StartSound("apenshotmarker", CHAN_AUTO, CHAN_UI);
+			dmgtype = "Arm";
+			scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgArmMult : 0.7);
+		}
+		else
+		{
+			//A_StartSound("bodyshotmarker", CHAN_AUTO, CHAN_UI);
+			dmgtype = damagetype;
+			scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgLowTorsoMult : 1);
+		}
+		
+		scaled_damage = victim.GetModifiedDamage(dmgType, scaled_damage, false, self, target);
+		
+		victim.DamageMobj(self, target, ceil(scaled_damage), dmgType, 0, angle);
+		
+		if( victim.bISMONSTER && !victim.bNOBLOOD ) 
+			victim.SpawnBlood( pos, angle, ceil(scaled_damage) );
+		
+		OnHitActor(target, dmgType);
+		
+		// [gng] prevent missile from ripping through or getting stuck on bosses
+		if (bRIPPER && victim.bBOSS && bNOBOSSRIP)		
+		{
+			// OnExplode (FindExplosionType(BlockingMobj));
+			// ExplodeMissile(BlockingLine, BlockingMobj);
+			// console.printf("penis");
+			return 0;
+		}
+		
+		return -1;
+	}
+	
+	override int SpecialMissileHit(Actor victim)
+	{
+		if (victim == Target && !bHitOwner)
+		{
+			return 1; //[inkoalawetrust] //This is default behavior though ?
+		}
+		
+		if (bRIPPER)
+		{
+			if (ripAmount < 0)
+			{
+				return 0; // [Ace] We must use 0 here or else the projectile will keep ripping. Removing the ripper flag does not take effect until the next tic because of how ripping works.
+			}
+			if (LastActor != victim && Victim)
+			{
+				ripAmount = ripAmount - 1;
+				Handle_MissileHit(victim);
+				LastActor = victim;
+			}
+			else
+			{
+				return 1;
+			}
+		}
+		Return -1;
+	}
+	
+	virtual void ActivateLines()
+	{
+		let lt = LineActivatorTracer.DoTrace(self, angle, pitch, max(128, vel.length()));
+		for(int i = 0; i < lt.HitLines.Size(); i++)
+		{
+			let ln = lt.HitLines[i];
+			if(ln) ln.Activate(target, 0, SPAC_Impact);
+		}
+		if(BlockingLine) BlockingLine.Activate(target, 0, SPAC_Impact);
+	}
+	
+	//[inkoalawetrust]: The stock FastProjectile code. We have to basically reimplement the whole think to make it support bouncing projectiles again.
+	Void FastProjectileTick()
+	{
+		ClearInterpolation();
+		double oldz = pos.Z;
+
+		if (isFrozen())
+			return;
+
+		// [RH] Ripping is a little different than it was in Hexen
+		FCheckPosition tm;
+		tm.DoRipping = bRipper;
+
+		int count = 8;
+		if (radius > 0)
+		{
+			while (abs(Vel.X) >= radius * count || abs(Vel.Y) >= radius * count)
+			{
+				// we need to take smaller steps.
+				count += count;
+			}
+		}
+
+		if (height > 0)
+		{
+			while (abs(Vel.Z) >= height * count)
+			{
+				count += count;
+			}
+		}
+
+		// Handle movement
+		bool ismoved = Vel != (0, 0, 0)
+			// Check Z position set during previous tick.
+			// It should be strictly equal to the argument of SetZ() function.
+			|| (   (pos.Z != floorz           ) /* Did it hit the floor?   */
+				&& (pos.Z != ceilingz - Height) /* Did it hit the ceiling? */ );
+
+		if (ismoved)
+		{
+			// force some lateral movement so that collision detection works as intended.
+			if (bMissile && Vel.X == 0 && Vel.Y == 0 && !IsZeroDamage())
+			{
+				VelFromAngle(MinVel);
+			}
+
+			Vector3 frac = Vel / count;
+			int changexy = frac.X != 0 || frac.Y != 0;
+			int ripcount = count / 8;
+			for (int i = 0; i < count; i++)
+			{
+				if (changexy)
+				{
+					if (--ripcount <= 0)
+					{
+						tm.ClearLastRipped();	// [RH] Do rip damage each step, like Hexen
+					}
+
+					if( bRANGED && Level.Vec3Diff( pos, startPos ).Length() > destroyRange )
+					{
+						self.Destroy();
+						return;
+					}
+					
+					if (!TryMove (Pos.XY + frac.XY, true, false, tm))
+					{ // Blocked move
+						if (!bSkyExplode)
+						{
+							let l = tm.ceilingline;
+							if (l &&
+								l.backsector &&
+								l.backsector.GetTexture(sector.ceiling) == skyflatnum)
+							{
+								let posr = PosRelative(l.backsector);
+								if (pos.Z >= l.backsector.ceilingplane.ZatPoint(posr.XY))
+								{
+									// Hack to prevent missiles exploding against the sky.
+									// Does not handle sky floors.
+									Destroy ();
+									return;
+								}
+							}
+							// [RH] Don't explode on horizon lines.
+							if (BlockingLine != NULL && BlockingLine.special == Line_Horizon)
+							{
+								Destroy ();
+								return;
+							}
+							
+							// [inkoalawetrust] Bounce off of blocking lines and actors.
+							// https://sourcegraph.com/github.com/ZDoom/gzdoom/-/blob/src/playsim/p_mobj.cpp?L2105-2132
+							If (BlockingMobj) //Hit actor.
+							{
+								If (bBounceOnActors)
+								{
+									If (!BounceActor (BlockingMobj,False))
+									{
+										ExplodeMissile (Null, BlockingMobj);
+										OnExplode (FindExplosionType(BlockingMobj));
+									}
+									Return;
+								}
+							}
+							Else //Hit wall.
+							{
+								If (BounceWall())
+								{
+									PlayBounceSound (False);
+									Return;
+								}
+							}
+							
+							If (BlockingMobj && ReflectOffActor(BlockingMobj)) //Handle reflection too.
+								Return;
+						}
+						
+						ExplodeMissile (BlockingLine, BlockingMobj);
+						OnExplode (FindExplosionType(BlockingMobj));
+						return;
+					}
+				}
+				AddZ(frac.Z);
+				UpdateWaterLevel ();
+				oldz = pos.Z;
+				if (oldz <= floorz)
+				{ // Hit the floor
+
+					if (floorpic == skyflatnum && !bSkyExplode)
+					{
+						// [RH] Just remove the missile without exploding it
+						//		if this is a sky floor.
+						Destroy ();
+						return;
+					}
+					
+					SetZ(floorz);
+					
+					// [inkoalawetrust] Floor plane bounce handling.
+					// https://sourcegraph.com/github.com/ZDoom/gzdoom@cfe30c1d477e5cc8339226ebbb37f37b5bd2f019/-/blob/src/playsim/p_mobj.cpp?L2442-2463
+					CheckFor3DFloorHit(FloorZ,True);
+					
+					If (bBounceOnFloors)
+					{
+						BouncePlane (FloorSector.FloorPlane);
+						Return;
+					}
+					
+					HitFloor ();
+                    Destructible.ProjectileHitPlane(self, SECPART_Floor);
+					ExplodeMissile (NULL, NULL);
+					OnExplode (EType_Geometry);
+					return;
+				}
+				if (pos.Z + height > ceilingz)
+				{ // Hit the ceiling
+
+					if (ceilingpic == skyflatnum && !bSkyExplode)
+					{
+						Destroy ();
+						return;
+					}
+					
+					SetZ(ceilingz - Height);
+					
+					// [inkoalawetrust] Ceiling plane bounce handling.
+					// https://sourcegraph.com/github.com/ZDoom/gzdoom@cfe30c1d477e5cc8339226ebbb37f37b5bd2f019/-/blob/src/playsim/p_mobj.cpp?L2553-2572
+					CheckFor3DCeilingHit(CeilingZ,True);
+					
+					If (bBounceOnCeilings)
+					{
+						BouncePlane (CeilingSector.CeilingPlane);
+						Return;
+					}
+					
+                    Destructible.ProjectileHitPlane(self, SECPART_Ceiling);
+					ExplodeMissile (NULL, NULL);
+					OnExplode (EType_Geometry);
+					return;
+				}
+				CheckPortalTransition();
+				if (changexy && ripcount <= 0) 
+				{
+					ripcount = count >> 3;
+
+					// call the 'Effect' method.
+					Effect();
+				}
+			}
+		}
+		if (!CheckNoDelay())
+			return;		// freed itself
+		// Advance the state
+		if (tics != -1)
+		{
+			if (tics > 0) tics--;
+			while (!tics)
+			{
+				if (!SetState (CurState.NextState))
+				{ // mobj was removed
+					return;
+				}
+			}
+		}
+	}
+	
+	override void Tick()
+	{
+		if (IsFrozen())
+			return;
+		
+		activateLines();
+		
+		Double OldZ = Pos.Z;
+		FastProjectileTick(); //We just use our own copy of the Tick() method for bouncing.
+		FallAndSink(GetGravity(),OldZ); //[inkoalawetrust] It's as shrimple as that.
+	}
+
+	// [Ace] Override these if you want to do stuff when something happens.
+	protected virtual void OnHitActor(Actor target, Name dmgType) {}
+	protected virtual void OnExplode(int type) {}
+	
+	ExplosionType FindExplosionType (Actor Victim) //Determine what impact type to use.
+	{
+		If (!Victim) //No impact victim ? Probably level geometry.
+			Return EType_Geometry;
+		
+		If (((Victim.bShootable && Victim.bCorpse) || Victim.bKilled ) && Victim.bNoBlood) //https://www.youtube.com/watch?v=K63AVSCPcSI
+			Return EType_Actor;
+		
+		Return EType_BleedingActor; //https://www.youtube.com/watch?v=BlrjHLnNzAo
+	}
+	
+	// [Ace] In case you have attached anything to this item, calling OwnerDied allows you to do some effects on death.
+	protected void CallOwnerDied()
+	{
+		for (Inventory next = Inv; next != null; next = next.Inv)
+		{
+			next.OwnerDied();
+		}
+	}
+
+	double ExtraDamageFactor;
+	protected Actor LastActor;
+	
+	Array<Actor> act_hits;
+	Actor hitactor;
+	Actor LastRipped, PreLastRipped; //The actor that a ripper last hit. Used for the RIPONCE flag.
+	int ripamount;
+	Property RipperCount : ripamount;
+	
+	int destroyRange;
+	Property ProjectileRange : destroyRange;
+	
+	double truedamage;
+	Property BaseDamage : truedamage;
+	
+	private int BehaviorFlags;
+	flagdef NoCriticals: BehaviorFlags, 0;
+	flagdef Omnidirectional: BehaviorFlags, 1;
+	flagdef InvisiblePuff: BehaviorFlags, 2;
+	flagdef RipOnce: BehaviorFlags, 3;
+	flagdef RANGED: BehaviorFlags, 4;
+	
+	vector3 startPos;
+
+	Default
+	{
+		// [Ace] Speedy projectiles with a large radius are more performant, but they don't work so well with switches that rely on hitscan activation
+		// if the linedefs are packed right in front of a wall. Normally this shouldn't be a problem, but in some cases it is, such as Sigil's E5M1 switch at map start.
+		Speed 320;
+		Mass 25;
+		Radius 1;
+		Height 2;
+		Projectile;
+		+GETOWNER
+		+NODAMAGETHRUST
+		+NOEXTREMEDEATH
+		+FORCERADIUSDMG
+		+BLOODSPLATTER
+		+NODAMAGETHRUST
+		+HITTRACER
+		+NOBOSSRIP
+		+RIPPER
+		-NOGRAVITY
+		+PB_Projectile.RipOnce;
+		ProjectileKickBack 20;
+		Renderstyle "Add";
+		Decal "BulletChip";
+		Scale 0.15;
+		PB_Projectile.RipperCount 1;
+		PB_Projectile.BaseDamage 5;
+		Gravity 0.1;
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 1;
+			TRAC A -1;
+			Stop;
+		Death: // [Ace] Wall.
+			TNT1 A 0
+			{
+				CallOwnerDied();
+				OnExplode(EType_Geometry);
+				A_SpawnProjectile("PB_BulletPuff",0,0,0,0);
+				if(random(0, 100) < 25)
+				{
+					A_StartSound("ricochet/hit");
+				}
+			}
+			Stop;
+		Crash: // [Ace] Dormant/NoBlood enemies.
+			TNT1 A 0
+			{
+				CallOwnerDied();
+				OnExplode(EType_Actor);
+				A_SpawnProjectile("PB_BulletPuff",0,0,0,0);
+			}
+			Stop;
+		XDeath: // [Ace] Bleeding enemies.
+			TNT1 A 0
+			{
+
+				CallOwnerDied();
+				OnExplode(EType_BleedingActor);
+			}
+			Stop;
+	}
+}
+
+class LineActivatorTracer : LineTracer
+{
+	Actor src;
+	Array<Line> HitLines;
+
+	play static LineActivatorTracer DoTrace(Actor src, double tangle, double tpitch, double dist, uint traceflags = 0)
+	{
+		LineActivatorTracer tracer = new("LineActivatorTracer");
+		if(tracer) 
+		{
+			tracer.src = src;
+			vector3 dir = PB_Math.VecFromAngles(tangle, tpitch);
+			tracer.Trace(src.pos, src.CurSector, dir, dist, traceflags);
+		}
+		return tracer;
+	}
+
+	// Thanks to PhantomBeta 
+	// (https://github.com/Doom2fan/Se7evidas/blob/master/PK3%20Source/S7ZScript/Bases/S7_Projectile/Linetracer.ZS)
+    transient Array<F3DFloor> ffloorsToIgnore;
+	ETraceStatus HandleWall() 
+	{
+		let hl = Results.HitLine;
+		HitLines.push(hl);
+
+        if (Results.Tier == TIER_Upper || Results.Tier == TIER_Lower)
+            return TRACE_Stop;
+
+        if (Results.ffloor && ffloorsToIgnore.Find (Results.ffloor) == ffloorsToIgnore.Size ())
+		{
+            ffloorsToIgnore.Push (Results.ffloor);
+            return TRACE_Stop;
+        }
+
+        if (Results.Tier == TIER_Middle && !hl.backsector)
+			return TRACE_Stop;
+
+        if (Results.Tier == TIER_Middle && (hl.flags & Line.ML_Blocking) && (hl.flags & Line.ML_TwoSided))
+            return TRACE_Skip;
+
+        if ((hl.flags & Line.ML_3DMidTex) && !(hl.flags & Line.ML_3DMidTex_Impass))
+            return TRACE_Stop;
+
+        if (hl.flags & (Line.ML_Blocking | Line.ML_BlockEverything))
+            return TRACE_Stop;
+
+        return TRACE_Skip;
+    }
+
+	override ETraceStatus TraceCallback()
+	{
+		if(results.HitType == Trace_HitWall)
+		{
+			let stat = HandleWall();
+			return stat;
+		}
+		if(results.HitType == Trace_HitActor)
+		{
+			return Trace_Skip;
+		}
+		return Trace_Stop;
+	}
+}
+
+/* [Pop] Dummy Class for Reference, has notes too
+
+class PB_M16 : PB_Projectile
+{
+	Default
+	{
+		PB_Projectile.BaseDamage 15; this IS NOT multiplied by random(1,3), do keep that in mind
+		PB_Projectile.RipperCount 2; this is always +1, IE 2 is 3 enemies
+		Obituary "%o was blasted with bullets %k.";
+	}
+}*/

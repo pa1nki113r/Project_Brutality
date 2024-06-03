@@ -70,10 +70,10 @@ ACTOR MicroMissileProjectile
 	Height 6
 	Projectile
 	Speed 45
-    Damage 9
+    Damage (35)
 	DamageType Explosive
     MeleeDamage 0
-    Gravity 0.25
+    Gravity 0.15
 	Scale 0.38
     Decal "Scorch"
     -NOGRAVITY
@@ -82,6 +82,7 @@ ACTOR MicroMissileProjectile
 	+THRUSPECIES
 	+MTHRUSPECIES
 	+RANDOMIZE
+	+MISSILE
 	SeeSound "weapons/RLL"
 // 	DeathSound "Explosion"
 	Species "Marine"
@@ -92,7 +93,7 @@ ACTOR MicroMissileProjectile
 			MICR A 1 bright
 			MICR A 1 A_StartSound("weapons/rocketloop",CHAN_BODY,CHANF_LOOP)
 		Fly:
-			MICR AAABBBCCCAAABBBCCC 1 Bright Light("ROCKET")
+			MICR AAAABBBBCCCCAAAABBBBCCCC 1 Bright Light("ROCKET")
 			{
 				if(waterlevel < 1) {
 // 					A_SpawnItemEx("OldschoolRocketSmokeTrail2",-3,0,0,-1,0,0);
@@ -112,18 +113,17 @@ ACTOR MicroMissileProjectile
 			loop
 	
 	Death:
-		TNT1 A 0 A_Explode(75, 42)
+		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 1)
+		TNT1 A 0 A_Stop
+		TNT1 A 0 A_Explode((120), 50)
 		TNT1 A 0
 		{
 // 			A_SpawnItemEx ("RocketExplosion",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			A_StopSound(CHAN_BODY);
 			A_StartSound("FAREXPL", CHAN_AUTO,CHANF_OVERLAP,0.5,0,1.1);
 			Radius_Quake (2, 4, 0, 7, 0);
-			A_CustomMissile("BigRicoChet");
-			A_SpawnItem ("BigRicoChet", 0, -30);
 			A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
-			A_SpawnItemEx ("UnderwaterExplosion",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			//A_SpawnItemEx("NewRocketExploFX", 0, 0, 0);
 			A_SpawnItemEx ("LiquidExplosionEffectSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
@@ -198,1545 +198,1606 @@ TNT1 A 0 A_Explode(100, 200)
 ACTOR PB_LMG : PB_Weapon
 {
 	//$Title Light Machine Gun
-	//$Category Weapons
+	//$Category Project Brutality - Weapons
 	//$Sprite LMPIA0
-Game Doom
-SpawnID 9430
-Weapon.BobRangeX 0.3
-Weapon.BobRangeY 0.5
-Weapon.BobStyle InverseSmooth
-Weapon.BobSpeed 2.4
-Weapon.AmmoType1 "NewClip"
-Weapon.AmmoType2 "LMGAmmo"
-Weapon.AmmoGive 45
-Scale 0.45
-Weapon.AmmoUse1 0
-Weapon.AmmoUse2 0
-+FLOORCLIP
-+DONTGIB
-+WEAPON.NOAUTOAIM
-+WEAPON.NOAUTOFIRE
-+POWERED_UP
-+WEAPON.NOALERT
-PB_WeaponBase.UnloaderToken "PBLMGHasUnloaded"
-Inventory.PickupSound "LMGPKP"
-Inventory.PickupMessage "You got the UAC Light Machine Gun!"
-Tag "Light Machine Gun"
-Obituary "%o was became a leaking piece of meat by %k's light machine gun"
-AttackSound "none"
-+WEAPON.CHEATNOTWEAPON
-Weapon.SisterWeapon PB_Carbine
-+COUNTITEM
-PB_WeaponBase.respectItem "RespectLMG"
-//FloatBobStrength 0.5
-States
+	Game Doom
+	SpawnID 9430
+	Weapon.AmmoType1 "PB_HighCalMag"
+	Weapon.AmmoType2 "LMGAmmo"
+	Weapon.AmmoGive 45
+	Scale 0.45
+	Weapon.AmmoUse1 0
+	Weapon.AmmoUse2 0
+	+FLOORCLIP
+	+DONTGIB
+	+WEAPON.WIMPY_WEAPON
+	+WEAPON.NOAUTOAIM
+	+WEAPON.NOAUTOFIRE
+	//+POWERED_UP
+	+WEAPON.NOALERT
+	PB_WeaponBase.UnloaderToken "PBLMGHasUnloaded"
+	Inventory.PickupSound "LMGPKP"
+	Inventory.PickupMessage "UAC Light Machine Gun (Slot 4, Upgrade)"
+	Tag "Light Machine Gun"
+	Obituary "%o became a leaking piece of meat by %k's light machine gun"
+	AttackSound "none"
+	+WEAPON.CHEATNOTWEAPON
+	//Weapon.SisterWeapon PB_Carbine
+	+COUNTITEM
+	PB_WeaponBase.respectItem "RespectLMG"
+	//FloatBobStrength 0.5
+	PB_WeaponBase.OffsetRecoilX 3.8
+	PB_WeaponBase.OffsetRecoilY 2.5
+
+	States
 	{
-	Spawn:
-		//BRIGHT Light("WeaponUpgradeSpawner")
-		LMPI A 10 BRIGHT ACS_NamedExecuteAlways("ToggleLMG",0) 
-		Loop
-	/*Spawn: //Model not implemented yet
-		VLMG A 0 NoDelay
-		LMPI A 10 A_PbvpFramework("VLMG")
-		"####" "#" 0 A_PbvpInterpolate()
-		LOOP*/
-	FlashPunching:
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "FlashPunchingMissile")
-		LQB6 AB 0
-		LQB5 AB 0
-		LQB4 AB 0
-		LQB3 AB 0
-		LQB7 AB 1 {
-			if(CountInv("LMGAmmo") == 6) {A_SetFlashWeaponSprite("LQB6");}
-			if(CountInv("LMGAmmo") == 5) {A_SetFlashWeaponSprite("LQB5");}
-			if(CountInv("LMGAmmo") == 4) {A_SetFlashWeaponSprite("LQB4");}
-			if(CountInv("LMGAmmo") < 4) {A_SetFlashWeaponSprite("LQB3");}
-		}
-		LQB7 CDEFGHFEDC 1
-		LQB7 BA 1 {
-			if(CountInv("LMGAmmo") == 6) {A_SetFlashWeaponSprite("LQB6");}
-			if(CountInv("LMGAmmo") == 5) {A_SetFlashWeaponSprite("LQB5");}
-			if(CountInv("LMGAmmo") == 4) {A_SetFlashWeaponSprite("LQB4");}
-			if(CountInv("LMGAmmo") < 4) {A_SetFlashWeaponSprite("LQB3");}
-		}
-		Stop
-	FlashPunchingMissile:
-		LQM5 AB 0
-		LQM4 AB 0
-		LQM3 AB 0
-		LQM6 AB 1 {
-			if(CountInv("LMGAmmo") ==15 || CountInv("LMGAmmo") <= 17) {A_SetFlashWeaponSprite("LQM5");}
-			if(CountInv("LMGAmmo") == 12 || CountInv("LMGAmmo") <= 14) {A_SetFlashWeaponSprite("LQM4");}
-			if(CountInv("LMGAmmo") < 12) {A_SetFlashWeaponSprite("LQM3");}
-		}
-		LQM6 CDEFGHFEDC 1
-		LQM6 BA 1 {
-			if(CountInv("LMGAmmo") ==15 || CountInv("LMGAmmo") <= 17) {A_SetFlashWeaponSprite("LQM5");}
-			if(CountInv("LMGAmmo") == 12 || CountInv("LMGAmmo") <= 14) {A_SetFlashWeaponSprite("LQM4");}
-			if(CountInv("LMGAmmo") < 12) {A_SetFlashWeaponSprite("LQM3");}
-		}
-		Stop
-	FlashKicking:
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "FlashKickingMissile")
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",7,5)
-		LKB6 A 0 A_JumpIfInventory("LMGAmmo",6,4)
-		LKB5 A 0 A_JumpIfInventory("LMGAmmo",5,3)
-		LKB4 A 0 A_JumpIfInventory("LMGAmmo",4,2)
-		LKB3 A 0
-		"####" ABCDEFGHGFEDCBA 1
-		Goto Ready3
-	FlashAirKicking:
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "FlashAirKickingMissile")
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",7,5)
-		LKB6 A 0 A_JumpIfInventory("LMGAmmo",6,4)
-		LKB5 A 0 A_JumpIfInventory("LMGAmmo",5,3)
-		LKB4 A 0 A_JumpIfInventory("LMGAmmo",4,2)
-		LKB3 A 0
-		"####" ABCDEFGHHGFEDCBA 1
-		Goto Ready3
-	FlashKickingMissile:
-		LKM6 A 0 A_JumpIfInventory("LMGAmmo",18,4)
-		LKM5 A 0 A_JumpIfInventory("LMGAmmo",15,3)
-		LKM4 A 0 A_JumpIfInventory("LMGAmmo",12,2)
-		LKM3 A 0
-		"####" ABCDEFGHGFEDCBA 1
-		Goto Ready3
-	FlashAirKickingMissile:
-		LKM6 A 0 A_JumpIfInventory("LMGAmmo",18,4)
-		LKM5 A 0 A_JumpIfInventory("LMGAmmo",15,3)
-		LKM4 A 0 A_JumpIfInventory("LMGAmmo",12,2)
-		LKM3 A 0
-		"####" ABCDEFGHHGFEDCBA 1
-		Goto Ready3
-	FlashSlideKicking:
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "FlashSlideKickingMissile")
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",7,5)
-		LKB6 A 0 A_JumpIfInventory("LMGAmmo",6,4)
-		LKB5 A 0 A_JumpIfInventory("LMGAmmo",5,3)
-		LKB4 A 0 A_JumpIfInventory("LMGAmmo",4,2)
-		LKB3 A 0
-		"####" ABCDEFGHHHHHHHHHHHHGFEDCBA 1
-		Goto Ready3
-	FlashSlideKickingMissile:
-		LKM6 A 0 A_JumpIfInventory("LMGAmmo",18,4)
-		LKM5 A 0 A_JumpIfInventory("LMGAmmo",15,3)
-		LKM4 A 0 A_JumpIfInventory("LMGAmmo",12,2)
-		LKM3 A 0
-		"####" ABCDEFGHHHHHHHHHHHHHGFEDCBA 1
-		Goto Ready3
-	FlashSlideKickingStop:
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "FlashSlideKickingMissileStop")
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",7,5)
-		LKB6 A 0 A_JumpIfInventory("LMGAmmo",6,4)
-		LKB5 A 0 A_JumpIfInventory("LMGAmmo",5,3)
-		LKB4 A 0 A_JumpIfInventory("LMGAmmo",4,2)
-		LKB3 A 0
-		"####" GFEDCBA 1
-		Goto Ready3
-	FlashSlideKickingMissileStop:
-		LKM6 A 0 A_JumpIfInventory("LMGAmmo",18,4)
-		LKM5 A 0 A_JumpIfInventory("LMGAmmo",15,3)
-		LKM4 A 0 A_JumpIfInventory("LMGAmmo",12,2)
-		LKM3 A 0
-		"####" GFEDCBA 1
-		Goto Ready3
-	Steady:
-		TNT1 A 1
-		Goto Ready
-	Ready:
-		TNT1 A 0 {
-			if(GetCvar("pb_weapon_crosshairs")) {
-				if(CountInv("LMGMicroMissiles") >= 1) {
-					PB_HandleCrosshair(74);
+		Spawn:
+			//BRIGHT Light("WeaponUpgradeSpawner")
+			LMPI A 10 BRIGHT ACS_NamedExecuteAlways("ToggleLMG",0) 
+			Loop
+		/*Spawn: //Model not implemented yet
+			VLMG A 0 NoDelay
+			LMPI A 10 A_PbvpFramework("VLMG")
+			"####" "#" 0 A_PbvpInterpolate()
+			LOOP*/
+		FlashPunching:
+			TNT1 A 0 A_TakeInventory("CantWeaponSpecial",1)
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "FlashPunchingMissile")
+			LQB6 AB 0
+			LQB5 AB 0
+			LQB4 AB 0
+			LQB3 AB 0
+			LQB7 AB 1 {
+				if(CountInv("LMGAmmo") == 6) {A_SetFlashWeaponSprite("LQB6");}
+				if(CountInv("LMGAmmo") == 5) {A_SetFlashWeaponSprite("LQB5");}
+				if(CountInv("LMGAmmo") == 4) {A_SetFlashWeaponSprite("LQB4");}
+				if(CountInv("LMGAmmo") < 4) {A_SetFlashWeaponSprite("LQB3");}
+			}
+			LQB7 CDEFGHFEDC 1
+			LQB7 BA 1 {
+				if(CountInv("LMGAmmo") == 6) {A_SetFlashWeaponSprite("LQB6");}
+				if(CountInv("LMGAmmo") == 5) {A_SetFlashWeaponSprite("LQB5");}
+				if(CountInv("LMGAmmo") == 4) {A_SetFlashWeaponSprite("LQB4");}
+				if(CountInv("LMGAmmo") < 4) {A_SetFlashWeaponSprite("LQB3");}
+			}
+			Stop
+		FlashPunchingMissile:
+			LQM5 AB 0
+			LQM4 AB 0
+			LQM3 AB 0
+			LQM6 AB 1 {
+				if(CountInv("LMGAmmo") ==15 || CountInv("LMGAmmo") <= 17) {A_SetFlashWeaponSprite("LQM5");}
+				if(CountInv("LMGAmmo") == 12 || CountInv("LMGAmmo") <= 14) {A_SetFlashWeaponSprite("LQM4");}
+				if(CountInv("LMGAmmo") < 12) {A_SetFlashWeaponSprite("LQM3");}
+			}
+			LQM6 CDEFGHFEDC 1
+			LQM6 BA 1 {
+				if(CountInv("LMGAmmo") ==15 || CountInv("LMGAmmo") <= 17) {A_SetFlashWeaponSprite("LQM5");}
+				if(CountInv("LMGAmmo") == 12 || CountInv("LMGAmmo") <= 14) {A_SetFlashWeaponSprite("LQM4");}
+				if(CountInv("LMGAmmo") < 12) {A_SetFlashWeaponSprite("LQM3");}
+			}
+			Stop
+		FlashKicking:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "FlashKickingMissile")
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",7,5)
+			LKB6 A 0 A_JumpIfInventory("LMGAmmo",6,4)
+			LKB5 A 0 A_JumpIfInventory("LMGAmmo",5,3)
+			LKB4 A 0 A_JumpIfInventory("LMGAmmo",4,2)
+			LKB3 A 0
+			"####" ABCDEFGHGFEDCBA 1
+			Goto Ready3
+		FlashAirKicking:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")	
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "FlashAirKickingMissile")
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",7,5)
+			LKB6 A 0 A_JumpIfInventory("LMGAmmo",6,4)
+			LKB5 A 0 A_JumpIfInventory("LMGAmmo",5,3)
+			LKB4 A 0 A_JumpIfInventory("LMGAmmo",4,2)
+			LKB3 A 0
+			"####" ABCDEFGHHGFEDCBA 1
+			Goto Ready3
+		FlashKickingMissile:
+			LKM6 A 0 A_JumpIfInventory("LMGAmmo",18,4)
+			LKM5 A 0 A_JumpIfInventory("LMGAmmo",15,3)
+			LKM4 A 0 A_JumpIfInventory("LMGAmmo",12,2)
+			LKM3 A 0
+			"####" ABCDEFGHGFEDCBA 1
+			Goto Ready3
+		FlashAirKickingMissile:
+			LKM6 A 0 A_JumpIfInventory("LMGAmmo",18,4)
+			LKM5 A 0 A_JumpIfInventory("LMGAmmo",15,3)
+			LKM4 A 0 A_JumpIfInventory("LMGAmmo",12,2)
+			LKM3 A 0
+			"####" ABCDEFGHHGFEDCBA 1
+			Goto Ready3
+		FlashSlideKicking:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "FlashSlideKickingMissile")
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",7,5)
+			LKB6 A 0 A_JumpIfInventory("LMGAmmo",6,4)
+			LKB5 A 0 A_JumpIfInventory("LMGAmmo",5,3)
+			LKB4 A 0 A_JumpIfInventory("LMGAmmo",4,2)
+			LKB3 A 0
+			"####" ABCDEFGHHHHHHHHHHHHGFEDCBA 1
+			Goto Ready3
+		FlashSlideKickingMissile:
+			LKM6 A 0 A_JumpIfInventory("LMGAmmo",18,4)
+			LKM5 A 0 A_JumpIfInventory("LMGAmmo",15,3)
+			LKM4 A 0 A_JumpIfInventory("LMGAmmo",12,2)
+			LKM3 A 0
+			"####" ABCDEFGHHHHHHHHHHHHHGFEDCBA 1
+			Goto Ready3
+		FlashSlideKickingStop:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "FlashSlideKickingMissileStop")
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",7,5)
+			LKB6 A 0 A_JumpIfInventory("LMGAmmo",6,4)
+			LKB5 A 0 A_JumpIfInventory("LMGAmmo",5,3)
+			LKB4 A 0 A_JumpIfInventory("LMGAmmo",4,2)
+			LKB3 A 0
+			"####" GFEDCBA 1
+			Goto Ready3
+		FlashSlideKickingMissileStop:
+			LKM6 A 0 A_JumpIfInventory("LMGAmmo",18,4)
+			LKM5 A 0 A_JumpIfInventory("LMGAmmo",15,3)
+			LKM4 A 0 A_JumpIfInventory("LMGAmmo",12,2)
+			LKM3 A 0
+			"####" GFEDCBA 1
+			Goto Ready3
+		Steady:
+			TNT1 A 1
+			Goto Ready
+		Ready:
+			TNT1 A 0 {
+				if(GetCvar("pb_weapon_crosshairs")) {
+					if(CountInv("LMGMicroMissiles") >= 1) {
+						PB_HandleCrosshair(74);
+						}
+					else {
+						PB_HandleCrosshair(52);
 					}
-				else {
-					PB_HandleCrosshair(52);
 				}
 			}
-		}
-		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
-		TNT1 A 0 PB_RespectIfNeeded
-	WeaponRespect:
-		TNT1 A 0 A_StartSound("weapons/smg_up", 0)
-		TNT1 A 0 A_GiveInventory("RespectLMG")
-		LSM6 ABCD 1 A_DoPBWeaponAction
-		LMRP AAAAABCDE 1 A_DoPBWeaponAction
-		TNT1 A 0 A_StartSound("LINSP ", 2)
-		LMRP FGHIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
-		LRP1 ABBBCDEFGHIJKLMNOPQ 1 A_DoPBWeaponAction
-		TNT1 A 0 A_StartSound("LLIDOP", 2)
-		LRP1 RSTUVWXYZ 1 A_DoPBWeaponAction
-		LRP2 ABCDEFGHIJKLMNOPQQQ 1 A_DoPBWeaponAction
-		TNT1 A 0 A_StartSound("weapons/sgl/detach", 4)
-		LRP2 RSTUVWWXYZ 1 A_DoPBWeaponAction
-		TNT1 A 0 A_StartSound("weapons/sgl/inspect1", 4)
-		LRP3 ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
-		TNT1 A 0 A_StartSound("LFEED", 3)
-		LRP4 ABCDEFGHIJKL 1 A_DoPBWeaponAction
-		"####" A 0 A_StartSound("LLIDCL", 3)
-		LRP4 MNOPQRSTUVWXY 1 A_DoPBWeaponAction
-		Goto RealReady
-	SelectAnimation:
-		TNT1 A 0 A_StartSound("weapons/smg_up", 0)
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "MissileSelect")
-		TNT1 A 0 A_JumpIfInventory("PBLMGHasUnloaded", 1, "UnloadedSelect")
-		LSB7 ABCD 0
-		LSB6 ABCD 0
-		LSB5 ABCD 0
-		LSB4 ABCD 0
-		LSB3 ABCD 0
-		AU2M ABCD 1 {
-				if (CountInv("LMGAmmo") >= 7 ) { A_SetWeaponSprite("LSB7");}
-				if (CountInv("LMGAmmo") == 6 ) { A_SetWeaponSprite("LSB6");}
-				if (CountInv("LMGAmmo") == 5 )  { A_SetWeaponSprite("LSB5");}
-				if (CountInv("LMGAmmo") == 4 )  { A_SetWeaponSprite("LSB4");}
-				if (CountInv("LMGAmmo") <= 3 )  { A_SetWeaponSprite("LSB3");}
-			}
-		Goto Ready3
-	MissileSelect:
-		TNT1 A 0 A_JumpIfInventory("PBLMGHasUnloaded", 1, "UnloadedSelectMissile")
-		LSM6 ABCD 0
-		LSM5 ABCD 0
-		LSM4 ABCD 0
-		LSM3 ABCD 0
-		LSM3 ABCD 1 {
-				if (CountInv("LMGAmmo") >= 18 ) { A_SetWeaponSprite("LSM6");}
-				if (CountInv("LMGAmmo") <= 15 ) { A_SetWeaponSprite("LSM5");}
-				if (CountInv("LMGAmmo") <= 12 )  { A_SetWeaponSprite("LSM4");}
-				if (CountInv("LMGAmmo") <= 9 )  { A_SetWeaponSprite("LSM3");}
-			}
-		Goto ReadyMissile
-	UnloadedSelectMissile:
-		LUSM ABCDE 1
-		Goto ReadyUnload
-	UnloadedSelect:
-		LUSB ABCDE 1
-		Goto ReadyUnload
-	ReadyMissile:
-		LSM6 E 0
-		LSM5 E 0
-		LSM4 E 0
-		LSM3 E 0
-		LSM3 E 1 {
-				if (CountInv("LMGAmmo") >= 18 ) { A_SetWeaponSprite("LSM6");}
-				if (CountInv("LMGAmmo") <= 15 ) { A_SetWeaponSprite("LSM5");}
-				if (CountInv("LMGAmmo") <= 12 )  { A_SetWeaponSprite("LSM4");}
-				if (CountInv("LMGAmmo") <= 9 )  { A_SetWeaponSprite("LSM3");}
-				if (PressingFire() && PressingAltfire() && CountInv("LMGAmmo") > 3){
-					return state("FireMissile");
+			TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+			TNT1 A 0 PB_RespectIfNeeded
+		WeaponRespect:
+			TNT1 A 0 A_StartSound("weapons/smg_up", 0)
+			TNT1 A 0 A_GiveInventory("RespectLMG")
+			LSM6 ABCD 1 A_DoPBWeaponAction
+			LMRP AAAAABCDE 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("LINSP ", 2)
+			LMRP FGHIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
+			LRP1 ABBBCDEFGHIJKLMNOPQ 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("LLIDOP", 2)
+			LRP1 RSTUVWXYZ 1 A_DoPBWeaponAction
+			LRP2 ABCDEFGHIJKLMNOPQQQ 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("weapons/sgl/detach", 4)
+			LRP2 RSTUVWWXYZ 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("weapons/lmg/magin", 4)
+			LRP3 ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("LFEED", 3)
+			LRP4 ABCDEFGHIJKL 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("LLIDCL", 3)
+			LRP4 MNOPQRSTUVWXY 1 A_DoPBWeaponAction
+			Goto RealReady
+		SelectAnimation:
+			TNT1 A 0 A_TakeInventory("Zoomed",1)
+			TNT1 A 0 A_StartSound("weapons/smg_up", 0)
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "MissileSelect")
+			TNT1 A 0 A_JumpIfInventory("PBLMGHasUnloaded", 1, "UnloadedSelect")
+			LSB7 ABCD 0
+			LSB6 ABCD 0
+			LSB5 ABCD 0
+			LSB4 ABCD 0
+			LSB3 ABCD 0
+			AU2M ABCD 1 {
+					if (CountInv("LMGAmmo") >= 7 ) { A_SetWeaponSprite("LSB7");}
+					if (CountInv("LMGAmmo") == 6 ) { A_SetWeaponSprite("LSB6");}
+					if (CountInv("LMGAmmo") == 5 )  { A_SetWeaponSprite("LSB5");}
+					if (CountInv("LMGAmmo") == 4 )  { A_SetWeaponSprite("LSB4");}
+					if (CountInv("LMGAmmo") <= 3 )  { A_SetWeaponSprite("LSB3");}
 				}
-				if (PressingFire() && CountInv("LMGAmmo") > 3){
+			Goto Ready3
+		MissileSelect:
+			TNT1 A 0 A_JumpIfInventory("PBLMGHasUnloaded", 1, "UnloadedSelectMissile")
+			LSM6 ABCD 0
+			LSM5 ABCD 0
+			LSM4 ABCD 0
+			LSM3 ABCD 0
+			LSM3 ABCD 1 {
+					if (CountInv("LMGAmmo") >= 18 ) { A_SetWeaponSprite("LSM6");}
+					if (CountInv("LMGAmmo") <= 15 ) { A_SetWeaponSprite("LSM5");}
+					if (CountInv("LMGAmmo") <= 12 )  { A_SetWeaponSprite("LSM4");}
+					if (CountInv("LMGAmmo") <= 9 )  { A_SetWeaponSprite("LSM3");}
+				}
+			Goto ReadyMissile
+		UnloadedSelectMissile:
+			LUSM ABCDE 1
+			Goto ReadyUnload
+		UnloadedSelect:
+			LUSB ABCDE 1
+			Goto ReadyUnload
+		ReadyMissile:
+			"####" A 0 A_TakeInventory("CantWeaponSpecial",1)
+			LSM6 E 0
+			LSM5 E 0
+			LSM4 E 0
+			LSM3 E 0
+			LSM3 E 1 {
+					if (CountInv("LMGAmmo") >= 18 ) { A_SetWeaponSprite("LSM6");}
+					if (CountInv("LMGAmmo") <= 15 ) { A_SetWeaponSprite("LSM5");}
+					if (CountInv("LMGAmmo") <= 12 )  { A_SetWeaponSprite("LSM4");}
+					if (CountInv("LMGAmmo") <= 9 )  { A_SetWeaponSprite("LSM3");}
+					if (PressingFire() && PressingAltfire() && CountInv("LMGAmmo") > 3){
 						return state("FireMissile");
-				}
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBLMGHasUnloaded"));
-			}
-		Loop
-	Ready3:
-		TNT1 A 0 {
-			if(GetCvar("pb_weapon_crosshairs")) {
-				if(CountInv("LMGMicroMissiles") >= 1) {
-					PB_HandleCrosshair(74);
 					}
-				else {
-					PB_HandleCrosshair(52);
+					if (PressingFire() && CountInv("LMGAmmo") > 3){
+							return state("FireMissile");
+					}
+						return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBLMGHasUnloaded"));
+				}
+			Loop
+		Ready3:
+			TNT1 A 0 A_TakeInventory("CantDoAction",1)
+			TNT1 A 0 A_TakeInventory("CantWeaponSpecial",1)
+			TNT1 A 0 A_SetCrosshair(0)
+			TNT1 A 0 {
+				if(GetCvar("pb_weapon_crosshairs")) {
+					if(CountInv("LMGMicroMissiles") >= 1) {
+						PB_HandleCrosshair(74);
+						}
+					else {
+						PB_HandleCrosshair(52);
+					}
 				}
 			}
-		}
-		TNT1 A 0 A_JumpIfInventory("PBLMGHasUnloaded", 1, "ReadyUnload")
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "ReadyMissile")
-	RealReady:
-		LSB7 E 0
-		LSB6 E 0
-		LSB5 E 0
-		LSB4 E 0
-		LSB3 E 0
-		LSB7 E 1{
-				if (CountInv("LMGAmmo") >= 7 ) { A_SetWeaponSprite("LSB7");}
-				if (CountInv("LMGAmmo") == 6 ) { A_SetWeaponSprite("LSB6");}
-				if (CountInv("LMGAmmo") == 5 )  { A_SetWeaponSprite("LSB5");}
-				if (CountInv("LMGAmmo") == 4 )  { A_SetWeaponSprite("LSB4");}
-				if (CountInv("LMGAmmo") <= 3 )  { A_SetWeaponSprite("LSB3");}
-				if (PressingFire() && PressingAltfire() && CountInv("LMGAmmo") > 0){
-					return state("Fire");
-				}
-				if (PressingFire() && CountInv("LMGAmmo") > 0){
+			TNT1 A 0 A_JumpIfInventory("PBLMGHasUnloaded", 1, "ReadyUnload")
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "ReadyMissile")
+		RealReady:
+			"####" A 0 A_TakeInventory("CantWeaponSpecial",1)
+			LSB7 E 0
+			LSB6 E 0
+			LSB5 E 0
+			LSB4 E 0
+			LSB3 E 0
+			LSB7 E 1{
+					if (CountInv("LMGAmmo") >= 7 ) { A_SetWeaponSprite("LSB7");}
+					if (CountInv("LMGAmmo") == 6 ) { A_SetWeaponSprite("LSB6");}
+					if (CountInv("LMGAmmo") == 5 )  { A_SetWeaponSprite("LSB5");}
+					if (CountInv("LMGAmmo") == 4 )  { A_SetWeaponSprite("LSB4");}
+					if (CountInv("LMGAmmo") <= 3 )  { A_SetWeaponSprite("LSB3");}
+					if (PressingFire() && PressingAltfire() && CountInv("LMGAmmo") > 0){
 						return state("Fire");
+					}
+					if (PressingFire() && CountInv("LMGAmmo") > 0){
+							return state("Fire");
+					}
+						return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBLMGHasUnloaded"));
 				}
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBLMGHasUnloaded"));
-			}
-		Loop
-	MuzzleFlashBullet:
-		TNT1 A 0 A_Jump(255, "MuzzleBullet1", "MuzzleBullet2","MuzzleBullet3")
-		Goto MuzzleBullet1
-	MuzzleBullet1:
-		LBMZ AB 1 BRIGHT
-		Stop
-	MuzzleBullet2:
-		LBMZ DC 1 BRIGHT
-		Stop
-	MuzzleBullet3:
-		LBMZ EF 1 BRIGHT
-		Stop
-	BeltFireMissile:
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",21,"BeltMissile21")
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",18,"BeltMissile18")
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",15,"BeltMissile15")
-		LKB6 A 0 A_JumpIfInventory("LMGAmmo",12,"BeltMissile12")
-		TNT1 A 4 
-		Stop
-	BeltMissile21:
-		LMML MN 1 BRIGHT
-		LMML OA 1
-		Stop
-	BeltMissile18:
-		LMML PQ 1 BRIGHT
-		LMML RG 1
-		Stop
-	BeltMissile15:
-		LMML ST 1 BRIGHT
-		LMML UJ 1
-		Stop
-	BeltMissile12:
-		LMML VW 1 BRIGHT
-		LMML X 1
-		Stop
+			Loop
+		MuzzleFlashBullet:
+			TNT1 A 0 PB_FireOffset
+			TNT1 A 0 A_Jump(255, "MuzzleBullet1", "MuzzleBullet2","MuzzleBullet3")
+			Goto MuzzleBullet1
+		MuzzleBullet1:
+			LBMZ AB 1 BRIGHT
+			Stop
+		MuzzleBullet2:
+			LBMZ DC 1 BRIGHT
+			Stop
+		MuzzleBullet3:
+			LBMZ EF 1 BRIGHT
+			Stop
+		BeltFireMissile:
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",21,"BeltMissile21")
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",18,"BeltMissile18")
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",15,"BeltMissile15")
+			LKB6 A 0 A_JumpIfInventory("LMGAmmo",12,"BeltMissile12")
+			TNT1 A 4 
+			Stop
+		BeltMissile21:
+			LMML MN 1 BRIGHT
+			LMML OA 1
+			Stop
+		BeltMissile18:
+			LMML PQ 1 BRIGHT
+			LMML RG 1
+			Stop
+		BeltMissile15:
+			LMML ST 1 BRIGHT
+			LMML UJ 1
+			Stop
+		BeltMissile12:
+			LMML VW 1 BRIGHT
+			LMML X 1
+			Stop
 
-	//Zoom
-	ZoomOverlay:
-		LMAT A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "ZoomOverlayMicro")
-		ALB7 A 0 A_JumpIfInventory("LMGAmmo", 7, 5)
-		ALB6 A 0 A_JumpIfInventory("LMGAmmo", 6, 4)
-		ALB5 A 0 A_JumpIfInventory("LMGAmmo", 5, 3)
-		ALB4 A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" AB 1
-		Stop
-	ZoomOverlayContinue:
-		LMAT A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "ZoomOverlayContinueMicro")
-		ALB7 A 0 A_JumpIfInventory("LMGAmmo", 7, 5)
-		ALB6 A 0 A_JumpIfInventory("LMGAmmo", 6, 4)
-		ALB5 A 0 A_JumpIfInventory("LMGAmmo", 5, 3)
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" CD 1
-		Stop
-	ZoomOverlayMicro:
-		ALM6 A 0 A_JumpIfInventory("LMGAmmo", 18, 4)
-		ALM5 A 0 A_JumpIfInventory("LMGAmmo", 15, 3)
-		ALM4 A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" AB 1
-		Stop
-	ZoomOverlayContinueMicro:
-		ALM6 A 0 A_JumpIfInventory("LMGAmmo", 18, 4)
-		ALM5 A 0 A_JumpIfInventory("LMGAmmo", 15, 3)
-		ALM4 A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" CD 1
-		Stop
-	AltFire:
-		TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "Unzoom")
-		TNT1 A 0 A_GiveInventory("Zoomed", 1)
-		TNT1 A 0 A_SetCrosshair(5)
-		LMAT A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LBAT A 0
-		"####" A 0 A_ZoomFactor(1.5)
-		"####" A 0 A_Overlay(2, "ZoomOverlay")
-		"####" AB 1
-		"####" A 0 A_Overlay(-2, "ZoomOverlayContinue")
-		"####" CD 1
-		Goto Ready2
-	UnZoomOverlay:
-		LMAT A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "UnZoomOverlayMicro")
-		ALB7 A 0 A_JumpIfInventory("LMGAmmo", 7, 5)
-		ALB6 A 0 A_JumpIfInventory("LMGAmmo", 6, 4)
-		ALB5 A 0 A_JumpIfInventory("LMGAmmo", 5, 3)
-		ALB4 A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" BA 1
-		Stop
-	UnZoomOverlayContinue:
-		LMAT A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "UnZoomOverlayContinueMicro")
-		ALB7 A 0 A_JumpIfInventory("LMGAmmo", 7, 5)
-		ALB6 A 0 A_JumpIfInventory("LMGAmmo", 6, 4)
-		ALB5 A 0 A_JumpIfInventory("LMGAmmo", 5, 3)
-		ALB4 A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" DC 1
-		Stop
-	UnZoomOverlayMicro:
-		ALM6 A 0 A_JumpIfInventory("LMGAmmo", 18, 4)
-		ALM5 A 0 A_JumpIfInventory("LMGAmmo", 15, 3)
-		ALM4 A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" BA 1
-		Stop
-	UnZoomOverlayContinueMicro:
-		ALM6 A 0 A_JumpIfInventory("LMGAmmo", 18, 4)
-		ALM5 A 0 A_JumpIfInventory("LMGAmmo", 15, 3)
-		ALM4 A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" DC 1
-		Stop
-	Unzoom:
-		LMAT A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LBAT A 0
-		"####" A 0 A_ZoomFactor(1)
-		"####" A 0 A_TakeInventory("Zoomed", 1)
-		"####" A 0 A_Overlay(-2, "UnZoomOverlayContinue")
-		"####" DC 1
-		"####" A 0 A_Overlay(2, "UnZoomOverlay")
-		"####" BA 1
-		Goto Ready3
-	Ready2:
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "Ready2Micro")
-	Ready2Real:
-        LBA7 A 0 A_JumpIfInventory("LMGAmmo", 7, 4)
-        LBA6 A 0 A_JumpIfInventory("LMGAmmo", 6, 3)
-        LBA5 A 0 A_JumpIfInventory("LMGAmmo", 5, 2)
-        LBA4 A 0
-        "####" Q 1 {
-                    //Updated code for far superior smooth gameplay
-            if(GetCvar("pb_toggle_aim_hold")) {
-                if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){
-                    return state("Unzoom");
-                }
-        
-                if (PressingFire() && PressingAltfire() && CountInv("LMGAmmo") > 0){
-                        return state("Fire2");
-                }
-                
-                
-                return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE, CheckUnloaded("PBLMGHasUnloaded"));
-                
-            }
-            else {
-                if (PressingFire() && CountInv("LMGAmmo") > 0){
-                    return state("Fire");
-                }
-                return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBLMGHasUnloaded"));
-            }
-            return state("");
-        }
-        Loop
-	Ready2Micro:
-        LMA6 A 0 A_JumpIfInventory("LMGAmmo", 18, 4) //Different ammo checks, different states :D
-        LMA5 A 0 A_JumpIfInventory("LMGAmmo", 15, 3)
-        LMA4 A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
-        LMA3 A 0
-        "####" A 0
-        "####" Q 1 {
-                    //Updated code for far superior smooth gameplay
-            if(GetCvar("pb_toggle_aim_hold")) {
-                if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){
-                    return state("Unzoom");
-                }
-        
-                if (PressingFire() && PressingAltfire() && CountInv("LMGAmmo") > 0){
-                        return state("Fire2Missile");
-                }
-                
-                
-                return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
-                
-            }
-            else {
-                if (PressingFire() && CountInv("LMGAmmo") > 2){
-                    return state("Fire");
-                }
-                return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
-            }
-            return state("");
-        }
-        Loop
-	ReadyUnload:
-		LLMU Q 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LLBU Q 0 
-		"####" A 0
-		"####" Q 1  A_WeaponReady(WRF_ALLOWRELOAD | WRF_NOSECONDARY) 
-		Loop
-	BeltFireMissileZoom:
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",21,"BeltFireMissileZoom7")
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",18,"BeltFireMissileZoom6")
-		LKB6 A 0 A_JumpIfInventory("LMGAmmo",15,"BeltFireMissileZoom5")
-		LKB5 A 0 A_JumpIfInventory("LMGAmmo",12,"BeltFireMissileZoom4")
-		TNT1 A 4 
-		Stop
-	BeltFireMissileZoom7:
-		LRAB JK 1 BRIGHT
-		LRAB LA 1
-		Stop
-	BeltFireMissileZoom6:
-		LRAB JK 1 BRIGHT
-		LRAB LD 1
-		Stop
-	BeltFireMissileZoom5:
-		LRAB MN 1 BRIGHT
-		LRAB OG 1
-		Stop
-	BeltFireMissileZoom4:
-		LRAB PQ 1 BRIGHT
-		LRAB R 1
-		Stop
-	MuzzleFlashRocketZoom:
-		TNT1 A 0 A_Jump(255, "MuzzleFlashRocketZoom1", "MuzzleFlashRocketZoom2")
-		Goto MuzzleFlashBulletZoom1
-	MuzzleFlashRocketZoom1:
-		LAFR AB 1 BRIGHT
-		Stop
-	MuzzleFlashRocketZoom2:
-		LAFR DC 1 BRIGHT
-		Stop
-	Fire2Missile:
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo",3,2)
-        Goto Reload
-		TNT1 A 0
-		TNT1 A 0 A_StartSound("LMISFIR")
-		TNT1 A 0 A_Overlay(-2, "MuzzleFlashRocketZoom")
-		TNT1 A 0 A_Overlay(4, "BeltFireMissileZoom")
-// 		 TNT1 A 0 A_FireBullets (1.45, 1.45, -1, random(70,75), "LMGMicroMissilePuff")
-		TNT1 A 0 PB_SpawnCasing("LMGCasingRocket",17.5, 0.5, 32,frandom(0,2),frandom(3,5),frandom(4,7))
-		TNT1 A 0 PB_SpawnCasing("LMGMissileBeltLink",17.5, 0.5, 32,frandom(0,2),frandom(3,5),frandom(4,7))
- 		TNT1 A 0 A_FireCustomMissile("MicroMissileProjectile", frandom(-1.5,1.5), 0, 0, 0, 0, frandom(-1.5,1.5))
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
-		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
-		TNT1 A 0 PB_WeaponRecoil(-0.22,-0.20)
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
-		TNT1 A 0 A_AlertMonsters
-		TNT1 A 0 A_TakeInventory("LMGAmmo", 3)
-		LRAF B 1 BRIGHT 
-		TNT1 A 0 A_ZoomFactor(1.48)
-		LRAF C 1 BRIGHT 
-		TNT1 A 0 A_ZoomFactor(1.5)
-		LRAF D 1 
-		LRAF A 1
-		LMA6 A 0 A_JumpIfInventory("LMGAmmo", 18, 4) 
-		LMA5 A 0 A_JumpIfInventory("LMGAmmo", 15, 3)
-		LMA4 A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
-		LMA3 A 0
-		"####" A 0
-		"####" Q 1 
-		TNT1 A 0 {            
-            if(GetCvar("pb_toggle_aim_hold")) {
-                if(JustReleased(BT_ALTATTACK)){
-                    return state("Unzoom");
-                }
-        
-                if (PressingFire() && PressingAltfire()){
-                        return state("Fire2Missile");
-                }
-            }
-            else {
-                if(PressingAltfire()){
-                    return state("Unzoom");
-                }
-                A_Refire("Fire2Missile");
-            }
-            return state("");
-        }
-		Goto Ready2Micro
-	Fire2:
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles",1,"Fire2Missile")
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo",1,2)
-        Goto Reload
-		TNT1 A 0
-		TNT1 A 0 A_StartSound("LFIRE")
-		TNT1 A 0 A_Overlay(-2, "MuzzleFlashBulletZoom")
-		TNT1 A 0 A_Overlay(-3, "BeltFireBulletZoom")
-		TNT1 A 0 A_FireBullets (0.1, 0.1, -1, 27, "MachineGunBulletPuff", FBF_NORANDOM,8192,"Tracer", -2,0)
-//		TNT1 A 0 A_Firecustommissile("LMGCaseSpawnStandard",0,0,24,-20, 0, -50)
-		TNT1 A 0 PB_SpawnCasing("LMGCasingStandard",17.5, 0.5, 32,frandom(0,2),frandom(3,5),frandom(4,7))
-		TNT1 A 0 PB_SpawnCasing("LMGBeltLink",17.5, 0.5, 32,frandom(0,2),frandom(3,5),frandom(4,7))
-        TNT1 A 0 A_FireCustomMissile("Tracer", random(-1,1), 0, -1, 0)
-		TNT1 A 0 A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0)
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
-		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
-		TNT1 A 0 PB_WeaponRecoil(-0.44, -0.40)
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
-		TNT1 A 0 A_AlertMonsters
-		TNT1 A 0 A_TakeInventory("LMGAmmo", 1)
-		LGAF B 1 BRIGHT 
-		TNT1 A 0 A_ZoomFactor(1.45)
-		LGAF C 1 BRIGHT 
-		TNT1 A 0 A_ZoomFactor(1.5)
-		LGAF DA 1 
-		TNT1 A 0 {            
-            if(GetCvar("pb_toggle_aim_hold")) {
-                if(JustReleased(BT_ALTATTACK)){
-                    return state("Unzoom");
-                }
-        
-                if (PressingFire() && PressingAltfire()){
-                        return state("Fire2");
-                }
-            }
-            else {
-                if(PressingAltfire()){
-                    return state("Unzoom");
-                }
-                A_Refire("Fire2");
-            }
-            return state("");
-        }
-		Goto Ready2
-	BeltFireBulletZoom:
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",8,"BeltFireBulletZoom8")
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",7,"BeltFireBulletZoom7")
-		LKB6 A 0 A_JumpIfInventory("LMGAmmo",6,"BeltFireBulletZoom6")
-		LKB5 A 0 A_JumpIfInventory("LMGAmmo",5,"BeltFireBulletZoom4")
-		TNT1 A 4 
-		Stop
-	BeltFireBulletZoom8:
-		LGAB JK 1 BRIGHT
-		LGAB LA 1
-		Stop
-	BeltFireBulletZoom7:
-		LGAB JK 1 BRIGHT
-		LGAB LD 1
-		Stop
-	BeltFireBulletZoom6:
-		LGAB MN 1 BRIGHT
-		LGAB OG 1
-		Stop
-	BeltFireBulletZoom5:
-		LGAB PQ 1 BRIGHT
-		LGAB R 1
-		Stop
-	MuzzleFlashBulletZoom:
-		TNT1 A 0 A_Jump(255, "MuzzleFlashBulletZoom1", "MuzzleFlashBulletZoom2", "MuzzleFlashBulletZoom3")
-		Goto MuzzleFlashBulletZoom1
-	MuzzleFlashBulletZoom1:
-		LAFB AB 1 BRIGHT
-		Stop
-	MuzzleFlashBulletZoom2:
-		LAFB DC 1 BRIGHT
-		Stop
-	MuzzleFlashBulletZoom3:
-		LAFB DC 1 BRIGHT
-		Stop
-	Fire:
-		TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "Fire2")
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles",1,"FireMissile")
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo",1,2)
-        Goto Reload
-		TNT1 A 0
-		TNT1 A 0 A_StartSound("LFIRE")
-		TNT1 A 0 A_Overlay(-2, "MuzzleFlashBullet")
-		TNT1 A 0 A_Overlay(4, "BeltFireBullet")
-		TNT1 A 0 PB_SpawnCasing("LMGCasingStandard", 29,-2,18.7,frandom(0,2),frandom(3,5),frandom(6,9))
-		TNT1 A 0 PB_SpawnCasing("LMGBeltLink",29,-2,19.65,frandom(0,2),frandom(3,5),frandom(6,9))
-		TNT1 A 0 A_FireBullets (0.1, 0.1, -1, 27, "MachineGunBulletPuff", FBF_NORANDOM,8192,"Tracer", -2,0)
-        TNT1 A 0 A_FireCustomMissile("Tracer", random(-1,1), 0, -1, 0)
-		TNT1 A 0 A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0)
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
-		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
-		TNT1 A 0 PB_WeaponRecoil(-0.60,-0.55)
-		TNT1 A 0 A_ZoomFactor(0.982)
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
-		TNT1 A 0 A_AlertMonsters
-		TNT1 A 0 A_TakeInventory("LMGAmmo", 1)
-		LMGF A 1 BRIGHT Offset(0,0)
-		TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY)
-		TNT1 A 0 A_ZoomFactor(1.0)
-		LMGF B 1 BRIGHT Offset(0,35)
-		TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY)
-		LMGF C 1 Offset(0,34)
-		TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY)
-		LMGF D 1 Offset(0,33)
-		TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY)
-		Goto RealReady
-	BeltFireBullet:
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",8,"BeltBullet8")
-		LKB7 A 0 A_JumpIfInventory("LMGAmmo",7,"BeltBullet7")
-		LKB6 A 0 A_JumpIfInventory("LMGAmmo",6,"BeltBullet6")
-		LKB5 A 0 A_JumpIfInventory("LMGAmmo",5,"BeltBullet5")
-		LKB4 A 0 A_JumpIfInventory("LMGAmmo",4,"BeltBullet4")
-		TNT1 A 4 
-		Stop
-	BeltBullet8:
-		LMGB JK 1 BRIGHT
-		LMGB LA 1
-		Stop
-	BeltBullet7:
-		LMGB JK 1 BRIGHT
-		LMGB LD 1
-		Stop
-	BeltBullet6:
-		LMGB MN 1 BRIGHT
-		LMGB OG 1
-		Stop
-	BeltBullet5:
-		LMGB PQ 1 BRIGHT
-		LMGB R 1
-		Stop
-	MuzzleFlashRocket:
-		TNT1 A 0 A_Jump(255, "MuzzleRocket1", "MuzzleRocket2")
-		Goto MuzzleRocket1
-	MuzzleRocket1:
-		LMMZ AB 1 BRIGHT
-		Stop
-	MuzzleRocket2:
-		LMMZ DC 1 BRIGHT
-		Stop
-	FireMissile:
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo",3,2)
-        Goto Reload
-		TNT1 A 0
-		TNT1 A 0 A_StartSound("LMISFIR")
-		TNT1 A 0 A_Overlay(-2, "MuzzleFlashRocket")
-		TNT1 A 0 A_Overlay(4, "BeltFireMissile")
-// 		 TNT1 A 0 A_FireBullets (1.45, 1.45, -1, random(70,75), "LMGMicroMissilePuff")
-		TNT1 A 0 PB_SpawnCasing("LMGCasingRocket",29,-2,19.65,frandom(0,2),frandom(3,5),frandom(6,9))
-		TNT1 A 0 PB_SpawnCasing("LMGMissileBeltLink",29,-2,19.65,frandom(0,2),frandom(3,5),frandom(6,9))
-		TNT1 A 0 A_FireCustomMissile("MicroMissileProjectile", frandom(-1.5,1.5), 0, 0, 0, 0, frandom(-1.5,1.5))
- 		TNT1 A 0 A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0)
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
-		RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
-		TNT1 A 0 PB_WeaponRecoil(-0.30,-0.26)
-		TNT1 A 0 A_ZoomFactor(0.982)
-		TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
-		TNT1 A 0 A_AlertMonsters
-		TNT1 A 0 A_TakeInventory("LMGAmmo", 3)
-		LMMF A 1 BRIGHT Offset(0,0)
-		TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY)
-		TNT1 A 0 A_ZoomFactor(1.0)
-		LMMF B 1 BRIGHT Offset(0,35)
-		TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY)
-		LMMF C 1 Offset(0,34)
-		TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY)
-		LMMF D 1 Offset(0,33)
-		TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY)
-		LSM6 E 0
-		LSM5 E 0
-		LSM4 E 0
-		LSM3 E 0
-		LSM3 E 1 {
-				if (CountInv("LMGAmmo") >= 18 ) { A_SetWeaponSprite("LSM6");}
-				if (CountInv("LMGAmmo") <= 15 ) { A_SetWeaponSprite("LSM5");}
-				if (CountInv("LMGAmmo") <= 12 )  { A_SetWeaponSprite("LSM4");}
-				if (CountInv("LMGAmmo") <= 9 )  { A_SetWeaponSprite("LSM3");}
-		}
-		Goto ReadyMissile
-	 InsertingBullets:
-		TNT1 A 0
-		TNT1 A 0
-		TNT1 A 0 A_JumpIfInventory("NewClip",1,2)
-        Goto Ready3
-		TNT1 A 0
-		TNT1 A 0
-        TNT1 A 0 A_JumpIfInventory("LMGAmmo",75,"Ready3")
-		TNT1 A 0 A_Giveinventory("LMGAmmo",1)
-		TNT1 A 0 A_Takeinventory("NewClip",1)
-		Loop
-
-	StopOverlay: //just for fun lmfao
-		TNT1 A 1
-		Stop
-
-
-	BeltReloadBulletLess4:
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
-		Stop
-		TNT1 A 0
-		TNT1 AAAAAAAAAA 1
-		LB31 A 0 A_JumpIfInventory("LMGAmmo", 3, 4)
-		LB21 A 0 A_JumpIfInventory("LMGAmmo", 2, 3)
-		LB11 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" ABCCCCCC 1
-		Goto BeltReloadBulletGet7
-	BeltReload:
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "BeltReloadMissile")
-	BeltReloadBullet:
-		"####" A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
-		Goto BeltReloadBulletLess4
-		"####" A 0
-		"####" A 0
-		LB71 A 0 A_JumpIfInventory("LMGAmmo", 7, 5)
-		LB61 A 0 A_JumpIfInventory("LMGAmmo", 6, 4)
-		LB51 A 0 A_JumpIfInventory("LMGAmmo", 5, 3)
-		LB41 A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" ABCDEFFFGHIJKKKKKK 1
-		"####" A 0 A_JumpIfInventory("LMGAmmo", 8, "BeltReloadBullet8")
-	BeltReloadBulletGet7:
-		LLB7 A 0 A_JumpIfInventory("LMGAmmo", 7, 8)
-		LLB6 A 0 A_JumpIfInventory("LMGAmmo", 6, 7)
-		LLB5 A 0 A_JumpIfInventory("LMGAmmo", 5, 6)
-		LLB4 A 0 A_JumpIfInventory("LMGAmmo", 4, 5)
-		LLB3 A 0 A_JumpIfInventory("LMGAmmo", 3, 4)
-		LLB2 A 0 A_JumpIfInventory("LMGAmmo", 2, 3)
-		LLB1 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" A 0
-		"####" A 0
-		"####" ABCD 1
-		"####" A 0 {
-				if (countinv("LMGAmmo") >= 1) {
-				A_StartSound("LFEED");
-				}
-			}
-		"####" EFGH 1
-		"####" A 0 A_JumpIfInventory("NewClip", 8, "StopOverlay")
-		"####" OOO 1 //there is no O frame in any of LLB? so it's just empty frame
-		Stop
-	BeltReloadBulletGive7:
-		LLB7 A 0 A_JumpIfInventory("LMGAmmo", 7, 8)
-		LLB6 A 0 A_JumpIfInventory("LMGAmmo", 6, 7)
-		LLB5 A 0 A_JumpIfInventory("LMGAmmo", 5, 6)
-		LLB4 A 0 A_JumpIfInventory("LMGAmmo", 4, 5)
-		LLB3 A 0 A_JumpIfInventory("LMGAmmo", 3, 4)
-		LLB2 A 0 A_JumpIfInventory("LMGAmmo", 2, 3)
-		LLB1 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" A 0
-		"####" HGF 1
-		"####" A 0 {
-				if (countinv("LMGAmmo") >= 1) {
-				A_StartSound("LFEED");
-				}
-			}
-		"####" EDIJKLMN 1
-		Stop
-	BeltReloadBullet8:
-		LB71 KKKL 1
-	BeltReloadBullet8Get:
-		LB71 MNOOPQQQQRSTU 1
-		Stop
-	
-	BeltReloadRocketLess6:
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo", 3, 2)
-		Stop
-		TNT1 A 0
-		TNT1 AAAAAAAAAA 1
-		LM31 A 0 A_JumpIfInventory("LMGAmmo", 9, 4)
-		LM21 A 0 A_JumpIfInventory("LMGAmmo", 6, 3)
-		LM11 A 0 A_JumpIfInventory("LMGAmmo", 3, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" ABCCCCCC 1
-		Goto BeltReloadRocketGet6
-	BeltReloadMissile:
-		"####" A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
-		Goto BeltReloadRocketLess6
-		"####" A 0
-		"####" A 0
-		LM61 A 0 A_JumpIfInventory("LMGAmmo", 18, 5)
-		LM51 A 0 A_JumpIfInventory("LMGAmmo", 15, 4)
-		LM41 A 0 A_JumpIfInventory("LMGAmmo", 12, 3)
-		TNT1 A 0
-		"####" A 0
-		"####" A 0
-		"####" ABCDEFFFGHIJKKKKKK 1
-		"####" A 0 A_JumpIfInventory("LMGAmmo", 21, "BeltReloadRocket7")
-	BeltReloadRocketGet6:
-		LLM6 A 0 A_JumpIfInventory("LMGAmmo", 18, 7)
-		LLM5 A 0 A_JumpIfInventory("LMGAmmo", 15, 6)
-		LLM4 A 0 A_JumpIfInventory("LMGAmmo", 12, 5)
-		LLM3 A 0 A_JumpIfInventory("LMGAmmo", 9, 4)
-		LLM2 A 0 A_JumpIfInventory("LMGAmmo", 6, 3)
-		LLM1 A 0 A_JumpIfInventory("LMGAmmo", 3, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" A 0
-		"####" ABCD 1
-		"####" A 0 {
-				if (countinv("LMGAmmo") >= 3) {
-				A_StartSound("LFEED");
-				}
-			}
-		"####" EFGH 1
-		"####" A 0 A_JumpIfInventory("NewClip", 21, "StopOverlay")
-		"####" OOO 1 //there is no O frame in any of LLB? so it's just empty frame
-		Stop
-	BeltReloadRocketGive6:
-		LLM6 A 0 A_JumpIfInventory("LMGAmmo", 18, 7)
-		LLM5 A 0 A_JumpIfInventory("LMGAmmo", 15, 6)
-		LLM4 A 0 A_JumpIfInventory("LMGAmmo", 12, 5)
-		LLM3 A 0 A_JumpIfInventory("LMGAmmo", 9, 4)
-		LLM2 A 0 A_JumpIfInventory("LMGAmmo", 6, 3)
-		LLM1 A 0 A_JumpIfInventory("LMGAmmo", 3, 2)
-		LLM1 A 0
-		"####" A 0
-		"####" A 0
-		"####" HGF 1
-		"####" A 0 {
-				if (countinv("LMGAmmo") >= 3) {
-				A_StartSound("LFEED");
-				}
-			}
-		"####" EDIJKLMN 1
-		Stop
-	BeltReloadRocket7:
-		LM61 KKKL 1
-	BeltReloadRocket7Get:
-		LM61 MNOOPQQQQRSTU 1
-		Stop
-
-	
-	BeltLidClosing:
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "BeltLidMissile")
-		"####" A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
-		Goto BeltLidBulletLess4
-		"####" A 0
-		"####" A 0
-		LB71 A 0 A_JumpIfInventory("LMGAmmo", 7, "BeltBulletLidMore7")
-		LB61 A 0 A_JumpIfInventory("LMGAmmo", 6, 4)
-		LB51 A 0 A_JumpIfInventory("LMGAmmo", 5, 3)
-		LB41 A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" LMNPQRSTUUUUVWXY 1
-		Stop
-	BeltLidBulletLess4:
-		LB31 A 0 A_JumpIfInventory("LMGAmmo", 3, 4)
-		LB21 A 0 A_JumpIfInventory("LMGAmmo", 2, 3)
-		LB11 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" DEGHI 1
-		Stop
-	BeltBulletLidMore7:
-		LB71 VWXYZ 1
-		LB72 ABCDDDDEFGH 1
-		Stop
-
-	BeltLidMissile:
-		"####" A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
-		Goto BeltLidRocketLess4
-		"####" A 0
-		"####" A 0
-		LM61 A 0 A_JumpIfInventory("LMGAmmo", 18, "BeltRocketLidMore6")
-		LM51 A 0 A_JumpIfInventory("LMGAmmo", 12, 3)
-		LM41 A 0 A_JumpIfInventory("LMGAmmo", 9, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" LMNOPQRSTTTTUVWXY 1
-		Stop
-	BeltLidRocketLess4:
-		LM31 A 0 A_JumpIfInventory("LMGAmmo", 9, 4)
-		LM21 A 0 A_JumpIfInventory("LMGAmmo", 6, 3)
-		LM11 A 0 A_JumpIfInventory("LMGAmmo", 3, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" DEFGHI 1
-		Stop
-	BeltRocketLidMore6:
-		LM61 VWXYZ 1
-		LM62 ABCDDDDEFGH 1
-		Stop
-		
-	//QUITE A unload code
-	Unload:
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo", 1, "UnloadAnimationBegin")
-		Goto Ready2
-	UnloadAnimationBegin:
-		TNT1 A 0 A_GiveInventory("PBLMGHasUnloaded", 1)
-		TNT1 A 0 A_GiveInventory("LMGRechamberNeeded", 1)
-		TNT1 A 0 A_Overlay(2, "BeltReload")
-		LMR1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LBR1 A 0
-		"####" A 0
-		"####" ABCDEFGHI 1
-		"####" A 0 A_StartSound("LLIDOP")
-		"####" JKLMNOPQRS 1
-		"####" A 0
-		"####" A 0 {
-				If (CountInv("LMGMicroMissiles") == 1) {
-					A_Overlay(2, "BeltReloadRocketGet6");
+		//Zoom
+		ZoomOverlay:
+			LMAT A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "ZoomOverlayMicro")
+			ALB7 A 0 A_JumpIfInventory("LMGAmmo", 7, 5)
+			ALB6 A 0 A_JumpIfInventory("LMGAmmo", 6, 4)
+			ALB5 A 0 A_JumpIfInventory("LMGAmmo", 5, 3)
+			ALB4 A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" AB 1
+			Stop
+		ZoomOverlayContinue:
+			LMAT A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "ZoomOverlayContinueMicro")
+			ALB7 A 0 A_JumpIfInventory("LMGAmmo", 7, 5)
+			ALB6 A 0 A_JumpIfInventory("LMGAmmo", 6, 4)
+			ALB5 A 0 A_JumpIfInventory("LMGAmmo", 5, 3)
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" CD 1
+			Stop
+		ZoomOverlayMicro:
+			ALM6 A 0 A_JumpIfInventory("LMGAmmo", 18, 4)
+			ALM5 A 0 A_JumpIfInventory("LMGAmmo", 15, 3)
+			ALM4 A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" AB 1
+			Stop
+		ZoomOverlayContinueMicro:
+			ALM6 A 0 A_JumpIfInventory("LMGAmmo", 18, 4)
+			ALM5 A 0 A_JumpIfInventory("LMGAmmo", 15, 3)
+			ALM4 A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" CD 1
+			Stop
+		AltFire:
+			TNT1 A 0 A_TakeInventory("CantWeaponSpecial",1)
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+			TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "Unzoom")
+			TNT1 A 0 A_GiveInventory("Zoomed", 1)
+			TNT1 A 0 A_SetCrosshair(5)
+			LMAT A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LBAT A 0
+			"####" A 0 A_ZoomFactor(1.5)
+			"####" A 0 A_Overlay(2, "ZoomOverlay")
+			"####" AB 1
+			"####" A 0 A_Overlay(-2, "ZoomOverlayContinue")
+			"####" CD 1
+			Goto Ready2
+		UnZoomOverlay:
+			LMAT A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "UnZoomOverlayMicro")
+			ALB7 A 0 A_JumpIfInventory("LMGAmmo", 7, 5)
+			ALB6 A 0 A_JumpIfInventory("LMGAmmo", 6, 4)
+			ALB5 A 0 A_JumpIfInventory("LMGAmmo", 5, 3)
+			ALB4 A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" BA 1
+			Stop
+		UnZoomOverlayContinue:
+			LMAT A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "UnZoomOverlayContinueMicro")
+			ALB7 A 0 A_JumpIfInventory("LMGAmmo", 7, 5)
+			ALB6 A 0 A_JumpIfInventory("LMGAmmo", 6, 4)
+			ALB5 A 0 A_JumpIfInventory("LMGAmmo", 5, 3)
+			ALB4 A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" DC 1
+			Stop
+		UnZoomOverlayMicro:
+			ALM6 A 0 A_JumpIfInventory("LMGAmmo", 18, 4)
+			ALM5 A 0 A_JumpIfInventory("LMGAmmo", 15, 3)
+			ALM4 A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" BA 1
+			Stop
+		UnZoomOverlayContinueMicro:
+			ALM6 A 0 A_JumpIfInventory("LMGAmmo", 18, 4)
+			ALM5 A 0 A_JumpIfInventory("LMGAmmo", 15, 3)
+			ALM4 A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" DC 1
+			Stop
+		Unzoom:
+			LMAT A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LBAT A 0
+			"####" A 0 A_ZoomFactor(1)
+			"####" A 0 A_TakeInventory("Zoomed", 1)
+			"####" A 0 A_Overlay(-2, "UnZoomOverlayContinue")
+			"####" DC 1
+			"####" A 0 A_Overlay(2, "UnZoomOverlay")
+			"####" BA 1
+			Goto Ready3
+		Ready2:
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "Ready2Micro")
+		Ready2Real:
+			LBA7 A 0 A_JumpIfInventory("LMGAmmo", 7, 4)
+			LBA6 A 0 A_JumpIfInventory("LMGAmmo", 6, 3)
+			LBA5 A 0 A_JumpIfInventory("LMGAmmo", 5, 2)
+			LBA4 A 0
+			"####" Q 1 {
+						//Updated code for far superior smooth gameplay
+				if(GetCvar("pb_toggle_aim_hold")) {
+					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){
+						return state("Unzoom");
+					}
+			
+					if (PressingFire() && PressingAltfire() && CountInv("LMGAmmo") > 0){
+							return state("Fire2");
+					}
+					
+					
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE, CheckUnloaded("PBLMGHasUnloaded"));
+					
 				}
 				else {
-					A_Overlay(2, "BeltReloadBulletGet7");
+					if (PressingFire() && CountInv("LMGAmmo") > 0){
+						return state("Fire");
+					}
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBLMGHasUnloaded"));
 				}
-		}
-		LLMU A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LLBU A 0
-		"####" A 0
-		"####" AAABCDEFGHHHH 1
-		"####" IJKLLLL 1
-		"####" A 0 A_StartSound("weapons/sgl/detach", 3)
-		"####" MNOPQQQ 1
-		Goto UnloadLoop
-	UnloadLoop:
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
-		Goto ReadyUnload
-		TNT1 A 0
-		TNT1 A 0 A_GiveInventory("NewClip", 1)
-		TNT1 A 0 A_TakeInventory("LMGAmmo", 1)
-		Loop
-	UnloadCalculations:
-		TNT1 A 0 A_TakeInventory("PBLMGHasUnloaded")
-		TNT1 A 0 {
-			If (CountInv("LMGMicroMissiles") == 1) {
-					if (CountInv("NewClip") >= 21) {
-							return state ("UnloadedClipIn");
+				return state("");
+			}
+			Loop
+		Ready2Micro:
+			LMA6 A 0 A_JumpIfInventory("LMGAmmo", 18, 4) //Different ammo checks, different states :D
+			LMA5 A 0 A_JumpIfInventory("LMGAmmo", 15, 3)
+			LMA4 A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
+			LMA3 A 0
+			"####" A 0
+			"####" Q 1 {
+						//Updated code for far superior smooth gameplay
+				if(GetCvar("pb_toggle_aim_hold")) {
+					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){
+						return state("Unzoom");
+					}
+			
+					if (PressingFire() && PressingAltfire() && CountInv("LMGAmmo") > 0){
+							return state("Fire2Missile");
+					}
+					
+					
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+					
+				}
+				else {
+					if (PressingFire() && CountInv("LMGAmmo") > 2){
+						return state("Fire");
+					}
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+				}
+				return state("");
+			}
+			Loop
+		ReadyUnload:
+			LLMU Q 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LLBU Q 0 
+			"####" A 0
+			"####" Q 1  A_WeaponReady(WRF_ALLOWRELOAD | WRF_NOSECONDARY) 
+			Loop
+		BeltFireMissileZoom:
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",21,"BeltFireMissileZoom7")
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",18,"BeltFireMissileZoom6")
+			LKB6 A 0 A_JumpIfInventory("LMGAmmo",15,"BeltFireMissileZoom5")
+			LKB5 A 0 A_JumpIfInventory("LMGAmmo",12,"BeltFireMissileZoom4")
+			TNT1 A 4 
+			Stop
+		BeltFireMissileZoom7:
+			LRAB JK 1 BRIGHT
+			LRAB LA 1
+			Stop
+		BeltFireMissileZoom6:
+			LRAB JK 1 BRIGHT
+			LRAB LD 1
+			Stop
+		BeltFireMissileZoom5:
+			LRAB MN 1 BRIGHT
+			LRAB OG 1
+			Stop
+		BeltFireMissileZoom4:
+			LRAB PQ 1 BRIGHT
+			LRAB R 1
+			Stop
+		MuzzleFlashRocketZoom:
+			TNT1 A 0 A_Jump(255, "MuzzleFlashRocketZoom1", "MuzzleFlashRocketZoom2")
+			Goto MuzzleFlashBulletZoom1
+		MuzzleFlashRocketZoom1:
+			LAFR AB 1 BRIGHT
+			Stop
+		MuzzleFlashRocketZoom2:
+			LAFR DC 1 BRIGHT
+			Stop
+		Fire2Missile:
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo",3,2)
+			Goto Reload
+			TNT1 A 0
+			TNT1 A 0 A_StartSound("LMISFIR")
+			TNT1 A 0 A_Overlay(-2, "MuzzleFlashRocketZoom")
+			TNT1 A 0 A_Overlay(4, "BeltFireMissileZoom")
+	// 		 TNT1 A 0 A_FireBullets (1.45, 1.45, -1, random(70,75), "LMGMicroMissilePuff")
+			TNT1 A 0 PB_SpawnCasing("LMGCasingRocket",17.5, 0.5, 32,frandom(0,2),frandom(3,5),frandom(4,7))
+			TNT1 A 0 PB_SpawnCasing("LMGMissileBeltLink",17.5, 0.5, 32,frandom(0,2),frandom(3,5),frandom(4,7))
+			TNT1 A 0 A_FireCustomMissile("PB_MicroMissileProjectile", frandom(-1.0,1.0), 0, 0, 0, 0, frandom(-1.0,1.0))
+			TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
+			RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
+			TNT1 A 0 PB_WeaponRecoil(-0.22,-0.20)
+			TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
+			TNT1 A 0 A_AlertMonsters
+			TNT1 A 0 A_TakeInventory("LMGAmmo", 3)
+			LRAF B 1 BRIGHT 
+			TNT1 A 0 A_ZoomFactor(1.48)
+			LRAF C 1 BRIGHT 
+			TNT1 A 0 A_ZoomFactor(1.5)
+			LRAF D 1 
+			LRAF A 1
+			LMA6 A 0 A_JumpIfInventory("LMGAmmo", 18, 4) 
+			LMA5 A 0 A_JumpIfInventory("LMGAmmo", 15, 3)
+			LMA4 A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
+			LMA3 A 0
+			"####" A 0
+			"####" Q 1 
+			TNT1 A 0 {            
+				if(GetCvar("pb_toggle_aim_hold")) {
+					if(JustReleased(BT_ALTATTACK)){
+						return state("Unzoom");
+					}
+			
+					if (PressingFire() && PressingAltfire()){
+							return state("Fire2Missile");
 					}
 				}
-			else {
-						if (CountInv("NewClip") >= 8) {
-							return state ("UnloadedClipIn");
+				else {
+					if(PressingAltfire()){
+						return state("Unzoom");
 					}
-						return state ("");
+					A_Refire("Fire2Missile");
+				}
+				return state("");
+			}
+			Goto Ready2Micro
+		Fire2:
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles",1,"Fire2Missile")
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo",1,2)
+			Goto Reload
+			TNT1 A 0
+			TNT1 A 0 A_StartSound("LFIRE")
+			TNT1 A 0 A_Overlay(-2, "MuzzleFlashBulletZoom")
+			TNT1 A 0 A_Overlay(-3, "BeltFireBulletZoom")
+			//TNT1 A 0 A_FireBullets (0.1, 0.1, -1, 27, "MachineGunBulletPuff", FBF_NORANDOM,8192,"Tracer", -2,0)
+			TNT1 A 0 A_FireProjectile("PB_762x51mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1))
+	//		TNT1 A 0 A_Firecustommissile("LMGCaseSpawnStandard",0,0,24,-20, 0, -50)
+			TNT1 A 0 PB_SpawnCasing("LMGCasingStandard",17.5, 0.5, 32,frandom(0,2),frandom(3,5),frandom(4,7))
+			TNT1 A 0 PB_SpawnCasing("LMGBeltLink",17.5, 0.5, 32,frandom(0,2),frandom(3,5),frandom(4,7))
+			TNT1 A 0 A_FireCustomMissile("Tracer", random(-1,1), 0, -1, 0)
+			TNT1 A 0 A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0)
+			TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
+			RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
+			TNT1 A 0 PB_WeaponRecoil(-0.44, -0.40)
+			TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
+			TNT1 A 0 A_AlertMonsters
+			TNT1 A 0 PB_LowAmmoSoundWarning("lmg")
+			TNT1 A 0 A_TakeInventory("LMGAmmo", 1)
+			LGAF B 1 BRIGHT 
+			TNT1 A 0 A_ZoomFactor(1.45)
+			LGAF C 1 BRIGHT 
+			TNT1 A 0 A_ZoomFactor(1.5)
+			LGAF DA 1 
+			TNT1 A 0 {            
+				if(GetCvar("pb_toggle_aim_hold")) {
+					if(JustReleased(BT_ALTATTACK)){
+						return state("Unzoom");
+					}
+			
+					if (PressingFire() && PressingAltfire()){
+							return state("Fire2");
+					}
+				}
+				else {
+					if(PressingAltfire()){
+						return state("Unzoom");
+					}
+					A_Refire("Fire2");
+				}
+				return state("");
+			}
+			Goto Ready2
+		BeltFireBulletZoom:
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",8,"BeltFireBulletZoom8")
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",7,"BeltFireBulletZoom7")
+			LKB6 A 0 A_JumpIfInventory("LMGAmmo",6,"BeltFireBulletZoom6")
+			LKB5 A 0 A_JumpIfInventory("LMGAmmo",5,"BeltFireBulletZoom4")
+			TNT1 A 4 
+			Stop
+		BeltFireBulletZoom8:
+			LGAB JK 1 BRIGHT
+			LGAB LA 1
+			Stop
+		BeltFireBulletZoom7:
+			LGAB JK 1 BRIGHT
+			LGAB LD 1
+			Stop
+		BeltFireBulletZoom6:
+			LGAB MN 1 BRIGHT
+			LGAB OG 1
+			Stop
+		BeltFireBulletZoom5:
+			LGAB PQ 1 BRIGHT
+			LGAB R 1
+			Stop
+		MuzzleFlashBulletZoom:
+			TNT1 A 0 A_Jump(255, "MuzzleFlashBulletZoom1", "MuzzleFlashBulletZoom2", "MuzzleFlashBulletZoom3")
+			Goto MuzzleFlashBulletZoom1
+		MuzzleFlashBulletZoom1:
+			LAFB AB 1 BRIGHT
+			Stop
+		MuzzleFlashBulletZoom2:
+			LAFB DC 1 BRIGHT
+			Stop
+		MuzzleFlashBulletZoom3:
+			LAFB DC 1 BRIGHT
+			Stop
+		Fire:
+			TNT1 A 0 A_ClearOverlays(-2,7)
+			TNT1 A 0 A_TakeInventory("CantWeaponSpecial",1)
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
+			TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "Fire2")
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles",1,"FireMissile")
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo",1,2)
+			Goto Reload
+			TNT1 A 0
+			TNT1 A 0 A_StartSound("LFIRE")
+			TNT1 A 0 A_Overlay(-2, "MuzzleFlashBullet")
+			TNT1 A 0 A_Overlay(4, "BeltFireBullet")
+			TNT1 A 0 PB_SpawnCasing("LMGCasingStandard", 29,-2,18.7,frandom(0,2),frandom(3,5),frandom(6,9))
+			TNT1 A 0 PB_SpawnCasing("LMGBeltLink",29,-2,19.65,frandom(0,2),frandom(3,5),frandom(6,9))
+			//TNT1 A 0 A_FireBullets (0.1, 0.1, -1, 27, "MachineGunBulletPuff", FBF_NORANDOM,8192,"Tracer", -2,0)
+			TNT1 A 0 A_FireProjectile("PB_762x51mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1))
+			TNT1 A 0 A_FireCustomMissile("Tracer", random(-1,1), 0, -1, 0)
+			TNT1 A 0 A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0)
+			TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
+			RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
+			TNT1 A 0 PB_WeaponRecoil(-0.60,-0.55)
+			TNT1 A 0 A_ZoomFactor(0.982)
+			TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
+			TNT1 A 0 A_AlertMonsters
+			TNT1 A 0 PB_LowAmmoSoundWarning("lmg")
+			TNT1 A 0 A_TakeInventory("LMGAmmo", 1)
+			LMGF A 1 BRIGHT Offset(0,0)
+			TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY|WRF_NOBOB)
+			TNT1 A 0 A_ZoomFactor(1.0)
+			LMGF B 1 BRIGHT Offset(0,35)
+			TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY|WRF_NOBOB)
+			LMGF C 1 Offset(0,34)
+			TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY|WRF_NOBOB)
+			LMGF D 1 Offset(0,33)
+			TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY|WRF_NOBOB)
+			Goto RealReady
+		BeltFireBullet:
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",8,"BeltBullet8")
+			LKB7 A 0 A_JumpIfInventory("LMGAmmo",7,"BeltBullet7")
+			LKB6 A 0 A_JumpIfInventory("LMGAmmo",6,"BeltBullet6")
+			LKB5 A 0 A_JumpIfInventory("LMGAmmo",5,"BeltBullet5")
+			LKB4 A 0 A_JumpIfInventory("LMGAmmo",4,"BeltBullet4")
+			TNT1 A 4 
+			Stop
+		BeltBullet8:
+			LMGB JK 1 BRIGHT
+			LMGB LA 1
+			Stop
+		BeltBullet7:
+			LMGB JK 1 BRIGHT
+			LMGB LD 1
+			Stop
+		BeltBullet6:
+			LMGB MN 1 BRIGHT
+			LMGB OG 1
+			Stop
+		BeltBullet5:
+			LMGB PQ 1 BRIGHT
+			LMGB R 1
+			Stop
+		MuzzleFlashRocket:
+			TNT1 A 0 PB_FireOffset
+			TNT1 A 0 A_Jump(255, "MuzzleRocket1", "MuzzleRocket2")
+			Goto MuzzleRocket1
+		MuzzleRocket1:
+			LMMZ AB 1 BRIGHT
+			Stop
+		MuzzleRocket2:
+			LMMZ DC 1 BRIGHT
+			Stop
+		FireMissile:
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo",3,2)
+			Goto Reload
+			TNT1 A 0 PB_FireOffset
+			TNT1 A 0
+			TNT1 A 0 A_StartSound("LMISFIR")
+			TNT1 A 0 A_Overlay(-2, "MuzzleFlashRocket")
+			TNT1 A 0 A_Overlay(4, "BeltFireMissile")
+	// 		 TNT1 A 0 A_FireBullets (1.45, 1.45, -1, random(70,75), "LMGMicroMissilePuff")
+			TNT1 A 0 PB_SpawnCasing("LMGCasingRocket",29,-2,19.65,frandom(0,2),frandom(3,5),frandom(6,9))
+			TNT1 A 0 PB_SpawnCasing("LMGMissileBeltLink",29,-2,19.65,frandom(0,2),frandom(3,5),frandom(6,9))
+			TNT1 A 0 A_FireCustomMissile("PB_MicroMissileProjectile", frandom(-1.0,1.0), 0, 0, 0, 0, frandom(-1.0,1.0))
+			TNT1 A 0 A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0)
+			TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
+			RIFF A 0 A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0)
+			TNT1 A 0 PB_WeaponRecoil(-0.30,-0.26)
+			TNT1 A 0 A_ZoomFactor(0.982)
+			TNT1 A 0 A_FireCustomMissile("YellowFlareSpawn",0,0,0,0)
+			TNT1 A 0 A_AlertMonsters
+			TNT1 A 0 A_TakeInventory("LMGAmmo", 3)
+			LMMF A 1 BRIGHT Offset(0,0)
+			TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY|WRF_NOBOB)
+			TNT1 A 0 A_ZoomFactor(1.0)
+			LMMF B 1 BRIGHT Offset(0,35)
+			TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY|WRF_NOBOB)
+			LMMF C 1 Offset(0,34)
+			TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY|WRF_NOBOB)
+			LMMF D 1 Offset(0,33)
+			TNT1 A 0 A_WeaponReady(WRF_NOPRIMARY|WRF_NOBOB)
+			LSM6 E 0
+			LSM5 E 0
+			LSM4 E 0
+			LSM3 E 0
+			LSM3 E 1 {
+					if (CountInv("LMGAmmo") >= 18 ) { A_SetWeaponSprite("LSM6");}
+					if (CountInv("LMGAmmo") <= 15 ) { A_SetWeaponSprite("LSM5");}
+					if (CountInv("LMGAmmo") <= 12 )  { A_SetWeaponSprite("LSM4");}
+					if (CountInv("LMGAmmo") <= 9 )  { A_SetWeaponSprite("LSM3");}
+			}
+			Goto ReadyMissile
+		 InsertingBullets:
+			TNT1 A 0
+			TNT1 A 0
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag",1,2)
+			Goto Ready3
+			TNT1 A 0
+			TNT1 A 0
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo",75,"Ready3")
+			TNT1 A 0 A_Giveinventory("LMGAmmo",1)
+			TNT1 A 0 A_Takeinventory("PB_HighCalMag",1)
+			Loop
+
+		StopOverlay: //just for fun lmfao
+			TNT1 A 1
+			Stop
+
+
+		BeltReloadBulletLess4:
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
+			Stop
+			TNT1 A 0
+			TNT1 AAAAAAAAAA 1
+			LB31 A 0 A_JumpIfInventory("LMGAmmo", 3, 4)
+			LB21 A 0 A_JumpIfInventory("LMGAmmo", 2, 3)
+			LB11 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" ABCCCCCC 1
+			Goto BeltReloadBulletGet7
+		BeltReload:
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "BeltReloadMissile")
+		BeltReloadBullet:
+			"####" A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
+			Goto BeltReloadBulletLess4
+			"####" A 0
+			"####" A 0
+			LB71 A 0 A_JumpIfInventory("LMGAmmo", 7, 5)
+			LB61 A 0 A_JumpIfInventory("LMGAmmo", 6, 4)
+			LB51 A 0 A_JumpIfInventory("LMGAmmo", 5, 3)
+			LB41 A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" ABCDEFFFGHIJKKKKKK 1
+			"####" A 0 A_JumpIfInventory("LMGAmmo", 8, "BeltReloadBullet8")
+		BeltReloadBulletGet7:
+			LLB7 A 0 A_JumpIfInventory("LMGAmmo", 7, 8)
+			LLB6 A 0 A_JumpIfInventory("LMGAmmo", 6, 7)
+			LLB5 A 0 A_JumpIfInventory("LMGAmmo", 5, 6)
+			LLB4 A 0 A_JumpIfInventory("LMGAmmo", 4, 5)
+			LLB3 A 0 A_JumpIfInventory("LMGAmmo", 3, 4)
+			LLB2 A 0 A_JumpIfInventory("LMGAmmo", 2, 3)
+			LLB1 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" A 0
+			"####" A 0
+			"####" ABCD 1
+			"####" A 0 {
+					if (countinv("LMGAmmo") >= 1) {
+					A_StartSound("LFEED");
+					}
+				}
+			"####" EFGH 1
+			"####" A 0 A_JumpIfInventory("PB_HighCalMag", 8, "StopOverlay")
+			"####" OOO 1 //there is no O frame in any of LLB? so it's just empty frame
+			Stop
+		BeltReloadBulletGive7:
+			LLB7 A 0 A_JumpIfInventory("LMGAmmo", 7, 8)
+			LLB6 A 0 A_JumpIfInventory("LMGAmmo", 6, 7)
+			LLB5 A 0 A_JumpIfInventory("LMGAmmo", 5, 6)
+			LLB4 A 0 A_JumpIfInventory("LMGAmmo", 4, 5)
+			LLB3 A 0 A_JumpIfInventory("LMGAmmo", 3, 4)
+			LLB2 A 0 A_JumpIfInventory("LMGAmmo", 2, 3)
+			LLB1 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" A 0
+			"####" HGF 1
+			"####" A 0 {
+					if (countinv("LMGAmmo") >= 1) {
+					A_StartSound("LFEED");
+					}
+				}
+			"####" EDIJKLMN 1
+			Stop
+		BeltReloadBullet8:
+			LB71 KKKL 1
+		BeltReloadBullet8Get:
+			LB71 MNOOPQQQQRSTU 1
+			Stop
+		
+		BeltReloadRocketLess6:
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo", 3, 2)
+			Stop
+			TNT1 A 0
+			TNT1 AAAAAAAAAA 1
+			LM31 A 0 A_JumpIfInventory("LMGAmmo", 9, 4)
+			LM21 A 0 A_JumpIfInventory("LMGAmmo", 6, 3)
+			LM11 A 0 A_JumpIfInventory("LMGAmmo", 3, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" ABCCCCCC 1
+			Goto BeltReloadRocketGet6
+		BeltReloadMissile:
+			"####" A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
+			Goto BeltReloadRocketLess6
+			"####" A 0
+			"####" A 0
+			LM61 A 0 A_JumpIfInventory("LMGAmmo", 18, 5)
+			LM51 A 0 A_JumpIfInventory("LMGAmmo", 15, 4)
+			LM41 A 0 A_JumpIfInventory("LMGAmmo", 12, 3)
+			TNT1 A 0
+			"####" A 0
+			"####" A 0
+			"####" ABCDEFFFGHIJKKKKKK 1
+			"####" A 0 A_JumpIfInventory("LMGAmmo", 21, "BeltReloadRocket7")
+		BeltReloadRocketGet6:
+			LLM6 A 0 A_JumpIfInventory("LMGAmmo", 18, 7)
+			LLM5 A 0 A_JumpIfInventory("LMGAmmo", 15, 6)
+			LLM4 A 0 A_JumpIfInventory("LMGAmmo", 12, 5)
+			LLM3 A 0 A_JumpIfInventory("LMGAmmo", 9, 4)
+			LLM2 A 0 A_JumpIfInventory("LMGAmmo", 6, 3)
+			LLM1 A 0 A_JumpIfInventory("LMGAmmo", 3, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" A 0
+			"####" ABCD 1
+			"####" A 0 {
+					if (countinv("LMGAmmo") >= 3) {
+					A_StartSound("LFEED");
+					}
+				}
+			"####" EFGH 1
+			"####" A 0 A_JumpIfInventory("PB_HighCalMag", 21, "StopOverlay")
+			"####" OOO 1 //there is no O frame in any of LLB? so it's just empty frame
+			Stop
+		BeltReloadRocketGive6:
+			LLM6 A 0 A_JumpIfInventory("LMGAmmo", 18, 7)
+			LLM5 A 0 A_JumpIfInventory("LMGAmmo", 15, 6)
+			LLM4 A 0 A_JumpIfInventory("LMGAmmo", 12, 5)
+			LLM3 A 0 A_JumpIfInventory("LMGAmmo", 9, 4)
+			LLM2 A 0 A_JumpIfInventory("LMGAmmo", 6, 3)
+			LLM1 A 0 A_JumpIfInventory("LMGAmmo", 3, 2)
+			LLM1 A 0
+			"####" A 0
+			"####" A 0
+			"####" HGF 1
+			"####" A 0 {
+					if (countinv("LMGAmmo") >= 3) {
+					A_StartSound("LFEED");
+					}
+				}
+			"####" EDIJKLMN 1
+			Stop
+		BeltReloadRocket7:
+			LM61 KKKL 1
+		BeltReloadRocket7Get:
+			LM61 MNOOPQQQQRSTU 1
+			Stop
+
+		
+		BeltLidClosing:
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "BeltLidMissile")
+			"####" A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
+			Goto BeltLidBulletLess4
+			"####" A 0
+			"####" A 0
+			LB71 A 0 A_JumpIfInventory("LMGAmmo", 7, "BeltBulletLidMore7")
+			LB61 A 0 A_JumpIfInventory("LMGAmmo", 6, 4)
+			LB51 A 0 A_JumpIfInventory("LMGAmmo", 5, 3)
+			LB41 A 0 A_JumpIfInventory("LMGAmmo", 4, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" LMNPQRSTUUUUVWXY 1
+			Stop
+		BeltLidBulletLess4:
+			LB31 A 0 A_JumpIfInventory("LMGAmmo", 3, 4)
+			LB21 A 0 A_JumpIfInventory("LMGAmmo", 2, 3)
+			LB11 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" DEGHI 1
+			Stop
+		BeltBulletLidMore7:
+			LB71 VWXYZ 1
+			LB72 ABCDDDDEFGH 1
+			Stop
+
+		BeltLidMissile:
+			"####" A 0 A_JumpIfInventory("LMGAmmo", 12, 2)
+			Goto BeltLidRocketLess4
+			"####" A 0
+			"####" A 0
+			LM61 A 0 A_JumpIfInventory("LMGAmmo", 18, "BeltRocketLidMore6")
+			LM51 A 0 A_JumpIfInventory("LMGAmmo", 12, 3)
+			LM41 A 0 A_JumpIfInventory("LMGAmmo", 9, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" LMNOPQRSTTTTUVWXY 1
+			Stop
+		BeltLidRocketLess4:
+			LM31 A 0 A_JumpIfInventory("LMGAmmo", 9, 4)
+			LM21 A 0 A_JumpIfInventory("LMGAmmo", 6, 3)
+			LM11 A 0 A_JumpIfInventory("LMGAmmo", 3, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" DEFGHI 1
+			Stop
+		BeltRocketLidMore6:
+			LM61 VWXYZ 1
+			LM62 ABCDDDDEFGH 1
+			Stop
+			
+		//QUITE A unload code
+		Unload:
+			"####" A 0 A_TakeInventory("CantWeaponSpecial",1)
+			TNT1 A 0 A_Takeinventory("Unloading",1)
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo", 1, "UnloadAnimationBegin")
+			Goto Ready2
+		UnloadAnimationBegin:
+			TNT1 A 0 A_GiveInventory("PBLMGHasUnloaded", 1)
+			TNT1 A 0 A_GiveInventory("LMGRechamberNeeded", 1)
+			TNT1 A 0 A_Overlay(2, "BeltReload")
+			LMR1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LBR1 A 0
+			"####" A 0
+			"####" ABCDEFGHI 1
+			"####" A 0 A_StartSound("LLIDOP")
+			"####" JKLMNOPQRS 1
+			"####" A 0
+			"####" A 0 {
+					If (CountInv("LMGMicroMissiles") == 1) {
+						A_Overlay(2, "BeltReloadRocketGet6");
+					}
+					else {
+						A_Overlay(2, "BeltReloadBulletGet7");
+					}
+			}
+			LLMU A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LLBU A 0
+			"####" A 0
+			"####" AAABCDEFGHHHH 1
+			"####" IJKLLLL 1
+			"####" A 0 A_StartSound("weapons/sgl/detach", 3)
+			"####" MNOPQQQ 1
+			Goto UnloadLoop
+		UnloadLoop:
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
+			Goto ReadyUnload
+			TNT1 A 0
+			TNT1 A 0 A_GiveInventory("PB_HighCalMag", 1)
+			TNT1 A 0 A_TakeInventory("LMGAmmo", 1)
+			Loop
+		UnloadCalculations:
+			TNT1 A 0 A_TakeInventory("PBLMGHasUnloaded")
+			TNT1 A 0 {
+				If (CountInv("LMGMicroMissiles") == 1) {
+						if (CountInv("PB_HighCalMag") >= 21) {
+								return state ("UnloadedClipIn");
+						}
+					}
+				else {
+							if (CountInv("PB_HighCalMag") >= 8) {
+								return state ("UnloadedClipIn");
+						}
+							return state ("");
+					}
+					return state ("");
+				}
+		UnloadedReload:
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "UnloadedReloadMicro")
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo", 75, "ReloadBullletInsertAnim")
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 1, 2)
+			Goto UnloadAnimationIn
+			TNT1 A 0
+			TNT1 A 0 A_GiveInventory("LMGAmmo", 1)
+			TNT1 A 0 A_TakeInventory("PB_HighCalMag", 1)
+			Loop
+		UnloadedReloadMicro:
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo", 75, "ReloadBullletInsertAnim")
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 3, 2)
+			Goto UnloadAnimationIn
+			TNT1 A 0
+			TNT1 A 0 A_GiveInventory("LMGAmmo", 3)
+			TNT1 A 0 A_TakeInventory("PB_HighCalMag", 3)
+			Loop
+		UnloadAnimationIn:
+			LLMU A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LLBU A 0
+			"####" A 0
+			"####" PONM 1
+			"####" A 0 A_StartSound("weapons/lmg/magin", 2)
+			"####" LLLLKJIHHHH 1
+			"####" HGF 1
+			"####" A 0 {
+				If (CountInv("LMGMicroMissiles") == 1) {
+							A_Overlay(2, "BeltReloadRocketGive6");			
+						}
+				else {
+								A_Overlay(2, "BeltReloadBulletGive7");
+						}
+					}
+			"####" EDCBARSTUV 1
+			LMR4 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "ReloadLidClosing")
+			LBR4 A 0
+			Goto ReloadLidClosing
+		UnloadedClipIn:
+			LBM1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LBM2 A 0
+			"####" A 0
+			"####" ABCD 1
+			LMR2 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LBR2 A 0
+			"####" A 0
+			Goto ReloadBulletInsert
+		//BIG FUCKING RELOAD code 
+		ReloadCheckRocket:
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 3, "ReloadBegin")
+			Goto Ready3
+		Reload:
+			TNT1 A 0 A_GiveInventory("CantDoAction",1)
+			TNT1 A 0 A_TakeInventory("CantWeaponSpecial",1)
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+			TNT1 A 0 A_ZoomFactor(1)
+			TNT1 A 0 A_TakeInventory("Zoomed")
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo", 75, "Ready3")
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "ReloadCheckRocket") //I don't really like TNT1 A 0 { if { } } stuff so I will keep it more simple
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 1, "ReloadBegin")
+			Goto Ready3
+		ReloadBegin:
+			TNT1 A 0 A_JumpIfInventory("PBLMGHasUnloaded", 1, "UnloadCalculations") //unload stuff
+			TNT1 A 0 {
+				If (CountInv("LMGAmmo") == 0) {
+					A_GiveInventory("LMGRechamberNeeded", 1);
+				}
+			}
+			TNT1 A 0 A_Overlay(2, "BeltReload")
+			LMR1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LBR1 A 0
+			"####" A 0
+			"####" ABCDEFGHI 1
+			"####" A 0 A_StartSound("LLIDOP")
+			"####" JKLMNOPQRS 1
+			"####" A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "MissileReload")
+			"####" A 0 A_JumpIfInventory("LMGAmmo", 8, "ReloadNormally")
+		
+		ReloadBulletLess8:
+	// 		"####" A 0 {
+	// 			IF (CountInv("LMGAmmo") >= 1) {
+	// 				return state ("");
+	// 				}
+	// 			else if {
+	// 				return state ("ReloadNormally");
+	// 			}
+	// 				return state ("");
+	// 		}
+			"####" A 0
+			"####" A 0 A_Overlay(2, "BeltReloadBulletGet7")
+			LLBU AAABCDEFGHHHH 1
+		//ENTER the LMGAmmo -> NewClip sequence here
+		LMGAmmoToNewClipLess8:
+			TNT1 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
+			Goto ReloadBulletLess8Continue
+			TNT1 A 0
+			TNT1 A 0 A_GiveInventory("PB_HighCalMag", 1)
+			TNT1 A 0 A_TakeInventory("LMGAmmo", 1)
+			Loop
+		ReloadBulletLess8Continue:
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 8, "ReloadBulletLess8GoNormal")
+		NewClipLMGToAmmoLess8:
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 1, 2)
+			Goto ReloadBulletLess8ContinueReal
+			TNT1 A 0
+			TNT1 A 0 A_GiveInventory("LMGAmmo", 1)
+			TNT1 A 0 A_TakeInventory("PB_HighCalMag", 1)
+			Loop
+		ReloadBulletLess8ContinueReal:
+			LLBU HGF 1
+			TNT1 A 0 A_Overlay(2, "BeltReloadBulletGive7")
+			LLBU EDCBARSTUV 1
+			Goto ReloadLidClosing
+		ReloadBulletLess8GoNormal:
+	// 		LLBU HGFEDCBAAAA 1
+			LLBU IJKLLL 1
+			"####" A 0 A_StartSound("weapons/sgl/detach", 3)
+			LLBU MNOPQ 1
+			"####" A 0 PB_SpawnCasing("EmptyLMGMag", 12, -2.5, 10.25,frandom(2,5),frandom(1,3),frandom(2,4))
+			LLBU QQ 1
+			LBM2 ABCD 1
+			LBR2 A 0 
+			Goto ReloadLoop
+
+		MissileReload:
+			"####" A 0 A_JumpIfInventory("LMGAmmo", 21, "ReloadNormally")
+		ReloadMissileLess6:
+	// 		"####" A 0 A_JumpIfInventory("LMGAmmo", 3, 2)
+	// 		Goto ReloadNormally
+			"####" A 0
+			LLMU AAABCDEFGHHHH 1
+			//ENTER the LMGAmmo -> NewClip sequence here
+		ReloadRocketLess6Continue:
+			"####" A 0 A_JumpIfInventory("PB_HighCalMag", 21, "ReloadRocketLess6GoNormal")
+		NewClipToLMGAmmoLess6:
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 3, 2)
+			Goto ReloadRocketLess6ContinueReal
+			TNT1 A 0
+			TNT1 A 0 A_GiveInventory("LMGAmmo", 3)
+			TNT1 A 0 A_TakeInventory("PB_HighCalMag", 3)
+			Loop
+		ReloadRocketLess6ContinueReal:
+			LLMU HGF 1
+			TNT1 A 0 A_Overlay(2, "BeltReloadRocketGive6")
+			LLMU EDCBARSTUV 1
+			Goto ReloadLidClosing
+		ReloadRocketLess6GoNormal:
+	// 		LLMU HGFEDCBAAAA 1
+			LLMU IJKLLL 1
+			"####" A 0 A_StartSound("weapons/sgl/detach", 3)
+			LLMU MNOPQ 1 
+			"####" A 0 PB_SpawnCasing("EmptyLMGMissileMag", 12, -2.5, 10.25,frandom(2,5),frandom(1,3),frandom(2,4))
+			LLMU QQ 1
+			LBM2 ABCD 1
+			LMR2 A 0 
+			Goto ReloadLoop
+
+		ReloadNormally:
+			LMR1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LBR1 A 0
+			"####" A 0
+			"####" STU 1
+		ReloadNormallyGotClip:
+			LMR1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LBR1 A 0
+			"####" A 0
+			"####" A 0 A_StartSound("", 2)
+			"####" VWXYZ 1
+			LMR2 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2) 
+			LBR2 A 0
+			"####" A 0
+			"####" ABCD 1
+			"####" A 0 A_StartSound("weapons/sgl/detach", 3)
+		ReloadBulletContinue:
+			"####" EFGHIJKLMN 1
+		ReloadBulletInsert:
+		ReloadLoop:
+			"####" A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "ReloadLoopMissile") //same reload but 3 clip ammo needed	
+		ReloadLoopBullet:
+			"####" A 0 A_JumpIfInventory("LMGAmmo", 75, "ReloadBullletInsertAnim")
+			"####" A 0 A_JumpIfInventory("PB_HighCalMag",1,2)
+			Goto ReloadBullletInsertAnim
+			"####" A 0
+			"####" A 0
+			"####" A 0 A_Giveinventory("LMGAmmo",1)
+			"####" A 0 A_Takeinventory("PB_HighCalMag",1)
+			Loop
+		ReloadLoopMissile:
+			"####" A 0 A_JumpIfInventory("LMGAmmo", 75, "ReloadBullletInsertAnim")
+			"####" A 0 A_JumpIfInventory("PB_HighCalMag",3,2)
+			Goto ReloadBullletInsertAnim
+			"####" A 0
+			"####" A 0
+			"####" A 0 A_Giveinventory("LMGAmmo",3)
+			"####" A 0 A_Takeinventory("PB_HighCalMag",3)
+			Loop
+		ReloadBullletInsertAnim:
+			"####" OP 1
+			"####" A 0 A_StartSound("weapons/lmg/magin", 4) 
+			"####" QRSTUVWXYZ 1
+			LMR3 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LBR3 A 0
+			"####" A 0 
+			"####" A 0 A_StartSound("weapons/riflemagslap", 5)
+			"####" ABCDEFGHIJKLMNOPQR 1
+			"####" A 0 A_StartSound("LFEED")
+			"####" STUVWXYZ 1
+			LMR4 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LBR4 A 0
+			"####" A 0
+			"####" AB 1
+		ReloadLidClosing:
+			LMR4 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			LBR4 A 0
+			"####" A 0 A_Overlay(2, "BeltLidClosing")
+			"####" CDEFGH 1
+			"####" A 0 A_StartSound("LLIDCL")
+			"####" IJKLMNOPQR 1
+			"####" A 0 A_TakeInventory("CantWeaponSpecial",1)
+			Goto BoltReset
+
+		BeltRechamber:
+			RELM A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "BeltRechamberRocket")
+			R8LB A 0 A_JumpIfInventory("LMGAMMO", 8, 6)
+			R8LB A 0 A_JumpIfInventory("LMGAMMO", 7, 5)
+			R6LB A 0 A_JumpIfInventory("LMGAMMO", 6, 4)
+			R5LB A 0 A_JumpIfInventory("LMGAMMO", 5, 3)
+			R4LB A 0 A_JumpIfInventory("LMGAMMO", 4, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" ABCDEFFF 1
+			R8LB A 0 A_JumpIfInventory("LMGAMMO", 8, 6)
+			R7LB A 0 A_JumpIfInventory("LMGAMMO", 7, 5)
+			R7LB A 0 A_JumpIfInventory("LMGAMMO", 6, 4)
+			R6LB A 0 A_JumpIfInventory("LMGAMMO", 5, 3)
+			R5LB A 0 A_JumpIfInventory("LMGAMMO", 4, 2)
+			TNT1 A 0
+			"####" G 1
+			"####" HIJKKKLMN 1
+			Stop
+		BeltRechamberRocket:
+			R7LM A 0 A_JumpIfInventory("LMGAMMO", 21, 5)
+			R7LM A 0 A_JumpIfInventory("LMGAMMO", 18, 4)
+			R5LM A 0 A_JumpIfInventory("LMGAMMO", 15, 3)
+			R4LM A 0 A_JumpIfInventory("LMGAMMO", 12, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" ABCDEFFF 1
+			R7LM A 0 A_JumpIfInventory("LMGAMMO", 21, 5)
+			R7LM A 0 A_JumpIfInventory("LMGAMMO", 18, 4)
+			R6LM A 0 A_JumpIfInventory("LMGAMMO", 15, 3)
+			R5LM A 0 A_JumpIfInventory("LMGAMMO", 12, 2)
+			TNT1 A 0
+			"####" A 0
+			"####" GHIJKKKLMN 1
+			Stop
+		BoltReset:
+			TNT1 A 0 A_JumpIfInventory("LMGRechamberNeeded", 1, 2)
+			Goto Ready3
+			TNT1 A 0
+			TNT1 A 0
+			TNT1 A 0 A_Overlay(5, "BeltRechamber")
+			TNT1 A 0 A_TakeInventory("LMGRechamberNeeded", 1)
+			RELM A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
+			RELB A 0
+			"####" A 0
+			"####" ABCDEF 1
+			"####" A 0 A_StartSound("IronSights", 1)
+			"####" A 0 A_StartSound("LMGCLK", 2)
+			"####" GHIJKLMNOPQR 1
+			"####" A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
+			Goto Ready3
+
+		WeaponSpecial:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+			TNT1 A 0 A_SetCrosshair(5)
+			TNT1 A 0 A_Takeinventory("Zoomed",1)
+			TNT1 A 0 A_ZoomFactor(1.0)
+			TNT1 A 0 A_Takeinventory("ADSmode",1)
+			TNT1 A 0 A_GiveInventory("LMGRechamberNeeded", 1)
+			TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
+			TNT1 A 0 A_GiveInventory("CantWeaponSpecial",1)
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "MissileToBullet")
+			TNT1 A 0 A_PRINT("$PB_LMGMICRO", 2)
+			LBS1 A 0 A_JumpIfInventory("LMGAmmo", 7, 6)
+			LB97 A 0 A_JumpIfInventory("LMGAmmo", 6, 5)
+			LB98 A 0 A_JumpIfInventory("LMGAmmo", 5, 4)
+			LB99 A 0 A_JumpIfInventory("LMGAmmo", 4, 3)
+			LB90 A 0 
+			"####" A 0
+			"####" A 0
+			"####" ABC 1 A_DoPBWeaponAction
+			LBS1 HIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
+			LBS2 ABCDEF 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("MG42RE")
+			LBS2 GHIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
+			LBS3 ABCDEFGHIJKLMNOPQR 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("MG42IN")
+			LBS3 STUVWX 1 A_DoPBWeaponAction
+			LBS4 ABCDE 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("weapons/riflemagslap", 0)
+			LBS4 FGHIJKLMNOPQRSTUVWXYZ 1
+			LBS5 A 1 A_DoPBWeaponAction
+			LBS1 A 0 A_JumpIfInventory("LMGAmmo", 7, 6)
+			LB97 A 0 A_JumpIfInventory("LMGAmmo", 6, 5)
+			LB98 A 0 A_JumpIfInventory("LMGAmmo", 5, 4)
+			LB99 A 0 A_JumpIfInventory("LMGAmmo", 4, 3)
+			LB90 A 0 
+			"####" A 0
+			"####" A 0
+			"####" CBA 1 A_DoPBWeaponAction
+			"####" A 0 A_GiveInventory("LMGMicroMissiles", 1)
+			Goto BarrelSwitchBulletMissile
+		MissileToBullet:
+			TNT1 A 0 A_PRINT("$PB_LMGBULLET", 2)
+			LMS1 A 0 A_JumpIfInventory("LMGAmmo", 18, 5)
+			LM86 A 0 A_JumpIfInventory("LMGAmmo", 15, 4)
+			LM85 A 0 A_JumpIfInventory("LMGAmmo", 12, 3)
+			LM84 A 0 
+			"####" A 0
+			"####" A 0
+			"####" ABC 1 A_DoPBWeaponAction
+			LMS1 HIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
+			LMS2 ABCDEF 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("MG42RE")
+			LMS2 GHIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
+			LMS3 ABCDEFGHIJKLMNOPQR 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("MG42IN")
+			LMS3 STVWX 1 A_DoPBWeaponAction
+			LMS4 ABCDEFGHIJKLMNOPQRST 1 A_DoPBWeaponAction
+			LMS1 A 0 A_JumpIfInventory("LMGAmmo", 18, 5)
+			LM86 A 0 A_JumpIfInventory("LMGAmmo", 15, 4)
+			LM85 A 0 A_JumpIfInventory("LMGAmmo", 12, 3)
+			LM84 A 0 
+			"####" A 0
+			"####" A 0
+			"####" CBA 1 A_DoPBWeaponAction
+			"####" A 0 A_TakeInventory("LMGMicroMissiles", 1)
+			Goto BarrelSwitchMissileBullet
+
+		BarrelSwitchBulletMissile:
+			TNT1 A 0 A_Overlay(2, "BeltReloadBullet")
+			LBR1 ABCDEFGHIJ 1 A_DoPBWeaponAction
+			LBR1 A 0 A_StartSound("LLIDOP")
+			LBMR ABCDEFFFF 1 A_DoPBWeaponAction
+			TNT1 A 0 {
+				IF (CountInv("PB_HighCalMag") < 3 && CountInv("LMGAmmo") == 0) {
+					return state  ("BarrelSwitchGetEmptyClipBM");
 				}
 				return state ("");
-			}
-	UnloadedReload:
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "UnloadedReloadMicro")
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo", 75, "ReloadBullletInsertAnim")
-		TNT1 A 0 A_JumpIfInventory("NewClip", 1, 2)
-		Goto UnloadAnimationIn
-		TNT1 A 0
-		TNT1 A 0 A_GiveInventory("LMGAmmo", 1)
-		TNT1 A 0 A_TakeInventory("NewClip", 1)
-		Loop
-	UnloadedReloadMicro:
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo", 75, "ReloadBullletInsertAnim")
-		TNT1 A 0 A_JumpIfInventory("NewClip", 3, 2)
-		Goto UnloadAnimationIn
-		TNT1 A 0
-		TNT1 A 0 A_GiveInventory("LMGAmmo", 3)
-		TNT1 A 0 A_TakeInventory("NewClip", 3)
-		Loop
-	UnloadAnimationIn:
-		LLMU A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LLBU A 0
-		"####" A 0
-		"####" PONM 1
-		"####" A 0 A_StartSound("weapons/sgl/inspect1", 2)
-		"####" LLLLKJIHHHH 1
-		"####" HGF 1
-		"####" A 0 {
-			If (CountInv("LMGMicroMissiles") == 1) {
-						A_Overlay(2, "BeltReloadRocketGive6");			
-					}
-			else {
-							A_Overlay(2, "BeltReloadBulletGive7");
-					}
 				}
-		"####" EDCBARSTUV 1
-		LMR4 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "ReloadLidClosing")
-		LBR4 A 0
-		Goto ReloadLidClosing
-	UnloadedClipIn:
-		LBM1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LBM2 A 0
-		"####" A 0
-		"####" ABCD 1
-		LMR2 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LBR2 A 0
-		"####" A 0
-		Goto ReloadBulletInsert
-	//BIG FUCKING RELOAD code 
-	ReloadCheckRocket:
-		TNT1 A 0 A_JumpIfInventory("NewClip", 3, "ReloadBegin")
-		Goto Ready3
-	Reload:
-		TNT1 A 0 A_ZoomFactor(1)
-		TNT1 A 0 A_TakeInventory("Zoomed")
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo", 75, "Ready3")
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "ReloadCheckRocket") //I don't really like TNT1 A 0 { if { } } stuff so I will keep it more simple
-		TNT1 A 0 A_JumpIfInventory("NewClip", 1, "ReloadBegin")
-		Goto Ready3
-	ReloadBegin:
-		TNT1 A 0 A_JumpIfInventory("PBLMGHasUnloaded", 1, "UnloadCalculations") //unload stuff
-		TNT1 A 0 {
-			If (CountInv("LMGAmmo") == 0) {
-				A_GiveInventory("LMGRechamberNeeded", 1);
-			}
-		}
-		TNT1 A 0 A_Overlay(2, "BeltReload")
-		LMR1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LBR1 A 0
-		"####" A 0
-		"####" ABCDEFGHI 1
-		"####" A 0 A_StartSound("LLIDOP")
-		"####" JKLMNOPQRS 1
-		"####" A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "MissileReload")
-		"####" A 0 A_JumpIfInventory("LMGAmmo", 8, "ReloadNormally")
-	
-	ReloadBulletLess8:
-// 		"####" A 0 {
-// 			IF (CountInv("LMGAmmo") >= 1) {
-// 				return state ("");
-// 				}
-// 			else if {
-// 				return state ("ReloadNormally");
-// 			}
-// 				return state ("");
-// 		}
-		"####" A 0
-		"####" A 0 A_Overlay(2, "BeltReloadBulletGet7")
-		LLBU AAABCDEFGHHHH 1
-	//ENTER the LMGAmmo -> NewClip sequence here
-	LMGAmmoToNewClipLess8:
-		TNT1 A 0 A_JumpIfInventory("LMGAmmo", 1, 2)
-		Goto ReloadBulletLess8Continue
-		TNT1 A 0
-		TNT1 A 0 A_GiveInventory("NewClip", 1)
-		TNT1 A 0 A_TakeInventory("LMGAmmo", 1)
-		Loop
-	ReloadBulletLess8Continue:
-		TNT1 A 0 A_JumpIfInventory("NewClip", 8, "ReloadBulletLess8GoNormal")
-	NewClipLMGToAmmoLess8:
-		TNT1 A 0 A_JumpIfInventory("NewClip", 1, 2)
-		Goto ReloadBulletLess8ContinueReal
-		TNT1 A 0
-		TNT1 A 0 A_GiveInventory("LMGAmmo", 1)
-		TNT1 A 0 A_TakeInventory("NewClip", 1)
-		Loop
-	ReloadBulletLess8ContinueReal:
-		LLBU HGF 1
-		TNT1 A 0 A_Overlay(2, "BeltReloadBulletGive7")
-		LLBU EDCBARSTUV 1
-		Goto ReloadLidClosing
-	ReloadBulletLess8GoNormal:
-// 		LLBU HGFEDCBAAAA 1
-		LLBU IJKLLL 1
-		"####" A 0 A_StartSound("weapons/sgl/detach", 3)
-		LLBU MNOPQ 1
-		"####" A 0 PB_SpawnCasing("EmptyLMGMag", 12, -2.5, 10.25,frandom(2,5),frandom(1,3),frandom(2,4))
-		LLBU QQ 1
-		LBM2 ABCD 1
-		LBR2 A 0 
-		Goto ReloadLoop
-
-	MissileReload:
-		"####" A 0 A_JumpIfInventory("LMGAmmo", 21, "ReloadNormally")
-	ReloadMissileLess6:
-// 		"####" A 0 A_JumpIfInventory("LMGAmmo", 3, 2)
-// 		Goto ReloadNormally
-		"####" A 0
-		LLMU AAABCDEFGHHHH 1
+			TNT1 A 0
+			TNT1 A 0 {
+				if (CountInv("LMGAmmo") >= 8 && CountInv("PB_HighCalMag") >= 13) {
+					return state ("BarrelSwitchBMNormalReload");
+					}
+					else if (CountInv("LMGAmmo") >= 21) {
+					return state ("BarrelSwitchBMNormalReload");
+					}
+				if (CountInv("LMGAmmo") >= 1) {
+						A_Overlay(2, "BeltReloadBulletGet7");
+					}
+				return state ("");
+				}
+			LLBM AAABCDEFGHHHHH 1 A_DoPBWeaponAction
+			LLBM IJKLLLL 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("weapons/sgl/detach", 3)
+			LLBM MNOPQQQQ 1 A_DoPBWeaponAction
 		//ENTER the LMGAmmo -> NewClip sequence here
-	ReloadRocketLess6Continue:
-		"####" A 0 A_JumpIfInventory("NewClip", 21, "ReloadRocketLess6GoNormal")
-	NewClipToLMGAmmoLess6:
-		TNT1 A 0 A_JumpIfInventory("NewClip", 3, 2)
-		Goto ReloadRocketLess6ContinueReal
-		TNT1 A 0
-		TNT1 A 0 A_GiveInventory("LMGAmmo", 3)
-		TNT1 A 0 A_TakeInventory("NewClip", 3)
-		Loop
-	ReloadRocketLess6ContinueReal:
-		LLMU HGF 1
-		TNT1 A 0 A_Overlay(2, "BeltReloadRocketGive6")
-		LLMU EDCBARSTUV 1
-		Goto ReloadLidClosing
-	ReloadRocketLess6GoNormal:
-// 		LLMU HGFEDCBAAAA 1
-		LLMU IJKLLL 1
-		"####" A 0 A_StartSound("weapons/sgl/detach", 3)
-		LLMU MNOPQ 1 
-		"####" A 0 PB_SpawnCasing("EmptyLMGMissileMag", 12, -2.5, 10.25,frandom(2,5),frandom(1,3),frandom(2,4))
-		LLMU QQ 1
-		LBM2 ABCD 1
-		LMR2 A 0 
-		Goto ReloadLoop
+		BarrelSwitchBMContinue:
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 21, "BarrelSwitchBGoNormal")
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 3, 2)
+			Goto BarrelSwitchBGoNormal
+			LLMU PON 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("weapons/lmg/magin", 4) 
+		NewClipToLMGAmmoBarrelSwitchBM:
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 3, 2)
+			Goto BarrelSwitchBMContinueReal
+			TNT1 A 0
+			TNT1 A 0 A_GiveInventory("LMGAmmo", 3)
+			TNT1 A 0 A_TakeInventory("PB_HighCalMag", 3)
+			Loop
+		BarrelSwitchBMContinueReal:
+			LLMU MLLLLKJIHHHG 1 A_DoPBWeaponAction
+			TNT1 A 0 A_Overlay(2, "BeltReloadRocketGive6")
+			LLMU FEDCBARSTUV 1 A_DoPBWeaponAction
+			Goto ReloadLidClosing
+		BarrelSwitchBGoNormal:
+			LBM1 ABCD 1 A_DoPBWeaponAction
+			LMR2 KK 1 A_DoPBWeaponAction
+			LMR2 A 0 A_JumpIfInventory("PB_HighCalMag", 21, "ReloadBulletInsert")
+			Goto BarrelSwitchGiveEmptyClipBM
+		BarrelSwitchBMNormalReload:
+			LBMR GHIJ 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("", 2)
+			LBMR KLL 1 A_DoPBWeaponAction
+			LBMR MNNNN 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("weapons/sgl/detach", 3)
+		BarrelSwitchBMContinueNormal:
+		BarrelSwitchBMContinueNormalStill:
+			LBMR OPQR 1 A_DoPBWeaponAction
+			LMR2 IIIIIII 1 A_DoPBWeaponAction
+			LMR2 A 0
+			Goto ReloadBulletInsert
+		BarrelSwitchGetEmptyClipBM:
+			LBMR GHIJ 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("", 2)
+			LBMR JKLL 1 A_DoPBWeaponAction
+			LBMR MNNNN 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("weapons/sgl/detach", 3)
+			LBMR OPQR 1 A_DoPBWeaponAction
+			LMR2 IIIII 1 A_DoPBWeaponAction
+			LMR2 A 0 A_JumpIfInventory("PB_HighCalMag", 21, "ReloadBulletInsert")
+		BarrelSwitchGiveEmptyClipBM:
+			LMR2 IIIII 1 A_DoPBWeaponAction
+			LMR2 HGFE 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("weapons/lmg/magin", 4) 
+			LMR2 DCBA 1 A_DoPBWeaponAction
+			Goto ReloadLidClosing
 
-	ReloadNormally:
-		LMR1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LBR1 A 0
-		"####" A 0
-		"####" STU 1
-	ReloadNormallyGotClip:
-		LMR1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LBR1 A 0
-		"####" A 0
-		"####" A 0 A_StartSound("", 2)
-		"####" VWXYZ 1
-		LMR2 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2) 
-		LBR2 A 0
-		"####" A 0
-		"####" ABCD 1
-		"####" A 0 A_StartSound("weapons/sgl/detach", 3)
-	ReloadBulletContinue:
-		"####" EFGHIJKLMN 1
-	ReloadBulletInsert:
-	ReloadLoop:
-		"####" A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "ReloadLoopMissile") //same reload but 3 clip ammo needed	
-	ReloadLoopBullet:
-		"####" A 0 A_JumpIfInventory("LMGAmmo", 75, "ReloadBullletInsertAnim")
-		"####" A 0 A_JumpIfInventory("NewClip",1,2)
-        Goto ReloadBullletInsertAnim
-		"####" A 0
-		"####" A 0
-		"####" A 0 A_Giveinventory("LMGAmmo",1)
-		"####" A 0 A_Takeinventory("NewClip",1)
-		Loop
-	ReloadLoopMissile:
-		"####" A 0 A_JumpIfInventory("LMGAmmo", 75, "ReloadBullletInsertAnim")
-		"####" A 0 A_JumpIfInventory("NewClip",3,2)
-        Goto ReloadBullletInsertAnim
-		"####" A 0
-		"####" A 0
-		"####" A 0 A_Giveinventory("LMGAmmo",3)
-		"####" A 0 A_Takeinventory("NewClip",3)
-		Loop
-	ReloadBullletInsertAnim:
-		"####" OP 1
-		"####" A 0 A_StartSound("weapons/sgl/inspect1", 4) 
-		"####" QRSTUVWXYZ 1
-		LMR3 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LBR3 A 0
-		"####" A 0 
-		"####" A 0 A_StartSound("weapons/riflemagslap", 5)
-		"####" ABCDEFGHIJKLMNOPQR 1
-		"####" A 0 A_StartSound("LFEED")
-		"####" STUVWXYZ 1
-		LMR4 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LBR4 A 0
-		"####" A 0
-		"####" AB 1
-	ReloadLidClosing:
-		LMR4 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		LBR4 A 0
-		"####" A 0 A_Overlay(2, "BeltLidClosing")
-		"####" CDEFGH 1
-		"####" A 0 A_StartSound("LLIDCL")
-		"####" IJKLMNOPQR 1
-		Goto BoltReset
-
-	BeltRechamber:
-		RELM A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "BeltRechamberRocket")
-		R8LB A 0 A_JumpIfInventory("LMGAMMO", 8, 6)
-		R8LB A 0 A_JumpIfInventory("LMGAMMO", 7, 5)
-		R6LB A 0 A_JumpIfInventory("LMGAMMO", 6, 4)
-		R5LB A 0 A_JumpIfInventory("LMGAMMO", 5, 3)
-		R4LB A 0 A_JumpIfInventory("LMGAMMO", 4, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" ABCDEFFF 1
-		R8LB A 0 A_JumpIfInventory("LMGAMMO", 8, 6)
-		R7LB A 0 A_JumpIfInventory("LMGAMMO", 7, 5)
-		R7LB A 0 A_JumpIfInventory("LMGAMMO", 6, 4)
-		R6LB A 0 A_JumpIfInventory("LMGAMMO", 5, 3)
-		R5LB A 0 A_JumpIfInventory("LMGAMMO", 4, 2)
-		TNT1 A 0
-		"####" G 1
-		"####" HIJKKKLMN 1
-		Stop
-	BeltRechamberRocket:
- 		R7LM A 0 A_JumpIfInventory("LMGAMMO", 21, 5)
-		R7LM A 0 A_JumpIfInventory("LMGAMMO", 18, 4)
-		R5LM A 0 A_JumpIfInventory("LMGAMMO", 15, 3)
-		R4LM A 0 A_JumpIfInventory("LMGAMMO", 12, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" ABCDEFFF 1
-		R7LM A 0 A_JumpIfInventory("LMGAMMO", 21, 5)
-		R7LM A 0 A_JumpIfInventory("LMGAMMO", 18, 4)
-		R6LM A 0 A_JumpIfInventory("LMGAMMO", 15, 3)
-		R5LM A 0 A_JumpIfInventory("LMGAMMO", 12, 2)
-		TNT1 A 0
-		"####" A 0
-		"####" GHIJKKKLMN 1
-		Stop
-	BoltReset:
-		TNT1 A 0 A_JumpIfInventory("LMGRechamberNeeded", 1, 2)
-		Goto Ready3
-		TNT1 A 0
-		TNT1 A 0
-		TNT1 A 0 A_Overlay(5, "BeltRechamber")
-		TNT1 A 0 A_TakeInventory("LMGRechamberNeeded", 1)
-		RELM A 0 A_JumpIfInventory("LMGMicroMissiles", 1, 2)
-		RELB A 0
-		"####" A 0
-		"####" ABCDEF 1
-		"####" A 0 A_StartSound("IronSights", 1)
-		"####" A 0 A_StartSound("LMGCLK", 2)
-		"####" GHIJKLMNOPQR 1
-		"####" A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
-		Goto Ready3
-
-	WeaponSpecial:
-		TNT1 A 0 A_SetCrosshair(5)
-		TNT1 A 0 A_Takeinventory("Zoomed",1)
-        TNT1 A 0 A_ZoomFactor(1.0)
-		TNT1 A 0 A_Takeinventory("ADSmode",1)
-		TNT1 A 0 A_GiveInventory("LMGRechamberNeeded", 1)
-		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "MissileToBullet")
-		TNT1 A 0 A_GiveInventory("LMGMicroMissiles", 1)
-		TNT1 A 0 A_PRINT("$PB_LMGMICRO", 2)
-		LBS1 A 0 A_JumpIfInventory("LMGAmmo", 7, 6)
-		LB97 A 0 A_JumpIfInventory("LMGAmmo", 6, 5)
-		LB98 A 0 A_JumpIfInventory("LMGAmmo", 5, 4)
-		LB99 A 0 A_JumpIfInventory("LMGAmmo", 4, 3)
-		LB90 A 0 
-		"####" A 0
-		"####" A 0
-		"####" ABC 1
-		LBS1 HIJKLMNOPQRSTUVWXYZ 1
-		LBS2 ABCDEF 1
-		TNT1 A 0 A_StartSound("MG42RE")
-		LBS2 GHIJKLMNOPQRSTUVWXYZ 1
-		LBS3 ABCDEFGHIJKLMNOPQR 1
-		TNT1 A 0 A_StartSound("MG42IN")
-		LBS3 STUVWX 1
-		LBS4 ABCDE 1
-		TNT1 A 0 A_StartSound("weapons/riflemagslap", 0)
-		LBS4 FGHIJKLMNOPQRSTUVWXYZ 1
-		LBS5 A 1
-		LBS1 A 0 A_JumpIfInventory("LMGAmmo", 7, 6)
-		LB97 A 0 A_JumpIfInventory("LMGAmmo", 6, 5)
-		LB98 A 0 A_JumpIfInventory("LMGAmmo", 5, 4)
-		LB99 A 0 A_JumpIfInventory("LMGAmmo", 4, 3)
-		LB90 A 0 
-		"####" A 0
-		"####" A 0
-		"####" CBA 1
-		Goto BarrelSwitchBulletMissile
-	MissileToBullet:
-		TNT1 A 0 A_TakeInventory("LMGMicroMissiles", 1)
-		TNT1 A 0 A_PRINT("$PB_LMGBULLET", 2)
-		LMS1 A 0 A_JumpIfInventory("LMGAmmo", 18, 5)
-		LM86 A 0 A_JumpIfInventory("LMGAmmo", 15, 4)
-		LM85 A 0 A_JumpIfInventory("LMGAmmo", 12, 3)
-		LM84 A 0 
-		"####" A 0
-		"####" A 0
-		"####" ABC 1
-		LMS1 HIJKLMNOPQRSTUVWXYZ 1
-		LMS2 ABCDEF 1
-		TNT1 A 0 A_StartSound("MG42RE")
-		LMS2 GHIJKLMNOPQRSTUVWXYZ 1
-		LMS3 ABCDEFGHIJKLMNOPQR 1
-		TNT1 A 0 A_StartSound("MG42IN")
-		LMS3 STVWX 1
-		LMS4 ABCDEFGHIJKLMNOPQRST 1
-		LMS1 A 0 A_JumpIfInventory("LMGAmmo", 18, 5)
-		LM86 A 0 A_JumpIfInventory("LMGAmmo", 15, 4)
-		LM85 A 0 A_JumpIfInventory("LMGAmmo", 12, 3)
-		LM84 A 0 
-		"####" A 0
-		"####" A 0
-		"####" CBA 1
-		Goto BarrelSwitchMissileBullet
-
-	BarrelSwitchBulletMissile:
-		TNT1 A 0 A_Overlay(2, "BeltReloadBullet")
-		LBR1 ABCDEFGHIJ 1
-		LBR1 A 0 A_StartSound("LLIDOP")
-		LBMR ABCDEFFFF 1	
-		TNT1 A 0 {
-			IF (CountInv("NewClip") < 3 && CountInv("LMGAmmo") == 0) {
-				return state  ("BarrelSwitchGetEmptyClipBM");
-			}
-			return state ("");
-			}
-		TNT1 A 0
-		TNT1 A 0 {
-			if (CountInv("LMGAmmo") >= 8 && CountInv("NewClip") >= 13) {
-				return state ("BarrelSwitchBMNormalReload");
+		//MISSILE TO BULLET
+		BarrelSwitchMissileBullet:
+			TNT1 A 0 A_Overlay(2, "BeltReloadMissile")
+			LMR1 ABCDEFGHIJ 1 A_DoPBWeaponAction
+			LRMR A 0 A_StartSound("LLIDOP")
+			LRMR ABCDEFFFF 1 A_DoPBWeaponAction
+			TNT1 A 0 {
+				IF (CountInv("PB_HighCalMag") == 0 && CountInv("LMGAmmo") < 3) {
+					return state  ("BarrelSwitchGetEmptyClipMB");
 				}
 				else if (CountInv("LMGAmmo") >= 21) {
-				return state ("BarrelSwitchBMNormalReload");
-				}
-			if (CountInv("LMGAmmo") >= 1) {
-					A_Overlay(2, "BeltReloadBulletGet7");
-				}
-			return state ("");
-			}
-		LLBM AAABCDEFGHHHHH 1
-		LLBM IJKLLLL 1
-		"####" A 0 A_StartSound("weapons/sgl/detach", 3)
-		LLBM MNOPQQQQ 1
-	//ENTER the LMGAmmo -> NewClip sequence here
-	BarrelSwitchBMContinue:
-		TNT1 A 0 A_JumpIfInventory("NewClip", 21, "BarrelSwitchBGoNormal")
-		TNT1 A 0 A_JumpIfInventory("NewClip", 3, 2)
-		Goto BarrelSwitchBGoNormal
-		LLMU PON 1
-		"####" A 0 A_StartSound("weapons/sgl/inspect1", 4) 
-	NewClipToLMGAmmoBarrelSwitchBM:
-		TNT1 A 0 A_JumpIfInventory("NewClip", 3, 2)
-		Goto BarrelSwitchBMContinueReal
-		TNT1 A 0
-		TNT1 A 0 A_GiveInventory("LMGAmmo", 3)
-		TNT1 A 0 A_TakeInventory("NewClip", 3)
-		Loop
-	BarrelSwitchBMContinueReal:
-		LLMU MLLLLKJIHHHG 1
-		TNT1 A 0 A_Overlay(2, "BeltReloadRocketGive6")
-		LLMU FEDCBARSTUV 1
-		Goto ReloadLidClosing
-	BarrelSwitchBGoNormal:
-		LBM1 ABCD 1
-		LMR2 KK 1
-		LMR2 A 0 A_JumpIfInventory("NewClip", 21, "ReloadBulletInsert")
-		Goto BarrelSwitchGiveEmptyClipBM
-	BarrelSwitchBMNormalReload:
-		LBMR GHIJ 1
-		"####" A 0 A_StartSound("", 2)
-		LBMR KLL 1
-		LBMR MNNNN 1
-		"####" A 0 A_StartSound("weapons/sgl/detach", 3)
-	BarrelSwitchBMContinueNormal:
-	BarrelSwitchBMContinueNormalStill:
-		LBMR OPQR 1
-		LMR2 IIIIIII 1
-		LMR2 A 0
-		Goto ReloadBulletInsert
-	BarrelSwitchGetEmptyClipBM:
-		LBMR GHIJ 1
-		"####" A 0 A_StartSound("", 2)
-		LBMR JKLL 1
-		LBMR MNNNN 1
-		"####" A 0 A_StartSound("weapons/sgl/detach", 3)
-		LBMR OPQR 1
-		LMR2 IIIII 1
-		LMR2 A 0 A_JumpIfInventory("NewClip", 21, "ReloadBulletInsert")
-	BarrelSwitchGiveEmptyClipBM:
-		LMR2 IIIII 1
-		LMR2 HGFE 1
-		"####" A 0 A_StartSound("weapons/sgl/inspect1", 4) 
-		LMR2 DCBA 1
-		Goto ReloadLidClosing
-
-	//MISSILE TO BULLET
-	BarrelSwitchMissileBullet:
-		TNT1 A 0 A_Overlay(2, "BeltReloadMissile")
-		LMR1 ABCDEFGHIJ 1
-		LRMR A 0 A_StartSound("LLIDOP")
-		LRMR ABCDEFFFF 1	
-		TNT1 A 0 {
-			IF (CountInv("NewClip") == 0 && CountInv("LMGAmmo") < 3) {
-				return state  ("BarrelSwitchGetEmptyClipMB");
-			}
-			else if (CountInv("LMGAmmo") >= 21) {
-				return state ("BarrelSwitchMBNormalReload");
-				}
-			return state ("");
-			}
-		TNT1 A 0
-		TNT1 A 0 {
-			if (CountInv("LMGAmmo") >= 21 && CountInv("NewClip") >= 21)  { //it's enough to normal reload
-				return state ("BarrelSwitchMBNormalReload");
-				}
-				else {
+					return state ("BarrelSwitchMBNormalReload");
+					}
 				return state ("");
 				}
-			if (CountInv("LMGAmmo") >= 3) {
-					A_Overlay(2, "BeltReloadRocketGet6");
+			TNT1 A 0
+			TNT1 A 0 {
+				if (CountInv("LMGAmmo") >= 21 && CountInv("PB_HighCalMag") >= 21)  { //it's enough to normal reload
+					return state ("BarrelSwitchMBNormalReload");
+					}
+					else {
+					return state ("");
+					}
+				if (CountInv("LMGAmmo") >= 3) {
+						A_Overlay(2, "BeltReloadRocketGet6");
+					}
+				return state ("");
 				}
-			return state ("");
-			}
-		LLMB AAABCDEFGHHHH 1
-		LLMB IJKLMMMM 1
-		"####" A 0 A_StartSound("weapons/sgl/detach", 3)
-		LLMB MNOPQQQQQ 1
-	//ENTER the LMGAmmo -> NewClip sequence here
-	BarrelSwitchMBContinue:
-		TNT1 A 0 A_JumpIfInventory("NewClip", 8, "BarrelSwitchMGoNormal")
-		TNT1 A 0 A_JumpIfInventory("NewClip", 3, 2)
-		Goto BarrelSwitchMGoNormal
-		LLBU PON 1
-		"####" A 0 A_StartSound("weapons/sgl/inspect1", 4) 
-		LLBU MLLLLKJIHHHGF 1
-	NewClipToLMGAmmoBarrelSwitchMB:
-		TNT1 A 0 A_JumpIfInventory("NewClip", 1, 2)
-		Goto BarrelSwitchMBContinueReal
-		TNT1 A 0
-		TNT1 A 0 A_GiveInventory("LMGAmmo", 1)
-		TNT1 A 0 A_TakeInventory("NewClip", 1)
-		Loop
-	BarrelSwitchMBContinueReal:
-		TNT1 A 0 A_Overlay(2, "BeltReloadBulletGive7")
-		LLBU EDCBARSTUV 1
-		Goto ReloadLidClosing
-	BarrelSwitchMGoNormal:
-		LBM2 ABCD 1
-		LBR2 KK 1
-		LBR2 A 0 A_JumpIfInventory("NewClip", 8, "ReloadBulletInsert")
-		Goto BarrelSwitchGiveEmptyClipMB
-	BarrelSwitchMBNormalReload:
-		LRMR GHIJ 1
-		"####" A 0 A_StartSound("", 2)
-		LRMR KLL 1
-		LRMR MNNNN 1
-		"####" A 0 A_StartSound("weapons/sgl/detach", 3)
-	BarrelSwitchMBContinueNormal:
-	BarrelSwitchMBContinueNormalStill:
-		LRMR OPQ 1
-		LBR2 IIIIIII 1
-		LBR2 A 0
-		Goto ReloadBulletInsert
-	BarrelSwitchGetEmptyClipMB:
-		LRMR GHIJ 1
-		"####" A 0 A_StartSound("", 2)
-		LRMR KLL 1
-		LRMR MNNNN 1
-		"####" A 0 A_StartSound("weapons/sgl/detach", 3)
-		LRMR OPQR 1
-		LBR2 IIIII 1
-		LBR2 A 0 A_JumpIfInventory("NewClip", 8, "ReloadBulletInsert")
-	BarrelSwitchGiveEmptyClipMB:
-		LBR2 IIIII 1
-		LBR2 HGFE 1
-		"####" A 0 A_StartSound("weapons/sgl/inspect1", 4) 
-		LBR2 DCBA 1
-		Goto ReloadLidClosing
-	
-	Deselect:
-		TNT1 A 0 //A_SetCrosshair(0)
-		TNT1 A 0 A_Takeinventory("RandomHeadExploder",1)
-		TNT1 A 0 A_Takeinventory("Unloading",1)
-		TNT1 A 0 A_Takeinventory("Reloading",1)
-		TNT1 A 0 A_Takeinventory("Zoomed",1)
-		TNT1 A 0 A_Takeinventory("ADSmode",1)
-		TNT1 A 0 A_ZoomFactor(1, ZOOM_INSTANT)
-		TNT1 A 0 A_StopSound(6)
-		TNT1 A 0 A_StopSound(4)
-        TNT1 A 0 SetPlayerProperty(0,0,0)
-		TNT1 A 0 A_JumpIfInventory("GotMeatShield", 1, "GrabEnemy")
-		TNT1 A 0 A_JumpIfInventory("PBLMGHasUnloaded", 1, "UnloadedDeselect")
-		TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "MissileDeselect")
-		AU2M DCBA 1 {
-				if (CountInv("LMGAmmo") >= 7 ) { A_SetWeaponSprite("LSB7");}
-				if (CountInv("LMGAmmo") == 6 ) { A_SetWeaponSprite("LSB6");}
-				if (CountInv("LMGAmmo") == 5 )  { A_SetWeaponSprite("LSB5");}
-				if (CountInv("LMGAmmo") == 4 )  { A_SetWeaponSprite("LSB4");}
-				if (CountInv("LMGAmmo") <= 3 )  { A_SetWeaponSprite("LSB3");}
-			}
-		Goto CompletelyDeselect
-	MissileDeselect:
-		LSM3 DCBA 1 {
-				if (CountInv("LMGAmmo") >= 18 ) { A_SetWeaponSprite("LSM6");}
-				if (CountInv("LMGAmmo") <= 15 ) { A_SetWeaponSprite("LSM5");}
-				if (CountInv("LMGAmmo") <= 12 )  { A_SetWeaponSprite("LSM4");}
-				if (CountInv("LMGAmmo") <= 9 )  { A_SetWeaponSprite("LSM3");}
-			}
-	CompletelyDeselect:
-		TNT1 A 1
-		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
-	    Wait
-	UnloadedDeselect:
-		LUSB EDCBA 1{
-			if(CountInv("LMGMicroMissiles") == 1) {A_SetWeaponSprite("LUSM");}
-			}
-		Goto CompletelyDeselect
+			LLMB AAABCDEFGHHHH 1 A_DoPBWeaponAction
+			LLMB IJKLMMMM 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("weapons/sgl/detach", 3)
+			LLMB MNOPQQQQQ 1 A_DoPBWeaponAction
+		//ENTER the LMGAmmo -> NewClip sequence here
+		BarrelSwitchMBContinue:
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 8, "BarrelSwitchMGoNormal")
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 3, 2)
+			Goto BarrelSwitchMGoNormal
+			LLBU PON 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("weapons/lmg/magin", 4) 
+			LLBU MLLLLKJIHHHGF 1 A_DoPBWeaponAction
+		NewClipToLMGAmmoBarrelSwitchMB:
+			TNT1 A 0 A_JumpIfInventory("PB_HighCalMag", 1, 2)
+			Goto BarrelSwitchMBContinueReal
+			TNT1 A 0
+			TNT1 A 0 A_GiveInventory("LMGAmmo", 1)
+			TNT1 A 0 A_TakeInventory("PB_HighCalMag", 1)
+			Loop
+		BarrelSwitchMBContinueReal:
+			TNT1 A 0 A_Overlay(2, "BeltReloadBulletGive7")
+			LLBU EDCBARSTUV 1 A_DoPBWeaponAction
+			Goto ReloadLidClosing
+		BarrelSwitchMGoNormal:
+			LBM2 ABCD 1 A_DoPBWeaponAction
+			LBR2 KK 1 A_DoPBWeaponAction
+			LBR2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, "ReloadBulletInsert")
+			Goto BarrelSwitchGiveEmptyClipMB
+		BarrelSwitchMBNormalReload:
+			LRMR GHIJ 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("", 2)
+			LRMR KLL 1 A_DoPBWeaponAction
+			LRMR MNNNN 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("weapons/sgl/detach", 3)
+		BarrelSwitchMBContinueNormal:
+		BarrelSwitchMBContinueNormalStill:
+			LRMR OPQ 1 A_DoPBWeaponAction
+			LBR2 IIIIIII 1 A_DoPBWeaponAction
+			LBR2 A 0 A_DoPBWeaponAction
+			Goto ReloadBulletInsert
+		BarrelSwitchGetEmptyClipMB:
+			LRMR GHIJ 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("", 2)
+			LRMR KLL 1 A_DoPBWeaponAction
+			LRMR MNNNN 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("weapons/sgl/detach", 3)
+			LRMR OPQR 1 A_DoPBWeaponAction
+			LBR2 IIIII 1 A_DoPBWeaponAction
+			LBR2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, "ReloadBulletInsert")
+		BarrelSwitchGiveEmptyClipMB:
+			LBR2 IIIII 1 A_DoPBWeaponAction
+			LBR2 HGFE 1 A_DoPBWeaponAction
+			"####" A 0 A_StartSound("weapons/lmg/magin", 4) 
+			LBR2 DCBA 1 A_DoPBWeaponAction
+			Goto ReloadLidClosing
+		
+		Deselect:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+			TNT1 A 0 //A_SetCrosshair(0)
+			TNT1 A 0 A_Takeinventory("RandomHeadExploder",1)
+			TNT1 A 0 A_Takeinventory("Unloading",1)
+			TNT1 A 0 A_Takeinventory("Reloading",1)
+			TNT1 A 0 A_Takeinventory("Zoomed",1)
+			TNT1 A 0 A_Takeinventory("ADSmode",1)
+			TNT1 A 0 A_ZoomFactor(1, ZOOM_INSTANT)
+			TNT1 A 0 A_StopSound(6)
+			TNT1 A 0 A_StopSound(4)
+			TNT1 A 0 SetPlayerProperty(0,0,0)
+			
+			TNT1 A 0 A_JumpIfInventory("PBLMGHasUnloaded", 1, "UnloadedDeselect")
+			TNT1 A 0 A_JumpIfInventory("LMGMicroMissiles", 1, "MissileDeselect")
+			AU2M DCBA 1 {
+					if (CountInv("LMGAmmo") >= 7 ) { A_SetWeaponSprite("LSB7");}
+					if (CountInv("LMGAmmo") == 6 ) { A_SetWeaponSprite("LSB6");}
+					if (CountInv("LMGAmmo") == 5 )  { A_SetWeaponSprite("LSB5");}
+					if (CountInv("LMGAmmo") == 4 )  { A_SetWeaponSprite("LSB4");}
+					if (CountInv("LMGAmmo") <= 3 )  { A_SetWeaponSprite("LSB3");}
+				}
+			Goto CompletelyDeselect
+		MissileDeselect:
+			LSM3 DCBA 1 {
+					if (CountInv("LMGAmmo") >= 18 ) { A_SetWeaponSprite("LSM6");}
+					if (CountInv("LMGAmmo") <= 15 ) { A_SetWeaponSprite("LSM5");}
+					if (CountInv("LMGAmmo") <= 12 )  { A_SetWeaponSprite("LSM4");}
+					if (CountInv("LMGAmmo") <= 9 )  { A_SetWeaponSprite("LSM3");}
+				}
+		CompletelyDeselect:
+			TNT1 A 1
+			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+			Wait
+		UnloadedDeselect:
+			LUSB EDCBA 1{
+				if(CountInv("LMGMicroMissiles") == 1) {A_SetWeaponSprite("LUSM");}
+				}
+			Goto CompletelyDeselect
 
-	Select:
-		TNT1 A 0
-		Goto SelectFirstPersonLegs
-		SelectContinue:
-		TNT1 A 0 PB_WeapTokenSwitch("CarbineSelected")
-		TNT1 A 0 A_Giveinventory("RandomHeadExploder",1)
-		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
-		TNT1 AAAAAAAA 1 A_Raise
-		Wait
+		Select:
+			TNT1 A 0 A_JumpIf(GetCvar("pb_UpgradeLMG") == 0, 2)
+			TNT1 A 0 A_TakeInventory("PB_Carbine",2)
+			
+			TNT1 A 0 A_TakeInventory("HasBarrel",1)
+			TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
+			TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
+			TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
+			TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
+			TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
+			
+			Goto SelectFirstPersonLegs
+			SelectContinue:
+			TNT1 A 0 PB_WeapTokenSwitch("CarbineSelected")
+			TNT1 A 0 A_Giveinventory("RandomHeadExploder",1)
+			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
+			TNT1 AAAAAAAA 1 A_Raise
+			Wait
 	}
 }

@@ -25,21 +25,17 @@ ACTOR MG42BarrelOverheat : Inventory { Inventory.MaxAmount 1} //Token for the MG
 ACTOR PB_MG42 : PB_Weapon
 {
 	//$Title MG-42
-	//$Category Weapons
+	//$Category Project Brutality - Weapons
 	//$Sprite HBUSD0
 	Game Doom
 	SpawnID 9400
-	Weapon.BobRangeX 0.3
-	Weapon.BobRangeY 0.5
-	Weapon.BobStyle InverseSmooth
-	Weapon.BobSpeed 2.4
 	+FLOORCLIP
-	Weapon.AmmoType1 "NewClip"
+	Weapon.AmmoType1 "PB_HighCalMag"
 	Weapon.AmmoType2 "MG42HeatLevel"
 	Weapon.AmmoGive1 30
 	Weapon.AmmoGive2 0
 	Weapon.AmmoUse1 0
-	Inventory.PickupMessage "You got MG-42 aka Hitler's Buzzsaw! (Slot 5)"
+	Inventory.PickupMessage "MG-42 (Slot 5)"
 	Weapon.AmmoUse2 0
 	Inventory.PickupSound "weapons/MG42/Pickup"
 	Obituary "%o tasted the power of %k's MG42"
@@ -47,15 +43,22 @@ ACTOR PB_MG42 : PB_Weapon
 	+WEAPON.AMMO_OPTIONAL
 	+WEAPON.NOAUTOFIRE
 	+WEAPON.NOALERT
+	+dontgib
 	Scale 0.28
-	Tag "MG-42 (Hitler's Buzzsaw)"
+	Tag "MG-42"
 	Inventory.AltHUDIcon "HBUSD0"
 	PB_WeaponBase.respectItem "MG42Respected"
 	//FloatBobStrength 0.5
+	PB_WeaponBase.OffsetRecoilX 7
+	PB_WeaponBase.OffsetRecoilY 5
+
 	States {
 	
 	//Short stuff first
 	WeaponSpecial:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 A_Takeinventory("GoWeaponSpecialAbility",1)
 		Goto Ready3
 	EmptyFire:
@@ -86,6 +89,14 @@ ACTOR PB_MG42 : PB_Weapon
 			PB_HandleCrosshair(50);
 			A_TakeInventory("PB_LockScreenTilt",1);
 		}
+		
+		TNT1 A 0 A_TakeInventory("HasBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
+		TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
+		
 		Goto SelectFirstPersonLegs
 		SelectContinue:
 		TNT1 A 0
@@ -158,10 +169,10 @@ ACTOR PB_MG42 : PB_Weapon
 		
 		
 	SelectBelt:
-		MGS5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGS4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGS3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGKS A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGS5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGS4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGS3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGKS A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		TNT1 A 0
 		"####" A 0
 		"####" CBA 1
@@ -173,6 +184,7 @@ ACTOR PB_MG42 : PB_Weapon
 		TNT1 A 0 A_TakeInventory("MG42HeatLevel", 20)
 		TNT1 A 0 PB_RespectIfNeeded
 	SelectAnimation:
+		TNT1 A 0 A_TakeInventory("Zoomed", 1)
 		TNT1 A 0 {
 		A_PlaySound("weapons/MG42/Select");
 		if(CountInv("MG42HeatLevel") > 1) {A_Overlay(3, "Cooling");}
@@ -194,43 +206,46 @@ ACTOR PB_MG42 : PB_Weapon
 		}
 	ReadyToFire:	
 		MG1R A 1 {
-			if(CountInv("NewClip") >= 14) {A_SetWeaponSprite("MG5R");}
-			if(CountInv("NewClip") >= 12 && CountInv("NewClip") < 14) {A_SetWeaponSprite("MG4R");}
-			if(CountInv("NewClip") >= 10 && CountInv("NewClip") < 12) {A_SetWeaponSprite("MG3R");}
-			if(CountInv("NewClip") >= 8 && CountInv("NewClip") < 10) {A_SetWeaponSprite("MG2R");
+			if(CountInv("PB_HighCalMag") >= 14) {A_SetWeaponSprite("MG5R");}
+			if(CountInv("PB_HighCalMag") >= 12 && CountInv("PB_HighCalMag") < 14) {A_SetWeaponSprite("MG4R");}
+			if(CountInv("PB_HighCalMag") >= 10 && CountInv("PB_HighCalMag") < 12) {A_SetWeaponSprite("MG3R");}
+			if(CountInv("PB_HighCalMag") >= 8 && CountInv("PB_HighCalMag") < 10) {A_SetWeaponSprite("MG2R");
 			}
 			return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
 		}
 		Loop
 	
 	ChangeBullet:
-		MA15 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MA14 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MA13 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MA12 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MA15 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MA14 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MA13 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MA12 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		TNT1 A 0
 		"####" ABCDEFGHIIIJKLMNOPQRSTTTTTTUVVVVWXYZ 1
-		MA25 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MA24 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MA23 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MA22 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MA25 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MA24 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MA23 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MA22 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		TNT1 A 0
 		"####" AAAAAABCDEFFFFFFGHHHHIJKLMNNNN 1
 		//RECHAMBER
-		MG5C A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MG4C A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MG3C A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MG2C A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MG5C A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MG4C A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MG3C A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MG2C A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		TNT1 A 0
 		"####" ABCDDDDCBA 1
-		MA25 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MA24 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MA23 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MA22 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MA25 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MA24 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MA23 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MA22 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		TNT1 A 0
 		"####" NNOPQRST 1
 		Stop
 	Reload:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 A_JumpIf(CountInv("MG42HasOverheated") || CountInv("MG42BarrelOverheat") >= 1, "BarrelChange")
 		Goto ReadyToFire
 	UnzoomOverheat:
@@ -261,10 +276,8 @@ ACTOR PB_MG42 : PB_Weapon
 		TNT1 AA 0
 		TNT1 A 0{
 		A_ClearOverlays(5, 6);
-		A_TakeInventory("MG42HeatLevel", 200);
-		A_TakeInventory("MG42HasOverheated");
-		A_TakeInventory("MG42BarrelOverheat");
 		A_Overlay(3, "ChangeBullet");
+		A_SetInventory("CantDoAction",1);
 		}
 		MGC1 ABCDEFGHIJKLMNO 1
 		TNT1 A 0 A_PlaySound("MG42OP")
@@ -282,12 +295,21 @@ ACTOR PB_MG42 : PB_Weapon
 		MGRC DDDDCBA 1
 		MGC3 OPQRST 1
 		TNT1 A 0 A_Overlay(3, "Cooling")
+		TNT1 A 0 {
+			A_SetInventory("CantDoAction",0);
+			A_TakeInventory("MG42HeatLevel", 200);
+			A_TakeInventory("MG42HasOverheated");
+			A_TakeInventory("MG42BarrelOverheat");
+			}
 		Goto Ready3
 	Fire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
 		TNT1 A 0 A_JumpIfInventory("MG42HasOverheated",1,"BarrelChange")
 		TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "Fire2")
 		TNT1 A 0 {
-		if (CountInv("NewClip") >= 1 && CountInv("MG42HeatLevel") != 100) {
+		if (CountInv("PB_HighCalMag") >= 1 && CountInv("MG42HeatLevel") != 100) {
 			return state ("ActualFire");
 			}
 		else if (CountInv("MG42HeatLevel") == 100) {
@@ -312,10 +334,10 @@ ACTOR PB_MG42 : PB_Weapon
 		Stop
 	
 	BeltFlash:
-		MGF5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGF4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGF3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGF2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGF5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGF4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGF3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGF2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		TNT1 A 0
 		"####" ABCD 1
 		Stop
@@ -330,16 +352,18 @@ ACTOR PB_MG42 : PB_Weapon
 		else{
 			A_GiveInventory("MG42HeatLevel", 1);
 			}
-		A_TakeInventory("NewClip", 1);
+		A_TakeInventory("PB_HighCalMag", 1);
 		A_PlaySound("MG42FIR", 1);
-		A_FireBullets(5, 6, 1, 28, "MachineGunBulletPuff", 1);
+		//A_FireBullets(5, 6, 1, 28, "MachineGunBulletPuff", 1);
+		A_FireProjectile("PB_792x57mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 		//A_Firecustommissile("MG42CaseSpawn",0,0,24,-20, 0, -50);
 		PB_SpawnCasing("MG42Casing", 16, -3, 33,frandom(3, 8),frandom(-2,2),frandom(-6,-3));
 		A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
 		A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
-		A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+		PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 		A_AlertMonsters;
 		PB_WeaponRecoil(-2.2,-0.6);
+		PB_FireOffset;
 		}
 		MGFI AB 1
 		TNT1 A 0 A_Refire
@@ -351,10 +375,10 @@ ACTOR PB_MG42 : PB_Weapon
 		TNT1 A 0 A_PlaySound("MG42HEAT")
 		TNT1 A 0 A_GiveInventory("MG42HasOverheated")
 		TNT1 A 0 A_GiveInventory("MG42BarrelOverheat")
-		MG5R A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MG4R A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MG3R A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MG2R A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MG5R A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MG4R A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MG3R A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MG2R A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		MG1R A 0
 		"####" A 0
 		"####" A 0 A_Overlay(3,"Cooling")
@@ -363,21 +387,24 @@ ACTOR PB_MG42 : PB_Weapon
 		Goto ReadyToFire
 	
 	BeltZoomFlash:
-		MGZ5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGZ4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGZ3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGZ2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGZ5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGZ4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGZ3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGZ2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		TNT1 A 0
 		"####" A 0
 		"####" AB 1
-		MGZ3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGZ2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGZ3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGZ2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		TNT1 A 0
 		"####" A 0
 		"####" C 1
 		Stop
 	
 	AltFire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "Unzoom")
 		TNT1 A 0 {
 		A_GiveInventory("Zoomed", 1);
@@ -391,16 +418,16 @@ ACTOR PB_MG42 : PB_Weapon
 		Goto Ready2
 	
 	BeltUnzoomFlash:
-		MGZ3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGZ2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGZ3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGZ2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		TNT1 A 0
 		"####" A 0
 		"####" C 1
 		"####" A 0
-		MGZ5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGZ4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGZ3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGZ2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGZ5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGZ4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGZ3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGZ2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		TNT1 A 0
 		"####" A 0
 		"####" BA 1
@@ -419,8 +446,8 @@ ACTOR PB_MG42 : PB_Weapon
 		Goto Ready3
 	
 	Ready2:
-		MG3Z A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MG2Z A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MG3Z A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MG2Z A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		MG1Z A 0
 		"####" A 0
 		"####" A 1 {
@@ -431,14 +458,14 @@ ACTOR PB_MG42 : PB_Weapon
 				if(!PressingAltfire() || JustReleased(BT_ALTATTACK) ) {
 					return state("Unzoom");
 				}
-				if (PressingFire() && PressingAltfire() && CountInv("NewClip") > 1 && CountInv("MG42HeatLevel") < 100)
+				if (PressingFire() && PressingAltfire() && CountInv("PB_HighCalMag") > 1 && CountInv("MG42HeatLevel") < 100)
 							{
 							Return State("Fire2");
 							}
-					else if (PressingFire() && PressingAltfire() && CountInv("NewClip") > 1 && CountInv("MG42HeatLevel") == 100) {
+					else if (PressingFire() && PressingAltfire() && CountInv("PB_HighCalMag") > 1 && CountInv("MG42HeatLevel") == 100) {
 							Return State ("UnzoomOverheat");
 						}
-					else if (PressingFire() && PressingAltfire() && CountInv("NewClip") <= 1) {
+					else if (PressingFire() && PressingAltfire() && CountInv("PB_HighCalMag") <= 1) {
 							Return State ("Unzoom");
 						}
 				return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY);
@@ -450,16 +477,16 @@ ACTOR PB_MG42 : PB_Weapon
 	Loop
 	
 	BeltFlashZoomFire:
-		MZF3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MZF2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MZF3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MZF2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		TNT1 A 0
 		"####" A 0
 		"####" AC 1
 		Stop
 	BeltFlashZoomFireFinished:
 		TNT1 B 1{
-			if(CountInv("NewClip") >= 10) {A_SetOverlaySprite(5, "MZF3");}
-			else if (CountInv("NewClip")  == 8 || CountInv("NewClip")  == 9)  {A_SetOverlaySprite(5, "MZF2");}
+			if(CountInv("PB_HighCalMag") >= 10) {A_SetOverlaySprite(5, "MZF3");}
+			else if (CountInv("PB_HighCalMag")  == 8 || CountInv("PB_HighCalMag")  == 9)  {A_SetOverlaySprite(5, "MZF2");}
 		}
 		STOP
 		
@@ -477,7 +504,7 @@ ACTOR PB_MG42 : PB_Weapon
 	Fire2:
 		TNT1 A 0 A_JumpIfInventory("MG42HasOverheated",1,"UnzoomBarrelChange")
 		TNT1 A 0 {
-		if (CountInv("NewClip") >= 1 && CountInv("MG42HeatLevel") != 100) {
+		if (CountInv("PB_HighCalMag") >= 1 && CountInv("MG42HeatLevel") != 100) {
 			return state ("ActualFire2");
 			}
 		else if (CountInv("MG42HeatLevel") == 100) {
@@ -499,13 +526,14 @@ ACTOR PB_MG42 : PB_Weapon
 		else{
 			A_GiveInventory("MG42HeatLevel", 2);
 			}
-		A_TakeInventory("NewClip", 1);
+		A_TakeInventory("PB_HighCalMag", 1);
 		A_PlaySound("MG42FIR", 1);
-		A_FireBullets(5, 5, 1, 28, "MachineGunBulletPuff", 1);
+		//A_FireBullets(5, 5, 1, 28, "MachineGunBulletPuff", 1);
+		A_FireProjectile("PB_792x57mm", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 		PB_SpawnCasing("MG42Casing", 20, -3, 36,frandom(3, 8),frandom(-2,2),frandom(-6,-3));
 		A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
 		A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
-		A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+		PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
 		A_AlertMonsters;
 		PB_WeaponRecoil(-2.0,-0.5);
 		}
@@ -540,102 +568,120 @@ ACTOR PB_MG42 : PB_Weapon
 		}
 		MGZF C 1 A_Overlay(5, "BeltFlashZoomFireFinished")
 		MG1Z A 1 {
-			if(CountInv("NewClip") >= 10) {A_SetWeaponSprite("MG3Z");}
-			if(CountInv("NewClip") == 8 || CountInv("NewClip") == 9) {A_SetWeaponSprite("MG2Z");}
+			if(CountInv("PB_HighCalMag") >= 10) {A_SetWeaponSprite("MG3Z");}
+			if(CountInv("PB_HighCalMag") == 8 || CountInv("PB_HighCalMag") == 9) {A_SetWeaponSprite("MG2Z");}
 			}
 		TNT1 A 0 A_Overlay(3, "Cooling")
 		Goto Ready2
 	
 	FlashKicking:
-		MGK5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGK4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGK3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGK2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		MGKI  A 0
 		"####" A 0
 		"####" BCD 1
 		MGKI EFGHHGFE 1
-		MGK5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGK4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGK3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGK2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		MGKI  A 0
 		"####" A 0
 		"####" DCB 1
 		Goto Ready3
 	FlashAirKicking:
-		MGK5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGK4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGK3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGK2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")	
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		MGKI  A 0
 		"####" A 0
 		"####" BCD 1
 		MGKI EFGHIIIHGFE 1
-		MGK5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGK4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGK3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGK2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		MGKI  A 0
 		"####" A 0
 		"####" DCB 1
 		Goto Ready3
 	FlashSlideKicking:
-		MGK5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGK4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGK3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGK2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		MGKI  A 0
 		"####" A 0
 		"####" BCD 1
 		MGKI EFGHIIIIIIIIIIHGFE 1
-		MGK5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGK4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGK3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGK2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		MGKI  A 0
 		"####" A 0
 		"####" DCB 1
 		Goto Ready3
 	FlashSlideKickingStop:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
 		MGKI IIII 1
-		MGK5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGK4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGK3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGK2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		MGKI  A 0
 		"####" A 0
 		"####" DCB 1
 		Goto Ready3
 	FlashPunching:
-		MGK5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGK4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGK3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGK2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		MGKI  A 0
 		"####" A 0
 		"####" BCD 1
 		MGKI EFGHHGFE 1
-		MGK5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGK4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGK3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGK2 A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		MGKI  A 0
 		"####" A 0
 		"####" DCB 1
 		Stop
 	
 	DeselectFlash:
-		MGS5 A 0 A_JumpIfInventory("NewClip", 14, 5)
-		MGS4 A 0 A_JumpIfInventory("NewClip", 12, 4)
-		MGS3 A 0 A_JumpIfInventory("NewClip", 10, 3)
-		MGKS A 0 A_JumpIfInventory("NewClip", 8, 2)
+		MGS5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGS4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGS3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGKS A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
 		TNT1 A 0
 		"####" A 0
 		"####" ABC 1
 		Stop
 	
 	Deselect:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);

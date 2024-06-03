@@ -41,6 +41,7 @@ class NashGoreBloodBase : Blood replaces Blood
 		+DONTSPLASH
 		+NOTELEPORT
 		-SOLID
+		DistanceCheck "pb_floorwallblooddrawdist";
 	}
 
 	const BLOOD_FLAGS = SXF_TRANSFERTRANSLATION | SXF_ABSOLUTEPOSITION | SXF_ABSOLUTEANGLE |
@@ -52,6 +53,39 @@ class NashGoreBloodBase : Blood replaces Blood
 	//
 	//===========================================================================
 
+	action void SpawnCeilingBlood() {
+		FLineTraceData t;
+		int flags = TRF_THRUACTORS;
+
+		double ang = frandom(0, 360);
+
+		LineTrace(ang, 32, frandom(-90, 0), flags, 0, data: t);
+
+		if (t.HitType == t.TRACE_HitCeiling)
+		{
+			bool result;
+			Actor obj;
+
+			// ceiling blood
+			if (nashgore_bloodtype == 0 || nashgore_bloodtype == 1)
+			{
+				class<Actor> cls;
+				cls = "PB_BloodSpotCeiling";
+
+				[result, obj] = A_SpawnItemEx(cls, flags: SXF_USEBLOODCOLOR | BLOOD_FLAGS, 150);
+				if (obj)
+				{
+					obj.Gravity = 0;
+					obj.SetOrigin(t.HitLocation, true);
+					PB_BloodSpotCeiling(obj).bOnCeiling = true;
+
+					// flip sprite Y
+					if (nashgore_spriteblood) obj.Scale.Y *= -1;
+				}
+			}
+		}
+	}
+	
 	override void BeginPlay(void)
 	{
 		Super.BeginPlay();
@@ -135,7 +169,7 @@ class NashGoreBlood : NashGoreBloodBase
 		TNT1 A 0
 		{
 			A_SpawnItemEx("NashGoreBloodImpact", flags: BLOOD_FLAGS);
-			A_RadiusGive("RedBloodSplatterz", 96, RGF_PLAYERS | RGF_OBJECTS | RGF_MONSTERS, 1);
+			
 			A_SpawnProjectile("BloodSplasher", 0, 0, random (0, 360), 2, random (0, 160));
 			
 			A_SpawnProjectile ("WaterBloodCHecker", 7, 0, random (0, 360), 2, random (30, 60));
@@ -301,7 +335,10 @@ class NashGoreBloodParticle1 : NashGoreBloodBase
 	States
 	{
 	Spawn:
-		TNT1 A 1 NoDelay A_Jump(256, "Blood1", "Blood2", "Blood3", "Blood4", "Blood5", "Blood6");
+		TNT1 A 1 NoDelay {
+			SpawnCeilingBlood();
+			A_Jump(256, "Blood1", "Blood2", "Blood3", "Blood4", "Blood5", "Blood6");
+		}
 		Stop;
 	Blood1:
 		NBL1 A -1;
@@ -322,17 +359,7 @@ class NashGoreBloodParticle1 : NashGoreBloodBase
 		NBL1 F -1;
 		Stop;
 	Crash:
-		TNT1 A 1
-		{
-			if (random() < 50)
-			{
-				A_SpawnItemEx("NashGoreBloodSpot", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 190);
-			}
-			else
-			{
-				A_SpawnItemEx("NashGoreBloodSpotSmall", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 190);
-			}
-		}
+		TNT1 A 1 A_SpawnItemEx("PB_BloodSpot", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION);
 		Stop;
 	}
 }
@@ -365,7 +392,10 @@ class NashGoreBloodParticle2 : NashGoreBloodBase
 		*/
 		
 	Spawn:
-		TNT1 A 1 NoDelay A_Jump(256, "Spawn1", "Spawn2", "Spawn3");
+		TNT1 A 1 NoDelay {
+			SpawnCeilingBlood();
+			A_Jump(256, "Blood1", "Blood2", "Blood3", "Blood4", "Blood5", "Blood6");
+		}
 	Spawn1:
 		X057 ABCDEFGHIJKLMNOPQRS 1;
 		Stop;
@@ -376,7 +406,7 @@ class NashGoreBloodParticle2 : NashGoreBloodBase
 		X059 ABCDEFGHIJKLM 1;
 		Stop;
 	Crash:
-		TNT1 A 1;
+		TNT1 A 1 A_SpawnItemEx("PB_BloodSpot", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION);
 		Stop;
 	}
 }
@@ -410,7 +440,10 @@ class NashGoreBloodParticle_Large : NashGoreBloodBase
 		*/
 		
 	Spawn:
-		TNT1 A 1 NoDelay A_Jump(256, "Spawn1", "Spawn2", "Spawn3");
+		TNT1 A 1 NoDelay {
+			SpawnCeilingBlood();
+			A_Jump(256, "Blood1", "Blood2", "Blood3", "Blood4", "Blood5", "Blood6");
+		}
 	Spawn1:
 		X057 ABCDEFGHIJKLMNOPQRS 1;
 		Stop;
@@ -421,7 +454,7 @@ class NashGoreBloodParticle_Large : NashGoreBloodBase
 		X059 ABCDEFGHIJKLM 1;
 		Stop;
 	Crash:
-		TNT1 A 1;
+		TNT1 A 1 A_SpawnItemEx("PB_BloodSpot", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION);
 		Stop;
 	}
 }
@@ -698,16 +731,17 @@ class NashGoreBloodSpurt : NashGoreBloodBase
 	Crash:
 		TNT1 A 1
 		{
+			A_SpawnItemEx("PB_BloodSpot", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION);
 			A_SpawnItemEx("NashGoreBloodFloorSplash",
 				frandom(-32, 32), frandom(-32, 32),
-				flags: SXF_TRANSFERTRANSLATION | SXF_ABSOLUTEPOSITION | SXF_NOCHECKPOSITION, 100);
+				flags: SXF_TRANSFERTRANSLATION | SXF_ABSOLUTEPOSITION | SXF_NOCHECKPOSITION);
 
 			if (nashgore_bloodtype == 0 || nashgore_bloodtype == 1)
 			{
 				class<Actor> cls;
-				if (nashgore_bloodtype == 0)		cls = "NashGoreBloodSpot";
+				if (nashgore_bloodtype == 0)		cls = "PB_BloodSpot";
 				else if (nashgore_bloodtype == 1)	cls = "NashGoreBloodSpotClassic";
-				A_SpawnItemEx(cls, flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 230);
+				A_SpawnItemEx(cls, flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION);
 			}
 		}
 		Stop;
@@ -826,6 +860,7 @@ class NashGoreBloodDrop : NashGoreBloodBase
 		TNT1 A 0
 		{
 			A_SpawnItemEx("NashGoreBloodFloorSplash", flags: BLOOD_FLAGS);
+			A_SpawnItemEx("PB_BloodSpotTiny", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION);
 			if (random() < 180) A_StartSound("nashgore/blooddrop");
 		}
 		Stop;

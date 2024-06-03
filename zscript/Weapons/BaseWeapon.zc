@@ -1,7 +1,7 @@
-
-
-class PB_WeaponBase : DoomWeapon 
+class PB_WeaponBase : DoomWeapon
 {
+	Mixin PB_CheckFunctions;
+	double exaggerationMultiplier;
 	Actor laseractor;
 	Actor InvActor;
 	Vector3 invactorpos;
@@ -46,843 +46,65 @@ class PB_WeaponBase : DoomWeapon
 	bool executingEnemy;
 	property executingEnemy: executingEnemy;
 	
+	bool executionBlueBlood;
+	property executionBlueBlood: executionBlueBlood;
+	
+	bool executionGreenBlood;
+	property executionGreenBlood: executionGreenBlood;
+	
+	double horizontalOffsetRecoil;
+	property OffsetRecoilX: horizontalOffsetRecoil;
+
+	double verticalOffsetRecoil;
+	property OffsetRecoilY: verticalOffsetRecoil;
 	
 	bool chainsawMode;
 	property chainsawMode: chainsawMode;
 	
+	//Cemtex's PB_AmmoIntoMag function variables
+	string AmmoMag;
+	string AmmoPool;
+	int MagazineMaxFill;
+	int TakeGiveResrvAmnt; //So no states would be made for weapons that take more than one of their desired reserve ammo
 	
-	action bool PB_ChainsawHealthRestore(){
-		return invoker.chainsawMode;
-	}
-	
-	action void PB_SetChainsawHealthRestore(bool type){
-		invoker.executingEnemy = type;
-	}
-	
-	action void PB_SawAttack(bool verticalCut = 0, bool stealArmor = 0)
-	{
-		
-				double playerHealth = self.health;
-				Actor target = self.GetPointer(AAPTR_PLAYER_GETTARGET);
-				
-				if(target)
-				{
-					if(CountInv("ChainsawResourceGather") == 1 && (target is "PB_Monster" || target.bCountKill == true) && CountInv("Gas") > 0 && playerHealth < 200) {
-						
-						double coefficient = 0.015;
-						if (playerHealth < 100) {coefficient = 0.03;}
-							
-							
-						double healingFactor = coefficient*sqrt(200-playerHealth);
-						
-						if(verticalCut) {
-							A_Saw("", "Machete/Yum", 2, "SSawPuff3", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS, 80, 3, 0, healingFactor, 200);
-						}
-						else {
-							A_Saw("", "Machete/Yum", 2, "SSawPuff2", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS, 80, 3, 0, healingFactor, 200);
-						}
-					
-					}
-					else {
-						if(verticalCut) {
-							A_Saw("", "Machete/Yum", 2, "SSawPuff3", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS|SF_NOUSEAMMO , 80, 3, 0);
-						}
-						else {
-							A_Saw("", "Machete/Yum", 2, "SSawPuff2", SF_NOPULLIN|SF_NOTURN|SF_NOUSEAMMOMISS|SF_NOUSEAMMO , 80, 3, 0);
-						}
-					}
-				}
-				
-	}
-	
-	
-	
-	action bool PB_usingEquipment(){
-		return invoker.usingEquipment;
-	}
-	
-	action void PB_SetUsingEquipment(bool type){
-		invoker.usingEquipment = type;
-	}
-	
-	action bool PB_usingMelee(){
-		return invoker.usingMelee;
-	}
-	
-	action void PB_SetUsingMelee(bool type){
-		invoker.usingMelee = type;
-	}
-	
-	
-	action bool PB_usingKick(){
-		return invoker.usingKick;
-	}
-	
-	action void PB_SetUsingKick(bool type){
-		invoker.usingKick = type;
-	}
-	
-	
-	action bool PB_executingEnemy(){
-		return invoker.executingEnemy;
-	}
-	
-	action void PB_SetExecutingEnemy(bool type){
-		invoker.executingEnemy = type;
-	}
-	
-	action void PB_SetPlayerExecutionProperties() {
-		A_GiveInventory("ExecutionToken", 1); // When dashing, make sure to STOP player momentum, or else it fucks with the execution. Using a token for now.
-		A_ClearOverlays(10,11);
-		A_StopSound(CHAN_7);
-		A_StopSound(CHAN_WEAPON);
-		SetPlayerProperty(0, 1, PROP_INVULNERABILITY);
-		SetPlayerProperty(0, 1, PROP_TOTALLYFROZEN );
-		SetPlayerProperty(0, 1, PROP_FLY);
-		PB_SetExecutingEnemy(true);
-	}
-	
-	
-	action void PB_UnsetPlayerExecutionProperties() {
-		SetPlayerProperty(0, 0, PROP_INVULNERABILITY);
-		SetPlayerProperty(0, 0, PROP_TOTALLYFROZEN );
-		SetPlayerProperty(0, 0, PROP_FLY);
-		PB_SetExecutingEnemy(false);
-		PB_SetUsingMelee(false);
-		//A_ClearTarget();
-		A_TakeInventory("KnifeHasHit",1);
-		A_TakeInventory("HasCutingWeapon", 1);
-		A_TakeInventory("ExecutionToken", 1);
-	}
-	
-	
-	action StateLabel PB_ExecuteZombieMan() {
-		A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
-		StateLabel result;
-		int selector = (random(1,4));
-		FLineTraceData RemoteRay;
-		bool wallcheck = LineTrace(
-		   angle,
-		   120,
-		   pitch,
-		   TRF_THRUACTORS,
-		   offsetz: height-12,
-		   data: RemoteRay
-		);
-		
-		// Drop Kick Fatality
-		if((Pos.Z-floorz) > 8) {
-			A_Warp(AAPTR_PLAYER_GETTARGET, 0, 0, 54, WARPF_USECALLERANGLE|WARPF_NOCHECKPOSITION);
-			result = "Execution_Zombieman4";
-			return result;
-		}
-		
-		// Wall Kick Fatality
-		if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
-			result = "Execution_Zombieman3";
-			return result;
-		}
-		
-		// Generic Fatalities
-		switch(selector){
-			case 1:
-				result = "Execution_Zombieman1";
-				break;
-			case 2:
-				result = "Execution_Zombieman2";
-				break;
-			case 3:
-				result = "Execution_Zombieman5";
-				break;
-			case 4:
-				result = "Execution_Zombieman6";
-				break;
-		}
-		return result;
-	}
-	
-	action StateLabel PB_ExecuteShotguny() {
-		A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
-		StateLabel result;
-		int selector = (random(1,4));
-		FLineTraceData RemoteRay;
-		bool wallcheck = LineTrace(
-		   angle,
-		   120,
-		   pitch,
-		   TRF_THRUACTORS,
-		   offsetz: height-12,
-		   data: RemoteRay
-		);
-		
-		// Drop Kick Fatality
-		if((Pos.Z-floorz) > 8) {
-			A_Warp(AAPTR_PLAYER_GETTARGET, 0, 0, 54, WARPF_USECALLERANGLE|WARPF_NOCHECKPOSITION);
-			result = "Execution_ShotgunGuy4";
-			return result;
-		}
-		
-		// Wall Kick Fatality
-		if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
-			result = "Execution_ShotgunGuy3";
-			return result;
-		}
-		
-		// Generic Fatalities
-		switch(selector){
-			case 1:
-				result = "Execution_ShotgunGuy1";
-				break;
-			case 2:
-				result = "Execution_ShotgunGuy2";
-				break;
-			case 3:
-				result = "Execution_ShotgunGuy5";
-				break;
-			case 4:
-				result = "Execution_ShotgunGuy6";
-				break;
-		}
-		return result;
-	}
-	
-	
-	action StateLabel PB_ExecuteImp() {
-		A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
-		StateLabel result;
-// 		int selector = (random(1,4));
-		int selector = 1;
-		FLineTraceData RemoteRay;
-		bool wallcheck = LineTrace(
-		   angle,
-		   120,
-		   pitch,
-		   TRF_THRUACTORS,
-		   offsetz: height-12,
-		   data: RemoteRay
-		);
-		
-		// Drop Kick Fatality
-// 		if((Pos.Z-floorz) > 8) {
-// 			A_Warp(AAPTR_PLAYER_GETTARGET, 0, 0, 54, WARPF_USECALLERANGLE|WARPF_NOCHECKPOSITION);
-// 			result = "Execution_Zombieman4";
-// 			return result;
-// 		}
-		
-// 		// Wall Kick Fatality
-// 		if(wallcheck && RemoteRay.HitType == TRACE_HitWall) {
-// 			result = "Execution_Zombieman3";
-// 			return result;
-// 		}
-		
-		// Generic Fatalities
-		switch(selector){
-			case 1:
-				result = "Execution_Imp1";
-				break;
-		}
-		return result;
-	}
-		
-	action StateLabel PB_ExecutionHandlerString(Actor monster) {
-	
-		A_Stop();
-		PB_SetPlayerExecutionProperties();
-		A_SetCrosshair(5);
-		
-		name enemy = monster.getClassName();
-// 		A_print(enemy);
-		
-		switch(enemy){
-			// Zombieman
-			case 'PB_Zombieman':
-				return PB_ExecuteZombieMan();
-			case 'PB_PistolZombieman1':
-				return PB_ExecuteZombieMan();
-			case 'PB_HelmetZombieman':
-				return PB_ExecuteZombieMan();
-			case 'PB_PistolZombieman2':
-				return PB_ExecuteZombieMan();
-			
-			// Imp
-			case 'PB_Imp1':
-				return PB_ExecuteImp();
-				
-			//Shotgun Guy
-			case 'PB_ShotgunGuy':
-				return PB_ExecuteShotguny();
-				
-			default:
-				A_Print("Execution Failed");
-				PB_UnsetPlayerExecutionProperties();
-				return "GoingToReady2";
-		}
-	}
-	
-	action state PB_Execute() {
-	
-        CVar experimental_settings = CVar.FindCVar('pb_experimental');
-		
-		if(experimental_settings.GetBool()){
-			//
-			if(GetPointer(AAPTR_PLAYER_GETTARGET) != NULL)
-			{
-// 				if (GetPointer(AAPTR_PLAYER_GETTARGET) is "PB_Monster" && GetDistance(True, AAPTR_PLAYER_GETTARGET) < 120 ){
-				
-				if(GetPointer(AAPTR_PLAYER_GETTARGET) is "PB_Monster")
-				{
-					LookExParams look;
-					look.FOV = 110;
-					
-					if (GetPointer(AAPTR_PLAYER_GETTARGET).IsVisible(self, false, look) && GetDistance(True, AAPTR_PLAYER_GETTARGET) < 250 ){
-						
-// 						Actor monster = self.AimTarget();
-						Actor monster = GetPointer(AAPTR_PLAYER_GETTARGET);
-						int targetMaxHealth = monster.spawnHealth();
-						int targetCurrentHealth = monster.health;
-						
-						if (targetCurrentHealth <= targetMaxHealth*0.2|| targetCurrentHealth < 65) {
-							StateLabel st = PB_ExecutionHandlerString(monster);
-							return ResolveState(st);
-						}
-					}
-				}
-			}
-		}
-		return null;
-	}
-	
-	// Shoutout to Matt on ZDoom forums for the helpful weapon functions
-    action bool PressingFire(){return player.cmd.buttons & BT_ATTACK;}
-    action bool PressingAltfire(){return player.cmd.buttons & BT_ALTATTACK;}
-	action bool PressingReload(){return player.cmd.buttons & BT_RELOAD;}
-	action bool PressingUser4(){return player.cmd.buttons & BT_USER4;} //Particularly for the fist combos
-	
-	//Set weapon recoil, factoring in the recoil multiplier cvar
-	//Normally you want to use PB_WeaponRecoil instead, because it accounts for the berserk powerup
-	action void PB_WeaponRecoilBasic(float pitchDelta, float angleDelta = 0)
-	{
-        A_SetPitch(self.pitch+(pitchDelta * pb_weapon_recoil_mod_vertical), SPF_INTERPOLATE);
-        A_SetAngle(self.angle+(angleDelta * pb_weapon_recoil_mod_horizontal), SPF_INTERPOLATE);
-	}
-	
-	//Adds weapon recoil, modifying it if the owner has a berserk powerup
-	action void PB_WeaponRecoil(float pitchDelta, float angleDelta, float powerMod = 0.5)
-	{
-        if (invoker.OwnerHasBerserk())
-            PB_WeaponRecoilBasic(pitchDelta * powerMod, angleDelta * powerMod);
-        else
-            PB_WeaponRecoilBasic(pitchDelta, angleDelta);
-	}
-	
-	//This will allow for direct spawning of shell casings and empty magazines without using an intermediary actor.
-	//I highly recommend making cvars for each of the perameters for location and velocity to edit and test live, and with those numbers transpose into the final code.
-	//upon request I also have code for the tactical lean mod out there.
-	Action State PB_SpawnCasing(String Missile,Double ShellX,Double ShellY,Double ShellZ,Double ShellV_X,Double ShellV_Y,Double ShellV_Z)
-	{
-		A_SpawnItemEX(Missile,cos(pitch)*ShellX,ShellY,((ShellZ)*players[consoleplayer].Crouchfactor)-(sin(pitch)*ShellX),ShellV_X,ShellV_Y,ShellV_Z,0,SXF_TRANSFERPITCH,0);
-	Return Null;
-	}
-	
-	//Checks if the owner has a berserk
-	bool OwnerHasBerserk()
-	{
-        return (owner.CountInv("PowerStrength") >= 1);
-	}
-	
-	//Allows us to specify pitch and angle manually for berserk and non-berserk owners.
-	//Used occasionally where berserk recoil numbers aren't exactly half/double in a few cases, such as the pistol
-	action void PB_WeaponRecoilSpecial(float pitchDelta, float angleDelta, float pitchDeltaBerserk, float angleDeltaBerserk)
-	{
-        if (invoker.OwnerHasBerserk())
-            PB_WeaponRecoilBasic(pitchDeltaBerserk, angleDeltaBerserk);
-        else
-            PB_WeaponRecoilBasic(pitchDelta, angleDelta);
-	}
-	
-    action bool JustPressed(int which) // "which" being any BT_* value, mentioned above or not
-    {
-        return player.cmd.buttons & which && !(player.oldbuttons & which);
-    }
-    action bool JustReleased(int which)
-    {
-        return !(player.cmd.buttons & which) && player.oldbuttons & which;
-    }
-	
-    action bool IsPressingInput(int which){return player.cmd.buttons & which;}
+	protected int BraceTicker;
+	bool GunBraced;
 	
 	Default
 	{
+		Weapon.BobRangeX 0.3;
+		Weapon.BobRangeY 0.5;
+		Weapon.BobSpeed 2.4;
+		Weapon.BobStyle "InverseSmooth";
 		PB_WeaponBase.UnloaderToken "HasUnloaded";
-	}
-	override void AttachToOwner(Actor Other)
-	{
-		Super.AttachToOwner(other);
-		let toucher = other;
-		bool IsAlreadyPicked = false;
-		if (toucher.FindInventory("PB_PDAWeaponContainer",true))
-		{
-			PB_PDAWeaponContainer pdaweapContainer = PB_PDAWeaponContainer(toucher.FindInventory("PB_PDAWeaponContainer",true));
-			pdaweapContainer.CollectedWeapons.Push(self.GetClassName());
-			EventHandler.SendNetworkEvent("Foundweapon:"..self.GetClassName());
-		}
-	}
-	
-	//Weapon token take away in one function
-	action void PB_WeapTokenSwitch(name wepToken) 
-	{
-			PB_SetUsingMelee(false); //force to false so that quick melee doesn't break on some weapons
-			PB_SetUsingKick(false); //force to false so that kicking doesn't break on some weapons
-			A_TakeInventory("ADSMode",1);
-			A_TakeInventory("Zoomed",1);
-			A_TakeInventory("Unloading",1);
-			A_TakeInventory("RifleWasEmpty",1);
-			A_TakeInventory("RifleSelected",1);
-			A_TakeInventory("CarbineSelected",1);
-			A_TakeInventory("FistsSelected",1);
-			A_TakeInventory("SawSelected",1);
-			A_TakeInventory("SledgeSelected",1);
-			A_TakeInventory("HandgunSelected",1);
-			A_TakeInventory("DualHandgunSelected",1);
-			A_TakeInventory("RevolverSelected",1);
-			A_TakeInventory("DeagleSelected",1);
-			A_TakeInventory("ShotgunSelected",1);
-			A_TakeInventory("SSGSelected",1);
-			A_TakeInventory("ASGSelected",1);
-			A_TakeInventory("QSGSelected",1);
-			A_TakeInventory("MinigunSelected",1);
-			A_TakeInventory("MG42Selected",1);
-			A_TakeInventory("NewChaingunSelected",1);
-			A_TakeInventory("RocketLauncherSelected",1);
-			A_TakeInventory("GrenadeLauncherSelected",1);
-			A_TakeInventory("SGLSelected",1);
-			A_TakeInventory("PlasmaGunSelected",1);
-			A_TakeInventory("M2Selected",1);
-			A_TakeInventory("FreezerSelected",1);
-			A_TakeInventory("RailGunSelected",1);
-			A_TakeInventory("BFGSelected",1);
-			A_TakeInventory("BFGBeamSelected",1);
-			A_TakeInventory("BHCSelected",1);
-			A_TakeInventory("RevenantLauncherSelected",1);
-			A_TakeInventory("UnmakerSelected",1);
-			A_TakeInventory("FlameCannonSelected",1);
-			A_TakeInventory("HellRifleSelected",1);
-			A_TakeInventory("LandMineSelected",1);
-			A_TakeInventory("UACSMGSelected",1);
-			A_TakeInventory("MP40Selected",1);
-			A_TakeInventory("LostSoulSelected",1);
-			A_TakeInventory("HasBarrel",1);
-			A_TakeInventory("HasIceBarrel", 1);
-			A_TakeInventory("HasBurningBarrel",1);
-			A_TakeInventory("HasIncendiaryWeapon", 1);
-			A_TakeInventory("HasExplosiveWeapon",1);
-			A_TakeInventory("HasPlasmaWeapon",1);
-			A_TakeInventory("HasCutingWeapon",1);
-			A_Takeinventory("HasFireWeapon",1);
-			A_Takeinventory("HasAcidWeapon",1);
-			A_GiveInventory(wepToken,1);
-	}
-	
-	//Special Modes
-	action bool A_IsFiringLeftWeapon()
-	{
-		return invoker.FiringLeftWeapon;
-	}
-	
-	action void A_SetFiringLeftWeapon(bool type)
-	{
-		invoker.FiringLeftWeapon = type;
-	}
-	
-	action bool A_IsFiringRightWeapon()
-	{
-		return invoker.FiringRightWeapon;
-	}
-	
-	action void A_SetFiringRightWeapon(bool type)
-	{
-		invoker.FiringRightWeapon = type;
-	}
-	
-	
-	
-	action bool A_CheckAkimbo()
-	{
-		return invoker.akimboMode;
-	}
-	
-	action void A_SetAkimbo(bool type)
-	{
-		invoker.akimboMode = type;
-	}
-		
-	
-	action string A_GetCurrentFireMode()
-	{
-		return invoker.fireMode;
-	}
-	
-	action void A_SetCurrentFireMode(string type)
-	{
-		invoker.fireMode = type;
-	}
-		
-	
-	action string A_GetCurrentRifleMode()
-	{
-		return invoker.upgradedRifleMode;
-	}
-	
-	action void A_SetCurrentRifleMode(string type)
-	{
-		invoker.upgradedRifleMode = type;
-	}
-	
-	
-	action string A_GetCurrentGrenadeType()
-	{
-		return invoker.lastGrenadeType;
-	}
-	
-	action void A_SetCurrentGrenadeType(string type)
-	{
-		invoker.lastGrenadeType = type;
-	}
-	
-	action void PB_FireFreezerLaser()
-	{
-		let laserproj = A_FireProjectile("FreezeRifleLaser");
-		let laser = MWLaser (laserproj);
-	}
-	
-	action string PB_GetCurrentRocketMode()
-	{
-		return invoker.rocketLauncherMode;
-	}
-	
-	action void PB_SetCurrentRocketMode(string type)
-	{
-		invoker.rocketLauncherMode = type;
-	}
-
-//I know that two functions are messy but hey, they work like wonders.	
-//Also, a HUGE thank you to both A_D_M_E_R_A_L and DoomKrakken for showing
-//their examples on making the plasma ammo counter! Thanks guys!
-//-JMartinez2098
-//Edit - Thank you A_D_M_E_R_A_L for trimming down both of the functions into one
-	action void PB_SetPRCounter(int layer, name ammotype, name spr, bool isRightDigit = false)
-	{
-		int amount = CountInv(ammotype);
-		int a; //frame number based on ammo count
-		let pl_ws = player.GetPSprite(layer);
-		if(pl_ws) {
-			if(isRightDigit) a = amount % 10;  //check if isRightDigit is true
-			else a = amount / 10;
-			pl_ws.Sprite = GetSpriteIndex(spr);
-			pl_ws.Frame = a;
-		}
-	}
-
-	action void A_DecideSpawnLaserPuff()
-	{
-			if (CountInv("LaserSightActivated")==1 && CountInv("KeepLaserDeactivated") != 1)
-			{
-				//invoker.A_SpawnLaserPuff();
-			}
-			else 
-			{
-				invoker.A_DestroyLaserPuff();
-			}
-	}
-	action void A_DestroyLaserPuff()
-	{
-		if (invoker.laseractor) invoker.laseractor.Destroy();
-	}
-	action Actor A_SpawnLaserPuff(Double jitteramountX,Double jitteramountY,String DotColor)
-	{
-		int integer;
-		Double DotJitterX, DotJitterY;
-		Double FinalAngle, FinalPitch;
-
-		DotJitterX = Frandom(-(jitteramountX),jitteramountX);
-		DotJitterY = Frandom(-(jitteramountY),jitteramountY);
-		FinalAngle = angle + DotJitterX;
-		FinalPitch = Pitch + DotJitterY; 
-
-		[invoker.InvActor, invoker.integer] = LineAttack(Finalangle,4096,Finalpitch,0,'None',"InvisiblePuff",LAF_NORANDOMPUFFZ|LAF_NOINTERACT);
-		if (invoker.InvActor)
-		{
-			invoker.invactorpos = invoker.InvActor.pos;
-			invoker.InvActor.Destroy();
-		}
-		if (!invoker.laseractor) invoker.laseractor = Spawn(DotColor,invoker.invactorpos);
-		else invoker.laseractor.SetOrigin(invoker.invactorpos, true);
-		
-		return invoker.laseractor;
-	}
-	action int CheckUnloaded(string token)
-	{
-		if (CountInv(token) >= 1) return PBWEAP_UNLOADED;
-		return 0;
-	}
-	
-	// Used for interrupting the hand animation when kicking with melee attacks
-	action bool PB_MeleeKickInterruptCheck() {
-		if( InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftJab")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftHook")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftUpperCut")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftBackHand")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightJab"))||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightHook")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightUpperCut")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightBackHand"))
-		) {
-			return true;
-		}
-		return false;
-	}
-	
-	action bool PB_MeleeAttackKickCheck() 
-	{
-	
-		if( InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftJab")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftHook")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftUpperCut")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("LeftBackHand")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightJab"))||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightHook")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightUpperCut")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("RightBackHand")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("SideKickRight")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("SideKickLeft")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("HookKickLeft")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("ThrustKick")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("AirKickCombo")) ||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("HookKickRight"))||
-			InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("JavelinReadyToFire"))
-			
-			
-		) {
-			return false;
-		}
-		return true;
-		
-	}
-	
-	action bool PB_WeaponIsInReadyState()
-	{
-		if ( (InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("Ready")) || 
-			  InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("ReallyReady")) ||
-			  InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("ReadyToFire"))||
-			  InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("Ready2"))||
-			  InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("Ready5"))||
-			  InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("Ready4"))||
-			  InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("ReallyReady"))||
-			  InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("Ready3"))
-			 ) 
-			 ||
-			(InStateSequence(invoker.owner.player.GetPSprite(10).Curstate,invoker.ResolveState("IdleLeft_Overlay")) && 
-			 InStateSequence(invoker.owner.player.GetPSprite(11).Curstate,invoker.ResolveState("IdleRight_Overlay")) && 
-			 InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("ReadyToFireDualWield")))
-		   ){
-			
-			return true;
-		}
-		return false;
-	}
-	
-	
-	action state A_DoPBWeaponAction(int weapflags = WRF_ALLOWRELOAD, int pbFlags = 0, string unloadtoken = "HasUnloaded", bool noReload = false)
-	{
-		static const string PBWeapEmptyToken[] = 
-		{
-			"PB_PistolWasEmpty","RifleWasEmpty","UACSMGWasEmpty"
-		};
-		static const string PBWeapUnloadedToken[] =
-		{
-			"HasUnloaded","PulseCannonHasUnloaded", "HasUnloadedRG"
-		};
-		static const string PBWeapUnloadableClasses [] =
-		{
-			"PB_Weapon","PulseCannon"
-		};
-		static const statelabel PBWeapStatelabels[] =
-		{
-			"Steady", "QuickPunch", //"LedgeClimb",
-			"DoKick", "Taunt", "Salute", "Salute",
-			"UseEquipment", "SwitchEquipment", "DualWieldBaby",
-			"NoDualWield", "WeaponSpecial", "GrabbedBarrel", "GrabbedBurningBarrel"
-		};
-		if (!(pbFlags & PBWEAP_UNLOADED)) pbFlags |= CheckUnloaded(invoker.UnloaderToken);
-		if (CountInv("GoFatality")>=1 || PB_executingEnemy())
-		{
-			return ResolveState("Steady");
-		}
-		
-		if(((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()) || ((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon())){
-			if(CountInv("DualFireReload") >= 2){
-				A_TakeInventory("DualFireReload",2);
-				return ResolveState("Reload");
-			}
-		}
-		
-// 		}
-		if (CountInv("GoWeaponSpecialAbility")>=1)
-		{
-			if (ResolveState("DualWieldBaby")) return ResolveState("DualWieldBaby");
-			else if (ResolveState("NoDualWield")) return ResolveState("NoDualWield");
-			else return ResolveState("WeaponSpecial");
-		}
-		if (CountInv("GrabbedBarrel")>=1) 
-		{
-			return ResolveState("GrabBarrel");
-		}
-		if (CountInv("GrabbedBurningBarrel")>=1) 
-		{
-			return ResolveState("GrabBarrel");
-		}
-		if (CountInv("GrabbedIceBarrel")>=1) 
-		{
-			return ResolveState("GrabBarrel");
-		}
-		if (CountInv("Unloading")>=1 && ResolveState("Unload") && !(pbFlags & PBWEAP_UNLOADED) && CountInv(invoker.UnloaderToken) != 1)
-		{
-			return ResolveState("Unload");
-		}
-		else A_TakeInventory("Unloading", CountInv("Unloading"));
-		if (CountInv(invoker.UnloaderToken) >= 1 && !(pbFlags & PBWEAP_UNLOADED) && !InStateSequence(invoker.owner.player.GetPSprite(PSP_WEAPON).Curstate,invoker.ResolveState("GunEmpty")))
-		{
-			return ResolveState("GunEmpty");
-		}
-		if (ResolveState("LoadChamber"))
-		{
-			for (int i = 0; i < PBWeapEmptyToken.Size(); ++i)
-			{
-				if (CountInv(PBWeapEmptyToken[i]) >= 1)
-				{
-					return ResolveState("LoadChamber");
-				}
-			}
-		}
-		
-		if (noReload) {
-			A_WeaponReady();
-		}
-		else {
-			A_WeaponReady(weapflags);
-		}
-		return null;
-	}
-	
-	action void PB_HandleCrosshair(int num)
-	{
-        CVar crosshair_settings = CVar.FindCVar('pb_weapon_crosshairs');
-		
-		if(crosshair_settings.GetBool()){
-			A_SetCrosshair(num); // Set crosshair to specific weapon
-		}
-		else {
-			A_SetCrosshair(0); // Set crosshair to universal user setting
-		}
-	}
-	
-	//weapons should ALWAYS bob, fucking fight me -popguy
-	override void DoEffect()
-	{
-		super.DoEffect();
-		let player = owner.player;
-		if (player && player.readyweapon)
-		{
-			player.WeaponState |= WF_WEAPONBOBBING;
-		}
-	}
-	
-	action void A_SetOverlaySprite(int layer, String str)
-        {
-                    let psp = player.GetPSprite(layer);
-                    psp.sprite = GetSpriteIndex(str);
-        }
-  
-	action void A_SetWeaponSprite(String str)
-        {
-                    let psp = player.GetPSprite(PSP_WEAPON);
-                  //  let psp = player.GetPSprite(1);
-                    psp.sprite = GetSpriteIndex(str);
-        }
-		
-	action void A_SetFlashWeaponSprite(String str)
-	{
-		let psp = player.GetPSprite(PSP_FLASH);
-		psp.sprite = GetSpriteIndex(str);
-	}
-
-	action void A_SetSpawnSprite(String str)
-	{
-	   sprite = GetSpriteIndex(str);
-	}
-	
-	action void LedgeReach(float HeightDecrease)
-	{
-		let plr = PlayerPawnBase(self);
-		plr.LedgeHeightMax = (plr.LedgeHeight - Height * HeightDecrease * 1.0f);
-		A_Stop();
-		SetOrigin((Pos.X, Pos.Y, plr.LedgeHeightMax), True);
-	}
-	
-	action state PB_RespectIfNeeded()
-	{
-		Actor own = invoker.owner;
-		bool shouldHelmet = ACS_NamedExecuteWithResult("ToggleHelmetAnimation",0,0,0) == 0 && own.CountInv("IntroductionSequence") == 0;
-		bool shouldRespect = invoker.respectInventoryItem != "" && own.CountInv(invoker.respectInventoryItem) == 0;
-		bool dontRespect = Cvar.FindCVar('pb_respectweapons').GetBool() == false && own.CountInv(invoker.respectInventoryItem) == 0;
-		if (shouldHelmet)
-		{
-			own.GiveInventory("IntroductionSequence",1);
-			//Console.printf("Setting State: HelmetAnimation");
-			return invoker.resolveState("HelmetAnimation");
-		}	
-		else if (dontRespect)
-		{
-			own.GiveInventory(invoker.respectInventoryItem,1);
-			if(self.player.ReadyWeapon.GetClassName() == "PB_MG42") {
-				own.SetInventory("MG42HeatLevel",0);
-				return invoker.A_Jump(256,"SelectAnimation");
-			}
-			if(self.player.ReadyWeapon.GetClassName() == "PB_SuperGL"){ //Thanks to 7Soul on the ZDoom Forums for posting on getting a selected weapon
-				A_SetCurrentGrenadeType("Impact");
-				return invoker.A_Jump(256,"SelectAnimation");
-				}
-			if(self.player.ReadyWeapon.GetClassName() == "PB_RocketLauncher"){
-				PB_SetCurrentRocketMode("Standard");
-				return invoker.A_Jump(256,"SelectAnimation");
-				}
-			else {
-			return invoker.A_Jump(256,"SelectAnimation");
-			}
-		}
-		else if (shouldRespect)
-		{
-			//Console.printf("Setting State: WeaponRespect");
-			own.GiveInventory(invoker.respectInventoryItem,1);
-			return invoker.resolveState("WeaponRespect");
-		}
-		else
-		{
-			//Console.printf("Setting State: SelectAnimation");
-			return invoker.A_Jump(256,"SelectAnimation");
-		}
+		//Weapon.WeaponScaleX 1.2;
+		+DONTGIB
 	}
 	
 	States
-	{	
+	{
+		Select:
+		TNT1 A 1 A_Raise;
+		Wait;
+
+		Fire:
+		Ready:
+		SelectAnimation:
+			Goto GoingToReady;
+		Deselect:
+			TNT1 A 1 A_Lower;
+			Wait;
+			
 		HelmetAnimation:
 			TNT1 A 0
 			{
+				A_GiveInventory("PB_NoEffectInvul",1);
 				A_GiveInventory("sae_extcam", 1);
 				A_GiveInventory("sae_deathcam", 1);
+				A_GiveInventory("DoingHelmetAnim", 1);
 				A_SetCrosshair(5);
 			}
-			H3L6 H 1 A_SetBlend("00 00 00", 1, 35, "00 00 00", 0);
+			H3L6 H 1; //A_SetBlend("00 00 00", 1, 35, "00 00 00", 0);
 			TNT1 A 34 A_StartSound("IronSights",CHAN_AUTO);
 			H3L1 ABCDE 1 A_SetRoll(roll+10, SPF_INTERPOLATE);
 			TNT1 A 0 A_StartSound("RSUP1",CHAN_AUTO);
@@ -944,8 +166,11 @@ class PB_WeaponBase : DoomWeapon
 			TNT1 A 20 A_SetBlend("51 92 99", 1, 20, "51 92 99", 0);
 			TNT1 A 0
 			{
+				A_TakeInventory("PB_NoEffectInvul",1);
 				A_TakeInventory("sae_extcam", 1);
 				A_TakeInventory("sae_deathcam", 1);
+				A_TakeInventory("CantDoAction",1);
+				A_TakeInventory("DoingHelmetAnim", 1);
 			}
 			TNT1 A 0 A_Raise(9999);
 			TNT1 A 0 A_Jump(256,"SelectAnimation");
@@ -960,19 +185,28 @@ class PB_WeaponBase : DoomWeapon
 			Stop;
 			
 		StainedLedgeClimb:
+			TNT1 A 0 A_TakeInventory("Zoomed",1);
 			3L1M A 0 A_JumpIfInventory("PowerGreenBloodOnVisor",1,4);
 			2L1M A 0 A_JumpIfInventory("PowerBlueBloodOnVisor",1,3);
 			1L1M A 0 A_JumpIfInventory("PowerBloodOnVisor",1,2);
 		LedgeClimb:
 			CL1M A 0;
-			"####" A 0 A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, false);
-			"####" A 0 A_ClearOverlays(-5, 80);
-			"####" A 0 A_Stop();
-			"####" A 0 A_ZoomFactor(1.0);
-			"####" A 0 A_GunFlash("LedgeGrabFlash");
-			"####" A 0 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH);
-			"####" A 0 SetPlayerProperty(0,1,PROP_TOTALLYFROZEN);
-			"####" A 0 A_StartSound("ledgeclimb",5);
+			"####" A 0 {
+				A_StopSound(1);
+				A_StopSound(5);
+				A_StopSound(6);
+				A_StopSound(7);
+				A_TakeInventory("CantDoAction",1);
+				A_TakeInventory("PB_NoEffectInvul",1);
+				A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, false);
+				A_ClearOverlays(-80, 80);
+				A_Stop();
+				A_ZoomFactor(1.0);
+				A_GunFlash("LedgeGrabFlash");
+				A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH);
+				SetPlayerProperty(0,1,PROP_TOTALLYFROZEN);
+				A_StartSound("ledgeclimb",5);
+			}
 			"####" ABC 1 {
 				let plr = PlayerPawnBase(self);
 				
@@ -990,6 +224,7 @@ class PB_WeaponBase : DoomWeapon
 				return ResolveState(null);
 			}
 		LedgeReach:
+		    "####" A 0 A_ClearOverlays(-80,80);
 			"####" A 0 A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, false);
 			"####" D 1 {
 				let plr = PlayerPawnBase(self);
@@ -1009,6 +244,7 @@ class PB_WeaponBase : DoomWeapon
 			Goto LedgeReach;
 			
 			"####" E 1 {
+			    A_ClearOverlays(-80,80);
 				let plr = PlayerPawnBase(self);
 				plr.velz = 3.6;
 				A_SetPitch(0, SPF_INTERPOLATE);
@@ -1039,9 +275,11 @@ class PB_WeaponBase : DoomWeapon
 			2L1M A 0 A_JumpIfInventory("PowerBlueBloodOnVisor",1,3);
 			1L1M A 0 A_JumpIfInventory("PowerBloodOnVisor",1,2);
 			CL1M A 0;
-			"####" A 0 A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, false);
-			"####" A 0 A_ClearOverlays(-5, 80);
-			"####" A 0 A_GunFlash("LedgeGrabFlash");
+			"####" A 0 {
+			    A_ClearOverlays(-80,80);
+				A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, false);				
+				A_GunFlash("LedgeGrabFlash");
+			}
 			"####" JK 1 {
 				let plr = PlayerPawnBase(self);
 				plr.velz = 3.6;
@@ -1053,18 +291,334 @@ class PB_WeaponBase : DoomWeapon
 				A_SetPitch(pitch-pitch/2, SPF_INTERPOLATE);
 				A_WeaponReady();
 			}
-			TNT1 A 0 A_SetPitch(0, SPF_INTERPOLATE);
-			TNT1 A 0 SetPlayerProperty(0,0,PROP_TOTALLYFROZEN);
-			TNT1 A 0 SetInventory("Grabbing_A_Ledge", 0);
-			//TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand");
+			// New, and to prevent an issue with melee not working after climbing during it's animation
+			TNT1 A 0 {
+				PB_SetUsingKick(false);
+				PB_SetUsingMelee(false);
+				PB_SetUsingEquipment(false);
+				PB_SetExecutingEnemy(false);
+				A_SetPitch(0, SPF_INTERPOLATE);
+				SetPlayerProperty(0,0,PROP_TOTALLYFROZEN);
+				A_SetInventory("sae_extcam", 0);
+				A_SetInventory("sae_deathcam", 0);
+			 	SetInventory("Grabbing_A_Ledge", 0);
+				A_Overlay(-10, "FirstPersonLegsStand");
+			}
 			TNT1 A 0 A_Jump(256,"SelectAnimation");
 			Goto Ready3;
+		Equipment_Toggle_Handler_Overlay:
+			TNT1 A 1 {
+			
+			if (CountInv("ToggleEquipment")==1) 
+				return ResolveState("SwitchEquipment");
+			return ResolveState(null);
+			}
+			Loop;
+		Melee_Equipment_Handler_Overlay:
+			TNT1 A 1 {
+				if(!((PressingFire() || JustPressed(BT_ATTACK)) || (ResolveState("AltFire") && (PressingAltFire() || JustPressed(BT_ALTATTACK)))))
+				{
+					if(JustPressed(BT_USER1) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() && !CheckInventory("CantDoAction",1)) 
+					{
+						if(CheckInventory("DoingHelmetAnim",1))
+						{
+							A_TakeInventory("PB_NoEffectInvul",1);
+							A_TakeInventory("sae_extcam", 1);
+							A_TakeInventory("sae_deathcam", 1);
+							A_TakeInventory("CantDoAction",1);
+							A_TakeInventory("DoingHelmetAnim", 1);
+						}
+						
+						if(!PB_usingKick())
+						{
+							A_OverlayOffset(PSP_WEAPON, 0, 32);
+							PB_SetUsingEquipment(true);
+							A_Overlay(PSP_WEAPON, "UseEquipment");
+							A_OverlayOffset(PSP_WEAPON, 0, 32);
+						}
+					}
+					
+					if(JustPressed(BT_USER2) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() && !CheckInventory("Zoomed", 1) && !CheckInventory("CantDoAction",1)) 
+					{
+						if(CheckInventory("DoingHelmetAnim",1))
+						{
+							A_TakeInventory("PB_NoEffectInvul",1);
+							A_TakeInventory("sae_extcam", 1);
+							A_TakeInventory("sae_deathcam", 1);
+							A_TakeInventory("CantDoAction",1);
+							A_TakeInventory("DoingHelmetAnim", 1);
+						}
+						 
+						{
+							A_OverlayOffset(PSP_WEAPON, 0, 32);
+							PB_SetUsingMelee(true);
+							A_Overlay(PSP_WEAPON, "QuickMelee");
+							A_OverlayOffset(PSP_WEAPON, 0, 32);
+						}
+					}
+				}
+			}
+			Loop;
+		KickHandler_Overlay:
+			TNT1 A 1 {
+				if(CountInv("ResetKick")>=1)
+				{
+					A_TakeInventory("ResetKick", 1);
+					PB_SetUsingKick(false);
+					A_TakeInventory("Kicking", 1);
+				}
+				if(CountInv("Grabbing_A_Ledge")==0 && CountInv("Kicking")==0 && (JustPressed(BT_USER4) && !PB_usingKick() && !PB_executingEnemy() && !CheckInventory("Zoomed", 1) && PB_MeleeAttackKickCheck()))
+				{
+					PB_SetUsingKick(true);
+					A_OverlayOffset(-999, 0, 32);
+					A_Overlay(-999, "DoKick");
+					A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, true);
+				}
+			}
+			Loop;
+		// Initialize Weapon upon selection
+		GoingToReady:
+			TNT1 A 0 A_JumpIfInventory ("HasBarrel", 1, "ReadyBarrel");
+			TNT1 A 0 A_JumpIfInventory ("HasFlameBarrel", 1, "ReadyFlameBarrel");
+			TNT1 A 0 A_JumpIfInventory ("HasIceBarrel", 1, "ReadyIceBarrel");
+		SelectingAnimation:
+			TNT1 A 0 {
+				A_TakeInventory("KeepLaserDeactivated",1);
+				A_TakeInventory("DoGrenade",1);
+				A_TakeInventory("IsRunning",1);
+				A_TakeInventory("Reloading",1);
+				A_Overlay(-10, "FirstPersonLegsStand");
+				A_ClearOverlays(-999, -999);
+				A_SetInventory("Grabbing_A_Ledge",0);
+				A_SetInventory("Kicking",0);
+				A_SetInventory("Zoomed",0);
+				// New 
+				PB_SetUsingKick(false);
+				PB_SetUsingMelee(false);
+				PB_SetUsingEquipment(false);
+				PB_SetExecutingEnemy(false);
+				A_ClearReFire(); //Prevents altfire hold glitches
 				
+			}
+			TNT1 A 0 A_Jump(255,"Ready4");
+			TNT1 AAAA 1 A_Jump(255, "Ready3");
+			Loop;
+		SelectFirstPersonLegs:
+			TNT1 A 0 {
+				A_StopSound(1);
+				A_StopSound(CHAN_VOICE);
+				A_StopSound(5);
+				A_StopSound(6);
+				A_StopSound(7);
+				A_StopSOund(CHAN_AUTO);
+				A_TakeInventory("Spin",1);
+				A_TakeInventory("CantWeaponSpecial",1); //Fixes bug with Weapon Special Key no longer working when changing SGL grenade type or RL missile mode
+				A_TakeInventory("MG42Selected",1); //Take this token on every weapon that's not the MG42.
+				A_SetInventory("Grabbing_A_Ledge", 0); //Fixed bug where movement is locked when vaulting after entering a level
+				A_Takeinventory("RandomHeadExploder",1);
+				A_TakeInventory("DualFireReload",2);
+				A_Overlay(-777, "Melee_Equipment_Handler_Overlay");
+				A_Overlay(-778, "KickHandler_Overlay");
+				A_Overlay(-779, "Equipment_Toggle_Handler_Overlay");
+				A_Overlay(-10, "FirstPersonLegsStand");
+				A_ClearOverlays(-999, -999);
+				PB_SetUsingKick(false);
+				A_SetInventory("Kicking",0);
+				A_SetInventory("Zoomed",0);
+			}
+			TNT1 A 0 A_Jump(255, "SelectContinue");
+			Loop;
+		TryToSelectDrum:
+			TNT1 AAAA 1 A_Jump(255, "Ready3");
+			TNT1 AAAA 1 A_Jump(255, "BeltReady");
+			Loop;
+		GoingToReady2:
+			TNT1 A 0 {
+				A_TakeInventory("KeepLaserDeactivated",1);
+				A_TakeInventory("ToggleEquipment",1);
+				PB_SetUsingMelee(false);
+				PB_SetUsingEquipment(false);
+				A_Overlay(-10, "FirstPersonLegsStand");
+				A_ClearReFire();
+			}
+			TNT1 A 0 A_JumpIfInventory("SawSelected", 1, "OnLoop");
+			TNT1 AAAA 0 A_Jump(256, "SelectAnimation");
+			TNT1 AAAA 1 A_Jump(256, "Ready");
+			Loop;
+			
+		Steady:
+			TNT1 A 1 {
+				// New 
+				PB_SetUsingKick(false);
+				PB_SetUsingMelee(false);
+				PB_SetUsingEquipment(false);
+				PB_SetExecutingEnemy(false);
+			}
+			Goto GoingToReady;
+		FirstPersonLegsKickRight:
+			STAN A 0;
+			"####" A 0 A_GiveInventory("KeepLaserDeactivated",1);
+			"####" A 0 A_JumpIf(Height < 54, "FirstPersonLegsHide");
+			"####" A 0 A_JumpIfInventory("FPSLegChecker", 1, 2);
+			"####" O 1
+			{
+				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
+				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
+				A_OverlayOffset(-10, 0, (-pitch*2)+230);
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
+					A_SetOverlaySprite(-10, "TNT1");
+			}
+			Loop;
+			"####" P 1
+			{
+				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
+				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
+				A_OverlayOffset(-10, 0, (-pitch*2)+230);
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
+					A_SetOverlaySprite(-10, "TNT1");
+			}
+			Loop;
+		FirstPersonLegsKickLeft:
+			STAL A 0;
+			"####" A 0 A_GiveInventory("KeepLaserDeactivated",1);
+			"####" A 0 A_JumpIf(Height < 54, "FirstPersonLegsHide");
+			"####" A 0 A_JumpIfInventory("FPSLegChecker", 1, 2);
+			"####" P 1
+			{
+				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
+				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
+				A_OverlayOffset(-10, 0, (-pitch*2)+230);
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
+					A_SetOverlaySprite(-10, "TNT1");
+			}
+			Loop;
+			"####" O 1
+			{
+				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
+				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
+				A_OverlayOffset(-10, 0, (-pitch*2)+230);
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
+					A_SetOverlaySprite(-10, "TNT1");
+			}
+			Loop;
+		FirstPersonLegsHide:
+			"####" Q 1 
+			{
+				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
+				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
+				A_OverlayOffset(-10, 0, (-pitch*2)+230);
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
+					A_SetOverlaySprite(-10, "TNT1");
+			}
+			Loop;
+		FirstPersonLegsStand:
+			TNT1 A 0 A_JumpIf(vel.x > 0.8 || vel.x < -0.8 || vel.y > 0.8 || vel.y < -0.8, "FirstPersonLegsWalk1");
+			TNT1 A 0 A_JumpIf(vel.z != 0, "FirstPersonLegsJump");
+			TNT1 A 0 A_JumpIf(Height < 54, "FirstPersonLegsCrouch");
+			TNT1 A 0 A_JumpIfInventory("FPSLegChecker", 1, 2);
+			STAN A 1 
+			{
+				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
+				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
+				A_OverlayOffset(-10, 0, (-pitch*2)+230);
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
+					A_SetOverlaySprite(-10, "TNT1");
+			}
+			Loop;
+			TNT1 A 0 A_JumpIf(Height < 54, "FirstPersonLegsCrouch");
+			TNT1 A 0 A_JumpIf(vel.z != 0, "FirstPersonLegsJump");
+			STAN M 1 
+			{
+				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
+				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
+				A_OverlayOffset(-10, 0, (-pitch*2)+230);
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
+					A_SetOverlaySprite(-10, "TNT1");
+			}
+			Loop;
+		FirstPersonLegsCrouch:
+			TNT1 A 0 A_StartSound("IronSights", 0); //Sound when player crouches
+		FirstPersonLegsCrouchContinue:
+			TNT1 A 0 A_JumpIf(vel.z != 0, "FirstPersonLegsJump");
+			TNT1 A 0 A_JumpIf(vel.x > 0.8 || vel.x < -0.8 || vel.y > 0.8 || vel.y < -0.8, "FirstPersonLegsWalk1");
+			TNT1 A 0 A_JumpIf(Height > 54, "FirstPersonLegsStand");
+			STAN N 1 
+			{
+				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
+				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
+				A_OverlayOffset(-10, 0, (-pitch*2)+230);
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
+					A_SetOverlaySprite(-10, "TNT1");
+			}
+			Loop;
+		FirstPersonLegsWalk1:
+			TNT1 A 0 A_JumpIf(vel.z != 0, "FirstPersonLegsJump");
+			TNT1 A 0 A_JumpIfInventory("FPSLegChecker", 1, "FirstPersonLegsWalk2");
+			TNT1 A 0 A_JumpIf(vel.z != 0, "FirstPersonLegsJump");
+			TNT1 A 0 A_GiveInventory("FPSLegChecker",1);
+			STAN BCCDDEEFF 1
+			{
+				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
+				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
+				A_OverlayOffset(-10, 0, (-pitch*2)+230);
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
+					A_SetOverlaySprite(-10, "TNT1");
+				return A_JumpIf(vel.z != 0, "FirstPersonLegsJump");
+			}
+			Goto FirstPersonLegsStand;
+		FirstPersonLegsWalk2:
+			TNT1 A 0 A_JumpIf(vel.z != 0, "FirstPersonLegsJump");
+			TNT1 A 0 A_TakeInventory("FPSLegChecker",1);
+			STAN GHHIIJJKLL 1 
+			{
+				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
+				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
+				A_OverlayOffset(-10, 0, (-pitch*2)+230);
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
+					A_SetOverlaySprite(-10, "TNT1");
+				return A_JumpIf(vel.z != 0, "FirstPersonLegsJump");
+			}
+			Goto FirstPersonLegsStand;
+		FirstPersonLegsJump:
+			STAN I 5
+			{
+				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
+				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
+				A_OverlayOffset(-10, 0, (-pitch*2)+230);
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
+					A_SetOverlaySprite(-10, "TNT1");
+			}
+			Goto FirstPersonLegsStand;
+
+
+		Steady:
+			Goto GoingToReady;
+	}
+}
+
+class PB_Weapon : PB_WeaponBase {} //This is just a dummy class for inheriting reasons
+
+class PB_DualWeapon : PB_Weapon
+{
+	States
+	{
+	 ThrowMine:
+	 ThrowGrenade:
+		TNT1 A 0 {
+			A_ZoomFactor(1.0);
+			A_TakeInventory("ADSMode", 1);
+			A_TakeInventory("DoGrenade", 1);
+			A_TakeInventory("DoMine", 1);
+			A_Print("You can't throw right now!");
+		}
+		Goto GoingToReady;
 	}
 }
 
 class PB_UpgradeItem : CustomInventory
 {
+	Default
+	{+DONTGIB;}
 	action void A_SetSpawnSprite(String str)
 	{
 	   sprite = GetSpriteIndex(str);

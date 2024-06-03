@@ -5,7 +5,7 @@ Class PB_SpecialWheelHandler : EventHandler
 	array<string> useTheseSpecials;
 	array<string> avoidTheseSpecials;
 	
-	array<bool > wheelShow;
+	array<int > wheelShow;
 	int wheelIt;
 	int currentSelection;
 	int oldSelection;
@@ -470,7 +470,6 @@ Class PB_SpecialWheelHandler : EventHandler
 		
 		if(players[consoleplayer].mo.FindInventory("CantWeaponSpecial") || 
 			players[consoleplayer].readyweapon.InStateSequence(players[consoleplayer].readyweapon.curstate, players[consoleplayer].readyweapon.resolvestate("Deselect")))
-
 		{
 			oldPitch = players[consoleplayer].mo.pitch;
 			oldYaw = players[consoleplayer].mo.angle;
@@ -610,6 +609,8 @@ Class PB_SpecialWheelHandler : EventHandler
 						int screwIt = 0;
 						for (int i = 0; i < AllActorClasses.Size(); i++)
 						{
+							if (oldPUTics.Size() - 1 < screwIt) { break; }
+								
 							let type = (Class<Powerup>)(AllActorClasses[i]);
 							let item = Powerup(players[consoleplayer].mo.FindInventory(type));
 								
@@ -1043,6 +1044,44 @@ Class PB_SpecialWheelHandler : EventHandler
 				specialWheel_handleMouse();
 	}
 	
+	void specialWheel_CryoRifle()
+	{
+				wheelSpecials.Clear();
+				iconScale = (0.8, 0.8);
+				PB_SpecialWheel_Mode cryorifle_missile = new ("PB_SpecialWheel_Mode");
+				cryorifle_missile.specialIcon = TexMan.CheckForTexture("graphics/pywheel/CryoRifle_Missile.png",TexMan.Type_Any);
+				cryorifle_missile.specialName = "FireModeCryoRifleMissile_WW";
+				cryorifle_missile.specialAlias = "Ice Missile";
+				cryorifle_missile.specialPriority = 1;
+				cryorifle_missile.iconScale = iconScale;
+				wheelSpecials.Push(cryorifle_missile);
+				
+				PB_SpecialWheel_Mode cryorifle_beam = new ("PB_SpecialWheel_Mode");
+				cryorifle_beam.specialIcon = TexMan.CheckForTexture("graphics/pywheel/CryoRifle_Beam.png",TexMan.Type_Any);
+				cryorifle_beam.specialName = "FireModeCryoRifleBeam_WW";
+				cryorifle_beam.specialAlias = "Ice Beam";
+				cryorifle_beam.specialPriority = 2;
+				cryorifle_beam.iconScale = iconScale;
+				wheelSpecials.Push(cryorifle_beam);
+				
+				PB_SpecialWheel_Mode cryorifle_spear = new ("PB_SpecialWheel_Mode");
+				cryorifle_spear.specialIcon = TexMan.CheckForTexture("graphics/pywheel/CryoRifle_Spear.png",TexMan.Type_Any);
+				cryorifle_spear.specialName = "FireModeCryoRifleSpear_WW";
+				cryorifle_spear.specialAlias = "Ice Spear";
+				cryorifle_spear.specialPriority = 3;
+				cryorifle_spear.iconScale = (0.6, 0.6);
+				wheelSpecials.Push(cryorifle_spear);
+				
+				PB_SpecialWheel_Mode cryorifle_flak = new ("PB_SpecialWheel_Mode");
+				cryorifle_flak.specialIcon = TexMan.CheckForTexture("graphics/pywheel/CryoRifle_Flak.png",TexMan.Type_Any);
+				cryorifle_flak.specialName = "FireModeCryoRifleFlak_WW";
+				cryorifle_flak.specialAlias = "Ice Flak";
+				cryorifle_flak.specialPriority = 4;
+				cryorifle_flak.iconScale = iconScale;
+				wheelSpecials.Push(cryorifle_flak);
+				
+				specialWheel_handleMouse();
+	}
 
 	void specialWheel_Minigun()
 	{
@@ -1237,10 +1276,10 @@ if (players[consoleplayer].ReadyWeapon == NULL)
          }
 			if(e.name == 'PBEquipSpecialOn')
 		{
+			wheelShow.Clear();
 
 			if (players[consoleplayer].mo.FindInventory("CantWeaponSpecial"))
 			{
-				wheelShow.Clear();
 				wheelIsOpen = false;
 				noWheel = true;
 				return;
@@ -1266,7 +1305,7 @@ if (players[consoleplayer].ReadyWeapon == NULL)
 			{
 				if(wheelShow.Size()>0)
 				{
-					int curSelMod = wheelShow[currentSelection];
+					int curSelMod; if (currentSelection >= wheelShow.Size()) { curSelMod = wheelShow[0]; } else { curSelMod = wheelShow[currentSelection]; }
 					players[consoleplayer].mo.A_GiveInventory(wheelSpecials[curSelMod].specialName);
 					players[consoleplayer].mo.A_GiveInventory("ToggleEquipment");
 					S_StartSound("menu/choose",5);
@@ -1280,10 +1319,10 @@ if (players[consoleplayer].ReadyWeapon == NULL)
 	
 	if(e.name == 'PBWeaponSpecialOn')
 		{
-			if (players[consoleplayer].mo.FindInventory("CantWeaponSpecial"))
+			wheelShow.Clear();
 
+			if (players[consoleplayer].mo.FindInventory("CantWeaponSpecial"))
 			{
-				wheelShow.Clear();
 				wheelIsOpen = false;
 				noWheel = true;
 				return;
@@ -1305,6 +1344,10 @@ if (players[consoleplayer].ReadyWeapon == NULL)
 				
 				case 'PB_SuperGL':
 					specialWheel_SGL();
+					return;
+					
+				case 'PB_CryoRifle':
+					specialWheel_CryoRifle();
 					return;
 					
 				case 'PB_QuadSG':
@@ -1373,7 +1416,7 @@ if (players[consoleplayer].ReadyWeapon == NULL)
 			{
 				if(wheelShow.Size()>0)
 				{
-					int curSelMod = wheelShow[currentSelection];
+					int curSelMod; if (currentSelection >= wheelShow.Size()) { curSelMod = wheelShow[0]; } else { curSelMod = wheelShow[currentSelection]; }
 					players[consoleplayer].mo.A_GiveInventory(wheelSpecials[curSelMod].specialName);
 					players[consoleplayer].mo.A_GiveInventory("GoWeaponSpecialAbility");
 					S_StartSound("menu/choose",5);

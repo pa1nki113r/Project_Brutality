@@ -3,24 +3,27 @@
 // Arachnotron2
 //
 //===========================================================================
-ACTOR PB_EliteArachnotron: Arachnotron replaces Arachnotron
+ACTOR PB_EliteArachnotron: Arachnotron //replaces Arachnotron
 {
 	//$Title Elite Arachnotron
 	//$Category Project Brutality - Monsters/Arachnotrons
 	//$Sprite ARACA1D1
 	Tag "Elite Arachnotron"
 	Health 750
-	Scale 1.35
+	Scale 1
+	Radius 60
+	Height 64
 	SpawnID 1620
 	+DONTHARMCLASS
-	+DONTHURTSPECIES
+	+DONTHARMSPECIES
 	+MISSILEMORE
 	Species "Arachnotron"
 	Obituary "%o was phased away by an Elite Arachnotron."
 	DamageFactor "Blood", 0.0 DamageFactor "BlueBlood", 0.0 DamageFactor "GreenBlood", 0.0
-	DropItem "DemonStrengthRune" 8
-	DropItem "DoubleSphere" 7
-	DropItem "HasteSphere" 2
+	damagefactor "TeleportRemover", 0.0
+	
+	DropItem "PB_DoomSphere" 7
+	DropItem "PB_Haste" 2
 	DropItem "Demonpickup2" 255
 	DropItem "Demonpickup" 55
 	DropItem "Demonpickup" 55
@@ -28,6 +31,18 @@ ACTOR PB_EliteArachnotron: Arachnotron replaces Arachnotron
 	PainChance "Siphon", 255
 	States
 	{
+	 Death.Execution:
+		TNT1 A 0 {
+ 			A_Stopsound;
+			A_FaceTarget;
+			A_NoBlocking;
+		}
+		ARAC AG 4 
+		TNT1 A 0 A_Pain
+		ARAC I 21
+		TNT1 A 0 A_Recoil(4)
+		Goto Death
+	
 	Possession:
     TNT1 A 0 A_SetInvulnerable
     ARAC I 3
@@ -53,7 +68,7 @@ ACTOR PB_EliteArachnotron: Arachnotron replaces Arachnotron
 		Goto See
 		
 	Pain.Siphon:
-        TNT1 A 0 A_SpawnItem ("HeadshotTarget30", 0, 45,0)
+        TNT1 A 0 
 		
 		TNT1 AAA 0 A_SpawnItemEx ("RedLightning_Small", random (-12, 12), random (-12, 12), random (16, 52), 0, 0)
 		ARAC I 1 
@@ -72,17 +87,14 @@ ACTOR PB_EliteArachnotron: Arachnotron replaces Arachnotron
 		Stop
 	
 	Spawn:
-	TNT1 A 0 ACS_ExecuteAlways(796, 0, 0, 0, 0)//Check if Vanilla Mode is activated
-		TNT1 AA 0
 		ARAC AB 10 A_Look
-		Goto Spawn+2
+		Loop
 	See:
-		ARAC A 20
 		ARAC A 3 A_BabyMetal
 		ARAC ABBCC 3 A_Chase
 		ARAC D 3 A_BabyMetal
 		ARAC DEEFF 3 A_Chase
-		Goto See+1
+		Loop
 
 	Missile:
 		ARAC A 15 BRIGHT A_FaceTarget
@@ -99,9 +111,9 @@ ACTOR PB_EliteArachnotron: Arachnotron replaces Arachnotron
 		Goto See+1
 		
 	Death:
-		TNT1 A 0 A_BossDeath
 		TNT1 A 0 A_Jump(101, "RareDeath")
 		TNT1 A 0 A_Jump(128, "Death2")
+		TNT1 A 0 A_BossDeath
 		ARAC J 8 A_Scream
          TNT1 AAAAAAAAA 0 A_CustomMissile ("CeilBloodLauncherLong", 0, 0, random (0, 360), 2, random (50, 130))
 		 TNT1 AAAA 0 A_CustomMissile ("Instestin", 32, 0, random (0, 360), 2, random (0, 160))
@@ -200,6 +212,7 @@ Death.SuperPlasma:
         Stop
 		
 		Death.Fire:
+		Death.FireExplosion:
         TNT1 A 0
 		TNT1 A 0 A_BossDeath
 		TNT1 A 0 A_Scream
@@ -331,17 +344,9 @@ Death.SuperPlasma:
 		TNT1 A 0 A_SpawnItem ("GrowingBloodPool")
         TNT1 A 0 A_SpawnItem ("XDeadSpider2", 1)
        Goto XBurns
-	
-	Death.IceBeam:
-	TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0)
-	TNT1 A 0 A_ChangeFlag("SOLID", 0)
-	TNT1 A 0 A_SpawnItem("FrozenArachnotron2")
-	TNT1 A 0 A_SpawnItem("IceCrystalGround")
-	TNT1 A 0 A_SpawnItem("IceCrystalGround")
-	TNT1 A 0 A_SpawnItem("IceCrystalGround")
-	Stop
-	
+
 	Death.Ice:
+	Death.IceExplosion:
 	Death.Freeze:
 	Death.Frost:
 	TNT1 A 0
@@ -595,7 +600,7 @@ states
 
 Actor Vanilla_Arachnotron2 : PB_EliteArachnotron
 {
-	DropItem "DemonStrengthRune" 5
+	
 	States
 	{
 		Spawn:

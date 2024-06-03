@@ -1,289 +1,225 @@
 Class PB_ZombieScientist : PB_Monster
 {
-		Default
-		{
-			//$Title Zombie Scientist
-			//$Category Project Brutality - Monsters/Former Humans/Zombiemen
-			//$Sprite SCZAB1
-			Monster;
-			Radius 16;
-			Height 56;
-			Speed 10;
-			FastSpeed 12;
-			MaxStepHeight 24;
-			MaxDropOffHeight 32;
-			MeleeRange 120;
-			Mass 100;
-			SeeSound "monsters/zombie/see";
-			PainSound "monsters/zombie/pain";
-			DeathSound "monsters/zombie/death";
-			ActiveSound "monsters/zombie/searching";
-			BloodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
-			Health 110;
-			PainChance 128;
-			PainChance "Avoid", 255;
-			PainChance "Head", 255;
-			PainChance "Kick", 255;
-			PainChance "ExtremePunches", 255;
-			PainChance "Melee", 255;
-			PainChance "Taunt", 255;
-			PainChance "MonsterKnocked", 255;
-			PainChance "ExplosiveImpact", 255;
-			PainChance "Trample", 255;
-			PainChance "Stun", 255;
-			PainChance "Siphon", 255;
-			damagefactor "Crush", 5.0;
-			damagefactor "Avoid", 1.0;
-			damagefactor "GibRemoving", 0.0;
-			damagefactor "DontCallTheBaron", 0.0;
-			damagefactor "Blood", 0.0; damagefactor "BlueBlood", 0.0; damagefactor "GreenBlood", 0.0;
-			damagefactor "Kick", 0.4;
-			damagefactor "Shrapnel", 0.4;
-			damagefactor "ExplosiveImpact", 0.6;
-			damagefactor "killme", 0.0;
-			damagefactor "Taunt", 1.0;
-			DamageFactor "CauseObjectsToSplash", 0.0;
-			damagefactor "TeleportRemover", 0.0;
-			damagefactor "SSG", 50.0;
-			damagefactor "Shotgun", 1.25;
-			damagefactor "Saw", 0.5;
-			damagefactor "Cut", 0.75;
-			damagefactor "Tear", 0.25;
-			damagefactor "Head", 0.6;
-			Obituary "%o has been sliced apart by a zombie labworker.";
-			+FLOORCLIP;
-			+SLIDESONWALLS;
-			+DOHARMSPECIES;
-			+HARMFRIENDS;
-			Species "Former_Human";
-		}
+	Default
+	{
+		//$Title Zombie Scientist
+		//$Category Project Brutality - Monsters/Former Humans/Zombiemen
+		//$Sprite SCZAB1
+		Monster;
+		Radius 16;
+		Height 56;
+		Speed 10;
+		FastSpeed 12;			
+		MaxTargetRange 130; 
+		Mass 100;
+		SeeSound "monsters/zombie/see";
+		PainSound "monsters/zombie/pain";
+		DeathSound "monsters/zombie/death";
+		ActiveSound "monsters/zombie/searching";
+		Health 110;
+		PainChance 128;
+		PainChance "Avoid", 255;
+		PainChance "Head", 255;
+		PainChance "Kick", 255;
+		PainChance "ExtremePunches", 255;
+		PainChance "Melee", 255;
+		PainChance "Taunt", 255;
+		PainChance "MonsterKnocked", 255;
+		PainChance "ExplosiveImpact", 255;
+		PainChance "Trample", 255;
+		PainChance "Stun", 255;
+		PainChance "Siphon", 255;
+		damagefactor "Crush", 5.0;
+		damagefactor "Avoid", 1.0;
+		damagefactor "GibRemoving", 0.0;
+		damagefactor "DontCallTheBaron", 0.0;
+		damagefactor "ExplosiveImpact", 2.2;
+		damagefactor "Explosive", 2.2;
+		damagefactor "Blood", 0.0; damagefactor "BlueBlood", 0.0; damagefactor "GreenBlood", 0.0;
+		damagefactor "Kick", 0.4;
+		damagefactor "Shrapnel", 0.4;
+		damagefactor "killme", 0.0;
+		damagefactor "Taunt", 1.0;
+		DamageFactor "CauseObjectsToSplash", 0.0;
+		damagefactor "TeleportRemover", 0.0;
+		damagefactor "SSG", 50.0;
+		damagefactor "Shotgun", 1.25;
+		damagefactor "Saw", 0.5;
+		damagefactor "Cut", 0.75;
+		damagefactor "Tear", 0.25;
+		damagefactor "Head", 0.6;
+		DropItem "PB_Stimpack", 22;
+		Obituary "%o has been sliced apart by a zombie labworker.";
+		+FLOORCLIP;
+		+SLIDESONWALLS;
+		+DOHARMSPECIES;
+		+HARMFRIENDS;
+		Species "Former_Human"; 
+		PB_Monster.CanIFallback false; //[inkoalawetrust] Why not a flag ?
+	}
+	
+	int movement_direction;
+	
+	void A_CombatDialogueHandler()
+	{
+		if (!target)
+			return;
 		
-		int movement_direction;
+		if (target.health < 50)
+			A_StartSound("monsters/zombie/player_low", CHAN_AUTO);
+		else
+			A_StartSound("monsters/zombie/combat", CHAN_AUTO);
+	}
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay(); // call the super function for virtual functions so we don't break shit if GZdoom update.
+		HitBoxSpawned = False;
+		PickRandomName(RANK_DOKTOR); //TURN OFF MY CRINGE INHIBITORS.
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
 		
-		void A_CombatDialogueHandler()
-		{
-			if (target == NULL) {
-				return;
+		// Update recognition if crouching
+		if(IsInState(Self,"Crouching"))
+			self.Height = 44;
+		else
+			self.Height = 56;
+		
+		//Handle Hitbox system
+		//HitboxerHandler();
+		
+	}
+		
+	States
+	{
+		// Generic Execution Placeholder for now
+		Death.Execution:
+			TNT1 A 0 {
+				A_Stopsound();
+				A_FaceTarget();
+				A_NoBlocking(false);
 			}
+			SCZA AE 4 ;
+			TNT1 A 0 A_Pain;
+			LOSH ABA 7;
+			TNT1 A 0 A_Recoil(4);
+			Goto Death.SSG;
 			
-			if (target.health < 50) {
-				A_StartSound("monsters/zombie/player_low", CHAN_AUTO);
-			}
-			else {
-				A_StartSound("monsters/zombie/combat", CHAN_AUTO);
-			}
-		}
 		
-		// Modified from original monster code. Aggressive melee enemies shouldn't 'fallback'
-// 		void A_SmartChase() {
-// 			if (target == NULL) {
-// 				A_GiveInventory("Wandering",1);
-// 				A_Wander();
-// 			}
-			
-// 			if (CheckSight(target) == true) {
-// 				EnemyLastSighted = Level.MapTime;
-// 				A_TakeInventory("Wandering",1);
-// 				A_Chase();
-// 			}
-// 			else if (CheckSight(target) == false && abs(Level.MapTime - EnemyLastSighted) < 300) {
-// 				A_Chase();
-// 			}
-// 			else {
-// 				A_GiveInventory("Wandering",1);
-// 				A_Wander();
-// 			}
-// 		}
-		
-		void A_SmartChase() {
-			if (willBeLooking)
-				{
-					// Terminate function immediately if called inside A_LookEx.
-					return;
-				}
-				// Target must be cleared out if it is a friend of the monster, else we get infinite function recursions.
-				if (target && (target is "PossessionWarperA" || isFriend(target)))
-				{
-					A_ClearTarget();
-					target = NULL;
-				}
-			if (target == NULL) {
-				A_GiveInventory("Wandering",1);
-				willBeLooking = true;
-				A_LookEx();
-				willBeLooking = false;;
-				A_Wander();
-				return;
-			}
-					
-			if (CheckSight(target) == true || CheckIfCloser(target, 500)) {
+		Spawn:
+			SCZA A 1;
+			TNT1 A 0 A_GiveInventory("SKLabGuy", 1);
+		Stand:
+			SCZA A 10 A_Look();
+			Loop;
+		See:
+			TNT1 A 0 {
+				A_TakeInventory("SKLabGuy", 1);
 				EnemyLastSighted = Level.MapTime;
-				A_TakeInventory("Wandering",36);
-				A_Chase();
 			}
-			else if (CheckSight(target) == false && abs(Level.MapTime - EnemyLastSighted) < 360) {
-				A_Chase();
+		SeeContinue:
+			SCZA AAABBB 1 A_SmartChase();
+			TNT1 A 0 A_StartSound("humans/step");
+			SCZA CCCDDD 1 A_SmartChase();
+			TNT1 A 0 A_StartSound("humans/step");
+			TNT1 A 0 A_JumpIf(CountInv("Wandering") == 71 && !OnPatrol,"LookAround");
+			Loop;
+		LookAround:
+			TNT1 A 0 A_ClearTarget();
+			TNT1 A 0 A_TakeInventory("Wandering", 71);
+			TNT1 A 0 A_GiveInventory("SKLabGuy", 1);
+			TNT1 A 0 A_Jump(200, 2);
+			TNT1 A 0 A_StartSound("monsters/zombie/searching", CHAN_AUTO);
+			SCZA AA 10 A_Look();
+			Goto See;
+	
+	
+		////////////////
+		//Attack Logic// 
+		////////////////
+		Melee:
+			TNT1 A 0 A_Jump(224, 2);
+			TNT1 A 0 A_CombatDialogueHandler();
+			TNT1 A 0 A_JumpIfInTargetLOS("Melee2",0, JLOSF_DEADNOJUMP, 60);		
+			TNT1 A 0 A_Jump(132, "MeleeRush");
+		JumpAttack:
+			SCZA E 4 A_FaceTarget();				
+			LJD0 A 1 {
+				A_StartSound("AXSWING");
+				ThrustThingZ(0,30,0,1);
+				A_Recoil (-10);
 			}
-			else {
-				A_GiveInventory("Wandering",1);
-				A_Wander(CHF_NORANDOMTURN);
+			LJD0 A 10;
+			SCZA F 6 A_CustomMeleeAttack(random(1, 8) * 4, "Machete/Yum", "", "Rip"); //A_SpawnProjectile("ZombieAxeAttack",10,0,0,0);
+			SCZA E 6;
+			Goto See;
+		MeleeRush:
+			TNT1 A 0 A_JumpIfInTargetLOS("JumpAttack",0, JLOSF_DEADNOJUMP|JLOSF_CLOSENOJUMP, 130, 60);
+			SCZA AABB 1 {
+				A_FaceTarget();
+				A_Recoil(-2);
 			}
-		}
-		
-		override void PostBeginPlay() {
-			Super.PostBeginPlay(); // call the super function for virtual functions so we don't break shit if GZdoom update.
-			HitBoxSpawned = False;
-		
-		}
-		
-		override void Tick()
-		{
-			Super.Tick();
+			TNT1 A 0 A_StartSound("humans/step");
+			SCZA CCDD 1 {
+				A_FaceTarget();
+				A_Recoil(-2);
+			}
+			TNT1 A 0 A_StartSound("humans/step");
+		Melee2:
+			TNT1 A 0 A_Stop();
+			SCZA E 6  { 
+				A_FaceTarget();
+				A_StartSound("AXSWING");
+			}
+			SCZA F 6 {
+				A_FaceTarget();
+				A_CustomMeleeAttack(random(1, 8) * 4, "Machete/Yum", "", "Rip");
+				//A_SpawnProjectile("ZombieAxeAttack",10,0,0,0);
+			}
+			SCZA E 6;
+			Goto See;
+	
+		////////////////
+		//Pain Logic// 
+		////////////////
+		Pain.Head:
+			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
+			TNT1 A 0 A_SpawnProjectile ("NashGoreBloodSpurt", 52, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			SCZA G 6 {
+				A_Pain();
+				A_Stop();
+			}
+			TNT1 AA 0 A_SpawnProjectile ("PB_Teeth", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			LOSH ABBBA 4;
+			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
 			
-			// Update recognition if crouching
-			if(self.InStateSequence(self.Curstate, self.ResolveState("Crouching"))) {
-				self.Height = 44;
-			}
-			else {
-				self.Height = 56;
-			}
+			TNT1 A 0 A_Jump(180, "See");
+			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
+			Goto See;
 			
-			//Handle Hitbox system
-			HitboxerHandler();
+		Pain.Melee:
+		Pain:
+			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
+			SCZA G 6 A_Pain();
+			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
 			
-		}
-		
-		States
-		{
-		
-			Spawn:
-				SCZA A 1;
-				TNT1 A 0 A_GiveInventory("SKLabGuy", 1);
-			Stand:
-				SCZA A 10 A_Look();
-				Loop;
-			See:
-				TNT1 A 0 {
-					A_TakeInventory("SKLabGuy", 1);
-					EnemyLastSighted = Level.MapTime;
-				}
-			SeeContinue:
-				SCZA AABB 2 A_SmartChase();
-				TNT1 A 0 A_StartSound("humans/step");
-				SCZA CCDD 2 A_SmartChase();
-				TNT1 A 0 A_StartSound("humans/step");
-				TNT1 A 0 A_JumpIfInventory("Wandering",16,"LookAround");
-				Loop;
-			LookAround:
-				TNT1 A 0 A_ClearTarget();
-				TNT1 A 0 A_TakeInventory("Wandering", 36);
-				TNT1 A 0 A_GiveInventory("SKLabGuy", 1);
-				TNT1 A 0 A_Jump(200, 2);
-				TNT1 A 0 A_StartSound("monsters/zombie/searching", CHAN_AUTO);
-				SCZA AA 10 A_Look();
-				Goto See;
-		
-		
-			////////////////
-			//Attack Logic// 
-			////////////////
+			TNT1 A 0 A_Jump(180, "See");
+			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
+			Goto See;
+	
 				
-			Melee:
-				TNT1 A 0 A_Jump(224, 2);
-				TNT1 A 0 A_CombatDialogueHandler();
-				TNT1 A 0 A_JumpIfCloser(80, "Melee2");
-				TNT1 A 0 A_Jump(132, "MeleeRush");
-				SCZA E 4 A_FaceTarget();
-				LJD0 A 1 {
-					A_StartSound("AXSWING");
-					ThrustThingZ(0,30,0,1);
-					A_Recoil (-10);
-				}
-				LJD0 A 10;
-				SCZA F 6 A_SpawnProjectile("ZombieAxeAttack",10,0,0,0);
-				SCZA E 6;
-				Goto See;
-			MeleeRush:
-				SCZA AABB 1 {
-					A_FaceTarget();
-					A_Recoil(-2);
-				}
-				TNT1 A 0 A_StartSound("humans/step");
-				SCZA CCDD 1 {
-					A_FaceTarget();
-					A_Recoil(-2);
-				}
-				TNT1 A 0 A_StartSound("humans/step");
-			Melee2:
-				TNT1 A 0 A_Stop();
-				SCZA E 6  { 
-					A_FaceTarget();
-					A_StartSound("AXSWING");
-				}
-				SCZA F 6 {
-					A_FaceTarget();
-					A_SpawnProjectile("ZombieAxeAttack",10,0,0,0);
-				}
-				SCZA E 6;
-				Goto See;
-		
-			////////////////
-			//Pain Logic// 
-			////////////////
-			Pain.Head:
-				TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
-				TNT1 A 0 A_SpawnProjectile ("NashGoreBloodSpurt", 52, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
-				SCZA G 6 {
-					A_Pain();
-					A_Stop();
-				}
-				TNT1 AA 0 A_SpawnProjectile ("PB_Teeth", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
-				LOSH ABBBA 4;
-				TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-				TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
-				TNT1 A 0 A_Jump(180, "See");
-				TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
-				Goto See;
-				
-			Pain.Melee:
-			TNT1 A 0 A_JumpIfInventory ("SKLabguy", 1, "StealthKill");
-			Pain:
-				TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
-				SCZA G 6 A_Pain();
-				TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-				TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
-				TNT1 A 0 A_Jump(180, "See");
-				TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
-				Goto See;
-			StealthKill:
-				TNT1 A 0 A_TakeInventory("SKLabguy", 1);
-				SCZA G 1 A_FaceTarget();
-				TNT1 A 0 A_JumpIfInTargetInventory("FistsSelected", 1, 2);
-				SCZA G 1;
-				Goto Pain;
-				TNT1 A 0 {
-					A_GiveToTarget("GoFatality", 1);
-					A_GiveToTarget("SKLabguy", 1);
-					A_NoBlocking();
-					A_Die("Stealthy");
-				}
-				Stop;
-			Death.Stealthy:
-				TNT1 A 0;
-				Stop;
-					
-			Downed:
-				LPO4 Z 4 A_Pain();
-				Goto GetUp;
-			
-		
+		Downed:
+			LPO4 Z 4 A_Pain();
+			Goto GetUp;
 		Pain.Kick:
 		Pain.ExtremePunches:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Pain");
 			SCZA G 1 {
 					bNODROPOFF = false;
 					bFORCEXYBILLBOARD = true;
-					A_TakeInventory("SKZombieman", 1);
 					A_GiveInventory("IsDown", 1);
 					A_Pain();
 					A_facetarget();
@@ -300,7 +236,6 @@ Class PB_ZombieScientist : PB_Monster
 			LPO4 U 1 {
 					bNODROPOFF = false;
 					bFORCEXYBILLBOARD = true;
-					A_TakeInventory("SKZombieman", 1);
 					A_GiveInventory("IsDown", 1);
 					A_Pain();
 					ThrustThingZ(0,40,0,1);
@@ -319,7 +254,6 @@ Class PB_ZombieScientist : PB_Monster
 		
 		
 		GetUp:
-			TNT1 A 0 A_SpawnItem("LargeMassWaterImpact");
 			TNT1 A 0 A_JumpIfInventory ("FallingHeight", 16, "FallingDie");
 			TNT1 A 0 {
 				A_TakeInventory("FallingHeight", 100);
@@ -333,7 +267,7 @@ Class PB_ZombieScientist : PB_Monster
 				bFORCEXYBILLBOARD = false;
 			}
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-			TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMarine",1, "See");
+			
 			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 			Goto See;
 		 
@@ -462,7 +396,12 @@ Class PB_ZombieScientist : PB_Monster
 		//Avoid damage
 		Pain.Avoid:
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "PlayerActionDialogue");
+		Roll:
 		Avoid:
+			TNT1 A 0
+			{
+				avoidCooldown = 175;
+			}
 			TNT1 A 0 A_Jump(256, "DiveLeft", "DiveRight", "DiveLeft", "DiveRight", "DiveFront");
 			Goto DiveFront;
 			
@@ -483,7 +422,13 @@ Class PB_ZombieScientist : PB_Monster
 			Stop;
 			
 		Death:
-			TNT1 A 0 A_Jump(96, "Death.Arm", "DeathNoGuts");
+			//TNT1 A 0 A_Jump(96, "Death.Arm", "DeathNoGuts");
+			TNT1 A 0 A_DeathWepCheck("ShotgunSelected", 400, "Death.Shotgun");
+			TNT1 A 0 A_DeathWepCheck("ASGSelected", 400, "Death.Shotgun");
+			TNT1 A 0 A_DeathWepCheck("SSGSelected", 200, "Death.SSG");
+			TNT1 A 0 A_DeathWepCheck("MinigunSelected", 1000, "Death.Minigun");
+			TNT1 A 0 A_DeathWepCheck("NewChaingunSelected", 750, "Death.Nailgun");
+			TNT1 A 0 A_Jump(96, "DeathNoGuts");
 			TNT1 A 0 A_Jump(128, "DeathMirror", "Death2");
 		BaseDeath:
 			FSMS H 5;
@@ -528,10 +473,11 @@ Class PB_ZombieScientist : PB_Monster
 			TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
 			TNT1 A 0 A_StartSound("BODYF",6);
-			TNT1 A 0 A_SpawnItem ("ZombieScientistDyingGuts", 2);
+			TNT1 A 0 A_SpawnItemEx ("ZombieScientistDyingGuts", 0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
-
-		 Death.Arm:
+		
+		Death.ArmHitbox:
+		Death.Arm:
 			TNT1 A 0 {
 				A_SpawnProjectile ("XDeathLabGuyArm", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 				A_SpawnProjectile ("PB_SmallGib", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
@@ -541,7 +487,7 @@ Class PB_ZombieScientist : PB_Monster
 				A_NoBlocking();
 				A_Scream();
 				}
-			TNT1 A 0 A_SpawnItem ("DyingFormerScientistNoArm");
+			TNT1 A 0 A_SpawnItemEx ("DyingFormerScientistNoArm", 0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 			
 			
@@ -612,15 +558,15 @@ Class PB_ZombieScientist : PB_Monster
 			TNT1 A 0 A_SpawnItem("DeadScientistTornApart");
 			Stop;
 
-		
+		Death.HeadHitbox:
 		Death.Head:
 			TNT1 A 0 A_FaceTarget();
 			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 			TNT1 A 0 A_JumpIfInTargetInventory("HasPlasmaWeapon", 1, "Death.Plasma");
 			TNT1 A 0 A_JumpIfInTargetInventory("HasCutingWeapon", 1, "Death.Decapitate");
 			TNT1 A 0 A_JumpIfInTargetInventory("RandomHeadExploder", 1, "HeadExplode");
-			TNT1 A 0 A_JumpIfHealthLower(-600, "HeavyHead");
-			TNT1 A 0 A_JumpIfHealthLower(-90, "HeadExplode");
+			TNT1 A 0 A_JumpIfHealthLower(-100, "HeavyHead");
+			TNT1 A 0 A_JumpIfHealthLower(-60, "HeadExplode");
 		HeadMinor:
 			TNT1 A 0 A_StartSound("MinorHeadshot");
 			TNT1 A 0 A_Jump (256, "DeathMinorhead1", "DeathMinorhead2");
@@ -651,7 +597,7 @@ Class PB_ZombieScientist : PB_Monster
 			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood2", 40, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_Jump(160, "DeathMinorHead2Short");
 			TNT1 A 0 A_SpawnItem ("GrowingBloodPool");
-			TNT1 A 0 A_SpawnItem ("DyingZombieScientistLostTeeth");
+			TNT1 A 0 A_SpawnItemEx ("DyingZombieScientistLostTeeth", 0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			TNT1 A 1 A_SpawnProjectile("DroppedPB_Axe", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (50, 130));
 			Stop;
 			
@@ -748,7 +694,8 @@ Class PB_ZombieScientist : PB_Monster
 			FSAD EEEEEEEEEEEEEEEE 2 A_SpawnProjectile ("PB_SquirtingBloodTrail", 10, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 40));
 			TNT1 A 0 A_SpawnItem ("DeadLabguyFSADE");
 			Stop;
-			
+		
+		Death.LegHitbox:
 		Death.Leg:
 			TNT1 A 0 A_JumpIfHealthLower(-100,"DoubleLegRemove");
 			TNT1 A 0 A_JumpIfHealthLower(-20, "LegRemove");
@@ -897,7 +844,7 @@ Class PB_ZombieScientist : PB_Monster
 				bNODROPOFF = false;
 				bNOBLOCKMONST = true;
 			}
-			TNT1 A 0 A_Jump(96,"Death.LandMine");
+			//TNT1 A 0 A_Jump(96,"Dead.LandMine");
 			TNT1 A 0 A_NoBlocking();
 			TNT1 A 0 A_SpawnProjectile ("PB_XDeath1", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
 			TNT1 A 0 A_SpawnProjectile ("PB_XDeath2", 32, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
@@ -929,19 +876,21 @@ Class PB_ZombieScientist : PB_Monster
 			Stop;
 			
 		Death.fire:
+		Death.FireExplosion:
 		Death.Flames:
 		Death.Burn:
+			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 			TNT1 A 1 {
-				A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 				A_ScreamAndUnblock();
+				A_DropItem("PB_Axe",1);
 				A_SpawnItemEx("BurningLabGuy",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
 			}
 			Stop;
 		  
-		Death.Desintegrate:
+		Death.Disintegrate:
 			TNT1 A 0 A_Scream();
 			TNT1 A 0 A_NoBlocking();
-			TNT1 A 0 A_SpawnItem("DesintegratedHuman");
+			TNT1 A 1 A_SpawnItem("DisintegratedHuman");
 			Stop;
 			
 		Death.Blackhole:
@@ -1065,7 +1014,6 @@ Class PB_ZombieScientist : PB_Monster
 			
 		Death.Melee:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down");
-			TNT1 A 0 A_JumpIfInventory ("SKLabguy", 1, "StealthKill");
         Death.Kick:
 			TNT1 A 0 {
 				bNODROPOFF = false;
@@ -1281,8 +1229,8 @@ Class PB_ZombieScientist : PB_Monster
 		Death.RVFT:
 		TNT1 A 0 A_FaceTarget();
 		TNT1 A 0 A_Jump(12, "Death.Arm");
-		TNT1 A 0 A_NoBlocking();
 		TNT1 A 0 A_Jump(128, "Death.Blast2");
+		TNT1 A 0 A_NoBlocking();
 		TNT1 A 0 {
 			A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
 			A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40));
@@ -1317,6 +1265,7 @@ Class PB_ZombieScientist : PB_Monster
 	    Stop;
 		
 	Death.Blast2:
+	TNT1 A 0 A_NoBlocking();
 	    TNT1 A 0 {
 			A_XScream();
 			NashGoreGibs.SpawnGibs(self);
@@ -1359,7 +1308,7 @@ Class PB_ZombieScientist : PB_Monster
 	
 	Death.SSG:
 	    LP07 A 1 {
-				A_Recoil(-20);
+				ThrustThing(angle * 256 / 360 + 128, 22, 0, 0);
 				A_FaceTarget();
 				NashGoreGibs.SpawnGibs(self);
 				for (int i = 0; i < 5; i++) {	
@@ -1390,6 +1339,7 @@ Class PB_ZombieScientist : PB_Monster
 		Stop;
 		
 	XDeath:
+		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 		TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG");
 		TNT1 A 0 { 
 			NashGoreGibs.SpawnGibs(self);
@@ -1412,18 +1362,9 @@ Class PB_ZombieScientist : PB_Monster
 		Raise:
 			POSS KJIH 5;
 			Goto See;
-		
-		Death.IceBeam:
-			TNT1 A 0 {
-				bSHOOTABLE = false;
-				bSOLID = false;
-				A_SpawnItem("FrozenLabguy");
-				A_SpawnItem("IceCrystalGround");
-				A_SpawnItem("IceCrystalGround");
-			}
-			Stop;
-		
+
 		Death.Ice:
+		Death.IceExplosion:
 		Death.Freeze:
 		Death.Frost:
 			TNT1 A 0 { 
