@@ -52,6 +52,10 @@ class PB_Monster : Actor abstract
 	
 	//The main custom A_Chase function
 	
+	int retargetSkips;
+	
+	property RetargetSkips : retargetSkips;
+	
 	void A_SmartChase(statelabel s1 = "Missile", statelabel s2 = "Melee", int flags = 0)
 	{
 		//A_LogFloat(self.speed);
@@ -60,7 +64,10 @@ class PB_Monster : Actor abstract
 		if (willBeLooking)
 			return;
 		
-		if (target && (target is "PossessionWarperA" || isFriend(target)))
+		if (retargetSkips > 0) 
+			retargetSkips--;
+		
+		if (target && isFriend(target)) //(target is "PossessionWarperA" || isFriend(target)))
 		{
 			A_ClearTarget();
 			A_ClearLastHeard();
@@ -85,7 +92,10 @@ class PB_Monster : Actor abstract
 				//self.FastSpeed = self.searchSpeed * 2;
 			}
 			A_Wander();
-			A_LookEx();
+			if(retargetSkips <= 0) {
+				retargetSkips = 3;
+				A_LookEx();
+			}
 			patrolTimer++;
 			return;
 		}
