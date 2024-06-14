@@ -13,7 +13,6 @@ Class EmptyMagBase : Actor
 	   Height 2;
 	   Radius 2;
 	   Speed 8;
-	   Scale 1.0;
 	   +DOOMBOUNCE;
 	   -NOGRAVITY;
 	   +WINDTHRUST;
@@ -25,14 +24,18 @@ Class EmptyMagBase : Actor
 	   +NOTELEPORT;
 	   +FORCEXYBILLBOARD; //[Pop] hmm, maybe, maybe not, we will see
 	   +GHOST;
-	   
 	   +ROLLSPRITE
 	   +ROLLCENTER;
+	   
+	   Scale 1.0;
 	   BounceCount 4;
+	   //[Pop] These two values here are the only ones that should be changed in
+	   //like 99% of cases, if you need to do 
 	   
 	   Mass 15; //[Pop] setting higher than 10, cause somethin with terrain splashes?
 	   
 	   SeeSound "weapons/emptymag/dropM"; //[Pop] also weapons/emptymag/dropL and weapons/emptymag/dropS respectively
+	   DeathSound "weapons/emptymag/dropM"; //[Pop] use this one too, A_ActiveSound is used in the death state to play it manually cause for some reason it doesnt
 	}
 	States
 	{
@@ -40,105 +43,147 @@ Class EmptyMagBase : Actor
 			ECLI A 1;
 			Goto Spawn1;
 		Spawn1:
-			#### A 2 A_SetRoll(roll+36, SPF_INTERPOLATE); //[Pop] Use 24 for bigger mags/drums
+			#### A 2 A_SetRoll(roll+24, SPF_INTERPOLATE); //[Pop] Use 24 for mid, 36 for small, and 12 for big
 			Loop;
 		Death:
-			//[Pop] The amount of rest states should make sure to take into account needing to flip any sprites horizontally for variety
-			//ideally tho, this should just be done in a single state and have the Frame set automatically and randomly, then randomly flip it.
-			#### A 0 A_Jump(256, "Rest1", "Rest2");
-		Rest1:
-			#### G 900 A_SetRoll(0);
-			#### A -1;
-			stop;  		
-		Rest2:
-			#### A 0 {bSpriteFlip = true;}
-			#### G 900 A_SetRoll(0);
-			#### A -1;
-			stop;
+			#### G 0; //[Pop] Preload Sprites
+			#### A 0 A_SetRoll(0);
+			#### A 900
+			{
+				//[Pop] Basically, make sure the frame set on this tic is the last frame
+				//before the resting frames, then count how many rest frames for the random
+				//frame additive, and then sprite flip is done automatically.
+				frame = frame + (random(1,1));
+				bSpriteFlip = random(0,1);
+			}
+			#### # -1;
+			Stop;
 		Splash:
 			#### # -1;
 			Stop;
 	}
 }	
 
-Class SGL_Drum : EmptyBrass2 //See?  Very minimal code to do the same thing.
+Class SGL_Drum : EmptyMagBase //See?  Very minimal code to do the same thing.
 {
-  Default
-   {
+	Default
+	{
 		Scale 0.33;
 		BounceCount 3;
-		SeeSound "weapons/largemagdrop";
+		SeeSound "weapons/emptymag/dropL";
+		DeathSound "weapons/emptymag/dropL";
 	}
- States
-   {
+	
+	States
+	{		
 		Spawn:
-			SGD1 A 0;
-		SpawnJump:
-			"####" A 0 A_Jump(256,"Spawn1","Spawn2","Spawn3");
+			SGD1 A 1;
+			Goto Spawn1;
 		Spawn1:
-			"####" ABCDEFGHABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJ  1 {
-				A_SetRoll(roll+16);
+			#### ABCDEFGHIJKL 2 A_SetRoll(roll+12, SPF_INTERPOLATE); 
+			Loop;
+		Death:
+			#### MNOPQR 0; //Preload Sprites
+			#### A 0 A_SetRoll(0);
+			#### L 900
+			{
+				frame = frame + (random(1,6));
+				bSpriteFlip = random(0,1);
 			}
-			Goto Death;
-		Spawn2:
-			"####" BCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJA  1 {
-				A_SetRoll(roll+32);
-			}
-			Goto Death;
-		Spawn3:
-			"####" CDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJABCDEFGHIJAB  1 {
-				A_SetRoll(roll+72);
-			}
-			Goto Death;
+			#### # -1;
+			Stop;
+		Splash:
+			#### # -1;
+			Stop;
 	}
 }
 
-Class EmptyRLMagazine : EmptyBrass2
+Class SGL_StickyDrum : SGL_Drum
 {
-  Default
-   {
+	States
+	{
+		Spawn:
+			SGD2 A 1;
+			Goto Spawn1;
+	}
+}
+
+Class SGL_IncendiaryDrum : SGL_Drum
+{
+	States
+	{
+		Spawn:
+			SGD3 A 1;
+			Goto Spawn1;
+	}
+}
+
+Class SGL_CryoDrum : SGL_Drum
+{
+	States
+	{
+		Spawn:
+			SGD4 A 1;
+			Goto Spawn1;
+	}
+}
+
+Class SGL_AcidDrum : SGL_Drum
+{
+	States
+	{
+		Spawn:
+			SGD5 A 1;
+			Goto Spawn1;
+	}
+}
+
+Class EmptyRLMagazine : EmptyMagBase
+{
+	Default
+	{
 		Scale 0.28;
 		BounceCount 3;
-		SeeSound "weapons/largemagdrop";
+		SeeSound "weapons/emptymag/dropL";
+		DeathSound "weapons/emptymag/dropL";
 	}
- States
-   {
+	
+	States
+	{
 		Spawn:
-			RCS3 A 0;
-		SpawnJump:
-			"####" A 0 A_Jump(256,"Spawn1","Spawn2","Spawn3");
+			RCS3 A 1;
 			Goto Spawn1;
-			
+		Spawn1:
+			#### ABCDEFGH 2 A_SetRoll(roll+12, SPF_INTERPOLATE); 
+			Loop;
 		Death:
-			#### A 0 a_setroll(0);
-			#### A 0 A_Jump(256, "Case1", "Case2", "Case3", "Case4");
-		Case1:
-			#### K 0;
-			Goto Rest;
-		Case2: //Flipped Case 1
-			#### K 0 {bSPRITEFLIP = True;}
-			goto Rest;
-		Case3: 
-			#### L 0;
-			Goto Rest;
-		Case4: //Flipped Case 3
-			#### L 0 {bSPRITEFLIP = True;}
-			goto Rest;
+			#### KL 0; //Preload Sprites
+			#### A 0 A_SetRoll(0);
+			#### H 900
+			{
+				frame = frame + (random(1,2));
+				bSpriteFlip = random(0,1);
+			}
+			#### # -1;
+			Stop;
+		Splash:
+			#### # -1;
+			Stop;
 	}
 }
 
-Class FlamerEmptyPB_Fuel : EmptyBrass2 //See?  Very minimal code to do the same thing.
-//Yea I see
+Class FlamerEmptyPB_Fuel : EmptyBrass2
 {
-  Default
-   {
+	Default
+	{
 		Scale 0.38;
 		BounceFactor 0.4;
 		BounceCount 2;
 		SeeSound "weapons/flamethrower/misc1";
 	}
- States
-   {
+	
+	States
+	{
 		Spawn:
 			FMLA A 0;
 		SpawnJump:
@@ -182,80 +227,38 @@ Class FlamerEmptyPB_Fuel : EmptyBrass2 //See?  Very minimal code to do the same 
 	}
 }
 
-
-Class SGL_StickyDrum : SGL_Drum
-{
- States
-   {
-		Spawn:
-			SGD2 A 0;
-			Goto SpawnJump;
-	}
-}
-
-Class SGL_IncendiaryDrum : SGL_Drum
-{
- States
-   {
-		Spawn:
-			SGD3 A 0;
-			Goto SpawnJump;
-	}
-}
-
-Class SGL_CryoDrum : SGL_Drum
-{
- States
-   {
-		Spawn:
-			SGD4 A 0;
-			Goto SpawnJump;
-	}
-}
-
-Class SGL_AcidDrum : SGL_Drum
-{
- States
-   {
-		Spawn:
-			SGD5 A 0;
-			Goto SpawnJump;
-	}
-}
-
-Class RevolverSpeedLoader : EmptyBrass2
+Class RevolverSpeedLoader : EmptyMagBase
 {
 	Default
 	{  	
-   -DONTSPLASH;
-   -CANBOUNCEWATER;
-   +FLOORCLIP;
-   +THRUACTORS;
 		Scale 0.20;
-		BounceFactor 0.85;
-		BounceCount 4;
-		SeeSound "weapons/smallmagdrop";
+		BounceCount 5;
+		SeeSound "weapons/emptymag/dropS";
+		DeathSound "weapons/emptymag/dropS";
 	}
+	
 	States
 	{
 		Spawn:
-			RVS1 A 0;
-			Goto SpawnJump;
-		SpawnSmoking:
-			"####" ABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGHABCDEFGH 1 {
-				A_SetRoll(roll+75);
-			}
-			Goto Death;
+			RVS1 A 1;
+			Goto Spawn1;
+		Spawn1:
+			#### ABCDEFGH 2 A_SetRoll(roll+36, SPF_INTERPOLATE); 
+			Loop;
 		Death:
-			  "####" A 0 A_SetRoll(0);
-			  "####" A 0 A_Jump(256,"Case1","Case2");
-		Case1:
-			"####" C 0;
-			Goto Rest;
-		Case2:
-			"####" G 0;
-			Goto Rest;
-		}
+			#### IJ 0; //Preload Sprites
+			#### A 0 A_SetRoll(0);
+			#### H 900
+			{
+				frame = frame + (random(1,2));
+				bSpriteFlip = random(0,1);
+			}
+			#### # -1;
+			Stop;
+		Splash:
+			#### # -1;
+			Stop;
+	}
 }
 
 Class EmptyClipMP40 : Actor
@@ -352,35 +355,14 @@ Class EmptyClip : Actor
    }
 }
 
-Class EmptyPistolMag : EmptyMagMP40
-{
-	override void BeginPlay(void)
-	{
-		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
-		Super.BeginPlay();
-	}
-	
+Class EmptyPistolMag : EmptyMagBase
+{	
 	Default
 	{
-		Height 12;
-		Radius 9;
-		Speed 4;
-		Scale 0.24;
-		+DOOMBOUNCE;
-		-NOGRAVITY;
-		+WINDTHRUST;
-		+CLIENTSIDEONLY;
-		+MOVEWITHSECTOR;
-		+MISSILE;
-		+NOBLOCKMAP;
-		-DROPOFF;
-		+NOTELEPORT;
-		+FORCEXYBILLBOARD;
-		+NOTDMATCH;
-		+GHOST;
-		Mass 1;
-		SeeSound "weapons/largemagdrop";
+		Scale 0.20;
+		BounceCount 5;
+		SeeSound "weapons/emptymag/dropS";
+		DeathSound "weapons/emptymag/dropS";
 	}
  
 	States
@@ -389,452 +371,287 @@ Class EmptyPistolMag : EmptyMagMP40
 			PEMG A 1;
 			Goto Spawn1;
 		Spawn1:
-			#### A 2 A_SetRoll(roll+36, SPF_INTERPOLATE);
+			#### A 2 A_SetRoll(roll+36, SPF_INTERPOLATE); 
 			Loop;
 		Death:
-			#### A 0 A_Jump(256, "Rest", "Rest2", "Rest3", "Rest4");
-		Rest:
-			#### B 900 A_SetRoll(0);
-			#### A -1;
-			stop;  		
-		Rest2:
-			#### A 0 {bSpriteFlip = true;}
-			#### B 900 A_SetRoll(0);
-			#### A -1;
-			stop; 
-		Rest3:
-			#### C 900 A_SetRoll(0);
-			#### A -1;
+			#### BC 0; //Preload Sprites
+			#### A 0 A_SetRoll(0);
+			#### A 900
+			{
+				frame = frame + (random(1,2));
+				bSpriteFlip = random(0,1);
+			}
+			#### # -1;
 			Stop;
-		Rest4:
-			#### A 0 {bSpriteFlip = true;}
-			#### C 900 A_SetRoll(0);
-			#### A -1;
+		Splash:
+			#### # -1;
 			Stop;
 	}
 }
 
-Class EmptyDeagleMag : EmptyMagMP40
+Class EmptyDeagleMag : EmptyMagBase
 {
-	override void BeginPlay(void)
-	{
-		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
-		Super.BeginPlay();
-	}
-	
 	Default
 	{
-		Height 12;
-		Radius 9;
-		Speed 4;
-		Scale 0.24;
-		+DOOMBOUNCE;
-		-NOGRAVITY;
-		+WINDTHRUST;
-		+CLIENTSIDEONLY;
-		+MOVEWITHSECTOR;
-		+MISSILE;
-		+NOBLOCKMAP;
-		-DROPOFF;
-		+NOTELEPORT;
-		+FORCEXYBILLBOARD;
-		+NOTDMATCH;
-		+GHOST;
-		Mass 1;
-		SeeSound "weapons/largemagdrop";
+		Scale 0.20;
+		BounceCount 5;
+		SeeSound "weapons/emptymag/dropS";
+		DeathSound "weapons/emptymag/dropS";
 	}
  
 	States
 	{
 		Spawn:
-			DEMG A 0;
+			DEMG A 1;
 			Goto Spawn1;
 		Spawn1:
-			#### A 2 A_SetRoll(roll+36, SPF_INTERPOLATE);
+			#### A 2 A_SetRoll(roll+36, SPF_INTERPOLATE); 
 			Loop;
 		Death:
-			#### A 0 A_Jump(256, "Rest", "Rest2", "Rest3", "Rest4");
-		Rest:
-			#### B 900 A_SetRoll(0);
-			#### A -1;
-			stop;  		
-		Rest2:
-			#### A 0 {bSpriteFlip = true;}
-			#### B 900 A_SetRoll(0);
-			#### A -1;
-			stop; 
-		Rest3:
-			#### C 900 A_SetRoll(0);
-			#### A -1;
+			#### BC 0; //Preload Sprites
+			#### A 0 A_SetRoll(0);
+			#### A 900
+			{
+				frame = frame + (random(1,2));
+				bSpriteFlip = random(0,1);
+			}
+			#### # -1;
 			Stop;
-		Rest4:
-			#### A 0 {bSpriteFlip = true;}
-			#### C 900 A_SetRoll(0);
-			#### A -1;
+		Splash:
+			#### # -1;
 			Stop;
 	}
 }
 
-Class SMGEmptyMagazine : EmptyBrass2
+Class SMGEmptyMagazine : EmptyMagBase
 {
-  Default
-   {
-		Scale 0.2;
-		BounceCount 3;
-		SeeSound "weapons/smallmagdrop";
-	}
- States
-   {
-		Spawn:
-			ESMG A 0;
-			Goto Spawn1;
-		Spawn1:
-			#### A 2 A_SetRoll(roll+36, SPF_INTERPOLATE);
-			Loop;
-		Death:
-			#### A 0 A_Jump(256, "Rest", "Rest2", "Rest3", "Rest4");
-		Rest:
-			#### B 900 A_SetRoll(0);
-			#### A -1;
-			stop;  		
-		Rest2:
-			#### C 900 A_SetRoll(0);
-			#### A -1;
-			stop; 
-		Rest3:
-			#### D 900 A_SetRoll(0);
-			#### A -1;
-			Stop;
-		Rest4:
-			#### E 900 A_SetRoll(0);
-			#### A -1;
-			Stop;
-	}
-}
-
-
-Class EmptyDMRMag : EmptyMagMP40
-{
-		override void BeginPlay(void)
+	Default
 	{
-		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
-		Super.BeginPlay();
+		Scale 0.2;
+		BounceCount 4;
+		SeeSound "weapons/emptymag/dropM";
+		DeathSound "weapons/emptymag/dropM";
 	}
-  Default
-  {
-   Scale 0.20;
-   BounceCount 3;
-   SeeSound "weapons/largemagdrop";
-   }
-   States
-   {
-   Spawn:
-      ECL1 A 1;
-	  
-	  Exist:
-      ECL1 A 3 A_SetRoll(roll+36, SPF_INTERPOLATE); 
-      loop;
-   Death:
-	  TNT1 A 0 A_SetRoll(0);
-	  TNT1 A 0 A_Jump(256, "Rest1", "Rest2", "Rest3", "Rest4");
-   Rest1:
-	  ECL1 B 900;
-	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-   	  Loop;
-	Rest2:
-	  ECL1 C 900;
-	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-   	  Loop;
-	Rest3:
-	  ECL1 D 900;
-	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-   	 Loop;
-   Rest4:
-	  ECL1 E 900;
-	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-	  Loop;
-	  
-  Disappear:
-	  TNT1 A 1;
-	  Stop;
-   }
+	
+	States
+	{
+		Spawn:
+			ESMG A 1;
+			Goto Spawn1;
+		Spawn1:
+			#### A 2 A_SetRoll(roll+24, SPF_INTERPOLATE); 
+			Loop;
+		Death:
+			#### BCDE 0; //Preload Sprites
+			#### A 0 A_SetRoll(0);
+			#### A 900
+			{
+				frame = frame + (random(1,4));
+				bSpriteFlip = random(0,1);
+			}
+			#### # -1;
+			Stop;
+		Splash:
+			#### # -1;
+			Stop;
+	}
+}
+
+
+Class EmptyDMRMag : EmptyMagBase
+{
+	Default
+	{
+		Scale 0.20;
+		BounceCount 4;
+		SeeSound "weapons/emptymag/dropM";
+		DeathSound "weapons/emptymag/dropM";
+	}
+	
+	States
+	{
+		Spawn:
+			ECLI A 1;
+			Goto Spawn1;
+		Spawn1:
+			#### A 2 A_SetRoll(roll+24, SPF_INTERPOLATE); 
+			Loop;
+		Death:
+			#### BCDE 0; //Preload Sprites
+			#### A 0 A_SetRoll(0);
+			#### A 900
+			{
+				frame = frame + (random(1,4));
+				bSpriteFlip = random(0,1);
+			}
+			#### # -1;
+			Stop;
+		Splash:
+			#### # -1;
+			Stop;
+	}
 }
 
 Class EmptyHDMRMag : EmptyDMRMag
 {
-		override void BeginPlay(void)
+	States
 	{
-		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
-		Super.BeginPlay();
+		Spawn:
+			HCLI A 1;
+			Goto Spawn1;
 	}
-  Default
-  {
-   Scale 0.23;
-   BounceCount 3;
-   SeeSound "weapons/largemagdrop";
-   }
-   States
-   {
-   Spawn:
-      HCL1 A 1;
-	  
-	  Exist:
-      HCL1 A 3 A_SetRoll(roll+36, SPF_INTERPOLATE); 
-      loop;
-   Death:
-	  TNT1 A 0 A_SetRoll(0);
-	  TNT1 A 0 A_Jump(256, "Rest1", "Rest2", "Rest3", "Rest4");
-   Rest1:
-	  HCL1 B 900;
-	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-   	  Loop;
-	Rest2:
-	  HCL1 C 900;
-	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-   	  Loop;
-	Rest3:
-	  HCL1 D 900;
-	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-   	  Loop;
-	Rest4:
-	  HCL1 E 900;
-	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-   	  Loop;
-   }
 }
 
 
 Class EmptyHDMRMag_SNiper : EmptyDMRMag
 {
-		override void BeginPlay(void)
+	States
 	{
-		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
-		Super.BeginPlay();
+		Spawn:
+			HCL2 A 1;
+			Goto Spawn1;
+		Spawn1:
+			#### A 2 A_SetRoll(roll+24, SPF_INTERPOLATE); 
+			Loop;
+		Death:
+			#### BC 0; //Preload Sprites
+			#### A 0 A_SetRoll(0);
+			#### A 900
+			{
+				frame = frame + (random(1,2));
+				bSpriteFlip = random(0,1);
+			}
+			#### # -1;
+			Stop;
+		Splash:
+			#### # -1;
+			Stop;
 	}
-  Default
-  {
-   Scale 0.23;
-   BounceCount 3;
-   SeeSound "weapons/largemagdrop";
-   }
-   States
-   {
-   Spawn:
-      HCL2 A 1;
-	  
-	  Exist:
-      HCL2 A 3 A_SetRoll(roll+36, SPF_INTERPOLATE); 
-      loop;
-   Death:
-	  TNT1 A 0 A_SetRoll(0);
-	  TNT1 A 0 A_Jump(256, "Rest1", "Rest2");
-   Rest1:
-	  HCL2 B 900;
-	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-   	  Loop;
-	Rest2:
-	  HCL2 C 900;
-	  TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-   	  Loop;
-   }
 }
 
-Class EmptyCarbineMag : EmptyMagMP40
+Class EmptyCarbineMag : EmptyMagBase
 {
-		override void BeginPlay(void)
+	Default
 	{
-		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
-		Super.BeginPlay();
-	}
-  Default
-  {
-   Scale 0.12;
-   BounceCount 3;
-   SeeSound "weapons/largemagdrop";
-   }
-   States
-   {
-	Spawn:
-		CB10 A 1;
-	Exist:
-		CB10 A 3 A_SetRoll(roll+20, SPF_INTERPOLATE); 
-		loop;
-	Death:
-		CB10 A 0 A_SetRoll(0);
-		TNT1 A 0 A_Jump(256, "Rest1", "Rest2", "Rest3", "Rest4");
-	Rest1:
-		CB10 B 900;
-		TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-		Loop;
-	Rest2:
-		TNT1 A 0 {bSpriteFlip = true;}
-		CB10 B 900;
-		TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-		Loop;
-	Rest3:
-		CB10 C 900;
-		TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-		Loop;
-	Rest4:
-		TNT1 A 0 {bSpriteFlip = true;}
-		CB10 C 900;
-		TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-		Loop;
-  Disappear:
-	  TNT1 A 1;
-	  Stop;
-   }
-}
-
-Class EmptyNailgunDrum : EmptyMagMP40
-{
-	override void BeginPlay(void)
-	{
-		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
-		Super.BeginPlay();
+		Scale 0.14;
+		BounceCount 4;
+		SeeSound "weapons/emptymag/dropM";
+		DeathSound "weapons/emptymag/dropM";
 	}
 	
+	States
+	{
+		Spawn:
+			CB10 A 1;
+			Goto Spawn1;
+		Spawn1:
+			#### A 2 A_SetRoll(roll+24, SPF_INTERPOLATE); 
+			Loop;
+		Death:
+			#### BC 0; //Preload Sprites
+			#### A 0 A_SetRoll(0);
+			#### A 900
+			{
+				frame = frame + (random(1,2));
+				bSpriteFlip = random(0,1);
+			}
+			#### # -1;
+			Stop;
+		Splash:
+			#### # -1;
+			Stop;
+	}
+}
+
+Class EmptyNailgunDrum : EmptyMagBase
+{
 	Default
 	{
 		Scale 0.6;
 		BounceCount 3;
-		SeeSound "weapons/largemagdrop";
+		SeeSound "weapons/emptymag/dropL";
+		DeathSound "weapons/emptymag/dropL";
 	}
 	
 	States
 	{
 		Spawn:
 			NEMG A 1;
-		Exist:
-			NEMG A 2 A_SetRoll(roll+20, SPF_INTERPOLATE); 
-			loop;
+			Goto Spawn1;
+		Spawn1:
+			#### A 2 A_SetRoll(roll+12, SPF_INTERPOLATE); 
+			Loop;
 		Death:
+			#### B 0; //Preload Sprites
 			#### A 0 A_SetRoll(0);
-			#### A 0 A_Jump(256, "Rest1", "Rest2", "Rest3", "Rest4");
-		Rest1:
-			#### A 900;
-			#### A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-			Loop;
-		Rest2:
-			#### A 0 {bSpriteFlip = true;}
-			#### A 900;
-			#### A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-			Loop;
-		Rest3:
-			#### B 900;
-			#### A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-			Loop;
-		Rest4:
-			#### A 0 {bSpriteFlip = true;}
-			#### B 900;
-			#### A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-			Loop;
-		Disappear:
-			TNT1 A 1;
+			#### A 900
+			{
+				frame = frame + (random(1,1));
+				bSpriteFlip = random(0,1);
+			}
+			#### # -1;
+			Stop;
+		Splash:
+			#### # -1;
 			Stop;
 	}
 }
 
-Class EmptyNailgunDrum_Javelin : EmptyMagMP40
+Class EmptyNailgunDrum_Javelin : EmptyNailgunDrum
 {
-	override void BeginPlay(void)
-	{
-		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
-		Super.BeginPlay();
-	}
-	
-	Default
-	{
-		Scale 0.6;
-		BounceCount 3;
-		SeeSound "weapons/largemagdrop";
-	}
-	
 	States
 	{
 		Spawn:
 			NEMG C 1;
-		Exist:
-			NEMG C 2 A_SetRoll(roll+20, SPF_INTERPOLATE); 
-			loop;
+			Goto Spawn1;
+		Spawn1:
+			#### C 2 A_SetRoll(roll+12, SPF_INTERPOLATE); 
+			Loop;
 		Death:
-			#### C 0 A_SetRoll(0);
-			#### C 0 A_Jump(256, "Rest1", "Rest2", "Rest3", "Rest4");
-		Rest1:
-			#### C 900;
-			#### A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-			Loop;
-		Rest2:
-			#### A 0 {bSpriteFlip = true;}
-			#### C 900;
-			#### A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-			Loop;
-		Rest3:
-			#### D 900;
-			#### A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-			Loop;
-		Rest4:
-			#### A 0 {bSpriteFlip = true;}
-			#### D 900;
-			#### A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-			Loop;
-		Disappear:
-			TNT1 A 1;
+			#### D 0; //Preload Sprites
+			#### A 0 A_SetRoll(0);
+			#### C 900
+			{
+				frame = frame + (random(1,1));
+				bSpriteFlip = random(0,1);
+			}
+			#### # -1;
+			Stop;
+		Splash:
+			#### # -1;
 			Stop;
 	}
 }
 
-Class EmptyMagMP40 : Actor //this one is actually used by the MP40
+Class EmptyMagMP40 : EmptyMagBase //this one is actually used by the MP40
 {
-	override void BeginPlay(void)
-	{
-		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
-		Super.BeginPlay();
-	}
 	Default
 	{
-		Height 12;
-		Radius 9;
-		Speed 4;
 		Scale 0.125;
-		+DOOMBOUNCE;
-		-NOGRAVITY;
-		+WINDTHRUST;
-		+CLIENTSIDEONLY;
-		+MOVEWITHSECTOR;
-		+MISSILE;
-		+NOBLOCKMAP;
-		-DROPOFF;
-		+NOTELEPORT;
-		+FORCEXYBILLBOARD;
-		+NOTDMATCH;
-		+GHOST;
-		+ROLLSPRITE
-		+ROLLCENTER
-		Mass 1;
-		SeeSound "weapons/smallmagdrop";
+		BounceCount 4;
+		SeeSound "weapons/emptymag/dropM";
+		DeathSound "weapons/emptymag/dropM";
 	}
 	States
 	{
 		Spawn:
-			C1P4 A 1 A_SetRoll(roll+90);
-		Exist:
-			C1P4 AAAAAAAAABBBBBBBBBAAAAAAAAABBBBBBBBB 1 A_SetRoll(roll+10, SPF_INTERPOLATE);
-			Goto Spawn+1;
+			C1P4 A 1;
+			Goto Spawn1;
+		Spawn1:
+			#### A 2 A_SetRoll(roll+24, SPF_INTERPOLATE); 
+			Loop;
 		Death:
-			C1P4 # 900 A_SetRoll(0);
-			TNT1 A 0 A_JumpIfInventory("CasingsJanitor", 1, "Disappear");
-			loop;  
-		Disappear:
-			TNT1 A 1;
+			#### BC 0; //Preload Sprites
+			#### A 0 A_SetRoll(0);
+			#### A 900
+			{
+				frame = frame + (random(1,2));
+				bSpriteFlip = random(0,1);
+			}
+			#### # -1;
+			Stop;
+		Splash:
+			#### # -1;
 			Stop;
 	}
 }
