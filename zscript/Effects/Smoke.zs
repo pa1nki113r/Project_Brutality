@@ -16,7 +16,7 @@ class PB_GunFireSmoke: Actor
         +DONTSPLASH;
         +MISSILE;
         +FORCEXYBILLBOARD;
-        +CLIENTSIDEONLY;
+        //+CLIENTSIDEONLY;
         +NOINTERACTION;
         +NOGRAVITY;
         +THRUACTORS;
