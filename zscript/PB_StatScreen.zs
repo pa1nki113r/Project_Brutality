@@ -48,7 +48,7 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 	
 	bool Perfect()
 	{
-		if(cnt_kills[0]==wbs.maxkills&&cnt_items[0]==wbs.maxitems&&cnt_secret[0]==wbs.maxsecret) return true;
+		if(cnt_kills[0]>=wbs.maxkills&&cnt_items[0]>=wbs.maxitems&&cnt_secret[0]>=wbs.maxsecret) return true;
 		else return false;
 	}
 	
