@@ -16,14 +16,15 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>. */
 
 // Modified version of Flashlight++, available at https://forum.zdoom.org/viewtopic.php?t=75585
 // Adapted for Project Brutality by generic name guy
-
+
+
 // Light
 class PB_FPP_Light : Spotlight
 {
 	Default 
 	{
 		+NOINTERACTION;
-		+DYNAMICLIGHT.ATTENUATE;
+		// +DYNAMICLIGHT.ATTENUATE;
 	}
 	
 	PlayerPawn toFollow;
@@ -41,7 +42,7 @@ class PB_FPP_Light : Spotlight
 	const sp2InnerAngle = 0.0;
 	const sp2OuterAngle = 30.0;
 	
-	const beamColor = 0xFFF4DA;
+	const beamColor = 0xF3F7FF;
 	
 	const darkenSpillMod = 3;
 	
@@ -87,7 +88,7 @@ class PB_FPP_Light : Spotlight
         	A_SetPitch(toFollow.pitch, SPF_INTERPOLATE);
         	A_SetRoll(toFollow.roll, SPF_INTERPOLATE);
         	
-        	SetOrigin(toFollow.pos + (RotateVector((offset.x, offset.y * ((90 + -abs(toFollow.pitch)) / 90.0)), toFollow.angle - 90.0), toFollow.player.viewheight + offset.z + (offset.y * (-toFollow.Pitch / 90.0))), true);
+        	SetOrigin(toFollow.pos + (RotateVector((offset.x, offset.y * cos(toFollow.Pitch)), toFollow.angle - 90.0), toFollow.player.viewheight + offset.z + (offset.y * -sin(toFollow.Pitch))), true);
         }
         
         //BD:BE monster alerting stuff, this was a nightmare to implement
@@ -209,9 +210,9 @@ class PB_FPP_Holder : Inventory
 			
 			flScale = clamp(flScale, 0.0, 1.0);
 			
-			if(flScale < 0.5)
+			if(flScale < 0.35)
 			{
-				double flFlicker = frandom(-1.0, 1.0);
+				double flFlicker = cos(gametic * 343.775) * sin(gametic * 859.437);
 				
 				if(flFlicker > 0.25 && flFlicker < 0.75)
 				{
@@ -383,4 +384,4 @@ extend class PB_EventHandler
 		holder.Init();
 		return holder;
 	}
-}
+}

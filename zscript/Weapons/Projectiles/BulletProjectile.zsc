@@ -13,6 +13,8 @@ class PB_Projectile : FastProjectile abstract
 		startPos = pos;
 	}
 	
+	array<PlayerPawnBase> alreadyWhizzedBy;
+	
 	virtual int Handle_MissileHit(Actor victim)
 	{
 		double scaled_damage = truedamage;
@@ -74,7 +76,7 @@ class PB_Projectile : FastProjectile abstract
 			scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgLowTorsoMult : 1);
 		}
 		
-		scaled_damage = victim.GetModifiedDamage(dmgType, scaled_damage, false, self, target);
+		scaled_damage = victim.GetModifiedDamage(dmgType, scaled_damage, true, self, target);
 		
 		victim.DamageMobj(self, target, ceil(scaled_damage), dmgType, 0, angle);
 		
@@ -348,6 +350,30 @@ class PB_Projectile : FastProjectile abstract
 		Double OldZ = Pos.Z;
 		FastProjectileTick(); //We just use our own copy of the Tick() method for bouncing.
 		FallAndSink(GetGravity(),OldZ); //[inkoalawetrust] It's as shrimple as that.
+		
+		if(bNOWHIZBY) return;
+		
+		BlockThingsIterator it = BlockThingsIterator.Create(self, radius + 5);
+		PlayerPawnBase plr;
+		while(it.Next())
+		{
+			plr = PlayerPawnBase(it.thing);
+			
+			if(!plr || target == plr) 
+				continue;
+				
+			if(alreadyWhizzedBy.Find(plr) != alreadyWhizzedBy.Size())
+				continue;
+				
+			double angtoplr = AbsAngle(self.Angle, AngleTo(plr));
+			
+			if(angtoplr > 75 && angtoplr < 130)
+			{
+				A_StartSound("env/whizby", CHAN_AUTO, attenuation: ATTN_STATIC, frandom(0.95, 1.0));
+				alreadyWhizzedBy.Push(plr);
+				// console.printf("whizzed by %s", plr.player.GetUserName());
+			}
+		}
 	}
 
 	// [Ace] Override these if you want to do stuff when something happens.
@@ -395,6 +421,7 @@ class PB_Projectile : FastProjectile abstract
 	flagdef InvisiblePuff: BehaviorFlags, 2;
 	flagdef RipOnce: BehaviorFlags, 3;
 	flagdef RANGED: BehaviorFlags, 4;
+	flagdef NOWHIZBY: BehaviorFlags, 5;
 	
 	vector3 startPos;
 
