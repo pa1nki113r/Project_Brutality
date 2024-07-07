@@ -51,8 +51,6 @@ Actor PB_CryoRifle: PB_Weapon
 	PB_WeaponBase.respectItem "RespectCryoRifle"
 	PB_WeaponBase.OffsetRecoilX 1.5
 	PB_WeaponBase.OffsetRecoilY 1.8
-	PB_WeaponBase.UsesWheel 1
-	PB_WeaponBase.WheelInfo "PB_CryoRifleWheel"
 		States {
   	
 			Spawn:
@@ -70,7 +68,8 @@ Actor PB_CryoRifle: PB_Weapon
 				TNT1 A 0 {
 					A_SetCrosshair(5);
 					A_GiveInventory("RespectCryoRifle");
-					A_GiveInventory("FireModeCryoRifleMissile");
+					A_GiveInventory("FireModeCryoRifleBeam");
+					A_GiveInventory("FireModeCryoRifleFlak");
 				}
 				TNT1 A 0 A_StartSound("weapons/CryoRifle/up", CHAN_AUTO, CHANF_OVERLAP)
 				FR00 ABCDEFGHIJKLMNO 1 A_DoPBWeaponAction
@@ -183,36 +182,28 @@ Actor PB_CryoRifle: PB_Weapon
 					// Missile
 					if(CountInv("FireModeCryoRifleMissile_WW")==1) {
 						
-						A_Print("Fire Mode: Ice Missile");
+						A_Print("Primary Mode: Ice Missile");
 						A_GiveInventory("FireModeCryoRifleMissile", 1);
 						A_TakeInventory("FireModeCryoRifleBeam", 1);
-						A_TakeInventory("FireModeCryoRifleSpear", 1);
-						A_TakeInventory("FireModeCryoRifleFlak", 1);
 					}
 					
 					// Beam
 					if(CountInv("FireModeCryoRifleBeam_WW")==1) {
-						A_Print("Fire Mode: Ice Beam");
+						A_Print("Primary Mode: Ice Beam");
 						A_TakeInventory("FireModeCryoRifleMissile", 1);
 						A_GiveInventory("FireModeCryoRifleBeam", 1);
-						A_TakeInventory("FireModeCryoRifleSpear", 1);
-						A_TakeInventory("FireModeCryoRifleFlak", 1);
 					}
 					
 					// Spike
 					if(CountInv("FireModeCryoRifleSpear_WW")==1) {
-						A_Print("Fire Mode: Ice Spike");
-						A_TakeInventory("FireModeCryoRifleMissile", 1);
-						A_TakeInventory("FireModeCryoRifleBeam", 1);
+						A_Print("Secondary Mode: Ice Spear");
 						A_GiveInventory("FireModeCryoRifleSpear", 1);
 						A_TakeInventory("FireModeCryoRifleFlak", 1);
 					}
 					
 					// Flak
 					if(CountInv("FireModeCryoRifleFlak_WW")==1) {
-						A_Print("Fire Mode: Ice Flak");
-						A_TakeInventory("FireModeCryoRifleMissile", 1);
-						A_TakeInventory("FireModeCryoRifleBeam", 1);
+						A_Print("Secondary Mode: Ice Flak");
 						A_TakeInventory("FireModeCryoRifleSpear", 1);
 						A_GiveInventory("FireModeCryoRifleFlak", 1);
 					}
@@ -300,10 +291,7 @@ Actor PB_CryoRifle: PB_Weapon
 				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleBeam",1,"FireBeam")
 			FireMissile:
 				TNT1 A 0  {
-					if ((CountInv("FireModeCryoRifleMissile") == 1 || CountInv("FireModeCryoRifleFlak") == 1) && CountInv("CryoRifleAmmo") < 5) {
-						return state("Reload");
-					}
-					if ((CountInv("FireModeCryoRifleSpear") == 1) && CountInv("CryoRifleAmmo") < 10) {
+					if (CountInv("FireModeCryoRifleMissile") == 1  && CountInv("CryoRifleAmmo") < 5) {
 						return state("Reload");
 					}
 					A_StopSound(CHAN_6);
@@ -329,24 +317,6 @@ Actor PB_CryoRifle: PB_Weapon
 						A_StartSound("weapons/CryoRifle/missile", CHAN_WEAPON, CHANF_OVERLAP);
 					}
 					
-					//Shoot Ice Spike
-					if(CountInv("FireModeCryoRifleSpear") == 1) {
-						PB_WeaponRecoil(-0.32,-0.16);
-						A_FireCustomMissile("IceSpear", 0, 0, 0, 0);
-						A_Takeinventory("CryoRifleAmmo",10);
-						A_StartSound("weapons/CryoRifle/spearfire", CHAN_WEAPON, CHANF_OVERLAP);
-					}
-					
-					//Shoot Ice Flak
-					if(CountInv("FireModeCryoRifleFlak") == 1) {
-						PB_WeaponRecoil(-0.32,-0.16);
-						A_FireCustomMissile("IceFlak1",random(-2,2),0,0,random(0,-1));
-						A_FireCustomMissile("IceFlak2",random(-2,2),0,0,random(0,-1));
-						A_FireCustomMissile("IceFlak3",random(-2,2),0,0,random(0,-1));
-						A_Takeinventory("CryoRifleAmmo",5);
-						A_StartSound("weapons/CryoRifle/flak", CHAN_WEAPON, CHANF_OVERLAP);
-					}
-					
 					PB_FireOffset;
 					A_GunFlash;
 					A_AlertMonsters;
@@ -368,10 +338,6 @@ Actor PB_CryoRifle: PB_Weapon
 					if (CountInv("FireModeCryoRifleMissile") == 1 && CountInv("CryoRifleAmmo") < 5) {
 						return state("EndMissile");
 					}
-					if ((CountInv("FireModeCryoRifleSpear") == 1 || CountInv("FireModeCryoRifleFlak") == 1) && CountInv("CryoRifleAmmo") < 10) {
-						return state("EndMissile");
-					}
-				
 					A_Refire("HoldMissile");
 					A_Startsound("weapons/CryoRifle/powerdown", CHAN_AUTO, CHANF_OVERLAP);
 					return state("");
@@ -382,7 +348,7 @@ Actor PB_CryoRifle: PB_Weapon
 				Goto Reload
 				
 			FireBeam:
-				TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",2,1)
+				TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",1,1)
 				Goto Reload
 				TNT1 A 0 {
 					A_StopSound(CHAN_6);
@@ -394,7 +360,7 @@ Actor PB_CryoRifle: PB_Weapon
 					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR11");}
 				}
 			HoldBeam:
-				TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",2,1)
+				TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",1,1)
 				Goto EndBeam
 				FR14 ABC 0 
 				FR13 ABCB 1 BRIGHT {
@@ -411,7 +377,7 @@ Actor PB_CryoRifle: PB_Weapon
 					A_Giveinventory("CryoRifleOverCooling",8);
 				}
 				TNT1 A 0 {
-					A_Takeinventory("CryoRifleAmmo",2);
+					A_Takeinventory("CryoRifleAmmo",1);
 					A_Refire ("HoldBeam");
 				}
 			EndBeam:
@@ -451,10 +417,108 @@ Actor PB_CryoRifle: PB_Weapon
 				Stop
 				
 			AltFire: //No moar pistol
+				TNT1 A 0 {
+					A_WeaponOffset(0,32);
+					A_SetRoll(0);
+					PB_HandleCrosshair(79);
+					A_TakeInventory("PB_LockScreenTilt",1);
+				}
 				TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
 				TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
 				TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
-				Goto Ready3
+			AltFireMissile:
+				TNT1 A 0  {
+					if (CountInv("FireModeCryoRifleSpear") == 1  && CountInv("CryoRifleAmmo") < 10) {
+						return state("Reload");
+					}
+					if (CountInv("FireModeCryoRifleFlak") == 1  && CountInv("CryoRifleAmmo") < 2) {
+						return state("Reload");
+					}
+					A_StopSound(CHAN_6);
+					A_StopSound(CHAN_7);
+					A_StartSound("weapons/CryoRifle/powerup", CHAN_AUTO, CHANF_OVERLAP);
+					return state("");
+				}
+				FR10 HGFEDCB 1 { 
+					PB_FireOffset;
+					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR11");}
+				}
+			AltHoldMissile:
+				
+					TNT1 A 0  {
+					//Shoot Ice Spear
+					if(CountInv("FireModeCryoRifleSpear") == 1) {
+						PB_WeaponRecoil(-0.32,-0.16);
+						A_FireCustomMissile("IceSpear", 0, 0, 0, 0);
+						A_Takeinventory("CryoRifleAmmo",10);
+						A_StartSound("weapons/CryoRifle/spearfire", CHAN_WEAPON, CHANF_OVERLAP);
+					}
+					
+					//Shoot Ice Flak
+					if(CountInv("FireModeCryoRifleFlak") == 1) {
+						PB_WeaponRecoil(-0.32,-0.16);
+						A_FireCustomMissile("IceFlak1",random(-4,4),0,0,random(0,-1));
+						A_FireCustomMissile("IceFlak2",random(-2,2),0,0,random(0,-1));
+						A_FireCustomMissile("IceFlak3",random(-3,3),0,0,random(0,-1));
+						A_FireCustomMissile("IceFlak2",random(-2,2),0,0,random(0,-1));
+						A_FireCustomMissile("IceFlak3",random(-3,3),0,0,random(0,-1));
+						A_Takeinventory("CryoRifleAmmo",2);
+						A_StartSound("weapons/CryoRifle/flak", CHAN_WEAPON, CHANF_OVERLAP);
+					}
+					PB_FireOffset;
+					A_GunFlash;
+					A_AlertMonsters;
+					A_Giveinventory("CryoRifleOverCooling",60);
+					PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0);
+					PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0);
+					PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 1, 0, 0);
+					A_ZoomFactor(0.98);
+				}
+				FR10 BCD 1 Bright {
+					PB_FireOffset;
+					A_ZoomFactor(1.0);
+					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR11");}
+				}
+				FR10 EFGH 1 {
+					if (CountInv("CryoRifleOverCooling") >= 100 ) { A_SetWeaponSprite("FR11");}
+				}
+				TNT1 A 0 {
+						if ((CountInv("FireModeCryoRifleFlak") == 1) && CountInv("CryoRifleAmmo") == 0) {
+							A_Jump(256,"EndAltMissile");
+						}
+				}
+				TNT1 A 0 A_JumpIfInventory("FireModeCryoRifleFlak",1,"AltRefire")
+				FR14 ABCCBA 1 BRIGHT {
+					PB_GunSmoke(frandom(-2,2),frandom(-2,2),frandom(-2,2));
+				}
+				FR14 BCA 1 { 
+					PB_GunSmoke(frandom(-2,2),frandom(-2,2),frandom(-2,2));
+					PB_FireOffset;
+				}
+				FR13 CBA 1 { 
+					PB_GunSmoke(frandom(-2,2),frandom(-2,2),frandom(-2,2));
+					PB_FireOffset;
+				}
+			AltRefire:
+				TNT1 A 0 {
+					if (CountInv("FireModeCryoRifleSpear") == 1 && CountInv("CryoRifleAmmo") < 10) {
+						return state("EndAltMissile");
+					}
+					if (CountInv("FireModeCryoRifleFlak") == 1  && CountInv("CryoRifleAmmo") < 2) {
+						return state("EndAltMissile");
+					}
+					return state("");
+					}
+				TNT1 A 0 {
+					A_Refire("AltHoldMissile");
+					A_Startsound("weapons/CryoRifle/powerdown", CHAN_AUTO, CHANF_OVERLAP);
+					return state("");
+				}
+			
+			EndAltMissile:
+// 				TNT1 A 0 A_Startsound("weapons/CryoRifle/powerdown", CHAN_AUTO, CHANF_OVERLAP)
+				TNT1 A 0 A_JumpIfInventory("CryoRifleAmmo",1,"Ready3")
+				Goto Reload
 //         A1F3 CBA 1
 //         Goto Ready3
 			Reload:
@@ -874,11 +938,11 @@ ACTOR IceMissile : FastProjectile {
 				TNT1 AAAA 0 A_SpawnItemEx ("DetectCeilIce",random(-15,15), random(-15,15),1,0,0,0,0,SXF_NOCHECKPOSITION,0)
 				Goto DeathEffects
 			DeathEffects:
-				TNT1 AAAAAAAAAAA 0 Bright A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_NOCHECKPOSITION)
-				TNT1 AAAAA 0 Bright A_SpawnItemEx("CryoSmoke3", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_NOCHECKPOSITION,64)
-				TNT1 AAAAAAA 0 Bright A_SpawnItemEx("CryoRifleTrailSparksSmall", random(5,-5), random(5,-5), random(5,-5), random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360),SXF_NOCHECKPOSITION,64)
-				TNT1 AAAAAAA 0 Bright A_SpawnItemEx("CryoSmoke2", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_NOCHECKPOSITION,64)
-				TNT1 A 0 Bright A_SpawnItemEx("IceExplosionImpact", 0, 0, 0, 0, 0, 0, random(1,360), SXF_NOCHECKPOSITION)
+				TNT1 AAAAAAAAAAA 0 Bright A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
+				TNT1 AAAAA 0 Bright A_SpawnItemEx("CryoSmoke3", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
+				TNT1 AAAAAAA 0 Bright A_SpawnItemEx("CryoRifleTrailSparksSmall", random(5,-5), random(5,-5), random(5,-5), random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
+				TNT1 AAAAAAA 0 Bright A_SpawnItemEx("CryoSmoke2", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
+				TNT1 A 0 Bright A_SpawnItemEx("IceExplosionImpact", 0, 0, 0, 0, 0, 0, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
 				TNT1 A 0 A_Playsound("weapons/CryoRifle/missiledeath")
 				BXPL ABCDEFGH 1 Bright
 				BXPL IJKLLM 1 Bright A_FadeOut(0.1)
@@ -903,12 +967,12 @@ Actor IceSpear {
 	-NOGRAVITY
 //	+RollSprite //This looks terrible from the other angles. The front and back look okay, but not the sides. -JM
 	Projectile
-	Radius 3
-	Height 6
-	Speed 50
-	Damage 34	
+	Radius 4
+	Height 8
+	Speed 110
+	Damage 75	
 	Damagetype "Blast"
-	Scale 0.75
+	Scale 1.25
 	RipperLevel 1
 	+MISSILE	
 	SeeSound ""
@@ -930,10 +994,10 @@ Actor IceSpear {
 					A_Stop;
 					A_SetRoll(0);
 					}
-				TNT1 AAAAAAAAAAA 0 Bright A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_NOCHECKPOSITION)
-				TNT1 AAAAA 0 Bright A_SpawnItemEx("CryoSmoke3", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_NOCHECKPOSITION,64)
-				TNT1 AAAAAAA 0 Bright A_SpawnItemEx("CryoRifleTrailSparksSmall", random(5,-5), random(5,-5), random(5,-5), random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_NOCHECKPOSITION,64)
-				TNT1 AAAAAAA 0 Bright A_SpawnItemEx("CryoSmoke2", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_NOCHECKPOSITION,64)
+				TNT1 AAAAAAAAAAA 0 Bright A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION)
+				TNT1 AAAAA 0 Bright A_SpawnItemEx("CryoSmoke3", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
+				TNT1 AAAAAAA 0 Bright A_SpawnItemEx("CryoRifleTrailSparksSmall", random(5,-5), random(5,-5), random(5,-5), random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
+				TNT1 AAAAAAA 0 Bright A_SpawnItemEx("CryoSmoke2", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_CLIENTSIDE|SXF_NOCHECKPOSITION,64)
 				ISPR A 70 Bright
 				ISPR AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 Bright A_FadeOut(0.02)
 				Stop
@@ -947,7 +1011,7 @@ ACTOR IceFlak1 {
 	Radius 3
 	Height 4
 	Speed 45
-	Damage 15
+	Damage 7
 	Mass 200
 	Scale 0.75
 	Damagetype "Cutless"
@@ -963,19 +1027,20 @@ ACTOR IceFlak1 {
 		States {
 			Spawn:
 				CSC2 C 1 Bright {
-					A_CustomMissile ("Icetracer", 0, 0, random (0, 360), 2, random (0, 360));
+					A_CustomMissile ("SmallIcetracer", 0, 0, random (0, 360), 2, random (0, 360));
 					A_SetRoll(Roll+45);
 				}
 				loop
 			Death:
 				EXPL A 0 A_CustomMissile ("IceDust", 4, 0, random (0, 360), 2, random (0, 360))
+				
 				Stop	}}
 ACTOR IceFlak2 : IceFlak1 {
 	Damagetype "Saw"
 		States {
 			Spawn:
 				CSD8 B 1 Bright {
-					A_CustomMissile ("Icetracer", 0, 0, random (0, 360), 2, random (0, 360));
+					A_CustomMissile ("SmallIcetracer", 0, 0, random (0, 360), 2, random (0, 360));
 					A_SetRoll(Roll+45);
 				}
 				loop	}}
@@ -984,7 +1049,7 @@ ACTOR IceFlak3 : IceFlak1 {
 		States {
 			Spawn:
 				CSD9 C 1 Bright {
-					A_CustomMissile ("Icetracer", 0, 0, random (0, 360), 2, random (0, 360));
+					A_CustomMissile ("SmallIcetracer", 0, 0, random (0, 360), 2, random (0, 360));
 					A_SetRoll(Roll+45);
 				}
 				loop	}}
@@ -993,7 +1058,7 @@ ACTOR IceFlak4 : IceFlak1 {
 		States {
 			Spawn:
 				ICC5 D 1 Bright {
-					A_CustomMissile ("Icetracer", 0, 0, random (0, 360), 2, random (0, 360));
+					A_CustomMissile ("SmallIcetracer", 0, 0, random (0, 360), 2, random (0, 360));
 					A_SetRoll(Roll+45);
 				}
 				loop	}}
@@ -1050,17 +1115,30 @@ Actor IceTracer {
 	RenderStyle Add
 	Alpha 0.9
 	StencilColor "A0 FF FF"
-	Scale 0.55
+	Scale 0.4
 	Speed 0
 	-DOOMBOUNCE
 		States {
 			Spawn:
 			Death:
+				FRPJ HHHEEEFFFGGG 1 Bright {
+					A_FadeOut(0.04);
+					A_SetRoll(roll-frandom(-15,15));
+				}
+				Stop	}
+	}
+				
+Actor SmallIceTracer : IceTracer {
+		States {
+			Spawn:
+			Death:
 				SHEX AABBCCDDEE 1 Bright {
 					A_FadeOut(0.04);
-					A_SetRoll(roll-15);
+					A_SetRoll(roll-frandom(-15,15));
 				}
-				Stop	}}
+				Stop	}
+	}
+
 ACTOR CryoTrail {
 	+NOINTERACTION
 	Radius 4
