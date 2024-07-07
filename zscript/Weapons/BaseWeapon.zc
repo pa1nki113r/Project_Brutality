@@ -61,6 +61,9 @@ class PB_WeaponBase : DoomWeapon
 	bool chainsawMode;
 	property chainsawMode: chainsawMode;
 	
+	string dualwieldToken;
+	property DualWieldToken:dualwieldToken;
+	
 	//Cemtex's PB_AmmoIntoMag function variables
 	string AmmoMag;
 	string AmmoPool;
@@ -70,6 +73,12 @@ class PB_WeaponBase : DoomWeapon
 	protected int BraceTicker;
 	bool GunBraced;
 	
+	bool hasWheelSpecial;					//this tells the wheel handler a weapon actually uses the wheel, this also allows to set when a weapon can use the wheel (like upgraded/unupgraded dmr)
+	class <wheelinfocontainer> wheelinfo;	//the object that holds the info about the wheel modes for this weapon
+	
+	property UsesWheel:hasWheelSpecial;
+	property WheelInfo:wheelinfo;
+	
 	Default
 	{
 		Weapon.BobRangeX 0.3;
@@ -77,6 +86,8 @@ class PB_WeaponBase : DoomWeapon
 		Weapon.BobSpeed 2.4;
 		Weapon.BobStyle "InverseSmooth";
 		PB_WeaponBase.UnloaderToken "HasUnloaded";
+		PB_WeaponBase.UsesWheel false;
+		PB_WeaponBase.WheelInfo "";
 		//Weapon.WeaponScaleX 1.2;
 		+DONTGIB
 	}
@@ -240,6 +251,8 @@ class PB_WeaponBase : DoomWeapon
 					Vel = Vel.Length() ? (0, 0, plr.velz) : (0, 0, 0);
 				}
 			}
+			"####" A 0 A_JumpIf(WaterLevel <= 2, 1);
+			Goto FinishClimb+11;
 			"####" A 0 A_JumpIf(CountInv("Grabbing_A_Ledge")==1, 1);
 			Goto LedgeReach;
 			
@@ -289,7 +302,7 @@ class PB_WeaponBase : DoomWeapon
 			"####" LM 1 A_SetPitch(pitch-2, SPF_INTERPOLATE);
 			TNT1 AA 1 {
 				A_SetPitch(pitch-pitch/2, SPF_INTERPOLATE);
-				A_WeaponReady();
+				//A_WeaponReady();
 			}
 			// New, and to prevent an issue with melee not working after climbing during it's animation
 			TNT1 A 0 {
@@ -465,7 +478,7 @@ class PB_WeaponBase : DoomWeapon
 				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
 				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
 				A_OverlayOffset(-10, 0, (-pitch*2)+230);
-				if(PB_executingEnemy())
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
 					A_SetOverlaySprite(-10, "TNT1");
 			}
 			Loop;
@@ -474,7 +487,7 @@ class PB_WeaponBase : DoomWeapon
 				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
 				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
 				A_OverlayOffset(-10, 0, (-pitch*2)+230);
-				if(PB_executingEnemy())
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
 					A_SetOverlaySprite(-10, "TNT1");
 			}
 			Loop;
@@ -488,7 +501,7 @@ class PB_WeaponBase : DoomWeapon
 				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
 				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
 				A_OverlayOffset(-10, 0, (-pitch*2)+230);
-				if(PB_executingEnemy())
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
 					A_SetOverlaySprite(-10, "TNT1");
 			}
 			Loop;
@@ -497,7 +510,7 @@ class PB_WeaponBase : DoomWeapon
 				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
 				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
 				A_OverlayOffset(-10, 0, (-pitch*2)+230);
-				if(PB_executingEnemy())
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
 					A_SetOverlaySprite(-10, "TNT1");
 			}
 			Loop;
@@ -507,7 +520,7 @@ class PB_WeaponBase : DoomWeapon
 				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
 				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
 				A_OverlayOffset(-10, 0, (-pitch*2)+230);
-				if(PB_executingEnemy())
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
 					A_SetOverlaySprite(-10, "TNT1");
 			}
 			Loop;
@@ -521,7 +534,7 @@ class PB_WeaponBase : DoomWeapon
 				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
 				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
 				A_OverlayOffset(-10, 0, (-pitch*2)+230);
-				if(PB_executingEnemy())
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
 					A_SetOverlaySprite(-10, "TNT1");
 			}
 			Loop;
@@ -532,7 +545,7 @@ class PB_WeaponBase : DoomWeapon
 				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
 				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
 				A_OverlayOffset(-10, 0, (-pitch*2)+230);
-				if(PB_executingEnemy())
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
 					A_SetOverlaySprite(-10, "TNT1");
 			}
 			Loop;
@@ -547,7 +560,7 @@ class PB_WeaponBase : DoomWeapon
 				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
 				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
 				A_OverlayOffset(-10, 0, (-pitch*2)+230);
-				if(PB_executingEnemy())
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
 					A_SetOverlaySprite(-10, "TNT1");
 			}
 			Loop;
@@ -561,7 +574,7 @@ class PB_WeaponBase : DoomWeapon
 				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
 				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
 				A_OverlayOffset(-10, 0, (-pitch*2)+230);
-				if(PB_executingEnemy())
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
 					A_SetOverlaySprite(-10, "TNT1");
 				return A_JumpIf(vel.z != 0, "FirstPersonLegsJump");
 			}
@@ -574,7 +587,7 @@ class PB_WeaponBase : DoomWeapon
 				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
 				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
 				A_OverlayOffset(-10, 0, (-pitch*2)+230);
-				if(PB_executingEnemy())
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
 					A_SetOverlaySprite(-10, "TNT1");
 				return A_JumpIf(vel.z != 0, "FirstPersonLegsJump");
 			}
@@ -585,7 +598,7 @@ class PB_WeaponBase : DoomWeapon
 				A_OverlayFlags(-10, PSPF_ADDWEAPON, False);
 				A_OverlayFlags(-10, PSPF_PLAYERTRANSLATED, True);
 				A_OverlayOffset(-10, 0, (-pitch*2)+230);
-				if(PB_executingEnemy())
+				if(PB_executingEnemy() || CountInv("Grabbing_A_Ledge") > 0)
 					A_SetOverlaySprite(-10, "TNT1");
 			}
 			Goto FirstPersonLegsStand;

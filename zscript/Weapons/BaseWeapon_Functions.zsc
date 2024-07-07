@@ -1,6 +1,47 @@
 extend class PB_WeaponBase
 {
-    action void PB_UseLine(int range = 64)
+	action void PB_LowAmmoSoundWarning(string type = "default", string ammoItem = "SuperMario64ForTheXboxOne", int ammoUse = 1)
+	{
+		Ammo count;
+		if(ammoItem == "SuperMario64ForTheXboxOne")
+			count = invoker.ammo2;
+		else
+			count = Ammo(FindInventory(ammoItem));
+			
+		if(!count)
+		{
+			console.printf("PB_LowAmmoSoundWarning: Invalid ammo class");
+			return;
+		}
+		
+		int lowammocount = ceil(count.maxamount * 0.25);
+		int currentammocount = count.amount;
+
+		sound sndName = "weapons/lowammo/"..type;
+		
+		currentammocount /= ammoUse;
+		lowammocount /= ammoUse;
+		
+		if(currentammocount <= lowammocount)
+		{
+			double clickvolume = PB_Math.LinearMap(currentammocount, 1.0, lowammocount, 1.0, 0.5);
+			A_StartSound(sndName, CHAN_AUTO, CHANF_OVERLAP, clickvolume, ATTN_STATIC, frandompick(0.98, 1.0));
+			
+			if(currentammocount == 1)
+				A_StartSound("weapons/lowammo/sweetener", CHAN_AUTO, CHANF_OVERLAP, 1.0, ATTN_STATIC);
+			
+			//console.printf("%f %i %i", clickvolume, lowammocount, currentammocount);
+			if(currentammocount == 0)
+				console.printf("PB_LowAmmoSoundWarning: Ammo count is 0 instead of 1, was the function called after the ammo item was taken?");
+		}
+	}
+	
+	action void PB_SetUsableWheel(bool set = true)
+	{
+		invoker.hasWheelSpecial = set;	//if hasWheelSpecial is true, means this weapon uses the wheel, otherwise it would just go to weaponspecial 
+	}
+	
+	action void PB_UseLine(int range = 64)
     {
         double pz = height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor;
         FLineTraceData ltd;
@@ -11,11 +52,15 @@ extend class PB_WeaponBase
         }
     }
     
-    action void PB_FireOffset(bool interp = true) {
+    action void PB_FireOffset(bool interp = true) 
+	{
 		if( !cvar.GetCVar("PB_ExaggeratedRecoil", invoker.owner.player).GetBool() )
 			return;
+
 		invoker.exaggerationMultiplier = cvar.GetCVar("PB_ExaggeratedRecoilMul", invoker.owner.player).GetFloat();
-		if(invoker.exaggerationMultiplier == 0) {
+		
+		if(invoker.exaggerationMultiplier == 0) 
+		{
 			invoker.exaggerationMultiplier = 0.1;
 		}
 		
@@ -23,6 +68,39 @@ extend class PB_WeaponBase
 		A_SetRoll(roll + frandom(-invoker.horizontalOffsetRecoil, invoker.horizontalOffsetRecoil) * invoker.exaggerationMultiplier, SPF_INTERPOLATE);
 		PB_QuakeCamera(2,3);
 	}
+	
+	Action void PB_TakeIfUpgrade(string oldweap = "")
+	{
+		//console.printf("cvar val: \ca"..pb_keepweapons.."\c-, weapon is: \cd"..invoker.getclassname().."\c-, oldweapon is: \ca"..oldweap.."\c-");
+		if(!pb_keepweapons)
+		{
+			let pbw = PB_WeaponBase(findinventory(oldweap));
+			if(pbw && pbw.DualWieldToken)
+			{
+				A_takeinventory(pbw.DualWieldToken,1);	//this function takes weapons that may be in akimbo mode, so you also need to take this token
+				pbw.A_SetAkimbo(false);
+			}
+			
+			//console.printf("taking: \cg"..oldweap.."\c-");
+			A_takeinventory(oldweap,3);
+		}
+	}
+	
+	Action void PB_SelectIfUpgrade(string upgrade = "")
+	{
+		//console.printf("cvar val: \ca"..pb_keepweapons.."\c-, weapon is: \cd"..invoker.getclassname().."\c-, oldweapon is: \ca"..upgrade.."\c-");
+		if(!CountInv(upgrade)) return;
+		if(!pb_keepweapons)
+		{
+			//console.printf("switching to: \cg"..upgrade.."\c-");
+			A_SetAkimbo(false);
+			if(invoker.DualWieldToken)
+				A_takeinventory(invoker.DualWieldToken,1);
+			
+			A_selectweapon(upgrade);
+		}
+	}
+	
 	
 	action bool PB_ChainsawHealthRestore(){
 		return invoker.chainsawMode;
