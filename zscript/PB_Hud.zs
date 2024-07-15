@@ -108,8 +108,8 @@ class PB_Hud_ZS : BaseStatusBar
 
         hudDynamics = automapactive ? false : hudDynamicsCvar;
 
-        hudXMargin = Cvar.GetCvar("pb_hudxmargin", CPlayer).GetInt();
-        hudYMargin = CVar.GetCvar("pb_hudymargin", CPlayer).GetInt();
+        hudXMargin = max(Cvar.GetCvar("pb_hudxmargin", CPlayer).GetInt(), -9);
+        hudYMargin = max(CVar.GetCvar("pb_hudymargin", CPlayer).GetInt(), -9);
             
         showVisor = CVar.GetCvar("pb_showhudvisor", CPlayer).GetBool();
         showVisorGlass = CVar.GetCvar("pb_showhudvisorglass", CPlayer).GetBool();
