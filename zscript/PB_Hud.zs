@@ -67,7 +67,7 @@ class PB_Hud_ZS : BaseStatusBar
     string leftAmmoAmount;
     bool hudDynamics, inPain;
     double dashIndAlpha, flashlightBatteryAlpha;
-    int healthFontCol, keyamount, hudState, oldDashCharge;
+    int healthFontCol, keyamount, hudState, oldDashCharge, weaponBarAccent;
     double dashScale1, dashScale2;
     DEDashJump Dasher;
 
@@ -77,6 +77,7 @@ class PB_Hud_ZS : BaseStatusBar
     float playerAlpha, playerBoxAlpha, messageSize, bloodDropsAlpha, glassCracksAlpha;
 
     bool centerNotify;
+  
     
 	override void Init()
 	{
@@ -1130,30 +1131,37 @@ class PB_Hud_ZS : BaseStatusBar
                 
                 if(WeaponUsesAmmoType("PB_LowCalMag"))
                 {
+                    weaponBarAccent = Font.CR_TAN;
                     DrawAmmoBar("BARBACT1", "BARBACT2", "BAMBAR2", "ABAR2", "ABAR2", "AMMOIC2", Font.CR_TAN);
                 }
                 else if(WeaponUsesAmmoType("PB_HighCalMag") && !(CheckWeaponSelected("PB_MG42")))
                 {
+                    weaponBarAccent = Font.CR_YELLOW;
                     DrawAmmoBar("BARBACY1", "BARBACY2", "BAMBAR1", "ABAR1", "ABAR1", "AMMOIC1", Font.CR_YELLOW);
                 }
                 else if(WeaponUsesAmmoType("PB_Shell"))
                 {
+                	weaponBarAccent = Font.CR_ORANGE;
                     DrawAmmoBar("BARBACO1", "BARBACO2", "BAMBAR3", "ABAR3", "ABAR3", "AMMOIC3", Font.CR_ORANGE);
                 }
                 else if(WeaponUsesAmmoType("PB_RocketAmmo"))
                 {
+                	weaponBarAccent = Font.CR_RED;
                     DrawAmmoBar("BARBACR1", "BARBACR2", "BAMBAR4", "ABAR4", "ABAR4", "AMMOIC4", Font.CR_RED);
                 }
                 else if(WeaponUsesAmmoType("PB_Cell"))
                 {
+                    weaponBarAccent = Font.CR_PURPLE;
                     DrawAmmoBar("BARBACP1", "BARBACP2", "BAMBAR5", "ABAR5", "ABAR5", "AMMOIC5", Font.CR_PURPLE);
                 }
                 else if(WeaponUsesAmmoType("PB_Fuel") && !(CheckWeaponSelected("PB_Chainsaw") || CheckWeaponSelected("PB_Flamethrower")))
                 {
+                    weaponBarAccent = Font.CR_ORANGE;
                     DrawAmmoBar("BARBACD1", "BARBACD2", "BAMBAR6", "ABAR6", "ABAR6", "AMMOIC6", Font.CR_ORANGE);
                 }
                 else if(WeaponUsesAmmoType("PB_DTech") && !(CheckWeaponSelected("PB_Unmaker")))
                 {
+                	weaponBarAccent = Font.CR_DARKRED;
                     DrawAmmoBar("BARBACZ1", "BARBACZ2", "BAMBAR7", "ABAR7", "ABAR7", "AMMOIC7", Font.CR_DARKRED);
                 }
                 
@@ -1161,6 +1169,12 @@ class PB_Hud_ZS : BaseStatusBar
                 
                 Ammo Primary, Secondary;
                 [Primary, Secondary] = GetCurrentAmmo();
+                
+                
+                if((Primary || Secondary) && CPlayer.ReadyWeapon)
+                {
+                	PBHud_DrawString(mDefaultFont, CPlayer.ReadyWeapon.GetTag(), (-110, -22), DI_ITEM_RIGHT_BOTTOM | DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT, weaponBarAccent, scale: (0.5, 0.5));
+                }
                 
                 switch(CPlayer.ReadyWeapon.GetClassName())
                 {
@@ -1175,6 +1189,7 @@ class PB_Hud_ZS : BaseStatusBar
                         PBHud_DrawString(mDefaultFont, Formatnumber(Primary.Amount), (-207, -48), DI_TEXT_ALIGN_RIGHT, Font.CR_DARKRED);
                         //Icon
                         PBHud_DrawImage("AMMOIC7", (-77, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
+                        weaponBarAccent = Font.CR_DARKRED;
                         break;
                     case 'PB_Chainsaw':
                         PBHud_DrawImage("BARBACD1", (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
@@ -1188,6 +1203,7 @@ class PB_Hud_ZS : BaseStatusBar
                         {
                             PBHud_DrawImage("CHAINHL", (-90, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (32, 32));
                         }
+                        weaponBarAccent = Font.CR_ORANGE;
                         break;
                     case 'PB_MG42':
                         PBHud_DrawImage("BARBACY1", (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
@@ -1200,6 +1216,7 @@ class PB_Hud_ZS : BaseStatusBar
                         PBHud_DrawString(mDefaultFont, Formatnumber(Primary.Amount), (-207, -48), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
                         //Icon
                         PBHud_DrawImage("AMMOIC1", (-77, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
+                        weaponBarAccent = Font.CR_YELLOW;
                         break;
                     case 'PB_Flamethrower':
                         PBHud_DrawImage("BARBACD1", (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
@@ -1212,6 +1229,7 @@ class PB_Hud_ZS : BaseStatusBar
                         PBHud_DrawString(mDefaultFont, Formatnumber(Primary.Amount), (-207, -48), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
                         //Icon
                         PBHud_DrawImage("AMMOIC6", (-77, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
+                        weaponBarAccent = Font.CR_ORANGE;
                         break;
                     case 'PB_Axe':
                         int AxeCount = CPlayer.mo.CountInv("PB_Axe");
