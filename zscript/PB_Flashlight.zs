@@ -35,16 +35,15 @@ class PB_FPP_Light : Spotlight
 	bool thisIsLight2;
 	
 	const spIntensity = sp2Intensity;
-	const spInnerAngle = 35.0;
-	const spOuterAngle = 40.0;
+	const spInnerAngle = 0.0;
+	const spOuterAngle = 60.0;
+	const beamSpillColor = 0x8086A3;
 	
-	const sp2Intensity = /*584.0*/ 256.0;
-	const sp2InnerAngle = 0.0;
+	const sp2Intensity = 584.0;
+	const sp2InnerAngle = 10.0;
 	const sp2OuterAngle = 30.0;
+	const beamColor = 0xEBEBEB;
 	
-	const beamColor = 0xF3F7FF;
-	
-	const darkenSpillMod = 3;
 	
 	//This is run whenever the flashlight is turned on.
 	PB_FPP_Light Init(PlayerPawn p, bool second)
@@ -53,17 +52,10 @@ class PB_FPP_Light : Spotlight
 		toInfo = p.player;
 		thisIsLight2 = second; //ignore monster alerting on the second light for optimization purposes
 		
-		if(second) {
+		if(second)
 			baseColor = beamColor;
-			//bNOSHADOWMAP = true;
-		}
-		else {
-			fCol = beamColor;
-			baseColor = color(255, 
-			fCol.r / darkenSpillMod, 
-			fCol.g / darkenSpillMod, 
-			fCol.b / darkenSpillMod);
-		}
+		else
+			baseColor = beamSpillColor;
 		
 		args[0] = baseColor.r;
 		args[1] = baseColor.g;
@@ -140,10 +132,13 @@ class PB_FPP_Holder : Inventory
 	const debuggerMode = 0;
 	
 	const flashlightChargeMax = 100.0;
+	
 	//100 / 1.1111 = 90 seconds, not exact but you can't tell
 	const flashlightDrainTime = 1.1111 / float(ticrate); 
+	
 	//100 / 25.0 = 4 seconds
 	const flashlightChargeTime = 25.0 / float(ticrate);
+	
 	//100 / 12.5 = 8 seconds
 	const flashlightChargeTimeSlow = 12.5 / float(ticrate);
 	
