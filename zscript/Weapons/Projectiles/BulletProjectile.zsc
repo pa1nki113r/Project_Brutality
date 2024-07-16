@@ -135,6 +135,61 @@ class PB_Projectile : FastProjectile abstract
 		if(BlockingLine) BlockingLine.Activate(target, 0, SPAC_Impact);
 	}
 	
+	virtual bool PenetrateWall(Vector3 frac)
+	{
+		if(GetCVar("pb_nopenetration") || Speed <= 0 || Mass <= 0) 
+			return false;
+		
+		Vector3 lastP = pos;
+		double depth = (0.5 * (Mass * 0.075) * (Speed * 2)) * 0.05;
+					   //(0.5 * (Mass * 0.001) * (Speed ** 2)) * 0.005;
+		//console.printf ("Depth: %.4f", depth);
+		Vector3 unit = frac/frac.length();
+		Vector3 penDest = lastP+unit*depth;
+		if(Level.IsPointInLevel(penDest))
+		{
+			//console.printf ("Penetrating wall");
+			A_SpawnProjectile("PB_BulletPuff",0,0,0,0);
+			A_SprayDecal("BulletChip", 172);
+			setOrigin(penDest, false);
+			
+			Angle -= 180;
+			Pitch = -Pitch;
+
+			FLineTraceData backTraceData;
+			bool hit = LineTrace(Angle, depth + 1, Pitch, flags: TRF_ABSOFFSET| TRF_THRUACTORS, data: backTraceData);
+			if(!hit)
+			{
+				//console.printf ("No exit found");
+				setOrigin(lastP, false);
+				return false;
+			} else {
+				double dist = Level.Vec3Diff( backTraceData.HitLocation, lastP ).length();
+				if(dist < depth)
+				{
+					//console.printf ("Found an exit at %.5f units", dist);
+					Vector3 offset = unit * (radius * 2);
+					setOrigin(backTraceData.HitLocation + offset, false);
+					A_SpawnProjectile("PB_BulletPuff",0,0,0,0);
+					A_SprayDecal("BulletChip", 172);
+					
+					Angle += 180;
+					Pitch = -Pitch;
+					
+					truedamage *= .8;
+					Speed *= .8;
+					Mass *= .8;
+					return true;
+				} else {
+					//console.printf ("Exit distance greater than depth");
+					setOrigin(lastP, false);
+					return false;
+				}
+			}
+		}
+		return false;
+	}
+	
 	//[inkoalawetrust]: The stock FastProjectile code. We have to basically reimplement the whole think to make it support bouncing projectiles again.
 	Void FastProjectileTick()
 	{
@@ -251,6 +306,12 @@ class PB_Projectile : FastProjectile abstract
 								Return;
 						}
 						
+						//Wall Penetration
+						if(BlockingMobj == NULL && BlockingLine != NULL)
+						{
+							if(PenetrateWall(frac)) return;
+						}
+						
 						ExplodeMissile (BlockingLine, BlockingMobj);
 						OnExplode (FindExplosionType(BlockingMobj));
 						return;
@@ -284,6 +345,9 @@ class PB_Projectile : FastProjectile abstract
 					
 					HitFloor ();
                     Destructible.ProjectileHitPlane(self, SECPART_Floor);
+					
+					if(PenetrateWall(frac)) return;
+					
 					ExplodeMissile (NULL, NULL);
 					OnExplode (EType_Geometry);
 					return;
@@ -310,6 +374,9 @@ class PB_Projectile : FastProjectile abstract
 					}
 					
                     Destructible.ProjectileHitPlane(self, SECPART_Ceiling);
+					
+					if(PenetrateWall(frac)) return;
+					
 					ExplodeMissile (NULL, NULL);
 					OnExplode (EType_Geometry);
 					return;
