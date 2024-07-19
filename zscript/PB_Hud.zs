@@ -46,9 +46,9 @@ class PB_Hud_ZS : BaseStatusBar
     DynamicValueInterpolator mAmmo1Interpolator;
     DynamicValueInterpolator mAmmo2Interpolator;
     DynamicValueInterpolator mAmmoLeftInterpolator;
-    DynamicValueInterpolator mSwayInterpolator;
-    DynamicValueInterpolator mPitchInterpolator;
-    DynamicValueInterpolator mFOffsetInterpolator;
+    PB_DynamicDoubleInterpolator mSwayInterpolator;
+    PB_DynamicDoubleInterpolator mPitchInterpolator;
+    PB_DynamicDoubleInterpolator mFOffsetInterpolator;
 
 	InventoryBarState invBar;
 
@@ -62,14 +62,18 @@ class PB_Hud_ZS : BaseStatusBar
     double m0to1Float;
     bool hasPutOnHelmet, hasCompletedHelmetSequence;
     bool deathFadeDone, playerWasDead;
+    
+    vector2 poll1, poll2, resultSway;
 
     //Hud variables
-    string leftAmmoAmount;
+    string leftAmmoAmount, oldLeftAmmoAmount;
     bool hudDynamics, inPain;
     double dashIndAlpha, flashlightBatteryAlpha;
     int healthFontCol, keyamount, hudState, oldDashCharge, weaponBarAccent;
     double dashScale1, dashScale2;
     DEDashJump Dasher;
+    
+    Weapon oldWeapon;
 
     //CVars
     int hudXMargin, hudYMargin, playerMsgPrint;
@@ -90,14 +94,16 @@ class PB_Hud_ZS : BaseStatusBar
 
         //invbar = InventoryBarState.CreateNoBox(mBoldFont);
 		
-        mHealthInterpolator = DynamicValueInterpolator.Create(0, 0.10, 2, 64);
-		mArmorInterpolator = DynamicValueInterpolator.Create(0, 0.10, 2, 64);
-        mAmmo1Interpolator = DynamicValueInterpolator.Create(0, 0.10, 2, 64);
-        mAmmo2Interpolator = DynamicValueInterpolator.Create(0, 0.10, 2, 64);
-        mAmmoLeftInterpolator = DynamicValueInterpolator.Create(0, 0.10, 2, 64);
-        mSwayInterpolator = DynamicValueInterpolator.Create(0, 0.30, 1, 32);
-        mPitchInterpolator = DynamicValueInterpolator.Create(0, 0.30, 1, 32);
-        mFOffsetInterpolator = DynamicValueInterpolator.Create(0, 0.5, 1, 64);
+        mHealthInterpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
+		mArmorInterpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
+		
+        mAmmo1Interpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
+        mAmmo2Interpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
+        mAmmoLeftInterpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
+        
+        mSwayInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.30, 0, 32);
+        mPitchInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.30, 0, 32);
+        mFOffsetInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.5, 0, 64);
 
 		InvBar = InventoryBarState.Create();
 	}
@@ -239,6 +245,19 @@ class PB_Hud_ZS : BaseStatusBar
         
         Ammo Primary, Secondary;
         [Primary, Secondary] = GetCurrentAmmo();
+	
+		//console.printf("%s", CPlayer.ReadyWeapon.GetClassName());
+		
+		if(oldweapon && (oldWeapon != CPlayer.ReadyWeapon))
+		{
+		    if(Primary)
+		    	mAmmo1Interpolator.Reset(Primary.Amount); 
+		    
+		    if(Secondary) 
+		    	mAmmo2Interpolator.Reset(Secondary.Amount);
+		    	
+		    mAmmoLeftInterpolator.Reset(0);
+		}
 
         if(m0to1Float > 0.99) {
             mHealthInterpolator.Update(CPlayer.Health);
@@ -246,12 +265,25 @@ class PB_Hud_ZS : BaseStatusBar
             mSwayInterpolator.Update(mSway);
             mPitchInterpolator.Update(mPitch);
             mFOffsetInterpolator.Update(mForwardOffset);
-            if(Primary) { mAmmo1Interpolator.Update(Primary.Amount); }
-            if(Secondary) { mAmmo2Interpolator.Update(Secondary.Amount); }
+            
+            if(Primary)
+            	mAmmo1Interpolator.Update(Primary.Amount); 
+            
+            if(Secondary)
+            	mAmmo2Interpolator.Update(Secondary.Amount); 
             
             if(leftAmmoAmount)
+            {
+            	if(leftAmmoAmount != oldLeftAmmoAmount) 
+			    	mAmmoLeftInterpolator.Reset(GetAmount(leftAmmoAmount));
+            
                 mAmmoLeftInterpolator.Update(GetAmount(leftAmmoAmount));
+                
+                oldLeftAmmoAmount = leftAmmoAmount;
+            }
         }
+        
+        oldWeapon = CPlayer.ReadyWeapon;
 	}
 
     void From32to0Slow() {
@@ -974,7 +1006,7 @@ class PB_Hud_ZS : BaseStatusBar
                         if(CheckInventory("DualWieldingDMRs"))
                         {
                             leftAmmoAmount = "LeftRifleAmmo";
-                            
+                           
                             //Left Rifle Ammo
                             PBHud_DrawImage("BARBACY3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
                             
@@ -1243,4 +1275,48 @@ class PB_Hud_ZS : BaseStatusBar
             }
         }
     }
+}
+
+class PB_DynamicDoubleInterpolator : Object
+{
+	double mCurrentValue;
+	double mMinChange;
+	double mMaxChange;
+	double mChangeFactor;
+
+	static PB_DynamicDoubleInterpolator Create(int startval, double changefactor, double minchange, double maxchange)
+	{
+		let v = new("PB_DynamicDoubleInterpolator");
+		v.mCurrentValue = startval;
+		v.mMinChange = minchange;
+		v.mMaxChange = maxchange;
+		v.mChangeFactor = changefactor;
+		return v;
+	}
+
+	void Reset(double value)
+	{
+		mCurrentValue = value;
+	}
+
+	// This must be called periodically in the status bar's Tick function.
+	// Do not call this in the Draw function because that may skip some frames!
+	void Update(double destvalue)
+	{
+		double diff = clamp(abs(destvalue - mCurrentValue) * mChangeFactor, mMinChange, mMaxChange);
+		if (mCurrentValue > destvalue)
+		{
+			mCurrentValue = max(destvalue, mCurrentValue - diff);
+		}
+		else
+		{
+			mCurrentValue = min(destvalue, mCurrentValue + diff);
+		}
+	}
+
+	// This must be called in the draw function to retrieve the value for output.
+	double GetValue()
+	{
+		return mCurrentValue;
+	}
 }
