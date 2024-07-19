@@ -14,14 +14,21 @@ Mixin Class PB_NailgunGlue
 		{
 			StickOnVictim = True;
 			HitOffsets = Level.Vec3Diff (Tracer.Pos,Pos);
-			If (Type == EType_BleedingActor && GetClassName() != "PB_MGNailHot" && GetClassName() != "PB_JavelinProjectile_Hot")
+			If (GetClassName() != "PB_MGNailHot" && GetClassName() != "PB_JavelinProjectile_Hot")
 				BleedAmount = Random (16,32);
 		}
+	}
+	
+	override int Handle_MissileHit(Actor Victim)
+	{
+		stuckVictim = Victim;
+		return Super.Handle_MissileHit(Victim);
 	}
 	
 	Bool StickOnVictim;
 	Vector3 HitOffsets;
 	Int BleedAmount; //How many times the final victim of the nail should bleed. Only appears on standard nails and javelins.
+	Actor stuckVictim;
 	
 	Override Void Tick()
 	{
@@ -31,10 +38,10 @@ Mixin Class PB_NailgunGlue
 		If ((!IsFrozen() || Tracer && Tracer.bNoTimeFreeze) && StickOnVictim && !bMissile && Tracer && Tracer.bSolid)
 		{
 			SetOrigin (PB_Math.Vec3OffsetRelative (Tracer,HitOffsets),True); //https://www.youtube.com/watch?v=EXjfvx-k1Ms
-			If (BleedAmount && Random (0, 255) < 16)
+			If (stuckVictim.bISMONSTER && !stuckVictim.bNOBLOOD && BleedAmount && Random (0, 255) < 16)
 			{
 				BleedAmount--;
-				SpawnBlood (Pos,AngleTo (Tracer),20);
+				stuckVictim.SpawnBlood (Pos,AngleTo (Tracer),20);
 			}
 		}
 		
