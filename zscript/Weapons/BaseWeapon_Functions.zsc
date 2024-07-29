@@ -232,56 +232,19 @@ extend class PB_WeaponBase
 	}
 	
 	//- L, 0 C, + R
-	// [gng] credits to jaih1r0 for the position calculation, modified by me to fix the pitch bug
+	// [gng] credits to Agent_Ash for the position calculation, modified by me to fix the pitch bug
 	Action void PB_GunSmoke(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
 	{
-		double PVZ;
-		PB_PlayerPawn plr = PB_PlayerPawn(invoker.owner);
-		PlayerInfo Playa = Player;
-		if(Playa)
-		{
-			PVZ = (Playa.ViewZ - FloorZ) - 6;
-		}
-
-		d2 += plr.Radius;
-		d3 -= 6;
-		vector3 direction = ((self.AngleToVector(angle,cos(pitch)), sin(-pitch)));
-        
-        //got this from KeksDose -> https://forum.zdoom.org/viewtopic.php?t=63552&p=1090328 its very useful for this, at least now that i dont understand quats xD
-        vector3 fw = (cos(angle),sin(angle),0); //forward offset
-        vector3 sd = (cos(angle - 90),sin(angle - 90),0); //side offset
-        
-        //get the pitch and adjust the forward offset if looking up/down, so the smoke doesnt appear in front of the player from thin air in those cases
-        //cos(pitch) < 1.0, and get closer to 0 when looking up/down, ig sin(pitch) ** 2 could also work (yes,this time the calculator wasnt in radians :D)
-        double pt = cos(pitch);
-		double pt2 = sin(pitch);
-
-        fw *= d2 * (((0.45 + (pt2 * 0.15)) * -pt2) + pt);
-		d3 -= d2 * pt2;
-
-		//console.printf("%f %f %f", fw.x, fw.y, fw.z);
-		//console.printf("%f %f %f", sd.x, sd.y, sd.z);
-        
-        //get a vector3 with the total offsets
-        vector3 offs = fw + (sd * -d1);
-        //add the offsets to the current position
-        vector3 spos = self.vec3offset(offs.x, offs.y, offs.z);
-        
-        //add the view value
-        spos.z += (height * 0.5 - floorclip + player.mo.AttackZOffset * player.crouchFactor) + d3;
-
-		//Vector3 CPos = (d2, -d1, d3 - 6);
+		d3 -= 5.5;
+		Vector3 spos = PB_Math.RelativeToGlobalCoords((self.pos.xy, self.player.viewz), (self.angle, self.pitch, self.roll), (self.radius + d2 - (5.0 * abs(sin(self.pitch))), d1, d3), true);
+		Vector3 svel = PB_Math.RelativeToGlobalCoords((self.vel.xy, 0), (self.angle, self.pitch, self.roll), (0, 0, 0));
 		
 		PB_GunFireSmoke Smoke = PB_GunFireSmoke(Spawn(SActor, spos));
-
-		//PB_GunFireSmoke pSmoke = PB_GunFireSmoke(Smoke);
 		
 		If(Smoke)
 		{
 			Smoke.master = invoker.owner;
-			//Smoke.Vel = PB_Math.AngleToVector3D(self.Angle, -self.Pitch);
-			vector3 momentum = plr.vel;
-			Smoke.A_ChangeVelocity(momentum.X, momentum.Y, 0, CVF_RELATIVE);
+			Smoke.vel = svel;
 			Smoke.A_FaceMovementDirection();
 			double m_flScale = frandom(0.10,0.12);
 			Smoke.Scale = (m_flScale, m_flScale);
@@ -750,13 +713,16 @@ extend class PB_WeaponBase
             PB_WeaponRecoilBasic(pitchDelta, angleDelta);
 	}
 	
-	//This will allow for direct spawning of shell casings and empty magazines without using an intermediary actor.
-	//I highly recommend making cvars for each of the perameters for location and velocity to edit and test live, and with those numbers transpose into the final code.
-	//upon request I also have code for the tactical lean mod out there.
-	Action State PB_SpawnCasing(String Missile,Double ShellX,Double ShellY,Double ShellZ,Double ShellV_X,Double ShellV_Y,Double ShellV_Z)
+	action void PB_SpawnCasing(class<Actor> casing, double xOfs = 0, double horOfs = 0, double vertOfs = 0, double xSpeed = 0, double horSpeed = 0, double vertSpeed = 0)
 	{
-		A_SpawnItemEX(Missile,cos(pitch)*ShellX,ShellY,((ShellZ)*players[consoleplayer].Crouchfactor)-(sin(pitch)*ShellX),ShellV_X,ShellV_Y,ShellV_Z,0,SXF_TRANSFERPITCH,0);
-	Return Null;
+		vertOfs -= (self.player.viewz - self.pos.z) / self.player.CrouchFactor;
+	
+		Vector3 spos = PB_Math.RelativeToGlobalCoords((self.pos.xy, self.player.viewz), (self.angle, self.pitch, self.roll), (xOfs - (5.0 * abs(sin(self.pitch))), horOfs, vertOfs), true);
+		Vector3 svel = PB_Math.RelativeToGlobalCoords((self.vel.xy, 0), (self.angle, self.pitch, self.roll), (xSpeed, horSpeed, vertSpeed));
+		
+		let pCase = Spawn(casing, spos);
+		if(pCase)
+			pCase.vel = svel;
 	}
 	
 	//Specific Casing Spawning
