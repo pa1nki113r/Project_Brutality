@@ -126,6 +126,9 @@ class PB_Projectile : FastProjectile abstract
 	
 	virtual void ActivateLines()
 	{
+		if(noActivation == -1) return;
+		if(noActivation == 1) noActivation=-1;
+		
 		let lt = LineActivatorTracer.DoTrace(self, angle, pitch, max(128, vel.length()));
 		for(int i = 0; i < lt.HitLines.Size(); i++)
 		{
@@ -133,6 +136,67 @@ class PB_Projectile : FastProjectile abstract
 			if(ln) ln.Activate(target, 0, SPAC_Impact);
 		}
 		if(BlockingLine) BlockingLine.Activate(target, 0, SPAC_Impact);
+	}
+	
+	virtual bool PenetrateWall(Vector3 frac)
+	{
+		if(!GetCVar("pb_wallpenetration") || Speed <= 0 || Mass <= 0 || penetrationCount == 0) 
+			return false;
+		
+		Vector3 lastP = pos;
+		double depth = (0.5 * (Mass * 0.075) * (Speed * 2)) * 0.05;
+					   //(0.5 * (Mass * 0.001) * (Speed ** 2)) * 0.005;
+		//console.printf ("Depth: %.4f", depth);
+		Vector3 unit = frac/frac.length();
+		Vector3 penDest = lastP+unit*depth;
+		if(Level.IsPointInLevel(penDest))
+		{
+			//console.printf ("Penetrating wall");
+			A_SpawnProjectile("PB_BulletPuff",0,0,0,0);
+			A_SprayDecal("BulletChip", 172);
+			setOrigin(penDest, false);
+			
+			Angle -= 180;
+			Pitch = -Pitch;
+
+			FLineTraceData backTraceData;
+			bool hit = LineTrace(Angle, depth + 1, Pitch, flags: TRF_ABSOFFSET| TRF_THRUACTORS, data: backTraceData);
+			if(!hit)
+			{
+				//console.printf ("No exit found");
+				setOrigin(lastP, false);
+				Angle += 180;
+				Pitch = -Pitch;
+				return false;
+			} else {
+				double dist = Level.Vec3Diff( backTraceData.HitLocation, lastP ).length();
+				if(dist < depth)
+				{
+					//console.printf ("Found an exit at %.5f units", dist);
+					Vector3 offset = unit * (radius * 2);
+					setOrigin(backTraceData.HitLocation + offset, false);
+					A_SpawnProjectile("PB_BulletPuff",0,0,0,0);
+					A_SprayDecal("BulletChip", 172);
+					
+					Angle += 180;
+					Pitch = -Pitch;
+					
+					noActivation = 1;
+					penetrationCount--;
+					truedamage *= .8;
+					Speed *= .8;
+					Mass *= .8;
+					return true;
+				} else {
+					//console.printf ("Exit distance greater than depth");
+					setOrigin(lastP, false);
+					Angle += 180;
+					Pitch = -Pitch;
+					return false;
+				}
+			}
+		}
+		return false;
 	}
 	
 	//[inkoalawetrust]: The stock FastProjectile code. We have to basically reimplement the whole think to make it support bouncing projectiles again.
@@ -251,6 +315,12 @@ class PB_Projectile : FastProjectile abstract
 								Return;
 						}
 						
+						//Wall Penetration
+						if(BlockingMobj == NULL && BlockingLine != NULL)
+						{
+							if(PenetrateWall(frac)) return;
+						}
+						
 						ExplodeMissile (BlockingLine, BlockingMobj);
 						OnExplode (FindExplosionType(BlockingMobj));
 						return;
@@ -284,6 +354,9 @@ class PB_Projectile : FastProjectile abstract
 					
 					HitFloor ();
                     Destructible.ProjectileHitPlane(self, SECPART_Floor);
+					
+					if(PenetrateWall(frac)) return;
+					
 					ExplodeMissile (NULL, NULL);
 					OnExplode (EType_Geometry);
 					return;
@@ -310,6 +383,9 @@ class PB_Projectile : FastProjectile abstract
 					}
 					
                     Destructible.ProjectileHitPlane(self, SECPART_Ceiling);
+					
+					if(PenetrateWall(frac)) return;
+					
 					ExplodeMissile (NULL, NULL);
 					OnExplode (EType_Geometry);
 					return;
@@ -415,6 +491,9 @@ class PB_Projectile : FastProjectile abstract
 	double truedamage;
 	Property BaseDamage : truedamage;
 	
+	int penetrationCount;
+	Property PenetrationCount : penetrationCount;
+	
 	private int BehaviorFlags;
 	flagdef NoCriticals: BehaviorFlags, 0;
 	flagdef Omnidirectional: BehaviorFlags, 1;
@@ -424,6 +503,7 @@ class PB_Projectile : FastProjectile abstract
 	flagdef NOWHIZBY: BehaviorFlags, 5;
 	
 	vector3 startPos;
+	int noActivation;
 
 	Default
 	{
@@ -450,6 +530,7 @@ class PB_Projectile : FastProjectile abstract
 		Scale 0.15;
 		PB_Projectile.RipperCount 1;
 		PB_Projectile.BaseDamage 5;
+		PB_Projectile.PenetrationCount 3;
 		Gravity 0.1;
 	}
 	
