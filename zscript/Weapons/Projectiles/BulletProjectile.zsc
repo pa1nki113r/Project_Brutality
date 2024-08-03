@@ -438,49 +438,49 @@ class PB_Projectile : FastProjectile abstract
 			playOutOnNextTic = false;
 		}*/
 		
-		BlockThingsIterator it = BlockThingsIterator.Create(self, radius + 10);
-		PlayerPawnBase plr;
-		while(it.Next())
+		PlayerPawnBase plr = PlayerPawnBase(players[consoleplayer].mo);
+		
+		if(!plr || target == plr) 
+			return;
+			
+		if(alreadyWhizzedBy.Find(plr) != alreadyWhizzedBy.Size())
+			return;
+			
+		int distToActor = Distance2D(plr);
+		if(distToActor > 400)
+			return;
+
+		string whizDist;
+
+		if(distanceTraveled > 1000)
+			whizDist = "far";
+		else if(distanceTraveled > 500)
+			whizDist = "med";
+		else
+			whizDist = "near";
+
+		string playerDist;
+
+		if(distToActor > 140)
+			playerDist = "far";
+		if(distToActor > 70)
+			playerDist = "med";
+		else
+			playerDist = "near";
+
+		// console.printf("whizzed %s the player, bullet traveled a %s distance", playerDist, whizDist);
+			
+		double angtoplr = AbsAngle(self.Angle, AngleTo(plr));
+		
+		if(angtoplr > 45 && angtoplr < 135)
 		{
-			plr = PlayerPawnBase(it.thing);
-			
-			if(!plr || target == plr) 
-				continue;
-				
-			if(alreadyWhizzedBy.Find(plr) != alreadyWhizzedBy.Size())
-				continue;
+			A_StartSound("whiz/"..whizDist.."/"..playerDist.."/in", CHAN_AUTO, volume: bWHIZCRACK ? 0.5 : 1.0, pitch: frandom(0.9, 1.1));
 
-			string whizDist;
+			if(bWHIZCRACK)
+				A_StartSound("bulletcrack/"..playerDist, CHAN_AUTO);		
 
-			if(distanceTraveled > 750)
-				whizDist = "far";
-			else if(distanceTraveled > 370.5)
-				whizDist = "med";
-			else
-				whizDist = "near";
-
-			string playerDist;
-
-			if(Distance2D(it.Thing) > 100)
-				playerDist = "med";
-			else
-				playerDist = "near";
-
-			// console.printf("whizzed %s the player, bullet traveled a %s distance", playerDist, whizDist);
-				
-			double angtoplr = AbsAngle(self.Angle, AngleTo(it.thing));
-			
-			if(angtoplr > 37.5 && angtoplr < 142.5)
-			{
-				
-				A_StartSound("whiz/"..whizDist.."/"..playerDist.."/in", CHAN_AUTO, pitch: frandom(0.9, 1.1));
-
-				if(bWHIZCRACK)
-					A_StartSound("bulletcrack/"..playerDist, CHAN_AUTO);		
-
-				alreadyWhizzedBy.Push(plr);
-				// playOutOnNextTic = true;
-			}
+			alreadyWhizzedBy.Push(plr);
+			// playOutOnNextTic = true;
 		}
 	}
 
@@ -581,7 +581,7 @@ class PB_Projectile : FastProjectile abstract
 				A_SpawnProjectile("PB_BulletPuff",0,0,0,0);
 				
 				// [gng] todo: make this texture specific, gotta rush it for 0.1.1
-				A_StartSound("bulletimpact", CHAN_AUTO, pitch: random(0.9, 1.1));
+				A_StartSound("bulletimpact", 20, pitch: random(0.9, 1.1));
 				if(random(0, 100) < 25)
 				{
 					A_StartSound("ricochet/hit");
