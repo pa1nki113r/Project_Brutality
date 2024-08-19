@@ -67,7 +67,7 @@ class gb_Freezer play
   private static
   bool isPlayerFreezeEnabled(int freezeMode)
   {
-    return freezeMode != 0;
+     return freezeMode != 0;
   }
 
   /**
@@ -98,6 +98,19 @@ class gb_Freezer play
     mGravity  = player.mo.gravity;
 
     gb_Sender.sendFreezePlayerEvent(player.cheats | FROZEN_CHEATS_FLAGS, (0, 0, 0), 0);
+
+    PlayerPawnBase pbPlayer = PlayerPawnBase(players[consolePlayer].mo);
+    if(pbPlayer && pbPlayer.oldPTics.Size() == 0)
+    {
+      let pspr = player.psprites;
+
+      while (pspr)
+      {
+        pbPlayer.oldPTics.Push(pspr.Tics);
+        pspr.Tics = -1;
+        pspr = pspr.Next;
+      }
+    }
   }
 
   private
@@ -107,10 +120,22 @@ class gb_Freezer play
   }
 
   private
-  void thawPlayer() const
+  void thawPlayer()
   {
     if (mWasPlayerFrozen) gb_Sender.sendFreezePlayerEvent(mCheats, mVelocity, mGravity);
     mWasPlayerFrozen = false;
+
+    PlayerPawnBase pbPlayer = PlayerPawnBase(players[consolePlayer].mo);
+    if(pbPlayer && pbPlayer.oldPTics.Size() > 0)
+    {
+      let pspr = players[consoleplayer].psprites;
+      while(pspr && pbPlayer.oldPTics.Size() > 0)
+      {
+        pspr.Tics = pbPlayer.oldPTics[0];
+        pbPlayer.oldPTics.Delete(0);
+        pspr = pspr.Next;
+      }
+    }
   }
 
   const FROZEN_CHEATS_FLAGS  = CF_TotallyFrozen | CF_Frozen;
@@ -125,5 +150,4 @@ class gb_Freezer play
   private double  mGravity;
 
   private gb_Options mOptions;
-
 } // class gb_Freezer

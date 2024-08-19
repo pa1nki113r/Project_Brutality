@@ -1,5 +1,15 @@
 extend class PB_WeaponBase
 {
+	action void PB_DynamicTail(string tailInside, string tailOutside)
+	{
+		double tailVolume = CVar.GetCVar("pb_tailvolume", player).GetFloat();
+		
+		if(Ceilingpic == SkyFlatNum)
+			A_StartSound("weapons/atmo/ext/"..tailOutside, CHAN_AUTO, volume: tailVolume, pitch: frandom(0.95, 1.05));
+		else
+			A_StartSound("weapons/atmo/int/"..tailInside, CHAN_AUTO, volume: tailVolume, pitch: frandom(0.95, 1.05));
+	}
+	
 	action void PB_LowAmmoSoundWarning(string type = "default", string ammoItem = "SuperMario64ForTheXboxOne", int ammoUse = 1)
 	{
 		Ammo count;
@@ -236,7 +246,8 @@ extend class PB_WeaponBase
 	Action void PB_GunSmoke(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
 	{
 		d3 -= 5.5;
-		Vector3 spos = PB_Math.RelativeToGlobalCoords((self.pos.xy, self.player.viewz), (self.angle, self.pitch, self.roll), (self.radius + d2 - (5.0 * abs(sin(self.pitch))), d1, d3), true);
+		double fovOfs = (120 - self.player.desiredfov) / 3.f; // good enough
+		Vector3 spos = PB_Math.RelativeToGlobalCoords((self.pos.xy, self.player.viewz), (self.angle, self.pitch, self.roll), (self.radius + d2 - (5.0 * abs(sin(self.pitch))) + fovOfs, -d1, d3), true);
 		Vector3 svel = PB_Math.RelativeToGlobalCoords((self.vel.xy, 0), (self.angle, self.pitch, self.roll), (0, 0, 0));
 		
 		PB_GunFireSmoke Smoke = PB_GunFireSmoke(Spawn(SActor, spos));
@@ -716,13 +727,17 @@ extend class PB_WeaponBase
 	action void PB_SpawnCasing(class<Actor> casing, double xOfs = 0, double horOfs = 0, double vertOfs = 0, double xSpeed = 0, double horSpeed = 0, double vertSpeed = 0)
 	{
 		vertOfs -= (self.player.viewz - self.pos.z) / self.player.CrouchFactor;
+		double fovOfs = (120 - self.player.desiredfov) / 3.f; // good enough
 	
-		Vector3 spos = PB_Math.RelativeToGlobalCoords((self.pos.xy, self.player.viewz), (self.angle, self.pitch, self.roll), (xOfs - (5.0 * abs(sin(self.pitch))), horOfs, vertOfs), true);
+		Vector3 spos = PB_Math.RelativeToGlobalCoords((self.pos.xy, self.player.viewz), (self.angle, self.pitch, self.roll), (xOfs - (5.0 * abs(sin(self.pitch))) + fovOfs, horOfs, vertOfs), true);
 		Vector3 svel = PB_Math.RelativeToGlobalCoords((self.vel.xy, 0), (self.angle, self.pitch, self.roll), (xSpeed, horSpeed, vertSpeed));
-		
+	
 		let pCase = Spawn(casing, spos);
 		if(pCase)
+		{
 			pCase.vel = svel;
+			pCase.angle = self.angle;
+		}
 	}
 	
 	//Specific Casing Spawning
@@ -733,7 +748,7 @@ extend class PB_WeaponBase
 		CasingCount = 6 - CountInv(AmmoSide);
 		for(CasingCount > 0; CasingCount--;)
 		{
-			A_FireProjectile("MagnumCasing",-5,0,0,-30);
+			A_FireProjectile("EmptyBrassMagnum",-5,0,0,-30);
 		}
 	}
 	
