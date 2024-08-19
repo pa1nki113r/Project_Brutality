@@ -116,7 +116,7 @@ class PB_ThrownGrenade : Actor
             }
         DeathLoop:
             GRND G 1;
-            Loop
+            Loop;
         Explode:
             TNT1 A 0 
             {
