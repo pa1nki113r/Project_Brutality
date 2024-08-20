@@ -14,8 +14,9 @@ class PB_Projectile : FastProjectile abstract
 	}
 	
 	array<PlayerPawnBase> alreadyWhizzedBy;
+	array<int> ticsToPlayWhizOut;
 	double distanceTraveled;
-	
+
 	virtual int Handle_MissileHit(Actor victim)
 	{
 		double scaled_damage = truedamage;
@@ -24,12 +25,13 @@ class PB_Projectile : FastProjectile abstract
 		
 		if(target)
 		{
-			ang = AbsAngle(victim.Angle, AngleTo(self));
+			ang = AbsAngle(self.Angle, AngleTo(victim));
+			ang = AbsAngle(ang, AngleTo(target));
 		}
 		
 		let ptrPBMon = PB_Monster(victim);
 		
-		if (!bNOCRITICALS && (ang < 30 || ang > 150) && Pos.Z > victim.Pos.Z + victim.Height * ((ptrPBMon) ? ptrPBMon.posTorsoHB : 0.65))
+		if (!bNOCRITICALS && Pos.Z > victim.Pos.Z + victim.Height * ((ptrPBMon) ? ptrPBMon.posTorsoHB : 0.65))
 		{
 			//Console.Printf("Critical");
 			scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgTorsoMult : 1.1);
@@ -63,7 +65,7 @@ class PB_Projectile : FastProjectile abstract
 				scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgLegMult : 0.8);
 			}
 		}
-		else if (!bOMNIDIRECTIONAL && ang > 50 && ang < 130)
+		else if (!bOMNIDIRECTIONAL && ang > 32 && ang < 148)
 		{
 			//Console.Printf("Armshot");
 			//A_StartSound("apenshotmarker", CHAN_AUTO, CHAN_UI);
@@ -430,19 +432,86 @@ class PB_Projectile : FastProjectile abstract
 		FastProjectileTick(); //We just use our own copy of the Tick() method for bouncing.
 		FallAndSink(GetGravity(),OldZ); //[inkoalawetrust] It's as shrimple as that.
 		
-		if(bNOWHIZBY) return;
-
-		/*if(playOutOnNextTic)
-		{
-			A_StartSound("whiz/"..playerDist.."/out", CHAN_AUTO);
-			playOutOnNextTic = false;
-		}*/
+		if(bNOWHIZBY) 
+			return;
 		
+		PB_HandleWhizby();
+	}
+	
+	virtual void PB_HandleWhizby()
+	{
 		PlayerPawnBase plr = PlayerPawnBase(players[consoleplayer].mo);
 		
 		if(!plr || target == plr) 
 			return;
 			
+		if(!plr.prefersNewWhiz)
+		{
+			PB_HandleWhizbyOld(plr);
+			return;
+		}
+		
+		string whizDist;
+
+		if(distanceTraveled > 1000)
+			whizDist = "far";
+		else if(distanceTraveled > 500)
+			whizDist = "med";
+		else
+			whizDist = "near";
+		
+		for(int i = ticsToPlayWhizOut.Size() - 1; i >= 0; i--)
+		{
+			int entry = ticsToPlayWhizOut[i];
+			if(GetAge() >= entry)
+			{
+				A_StartSound("whiz/"..whizDist.."/out", CHAN_BODY, CHANF_OVERLAP, pitch: frandom(0.9, 1.1));
+				ticsToPlayWhizOut.Delete(i);
+			}
+		}
+			
+		if(alreadyWhizzedBy.Find(plr) != alreadyWhizzedBy.Size())
+			return;
+
+		int distToActor = Distance3D(plr);
+		
+		// [gng] couldn't get playerDist working with the "new" system
+		// sounds still here for the old system
+		
+		/*double angtoplr = AngleTo(plr);
+		
+		string playerDist;
+
+		if(angtoplr > 140)
+			playerDist = "far";
+		if(angtoplr > 70)
+			playerDist = "med";
+		else
+			playerDist = "near";
+			
+		console.printf("%i %s", angtoplr, playerDist);*/
+			
+		sound whizSound = "whiz/"..whizDist.."/"..whizDist.."/in";
+		float sndLength = S_GetLength(whizSound);
+		
+		// predict the distance necessary to play the full sound
+		double distToFullSound = (vel.Length() * 35) * sndLength;
+
+		if(distToActor <= distToFullSound)
+		{			
+			ticsToPlayWhizOut.Push(GetAge() + round(S_GetLength(whizSound) * 35) - 1);
+			
+			A_StartSound(whizSound, CHAN_BODY, CHANF_OVERLAP, bWHIZCRACK ? 0.5 : 1.0, pitch: frandom(0.9, 1.1));
+			
+			if(bWHIZCRACK)
+				A_StartSound("bulletcrack/"..whizDist, 20, CHANF_OVERLAP);		
+
+			alreadyWhizzedBy.Push(plr);
+		}
+	}
+	
+	void PB_HandleWhizbyOld(PlayerPawnBase plr)
+	{
 		if(alreadyWhizzedBy.Find(plr) != alreadyWhizzedBy.Size())
 			return;
 			
@@ -579,12 +648,15 @@ class PB_Projectile : FastProjectile abstract
 				CallOwnerDied();
 				OnExplode(EType_Geometry);
 				A_SpawnProjectile("PB_BulletPuff",0,0,0,0);
+
+				//A_StopAllSounds();
 				
 				// [gng] todo: make this texture specific, gotta rush it for 0.1.1
 				A_StartSound("bulletimpact", 20, pitch: frandom(0.9, 1.1));
 				if(random(0, 100) < 25)
 				{
-					A_StartSound("ricochet/hit");
+					A_StopSound(CHAN_BODY);
+					A_StartSound("ricochet/hit", 20, CHANF_OVERLAP);
 				}
 			}
 			Stop;
