@@ -116,7 +116,7 @@ class gb_Freezer play
   private
   void thawLevel() const
   {
-    level.setFrozen(mWasLevelFrozen);
+    level.setFrozen(0);
   }
 
   private
