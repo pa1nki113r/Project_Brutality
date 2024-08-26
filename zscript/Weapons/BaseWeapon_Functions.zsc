@@ -243,7 +243,7 @@ extend class PB_WeaponBase
 	
 	//- L, 0 C, + R
 	// [gng] credits to Agent_Ash for the position calculation, modified by me to fix the pitch bug
-	Action vector3, vector3, PB_GunFireSmoke PB_GunSmokeSpawn(vector3 ofs, vector3 vofs, string SActor = "PB_GunFireSmoke")
+	Action PB_GunFireSmoke PB_GunSmokeSpawn(vector3 ofs, vector3 vofs, string SActor = "PB_GunFireSmoke", double scalemul = 1.0, double alphamul = 1.0, double blowspeed = 1.02)
 	{
 		ofs.z -= 5.5;
 		double fovOfs = (120 - self.player.desiredfov) / 3.f; // good enough
@@ -255,213 +255,162 @@ extend class PB_WeaponBase
 		If(Smoke)
 		{
 			Smoke.master = invoker.owner;
-			Smoke.vel = svel;
+			Smoke.vel += svel;
 			Smoke.A_FaceMovementDirection();
 			double m_flScale = frandom(0.10,0.12);
 			Smoke.Scale = (m_flScale, m_flScale);
 			Smoke.A_SetRoll(random(0, 359));
+			Smoke.scale *= scalemul;
+			Smoke.alpha *= alphamul;
+			Smoke.blowSpeed = blowspeed;
 		}
 
-		return spos, svel, smoke;
+		return smoke;
 	}
 
-	// TODO: clean up this code, maybe optimize it a little bit
+	// [gng] alias for old PB_GunSmoke format function argumentsy
+	Action void PB_GunSmoke_Basic(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
+	{
+		PB_GunSmokeSpawn((d1, d2, d3), (0, 0, 0), SActor); 
+	}
 
 	Action void PB_GunSmoke(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
 	{
-		vector3         pos1, pos2, pos3, pos4;
-		vector3         vel1, vel2, vel3, vel4;
-		PB_GunFireSmoke smk1, smk2, smk3, smk4;
-		
-		[pos1, vel1, smk1] = PB_GunSmokeSpawn((d1, d2, d3), (1, 0, 0), SActor);    // initial puff of muzzle gas
-		[pos2, vel2, smk2] = PB_GunSmokeSpawn((d1 + frandom(-0.2, -0.0), d2 + 1, d3 + frandom(-0.2, 0.2)), (2, frandom(-0.2, 0.2), frandom(-0.2, 0.2)), SActor); // smoke dragged by bullet
-		[pos3, vel3, smk3] = PB_GunSmokeSpawn((d1 + frandom(0.0, 0.2), d2 + 3, d3 + frandom(-0.2, 0.2)), (2.5, frandom(-0.2, 0.2), frandom(-0.2, 0.2)), SActor); // smoke dragged by bullet
-		[pos4, vel4, smk4] = PB_GunSmokeSpawn((d1, d2 + 5, d3 + frandom(-0.2, 0.2)), (3, frandom(-0.2, 0.2), frandom(-0.2, 0.2)), SActor); // final puff when bullet escapes gas
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), // offsets
+			(1, 0, 0), 	  // velocites
+			SActor,       // actor
+			1.2,          // scale multiplier
+			1.0,          // alpha multiplier
+			1.07          // blow speed
+		);
 
-		if(smk1)
-		{
-			smk1.scale *= 1.2;
-			// smk1.alpha *= 1.0;
-			smk1.blowSpeed = 1.07;
-		}
+		// smoke dragged by bullet
+		PB_GunSmokeSpawn(
+			(d1 + frandom(-0.2, -0.0), d2 + 1, d3 + frandom(-0.2, 0.2)), 
+			(2, frandom(-0.2, 0.2), frandom(-0.2, 0.2)), 
+			SActor, 
+			1, 
+			0.7,
+			1.01
+		); 
 
-		if(smk2)
-		{
-			smk2.scale *= 1;
-			smk2.alpha *= 0.7;
-			smk2.blowSpeed = 1.01;
-		}
+		// smoke dragged by bullet
+		PB_GunSmokeSpawn(
+			(d1 + frandom(0.0, 0.2), d2 + 3, d3 + frandom(-0.2, 0.2)), 
+			(2.5, frandom(-0.2, 0.2), frandom(-0.2, 0.2)), 
+			SActor, 
+			0.8, 
+			0.6,
+			1.005
+		);
 
-		if(smk3)
-		{
-			smk3.scale *= 0.8;
-			smk3.alpha *= 0.6;
-			smk3.blowSpeed = 1.005;
-		}
-
-		if(smk4)
-		{
-			smk4.scale *= 0.75;
-			smk4.alpha *= 0.9;
-			smk4.blowSpeed = 1.02;
-		}
-	}
-
-	Action void PB_GunSmoke_Basic(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
-	{
-		PB_GunSmokeSpawn((d1, d2, d3), (0, 0, 0), SActor);
-	}
-
-	Action void PB_GunSmoke_Silencer(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
-	{
-		vector3         pos1, pos2, pos3, pos4;
-		vector3         vel1, vel2, vel3, vel4;
-		PB_GunFireSmoke smk1, smk2, smk3, smk4;
-		
-		[pos1, vel1, smk1] = PB_GunSmokeSpawn((d1, d2, d3), (0, 0, 0), SActor);    // initial puff of muzzle gas
-		[pos2, vel2, smk2] = PB_GunSmokeSpawn((d1, d2 + 4, d3 + frandom(-0.2, 0.2)), (0, 0, 0), SActor); // smoke dragged by bullet
-		[pos3, vel3, smk3] = PB_GunSmokeSpawn((d1, d2 + 8, d3 + frandom(-0.2, 0.2)), (0, 0, 0), SActor); // smoke dragged by bullet
-		[pos4, vel4, smk4] = PB_GunSmokeSpawn((d1, d2 + 12, d3 + frandom(-0.2, 0.2)), (0, 0, 0), SActor); // final puff when bullet escapes gas
-
-		if(smk1)
-		{
-			smk1.scale *= 0.2;
-			smk1.alpha *= 0.7;
-			smk1.blowSpeed = 1.00;
-		}
-
-		if(smk2)
-		{
-			smk2.scale *= 0.6;
-			smk2.alpha *= 0.75;
-			smk2.blowSpeed = 1.00;
-		}
-
-		if(smk3)
-		{
-			smk3.scale *= 0.8;
-			smk3.alpha *= 0.8;
-			smk3.blowSpeed = 1.00;
-		}
-
-		if(smk4)
-		{
-			smk4.scale *= 1.0;
-			smk4.alpha *= 1.0;
-			smk4.blowSpeed = 1.00;
-		}
+		// final puff when bullet escapes gas
+		PB_GunSmokeSpawn(
+			(d1, d2 + 5, d3 + frandom(-0.2, 0.2)), 
+			(3, frandom(-0.2, 0.2), frandom(-0.2, 0.2)), 
+			SActor, 
+			0.75, 
+			0.9, 
+			1.02
+		); 
 	}
 
 	Action void PB_GunSmoke_Compensator(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
 	{
-		vector3         pos1, pos2, pos3, pos4, pos5, pos6;
-		vector3         vel1, vel2, vel3, vel4, vel5, vel6;
-		PB_GunFireSmoke smk1, smk2, smk3, smk4, smk5, smk6;
-		
-		[pos1, vel1, smk1] = PB_GunSmokeSpawn((d1, d2, d3), (0, 0, 0), SActor);    // initial puff of muzzle gas
-		[pos2, vel2, smk2] = PB_GunSmokeSpawn((d1, d2, d3), (0, frandom(-1.2, -1.5), frandom(-0.2, 0.2)), SActor); // initial puff of muzzle gas
-		[pos3, vel3, smk3] = PB_GunSmokeSpawn((d1, d2, d3), (0, frandom(1.2, 1.5), frandom(-0.2, 0.2)), SActor);  // initial puff of muzzle gas
-		[pos4, vel4, smk4] = PB_GunSmokeSpawn((d1 + frandom(-0.2, 0.2), d2 + 1.5, d3 + frandom(-0.2, 0.2)), (0.5, 0, 0), SActor); // smoke dragged by bullet
-		[pos5, vel5, smk5] = PB_GunSmokeSpawn((d1 + frandom(-0.35, 0.35), d2 + 3.5, d3 + frandom(-0.2, 0.2)), (1, 0, 0), SActor); // smoke dragged by bullet
-		[pos6, vel6, smk6] = PB_GunSmokeSpawn((d1 + frandom(-0.5, 0.5), d2 + 5.5, d3 + frandom(-0.2, 0.2)), (1.5, 0, 0), SActor); // final puff when bullet escapes gas
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, 0, 0), 
+			SActor, 
+			1.5, 
+			0.7, 
+			1.03
+		);    
 
-		if(smk1)
-		{
-			smk1.scale *= 1.5;
-			smk1.alpha *= 0.7;
-			smk1.blowSpeed = 1.03;
-		}
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, frandom(-1.2, -1.5), frandom(-0.2, 0.2)), 
+			SActor, 
+			0.3, 
+			0.7, 
+			1.2
+		);
 
-		if(smk2)
-		{
-			smk2.scale *= 0.3;
-			smk2.alpha *= 0.7;
-			smk2.blowSpeed = 1.2;
-		}
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, frandom(1.2, 1.5), frandom(-0.2, 0.2)), 
+			SActor, 
+			0.3, 
+			0.7, 
+			1.2
+		); 
 
-		if(smk3)
-		{
-			smk3.scale *= 0.3;
-			smk3.alpha *= 0.7;
-			smk3.blowSpeed = 1.2;
-		}
-
-		if(smk4)
-		{
-			smk4.scale *= 0.7;
-			smk4.alpha *= 0.7;
-			smk4.blowSpeed = 1.01;
-		}
-
-		if(smk5)
-		{
-			smk5.scale *= 0.6;
-			smk5.alpha *= 0.6;
-			smk5.blowSpeed = 1.005;
-		}
-
-		if(smk6)
-		{
-			smk6.scale *= 0.75;
-			smk6.alpha *= 0.9;
-			smk6.blowSpeed = 1.02;
-		}
+		// smoke dragged by bullet
+		PB_GunSmokeSpawn(
+			(d1 + frandom(-0.2, 0.2), d2 + 1.5, d3 + frandom(-0.2, 0.2)), 
+			(0.5, 0, 0), 
+			SActor, 
+			0.7, 
+			0.7, 
+			1.01
+		); 
 	}
 
 	Action void PB_GunSmoke_CompensatorHDMR(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
 	{
-		vector3         pos1, pos2, pos3, pos4, pos5, pos6;
-		vector3         vel1, vel2, vel3, vel4, vel5, vel6;
-		PB_GunFireSmoke smk1, smk2, smk3, smk4, smk5, smk6;
-		
-		[pos1, vel1, smk1] = PB_GunSmokeSpawn((d1, d2, d3), (0, 0.7, -0.7), SActor);    // initial puff of muzzle gas
-		[pos2, vel2, smk2] = PB_GunSmokeSpawn((d1, d2, d3), (0, -0.7, 0.7), SActor); // initial puff of muzzle gas
-		[pos3, vel3, smk3] = PB_GunSmokeSpawn((d1, d2, d3), (0, 0.7, 0.7), SActor);  // initial puff of muzzle gas
-		[pos4, vel4, smk4] = PB_GunSmokeSpawn((d1, d2, d3), (0, -0.7, -0.7), SActor); // smoke dragged by bullet
-		[pos5, vel5, smk5] = PB_GunSmokeSpawn((d1 + frandom(-0.35, 0.35), d2 + 3.5, d3 + frandom(-0.2, 0.2)), (1, 0, 0), SActor); // smoke dragged by bullet
-		[pos6, vel6, smk6] = PB_GunSmokeSpawn((d1 + frandom(-0.5, 0.5), d2 + 5.5, d3 + frandom(-0.2, 0.2)), (1.5, 0, 0), SActor); // final puff when bullet escapes gas
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, 0.7, -0.7), 
+			SActor, 
+			0.7, 
+			1.0, 
+			1.015
+		);    
 
-		if(smk1)
-		{
-			smk1.scale *= 0.7;
-			smk1.alpha *= 1.0;
-			smk1.blowSpeed = 1.015;
-		}
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, -0.7, 0.7), 
+			SActor, 
+			0.7, 
+			1.0, 
+			1.015
+		);
 
-		if(smk2)
-		{
-			smk2.scale *= 0.7;
-			smk2.alpha *= 1.0;
-			smk2.blowSpeed = 1.015;
-		}
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, 0.7, 0.7), 
+			SActor, 
+			0.7, 
+			1.0, 
+			1.015
+		);
 
-		if(smk3)
-		{
-			smk3.scale *= 0.7;
-			smk3.alpha *= 1.0;
-			smk3.blowSpeed = 1.015;
-		}
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, -0.7, -0.7),
+			SActor,
+			0.7, 
+			1.0, 
+			1.015
+		); 
 
-		if(smk4)
-		{
-			smk4.scale *= 0.7;
-			smk4.alpha *= 1.0;
-			smk4.blowSpeed = 1.015;
-		}
-
-		if(smk5)
-		{
-			smk5.scale *= 1.0;
-			smk5.alpha *= 1.0;
-			smk5.blowSpeed = 1.02;
-		}
-
-		if(smk6)
-		{
-			smk6.scale *= 0.75;
-			smk6.alpha *= 0.9;
-			smk6.blowSpeed = 1.02;
-		}
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1 + frandom(-0.35, 0.35), d2 + 3.5, d3 + frandom(-0.2, 0.2)), 
+			(1, 0, 0), 
+			SActor, 
+			1.2, 
+			1.0, 
+			1.02
+		);
 	}
 
 	override void Tick()
@@ -925,7 +874,7 @@ extend class PB_WeaponBase
             PB_WeaponRecoilBasic(pitchDelta, angleDelta);
 	}
 	
-	action void PB_SpawnCasing(class<Actor> casing, double xOfs = 0, double horOfs = 0, double vertOfs = 0, double xSpeed = 0, double horSpeed = 0, double vertSpeed = 0)
+	action void PB_SpawnCasing(class<Actor> casing, double xOfs = 0, double horOfs = 0, double vertOfs = 0, double xSpeed = 0, double horSpeed = 0, double vertSpeed = 0, bool ejectionSmoke = true)
 	{
 		vertOfs -= (self.player.viewz - self.pos.z) / self.player.CrouchFactor;
 		double fovOfs = (120 - self.player.desiredfov) / 3.f; // good enough
@@ -941,14 +890,14 @@ extend class PB_WeaponBase
 
 			let pPBCase = PB_CasingBase(pCase);
 
-			if(!pPBCase || pPBCase.bNEVERSMOKE) return;
+			if(!pPBCase || pPBCase.bNEVERSMOKE || !ejectionSmoke) return;
 
 			let pSmoke = PB_GunFireSmoke(Spawn('PB_GunFireSmoke', spos));
 
 			if(pSmoke) {
-				pSmoke.vel = svel;
+				pSmoke.vel = svel * 0.6;
 				pSmoke.alpha = 0.5;
-				pSmoke.blowSpeed = 1.4;
+				pSmoke.blowSpeed = 1.3;
 				pSmoke.scale *= 0.05;
 			}
 		}

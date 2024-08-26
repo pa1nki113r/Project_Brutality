@@ -30,6 +30,8 @@
 //
 //===========================================================================
 
+const STAT_PB_SMOKE = Thinker.STAT_USER_MAX - 2;
+
 class NashGoreStatics play
 {
 	//===========================================================================
@@ -216,6 +218,42 @@ class NashGoreStatics play
 		}
 	}
 
+	static void QueueSmoke(void)
+	{
+		let eh = NashGoreHandler(NashGoreHandler.Find("NashGoreHandler"));
+		if (eh)
+		{
+			// get max smoke count
+			// int countmax = eh.maxsmoke;
+
+			// count current amount of smoke objects
+			ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_PB_SMOKE);
+			Actor mo;
+			int count;
+			while (mo = Actor(it.Next()))
+			{
+				count++;
+			}
+
+			// clean up excessive smoke
+			while (count > 12)
+			{
+				// destroy the first one it can find
+				it.Reinit();
+				if (mo = Actor(it.Next()))
+				{		
+					bool valid = mo is "PB_GunFireSmoke";
+
+					if (valid) {
+						mo.Destroy();
+						//console.printf("removing smoke");
+					}
+					count--;
+				}
+			}
+		}
+	}
+
 	//===========================================================================
 	//
 	//
@@ -226,12 +264,17 @@ class NashGoreStatics play
 	{
 		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_NashGore_Gore);
 		ThinkerIterator pb = ThinkerIterator.Create("Actor", STAT_PB_BULLETS);
+		ThinkerIterator sm = ThinkerIterator.Create("Actor", STAT_PB_SMOKE);
 		Actor mo;
 		while (mo = Actor(it.Next()))
 		{
 			mo.Destroy();
 		}
 		while (mo = Actor(pb.Next()))
+		{
+			mo.Destroy();
+		}
+		while (mo = Actor(sm.Next()))
 		{
 			mo.Destroy();
 		}
