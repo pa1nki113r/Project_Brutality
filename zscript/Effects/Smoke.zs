@@ -33,6 +33,8 @@ class PB_GunFireSmoke: Actor
 
     override void BeginPlay()
     {
+        ChangeStatNum(STAT_PB_SMOKE);
+        NashGoreStatics.QueueSmoke();
         Super.BeginPlay();
 
         blowSpeed = 1.02;
