@@ -42,6 +42,7 @@ class PB_CasingBase : Actor
 		+ROLLCENTER;
 		+EXPLODEONWATER;
 		+NOBLOCKMONST;
+		PB_CasingBase.SmokePosition 2.4, 0.0;
 	}
 	
 	int spinSpeed;
@@ -60,6 +61,11 @@ class PB_CasingBase : Actor
 	float randwatermul;
 
 	bool cheapCasings;
+	
+	double smokex, smokey;
+	Property SmokePosition: smokex, smokey;
+	
+	int smoketics, smoketime;
 	
 	override void BeginPlay()
 	{
@@ -101,6 +107,7 @@ class PB_CasingBase : Actor
 		smoking = randompick(0, 1);
 		sprite = GetSpriteIndex(casingspritename);
 		randwatermul = frandom(2.0, 3.0);
+		smoketime = random(10, 32);
 	}
 	
 	override int SpecialBounceHit(Actor bounceMobj, Line bounceLine, SecPlane bouncePlane)
@@ -248,13 +255,14 @@ class PB_CasingBase : Actor
 		{
 			A_ChangeLinkFlags(true, FLAG_NO_CHANGE);
 			bTHRUACTORS = true;
-			smoking = false;
 		}
 
-		if(!cheapCasings && !bNEVERSMOKE && waterlevel < 1 && (smoking || bALWAYSSMOKE) && GetAge() < 88 && gametic % 4 == 0)
-			A_SpawnItemEx("CasingSmoke",frandom(0.3,0.2),random(0,-1.0),0,0,0,frandom(0.5,0.1),0,0,0);
-		else
-			smoking = false;
+		if(stationary && smoketics < smoketime && !bNEVERSMOKE && waterlevel < 1 && (smoking || bALWAYSSMOKE) && gametic % 4 == 0)
+		{
+			smoketics++;
+			//SpawnCasingSmoke();
+			A_SpawnItemEx("NewCasingSmoke", smokex, smokey, 0.5, frandom(-0.025, 0.025), frandom(-0.025, 0.025), 0.25);
+		}
 
 		if(!stationary)
 		{
@@ -298,6 +306,22 @@ class PB_CasingBase : Actor
 			CAS6 ABCDEFGHIJKLMOPQRST 0;
 			Stop;
 	}
+	
+	void SpawnCasingSmoke()
+	{
+		FSpawnParticleParams csmkprm;
+		csmkprm.Texture = TexMan.CheckForTexture("PUF2E0");
+		csmkprm.Color1 = "FFFFFF";
+		csmkprm.Style = STYLE_Add;
+		csmkprm.Vel = (0, 0, 0.25);
+		csmkprm.StartAlpha = 0.25;
+		csmkprm.FadeStep = -1;
+		csmkprm.Size = 8.64;
+		csmkprm.Lifetime = 50; 
+		vector2 posbuf = RotateVector((smokex, smokey), angle);
+		csmkprm.Pos = PB_Math.RelativeToGlobalCoords(pos, (angle, pitch, roll), (smokex, smokey, 0.5), true);
+		Level.SpawnParticle(csmkprm);
+	}
 }
 
 Class MG42Casing : PB_CasingBase
@@ -305,6 +329,7 @@ Class MG42Casing : PB_CasingBase
 	Default
 	{
 		PB_CasingBase.CasingSprite 'CS42';
+		PB_CasingBase.SmokePosition 3.8, 0.0;
 	}
 }
 
@@ -322,6 +347,7 @@ Class LMGCasingRocket : PB_CasingBase
 	{
 		PB_CasingBase.CasingSprite 'CSL2';
 		Scale 0.12;
+		PB_CasingBase.SmokePosition 1.5, 0.0;
 	}
 }
 
@@ -330,6 +356,7 @@ class PB_EmptyBrass : PB_CasingBase
 	Default
 	{
 		PB_CasingBase.CasingSprite 'CAS3';
+		PB_CasingBase.SmokePosition 2.4, 0.0;
 	}
 }
 
@@ -414,6 +441,7 @@ Class EmptyGrenadeBrass : PB_CasingBase
 		PB_CasingBase.CasingSprite 'CAS4';
 		BounceFactor 0.2;
 		+PB_CasingBase.ALWAYSSMOKE;
+		PB_CasingBase.SmokePosition 2.0, 0.0;
    	}
 }
 
@@ -427,6 +455,7 @@ Class PB_GiantEmptyBrass: PB_EmptyBrass
 		Scale 0.3;
 		BounceFactor 0.1;
 		PB_CasingBase.CasingSprite 'CAS8';
+		PB_CasingBase.SmokePosition 11.5, 0.0;
 	}
 }
 
@@ -437,6 +466,7 @@ Class BigEmptyBrass: PB_EmptyBrass
 		Gravity 0.8;
 		Speed 12;
 		Scale 0.2;
+		PB_CasingBase.SmokePosition 4.9, 0.0;
 	}
 }
 
@@ -455,6 +485,7 @@ Class ShotgunCasing : PB_CasingBase
 		PB_CasingBase.CasingSprite 'CASX';
 		+PB_CasingBase.ALWAYSSMOKE;
 		+PB_CasingBase.BUOYANT;
+		PB_CasingBase.SmokePosition 2.5, 0.0;
 	}
 }
 
@@ -553,6 +584,7 @@ Class EmptyBrassMP40 : PB_CasingBase
 		PB_CasingBase.CasingSprite 'CAS7';
 		BounceSound "weapons/smcasebounce";
 		BounceFactor 0.55;
+		PB_CasingBase.SmokePosition 1.2, 0.0;
 	}
 }
 
@@ -562,6 +594,7 @@ Class EmptyBrassDeagle : EmptyBrassMP40
 	{
 		Scale 0.15;       
 		Speed 9;
+		PB_CasingBase.SmokePosition 1.6, 0.0;
 	}           
 }
 
@@ -571,6 +604,7 @@ Class EmptyBrassMagnum : EmptyBrassMP40
 	{
 		Scale 0.16;       
 		Speed 9;   
+		PB_CasingBase.SmokePosition 1.7, 0.0;
 	}              
 }
 
@@ -736,5 +770,35 @@ Class MP40DogTag: Actor
 		Splash:
 			TNT1 A 0;
 			Stop;
+	}
+}
+
+class NewCasingSmoke : Actor
+{
+	Default
+	{
+		Alpha 0.10;
+		XScale 0.12;
+		YScale 0.31;
+		Renderstyle "Add";
+		Speed 8;
+		
+		+NOBLOCKMAP;
+		+NOCLIP;
+		+NOINTERACTION;
+		+NOTELEPORT;
+		+NOGRAVITY;
+		+THRUACTORS;
+		// +FORCEXYBILLBOARD;
+		
+		-SOLID;
+		-SHOOTABLE;
+	}
+	
+	States
+	{
+		Spawn:
+			PUF2 E 1 NoDelay A_FadeOut(0.001);
+			Loop;
 	}
 }
