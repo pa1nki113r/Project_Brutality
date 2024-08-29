@@ -104,7 +104,7 @@ class PB_CasingBase : Actor
 		Super.PostBeginPlay();
 		
 		spinSpeed = random(16, 100);
-		smoking = randompick(0, 1);
+		smoking = randompick(0, 0, 0, 1);
 		sprite = GetSpriteIndex(casingspritename);
 		randwatermul = frandom(2.0, 3.0);
 		smoketime = random(10, 32);
@@ -167,15 +167,20 @@ class PB_CasingBase : Actor
 	
 	override void Tick()
 	{
-		cheapCasings = pb_cheapcasings;
+		let eh = NashGoreHandler(NashGoreHandler.Find("NashGoreHandler"));
+		cheapCasings = eh.cheapCasings;
 		
 		if(!stationary || !cheapCasings)
 			Super.Tick();
 		
 		if(!cheapCasings)
 		{
-			A_ChangeLinkFlags(false, FLAG_NO_CHANGE);
-			bTHRUACTORS = false;
+			if(bNOBLOCKMAP || bTHRUACTORS) 
+			{
+				A_ChangeLinkFlags(false, FLAG_NO_CHANGE);
+				bTHRUACTORS = false;
+			}
+				
 			F3DFloor tdf;
 			Sector sec;
 			double floorPos;
@@ -251,17 +256,17 @@ class PB_CasingBase : Actor
 					//A_SetRoll(0);
 			}
 		}
-		else
+		else if(!bNOBLOCKMAP || !bTHRUACTORS)
 		{
 			A_ChangeLinkFlags(true, FLAG_NO_CHANGE);
 			bTHRUACTORS = true;
 		}
 
-		if(stationary && smoketics < smoketime && !bNEVERSMOKE && waterlevel < 1 && (smoking || bALWAYSSMOKE) && gametic % 4 == 0)
+		if(!cheapCasings && smoketics < smoketime && !bNEVERSMOKE && waterlevel < 1 && (smoking || bALWAYSSMOKE) && gametic % random(4, 8) == 0)
 		{
 			smoketics++;
 			//SpawnCasingSmoke();
-			A_SpawnItemEx("NewCasingSmoke", smokex, smokey, 0.5, frandom(-0.025, 0.025), frandom(-0.025, 0.025), 0.25);
+			A_SpawnItemEx("NewCasingSmoke", smokex, smokey, 0.5, frandom(-0.025, 0.025) + vel.x, frandom(-0.025, 0.025) + vel.y, 0.25 + vel.z);
 		}
 
 		if(!stationary)
@@ -362,7 +367,6 @@ class PB_EmptyBrass : PB_CasingBase
 
 Class ShotgunWad : Actor
 {
-	bool smoking;
 	override void BeginPlay(void)
 	{
 		ChangeStatNum(STAT_PB_BULLETS);
