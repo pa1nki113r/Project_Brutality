@@ -521,7 +521,7 @@ class gb_WheelView
     vector2 pos     = mCenter;
     pos.y += mScreen.getWheelRadius() * (isOnTop ? -1 : 1);
 	
-    mText.drawBox(ammo1, description, ammo2, pos, !isOnTop, mBaseColor, mAlpha,font.CR_LIGHTBLUE,true);
+    mText.drawBox(ammo1, description, ammo2, pos, !isOnTop, mBaseColor, mAlpha,font.FindFontColor("PBWheel_Text"),true);
   }
 
   private
