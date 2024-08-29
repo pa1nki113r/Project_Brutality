@@ -5,7 +5,7 @@ class PB_GunFireSmoke: Actor
     Default {
         Alpha 0.7;
         //Scale 0.2;
-        Renderstyle "Translucent";
+        Renderstyle "Add";
         Speed 1;
         BounceFactor 0;
         Radius 0;
