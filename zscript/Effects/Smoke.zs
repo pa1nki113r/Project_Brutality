@@ -3,7 +3,7 @@
 class PB_GunFireSmoke: Actor
 {
     Default {
-        Alpha 0.7;
+        Alpha 0.5;
         //Scale 0.2;
         Renderstyle "Add";
         Speed 1;
@@ -11,6 +11,7 @@ class PB_GunFireSmoke: Actor
         Radius 0;
         Height 0;
         Mass 0;
+        Scale 0.8;
         +NOBLOCKMAP;
         +NOTELEPORT;
         +DONTSPLASH;
@@ -45,13 +46,13 @@ class PB_GunFireSmoke: Actor
         dissipateRotation = frandom(0.7, 1.4) * randompick(-1, 1);
         bXFLIP = randompick(0, 1);
         bYFLIP = randompick(0, 1);
-        m_sprite = random(1, 11);
+        m_sprite = random(0, 25);
     }
 
     States 
     {
         Spawn:
-            SMOK A 1 {
+            X103 A 1 {
                 invoker.frame = invoker.m_sprite;
                 if(GetAge() < 5) 
                 {
@@ -84,6 +85,44 @@ class PB_GunFireSmoke: Actor
                         A_FadeOut(0.02, FTF_CLAMP|FTF_REMOVE);
                     else
                         A_Fadeout(0.04, FTF_CLAMP|FTF_REMOVE);
+                }
+            }
+            Loop;
+    }
+}
+
+class PB_CasingEjectionSmoke : PB_GunFireSmoke
+{    
+    Default
+    {
+        Scale 1.0;
+        XScale 2.5;
+        YScale 1.0;
+
+        -ROLLCENTER;
+    }
+    override void PostBeginPlay()
+    {
+        m_sprite = random(0, 24);
+
+        if(!master) Destroy();
+
+        A_FaceMovementDirection();
+        roll = -pitch * (deltaangle(angle, master.angle) / 180);
+    }
+
+    States 
+    {
+        Spawn:
+            X103 A 1 {
+                scale *= blowspeed;
+                invoker.frame = invoker.m_sprite;
+
+                if(GetAge() < 5) 
+                {
+                    scale.x *= 1.02;
+                    A_Fadeout(0.12, FTF_CLAMP|FTF_REMOVE);
+                    vel *= 0.85;
                 }
             }
             Loop;
