@@ -76,7 +76,7 @@ class PB_FPP_Light : Spotlight
     	if (toFollow && toFollow.player)
     	{
     		//console.printf("\cax: %f\cj, \cdy: %f", (90 + -abs(toFollow.pitch)) / 90.0, -toFollow.Pitch / 90.0);
-        	A_SetAngle(toFollow.angle, SPF_INTERPOLATE);
+        	A_SetAngle(toFollow.angle - 1.5, SPF_INTERPOLATE);
         	A_SetPitch(toFollow.pitch, SPF_INTERPOLATE);
         	A_SetRoll(toFollow.roll, SPF_INTERPOLATE);
         	
