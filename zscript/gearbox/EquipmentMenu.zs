@@ -62,7 +62,7 @@ Class gb_equipmentmenu
 	string ConfirmSelection() const
 	{
 		if(token.size() > 0)
-			return token[mSelectedIndex];
+			return token[clamp(mSelectedIndex,0,token.size() - 1)];
 		return "";
 	}
 	

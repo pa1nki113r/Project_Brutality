@@ -85,7 +85,7 @@ class gb_BlockyView
       // slot number box
       if (slot != lastDrawnSlot)
       {
-        drawAlphaTexture(mTextureCache.blockBox, slotX, startY, mSlotColor,false);
+        drawAlphaTexture(mTextureCache.blockBox, slotX, startY, mSlotColor,true);
 
         string slotText = string.format("%d", slot);
         int    textX    = slotX + SLOT_SIZE / 2 - aFont.stringWidth(slotText) / 2;
@@ -104,7 +104,7 @@ class gb_BlockyView
 
         // big box blockBigSel
         drawAlphaTexture(isSelectedWeapon ? mTextureCache.blockBigSel : mTextureCache.blockBig, 
-		slotX, weaponY, weaponColor,false);
+		slotX, weaponY, weaponColor,true);
 
         // weapon
         {
@@ -186,7 +186,7 @@ class gb_BlockyView
       else // not selected slot (small boxes)
       {
         int boxY = startY - MARGIN + (SLOT_SIZE + MARGIN) * (inSlotIndex + 1);
-        drawAlphaTexture(mTextureCache.blockBox, slotX, boxY, mBaseColor,false);
+        drawAlphaTexture(mTextureCache.blockBox, slotX, boxY, mBaseColor,true);
       }
 
       if (i + 1 < nWeapons && viewModel.slots[i + 1] != slot)
@@ -422,7 +422,8 @@ class gb_BlockyView
                       , DTA_KeepRatio     , true
                       , DTA_FlipX         , horFlip
                       , DTA_FlipY         , verFlip
-                      );
+                      , DTA_FillColor     , mSelectedColor
+					  );
   }
 
   private

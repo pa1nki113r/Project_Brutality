@@ -87,7 +87,7 @@ class gb_Text
 						  , NO_ANIMATION
 						  , center.x
 						  , center.y
-						  //, DTA_FillColor    , baseColor
+						  , DTA_FillColor    , baseColor
 						  , DTA_AlphaChannel , true
 						  , DTA_CenterOffset , true
 						  , DTA_Alpha        , alpha
@@ -100,7 +100,7 @@ class gb_Text
 						  , NO_ANIMATION
 						  , center.x
 						  , center.y
-						  //, DTA_FillColor    , baseColor
+						  , DTA_FillColor    , baseColor
 						  , DTA_AlphaChannel , true
 						  , DTA_CenterOffset , true
 						  , DTA_Alpha        , alpha
