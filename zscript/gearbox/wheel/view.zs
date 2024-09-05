@@ -50,12 +50,14 @@ class gb_WheelView
   void setBaseColor(int color)
   {
     mBaseColor = color;
+    mSelectedColor = addColor(mBaseColor,  0x44);
   }
 
   void setRotating(bool isRotating)
   {
     mIsRotating = isRotating;
   }
+  
 
   void display( gb_ViewModel viewModel
               , gb_WheelControllerModel controllerModel
@@ -217,7 +219,7 @@ class gb_WheelView
                       , NO_ANIMATION
                       , mCenter.x
                       , mCenter.y
-                      //, DTA_FillColor    , mBaseColor
+                      , DTA_FillColor    , mBaseColor
                       , DTA_AlphaChannel , true
                       , DTA_Alpha        , mAlpha
                       , DTA_CenterOffset , true
@@ -234,7 +236,7 @@ class gb_WheelView
                       , NO_ANIMATION
                       , x
                       , y
-                      //, DTA_FillColor    , mBaseColor
+                      , DTA_FillColor    , mBaseColor
                       , DTA_AlphaChannel , true
                       , DTA_Alpha        , mAlpha
                       , DTA_CenterOffset , true
@@ -482,6 +484,7 @@ class gb_WheelView
                       , DTA_FlipX         , true
                       , DTA_DestWidthF    , size.x
                       , DTA_DestHeightF   , size.y
+                      , DTA_FillColor    , mSelectedColor//mBaseColor
                       );
 
     Screen.drawTexture( mTextureCache.hand
@@ -495,6 +498,7 @@ class gb_WheelView
                       , DTA_Rotate        , handsAngle + sectorAngleHalfWidth
                       , DTA_DestWidthF    , size.x
                       , DTA_DestHeightF   , size.y
+                      , DTA_FillColor    , mSelectedColor//mBaseColor
                       );
   }
 
@@ -521,7 +525,7 @@ class gb_WheelView
     vector2 pos     = mCenter;
     pos.y += mScreen.getWheelRadius() * (isOnTop ? -1 : 1);
 	
-    mText.drawBox(ammo1, description, ammo2, pos, !isOnTop, mBaseColor, mAlpha,font.FindFontColor("PBWheel_Text"),true);
+    mText.drawBox(ammo1, description, ammo2, pos, !isOnTop, mBaseColor, mAlpha,font.CR_WHITE,true);
   }
 
   private
@@ -542,6 +546,25 @@ class gb_WheelView
 					  , DTA_TranslationIndex, Translation.GetID('reddenwep')
                       );
   }
+  
+  private static
+  color addColor(color base, int add)
+  {
+    uint newRed   = clamp(base.r + add, 0, 255);
+    uint newGreen = clamp(base.g + add, 0, 255);
+    uint newBlue  = clamp(base.b + add, 0, 255);
+
+    if (  abs(int(newRed  ) - base.r) < abs(add)
+       && abs(int(newGreen) - base.g) < abs(add)
+       && abs(int(newBlue ) - base.b) < abs(add)
+       )
+    {
+      return addColor(base, -add);
+    }
+
+    uint result   = (newRed << 16) + (newGreen << 8) + newBlue;
+    return result;
+  }
 
   const NO_ANIMATION = 0; // == false
 
@@ -559,6 +582,7 @@ class gb_WheelView
   private double  mAlpha;
   private color   mBaseColor;
   private vector2 mCenter;
+  private color  mSelectedColor;
 
   private gb_Screen         mScreen;
   private gb_Options        mOptions;
