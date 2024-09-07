@@ -14,8 +14,6 @@ class PlayerPawnBase : PlayerPawn
 	TextureID dashTex;
 	float alphaFade;
 	
-	bool prefersNewWhiz;
-	
 	bool InSlime;
 	int	SlimeSoundCooler;
 	
@@ -198,9 +196,6 @@ class PlayerPawnBase : PlayerPawn
 		StrafeRunning = cmd.forwardmove && cmd.sidemove;
 		ZMoveFactor = ZMScale();
 		
-		prefersNewWhiz = CVar.GetCVar("pb_usenewwhizby", Player).GetBool();
-		
-		
 		//Execute Player tic cycle
 		Super.PlayerThink();
 		
@@ -208,7 +203,7 @@ class PlayerPawnBase : PlayerPawn
 		Player.OnGround = (Pos.Z <= FloorZ) || bONMOBJ || bMBFBOUNCER || (Player.Cheats & CF_NOCLIP2); // Moved after super call, otherwise it doesn't register.
 
         // Stick player to ground when going down stairs
-        if (wasOnGround && !player.onGround && pos.z - GetZAt() < maxDropOffHeight && vel.z <= 0)
+        if (!(player.cheats & CF_PREDICTING) && wasOnGround && !player.onGround && pos.z - GetZAt() < maxDropOffHeight && vel.z <= 0)
         {
             //player.viewHeight += (pos.z - GetZAt());
             //player.deltaViewHeight -= (pos.z - GetZAt()) / 8;
@@ -221,12 +216,12 @@ class PlayerPawnBase : PlayerPawn
 
         // I'm not sure how this is done in PlayerPawn
         // Put player back in idle state after moving
-        if (!player.cmd.forwardMove && !player.cmd.sideMove && (!player.onGround || !player.vel.Length())) PlayIdle();
+        if (!(player.cheats & CF_PREDICTING) && !player.cmd.forwardMove && !player.cmd.sideMove && (!player.onGround || !player.vel.Length())) PlayIdle();
 		
 		//Bob weapon stuff
 		BobWeaponAuxiliary();
 		
-		ExecutionChecker();
+		if(!(player.cheats & CF_PREDICTING)) ExecutionChecker();
 		
 		//Old values for comparisons
 		OldRealFloorZ = RealFloorZ;
@@ -508,11 +503,11 @@ class PlayerPawnBase : PlayerPawn
 			if(Player.TurnTicks) //moved here to save many doubled lines
 			{
 				Player.TurnTicks--;
-				A_SetAngle(Angle + (180.0 / TURN180_TICKS), SPF_INTERPOLATE);
+				Angle += ViewAngleDelta;
 			}
 			else
 			{
-				Angle += ViewAngleDelta;
+				A_SetAngle(Angle + ViewAngleDelta, SPF_INTERPOLATE);
 				if(LedgeGrabbed) { Angle = clamp(Angle, LedgeAngle - 20, LedgeAngle + 20); }
 			}
 			
@@ -733,7 +728,7 @@ class PlayerPawnBase : PlayerPawn
 			
 			//Check if player is above a damaging floor. We don't cheese map design here!
 			sector sss=floorsector;
-			if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
+			if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement && !(player.cheats & CF_PREDICTING)) {
 				if(!JumpSoundCooler)
 					A_StartSound("Daedabus/impact", CHAN_BODY);
 					JumpSoundCooler = 4;
@@ -2462,7 +2457,8 @@ class PlayerPawnBase : PlayerPawn
 		Super.Tick();
 		
 		//Just to make sure NO TRACES of this softlocking motherfucker is left -generic name guy
-		A_SetInventory("GoFatality", 0);
+		if(!(player.cheats & CF_PREDICTING))
+			A_SetInventory("GoFatality", 0);
 		//CatchUpOnTiers();
 		CheckTargetHitRegistration();
 
@@ -2540,7 +2536,7 @@ class PlayerPawnBase : PlayerPawn
 			if (selector == 5){ACS_NamedExecute("LavaScreenSplash555", 0);}
 		}
 		*/
-		if (IsTank && !(health <= 0))
+		if (!(player.cheats & CF_PREDICTING) && IsTank && !(health <= 0))
 		{
 			if (TankTurretSprite != NULL)
 			{
@@ -2588,7 +2584,7 @@ Class SpeedoMeterHandler : EventHandler
 {
 	override void renderOverlay(RenderEvent e)
 	{
-		if(CVar.FindCVar("zm_speedometer").GetInt())
+		if(CVar.GetCvar("zm_speedometer", players[consoleplayer]).GetInt())
 		{
 			Actor mo = players[consoleplayer].mo;
 			if(mo != NULL && PlayerInGame[consoleplayer])
@@ -2597,7 +2593,7 @@ Class SpeedoMeterHandler : EventHandler
 				Vector2 scaler = (1 / scalevec.x, 1 / scalevec.y);
 				Vector2 screenSize = (Screen.GetWidth() * scaler.x, Screen.GetHeight() * scaler.y);
 			
-				if(CVar.FindCVar("zm_speedometer").GetInt() == 2)
+				if(CVar.GetCvar("zm_speedometer", players[consoleplayer]).GetInt() == 2)
 				{
 					Vector2 drawPos = (-4 * (screenSize.x / 320), 106 * (screenSize.y / 200));
 					Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y, String.format("%i", mo.Vel.XY.Length() * 32), DTA_HUDRules, true);
