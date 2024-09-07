@@ -46,9 +46,9 @@ class PB_Hud_ZS : BaseStatusBar
     DynamicValueInterpolator mAmmo1Interpolator;
     DynamicValueInterpolator mAmmo2Interpolator;
     DynamicValueInterpolator mAmmoLeftInterpolator;
-    DynamicValueInterpolator mSwayInterpolator;
-    DynamicValueInterpolator mPitchInterpolator;
-    DynamicValueInterpolator mFOffsetInterpolator;
+    PB_DynamicDoubleInterpolator mSwayInterpolator;
+    PB_DynamicDoubleInterpolator mPitchInterpolator;
+    PB_DynamicDoubleInterpolator mFOffsetInterpolator;
 
 	InventoryBarState invBar;
 
@@ -62,14 +62,18 @@ class PB_Hud_ZS : BaseStatusBar
     double m0to1Float;
     bool hasPutOnHelmet, hasCompletedHelmetSequence;
     bool deathFadeDone, playerWasDead;
+    
+    vector2 poll1, poll2, resultSway;
 
     //Hud variables
-    string leftAmmoAmount;
+    string leftAmmoAmount, oldLeftAmmoAmount;
     bool hudDynamics, inPain;
     double dashIndAlpha, flashlightBatteryAlpha;
-    int healthFontCol, keyamount, hudState, oldDashCharge;
+    int healthFontCol, keyamount, hudState, oldDashCharge, weaponBarAccent;
     double dashScale1, dashScale2;
     DEDashJump Dasher;
+    
+    Weapon oldWeapon;
 
     //CVars
     int hudXMargin, hudYMargin, playerMsgPrint;
@@ -77,6 +81,7 @@ class PB_Hud_ZS : BaseStatusBar
     float playerAlpha, playerBoxAlpha, messageSize, bloodDropsAlpha, glassCracksAlpha;
 
     bool centerNotify;
+  
     
 	override void Init()
 	{
@@ -89,14 +94,16 @@ class PB_Hud_ZS : BaseStatusBar
 
         //invbar = InventoryBarState.CreateNoBox(mBoldFont);
 		
-        mHealthInterpolator = DynamicValueInterpolator.Create(0, 0.10, 2, 64);
-		mArmorInterpolator = DynamicValueInterpolator.Create(0, 0.10, 2, 64);
-        mAmmo1Interpolator = DynamicValueInterpolator.Create(0, 0.10, 2, 64);
-        mAmmo2Interpolator = DynamicValueInterpolator.Create(0, 0.10, 2, 64);
-        mAmmoLeftInterpolator = DynamicValueInterpolator.Create(0, 0.10, 2, 64);
-        mSwayInterpolator = DynamicValueInterpolator.Create(0, 0.30, 1, 32);
-        mPitchInterpolator = DynamicValueInterpolator.Create(0, 0.30, 1, 32);
-        mFOffsetInterpolator = DynamicValueInterpolator.Create(0, 0.5, 1, 64);
+        mHealthInterpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
+		mArmorInterpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
+		
+        mAmmo1Interpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
+        mAmmo2Interpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
+        mAmmoLeftInterpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
+        
+        mSwayInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.30, 0, 32);
+        mPitchInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.30, 0, 32);
+        mFOffsetInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.5, 0, 64);
 
 		InvBar = InventoryBarState.Create();
 	}
@@ -107,8 +114,8 @@ class PB_Hud_ZS : BaseStatusBar
 
         hudDynamics = automapactive ? false : hudDynamicsCvar;
 
-        hudXMargin = Cvar.GetCvar("pb_hudxmargin", CPlayer).GetInt();
-        hudYMargin = CVar.GetCvar("pb_hudymargin", CPlayer).GetInt();
+        hudXMargin = max(Cvar.GetCvar("pb_hudxmargin", CPlayer).GetInt(), -9);
+        hudYMargin = max(CVar.GetCvar("pb_hudymargin", CPlayer).GetInt(), -9);
             
         showVisor = CVar.GetCvar("pb_showhudvisor", CPlayer).GetBool();
         showVisorGlass = CVar.GetCvar("pb_showhudvisorglass", CPlayer).GetBool();
@@ -238,6 +245,19 @@ class PB_Hud_ZS : BaseStatusBar
         
         Ammo Primary, Secondary;
         [Primary, Secondary] = GetCurrentAmmo();
+	
+		//console.printf("%s", CPlayer.ReadyWeapon.GetClassName());
+		
+		if(oldweapon && (oldWeapon != CPlayer.ReadyWeapon))
+		{
+		    if(Primary)
+		    	mAmmo1Interpolator.Reset(Primary.Amount); 
+		    
+		    if(Secondary) 
+		    	mAmmo2Interpolator.Reset(Secondary.Amount);
+		    	
+		    mAmmoLeftInterpolator.Reset(0);
+		}
 
         if(m0to1Float > 0.99) {
             mHealthInterpolator.Update(CPlayer.Health);
@@ -245,12 +265,25 @@ class PB_Hud_ZS : BaseStatusBar
             mSwayInterpolator.Update(mSway);
             mPitchInterpolator.Update(mPitch);
             mFOffsetInterpolator.Update(mForwardOffset);
-            if(Primary) { mAmmo1Interpolator.Update(Primary.Amount); }
-            if(Secondary) { mAmmo2Interpolator.Update(Secondary.Amount); }
+            
+            if(Primary)
+            	mAmmo1Interpolator.Update(Primary.Amount); 
+            
+            if(Secondary)
+            	mAmmo2Interpolator.Update(Secondary.Amount); 
             
             if(leftAmmoAmount)
+            {
+            	if(leftAmmoAmount != oldLeftAmmoAmount) 
+			    	mAmmoLeftInterpolator.Reset(GetAmount(leftAmmoAmount));
+            
                 mAmmoLeftInterpolator.Update(GetAmount(leftAmmoAmount));
+                
+                oldLeftAmmoAmount = leftAmmoAmount;
+            }
         }
+        
+        oldWeapon = CPlayer.ReadyWeapon;
 	}
 
     void From32to0Slow() {
@@ -973,7 +1006,7 @@ class PB_Hud_ZS : BaseStatusBar
                         if(CheckInventory("DualWieldingDMRs"))
                         {
                             leftAmmoAmount = "LeftRifleAmmo";
-                            
+                           
                             //Left Rifle Ammo
                             PBHud_DrawImage("BARBACY3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
                             
@@ -1130,30 +1163,37 @@ class PB_Hud_ZS : BaseStatusBar
                 
                 if(WeaponUsesAmmoType("PB_LowCalMag"))
                 {
+                    weaponBarAccent = Font.CR_TAN;
                     DrawAmmoBar("BARBACT1", "BARBACT2", "BAMBAR2", "ABAR2", "ABAR2", "AMMOIC2", Font.CR_TAN);
                 }
                 else if(WeaponUsesAmmoType("PB_HighCalMag") && !(CheckWeaponSelected("PB_MG42")))
                 {
+                    weaponBarAccent = Font.CR_YELLOW;
                     DrawAmmoBar("BARBACY1", "BARBACY2", "BAMBAR1", "ABAR1", "ABAR1", "AMMOIC1", Font.CR_YELLOW);
                 }
                 else if(WeaponUsesAmmoType("PB_Shell"))
                 {
+                	weaponBarAccent = Font.CR_ORANGE;
                     DrawAmmoBar("BARBACO1", "BARBACO2", "BAMBAR3", "ABAR3", "ABAR3", "AMMOIC3", Font.CR_ORANGE);
                 }
                 else if(WeaponUsesAmmoType("PB_RocketAmmo"))
                 {
+                	weaponBarAccent = Font.CR_RED;
                     DrawAmmoBar("BARBACR1", "BARBACR2", "BAMBAR4", "ABAR4", "ABAR4", "AMMOIC4", Font.CR_RED);
                 }
                 else if(WeaponUsesAmmoType("PB_Cell"))
                 {
+                    weaponBarAccent = Font.CR_PURPLE;
                     DrawAmmoBar("BARBACP1", "BARBACP2", "BAMBAR5", "ABAR5", "ABAR5", "AMMOIC5", Font.CR_PURPLE);
                 }
                 else if(WeaponUsesAmmoType("PB_Fuel") && !(CheckWeaponSelected("PB_Chainsaw") || CheckWeaponSelected("PB_Flamethrower")))
                 {
+                    weaponBarAccent = Font.CR_ORANGE;
                     DrawAmmoBar("BARBACD1", "BARBACD2", "BAMBAR6", "ABAR6", "ABAR6", "AMMOIC6", Font.CR_ORANGE);
                 }
                 else if(WeaponUsesAmmoType("PB_DTech") && !(CheckWeaponSelected("PB_Unmaker")))
                 {
+                	weaponBarAccent = Font.CR_DARKRED;
                     DrawAmmoBar("BARBACZ1", "BARBACZ2", "BAMBAR7", "ABAR7", "ABAR7", "AMMOIC7", Font.CR_DARKRED);
                 }
                 
@@ -1161,6 +1201,12 @@ class PB_Hud_ZS : BaseStatusBar
                 
                 Ammo Primary, Secondary;
                 [Primary, Secondary] = GetCurrentAmmo();
+                
+                
+                if((Primary || Secondary) && CPlayer.ReadyWeapon)
+                {
+                	PBHud_DrawString(mDefaultFont, CPlayer.ReadyWeapon.GetTag(), (-110, -22), DI_ITEM_RIGHT_BOTTOM | DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT, weaponBarAccent, scale: (0.5, 0.5));
+                }
                 
                 switch(CPlayer.ReadyWeapon.GetClassName())
                 {
@@ -1175,6 +1221,7 @@ class PB_Hud_ZS : BaseStatusBar
                         PBHud_DrawString(mDefaultFont, Formatnumber(Primary.Amount), (-207, -48), DI_TEXT_ALIGN_RIGHT, Font.CR_DARKRED);
                         //Icon
                         PBHud_DrawImage("AMMOIC7", (-77, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
+                        weaponBarAccent = Font.CR_DARKRED;
                         break;
                     case 'PB_Chainsaw':
                         PBHud_DrawImage("BARBACD1", (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
@@ -1188,6 +1235,7 @@ class PB_Hud_ZS : BaseStatusBar
                         {
                             PBHud_DrawImage("CHAINHL", (-90, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (32, 32));
                         }
+                        weaponBarAccent = Font.CR_ORANGE;
                         break;
                     case 'PB_MG42':
                         PBHud_DrawImage("BARBACY1", (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
@@ -1200,6 +1248,7 @@ class PB_Hud_ZS : BaseStatusBar
                         PBHud_DrawString(mDefaultFont, Formatnumber(Primary.Amount), (-207, -48), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
                         //Icon
                         PBHud_DrawImage("AMMOIC1", (-77, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
+                        weaponBarAccent = Font.CR_YELLOW;
                         break;
                     case 'PB_Flamethrower':
                         PBHud_DrawImage("BARBACD1", (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
@@ -1212,6 +1261,7 @@ class PB_Hud_ZS : BaseStatusBar
                         PBHud_DrawString(mDefaultFont, Formatnumber(Primary.Amount), (-207, -48), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
                         //Icon
                         PBHud_DrawImage("AMMOIC6", (-77, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
+                        weaponBarAccent = Font.CR_ORANGE;
                         break;
                     case 'PB_Axe':
                         int AxeCount = CPlayer.mo.CountInv("PB_Axe");
@@ -1225,4 +1275,48 @@ class PB_Hud_ZS : BaseStatusBar
             }
         }
     }
+}
+
+class PB_DynamicDoubleInterpolator : Object
+{
+	double mCurrentValue;
+	double mMinChange;
+	double mMaxChange;
+	double mChangeFactor;
+
+	static PB_DynamicDoubleInterpolator Create(int startval, double changefactor, double minchange, double maxchange)
+	{
+		let v = new("PB_DynamicDoubleInterpolator");
+		v.mCurrentValue = startval;
+		v.mMinChange = minchange;
+		v.mMaxChange = maxchange;
+		v.mChangeFactor = changefactor;
+		return v;
+	}
+
+	void Reset(double value)
+	{
+		mCurrentValue = value;
+	}
+
+	// This must be called periodically in the status bar's Tick function.
+	// Do not call this in the Draw function because that may skip some frames!
+	void Update(double destvalue)
+	{
+		double diff = clamp(abs(destvalue - mCurrentValue) * mChangeFactor, mMinChange, mMaxChange);
+		if (mCurrentValue > destvalue)
+		{
+			mCurrentValue = max(destvalue, mCurrentValue - diff);
+		}
+		else
+		{
+			mCurrentValue = min(destvalue, mCurrentValue + diff);
+		}
+	}
+
+	// This must be called in the draw function to retrieve the value for output.
+	double GetValue()
+	{
+		return mCurrentValue;
+	}
 }

@@ -182,6 +182,7 @@ Actor PB_FlamethrowerUpgrade : CustomInventory
 	Inventory.PickupSound "FLMDRAW"
 	Scale 0.5
 	Inventory.PickupMessage "UAC-M3 Flamethrower Upgrade! (Slot 8)"
+	Tag "UAC-M3 Flamethrower"
 	States
 	{
 		Spawn:
@@ -190,8 +191,8 @@ Actor PB_FlamethrowerUpgrade : CustomInventory
 		Pickup:
 			TNT1 A 0 A_GiveInventory ("PB_Flamethrower")
 			TNT1 A 0 A_JumpIfInventory("FlamerUpgraded",1,3)
-			TNT1 A 0 A_GiveInventory ("FlamerUpgraded")
-			TNT1 A 0 A_GiveInventory("FlamerTankNotInserted")
+			TNT1 A 0 A_SetInventory ("FlamerUpgraded",1)
+			TNT1 A 0 A_SetInventory("FlamerTankNotInserted",1)
 			TNT1 A 0 A_GiveInventory ("PB_Fuel", 90)
 			Stop
 	}
@@ -205,8 +206,8 @@ Actor PB_FlamethrowerMancubusGas : CustomInventory
 	States
 	{
 		Spawn:
-			MANA H 1 
-			Loop
+			MANA H -1
+			Stop
 		Pickup:
 			TNT1 A 0 A_GiveInventory ("PB_Fuel", 50)
 			Stop
@@ -241,16 +242,16 @@ ACTOR PB_Flamethrower : PB_Weapon
 	
 	ReadyUpgraded:
 		TNT1 A 0 A_JumpIfInventory("RespectFlamerGoonUpgraded", 1, "SelectAnimation")
-		TNT1 A 0 A_GiveInventory("RespectFlamerGoonUpgraded")
+		TNT1 A 0 A_SetInventory("RespectFlamerGoonUpgraded",1)
 		TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO)
 		FLS1 ABCD 1 A_DoPBWeaponAction
 		//respect animation here
 	StartUpgradeRespect:
 		TNT1 A 0 {
-			A_GiveInventory("RespectFlamerGoonUpgraded");
-			A_GiveInventory("RespectFlamerGoon");
-			A_TakeInventory("FlamerTankNotInserted",1);
-			}
+			A_SetInventory("RespectFlamerGoonUpgraded",1);
+			A_SetInventory("RespectFlamerGoon",1);
+			A_SetInventory("FlamerTankNotInserted",0);
+		}
 		FRL1 ABCDEFGHIJKLMNOPQRSTUVWXY 1  A_DoPBWeaponAction
 		TNT1 A 0 A_StartSound("weapons/flamethrower/respect4", CHAN_AUTO)
 		FRL1 Z 1 A_DoPBWeaponAction
@@ -377,12 +378,12 @@ ACTOR PB_Flamethrower : PB_Weapon
 	Ready3:
 		TNT1 A 0 {
 			if(CountInv("FlamerNukageMode") == 1) {
-				A_GiveInventory("HasAcidWeapon", 1);
-				A_TakeInventory("HasFireWeapon", 1);
+				A_SetInventory("HasAcidWeapon", 1);
+				A_SetInventory("HasFireWeapon", 0);
 			}
 			else {
-				A_TakeInventory("HasAcidWeapon", 1);
-				A_GiveInventory("HasFireWeapon", 1);
+				A_SetInventory("HasAcidWeapon", 0);
+				A_SetInventory("HasFireWeapon", 1);
 			}
 		}
 		TNT1 A 0 A_JumpIfInventory("FlamerTankNotInserted", 1, "StartUpgradeRespect")
@@ -428,18 +429,18 @@ ACTOR PB_Flamethrower : PB_Weapon
 
 	ToggleNukageBlobModeUp:
 		TNT1 A 0 {
-			A_Takeinventory("ToggleBlobStream",1);
-			A_Takeinventory("ToggleNukageBlob",1);
-			A_Takeinventory("ToggleNukage",1);
+			A_SetInventory("ToggleBlobStream",0);
+			A_SetInventory("ToggleNukageBlob",0);
+			A_SetInventory("ToggleNukage",0);
 			A_GunFlash;
 			A_Overlay(-5, "NoOverlay");
-			A_TakeInventory("FlamerNukeDMR");
-			A_TakeInventory("FlamerBlobDMR");
+			A_SetInventory("FlamerNukeDMR",0);
+			A_SetInventory("FlamerBlobDMR",0);
 		}
 		TNT1 A 0 
 			{
 				if (CountInv("FlamerBlobStream") != 1) {
-					A_GiveInventory("FlamerBlobStream");
+					A_SetInventory("FlamerBlobStream",1);
 					A_Print("Primary fire - nukage stream, alt. fire - nuke blob");
 					return state("Unwield");
 				}
@@ -458,7 +459,7 @@ ACTOR PB_Flamethrower : PB_Weapon
 		FDS1 A 0
 		"####" A 0
 		"####" HGFEDC 1
-		TNT1 A 0 A_TakeInventory("FlamerDMRAkimbo")
+		TNT1 A 0 A_SetInventory("FlamerDMRAkimbo",0)
 		FDS1 BA 1	
 		Goto ToggleUpgraded
 	
@@ -467,7 +468,7 @@ ACTOR PB_Flamethrower : PB_Weapon
 		FDS1 A 0
 		"####" A 0
 		"####" HGFEDC 1
-		TNT1 A 0 A_TakeInventory("FlamerDMRAkimbo")
+		TNT1 A 0 A_SetInventory("FlamerDMRAkimbo",0)
 		FDS1 BA 1	
 		Goto Ready3
 		
@@ -475,9 +476,9 @@ ACTOR PB_Flamethrower : PB_Weapon
 		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
 		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
 		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
-		TNT1 A 0 A_TakeInventory("GoWeaponSpecialAbility", 1)
+		TNT1 A 0 A_SetInventory("GoWeaponSpecialAbility", 0)
 		TNT1 A 0 {
-			A_GiveInventory("PB_LockScreenTilt",1);
+			A_SetInventory("PB_LockScreenTilt",1);
 			A_ZoomFactor(1.0);
 			A_ClearOverlays(10,11);
 			A_PlaySoundEx("Ironsights", "Auto");
@@ -490,20 +491,20 @@ ACTOR PB_Flamethrower : PB_Weapon
 		}
 		TNT1 A 0 {
 			if (CountInv("FlamerNukageMode") == 1) {
-				A_TakeInventory("FlamerNukageMode");
-				A_TakeInventory("FlamerBlobStream");
+				A_SetInventory("FlamerNukageMode",0);
+				A_SetInventory("FlamerBlobStream",0);
 				A_Print("$PB_FLAMER_FLAME");
 				return state ("SwitchFromNukage");
 			}
 			else if (CountInv("FlamerAmmo") < 3) {
-				A_GiveInventory("FlamerNukageMode");
-				A_GiveInventory("FlamerBlobStream");
+				A_SetInventory("FlamerNukageMode",1);
+				A_SetInventory("FlamerBlobStream",1);
 				A_Print("$PB_FLAMER_ACID");
 				return state ("SwitchEmpty");
 			}
 			else {
-				A_GiveInventory("FlamerNukageMode");
-				A_GiveInventory("FlamerBlobStream");
+				A_SetInventory("FlamerNukageMode",1);
+				A_SetInventory("FlamerBlobStream",1);
 				A_Print("$PB_FLAMER_ACID");
 				return state ("SwitchToNukage");
 			}
@@ -515,20 +516,20 @@ ACTOR PB_Flamethrower : PB_Weapon
 		TNT1 A 0
 		TNT1 A 0 {
 			if (CountInv("FlamerNukageMode") == 1) {
-				A_TakeInventory("FlamerNukageMode");
-				A_TakeInventory("FlamerBlobStream");
+				A_SetInventory("FlamerNukageMode",0);
+				A_SetInventory("FlamerBlobStream",0);
 				A_Print("$PB_FLAMER_FLAME");
 				return state ("SwitchFromNukageTube");
 			}
 			else if (CountInv("PB_Fuel") < 3) {
-				A_GiveInventory("FlamerNukageMode");
-				A_GiveInventory("FlamerBlobStream");
+				A_SetInventory("FlamerNukageMode",1);
+				A_SetInventory("FlamerBlobStream",1);
 				A_Print("$PB_FLAMER_ACID");
 				return state ("SwitchEmptyTube");
 			}
 			else {
-				A_GiveInventory("FlamerNukageMode");
-				A_GiveInventory("FlamerBlobStream");
+				A_SetInventory("FlamerNukageMode",1);
+				A_SetInventory("FlamerBlobStream",1);
 				A_Print("$PB_FLAMER_ACID");
 				return state ("SwitchToNukageTube");
 			}
@@ -683,7 +684,7 @@ ACTOR PB_Flamethrower : PB_Weapon
 		Goto ReloadLoop
 	
 	ReloadInsertFromUnload:
-		TNT1 A 0 A_TakeInventory("FlamerUnloaded")
+		TNT1 A 0 A_SetInventory("FlamerUnloaded",0)
 		FRE5 XWVUT 1
 		FRE2 F 1 Offset(-15,38)
 		FRE2 F 1 Offset(-7, 35)
@@ -728,14 +729,14 @@ ACTOR PB_Flamethrower : PB_Weapon
 		Goto ReloadLoop
 	
 	Unload:
-		ATFG A 0 A_Takeinventory("Unloading",1)
+		ATFG A 0 A_SetInventory("Unloading",0)
 		TNT1 A 0 A_JumpIfInventory("FlamerDMRAkimbo", 1, "Ready3")
 		TNT1 A 0 A_JumpIfInventory("FlamerUpgraded", 1, "Ready3")
 		TNT1 A 0 A_JumpIfInventory("FlamerUnloaded", 1, "Ready3")
 		TNT1 A 0 A_JumpIfInventory("FlamerAmmo", 1, 2)
 		Goto Ready3
 		TNT1 A 0
-		TNT1 A 0 A_GiveInventory("FlamerUnloaded")
+		TNT1 A 0 A_SetInventory("FlamerUnloaded",1)
 		TNT1 A 0 {
 			if (CountInv("FlamerNukageMode") == 1 || CountInv("FlamerAmmo") == 0) {
 					A_StopSound(1);
@@ -795,8 +796,8 @@ ACTOR PB_Flamethrower : PB_Weapon
 			A_StopSound(CHAN_WEAPON);
 			A_StopSound(CHAN_BODY);
 			A_StopSound(CHAN_6);
-			A_Takeinventory("HasFireWeapon",1);
-			A_Takeinventory("HasAcidWeapon",1);
+			A_SetInventory("HasFireWeapon",0);
+			A_SetInventory("HasAcidWeapon",0);
 			
 		}
 		
@@ -819,12 +820,7 @@ ACTOR PB_Flamethrower : PB_Weapon
 	Select:
 		TNT1 A 0
 		
-		TNT1 A 0 A_TakeInventory("HasBarrel",1)
-		TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
-		TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
-		TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
-		TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
-		TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
+		TNT1 A 0 PB_ResetBarrelTokens
 		
 		Goto SelectFirstPersonLegs
 		SelectContinue:
@@ -835,8 +831,8 @@ ACTOR PB_Flamethrower : PB_Weapon
 	    wait
 		
     Spawn:
-        FSPW A 1
-        Loop
+        FSPW A -1
+        Stop
 
 	////////////////////////////////////////////////////////
 	Fire:
@@ -1368,11 +1364,10 @@ Inventory.MaxAmount 1
 }
 Actor IsUsingOverlay : Inventory {}
 Actor IsInvisible : Inventory {}
-
+/*
 ACTOR FT_GroundFireSpawner: BarrelExplosionSmokeColumn
 {
 Damagetype "Fire"
-    -CLIENTSIDEONLY
 	+NODAMAGETHRUST
 	Alpha 0.9
 	RenderStyle Add
@@ -1431,7 +1426,6 @@ ACTOR FT_GroundFireSpawnerPerf : FT_GroundFireSpawner
 
 ACTOR FT_GroundFire
 {
-    -CLIENTSIDEONLY
 	+NOINTERACTION
 	-SOLID
 	+FORCEXYBILLBOARD
@@ -1457,7 +1451,6 @@ ACTOR FT_GroundFire
 
 ACTOR FT_GroundFire2
 {
-    -CLIENTSIDEONLY
 	+NOINTERACTION
 	-SOLID
 	+FORCEXYBILLBOARD
@@ -1480,10 +1473,9 @@ ACTOR FT_GroundFire2
 				Stop
     }
 }
-
+*/
 ACTOR NukeSplashSmall
 {
-    -CLIENTSIDEONLY
 	+NOINTERACTION
 	+FORCEXYBILLBOARD
 	+RANDOMIZE

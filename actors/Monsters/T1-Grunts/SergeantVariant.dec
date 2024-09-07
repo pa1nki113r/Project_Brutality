@@ -74,27 +74,148 @@ ACTOR PB_HelmetSergeant : PB_ShotgunGuyHelmet //Replaces ShotgunGuy
 	SpawnID 1210
 }
 
-Actor PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
+ACTOR NewFuelTankPhysics: HeadshotTargetBase
+{
+	Speed 9
+	+NOTARGET
+	damagefactor "Taunt", 0.00
+	damagefactor "Blood", 0.00
+	damagefactor "BlueBlood", 0.00
+	damagefactor "Head", 0.0
+	damagefactor "MinorHead", 0.0
+	damagefactor "KillMe", 0.0
+	damagefactor "DestroyShield", 0.0
+	damagefactor "ExtremePunches", 0.0
+	damagefactor "Kick", 0.00
+	damagefactor "Melee", 0.00
+	damagefactor "Burn", 0.00
+	damagefactor "Flames", 0.00
+	damagefactor "Fire", 0.00
+	Health 20
+	Radius 18
+	Height 24
+	BloodType "HitPuff"
+	PainChance 255
+	DamageType "Extreme"
+	Deathsound "FAREXPL"
+	+NOGRAVITY
+	+SHOOTABLE
+	+NOTELEPORT
+	+SOLID
+	+NODAMAGETHRUST
+	-THRUGHOST
+	+NORADIUSDMG
+	+NOCLIP
+	-GHOST
+	States
+	{
+	Spawn:
+		XXXX A 0
+		XXXX A 0 A_JumpIf(!AAPTR_MASTER, "Null")
+		XXXX A 0 A_JumpIfHealthLower(1, "Null", AAPTR_MASTER)
+		XXXX A 0 A_JumpIfInventory("IsDown", 1, 2, AAPTR_MASTER)
+		XXXX A 1 A_WARP(AAPTR_Master, -20, 0, 34, 0, WARPF_NOCHECKPOSITION)
+		Loop
+		XXXX A 1 A_WARP(AAPTR_Master, -20, 0, 0, 0, WARPF_NOCHECKPOSITION)
+		Goto Spawn
+
+	Pain:
+	Pain.Cutless:
+		TNT1 A 0 A_PlaySound ("barrel/pain")
+		Goto Spawn
+
+	Pain.Bullet:
+		TNT1 A 0 A_PlaySound ("barrel/pain")
+
+	Pain.SSG:
+	Pain.Cut:
+	Pain.Flames:
+	Pain.Fire:
+	Pain.Burn:
+	Pain.Plasma:
+	Pain.Eat:
+	Pain.Blast:
+	Pain.Rip:
+	Pain.ImpFatalityMarine:
+	Pain.HKF:
+	Pain.Melee:
+		TNT1 A 0 A_PlaySound ("barrel/pain")
+		Goto Spawn
+
+	Death:
+		TNT1 A 0 A_NoBlocking
+		XDT3 A 0 A_Explode(500,10,0)//hsTNT1 A 0 A_NoBlocking
+		TNT1 A 1 
+		NULL A 0  A_PlaySound("FAREXPL",9)
+		TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 AA 0 A_CustomMissile ("ExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 AA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180))
+		TNT1 AA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180))
+		TNT1 AAA 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		EXPL A 0 A_SpawnItem("ExplosionParticleSpawner")
+		EXPL AAA 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (0, 90))
+
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15))
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35))
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35))
+		TNT1 AAA 20 A_CustomMissile ("BigBlackSmoke", 0, 0, random (0, 360), 2, random (40, 160))
+		Stop
+	}
+}
+
+Actor EnemyFlamethrowerMissileNew: FlamethrowerMissileNew
+{
+	States
+	{
+	Death:
+		TNT1 A 0 A_Explode(5, 150, 0)
+		Goto Super::Death+1
+	XDeath:
+		TNT1 A 0 A_Explode(5, 150, 0)
+		Goto Super::XDeath+1
+	}
+}
+
+Actor PB_PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
 {
 	SpawnID 1250
 	Scale 1.04
 	DropItem "PB_Flamethrower"
-	PainChance "Fire", 12
-	PainChance "Flames", 12
-	PainChance "Burn", 12
+// 	PainChance "Fire", 12
+// 	PainChance "Flames", 12
+// 	PainChance "Burn", 12
+	Obituary "%o was incinerated by a Pyro Sergeant"
+	Tag "Pyro Sergeant"
+	+SLIDESONWALLS
+	+AVOIDMELEE
 	States
 	{
 	
+	Death.Execution:
+		TNT1 A 0
+		TNT1 A 0 {
+			A_StopSound;
+			A_FaceTarget;
+			A_NoBlocking(false);
+		}
+		SFV1 A 8
+		TNT1 A 0 A_Pain
+		SFV1 G 21
+		TNT1 A 0 A_Recoil(4)
+		Goto Death.SSG
+		
 	Death.Shrink:
 		TNT1 A 1 A_PlaySound("Shrink", 3)
-		TNT1 A 0 A_SpawnItemEx ("Sergeant2ShrinkFX1", 0, 0,  5, 0, 0)
-		TNT1 A 1 A_SpawnItemEx ("Sergeant2ShrinkFX2", 0, 0, 5, 0, 0)
-		TNT1 A 1 A_SpawnItemEx ("Sergeant2ShrinkFX3", 0, 0, 5, 0, 0)
-		TNT1 A 1 A_SpawnItemEx ("Sergeant2ShrinkFX4", 0, 0, 5, 0, 0)
-		TNT1 A 1 A_SpawnItemEx ("Sergeant2ShrinkFX5", 0, 0, 5, 0, 0)
-		TNT1 A 1 A_SpawnItemEx ("Sergeant2ShrinkFX6", 0, 0, 5, 0, 0)
-		TNT1 A 1 A_SpawnItemEx ("Sergeant2ShrinkFX7", 0, 0, 5, 0, 0)
-		TNT1 A 1 A_SpawnItemEx ("LilSergeant2", 1)
+		TNT1 A 0 A_SpawnItemEx ("PyroSergeantShrinkFX1", 0, 0,  5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("PyroSergeantShrinkFX2", 0, 0, 5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("PyroSergeantShrinkFX3", 0, 0, 5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("PyroSergeantShrinkFX4", 0, 0, 5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("PyroSergeantShrinkFX5", 0, 0, 5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("PyroSergeantShrinkFX6", 0, 0, 5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("PyroSergeantShrinkFX7", 0, 0, 5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("LilPyroSergeant", 1)
 		stop
 		
 	Possession:
@@ -142,11 +263,11 @@ Actor PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
 	
 	//////////////////////////////////////
 	Pain.Avoid: 
-	  TNT1 A 0
-	  TNT1 A 0 //A_Jump(255, "AvoidLeft", "AvoidRight")
-	  Goto FallBack
+		TNT1 A 0
+		TNT1 A 0 //A_Jump(255, "AvoidLeft", "AvoidRight")
+		Goto BackOff //FallBack
 	  
-	  AvoidLeft:
+	AvoidLeft:
 	    SSV1 E 1 A_FaceTarget
 	    TNT1 A 0 ThrustThing(angle*256/360+192, 15, 0, 0)
         ZP05 HGFEDCBA 2 A_FaceTarget
@@ -164,240 +285,197 @@ Actor PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
 		Stop
 		
 	Spawn:
-	  TNT1 A 0
-	  
-	  TNT1 A 0 A_GiveInventory("SKShotgunGuy", 1)
-	  TNT1 A 0 A_GiveInventory("TypeSergeant", 1)
-	  TNT1 A 0 A_TakeInventory("SergeantAmmo", 6)
-	  TNT1 A 0 A_GiveInventory("SergeantAmmo", random(0,5))
-	  SFV1 A 1
-	  Goto Stand
+		TNT1 A 0
+		TNT1 A 0 A_SpawnItemEx("NewFuelTankPhysics",0,0,0,0,0,0,0,SXF_SETMASTER)
+		TNT1 A 0 A_GiveInventory("TypeSergeant", 1)
+		TNT1 A 0 A_TakeInventory("SergeantAmmo", 6)
+		TNT1 A 0 A_GiveInventory("SergeantAmmo", random(0,5))
+		SFV1 A 1
+		Goto Stand
 
 	Stand:
 		//TNT1 A 0 A_SpawnItem ("LegTarget100", 10)
 		TNT1 A 0 A_CheckSight("Stand2")
 		TNT1 A 0 
-	    TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 E 10 A_Look
-	    TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 E 10 A_Look
+	    //
+		SFV1 E 5
+		SFV1 E 5 A_Look
+	    //
 		Loop
 		
 	Stand2:
-		SFV1 E 14 A_Look
+		SFV1 E 7
+		SFV1 E 7 A_Look
 		Goto Stand
 		
 		
 	FallBack:
-	TNT1 A 0 A_CheckSight("Advance")
-	TNT1 A 0 A_ChangeFLag("NODROPOFF", 1)
-	TNT1 A 0 A_SpawnItem 
-	TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-	SFV1 D 2 A_FaceTarget
-	SFV1 D 2 A_Recoil(2)
-	TNT1 A 0 A_PlaySound("humans/step",3)
-	TNT1 A 0 A_jump(64, "Missile")
-	TNT1 A 0 A_SpawnItem 
-	TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-	SFV1 C 2 A_FaceTarget
-	SFV1 C 2 A_Recoil(2)
-	TNT1 A 0 A_SpawnItem 
-	TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-	SFV1 B 2 A_FaceTarget
-	SFV1 B 2 A_Recoil(2)
-	TNT1 A 0 A_PlaySound("humans/step",3)
-	TNT1 A 0 A_SpawnItem 
-	TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-	SFV1 A 2 A_FaceTarget
-	SFV1 A 2 A_Recoil(2)
-	TNT1 A 0 A_SpawnItem 
-	TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-	SFV1 D 2 A_FaceTarget
-	SFV1 D 2 A_Recoil(2)
-	TNT1 A 0 A_PlaySound("humans/step",3)
-	TNT1 A 0 A_jump(64, "Missile")
-	TNT1 A 0 A_SpawnItem 
-	TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-	SFV1 C 2 A_FaceTarget
-	SFV1 C 2 A_Recoil(2)
-	TNT1 A 0 A_SpawnItem 
-	TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-	SFV1 B 2 A_FaceTarget
-	SFV1 B 2 A_Recoil(2)
-	TNT1 A 0 A_PlaySound("humans/step",3)
-	TNT1 A 0 A_SpawnItem 
-	TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-	SFV1 A 2 A_FaceTarget
-	SFV1 A 2 A_Recoil(2)
-	TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
-	GOto Missile
+		TNT1 A 0 A_CheckSight("Advance")
+		TNT1 A 0 A_ChangeFLag("NODROPOFF", 1)
+		//
+		SFV1 D 2 A_FaceTarget
+		SFV1 D 2 A_Recoil(2)
+		TNT1 A 0 A_PlaySound("humans/step",3)
+		//
+		SFV1 C 2 A_FaceTarget
+		SFV1 C 2 A_Recoil(2)
+		//
+		SFV1 B 2 A_FaceTarget
+		SFV1 B 2 A_Recoil(2)
+		TNT1 A 0 A_PlaySound("humans/step",3)
+		//
+		SFV1 A 2 A_FaceTarget
+		SFV1 A 2 A_Recoil(2)
+		//
+		SFV1 D 2 A_FaceTarget
+		SFV1 D 2 A_Recoil(2)
+		TNT1 A 0 A_PlaySound("humans/step",3)
+		TNT1 A 0 A_jump(64, "Missile")
+		//
+		SFV1 C 2 A_FaceTarget
+		SFV1 C 2 A_Recoil(2)
+		//
+		SFV1 B 2 A_FaceTarget
+		SFV1 B 2 A_Recoil(2)
+		TNT1 A 0 A_PlaySound("humans/step",3)
+		//
+		SFV1 A 2 A_FaceTarget
+		SFV1 A 2 A_Recoil(2)
+		TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
+		GOto Missile
 	
 	
 	SearchForPlayer:
 	Idle:
-		TNT1 A 0 A_JumpIfHealthLower(1, "Death")
-	    TNT1 A 0 A_ClearTarget
+		TNT1 A 0 A_ClearTarget
 	    TNT1 A 0 A_TakeInventory("EnemyMemory", 30)
-		TNT1 A 0 A_GiveInventory("SKShotgunGUy", 1)
-        TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
-		SFV1 A 10 A_Look
-        TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
-		SFV1 C 10 A_Look
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
-		SFV1 A 10 A_Look
-        TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
-		SFV1 D 10 A_Look
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
-		SFV1 A 10 A_Look
+		
+		SFV1 EEEEE 10 A_Look
 		
 		SFV1 A 4 A_Look
-		TNT1 A 0 A_SpawnItem 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		TNT1 A 0 A_Wander
 		TNT1 A 0 A_Recoil(-1)
 		SFV1 B 4 A_Look
-		TNT1 A 0 A_SpawnItem 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		TNT1 A 0 A_Wander
 		TNT1 A 0 A_Recoil(-1)
 		SFV1 C 4 A_Look
-		TNT1 A 0 A_SpawnItem 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		TNT1 A 0 A_Wander
 		TNT1 A 0 A_Recoil(-1)
 		SFV1 D 4 A_Look
-		TNT1 A 0 A_SpawnItem 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		TNT1 A 0 A_Wander
 		TNT1 A 0 A_Recoil(-1)
 		
 		TNT1 A 0 A_Jump(128, "Idle")
 		SFV1 A 4 A_Look
-		TNT1 A 0 A_SpawnItem 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		TNT1 A 0 A_Wander
 		TNT1 A 0 A_Recoil(-1)
 		SFV1 B 4 A_Look
-		TNT1 A 0 A_SpawnItem 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		TNT1 A 0 A_Wander
 		TNT1 A 0 A_Recoil(-1)
 		SFV1 C 4 A_Look
-		TNT1 A 0 A_SpawnItem 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		TNT1 A 0 A_Wander
 		TNT1 A 0 A_Recoil(-1)
 		SFV1 D 4 A_Look
-		TNT1 A 0 A_SpawnItem 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		TNT1 A 0 A_Wander
 		TNT1 A 0 A_Recoil(-1)
 		Loop
 		
-	
 	See:
-	TNT1 A 0 A_JumpIfHealthLower(1, "Death")
-	TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
-	TNT1 A 0 A_TakeInventory("SKZombieman", 1)
-	TNT1 A 0 A_TakeInventory("EnemyMemory", 15)
-	TNT1 A 0 A_CheckSight("SeeNeverSeen")
-	Goto SeeContinue
-	
-	SeeContinue:
-	TNT1 A 0 A_JumpIfHealthLower(1, "Death")
-	    TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
-	    TNT1 A 0 A_JumpIfCloser(200, "FlameThrower")
-		//Advance:
 		TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
-		TNT1 A 0 A_JumpIfInventory("EnemyMemory", 15, "SearchForPlayer")
+		TNT1 A 0 A_TakeInventory("EnemyMemory", 1)
+		TNT1 A 0 A_CheckSight("SeeNeverSeen")
+		Goto SeeContinue
+	
+		SeeContinue:
+		TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
+	    //Advance:
+		TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
+		TNT1 A 0 A_JumpIfInventory("EnemyMemory", 30, "SearchForPlayer")
 		TNT1 A 0 A_GiveInventory("EnemyMemory", 1)
         
-		TNT1 A 0 A_TakeInventory("SKShotgunGuy", 1)
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
-		SFV1 AA 2 A_Chase
-		TNT1 A 0 A_Recoil(-1)
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
-		SFV1 AA 2 A_Chase
-
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
-		SFV1 BB 2 A_Chase
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
+		SFV1 A 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 AA 2 A_SmartChase("", "", CHF_DONTTURN)
+		SFV1 B 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 BB 2 A_SmartChase("", "", CHF_DONTTURN)
 		TNT1 A 0 A_PlaySound("humans/step",3)
-		SFV1 BB 2 A_Chase
-
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
-		SFV1 CC 2 A_Chase
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
-		SFV1 CC 2 A_Chase
-
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
-		SFV1 DD 2 A_Chase
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		TNT1 A 0 
+		SFV1 C 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 CC 2 A_SmartChase("", "", CHF_DONTTURN)
+		SFV1 D 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 DD 2 A_SmartChase("", "", CHF_DONTTURN)
 		TNT1 A 0 A_PlaySound("humans/step",3)
-		SFV1 DD 2 A_Chase
 		Loop
 		
 	SeeNeverSeen:
 		TNT1 A 0 A_JumpIfCloser(200, "Missile")
-		Advance:
+	Advance:
 		TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
         
-		TNT1 A 0 A_SpawnItem 
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 AA 2 A_Chase
-		TNT1 A 0 A_Recoil(-1)
-		TNT1 A 0 A_TakeInventory("SKZombieman", 1)
-		TNT1 A 0 A_SpawnItem 
+		
+		SFV1 A 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 AA 2 A_SmartChase("", "", CHF_DONTTURN)
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 BB 2 A_Chase
+		
+		SFV1 B 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 BB 2 A_SmartChase("", "", CHF_DONTTURN)
 		TNT1 A 0 A_PlaySound("humans/step",3)
-		TNT1 A 0 A_SpawnItem 
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 CC 2 A_Chase
-		TNT1 A 0 A_SpawnItem 
+		
+		SFV1 C 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 CC 2 A_SmartChase("", "", CHF_DONTTURN)
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 DD 2 A_Chase
+		
+		SFV1 D 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 DD 2 A_SmartChase("", "", CHF_DONTTURN)
 		TNT1 A 0 A_PlaySound("humans/step",3)
 		Loop
 		
-		
+	///////////////////////////////////////	
+	Reload:
+	Roll:
+	BackOff:
+		TNT1 A 0
+		TNT1 A 0 A_Jump(255, "FallBack", "JumpLeft", "JumpRight", "JumpBack")
+		Goto Missile+3
+	JumpLeft:
+		SFV1 A 3 A_FaceTarget
+		TNT1 A 0 ThrustThing(angle*256/360+64, 8, 0, 0)
+		TNT1 A 0 ThrustThingZ(0, 20, 0, 0)
+		SFV1 F 15
+		TNT1 A 0 A_CheckSight("See")
+		Goto Missile+3
+	JumpRight:
+		SFV1 A 3 A_FaceTarget
+		TNT1 A 0 ThrustThingZ(0, 20, 0, 0)
+		TNT1 A 0 ThrustThing(angle*256/360+192, 8, 0, 0)
+		SFV1 F 15
+		TNT1 A 0 A_CheckSight("See")
+		Goto Missile+3
+	JumpBack:
+		SFV1 A 3 A_FaceTarget
+		TNT1 A 0 ThrustThingZ(0, 20, 0, 0)
+		TNT1 A 0 ThrustThing(angle*256/360+128, 8, 0, 0)
+		SFV1 F 15
+		TNT1 A 0 A_CheckSight("See")
+		Goto Missile+3
 		
 	///////////////////////////////////////	
+	Melee:
 	Missile:
+		TNT1 AAA 0
+		TNT1 A 0 A_TakeInventory("EnemyMemory", 30)
+		TNT1 A 0 A_Jump(150, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
 		TNT1 A 0 A_Jump(100, "Missile2")
-		TNT1 A 0 
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		TNT1 A 0 A_PlaySound("FLMDRAW",2)
 		SFV1 E 2 A_FaceTarget
 		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
@@ -415,7 +493,7 @@ Actor PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
 		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
 		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
         TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		SFV1 E 2 A_FaceTarget
 		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
 		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
@@ -425,66 +503,71 @@ Actor PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
 		TNT1 A 0 
 		TNT1 A 0 
         TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		SFV1 E 4 BRIGHT A_CustomMissile("PyroSargeFireBall", 32, 0, random(-8, 8), 1, random(-3, 3))
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		SFV1 E 6 A_FaceTarget
 		Goto SeeContinue
 		
 	Flamethrower:
 		TNT1 A 0 A_PlaySound("flamersh")
 		TNT1 A 0 
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
+		TNT1 A 0
+		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
 		SFV1 E 1 A_FaceTarget
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
 		
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
 		SFV1 E 1 A_FaceTarget
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
 		
-		
+		TNT1 A 0 A_Jump(126, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
 		TNT1 A 0 A_SetAngle(angle - 40)
 		TNT1 A 0 
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
-		SFV1 E 1 A_FaceTarget
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
-		SFV1 E 1 A_FaceTarget
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
 		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 1 A_FaceTarget
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 1 A_FaceTarget
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		TNT1 A 0 A_Jump(126, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
 		TNT1 A 0 A_SetAngle(angle + 40)
 		TNT1 A 0 
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
-		SFV1 E 1 A_FaceTarget
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
-		SFV1 E 1 A_FaceTarget
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
 		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 1 A_FaceTarget
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 1 A_FaceTarget
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		TNT1 A 0 A_Jump(126, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
 		TNT1 A 0 A_SetAngle(angle + 40)
 		TNT1 A 0 
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
 		SFV1 E 1 A_FaceTarget
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
 		SFV1 E 1 A_FaceTarget
-		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
 		
 		
 		TNT1 A 0 
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		SFV1 E 2 BRIGHT A_FaceTarget
 		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
 		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
@@ -501,7 +584,7 @@ Actor PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
 		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
 		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
         TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 34,0)
+		
 		SFV1 E 2 
 		SFV1 E 2 
 		Goto SeeContinue
@@ -509,8 +592,7 @@ Actor PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
 		
 	Missile2:
 		TNT1 A 0 
-		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 26,0)
+		
 		TNT1 A 0 A_PlaySound("FLMDRAW",2)
 		SFV1 E 5 A_FaceTarget
 		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
@@ -528,7 +610,7 @@ Actor PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
 		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
 		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
         TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 25,0)
+		
 		SFV1 F 2 A_FaceTarget
 		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
 		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
@@ -538,9 +620,9 @@ Actor PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
 		TNT1 A 0 
 		TNT1 A 0 
         TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 24,0)
+		
 		SFV1 F 4 BRIGHT A_CustomMissile("PyroSargeFireBall", 32, 0, random(-8, 8), 1, random(-3, 3))
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 24,0)
+		
 		SFV1 F 6 A_FaceTarget
 		Goto SeeContinue
 		
@@ -548,54 +630,60 @@ Actor PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
 		TNT1 A 0 A_PlaySound("flamersh")
 		TNT1 A 0 
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 25,0)
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
+		
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
 		SFV1 F 1 A_FaceTarget
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
 		
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 25,0)
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
+		
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
 		SFV1 F 1 A_FaceTarget
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
 		
 		
+		TNT1 A 0 A_Jump(126, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
 		TNT1 A 0 A_SetAngle(angle - 40)
 		TNT1 A 0 
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 25,0)
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
-		SFV1 F 1 A_FaceTarget
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
-		SFV1 F 1 A_FaceTarget
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
 		
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 1 A_FaceTarget
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 1 A_FaceTarget
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		
+		TNT1 A 0 A_Jump(126, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
 		TNT1 A 0 A_SetAngle(angle + 40)
 		TNT1 A 0 
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 25,0)
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
-		SFV1 F 1 A_FaceTarget
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
-		SFV1 F 1 A_FaceTarget
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
 		
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 1 A_FaceTarget
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 1 A_FaceTarget
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		
+		TNT1 A 0 A_Jump(126, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
 		TNT1 A 0 A_SetAngle(angle + 40)
 		TNT1 A 0 
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 25,0)
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
+		
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
 		SFV1 F 1 A_FaceTarget
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
 		SFV1 F 1 A_FaceTarget
-		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissile", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
 		
 		
 		TNT1 A 0 
 		TNT1 A 0 
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 25,0)
+		
 		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
 		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
         TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
@@ -611,77 +699,70 @@ Actor PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
 		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
 		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
         TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
-		TNT1 A 0 A_SpawnItem ("FuelTankPhysics", -20, 25,0)
+		
 		SFV1 E 6 
 		Goto SeeContinue
 	
+	Pain.Head:
+		TNT1 A 0
+        TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "FallingAfterImpact")
+		TNT1 A 0 
+		TNT1 A 0 
+		SFV1 G 6 A_Pain
+		Goto SeeContinue
+	
 	Pain:
-        TNT1 A 0 A_JumpIfInventory ("IsDown", 1, 6)
-		TNT1 A 0 A_TakeInventory("SKShotgunGuy", 1)
+		TNT1 A 0
+        TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "FallingAfterImpact")
 		TNT1 A 0 
 		TNT1 A 0 
 		SFV1 G 3 A_Pain
 		Goto SeeContinue
-        TNT1 AAAAA 0
-        TNT1 A 0 A_Pain
-        ID11 H 8
-		1D11 S 35
-        TNT1 A 0 A_TakeInventory("IsDown", 1)
-		1D11 T 10
-        Goto SeeContinue
 		
 	Pain.Melee:
 		TNT1 A 0
-        TNT1 A 0 A_JumpIfInventory ("IsDown", 1, 6)
+        TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "FallingAfterImpact")
 		TNT1 A 0 
 		SFV1 G 3
 		TNT1 A 0 
 		SFV1 G 3 A_Pain
 		Goto SeeContinue
-        TNT1 AAAAA 0
-        TNT1 A 0 A_Pain
-        1D11 G 8
-		1D11 S 35
-        TNT1 A 0 A_TakeInventory("IsDown", 1)
-		1D11 T 10
-        Goto SeeContinue
 		
 	
-		
+	Pain.Shotgun:
+		TNT1 A 0 A_Jump(200, "Pain")
 	Pain.Kick:
 	Pain.ExplosiveImpact:
 	Pain.ExtremePunches:
 	Pain.Explosive:
-       TNT1 A 0
-	   TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Pain")
-        ID11 G 0 A_Pain
+		TNT1 A 0
+		TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "FallingAfterImpact")
+		TNT1 A 0 A_Pain
 		TNT1 A 0 A_GiveInventory("IsDown", 1)
-		TNT1 A 0 A_TakeInventory("SKZombieman", 1)
-        TNT1 A 0 ThrustThingZ(0,30,0,1)
+		TNT1 A 0 ThrustThingZ(0,30,0,1)
 		TNT1 A 0 A_ChangeFlag("NOPAIN", 1)
-		1D11 F 4 A_FaceTarget
-        1D11 G 6 ThrustThing(angle*256/360+128, 10, 0, 0)
-        ID32 B 8
+		SP14 U 4 A_FaceTarget
+		SP14 V 6 ThrustThing(angle*256/360+128, 10, 0, 0)
+		SP14 W 8
 		TNT1 A 0 A_ChangeFlag("NOPAIN", 0)
-
 		Goto FallingAfterImpact
 
-		FallingAfterImpact:
-		ID32 B 1 A_GiveInventory ("FallingHeight", 1)
-		ID32 B 1 A_CheckFloor ("GetUp")
+	FallingAfterImpact:
+		SP14 X 1 A_GiveInventory ("FallingHeight", 1)
+		SP14 X 1 A_CheckFloor ("GetUp")
 		TNT1 A 0 A_JumpIf (momz == 0, "GetUp")
 		Loop
 
-		GetUp:
+	GetUp:
 		TNT1 A 0
 		TNT1 A 0 A_JumpIfInventory ("FallingHeight", 5, "FallingDie")
 		TNT1 A 0 A_PlaySound("BODYF",6)
 		TNT1 A 0 A_TakeInventory("FallingHeight", 100)
 		1F11 SSSSSSS 5 A_JumpIf(momz < 0, "FallingAfterImpact")
 
-        TNT1 A 0 A_TakeInventory("IsDown", 1)
+		TNT1 A 0 A_TakeInventory("IsDown", 1)
 		1F11 T 10
-       Goto SeeContinue
+		Goto SeeContinue
 	   
 	FallingDie:
 		TNT1 A 0
@@ -692,22 +773,71 @@ Actor PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
 		TNT1 A 0 A_JumpIfInventory ("FallingHeight", 10, "FallingSuperDeath")
 		TNT1 A 0 A_JumpIfInventory ("FallingHeight", 5, "FallingDeath")
 	FallingDeath:
-	TNT1 A 0
-	TNT1 A 0 A_Scream
-	TNT1 A 0 //A_NoBLocking
-	TNT1 AAAA 0 A_CustomMissile ("XDeath1", 32, 0, random (0, 360), 2, random (50, 130))
-	ID11 EF 2
-	TNT1 A 0 A_PlaySound("BODYF",7)
-	TNT1 A 0 A_SpawnItem ("GrowingBloodPool")
-	TNT1 A 0 A_SpawnItem ("DeadShotgunguy1")
-	Stop
+		TNT1 A 0
+		TNT1 A 0 A_Scream
+		TNT1 A 0 //A_NoBLocking
+		TNT1 AAAA 0 A_CustomMissile ("XDeath1", 32, 0, random (0, 360), 2, random (50, 130))
+		ID11 EF 2
+		TNT1 A 0 A_PlaySound("BODYF",7)
+		TNT1 A 0 A_SpawnItem ("GrowingBloodPool")
+		TNT1 A 0 A_SpawnItem ("DeadShotgunguy1")
+		Stop
 	
 	FallingSuperDeath:
-	TNT1 A 0
-	TNT1 A 0 A_XScream
-	TNT1 A 0 //A_NoBLocking
-	TNT1 A 0 A_SpawnItem ("GrowingBloodPool")
-	Goto Death.ExplosiveImpact+1
+		TNT1 A 0
+		TNT1 A 0 A_XScream
+		TNT1 A 0 //A_NoBLocking
+		TNT1 A 0 A_SpawnItem ("GrowingBloodPool")
+		Goto Death.ExplosiveImpact+1
+
+	Death.Freeze:
+	Death.Ice:
+		TNT1 A 0
+		Goto Super::Death
+
+	Death:
+		TNT1 A 0
+		TNT1 A 0 A_Jump(126, 1)
+		Goto Super::Death
+		
+		BMBE M 0 bright A_Explode (36, 128)
+		EXPL A 0 Radius_Quake (2, 40, 0, 8, 0)
+		TNT1 A 0 A_SpawnItem ("GrowingBloodPool")
+		TNT1 A 0 A_SpawnItemEx ("BarrelKaboom",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		
+		TNT1 AA 0 A_CustomMissile ("XDeathSargeLeg1", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AA 0 A_CustomMissile ("XDeathArm1", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile ("XDeathHFQSZHead", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAAA 0 A_CustomMissile ("XDeath1", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAAA 0 A_CustomMissile ("XDeath2", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAAA 0 A_CustomMissile ("XDeath3", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAA 0 A_CustomMissile ("PB_Intestine", 0, 0, random (0, 360), 2, random (0, 160))
+		
+		TNT1 A 0 A_CustomMissile ("MetalShard1", 5, 0, random (0, 360), 2, random (30, 160))
+		TNT1 A 0 A_CustomMissile ("MetalShard2", 5, 0, random (0, 360), 2, random (30, 160))
+		TNT1 A 0 A_CustomMissile ("MetalShard3", 5, 0, random (0, 360), 2, random (30, 160))
+		
+		TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 A 0 A_SpawnItemEx ("KamikazeeExplosion",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 AAA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180))
+		TNT1 AAAAAAAAA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 AAAAAAAAA 0 A_CustomMissile ("ExplosionParticleVeryFast", 0, 0, random (0, 360), 2, random (0, 360))
+		//XXXX A 0 A_CustomMissile ("ExplosionQuake", 1, 0, random (0, 360), 2, random (0, 160))
+
+		EXPL AAA 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (0, 90))
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15))
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35))
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35))
+		
+		TNT1 AAAAAAA 0 A_CustomMissile ("MediumExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360))
+		EXPL AAA 0 A_CustomMissile ("BigNeoSmoke", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 AAAAA 1 A_CustomMissile ("ExplosionSmoke", 2, 0, random (0, 360), 2, random (0, 360))
+		TNT1 A 0
+		TNT1 A 0 A_PlaySound("FAREXPL", 3)
+		TNT1 AAAAAAAAA 2 A_CustomMissile ("BigNeoSmoke", 2, 0, random (0, 360), 2, random (0, 360))
+		BMBE M 0 bright A_PlaySound ("weapons/rocklx")
+		BMBE O 0 A_NoBlocking
+		stop
 	}
 }
 
@@ -740,7 +870,7 @@ Actor DeadHelmetShotgunGuy_NoArm: DeadShotgunGuy1
          Stop}}
 		 
 
-Actor DeadHelmetShotgunGuy_NoLeg: DeadShotgunGuy_NoArm
+Actor DeadHelmetShotgunGuy_NoLeg: CurbstompedMarine
 {Health 200 States{Spawn:
         U6M5 F -1
         Stop	Death:
@@ -791,10 +921,17 @@ States
         TNT1 A 0 A_SpawnItem ("PB_HelmetSergeant", 3)
 		Stop
     Death:
+		TNT1 A 0 A_Jump(126, "Death2")
 		TNT1 A 0 A_CustomMissile ("XDeathSargeLeg1", 5, 0, random (0, 360), 2, random (0, 160))
 		SPOS A 0 A_CustomMissile ("XDeath1", 5, 0, random (0, 360), 2, random (0, 160))
-         TNT1 A 1 A_SpawnItem ("DeadHelmetShotgunGuy_NoLeg", 5)
+        TNT1 A 1 A_SpawnItem ("DeadHelmetShotgunGuy_NoLeg", 5)
         Stop
+	Death2:
+		TNT1 A 0
+		TNT1 A 0 A_CustomMissile ("XDeathArm1", 5, 0, random (0, 360), 2, random (0, 160))
+		SPOS A 0 A_CustomMissile ("XDeath1", 5, 0, random (0, 360), 2, random (0, 160))
+        TNT1 A 1 A_SpawnItem ("DeadHelmetShotgunGuy_NoArm", 5)
+		Stop
 
     Death.Plasma: Death.Plasma2:
         TNT1 A 0
@@ -862,7 +999,7 @@ States{Spawn:
 		}}
 		
 		
-ACTOR PyroSargeFireBall
+ACTOR PyroSargeFireBall: FastProjectile
 {
 	Radius 3
 	Height 5
@@ -871,6 +1008,8 @@ ACTOR PyroSargeFireBall
 	Damage (random(15,20))
 	Projectile 
     Scale 0.5
+	+GETOWNER
+	+THRUSPECIES
 	+FORCEXYBILLBOARD
 	+THRUGHOST
 	RenderStyle Translucent
@@ -923,9 +1062,9 @@ ACTOR PyroSargeFireBall
 	TNT1 AAA 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
 	EXPL A 0 A_SpawnItem("ExplosionParticleSpawner")
 	EXPL AAA 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (0, 90))
-	TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15))
-	TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35))
-	TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35))
+	//TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15))
+	//TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35))
+	//TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35))
 	TNT1 AA 20 A_CustomMissile ("BigBlackSmoke", 0, 0, random (0, 360), 2, random (40, 160))
 	Stop
 		
@@ -1149,7 +1288,7 @@ ACTOR PinnedHelmetShotgunGuyTorso
 	+MISSILE
     +NOTELEPORT
     +MOVEWITHSECTOR
-    +CLIENTSIDEONLY
+    //+CLIENTSIDEONLY
     +RIPPER
     +BLOODLESSIMPACT 
 	-DONTSPLASH
@@ -1365,7 +1504,7 @@ States{Spawn:
 
 ///////////////////////////======VANILLA======//////////////////////////////////
 
-Actor Vanilla_PyroSergeant : PyroSergeant
+Actor Vanilla_PyroSergeant : PB_PyroSergeant
 {
 	DropItem "DropedShotgun"
 	DropItem "PB_GrenadeAmmo" 6

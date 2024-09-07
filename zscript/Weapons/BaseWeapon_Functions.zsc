@@ -1,6 +1,16 @@
 extend class PB_WeaponBase
 {
-	action void PB_LowAmmoSoundWarning(string type = "default", string ammoItem = "SuperMario64ForTheXboxOne")
+	action void PB_DynamicTail(string tailInside, string tailOutside)
+	{
+		double tailVolume = CVar.GetCVar("pb_tailvolume", player).GetFloat();
+		
+		if(Ceilingpic == SkyFlatNum)
+			A_StartSound("weapons/atmo/ext/"..tailOutside, CHAN_AUTO, volume: tailVolume, pitch: frandom(0.95, 1.05));
+		else
+			A_StartSound("weapons/atmo/int/"..tailInside, CHAN_AUTO, volume: tailVolume, pitch: frandom(0.95, 1.05));
+	}
+	
+	action void PB_LowAmmoSoundWarning(string type = "default", string ammoItem = "SuperMario64ForTheXboxOne", int ammoUse = 1)
 	{
 		Ammo count;
 		if(ammoItem == "SuperMario64ForTheXboxOne")
@@ -19,9 +29,12 @@ extend class PB_WeaponBase
 
 		sound sndName = "weapons/lowammo/"..type;
 		
+		currentammocount /= ammoUse;
+		lowammocount /= ammoUse;
+		
 		if(currentammocount <= lowammocount)
 		{
-			double clickvolume = PB_Math.LinearMap(currentammocount, 1.0, lowammocount, 1.0, 0.5);
+			double clickvolume = PB_Math.LinearMap(currentammocount, 1.0, lowammocount, 1.0, 0.70);
 			A_StartSound(sndName, CHAN_AUTO, CHANF_OVERLAP, clickvolume, ATTN_STATIC, frandompick(0.98, 1.0));
 			
 			if(currentammocount == 1)
@@ -31,6 +44,11 @@ extend class PB_WeaponBase
 			if(currentammocount == 0)
 				console.printf("PB_LowAmmoSoundWarning: Ammo count is 0 instead of 1, was the function called after the ammo item was taken?");
 		}
+	}
+	
+	action void PB_SetUsableWheel(bool set = true)
+	{
+		invoker.hasWheelSpecial = set;	//if hasWheelSpecial is true, means this weapon uses the wheel, otherwise it would just go to weaponspecial 
 	}
 	
 	action void PB_UseLine(int range = 64)
@@ -60,6 +78,39 @@ extend class PB_WeaponBase
 		A_SetRoll(roll + frandom(-invoker.horizontalOffsetRecoil, invoker.horizontalOffsetRecoil) * invoker.exaggerationMultiplier, SPF_INTERPOLATE);
 		PB_QuakeCamera(2,3);
 	}
+	
+	Action void PB_TakeIfUpgrade(string oldweap = "")
+	{
+		//console.printf("cvar val: \ca"..pb_keepweapons.."\c-, weapon is: \cd"..invoker.getclassname().."\c-, oldweapon is: \ca"..oldweap.."\c-");
+		if(!pb_keepweapons)
+		{
+			let pbw = PB_WeaponBase(findinventory(oldweap));
+			if(pbw && pbw.DualWieldToken)
+			{
+				A_takeinventory(pbw.DualWieldToken,1);	//this function takes weapons that may be in akimbo mode, so you also need to take this token
+				pbw.A_SetAkimbo(false);
+			}
+			
+			//console.printf("taking: \cg"..oldweap.."\c-");
+			A_takeinventory(oldweap,3);
+		}
+	}
+	
+	Action void PB_SelectIfUpgrade(string upgrade = "")
+	{
+		//console.printf("cvar val: \ca"..pb_keepweapons.."\c-, weapon is: \cd"..invoker.getclassname().."\c-, oldweapon is: \ca"..upgrade.."\c-");
+		if(!CountInv(upgrade)) return;
+		if(!pb_keepweapons)
+		{
+			//console.printf("switching to: \cg"..upgrade.."\c-");
+			A_SetAkimbo(false);
+			if(invoker.DualWieldToken)
+				A_takeinventory(invoker.DualWieldToken,1);
+			
+			A_selectweapon(upgrade);
+		}
+	}
+	
 	
 	action bool PB_ChainsawHealthRestore(){
 		return invoker.chainsawMode;
@@ -191,63 +242,245 @@ extend class PB_WeaponBase
 	}
 	
 	//- L, 0 C, + R
-	// [gng] credits to jaih1r0 for the position calculation, modified by me to fix the pitch bug
-	Action void PB_GunSmoke(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
+	// [gng] credits to Agent_Ash for the position calculation, modified by me to fix the pitch bug
+	Action PB_GunFireSmoke PB_GunSmokeSpawn(vector3 ofs, vector3 vofs, string SActor = "PB_GunFireSmoke", double scalemul = 1.0, double alphamul = 1.0, double blowspeed = 1.02, double fadeSpeed = 1.0)
 	{
-		double PVZ;
-		PB_PlayerPawn plr = PB_PlayerPawn(invoker.owner);
-		PlayerInfo Playa = Player;
-		if(Playa)
-		{
-			PVZ = (Playa.ViewZ - FloorZ) - 6;
-		}
-
-		d2 += plr.Radius;
-		d3 -= 6;
-		vector3 direction = ((self.AngleToVector(angle,cos(pitch)), sin(-pitch)));
-        
-        //got this from KeksDose -> https://forum.zdoom.org/viewtopic.php?t=63552&p=1090328 its very useful for this, at least now that i dont understand quats xD
-        vector3 fw = (cos(angle),sin(angle),0); //forward offset
-        vector3 sd = (cos(angle - 90),sin(angle - 90),0); //side offset
-        
-        //get the pitch and adjust the forward offset if looking up/down, so the smoke doesnt appear in front of the player from thin air in those cases
-        //cos(pitch) < 1.0, and get closer to 0 when looking up/down, ig sin(pitch) ** 2 could also work (yes,this time the calculator wasnt in radians :D)
-        double pt = cos(pitch);
-		double pt2 = sin(pitch);
-
-        fw *= d2 * (((0.45 + (pt2 * 0.15)) * -pt2) + pt);
-		d3 -= d2 * pt2;
-
-		//console.printf("%f %f %f", fw.x, fw.y, fw.z);
-		//console.printf("%f %f %f", sd.x, sd.y, sd.z);
-        
-        //get a vector3 with the total offsets
-        vector3 offs = fw + (sd * -d1);
-        //add the offsets to the current position
-        vector3 spos = self.vec3offset(offs.x, offs.y, offs.z);
-        
-        //add the view value
-        spos.z += (height * 0.5 - floorclip + player.mo.AttackZOffset * player.crouchFactor) + d3;
-
-		//Vector3 CPos = (d2, -d1, d3 - 6);
+		ofs.z -= 5.5;
+		double fovOfs = (120 - self.player.desiredfov) / 3.f; // good enough
+		Vector3 spos = PB_Math.RelativeToGlobalCoords((self.pos.xy, self.player.viewz), (self.angle, self.pitch, self.roll), (self.radius + ofs.y - (5.0 * abs(sin(self.pitch))) + fovOfs, -ofs.x, ofs.z), true);
+		Vector3 svel = PB_Math.RelativeToGlobalCoords((self.vel.xy, 0), (self.angle, self.pitch, self.roll), vofs);
 		
 		PB_GunFireSmoke Smoke = PB_GunFireSmoke(Spawn(SActor, spos));
-
-		//PB_GunFireSmoke pSmoke = PB_GunFireSmoke(Smoke);
 		
 		If(Smoke)
 		{
 			Smoke.master = invoker.owner;
-			//Smoke.Vel = PB_Math.AngleToVector3D(self.Angle, -self.Pitch);
-			vector3 momentum = plr.vel;
-			Smoke.A_ChangeVelocity(momentum.X, momentum.Y, 0, CVF_RELATIVE);
+			Smoke.vel += svel;
 			Smoke.A_FaceMovementDirection();
-			double m_flScale = frandom(0.10,0.12);
-			Smoke.Scale = (m_flScale, m_flScale);
+			double m_flScale = frandom(0.15,0.20);
+			Smoke.Scale *= m_flScale;
 			Smoke.A_SetRoll(random(0, 359));
+			Smoke.scale *= scalemul;
+			Smoke.alpha *= alphamul;
+			Smoke.blowSpeed = blowspeed;
+			Smoke.fadeSpeed = fadeSpeed;
 		}
+
+		return smoke;
 	}
-	
+
+	// [gng] alias for old PB_GunSmoke format function arguments
+	Action void PB_GunSmoke_Basic(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
+	{
+		PB_GunSmokeSpawn((d1, d2, d3), (0, 0, 0), SActor); 
+	}
+
+	Action void PB_GunSmoke(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
+	{
+		
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), // offsets
+			(0, 0, 0), 	  // velocites
+			SActor,       // actor
+			0.95,          // scale multiplier
+			1.0,          // alpha multiplier
+			1.02,          // blow speed
+			1.2  		  // fade speed
+		);
+		PB_GunSmokeSpawn(
+			(d1, d2 - 2, d3), // offsets
+			(0, 0, -0.5), 	  // velocites
+			SActor,       // actor
+			2.2,          // scale multiplier
+			0.5,          // alpha multiplier
+			1.03          // blow speed
+		);
+		PB_GunSmokeSpawn(
+			(d1, d2 + 6, d3), // offsets
+			(1, 0, 0), 	  // velocites
+			SActor,       // actor
+			1.2,          // scale multiplier
+			0.9,          // alpha multiplier
+			1.05          // blow speed
+		);
+		PB_GunSmokeSpawn(
+			(d1, d2 + 9.1, d3),
+			(1.12, 0, 0),
+			SActor,
+			1.6,
+			0.8,
+			1.08,
+			1.1
+		);
+		PB_GunSmokeSpawn(
+			(d1, d2 + 15.6, d3),
+			(1.44, 0, 0),
+			SActor,
+			2.2,
+			0.8,
+			1.10,
+			1.15
+		);
+		PB_GunSmokeSpawn(
+			(d1, d2 + 5.1, d3),
+			(0, 0, 0),
+			SActor,
+			2.5,
+			0.3,
+			1.01,
+			1.2
+		);
+		PB_GunSmokeSpawn(
+			(d1, d2 + 13.6, d3),
+			(0, 0, 0),
+			SActor,
+			3.3,
+			0.3,
+			1.02,
+			1.2
+		);
+	}
+
+	Action void PB_GunSmoke_Compensator(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
+	{
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2 - 2, d3), // offsets
+			(0, 0, -0.5), 	  // velocites
+			SActor,       // actor
+			2.2,          // scale multiplier
+			0.5,          // alpha multiplier
+			1.03          // blow speed
+		);
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, 0, 0), 
+			SActor, 
+			1.5, 
+			0.7, 
+			1.03
+		);    
+
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, frandom(-1.2, -1.5), frandom(-0.2, 0.2)), 
+			SActor, 
+			0.3, 
+			0.7, 
+			1.2
+		);
+
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, frandom(1.2, 1.5), frandom(-0.2, 0.2)), 
+			SActor, 
+			0.3, 
+			0.7, 
+			1.2
+		); 
+		PB_GunSmokeSpawn(
+			(d1, d2 + 9.1, d3),
+			(1.12, 0, 0),
+			SActor,
+			1.6,
+			0.8,
+			1.012,
+			1.02
+		);
+		PB_GunSmokeSpawn(
+			(d1, d2 + 15.6, d3),
+			(1.44, 0, 0),
+			SActor,
+			2.2,
+			0.8,
+			1.05,
+			1.03
+		);
+	}
+
+	Action void PB_GunSmoke_CompensatorHDMR(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
+	{
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, 0.7, -0.7), 
+			SActor, 
+			0.7, 
+			1.0, 
+			1.015
+		);    
+		
+		PB_GunSmokeSpawn(
+			(d1, d2 + 6, d3), // offsets
+			(1, 0, 0), 	  // velocites
+			SActor,       // actor
+			1.2,          // scale multiplier
+			0.9,          // alpha multiplier
+			1.03          // blow speed
+		);
+		PB_GunSmokeSpawn(
+			(d1, d2 + 9.1, d3),
+			(1.15, 0, 0),
+			SActor,
+			1.6,
+			0.8,
+			1.012,
+			1.015
+		);
+		PB_GunSmokeSpawn(
+			(d1, d2 + 15.6, d3),
+			(1.50, 0, 0),
+			SActor,
+			2.2,
+			0.8,
+			1.044,
+			1.03
+		);
+
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, -0.7, 0.7), 
+			SActor, 
+			0.7, 
+			1.0, 
+			1.015
+		);
+
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, 0.7, 0.7), 
+			SActor, 
+			0.7, 
+			1.0, 
+			1.015
+		);
+
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1, d2, d3), 
+			(0, -0.7, -0.7),
+			SActor,
+			0.7, 
+			1.0, 
+			1.015
+		); 
+
+		// initial puff of muzzle gas
+		PB_GunSmokeSpawn(
+			(d1 + frandom(-0.35, 0.35), d2 + 3.5, d3 + frandom(-0.2, 0.2)), 
+			(1, 0, 0), 
+			SActor, 
+			1.2, 
+			1.0, 
+			1.02
+		);
+	}
+
 	override void Tick()
 	{
 		Super.Tick();
@@ -709,13 +942,34 @@ extend class PB_WeaponBase
             PB_WeaponRecoilBasic(pitchDelta, angleDelta);
 	}
 	
-	//This will allow for direct spawning of shell casings and empty magazines without using an intermediary actor.
-	//I highly recommend making cvars for each of the perameters for location and velocity to edit and test live, and with those numbers transpose into the final code.
-	//upon request I also have code for the tactical lean mod out there.
-	Action State PB_SpawnCasing(String Missile,Double ShellX,Double ShellY,Double ShellZ,Double ShellV_X,Double ShellV_Y,Double ShellV_Z)
+	action void PB_SpawnCasing(class<Actor> casing, double xOfs = 0, double horOfs = 0, double vertOfs = 0, double xSpeed = 0, double horSpeed = 0, double vertSpeed = 0, bool ejectionSmoke = true)
 	{
-		A_SpawnItemEX(Missile,cos(pitch)*ShellX,ShellY,((ShellZ)*players[consoleplayer].Crouchfactor)-(sin(pitch)*ShellX),ShellV_X,ShellV_Y,ShellV_Z,0,SXF_TRANSFERPITCH,0);
-	Return Null;
+		vertOfs -= (self.player.viewz - self.pos.z) / self.player.CrouchFactor;
+		double fovOfs = (120 - self.player.desiredfov) / 3.f; // good enough
+	
+		Vector3 spos = PB_Math.RelativeToGlobalCoords((self.pos.xy, self.player.viewz), (self.angle, self.pitch, self.roll), (xOfs - (5.0 * abs(sin(self.pitch))) + fovOfs, horOfs, vertOfs), true);
+		Vector3 svel = PB_Math.RelativeToGlobalCoords((self.vel.xy, 0), (self.angle, self.pitch, self.roll), (xSpeed, horSpeed, vertSpeed));
+	
+		let pCase = Spawn(casing, spos);
+		if(pCase)
+		{
+			pCase.vel = svel;
+			pCase.angle = self.angle;
+
+			let pPBCase = PB_CasingBase(pCase);
+
+			if(!pPBCase || pPBCase.bNEVERSMOKE || !ejectionSmoke) return;
+
+			let pSmoke = PB_GunFireSmoke(Spawn('PB_GunFireSmoke', spos));
+
+			if(pSmoke) {
+				pSmoke.vel = svel * 0.3;
+				pSmoke.alpha = 0.5;
+				pSmoke.blowSpeed = 1.1;
+				pSmoke.scale *= 0.1;
+				pSmoke.master = self;
+			}
+		}
 	}
 	
 	//Specific Casing Spawning
@@ -726,7 +980,7 @@ extend class PB_WeaponBase
 		CasingCount = 6 - CountInv(AmmoSide);
 		for(CasingCount > 0; CasingCount--;)
 		{
-			A_FireProjectile("MagnumCasing",-5,0,0,-30);
+			A_FireProjectile("EmptyBrassMagnum",-5,0,0,-30);
 		}
 	}
 	
@@ -887,6 +1141,31 @@ extend class PB_WeaponBase
 			A_SetInventory("sae_extcam", 0);
 			A_SetInventory("sae_deathcam", 0);
 			A_SetInventory(wepToken,1);
+	}
+	
+	action void PB_ResetVisorBloodTokens()
+	{
+			A_SetInventory("PowerBloodOnVisor",0);
+			A_SetInventory("PowerBlueBloodOnVisor",0);
+			A_SetInventory("PowerGreenBloodOnVisor",0);
+	}
+	
+	action void PB_ResetBarrelTokens()
+	{
+			A_SetInventory("HasBarrel",0);
+			A_SetInventory("HasIceBarrel", 0);
+			A_SetInventory("HasFlameBarrel",0);
+			A_SetInventory("GrabbedBarrel",0);
+			A_SetInventory("GrabbedIceBarrel", 0);
+			A_SetInventory("GrabbedFlameBarrel",0);
+			A_SetInventory("BarrelIsFrozen",0);
+			A_SetInventory("BarrelIsFlaming",0);
+			for(int i=8;i>0;i--)
+			{
+				A_SetInventory("Grab"..i,0);
+				A_SetInventory("IGrab"..i,0);
+				A_SetInventory("FGrab"..i,0);
+			}
 	}
 	
 	//Special Modes

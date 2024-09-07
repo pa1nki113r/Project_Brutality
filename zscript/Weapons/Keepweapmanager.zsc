@@ -1,0 +1,83 @@
+//
+//	this inventory class handles picking up a weapon that has a replacement upgrade based on pb_keepweapons option
+//
+class KeepWeapManager : inventory
+{
+	default
+	{
+		inventory.maxamount 1;
+		+INVENTORY.UNDROPPABLE;
+		+INVENTORY.UNTOSSABLE;
+	}
+	
+	override bool HandlePickup(Inventory item)
+	{
+		//stop if the keep weapons option is enabled, no special handling needed
+		if(pb_keepweapons)
+			return super.handlepickup(item);
+		
+		name pk = item.getclassname();
+		switch(pk)
+		{
+			//easily expandable, ig
+			case 'PB_Carbine':
+			case 'PB_SSG':
+			case 'PB_Revolver':
+				string upg = getupgrade(pk);
+				bool hasupgrade = upg != "" && owner.findinventory(upg);
+				if(!hasupgrade)
+					return super.handlepickup(item);	//if no upgrade, proccess normally
+				
+				let wp = weapon(item);
+				bool weapGone = false;
+				if(wp)
+				{
+					//if the weapon actually gives you ammo, give that ammo
+					//this checks both ammo1 and ammo2, just in case
+					
+					bool gotbackpack = owner.findinventory("Backpack",true);
+					
+					if(wp.AmmoType1 != null && wp.AmmoGive1 > 0)
+					{
+						ammo amu1 = ammo(owner.findinventory(wp.ammotype1));
+						int left1 = (gotbackpack ? amu1.BackpackMaxAmount : amu1.maxamount) - amu1.amount;
+						
+						if(left1 > 0)
+						{
+							weapGone = true;
+							owner.giveinventory(wp.ammotype1,wp.AmmoGive1);
+						}
+					}
+					
+					if(wp.AmmoType2 != null && wp.AmmoGive2 > 0)
+					{
+						ammo amu2 = ammo(owner.findinventory(wp.ammotype2));
+						int left2 = (gotbackpack ? amu2.BackpackMaxAmount : amu2.maxamount) - amu2.amount;
+						
+						if(left2 > 0)
+						{
+							weapGone = true;
+							owner.giveinventory(wp.ammotype2,wp.AmmoGive2);
+						}
+					}
+					
+				}
+				item.bPickupgood = weapGone;	//if ammo was given, make the weapon dissapear
+				return true;
+				break;
+		}
+		return super.handlepickup(item);
+	}
+	
+	//a property in the pb weapon base indicating if it has a replacing upgrade would be better, tho
+	string getupgrade(name wpn)
+	{
+		switch(wpn)
+		{
+			case 'PB_Carbine':		return "PB_LMG";			break;
+			case 'PB_SSG':			return "PB_QuadSG";			break;
+			case 'PB_Revolver':		return "PB_Deagle";			break;
+		}
+		return "";
+	}
+}

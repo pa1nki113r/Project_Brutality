@@ -33,9 +33,8 @@
 class NashGoreHandler : EventHandler
 {
 	int maxgore;
-	int maxgore_old, maxgore_new;
 	int maxcasings;
-	int maxcasings_old, maxcasings_new;
+	bool cheapCasings;
 
 	Array<String> bloodTypes;
 
@@ -73,21 +72,10 @@ class NashGoreHandler : EventHandler
 
 	override void WorldTick(void)
 	{
-		// update gore queue
-		maxgore_new = nashgore_maxgore;
-		if (maxgore_old != maxgore_new)
-		{
-			maxgore = maxgore_new;
-			maxgore_old = maxgore_new;
-		}
-		
-		// update casings queue
-		maxcasings_new = nashgore_maxcasings;
-		if (maxcasings_old != maxcasings_new)
-		{
-			maxcasings = maxcasings_new;
-			maxcasings_old = maxcasings_new;
-		}
+		// update queues
+		maxgore = nashgore_maxgore;
+		maxcasings = nashgore_maxcasings;
+		cheapCasings = pb_cheapcasings;
 	}
 
 	//===========================================================================
@@ -159,8 +147,7 @@ class NashGoreHandler : EventHandler
 			class<Actor> miscBloodCls;
 			miscBloodCls = String.Format("%s", bloodTypes[i]);
 
-			if (e.Replacee == "Blood" || e.Replacee == "BloodSplatter" || e.Replacee == "AxeBlood"
-				|| (miscBloodCls != NULL && e.Replacee == miscBloodCls))
+			if (miscBloodCls != NULL && e.Replacee == miscBloodCls)
 			{
 				class<Actor> bloodCls;
 
@@ -180,6 +167,27 @@ class NashGoreHandler : EventHandler
 
 				e.Replacement = bloodCls;
 			}
+		}
+
+		if (e.Replacee == "Blood" || e.Replacee == "BloodSplatter" || e.Replacee == "AxeBlood")
+		{
+			class<Actor> bloodCls;
+
+			switch(nashgore_bloodtype)
+			{
+				default:
+				case 0:
+					bloodCls = "NashGoreBlood";
+					break;
+				case 1:
+					bloodCls = "NashGoreClassicBlood";
+					break;
+				case 2:
+					bloodCls = "Blood";
+					break;
+			}
+
+			e.Replacement = bloodCls;
 		}
 
 		// other stuff

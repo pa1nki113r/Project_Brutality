@@ -40,6 +40,7 @@ ACTOR PB_Revolver : PB_Weapon
 	Weapon.AmmoGive2 0
 	Weapon.AmmoType1 "PB_LowCalMag"
 	Weapon.AmmoType2 "RevolverAmmo"
+	weapon.slotnumber 2
 	Inventory.MaxAmount 3
 	Inventory.Amount 1
 	//Weapon.Kickback 100
@@ -60,6 +61,7 @@ ACTOR PB_Revolver : PB_Weapon
 	Inventory.AltHUDIcon "RVICA0"
 	PB_WeaponBase.respectItem "RespectRevolver"
 	FloatBobStrength 0.5
+	PB_WeaponBase.DualWieldToken "DualWieldingRevolver"
 	States
 	{  
 	
@@ -69,8 +71,8 @@ ACTOR PB_Revolver : PB_Weapon
 	Goto Ready
 	
 	FastSwitchFromDualWield2:
-		TNT1 A 0 A_TakeInventory("SwitchingFromDualWieldRevolver", 1)
-		TNT1 A 0 A_Giveinventory("PB_LockScreenTilt",1)
+		TNT1 A 0 A_SetInventory("SwitchingFromDualWieldRevolver", 0)
+		TNT1 A 0 A_SetInventory("PB_LockScreenTilt",1)
 		R3V2 ABCD 1 A_SetRoll(roll-.8, SPF_INTERPOLATE)
 		R3V2 E 1
 		R3V2 FGHI 1 A_SetRoll(roll+.8, SPF_INTERPOLATE)
@@ -83,8 +85,8 @@ ACTOR PB_Revolver : PB_Weapon
 		TNT1 A 0 PB_RespectIfNeeded
 	WeaponRespect:
 		TNT1 A 0 {
-			A_Giveinventory("RespectRevolver",1);
-			A_Giveinventory("PB_LockScreenTilt",1);
+			A_SetInventory("RespectRevolver",1);
+			A_SetInventory("PB_LockScreenTilt",1);
 			A_PlaySoundEx("REVOUP", "Auto");
 			A_SetCrosshair(5);
 			}
@@ -135,7 +137,7 @@ ACTOR PB_Revolver : PB_Weapon
 		Goto Ready3
 		
 	SelectAnimation:
-		TNT1 A 0 A_TakeInventory("Zoomed",1)
+		TNT1 A 0 A_SetInventory("Zoomed",0)
 		TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "SelectAnimationDualWield")
         TNT1 A 0 A_PlaySound("REVOUP")
 		R1V1 ABCD 1
@@ -144,10 +146,10 @@ ACTOR PB_Revolver : PB_Weapon
 		TNT1 A 0 {
 			A_SetRoll(0, SPF_INTERPOLATE);
 			PB_HandleCrosshair(42);
-			A_TakeInventory("PB_LockScreenTilt",1);
+			A_SetInventory("PB_LockScreenTilt",0);
 		}
 	ReadyLoop:
-		R1V1 E 0 A_SelectWeapon("PB_Deagle")
+		R1V1 E 0 PB_SelectIfUpgrade("PB_Deagle") //A_SelectWeapon("PB_Deagle")
 		R1V1 E 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("RevolverHasUnloaded"))
 		Loop
 		
@@ -160,7 +162,7 @@ ACTOR PB_Revolver : PB_Weapon
 		TNT1 A 0 {
 			A_SetRoll(0);
 			PB_HandleCrosshair(42);
-			A_TakeInventory("PB_LockScreenTilt",1);
+			A_SetInventory("PB_LockScreenTilt",0);
 			A_SetFiringRightWeapon(False);
 			A_SetFiringLeftWeapon(False);
 			if(CountInv("LeftRevolverAmmo") < CountInv("RevolverAmmo")){
@@ -178,7 +180,7 @@ ACTOR PB_Revolver : PB_Weapon
 			A_Overlay(11, "IdleRight_Overlay", false);
 			}
 	ReadyToFireDualWield:
-		TNT1 A 0 A_SelectWeapon("PB_Deagle")
+		TNT1 A 0 PB_SelectIfUpgrade("PB_Deagle") //A_SelectWeapon("PB_Deagle")
 		TNT1 A 1 {
 			if(CountInv("PB_LowCalMag")>0){
 				if(CountInv("LeftRevolverAmmo")<=0 || CountInv("RevolverAmmo")<=0){
@@ -269,7 +271,8 @@ ACTOR PB_Revolver : PB_Weapon
 				PB_LowAmmoSoundWarning("revolver", "LeftRevolverAmmo");
 				A_Takeinventory("LeftRevolverAmmo",1);
 				A_ZoomFactor(0.99);
-				A_PlaySoundEx("revolver/fire", "Weapon");
+				A_StartSound("revolver/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(0.95, 1.05));
+				PB_DynamicTail("pistol", "shotgun");
 				A_AlertMonsters;
 				A_SetFiringLeftWeapon(True);
 				A_GunFlash;
@@ -330,7 +333,8 @@ ACTOR PB_Revolver : PB_Weapon
 					PB_LowAmmoSoundWarning("revolver");
 					A_Takeinventory("RevolverAmmo",1);
 					A_ZoomFactor(0.99);
-					A_PlaySoundEx("revolver/fire", "Weapon");
+					A_StartSound("revolver/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(0.95, 1.05));
+					PB_DynamicTail("pistol", "shotgun");
 					A_AlertMonsters;
 					A_SetFiringRightWeapon(True);
 					A_GunFlash;
@@ -384,8 +388,8 @@ ACTOR PB_Revolver : PB_Weapon
 		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
 		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 {
-			A_GiveInventory("PB_LockScreenTilt",1);
-			A_Takeinventory("GoWeaponSpecialAbility",1);
+			A_SetInventory("PB_LockScreenTilt",1);
+			A_Setinventory("GoWeaponSpecialAbility",0);
 			PB_HandleCrosshair(42);
 			A_ZoomFactor(1.0);
 			A_ClearOverlays(10,11);
@@ -398,12 +402,12 @@ ACTOR PB_Revolver : PB_Weapon
         	TNT1 A 0 {
         	    if (A_CheckAkimbo()) {
         	        A_SetAkimbo(False);
-        	        A_Takeinventory("DualWieldingRevolver",1); // this
+        	        A_SetInventory("DualWieldingRevolver",0); // this
         	        return state("SwitchFromDualWield");
         	    }
         	    else {
         	        A_SetAkimbo(True);
-        	        A_Giveinventory("DualWieldingRevolver",1); // and this
+        	        A_SetInventory("DualWieldingRevolver",1); // and this
         	        return state("");
         	    }
         	}
@@ -425,12 +429,12 @@ ACTOR PB_Revolver : PB_Weapon
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			PB_HandleCrosshair(42);
-			A_Takeinventory("Unloading",1);
-			A_TakeInventory("PB_LockScreenTilt",1);
+			A_SetInventory("Unloading",0);
+			A_SetInventory("PB_LockScreenTilt",0);
 			A_ClearOverlays(10,11);
 		}
 		
-		TNT1 A 0 A_JumpIfInventory("PB_Deagle",1,"DeselectUpgrade")
+		//TNT1 A 0 //A_JumpIfInventory("PB_Deagle",1,"DeselectUpgrade")
 		40V1 FGHI 0 
 		R1V1 FGHI 1 {
 			if (A_CheckAkimbo()) {
@@ -440,22 +444,16 @@ ACTOR PB_Revolver : PB_Weapon
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
 		
-	DeselectUpgrade:
+	//DeselectUpgrade:
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_LOWER
 		Wait	
 	Select:
 		TNT1 A 0
 		
-		TNT1 A 0 A_TakeInventory("HasBarrel",1)
-		TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
-		TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
-		TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
-		TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
-		TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
-		
+		TNT1 A 0 PB_ResetBarrelTokens
+		TNT1 A 0 PB_SelectIfUpgrade("PB_Deagle") //A_SelectWeapon("PB_Deagle")
 		Goto SelectFirstPersonLegs
-		SelectContinue:
-		TNT1 A 0 A_SelectWeapon("PB_Deagle")
+	SelectContinue:
 		TNT1 A 0 PB_WeapTokenSwitch("RevolverSelected")
 		TNT1 A 0
 		TNT1 A 0 A_JumpIfInventory("SwitchingFromDualWieldRevolver", 1, "FastSwitchFromDualWield1")
@@ -474,12 +472,13 @@ ACTOR PB_Revolver : PB_Weapon
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			PB_HandleCrosshair(42);
-			A_TakeInventory("PB_LockScreenTilt",1);
+			A_SetInventory("PB_LockScreenTilt",0);
 		}
         TNT1 A 0 A_JumpIfInventory("RevolverAmmo",1,1)
         Goto Reload
 		R4V1 A 1 BRIGHT {	
-				A_PlaySoundEx("revolver/fire", "Weapon");
+				A_StartSound("revolver/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(0.95, 1.05));
+				PB_DynamicTail("pistol", "shotgun");
 				//A_FireBullets (0.1, 0.1, -1, 90, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
 				A_FireProjectile("PB_500SW", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 				A_AlertMonsters;
@@ -515,12 +514,13 @@ ACTOR PB_Revolver : PB_Weapon
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			PB_HandleCrosshair(42);
-			A_TakeInventory("PB_LockScreenTilt",1);
+			A_SetInventory("PB_LockScreenTilt",0);
 		}
         TNT1 A 0 A_JumpIfInventory("RevolverAmmo",1,1)
         Goto Reload
 		R5V1 A 1 BRIGHT {	
-				A_PlaysoundEx("revolver/fire","Weapon");
+				A_StartSound("revolver/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(0.95, 1.05));
+				PB_DynamicTail("pistol", "shotgun");
 				//A_FireBullets (0.1, 0.1, -1, 90, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
 				A_FireProjectile("PB_500SW", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 				A_AlertMonsters;
@@ -553,7 +553,8 @@ ACTOR PB_Revolver : PB_Weapon
 		TNT1 A 0 A_JumpIfInventory("RevolverAmmo",1,1)
         Goto Reload
 		R5V1 I 1 BRIGHT {	
-				A_PlaysoundEx("revolver/fire","Weapon");
+				A_StartSound("revolver/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(0.95, 1.05));
+				PB_DynamicTail("pistol", "shotgun");
 				//A_FireBullets (0.1, 0.1, -1, 90, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
 				A_FireProjectile("PB_500SW", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 				A_AlertMonsters;
@@ -594,7 +595,7 @@ ACTOR PB_Revolver : PB_Weapon
 		Goto NoAmmo
 		TNT1 A 0 {
 			A_SetCrosshair(5);
-			A_Giveinventory("PB_LockScreenTilt",1);
+			A_SetInventory("PB_LockScreenTilt",1);
 			A_PlaySound("Ironsights");
 		}
 		R6V1 ABCDDE 1 A_SetRoll(roll+0.2, SPF_INTERPOLATE)
@@ -609,7 +610,7 @@ ACTOR PB_Revolver : PB_Weapon
 		R6V1 T 1 
 		R6V1 U 1 A_SetRoll(roll+0.5, SPF_INTERPOLATE)
 		ReloadEmpty:
-		TNT1 A 0 A_TakeInventory("RevolverHasUnloaded", 1)
+		TNT1 A 0 A_SetInventory("RevolverHasUnloaded", 0)
 		R6V1 VWXYZ 1 A_SetRoll(roll-0.5, SPF_INTERPOLATE)
 		R6V2 A 1 A_PlaySoundEx("Weapons/Revolver/Load", "Auto")
 		R6V2 BCDEFF 1 A_SetRoll(roll+0.5, SPF_INTERPOLATE)
@@ -643,7 +644,7 @@ ACTOR PB_Revolver : PB_Weapon
         Goto NoAmmoDualWield
 		TNT1 A 0 {
 			A_SetCrosshair(5);
-			A_Giveinventory("PB_LockScreenTilt",1);
+			A_SetInventory("PB_LockScreenTilt",1);
 			A_PlaySound("Ironsights");
 			A_ClearOverlays(10,11);
 		}
@@ -691,7 +692,7 @@ ACTOR PB_Revolver : PB_Weapon
 		42V3 IJKL 1
 		TNT1 A 0 A_PlaySoundEx("Ironsights", "Auto")
 		42V3 MNOPQRSTUV 1
-		TNT1 A 0 A_Takeinventory("RevolverHasUnloaded", 1)
+		TNT1 A 0 A_SetInventory("RevolverHasUnloaded", 0)
 	InsertBulletsDualWield_Right:
 		TNT1 A 0 
 		TNT1 A 0 PB_AmmoIntoMag("RevolverAmmo","PB_LowCalMag",6,2)
@@ -699,7 +700,7 @@ ACTOR PB_Revolver : PB_Weapon
 		Goto Ready3
 	
 	AlreadyUnloaded:
-		TNT1 A 0 A_Takeinventory("Unloading",1)
+		TNT1 A 0 A_SetInventory("Unloading",0)
 		Goto Ready3
 	Unload:
 		TNT1 A 0 A_JumpIfInventory("RevolverHasUnloaded", 1, "AlreadyUnloaded")
@@ -708,7 +709,7 @@ ACTOR PB_Revolver : PB_Weapon
         Goto AlreadyUnloaded
 		TNT1 A 0 {
 			A_SetCrosshair(5);
-			A_Giveinventory("PB_LockScreenTilt",1);
+			A_SetInventory("PB_LockScreenTilt",1);
 			A_PlaySound("Ironsights");
 			A_ClearOverlays(10,11);
 		}
@@ -730,8 +731,8 @@ ACTOR PB_Revolver : PB_Weapon
 		TNT1 A 0 PB_UnloadMag("RevolverAmmo","PB_LowCalMag",2)
 		Goto FinishUnload
 	FInishUnload:
-		TNT1 A 0 A_GiveInventory("RevolverHasUnloaded", 1)
-		TNT1 A 0 A_Takeinventory("Unloading",1)
+		TNT1 A 0 A_SetInventory("RevolverHasUnloaded", 1)
+		TNT1 A 0 A_SetInventory("Unloading",0)
 		Goto Ready3
 		
 	
@@ -741,7 +742,7 @@ ACTOR PB_Revolver : PB_Weapon
         Goto AlreadyUnloaded
 		TNT1 A 0 {
 			A_SetCrosshair(5);
-			A_Giveinventory("PB_LockScreenTilt",1);
+			A_SetInventory("PB_LockScreenTilt",1);
 			A_ClearOverlays(10,11);
 		}
 		TNT1 A 0 A_PlaySoundEx("Weapons/Revolver/Open", "Auto")
@@ -757,7 +758,7 @@ ACTOR PB_Revolver : PB_Weapon
 		TNT1 A 0 A_PlaySoundEx("Weapons/Revolver/Click2", "Auto")
 		43V2 MNOPQR 1 A_SetRoll(roll-0.5, SPF_INTERPOLATE)
 		43V2 STUVWXYZ 1
-		TNT1 A 0 A_Giveinventory("RevolverHasUnloaded",1)
+		TNT1 A 0 A_SetInventory("RevolverHasUnloaded",1)
 		TNT1 A 0 A_PlaySoundEx("Weapons/Revolver/Close", "Auto")
 		43V3 ABCD 1 A_SetRoll(roll+0.4, SPF_INTERPOLATE)
 		43V3 EFGH 1 A_SetRoll(roll-0.4, SPF_INTERPOLATE)
@@ -768,8 +769,8 @@ ACTOR PB_Revolver : PB_Weapon
 			}
 		Goto FInishUnloadDual
 	FInishUnloadDual:
-		TNT1 A 0 A_GiveInventory("RevolverHasUnloaded", 1)
-		TNT1 A 0 A_Takeinventory("Unloading",1)
+		TNT1 A 0 A_SetInventory("RevolverHasUnloaded", 1)
+		TNT1 A 0 A_SetInventory("Unloading",0)
 		Goto Ready3	
 		
 	Spawn:

@@ -30,6 +30,8 @@
 //
 //===========================================================================
 
+const STAT_PB_SMOKE = Thinker.STAT_USER_MAX - 2;
+
 class NashGoreStatics play
 {
 	//===========================================================================
@@ -139,14 +141,10 @@ class NashGoreStatics play
 				it.Reinit();
 				if (mo = Actor(it.Next()))
 				{		
-					bool valid = (
+					/*bool valid = (
 						mo is "Actor" ||
-						mo.GetClassName() == "NashGoreGibs" ||
-						mo.GetClassName() == "NashGoreBloodPlane" ||
-						mo.GetClassName() == "NashGoreIceChunk" ||
-						mo.GetClassName() == "NashGoreSquishyGibs" ||
-						mo.GetClassName() == "NashGoreStickyGibsCeiling" ||
-						mo.GetClassName() == "NashGoreStickyGibs" ||
+						mo is "NashGoreStickyGibsCeiling" ||
+						mo is "NashGoreStickyGibs" ||
 						mo is "NashGoreGibs" ||
 						mo is "NashGoreBloodPlane" ||
 						mo is "NashGoreIceChunk" ||
@@ -156,7 +154,7 @@ class NashGoreStatics play
 						mo is "PB_XDeath1" ||
 						mo is "PB_XDeath2" ||
 						mo is "PB_XDeathOrgan1" ||
-						mo.GetClassName() == "PB_XDeathBurnedMeat" ||
+						mo is "PB_XDeathBurnedMeat" ||
 						mo is "FlyingGibBase" ||
 						mo is "PB_XDeathArm1" ||
 						mo is "PB_SmallBrainPiece" ||
@@ -167,12 +165,12 @@ class NashGoreStatics play
 						mo is "PB_XDeathZombieManHead" ||
 						mo is "PB_XDeathZombieManHead" ||
 						mo is "PB_Teeth"
-					);
+					);*/
 
-					if (valid) {
+					//if (valid) {
 						mo.Destroy();
 						//Console.Printf("Cleaning Gibs");
-					}
+					//}
 					count--;
 				}
 			}
@@ -203,58 +201,39 @@ class NashGoreStatics play
 				it.Reinit();
 				if (mo = Actor(it.Next()))
 				{		
-					bool valid = (
-						mo is "Actor" ||
-						mo.GetClassName() == "Mp40CaseSpawn" ||
-						mo.GetClassName() == "Mp40CaseSpawnRight" ||
-						mo.GetClassName() == "DeagleCasingRight" ||
-						mo.GetClassName() == "DeagleCasingLeft" ||
-						mo.GetClassName() == "MagnumCasing" ||
-						mo.GetClassName() == "PistolCasingSpawner" ||
-						mo is "SMGCasingSpawner" ||
-						mo is "RifleCaseSpawn" ||
-						mo is "ShotCaseSpawn" ||
-						mo is "ShotCaseSpawn2" ||
-						mo is "ShotCaseSpawn3" ||
-						mo is "SSGCaseSpawner" ||
-						mo is "FiftyCaseSpawn" ||
-						mo is "FiftyCaseSpawn2" ||
-						mo is "GrenadeCaseSpawn" ||
-						mo.GetClassName() == "BigEmptyCaseSpawn" ||
-						mo is "MastermindCaseSpawn" ||
-						mo is "EmptyBrass" ||
-						mo is "EmptyBrassMinigun" ||
-						mo is "EmptyGrenadeBrass" ||
-						mo is "GiantEmptyBrass" ||
-						mo is "BigEmptyBrass" ||
-						mo is "underwaterEmptyBrass" ||
-						mo is "ShotgunCasing" ||
-						mo is "ShotgunCasingSSG" ||
-						mo is "ShotgunCasing2" ||
-						mo is "ShotgunCasing3" ||
-						mo is "EmptyClipMP40" ||
-						mo.GetClassName() == "EmptyClip" ||
-						mo is "EmptyBrassMP40" ||
-						mo is "EmptyBrassDeagle" ||
-						mo is "EmptyBrassMagnum" ||
-						mo is "EmptyBrassPistol" ||
-						mo is "EmptyBrassSMG" ||
-						mo is "EmptyRocketChamber" ||
-						mo is "EmptyLMGMag" ||
-						mo is "EmptyASGDrum" ||
-						mo is "EmptyHMGDrum" ||
-						mo is "EmptyCell" ||
-						mo is "RocketCaseSpawn" ||
-						mo is "PlasmaCaseSpawn" ||
-						mo is "MinigunBeltPiece" ||
-						mo.GetClassName() == "MiniBeltPieceSpawn" ||
-						mo is "MiniBeltPieceSpawn2"
-						);
+					bool valid = mo is "PB_CasingBase";
 
 					if (valid) {
+						// console.printf("cleaned up casing %p", mo);
 						mo.Destroy();
 						//Console.Printf("Cleaning Gibs");
 					}
+					count--;
+				}
+			}
+		}
+	}
+
+	static void QueueSmoke(void)
+	{
+		// count current amount of smoke objects
+		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_PB_SMOKE);
+		Actor mo;
+		int count;
+		while (mo = Actor(it.Next()))
+		{
+			count++;
+		}
+
+		// clean up excessive smoke
+		while (count > 24)
+		{
+			// destroy the first one it can find
+			it.Reinit();
+			if(mo = Actor(it.Next()))
+			{
+				if(mo is "PB_GunFireSmoke") {
+					mo.Destroy();
 					count--;
 				}
 			}
@@ -271,12 +250,17 @@ class NashGoreStatics play
 	{
 		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_NashGore_Gore);
 		ThinkerIterator pb = ThinkerIterator.Create("Actor", STAT_PB_BULLETS);
+		ThinkerIterator sm = ThinkerIterator.Create("Actor", STAT_PB_SMOKE);
 		Actor mo;
 		while (mo = Actor(it.Next()))
 		{
 			mo.Destroy();
 		}
 		while (mo = Actor(pb.Next()))
+		{
+			mo.Destroy();
+		}
+		while (mo = Actor(sm.Next()))
 		{
 			mo.Destroy();
 		}
