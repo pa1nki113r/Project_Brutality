@@ -24,7 +24,6 @@ class PB_GunFireSmoke: Actor
         +ROLLSPRITE;
         +ROLLCENTER;
         +NOCLIP;
-		+NOTIMEFREEZE;
     }
 
     double dissipateRotation;
