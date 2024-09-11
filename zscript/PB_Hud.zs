@@ -76,7 +76,7 @@ class PB_Hud_ZS : BaseStatusBar
     Weapon oldWeapon;
 
     //CVars
-    int hudXMargin, hudYMargin, playerMsgPrint;
+    int16 hudXMargin, hudYMargin, playerMsgPrint;
     bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks;
     float playerAlpha, playerBoxAlpha, messageSize, bloodDropsAlpha, glassCracksAlpha;
 
@@ -864,9 +864,8 @@ class PB_Hud_ZS : BaseStatusBar
             if(CheckInventory("PB_PowerStrength"))
             {
 				// the stupid fucking berserk indicator that i spent too much time on
-				// should i start using floats for inconsequential effects like these?
-				float gameTicRadians = (gameTic * 57.296) * 0.2;
-				float berserkBeat = 0.1 * ((((sin(gameTicRadians) ** 13) * sin((gameTicRadians) + 85.944)) / 0.2096) + (sin(gameTicRadians - 286.48) ** 16) * 0.2);
+				double gameTicRadians = gameTic * 11.4592;
+				double berserkBeat = 0.1 * ((((sin(gameTicRadians) ** 13) * sin((gameTicRadians) + 85.944)) / 0.2096) + (sin(gameTicRadians - 286.48) ** 16) * 0.2);
 				
 				PBHud_DrawImage("BZRKHUD",  (92, -62), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_CENTER, scale: (0.6 + berserkBeat, 0.6 + berserkBeat));
 			}
