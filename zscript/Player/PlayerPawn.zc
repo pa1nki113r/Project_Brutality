@@ -188,22 +188,28 @@ class PlayerPawnBase : PlayerPawn
 		UserCmd cmd = player.cmd;
 		
 		//Set some basic parameters
-		ActualSpeed = Speed * GetPowerSpeed();
-		bNOFRICTION = True;
-		GetFloorInfo();
-		MaxGroundSpeed = pb_maxgroundspeed * ActualSpeed;
-		Pain = InStateSequence(CurState, FindState("Pain"));
-		StrafeRunning = cmd.forwardmove && cmd.sidemove;
-		ZMoveFactor = ZMScale();
+		if(CheckNotPredicting())
+		{
+			ActualSpeed = Speed * GetPowerSpeed();
+			bNOFRICTION = True;
+			GetFloorInfo();
+			MaxGroundSpeed = pb_maxgroundspeed * ActualSpeed;
+			Pain = InStateSequence(CurState, FindState("Pain"));
+			StrafeRunning = cmd.forwardmove && cmd.sidemove;
+			ZMoveFactor = ZMScale();
+		}
 		
 		//Execute Player tic cycle
 		Super.PlayerThink();
 		
+		if(!CheckNotPredicting())
+			return;
+
 		bool wasOnGround = player.onGround;
 		Player.OnGround = (Pos.Z <= FloorZ) || bONMOBJ || bMBFBOUNCER || (Player.Cheats & CF_NOCLIP2); // Moved after super call, otherwise it doesn't register.
 
         // Stick player to ground when going down stairs
-        if (!(player.cheats & CF_PREDICTING) && wasOnGround && !player.onGround && pos.z - GetZAt() < maxDropOffHeight && vel.z <= 0)
+        if (wasOnGround && !player.onGround && pos.z - GetZAt() < maxDropOffHeight && vel.z <= 0)
         {
             //player.viewHeight += (pos.z - GetZAt());
             //player.deltaViewHeight -= (pos.z - GetZAt()) / 8;
@@ -216,17 +222,15 @@ class PlayerPawnBase : PlayerPawn
 
         // I'm not sure how this is done in PlayerPawn
         // Put player back in idle state after moving
-        if (!(player.cheats & CF_PREDICTING) && !player.cmd.forwardMove && !player.cmd.sideMove && (!player.onGround || !player.vel.Length())) PlayIdle();
+        if (!player.cmd.forwardMove && !player.cmd.sideMove && (!player.onGround || !player.vel.Length())) PlayIdle();
 		
 		//Bob weapon stuff
 		BobWeaponAuxiliary();
 		
-		if(!(player.cheats & CF_PREDICTING)) ExecutionChecker();
+		ExecutionChecker();
 		
 		//Old values for comparisons
 		OldRealFloorZ = RealFloorZ;
-		
-		
 	}
 	
 	bool frozenByExecution;
@@ -461,6 +465,11 @@ class PlayerPawnBase : PlayerPawn
 			}
 		}
 	}
+
+	bool CheckNotPredicting()
+	{
+		return !(player.cheats & CF_PREDICTING);
+	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -479,12 +488,20 @@ class PlayerPawnBase : PlayerPawn
 		UserCmd cmd = Player.cmd;
 		
 		//Slime Dissolving sound effect
-		CheckSlime();
-		if (SlimeSoundCooler) {SlimeSoundCooler--;}
-			if(InSlime == true){
-				if(!SlimeSoundCooler)
-					A_Startsound("world/barrelloop", 12, CHANF_LOOPING  );
-					SlimeSoundCooler = 8;
+		if(CheckNotPredicting())
+			CheckSlime();
+
+		if (SlimeSoundCooler) 
+		{
+			SlimeSoundCooler--;
+		}
+		if(InSlime == true)
+		{
+			if(!SlimeSoundCooler && CheckNotPredicting())
+			{
+				A_Startsound("world/barrelloop", 12, CHANF_LOOPING  );
+				SlimeSoundCooler = 8;
+			}
 		}
 		
 		// [RH] Check for fast turn around
@@ -507,7 +524,7 @@ class PlayerPawnBase : PlayerPawn
 			}
 			else
 			{
-				A_SetAngle(Angle + ViewAngleDelta, SPF_INTERPOLATE);
+				angle += ViewAngleDelta;
 				if(LedgeGrabbed) { Angle = clamp(Angle, LedgeAngle - 20, LedgeAngle + 20); }
 			}
 			
@@ -535,6 +552,8 @@ class PlayerPawnBase : PlayerPawn
 // 				if(ADashCooler) { ADashCooler--; }
 // 				if(ADashTargetSpeed) { AirDashFriction(); }
 // 			}
+			if(!CheckNotPredicting())
+				return;
 			//Wall Jumping
 			if(CheckForWJump) { DashInitiator(); }
 			//Crouchsliding
@@ -546,11 +565,11 @@ class PlayerPawnBase : PlayerPawn
 			
 			/////////////////////////////////////////
 			//Actual Movement selection
-			if(LedgeCheck)
+			if(LedgeCheck && CheckNotPredicting())
 			{
 				LedgeReach();
 			}
-			else if(LedgeGrabbed)
+			else if(LedgeGrabbed && CheckNotPredicting())
 			{
 				LedgeGrab();
 			}
@@ -559,14 +578,17 @@ class PlayerPawnBase : PlayerPawn
 				if(!pb_movetype)
 					DoomWaterMove();
 				
-				if(pb_ledgegrab) { LedgeGrabInitiator(); }
+				if(pb_ledgegrab && CheckNotPredicting()) 
+				{ 
+					LedgeGrabInitiator(); 
+				}
 			}
 			else if(bNOGRAVITY)
 			{
 				if(!pb_movetype)
 					DoomFlyMove();
 			}
-			else if(CanCSlide)
+			else if(CanCSlide && CheckNotPredicting())
 			{
 				if(pb_cslidetype)
 					QSlideMove();
@@ -728,7 +750,7 @@ class PlayerPawnBase : PlayerPawn
 			
 			//Check if player is above a damaging floor. We don't cheese map design here!
 			sector sss=floorsector;
-			if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement && !(player.cheats & CF_PREDICTING)) {
+			if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement && CheckNotPredicting()) {
 				if(!JumpSoundCooler)
 					A_StartSound("Daedabus/impact", CHAN_BODY);
 					JumpSoundCooler = 4;
@@ -749,7 +771,7 @@ class PlayerPawnBase : PlayerPawn
 				bOnMobj = false;
 				ZMJumpTics = True;
 				
-				if(!(player.cheats & CF_PREDICTING) && !JumpSoundCooler)
+				if(CheckNotPredicting() && !JumpSoundCooler)
 				{
 					A_StartSound("*jump", CHAN_BODY);
 					JumpSoundCooler = 4;
@@ -769,7 +791,7 @@ class PlayerPawnBase : PlayerPawn
 				bOnMobj = false;
 				ZMJumpTics = True;
 				
-				if(!(player.cheats & CF_PREDICTING)) { A_StartSound("JMPBOOT", CHAN_BODY); }
+				if(CheckNotPredicting()) { A_StartSound("JMPBOOT", CHAN_BODY); }
 				
 				CanDoubleJump = False;
 			}
@@ -1421,7 +1443,7 @@ class PlayerPawnBase : PlayerPawn
 		{
 			Int BT=cmd.buttons;
 			
-			if(Player.CrouchFactor != 1 && !CSlideStartTime && (BT & BT_USER4))
+			if(Player.CrouchFactor != 1 && !CSlideStartTime && (BT & BT_USER4) && CheckNotPredicting())
 			{
 				sector sss=floorsector;
 				if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
@@ -1452,7 +1474,7 @@ class PlayerPawnBase : PlayerPawn
 				
 				CSlideStartTime = Level.MapTime;
 			}
-			else if(!CanCSlide)
+			else if(!CanCSlide && CheckNotPredicting())
 			{
 				QSlideDuration = 0;
 			}
@@ -1715,7 +1737,7 @@ class PlayerPawnBase : PlayerPawn
 		if(JumpFac) { DashVelZ *= JumpFac; }
 		Vel.Z = DashVelZ;
 		
-		if(!(player.cheats & CF_PREDICTING)) { 
+		if(CheckNotPredicting()) { 
 			A_StartSound("JMPBOOT", CHAN_BODY);
 			A_StartSound("DBLJUMP", CHAN_AUTO);
 			A_GiveInventory("PlayerDashed");
@@ -1740,7 +1762,7 @@ class PlayerPawnBase : PlayerPawn
 		ADashCooler = 53;
 		DashNumber++;
 		
-		if(!(player.cheats & CF_PREDICTING)) { A_StartSound("*jump", CHAN_BODY); }
+		if(CheckNotPredicting()) { A_StartSound("*jump", CHAN_BODY); }
 		
 		if(Vel.XY.Length() <= MaxGroundSpeed)
 		{
@@ -1809,7 +1831,7 @@ class PlayerPawnBase : PlayerPawn
 		
 		if(zm_wjdoublejumprenew) { CanDoubleJump = True; }
 		
-		if(!(player.cheats & CF_PREDICTING)) { A_StartSound("*jump", CHAN_BODY); }
+		if(CheckNotPredicting()) { A_StartSound("*jump", CHAN_BODY); }
 		
 		Float EstimatedWJumpSpeed1 = pb_wjumpboost * MaxGroundSpeed;
 		Float EstimatedWJumpSpeed2 = pb_multipledashes + max(WJumpSpeed, Vel.XY.Length()); //WJumpSpeed can be stored a few tics before wall inpact which slows down player, allowing for more satisfying WJumps
@@ -2108,6 +2130,9 @@ class PlayerPawnBase : PlayerPawn
 	
 	void BobWeaponAuxiliary()
 	{	
+		if(multiplayer)
+			return;
+
 		///////////////////////////
 		//Bobbing Speed
 		if(MoveRangeMulti) { BobTime += Vel.XY.Length() / pb_maxgroundspeed; }
@@ -2137,6 +2162,9 @@ class PlayerPawnBase : PlayerPawn
 	
 	Override Vector2 BobWeapon(double ticfrac)
 	{
+		if(multiplayer)
+			return Super.BobWeapon(ticfrac);
+
 		let player = self.player;
 		UserCmd cmd = player.cmd;
 		
@@ -2457,10 +2485,13 @@ class PlayerPawnBase : PlayerPawn
 		Super.Tick();
 		
 		//Just to make sure NO TRACES of this softlocking motherfucker is left -generic name guy
-		if(!(player.cheats & CF_PREDICTING))
+		if(player && CheckNotPredicting())
+		{
 			A_SetInventory("GoFatality", 0);
+			CheckTargetHitRegistration();
+		}
 		//CatchUpOnTiers();
-		CheckTargetHitRegistration();
+		
 
 		//Screen Overlay Handlers
 		//Disabled until we can convert the screen splatters to ZScript
@@ -2536,7 +2567,7 @@ class PlayerPawnBase : PlayerPawn
 			if (selector == 5){ACS_NamedExecute("LavaScreenSplash555", 0);}
 		}
 		*/
-		if (!(player.cheats & CF_PREDICTING) && IsTank && !(health <= 0))
+		if (CheckNotPredicting() && IsTank && !(health <= 0))
 		{
 			if (TankTurretSprite != NULL)
 			{
