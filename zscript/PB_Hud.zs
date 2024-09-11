@@ -149,7 +149,8 @@ class PB_Hud_ZS : BaseStatusBar
 	{
 		Super.Draw(state, TicFrac);
 
-        if(menuactive) GatherCvars();
+        if(menuactive || consolestate == c_up) 
+        	GatherCvars();
         
         hudState = state;
 		
