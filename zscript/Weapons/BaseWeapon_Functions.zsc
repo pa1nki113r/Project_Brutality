@@ -1,5 +1,126 @@
 extend class PB_WeaponBase
 {
+	//these functions were added to simplify part of the states from pb weapons
+	
+	//raises the weapon, and plays a raise sound if any
+	//also this avoids needing to go to SelectFirstPersonLegs state after the select state
+	//so it can go select -> selectcontinue -> selectanimation
+	action void PB_WeaponRaise(string upSnd = "")
+	{
+		A_weaponoffset(0,32);
+		if(upSnd)
+			A_startsound(upSnd,32);	//play the select sound if defined
+		
+		A_setroll(0);
+		A_zoomfactor(1.0);
+		
+		//this was in the SelectFirstPersonLegs state
+		A_StopSound(1);
+		A_StopSound(CHAN_VOICE);
+		A_StopSound(5);
+		A_StopSound(6);
+		A_StopSound(7);
+		A_StopSOund(CHAN_AUTO);
+		
+		A_SetInventory("Spin",0);
+		A_SetInventory("CantWeaponSpecial",0);		//Fixes bug with Weapon Special Key no longer working when changing SGL grenade type or RL missile mode
+		A_SetInventory("MG42Selected",0); 			//Take this token on every weapon that's not the MG42.
+		A_SetInventory("Grabbing_A_Ledge", 0);		//Fixed bug where movement is locked when vaulting after entering a level
+		A_SetInventory("RandomHeadExploder",0);
+		A_SetInventory("DualFireReload",0);
+		A_SetInventory("Kicking",0);
+		A_SetInventory("Zoomed",0);
+		
+		A_ClearOverlays(-999, -999);
+		A_Overlay(-777, "Melee_Equipment_Handler_Overlay");
+		A_Overlay(-778, "KickHandler_Overlay");
+		A_Overlay(-779, "Equipment_Toggle_Handler_Overlay");
+		A_Overlay(-10, "FirstPersonLegsStand");
+		
+		PB_SetUsingKick(false);
+		PB_SetUsingMelee(false);
+		PB_SetUsingEquipment(false);
+		PB_SetExecutingEnemy(false);
+	}
+	
+	//put this in the beggining of the reload state
+	//	-emptyReload is meant for guns that have different reloads when its empty, if its not the case just pass null (without "")
+	//	-fullAlready is the state it jumps if its already full, usually just ready3
+	//	-noAmmo is the state to jump if theres no reserve ammo
+	//	-full is the amount considered for the gun to be full
+	//	-equal is the equivalence between the ammo reserve and a single bullet/shell/whateverammouses loaded
+	action state PB_checkReload(statelabel emptyReload,statelabel fullAlready,statelabel noAmmo,int full = 30,int equal = 1)
+	{
+		int amount1 = countinv(invoker.ammotype1);	//reserve
+		int amount2 = countinv(invoker.ammotype2);	//to be loaded
+		
+		if(amount2 >= full)							//if the weapon is already full
+			return resolvestate(fullAlready);
+		
+		if(amount1 < equal)							//if theres no reserve ammo enough to reload a single bullet
+			return resolvestate(noAmmo);
+		
+		if(amount2 <= 0)							//if the chamber was empty
+			return resolvestate(EmptyReload);
+			
+		return resolvestate(null);
+	}
+	
+	//maybe constants would be better for this
+	action bool,int isHoldingBarrel()
+	{
+		if(findinventory("GrabbedBarrel"))
+			return true,1;
+		if(findinventory("GrabbedFlameBarrel"))
+			return true,2;
+		if(findinventory("GrabbedIceBarrel"))
+			return true,3;
+			
+		return false,0;
+	}
+	
+	//to avoid spaming A_jumpifinventory(barrel, barrelstate)
+	//just pass the respective state to jump in case of the barrel
+	action state PB_jumpIfHasBarrel(statelabel nukage,statelabel flame, statelabel ice)
+	{
+		bool b;	int type;
+		[b,type] = isHoldingBarrel();
+		
+		if(!b)
+			return resolvestate(null);
+		
+		switch(type)
+		{
+			case 1:		return resolvestate(nukage);	break;
+			case 2:		return resolvestate(flame);		break;
+			case 3:		return resolvestate(ice);		break;
+		}
+		return resolvestate(null);
+	}
+	
+	//put this in the beggining of the fire state to determine if it can fire or needs reloading
+	//this replaces the usual:
+	//	TNT1 A 0 A_jumpifinventory(ammo,1,1)
+	//	goto reload
+	//it also lets you specify the specific reload state to jump
+	action state PB_jumpIfNoAmmo(statelabel reloadstate = "Reload",int min = 1,bool secondary = true)
+	{
+		if(!secondary && invoker.ammotype1 != null)
+		{
+			if(countinv(invoker.ammotype1) < min)
+				return resolvestate(reloadstate);
+			return resolvestate(null);
+		}
+		if(secondary && invoker.ammotype2 != null)
+		{
+			if(countinv(invoker.ammotype2) < min)
+				return resolvestate(reloadstate);
+			return resolvestate(null);
+		}
+		return resolvestate(null);
+	}
+	//
+	
 	action void PB_DynamicTail(string tailInside, string tailOutside)
 	{
 		double tailVolume = CVar.GetCVar("pb_tailvolume", player).GetFloat();
