@@ -77,6 +77,147 @@ Class PB_SpawnerBase : Actor
 		return CVAR.GetCVAR("PBSpawnChoices").GetInt();
 	}
 	
+	enum Spawn_Tiers {
+		Tier_Chaotic	=		663,
+		Tier_Dynamic 	=		666,
+		Tier_1 			=		667,
+		Tier_2 			= 		668,
+		Tier_3 			=		669,
+		Tier_4 			= 		670,
+		Tier_Tiered 	= 		671,
+		Tier_Death 		= 		672
+	}
+	
+	//
+	//	this function handles the spawning logic :B
+	//	
+	//
+	state DoSpawnLogic()
+	{
+		Stats = PB_GlobalStats.Get();
+		
+		int Count = Stats.Counters[PB_GlobalStats.Counter_LevelsCompleted];
+		
+		int spawnbal = Tier_Dynamic;
+		int lvtp = (levelsToPlay / 4);
+		
+		if(SpawnBalance == Tier_Chaotic)
+			spawnbal = Tier_Chaotic;
+		else
+			spawnbal = clamp(SpawnBalance,Tier_Dynamic,Tier_Death);
+		
+		statelabel st = "CHAOTICRANDOM";
+		switch(spawnbal)
+		{
+			case Tier_Chaotic:	st = "CHAOTICRANDOM";	break;
+			case Tier_1:		st = "Tier1";			break;
+			case Tier_2:		st = "Tier2";			break;
+			case Tier_3:		st = "Tier3";			break;
+			case Tier_Death:
+			case Tier_4:		st = "Tier4";			break;
+			
+			case Tier_Tiered:
+				if(Count <= lvtp) 						{st = "Tier1";}
+				else if(Count <= (lvtp * 2)) 			{st = "Tier2";}
+				else if(Count <= (lvtp * 3)) 			{st = "Tier3";}
+				else if(Count > (lvtp * 3)) 			{st = "Tier4";}
+				break;
+				
+			case Tier_Dynamic:
+				if(Count < (lvtp)) 						{st = "Tier1";}
+				else if(Count == (lvtp)) 				{st = "T2Random64";}
+				else if(Count == ((lvtp) + 1)) 			{st = "T2Random128";}
+				else if(Count == ((lvtp) + 2)) 			{st = "T2Random192";}
+					
+				else if(Count < ((lvtp) * 2)) 			{st = "Tier2";}
+				else if(Count == ((lvtp) * 2)) 			{st = "T3Random64";}
+				else if(Count == (((lvtp) * 2) + 1)) 	{st = "T3Random128";}
+				else if(Count == (((lvtp) * 2) + 2)) 	{st = "T3Random192";}
+					
+				else if(Count < ((lvtp) * 3)) 			{st = "Tier3";}
+				else if(Count == ((lvtp) * 3)) 			{st = "T4Random64";}
+				else if(Count == (((lvtp) * 3) + 1)) 	{st = "T4Random128";}
+				else if(Count == (((lvtp) * 3) + 2)) 	{st = "T4Random192";}
+				
+				else if(Count > (((lvtp) * 3) + 2)) 	{st = "Tier4";}
+				break;
+		}
+		
+		//console.printf("Running Spawn logic! Count is: "..Count..", spawn balance is: "..spawnbal..", State label jump: "..st);
+		return self.resolvestate(st);
+	}
+	
+	actor PB_SpawnerSpawn(name spawner)
+	{
+		Class<Actor> cls = spawner;
+		if(!cls)
+		{
+			console.printf("unkown spawner class: "..spawner..". \n");
+			return null;
+		}
+		else
+		{
+			actor newmobj = Spawn(cls, Pos, NO_REPLACE);
+			if (newmobj != null)
+			{
+				// copy everything relevant
+				newmobj.SpawnAngle = SpawnAngle;
+				newmobj.Angle		= Angle;
+				newmobj.Pitch		= Pitch;
+				newmobj.Roll		= Roll;
+				newmobj.SpawnPoint = SpawnPoint;
+				newmobj.special    = special;
+				newmobj.args[0]    = args[0];
+				newmobj.args[1]    = args[1];
+				newmobj.args[2]    = args[2];
+				newmobj.args[3]    = args[3];
+				newmobj.args[4]    = args[4];
+				newmobj.special1   = special1;
+				newmobj.special2   = special2;
+				newmobj.SpawnFlags = SpawnFlags & ~MTF_SECRET;	// MTF_SECRET needs special treatment to avoid incrementing the secret counter twice. It had already been processed for the spawner itself.
+				newmobj.HandleSpawnFlags();
+				newmobj.SpawnFlags = SpawnFlags;
+				newmobj.bCountSecret = SpawnFlags & MTF_SECRET;	// "Transfer" count secret flag to spawned actor
+				newmobj.ChangeTid(tid);
+				newmobj.Vel	= Vel;
+				newmobj.master = master;	// For things such as DamageMaster/DamageChildren, transfer mastery.
+				newmobj.target = target;
+				newmobj.tracer = tracer;
+				newmobj.CopyFriendliness(self, false);
+				// This handles things such as projectiles with the MF4_SPECTRAL flag that have
+				// a health set to -2 after spawning, for internal reasons.
+				if (health != SpawnHealth()) newmobj.health = health;
+				if (!bDropped) newmobj.bDropped = false;
+				// Handle special altitude flags
+				if (newmobj.bSpawnCeiling)
+				{
+					newmobj.SetZ(newmobj.ceilingz - newmobj.Height - SpawnPoint.Z);
+				}
+				else if (newmobj.bSpawnFloat) 
+				{
+					double space = newmobj.ceilingz - newmobj.Height - newmobj.floorz;
+					if (space > 48)
+					{
+						space -= 40;
+						newmobj.SetZ((space * random[randomspawn]()) / 256. + newmobj.floorz + 40);
+					}
+					newmobj.AddZ(SpawnPoint.Z);
+				}
+				// Bouncecount is used to count how many recursions we're in.
+				if (newmobj is 'RandomSpawner')
+					newmobj.bouncecount = ++bouncecount;
+				// If the spawned actor has either of those flags, it's a boss.
+				return newmobj;
+			}
+			else
+			{
+				console.printf("could not spawn: "..spawner..". \n");
+				return null;
+			}
+		}
+		return null;
+	}
+	
 	override void Tick()
 	{
 		
@@ -93,8 +234,51 @@ Class PB_SpawnerBase : Actor
 	States
 	{
 		Spawn:
-	    TNT1 A 1;
-        stop;
+			TNT1 A 0;
+		StartChoose:
+			TNT1 A 0;
+			TNT1 A 0 DoSpawnLogic();
+			TNT1 A 1;
+			stop;
+		T2Random64:
+		    TNT1 A 0 A_Jump(64,"Tier2");
+		    TNT1 A 0 A_Jump(256,"Tier1");
+		T2Random128:
+		    TNT1 A 0 A_Jump(128,"Tier2");
+			TNT1 A 0 A_Jump(256,"Tier1");
+		T2Random192:
+		    TNT1 A 0 A_Jump(192,"Tier2");
+			TNT1 A 0 A_Jump(256,"Tier1");
+		T3Random64:
+		    TNT1 A 0 A_Jump(64,"Tier3");
+			TNT1 A 0 A_Jump(256,"Tier2");
+		T3Random128:
+		    TNT1 A 0 A_Jump(128,"Tier3");
+			TNT1 A 0 A_Jump(256,"Tier2");
+		T3Random192:
+		    TNT1 A 0 A_Jump(192,"Tier3");
+			TNT1 A 0 A_Jump(256,"Tier2");
+		T4Random64:
+		    TNT1 A 0 A_Jump(64,"Tier4");
+			TNT1 A 0 A_Jump(256,"Tier3");
+		T4Random128:
+		    TNT1 A 0 A_Jump(128,"Tier4");
+			TNT1 A 0 A_Jump(256,"Tier3");
+		T4Random192:
+		    TNT1 A 0 A_Jump(192,"Tier4");
+			TNT1 A 0 A_Jump(256,"Tier3");
+		CHAOTICRANDOM:
+		    TNT1 A 0 A_Jump(256, "Tier4","Tier3", "Tier2", "Tier1");
+			Stop;
+		Tier4:
+		Tier3:
+		Tier2:
+		Tier1:
+			TNT1 A 1;
+			stop;
+		Death:
+			TNT1 A 1;
+			goto spawn;
 	}
 }
 
@@ -165,58 +349,88 @@ class PBSpawnInfo play
 			Users.Push(cls);
 		}
 	}
+	
+	static PBSpawnInfo Create(class<PBRandomSpawner> target, Name injected, int chance, int weight, class<PB_Ammo> directAmmo = null, int flags = 0)
+	{
+		class<Actor> cls = injected;
+		if (!cls)
+		{
+			return null;
+		}
+
+		PBSpawnInfo dsi = new('PBSpawnInfo');
+		dsi.Target = target;
+		dsi.Injected = cls;
+		dsi.Chance = chance;
+		dsi.Weight = weight;
+		dsi.directAmmo = directAmmo;
+		//dsi.Flags = flags;
+
+		/*let amSpawnCls = (class<PB_AmmoSpawner>)(injected);
+		if (amSpawnCls)
+		{
+			dsi.DirectAmmo = GetDefaultByType(amSpawnCls).SpawnClass;
+		}*/
+		return dsi;
+	}
 }
 
 extend class PB_EventHandler
 {
-	private Array<PBSpawnInfo> Spawners;
-
-	void InjectSpawn(class<PBRandomSpawner> target, class<PBRandomSpawner> injected, int chance, int weight, class<PB_Ammo> directAmmo = null, string users = "")
+	Array<PBSpawnInfo> Spawners;
+	protected bool InitializedInjectors;
+	
+	void InjectSpawn(class<PBRandomSpawner> target, Name injected, int chance, int weight, class<PB_Ammo> directAmmo = null, string users = "")
 	{
-		let def = GetDefaultByType(injected);
-
+		class<Actor> cls = injected;
+		if (!cls)
+		{
+			return;
+		}
 		PBSpawnInfo dsi = new('PBSpawnInfo');
-
 		dsi.Target = target;
-		dsi.Injected = injected;
+		dsi.Injected = cls;
 		dsi.Chance = chance;
 		dsi.Weight = weight;
 		dsi.DirectAmmo = directAmmo;
-		dsi.ParseUsers(users);
+		//dsi.ParseUsers(users);	//
 
 		Spawners.Push(dsi);
 	}
-
-	override void CheckReplacement(ReplaceEvent e)
+	
+	
+	void InitInjectors()
 	{
-		if (!e.Replacement)
+		if (InitializedInjectors)
 		{
 			return;
 		}
 
-		Array<PBSpawnInfo> valid;
-		for (int i = 0; i < Spawners.Size(); ++i)
+		InitializedInjectors = true;
+		foreach (cls : AllClasses)
 		{
-			if (!Spawners[i].DoNotSpawn && e.Replacement is Spawners[i].Target)
+			if (cls is 'PBInjector' && !cls.IsAbstract())
 			{
-				valid.Push(Spawners[i]);
+				let inj = PBInjector(new(cls));
+				inj.Init(self);
+				inj.Destroy();
 			}
 		}
-
-		if (valid.Size() > 0)
+		
+		//just a testing thing
+		/*int xd = Spawners.size();
+		if(xd < 1)
+			console.printf("no injectors found!");
+		else
 		{
-			Array<int> weights;
-			for (int i = 0; i < valid.Size(); ++i)
+			foreach(ij : Spawners)
 			{
-				weights.Push(valid[i].Weight);
+				console.printf("injected: "..ij.Injected.getclassname().." into: "..ij.Target.getclassname());
 			}
-			int index = PBCore.GetWeightedResult(weights);
-			if (random() <= valid[index].Chance)
-			{
-				e.Replacement = valid[index].Injected;
-			}
-		}
+		}*/
 	}
+	
+	
 /*
 	protected void DoInjectorStuff(Actor spawned)
 	{
@@ -243,12 +457,15 @@ class PBRandomSpawner : RandomSpawner abstract
 {
 	override void PostSpawn(Actor spawned)
 	{
+		spawned.bDropped = bDropped;
+		return;
+		
 		let wpn = PB_Weapon(spawned);
 		let pkp = PB_Ammo(spawned);
 		let mon = PB_Monster(spawned);
 		let med = PB_Health(spawned);
-		let ar1 = PB_Armor(spawned); //armor
-		let ar2 = PB_Armor2(spawned); //bonus
+		let ar1 = PB_Armor(spawned); 	//armor
+		let ar2 = PB_Armor2(spawned); 	//bonus
 		let spn = PBRandomSpawner(spawned);
 
 		if (wpn)
@@ -283,121 +500,124 @@ class PBRandomSpawner : RandomSpawner abstract
 
 	override void PostBeginPlay()
 	{
-		Super.PostBeginPlay();
-	}
-
-	override Name ChooseSpawn()
-	{
-		DropItem di;
-		DropItem drop;
-		int n = 0;
-
-		drop = di = GetDropItems();
-		if (di)
+		if (!AllowPostBeginPlay) //|| bDROPPED && !bALLOWENEMYDROPS)
 		{
-			while (di)
-			{
-				if (di.Name != 'None' && CanSpawn(di))
-				{
-					int amt = di.Amount;
-					if (amt < 0)
-					{
-						amt = 1;
-					}
-					n += amt;
-				}
-				di = di.Next;
-			}
-
-			if (n == 0)
-			{
-				return 'None';
-			}
-
-			di = drop;
-			n = random[randomspawn](0, n - 1);
-			while (n > -1 && di)
-			{
-				if (di.Name != 'None' && CanSpawn(di))
-				{
-					int amt = di.Amount;
-					if (amt < 0)
-					{
-						amt = 1;
-					}
-					n -= amt;
-					if (di.Next && n > -1)
-					{
-						di = di.Next;
-					}
-					else
-					{
-						n = -1;
-					}
-				}
-				else
-				{
-					di = di.Next;
-				}
-			}
-
-			if (!di)
-			{
-				return 'Unknown';
-			}
-			
-			if (random[randomspawn]() <= di.Probability)
-			{
-				return di.Name;
-			}
-		}
-		
-		return 'None';
-	}
-
-	override void BeginPlay()
-	{
-		Super.BeginPlay();
-		let s = ChooseSpawn();
-
-		if (s == 'Unknown')
-		{
-			TryCallSpecial();
-			Spawn(s, Pos, NO_REPLACE);
-			Destroy();
-		}
-		else if (s == 'None')
-		{
-			TryCallSpecial();
-			Destroy();
 			return;
+		}
+		//console.printf("Running: PostBeginPlay() from: "..getclassname());
+		InitInternalList();
+		ProcessInjections();
+		
+		let s = ChooseSpawn();
+		HandleSpawnExeptions(s);
+		//console.printf(""..getclassname().." choose: "..s);
+		if (s == 'None')
+		{
+			TryCallSpecial();
+			ClearCounters();
 		}
 		else
 		{
-			class<Actor> cls = s;
-			if (cls)
+			Species = Name(GetReplacement(s));
+		}
+
+		Super.PostBeginPlay();
+	}
+	
+	override Name ChooseSpawn()
+	{
+		if (Spawns.Size() == 0)
+		{
+			return 'None';
+		}
+
+		Array<int> weights;
+		foreach (i : Spawns)
+		{
+			//console.printf(""..getclassname().."'s spawns: "..i.injected.getclassname());
+			weights.Push(i.Weight);
+		}
+
+		int index = PBCore.GetWeightedResult(weights);
+		if (random[randomspawn](1, 255) <= Spawns[index].Chance * ChanceFactor)
+		{
+			return Spawns[index].Injected.GetClassName();
+		}
+
+		return 'None';
+	}
+	
+
+	override void BeginPlay()
+	{
+		Handler = PB_EventHandler(EventHandler.Find('PB_EventHandler'));
+		if (Handler)
+			Handler.InitInjectors();
+			
+		ChanceFactor = 1.0;
+		
+		Actor.BeginPlay();
+		return;
+	}
+	
+	override void Tick()
+	{
+		// [Ace] So the reason this exists is kinda bullshit: WorldThingSpawned will not fire if the spawner gets destroyed immediately, which is 100% of the time.
+		// This hack exists so that WorldThingSpawned is fired, and only then PostBeginPlay is called.
+		// The use case for this is Zhs2's injectors which need to intercept dropped ammo spawners and set ALLOWENEMYDROPS on them in order to allow them to spawn ammo.
+		if (GetAge() == 0)
+		{
+			AllowPostBeginPlay = true;
+			PostBeginPlay();
+		}
+		Super.Tick();
+	}
+	
+	//
+	protected void InitInternalList()
+	{
+		DropItem di = GetDropItems();
+		//console.printf("Running: InitInternalList() from: "..getclassname());
+		while (di)
+		{
+			if (di.Name == 'None' || !CanSpawn(di.Name))
 			{
-				class<Actor> rep = GetReplacement(cls);
-				if (rep)
+				di = di.Next;
+				continue;
+			}
+			
+			let info = PBSpawnInfo.Create(GetClass(), di.name, di.Probability, max(1, di.Amount),null,0);
+			if (info)
+			{
+				Spawns.Push(info);
+			}
+			di = di.Next;
+		}
+	}
+	
+	protected void ProcessInjections()
+	{
+		//console.printf("Running: ProcessInjections() from: "..getclassname());
+		Array<PBSpawnInfo> injected;
+		if (Handler)
+		{
+			foreach (sp : Handler.Spawners)
+			{
+				//if (sp.DoNotSpawn || bDROPPED && !(sp.Flags & PBSpawnInfo.SIF_DROPPED) || !bDROPPED && sp.Flags & DSSpawnInfo.SIF_DROPPED || !CanSpawn(sp.Injected))
+				if(sp.DoNotSpawn || !CanSpawn(sp.Injected.getclassname()))
 				{
-					cls = rep;
+					continue;
+				}
+
+				//bool ex = sp.Flags & PBSpawnInfo.SIF_EXPLICIT;
+				//if (ex && sp.Target == GetClass() || !ex && sp.Target is GetClass())
+				if(sp.target is getclass())
+				{
+					injected.Push(sp);
 				}
 			}
-			if (cls)
-			{
-				Species = Name(cls);
-				readonly<Actor> def = GetDefaultByType(cls);
-				Speed = def.Speed;
-				bMISSILE |= def.bMISSILE;
-				bSEEKERMISSILE |= def.bSEEKERMISSILE;
-				bSPECTRAL |= def.bSPECTRAL;
-			}
-			else
-			{
-				A_Log(TEXTCOLOR_RED .. "Unknown item class ".. s .." to drop from a random spawner\n");
-				Species = 'None';
-			}
 		}
+		Spawns.Append(injected);
 	}
 
 	protected void TryCallSpecial()
@@ -408,13 +628,14 @@ class PBRandomSpawner : RandomSpawner abstract
 		}
 	}
 
-	virtual bool CanSpawn(DropItem di)
+	virtual bool CanSpawn(Name di)
 	{
-		class<Actor> actCls = di.Name;
+		class<Actor> actCls = di;
 		if (actCls && (sv_nomonsters || Level.nomonsters) && GetDefaultByType(actCls).bISMONSTER)
 		{
 			return false;
 		}
+		return true;
 		/*
 		class<PB_Weapon> wpnCls = di.Name;
 		class<PB_Ammo> pkpCls = di.Name;
@@ -461,8 +682,23 @@ class PBRandomSpawner : RandomSpawner abstract
 		}*/
 		return true;
 	}
-
+	
+	
+	//the idea here is:
+	//	this function is run after spawn choosing
+	//	it gets the choosed spawn thing, and here you can handle things like
+	//	change it to other thing if its option is disabled
+	virtual void HandleSpawnExeptions(in out name toSpawn)
+	{
+		
+	}
+	
+	protected Array<PBSpawnInfo> Spawns;
+	protected PB_EventHandler Handler;
+	double ChanceFactor;
+	
 	private int BehaviourFlags;
+	protected bool AllowPostBeginPlay;
 	flagdef AllowDropsOnFirstMap: BehaviourFlags, 0;
 	flagdef AllowEnemyDrops: BehaviourFlags, 1;
 
@@ -476,4 +712,10 @@ class PBRandomSpawner : RandomSpawner abstract
 	{
 		+FRIENDLY
 	}
+}
+
+
+Class PBInjector abstract play
+{
+	abstract void Init(PB_EventHandler handler);
 }
