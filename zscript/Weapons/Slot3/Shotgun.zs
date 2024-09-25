@@ -1123,7 +1123,7 @@ Class PB_Shotgun : PB_WeaponBase
 		EmptyMagReloadSwap:
 			SHTN GHIJKL 1;
 			TNT1 A 0 A_JumpIfInventory("ShotgunAmmo",1,2);
-			TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",-5,0,8,-4);
+			TNT1 A 0 A_FireProjectile("EmptyClipMP40",-5,0,8,-4);
 		InsertMagAmmoSwap:
 			SHMS BCDEFG 0;
 			SHMD BCDEFG 0;
