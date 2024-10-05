@@ -14,8 +14,8 @@ Class PB_Shotgun : PB_WeaponBase
 		PB_WeaponBase.unloadertoken "PBPumpShotgunHasUnloaded";
 		PB_WeaponBase.respectItem "RespectShotgun";
 		inventory.pickupsound "SHOTPICK";
-		inventory.pickupmessage "Pump Shotgun (Slot 3)";
-		Tag "Shotgun";
+		inventory.pickupmessage "UAC GS-10 Pump Shotgun (Slot 3)";
+		Tag "UAC GS-10 Shotgun";
 		Scale 0.45;
 		FloatBobStrength 0.5;
 		Inventory.AltHUDIcon "SHTCA0";					
