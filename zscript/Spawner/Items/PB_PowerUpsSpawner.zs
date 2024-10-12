@@ -1,4 +1,4 @@
-Class PB_InvulSpawner : PB_SpawnerBase replaces invulnerabilitysphere
+Class PB_InvulSpawner : PB_SpawnerBase //replaces invulnerabilitysphere
 {
 	default
 	{
@@ -70,7 +70,7 @@ class PB_InvulSpawnerT4 : PB_PowerUpSpawner
 /// 
 //
 
-Class PB_RadSuitSpawner : PB_SpawnerBase replaces radsuit
+Class PB_RadSuitSpawner : PB_SpawnerBase //replaces radsuit
 {
 	default
 	{
@@ -142,7 +142,7 @@ class PB_RadSuitSpawnerT4 : PB_PowerUpSpawner
 //PB_BlurSphere
 
 
-Class PB_BlurSpawner : PB_SpawnerBase replaces blursphere
+Class PB_BlurSpawner : PB_SpawnerBase //replaces blursphere
 {
 	default
 	{
@@ -212,7 +212,7 @@ class PB_BlurSpawnerT4 : PB_PowerUpSpawner
 // infrared
 //
 
-Class PB_InfraRedSpawner : PB_SpawnerBase replaces infrared
+Class PB_InfraRedSpawner : PB_SpawnerBase //replaces infrared
 {
 	default
 	{
@@ -283,7 +283,7 @@ class PB_InfraRedSpawnerT4 : PB_PowerUpSpawner
 //
 //
 
-Class PB_SoulSphereSpawner : PB_SpawnerBase replaces soulsphere
+Class PB_SoulSphereSpawner : PB_SpawnerBase //replaces soulsphere
 {
 	default
 	{
@@ -353,7 +353,7 @@ class PB_SoulSphereSpawnerT4 : PB_PowerUpSpawner
 //
 // 
 
-Class PB_MegaSpawner : PB_SpawnerBase replaces megasphere
+Class PB_MegaSpawner : PB_SpawnerBase //replaces megasphere
 {
 	default
 	{
@@ -423,7 +423,7 @@ class PB_MegaSpawnerT4 : PB_PowerUpSpawner
 // Berserk
 //
 
-Class PB_BerserkSpawner : PB_SpawnerBase replaces Berserk
+Class PB_BerserkSpawner : PB_SpawnerBase //replaces Berserk
 {
 	default
 	{
@@ -493,7 +493,7 @@ class PB_BerserkSpawnerT4 : PB_PowerUpSpawner
 //	allmap
 //
 
-Class PB_AllMapSpawner : PB_SpawnerBase replaces AllMap
+Class PB_AllMapSpawner : PB_SpawnerBase //replaces AllMap
 {
 	default
 	{
