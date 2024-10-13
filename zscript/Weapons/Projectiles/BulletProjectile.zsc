@@ -20,6 +20,7 @@ class PB_Projectile : FastProjectile abstract
 	double distanceTraveled;
 	vector3 oldPos;
 	sound whizSound;
+	F3DFloor PBBlocking3DFloor, PBBlocking3DCeiling;
 	
 	// whiz radii
 	const WHIZ_DIST_STEP = 1500;
@@ -97,8 +98,14 @@ class PB_Projectile : FastProjectile abstract
 		
 		victim.DamageMobj(self, target, ceil(scaled_damage), dmgType, 0, angle);
 		
-		if( victim.bISMONSTER && !victim.bNOBLOOD ) 
+		if( !victim.bNOBLOOD && 
+			!victim.bINVULNERABLE && 
+			!victim.bDORMANT && 
+			!victim.bREFLECTIVE &&
+			( victim.bISMONSTER || victim.BloodType != 'Blood' ) ) 
+		{
 			victim.SpawnBlood( pos, angle, ceil(scaled_damage) );
+		}
 		
 		OnHitActor(target, dmgType);
 		
@@ -169,8 +176,7 @@ class PB_Projectile : FastProjectile abstract
 		if(Level.IsPointInLevel(penDest))
 		{
 			//console.printf ("Penetrating wall");
-			A_SpawnProjectile("PB_BulletPuff",0,0,0,0);
-			A_SprayDecal("BulletChip", 172);
+			PB_SpawnImpact();
 			setOrigin(penDest, false);
 			
 			Angle -= 180;
@@ -192,9 +198,7 @@ class PB_Projectile : FastProjectile abstract
 					//console.printf ("Found an exit at %.5f units", dist);
 					Vector3 offset = unit * (radius * 2);
 					setOrigin(backTraceData.HitLocation + offset, false);
-					A_SpawnProjectile("PB_BulletPuff",0,0,0,0);
-					A_SprayDecal("BulletChip", 172);
-					
+					PB_SpawnImpact();
 					Angle += 180;
 					Pitch = -Pitch;
 					
@@ -340,6 +344,7 @@ class PB_Projectile : FastProjectile abstract
 							if(PenetrateWall(frac)) return;
 						}
 						
+						PB_SpawnImpact(false, 1);
 						ExplodeMissile (BlockingLine, BlockingMobj);
 						OnExplode (FindExplosionType(BlockingMobj));
 						return;
@@ -370,12 +375,16 @@ class PB_Projectile : FastProjectile abstract
 						BouncePlane (FloorSector.FloorPlane);
 						Return;
 					}
+
+					double dontcare;
+					[dontcare, BlockingFloor, PBBlocking3DFloor] = floorsector.NextLowestFloorAt(pos.x, pos.y, floorz);
 					
 					HitFloor ();
                     Destructible.ProjectileHitPlane(self, SECPART_Floor);
 					
 					if(PenetrateWall(frac)) return;
 					
+					PB_SpawnImpact(true, 2);
 					ExplodeMissile (NULL, NULL);
 					OnExplode (EType_Geometry);
 					return;
@@ -401,10 +410,13 @@ class PB_Projectile : FastProjectile abstract
 						Return;
 					}
 					
+					double dontcare;
+					[dontcare, BlockingCeiling, PBBlocking3DCeiling] = ceilingsector.NextHighestCeilingAt(pos.x, pos.y, pos.z, ceilingz);
                     Destructible.ProjectileHitPlane(self, SECPART_Ceiling);
 					
 					if(PenetrateWall(frac)) return;
 					
+					PB_SpawnImpact(true, 3);
 					ExplodeMissile (NULL, NULL);
 					OnExplode (EType_Geometry);
 					return;
@@ -483,7 +495,7 @@ class PB_Projectile : FastProjectile abstract
 			return;
 
 		vector3 soundPosition;
-		vector3 cPlayerPos = players[consoleplayer].mo.pos;
+		vector3 cPlayerPos = plr.pos;
 		cPlayerPos.z = plr.player.ViewZ;
 
 		double distanceSq = PointInLineSquared(cPlayerPos, oldpos, pos, soundPosition.x, soundPosition.y, soundPosition.z);
@@ -507,11 +519,13 @@ class PB_Projectile : FastProjectile abstract
 			if(dotProduct > 0.0 && dotProduct < bulletDist)	
 			{
 				sound whizSound = "whiz/"..whizDist.."/"..playerDist.."/in";
-				float sndLength = floor(S_GetLength(whizSound) * 35) - 7;
-				ticsToPlayWhizOut.Push(level.maptime + sndLength);
+				ticsToPlayWhizOut.Push(level.maptime + 35);
 
-				A_StartSound(whizsound, CHAN_AUTO, volume: bWHIZCRACK ? 0.5 : 1.0, pitch: frandom(0.9, 1.1));
-				if(bWHIZCRACK) A_StartSound("bulletcrack/"..playerDist, CHAN_AUTO);
+				if(bWHIZCRACK) 
+					A_StartSound("bulletcrack/"..playerDist, CHAN_AUTO);
+				else
+					A_StartSound(whizsound, CHAN_AUTO, pitch: frandom(0.9, 1.1));
+
 				alreadyWhizzedBy.Push(plr);
 			}
 		}
@@ -573,6 +587,63 @@ class PB_Projectile : FastProjectile abstract
 		}
 	}
 
+	string PB_GetImpact(name texname)
+	{
+		string tmpstring = texName;
+		string mat;
+		switch(PB_Materialsys.GetMaterialFromTexName(texname))
+		{
+			default:
+			case 'tile/a':
+			case 'tile/b':
+			case 'hard':
+			case 'carpet':
+				mat = "PB_BulletImpact";
+				break;
+			case 'flesh':
+				mat = "NashGoreBlood";
+				break;
+			case 'lava':
+				mat = "PB_BulletImpact";
+				break;
+			case 'dirt':
+			case 'gravel':
+				mat = "PB_BulletImpactDirt";
+				break;
+			case 'wood':
+				mat = "PB_BulletImpactWood";
+				break;
+			case 'rock':
+				mat = "PB_BulletImpactBrownRock";
+				break;
+			case 'metal/a':
+				mat = "PB_BulletImpactMetal";
+				break;
+			case 'metal/b':
+				mat = "PB_BulletImpactSheetMetal";
+				break;
+			case 'water':
+				tmpstring = tmpstring.MakeLower();
+				
+				if(tmpstring.IndexOf("blood") >= 0 || tmpstring.IndexOf("bfall") >= 0)
+					mat = "PB_BulletImpactBlood";
+				else
+					mat = "PB_BulletImpactWater";
+
+				break;
+			case 'slime':
+				tmpstring = tmpstring.MakeLower();
+				
+				if(tmpstring.IndexOf("slime") >= 0)
+					mat = "PB_BulletImpactSlime";
+				else
+					mat = "PB_BulletImpactNukage";
+
+				break;
+		}
+		return mat;
+	}
+
 	double ExtraDamageFactor;
 	protected Actor LastActor;
 	
@@ -603,6 +674,118 @@ class PB_Projectile : FastProjectile abstract
 	vector3 startPos;
 	int noActivation;
 
+	void PB_SpawnImpact(bool floor = false, int id = 0) {
+		PB_BaseBulletImpact puff;
+		double normal;
+		int hitSurfaceType;
+		TextureID surfaceTexId;
+
+		if(!target)
+			return;
+			
+		int side;
+		vector3 linepos;
+
+		if(BlockingLine)
+		{			
+			double den = BlockingLine.delta.LengthSquared();
+			if(den != 0)
+			{
+				double frac = clamp((pos.xy - BlockingLine.v1.p) dot BlockingLine.delta, 0, den) / den;
+				linepos = (BlockingLine.v1.p + BlockingLine.delta * frac, pos.z);
+			}
+
+			side = Level.PointOnLineSide(target.pos.xy, BlockingLine, true);
+
+			Side hitSide = BlockingLine.sidedef[side];
+			sector backsec, frontsec;
+
+			//console.printf("line at id: %i", BlockingLine.Index());
+
+			// facing the void, flip and test
+			if(!hitSide || !hitSide.sector)
+			{
+				/*side ^= 1;
+
+				Side hitSide = BlockingLine.sidedef[side];
+
+				if(!hitSide)*/
+					return;
+			}
+
+			// find what angle the line is facing
+			vector2 normals = PB_Math.GetLineNormal(side, BlockingLine);
+			double wallNormal = -atan2(normals.x, normals.y);
+			
+			// [gng] ideally front would be the only side i need, but
+			// some maps have weird lines where the front faces the back
+			if(side == 0)
+			{
+				backsec = BlockingLine.backsector;
+				frontsec = BlockingLine.frontsector;
+			}
+			else
+			{
+				backsec = BlockingLine.frontsector;
+				frontsec = BlockingLine.backsector;
+			}
+
+			if(hitside)
+			{
+				if(!backsec)
+					surfaceTexId = hitSide.GetTexture(hitSide.mid);
+				else if(backsec.floorplane.ZAtPoint(pos.xy) >= pos.Z)
+					surfaceTexId = hitSide.GetTexture(hitSide.bottom);
+				else if (backsec.ceilingplane.ZAtPoint(pos.xy) <= pos.Z)
+					surfaceTexId = hitSide.GetTexture(hitSide.top);
+			}
+
+			//console.printf("%s", TexMan.GetName(surfaceTexId));
+
+			normal = wallNormal;
+			hitSurfaceType = 1;
+		}
+		else if(BlockingFloor || PBBlocking3DFloor)
+		{
+			hitSurfaceType = 2;
+			normal = -90;
+			surfaceTexId = floorpic;
+			//console.printf("flat: %s", TexMan.GetName(surfaceTexId));
+		}
+		else if(BlockingCeiling || PBBlocking3DCeiling)
+		{
+			hitSurfaceType = 3;
+			normal = -90;
+			surfaceTexId = ceilingpic;
+			//console.printf("flat: %s", TexMan.GetName(surfaceTexId));
+		}
+		else
+		{
+			hitSurfaceType = 1;
+			normal = angle + 90;
+		}
+
+		if(BlockingLine || BlockingCeiling || PBBlocking3DCeiling || BlockingFloor || PBBlocking3DFloor)
+		{
+			string impact;
+			impact = PB_GetImpact(Texman.GetName(surfaceTexId));
+			puff = PB_BaseBulletImpact(SpawnPuff(impact, pos, angle, normal + 90, 0));
+			
+			if(puff)
+			{
+				if(!floor && BlockingLine && puff.DecalGenerator)
+					self.DecalGenerator = puff.default.DecalGenerator;
+				
+				puff.hitWhat = hitSurfaceType;
+				puff.wallNormal = normal + 90;
+			}
+		}
+		else
+		{
+			SpawnPuff("PB_BulletPuff", pos, angle, 0, 0, PF_HITTHING);
+		}
+	}
+
 	Default
 	{
 		// [Ace] Speedy projectiles with a large radius are more performant, but they don't work so well with switches that rely on hitscan activation
@@ -620,11 +803,12 @@ class PB_Projectile : FastProjectile abstract
 		+HITTRACER
 		+NOBOSSRIP
 		+RIPPER
+		+BLOODLESSIMPACT
 		-NOGRAVITY
 		+PB_Projectile.RipOnce;
 		ProjectileKickBack 20;
 		Renderstyle "Add";
-		Decal "BulletChip";
+		Decal "ConcreteBullethole";
 		Scale 0.15;
 		PB_Projectile.RipperCount 1;
 		PB_Projectile.BaseDamage 5;
@@ -643,17 +827,8 @@ class PB_Projectile : FastProjectile abstract
 			{
 				CallOwnerDied();
 				OnExplode(EType_Geometry);
-				A_SpawnProjectile("PB_BulletPuff",0,0,0,0);
 
 				//A_StopAllSounds();
-				
-				// [gng] todo: make this texture specific, gotta rush it for 0.1.1
-				A_StartSound("bulletimpact", 20, pitch: frandom(0.9, 1.1));
-				if(random(0, 100) < 25)
-				{
-					// A_StopSound(CHAN_BODY);
-					A_StartSound("ricochet/hit", 20, CHANF_OVERLAP);
-				}
 			}
 			Stop;
 		Crash: // [Ace] Dormant/NoBlood enemies.
@@ -661,13 +836,12 @@ class PB_Projectile : FastProjectile abstract
 			{
 				CallOwnerDied();
 				OnExplode(EType_Actor);
-				A_SpawnProjectile("PB_BulletPuff",0,0,0,0);
+				//console.printf("hit");
 			}
 			Stop;
 		XDeath: // [Ace] Bleeding enemies.
 			TNT1 A 0
 			{
-
 				CallOwnerDied();
 				OnExplode(EType_BleedingActor);
 			}

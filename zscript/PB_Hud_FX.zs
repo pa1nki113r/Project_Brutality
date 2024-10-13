@@ -275,7 +275,7 @@ class PB_HUDFXHandler : EventHandler
 			return;
 		
 		PB_PlayerPawn pmo = PB_PlayerPawn(players[consoleplayer].mo);
-		if(e.Thing == pmo && random(0, 10) > 8)
+		if(e.Thing == pmo && e.DamageType == 'Head')
 		{
 			EventHandler.SendInterfaceEvent(pmo.PlayerNumber(), "PB_HUDGlassBreak");
 		}

@@ -309,6 +309,28 @@ Class PB_SMGWheel : wheelinfocontainer
 			
 			spw.Push(smg_laser);
 		}
+		if(!requester.FindInventory("SilencedSMG")) 
+		{
+			PB_SpecialWheel_Mode smg_silencer = new ("PB_SpecialWheel_Mode");
+			smg_silencer.img = "sprites/weapons/Slot 2/UACSMG/silencer_icon.png";
+			smg_silencer.Alias = "Screw On Silencer";
+			smg_silencer.tokentogive = "SelectSilencedSMG";
+			smg_silencer.scalex = iconscale.x;
+			smg_silencer.scaley = iconscale.y;
+			
+			spw.Push(smg_silencer);
+		}
+		else 
+		{
+			PB_SpecialWheel_Mode smg_silencer = new ("PB_SpecialWheel_Mode");
+			smg_silencer.img = "sprites/weapons/Slot 2/UACSMG/Pickup/ATFLA0.png";
+			smg_silencer.Alias = "Screw Off Silencer";
+			smg_silencer.tokentogive = "SelectSilencedSMG";
+			smg_silencer.scalex = iconscale.x;
+			smg_silencer.scaley = iconscale.y;
+			
+			spw.Push(smg_silencer);
+		}
 	}
 }
 

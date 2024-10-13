@@ -1,17 +1,19 @@
+#include "zscript/Effects/BulletImpacts.zs"
+
 // [gng] partially based on beautiful doom's smoke
 // https://github.com/jekyllgrim/Beautiful-Doom/blob/96fcd0cec039eca762a8b206e522e8111a62ad95/Z_BDoom/bd_main.zc#L932
 class PB_GunFireSmoke: Actor
 {
     Default {
-        Alpha 0.5;
+        Alpha 0.3;
         //Scale 0.2;
-        Renderstyle "Translucent";
+        Renderstyle "Add";
         Speed 1;
         BounceFactor 0;
         Radius 0;
         Height 0;
         Mass 0;
-        Scale 0.8;
+        Scale 0.22;
         +NOBLOCKMAP;
         +NOTELEPORT;
         +DONTSPLASH;
@@ -35,7 +37,6 @@ class PB_GunFireSmoke: Actor
     override void BeginPlay()
     {
         ChangeStatNum(STAT_PB_SMOKE);
-        NashGoreStatics.QueueSmoke();
         Super.BeginPlay();
 
         blowSpeed = 1.02;
@@ -57,7 +58,8 @@ class PB_GunFireSmoke: Actor
     	if(Level.IsFrozen())
     		return;
     	
-        if(GetAge() < 5) 
+        int age = GetAge();
+        if(age < 5 && age > 1) 
         {
             A_Fadeout(0.05 * fadeSpeed, FTF_CLAMP|FTF_REMOVE);
             scale *= blowSpeed;

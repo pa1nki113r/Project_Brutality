@@ -10,10 +10,10 @@ Class PB_Revolver : PB_WeaponBase
 		weapon.ammogive1 6;	
 		weapon.ammotype2 "RevolverAmmo";
 		inventory.pickupsound "REVOUP";
-		Inventory.Pickupmessage "UAC .500 Magnum (Slot 2)";
+		Inventory.Pickupmessage "UAC-B750 \"Death Adder\" .500 Magnum (Slot 2)";
 		Inventory.MaxAmount 3;					
 		Obituary "%o was shot down by %k's revolver.";
-		Tag "UAC .500 Magnum";
+		Tag "UAC-B750 .500 Magnum";
 		scale 0.4;
 		+WEAPON.NOAUTOFIRE;
 		+WEAPON.NOALERT;
@@ -128,7 +128,6 @@ Class PB_Revolver : PB_WeaponBase
 				A_SetInventory("PB_LockScreenTilt",0);
 			}
 			TNT1 A 0 PB_jumpIfNoAmmo("Reload",1);
-			TNT1 A 0 A_jumpifinventory("zoomed",1,"Fire2");
 			R4V1 A 1 BRIGHT {	
 					A_StartSound("revolver/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(0.95, 1.05));
 					PB_DynamicTail("pistol", "shotgun");
@@ -150,16 +149,16 @@ Class PB_Revolver : PB_WeaponBase
 					A_ZoomFactor(1.0);
 					PB_WeaponRecoil(-1.15,-0.26);
 				}
-			R4V1 DEF 1;
+			R4V1 DEFG 1;
 			TNT1 A 0 A_ZoomFactor(1.0);
-			R4V1 GH 1 A_jumpif(JustPressed(BT_ATTACK),"FanFire");
+			R4V1 H 1 A_jumpif(JustPressed(BT_ATTACK),"FanFire");
 			R1V1 EE 1 {
 				if(JustPressed(BT_ATTACK))
 					return resolvestate("FanFire");
 				A_WeaponReady(WRF_ALLOWRELOAD);
 				return resolvestate(null);
 			}
-			TNT1 A 0 A_Refire();
+			TNT1 A 0 PB_ReFire();
 			Goto Ready3;
 		
 		AltFire:
@@ -198,7 +197,7 @@ Class PB_Revolver : PB_WeaponBase
 				}
 			R5V1 DEFG 1;
 			TNT1 A 0 A_ZoomFactor(1.0);
-			TNT1 A 0 A_Refire("AltFan_Hold");
+			TNT1 A 0 PB_ReFire("AltFan_Hold");
 			R5V1 UVWX 1;
 			Goto Ready3;
 		AltFan_Hold:
@@ -227,7 +226,7 @@ Class PB_Revolver : PB_WeaponBase
 					PB_WeaponRecoil(-1.2,-0.36);
 				}
 			R5V1 LMNO 1;
-			TNT1 A 0 A_Refire("AltFan_Hold");
+			TNT1 A 0 PB_ReFire("AltFan_Hold");
 			R5V1 UVWX 1;
 			Goto Ready3;
 		
@@ -275,10 +274,6 @@ Class PB_Revolver : PB_WeaponBase
 		
 		Unload:
 			TNT1 A 0 A_SetInventory("Unloading",0);
-			TNT1 A 0 {
-				A_zoomfactor(1.0);
-				A_setinventory("zoomed",0);
-			}
 			TNT1 A 0 A_JumpIF(A_CheckAkimbo(), "DualUnload");
 			TNT1 A 0 A_Jumpif(countinv(invoker.UnloaderToken) > 0 || countinv(invoker.ammotype2) < 1,"Ready3");
 			TNT1 A 0 {
@@ -311,7 +306,6 @@ Class PB_Revolver : PB_WeaponBase
 				A_Setinventory("GoWeaponSpecialAbility",0);
 				PB_HandleCrosshair(42);
 				A_ZoomFactor(1.0);
-				A_setinventory("zoomed",0);
 				A_ClearOverlays(10,11);
 				A_StartSound("Ironsights", 10);
 			}
@@ -390,14 +384,14 @@ Class PB_Revolver : PB_WeaponBase
 					if(!PressingAltfire() || JustReleased(BT_ALTATTACK))
 						return resolvestate("Zoomout");
 					
-					if (PressingFire() && PressingAltfire() && CountInv("RevolverAmmo") > 0)
+					if (PressingFire() && PressingAltfire() && CountInv(invoker.ammotype2) > 0)
 							return resolvestate("Fire2");
 					
 					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY);
 				}
 				else 
 				{
-					if (PressingFire() && CountInv("RevolverAmmo") > 0 )
+					if (PressingFire() && CountInv(invoker.ammotype2) > 0 )
 						return resolvestate("Fire2");
 					
 					return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
@@ -412,11 +406,10 @@ Class PB_Revolver : PB_WeaponBase
 					A_SetCrosshair(5);
 				}
 			TNT1 A 0 PB_jumpIfNoAmmo("Reload",1);
-		ActualFire2:
+			TNT1 A 0 A_overlay(-6,"ADS_FireFlash");
 			R4V3 A 1 BRIGHT {	
 					A_StartSound("revolver/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(0.95, 1.05));
 					PB_DynamicTail("pistol", "shotgun");
-					A_overlay(-6,"ADS_FireFlash");
 					A_FireProjectile("PB_500SW", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 					A_AlertMonsters();
 					PB_GunSmoke(0,0,0);
@@ -426,9 +419,7 @@ Class PB_Revolver : PB_WeaponBase
 					A_ZoomFactor(1.25);
 					//A_GunFlash;
 					PB_WeaponRecoil(-1.15,-0.26);
-					A_SetInventory("CantDoAction",1);
 				}
-		Fire2Continue:
 			R4V3 B 1 BRIGHT {
 					A_ZoomFactor(1.28);
 					PB_WeaponRecoil(-1.15,-0.26);
@@ -456,7 +447,7 @@ Class PB_Revolver : PB_WeaponBase
 						return resolvestate("Zoomout");
 					if (JustPressed(BT_ATTACK))
 							return resolvestate("Fire2");
-					A_Refire("Fire2");
+					PB_ReFire("Fire2");
 				}
 				return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
 			}
