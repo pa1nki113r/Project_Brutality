@@ -22,12 +22,13 @@ class gb_Text
 {
 
   static
-  gb_Text from(gb_TextureCache textureCache, gb_Screen screen, gb_FontSelector fontSelector)
+  gb_Text from(gb_TextureCache textureCache, gb_Screen screen, gb_FontSelector fontSelector, gb_Options options)
   {
     let result = new("gb_Text");
     result.mTextureCache = textureCache;
     result.mScreen       = screen;
     result.mFontSelector = fontSelector;
+	result.mOptions		 = options;
     return result;
   }
 
@@ -80,34 +81,66 @@ class gb_Text
                    ), height * 2);
     vector2 size   = (width, height) * scaleFactor;
     vector2 center = pos + (0, size.y / 2);
-	
-	if(novertscale)
+	if(mOptions.isColoredEnabled())
 	{
-		Screen.drawTexture( mTextureCache.textBox
-						  , NO_ANIMATION
-						  , center.x
-						  , center.y
-						  , DTA_FillColor    , baseColor
-						  , DTA_AlphaChannel , true
-						  , DTA_CenterOffset , true
-						  , DTA_Alpha        , alpha
-						  , DTA_DestWidth    , int(size.x)
-						  );
+		if(novertscale)
+		{
+			Screen.drawTexture( mTextureCache.textBox
+							  , NO_ANIMATION
+							  , center.x
+							  , center.y
+							  , DTA_FillColor    , baseColor
+							  , DTA_AlphaChannel , true
+							  , DTA_CenterOffset , true
+							  , DTA_Alpha        , alpha
+							  , DTA_DestWidth    , int(size.x)
+							  );
+		}
+		else
+		{
+			Screen.drawTexture( mTextureCache.textBox
+							  , NO_ANIMATION
+							  , center.x
+							  , center.y
+							  , DTA_FillColor    , baseColor
+							  , DTA_AlphaChannel , true
+							  , DTA_CenterOffset , true
+							  , DTA_Alpha        , alpha
+							  , DTA_DestWidth    , int(size.x)
+							  , DTA_DestHeight   , int(size.y)	
+							  );
+		}
 	}
 	else
 	{
-		Screen.drawTexture( mTextureCache.textBox
-						  , NO_ANIMATION
-						  , center.x
-						  , center.y
-						  , DTA_FillColor    , baseColor
-						  , DTA_AlphaChannel , true
-						  , DTA_CenterOffset , true
-						  , DTA_Alpha        , alpha
-						  , DTA_DestWidth    , int(size.x)
-						  , DTA_DestHeight   , int(size.y)	//aaa
-						  );
+		if(novertscale)
+		{
+			Screen.drawTexture( mTextureCache.textBox
+							  , NO_ANIMATION
+							  , center.x
+							  , center.y
+							  , DTA_AlphaChannel , true
+							  , DTA_CenterOffset , true
+							  , DTA_Alpha        , alpha
+							  , DTA_DestWidth    , int(size.x)
+							  );
+		}
+		else
+		{
+			Screen.drawTexture( mTextureCache.textBox
+							  , NO_ANIMATION
+							  , center.x
+							  , center.y
+							  , DTA_AlphaChannel , true
+							  , DTA_CenterOffset , true
+							  , DTA_Alpha        , alpha
+							  , DTA_DestWidth    , int(size.x)
+							  , DTA_DestHeight   , int(size.y)	
+							  );
+		}
 	}
+	
+	
     vector2 line = (0, lineHeight);
     if (topText   .length() > 0) draw(topText   , center - line, aFont, alpha,fontcol:fontcol);
     if (middleText.length() > 0) draw(middleText, center       , aFont, alpha,fontcol:fontcol);
@@ -133,5 +166,6 @@ class gb_Text
   private gb_TextureCache mTextureCache;
   private gb_Screen       mScreen;
   private gb_FontSelector mFontSelector;
+  private gb_Options        mOptions;
 
 } // class gb_Text

@@ -194,7 +194,7 @@ Class PB_M1Plasma : PB_WeaponBase
 				}
 			TNT1 A 0 A_ReFire();
 			TNT1 A 0 A_JumpIf(pb_nocooldown, "Ready3");
-			TNT1 A 0 A_StartSound("weapons/plasma/startup", 12,CHANF_OVERLAP);
+			TNT1 A 0 A_StartSound("weapons/plasma/startup", 15,CHANF_OVERLAP);
 			TNT1 A 0 A_Setinventory("PB_LockScreenTilt",1);
 			TNT1 A 0 A_StartSound("PLSCOOL",CHAN_VOICE);
 			PLSG BCDEEEEEEEEEEE 1 A_FireProjectile("SmokeSpawner",0,0,0,5);
@@ -316,7 +316,7 @@ Class PB_M1Plasma : PB_WeaponBase
 			PLHE C 2 BRIGHT;
 			PLHE B 1 BRIGHT;
 			PLHE A 2 BRIGHT;
-			TNT1 A 0 A_StartSound("BEPBEP", 5, 1.2);
+			TNT1 A 0 A_StartSound("BEPBEP", 5);
 			TNT1 A 0 A_ClearReFire();
 			Goto Ready3;
 		
@@ -1198,7 +1198,7 @@ Class M1_HeatWave : Actor
 			TNT1 A 1 NoDelay A_RadiusThrust(5000, 150, 0, 100);
 			Q05S BCDEF 1 BRIGHT Light("M1HeatWave") {
 				A_Setroll(roll-0.5);
-				A_SetScale(ScaleX+0.02, ScaleY+0.02);
+				A_SetScale(Scale.X+0.02, Scale.Y+0.02);
 				A_Explode(60,180,0,0,150);
 				A_SpawnItemEx("HeatBlastEffect2", 0, 0, 0, 0, 0, 0, 0, 128);
 				A_SpawnItemEx("HeatBlastEffect2", 0, 0, 0, 0, 0, 0, 0, 128);
@@ -1211,7 +1211,7 @@ Class M1_HeatWave : Actor
 		Fly:
 			TNT1 A 1 BRIGHT Light("M1HeatWave") {
 				A_Setroll(roll-0.5);
-				A_SetScale(ScaleX+0.02, ScaleY+0.02);
+				A_SetScale(Scale.X+0.02, Scale.Y+0.02);
 				A_CountDown();
 				A_Explode(60,180,0,0,150);
 				A_SpawnItemEx("HeatBlastEffect1", 0, 0, 0, 0, 0, 0, 0, 128);

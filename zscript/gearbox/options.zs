@@ -62,8 +62,9 @@ class gb_Options
     result.mTextPositionY          = gb_Cvar.from("gb_text_position_y");
     result.mTextPositionYMax       = gb_Cvar.from("gb_text_position_y_max");
     result.mTextUsualColor         = gb_Cvar.from("gb_text_usual_color");
-    result.mTextSelectedColor      = gb_Cvar.from("gb_text_selected_color");
-
+    result.mTextSelectedColor      = gb_Cvar.from("gb_text_selected_color"); 
+	result.mColoredUi      		   = gb_Cvar.from("gb_colored_ui");
+	
     result.mWheelPosition          = gb_Cvar.from("gb_wheel_position");
     result.mWheelScale             = gb_Cvar.from("gb_wheel_scale");
 
@@ -93,6 +94,8 @@ class gb_Options
   bool isNoMenuIfOne()               const { return mNoMenuIfOne           .getBool();    }
   bool isOnAutomap()                 const { return mOnAutomap             .getBool();    }
   bool isSoundEnabled()              const { return mEnableSounds          .getBool();    }
+  
+  bool isColoredEnabled()			 const { return mColoredUi             .getBool();    }
 
   int  getTimeFreezeMode()           const { return mTimeFreeze            .getInt();     }
 
@@ -166,6 +169,7 @@ class gb_Options
   private gb_Cvar mTextPositionYMax;
   private gb_Cvar mTextUsualColor;
   private gb_Cvar mTextSelectedColor;
+  private gb_Cvar mColoredUi;
 
   private gb_Cvar mWheelPosition;
   private gb_Cvar mWheelScale;
