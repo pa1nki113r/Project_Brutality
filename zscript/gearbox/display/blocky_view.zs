@@ -85,7 +85,7 @@ class gb_BlockyView
       // slot number box
       if (slot != lastDrawnSlot)
       {
-        drawAlphaTexture(mTextureCache.blockBox, slotX, startY, mSlotColor,true);
+        drawAlphaTexture(mTextureCache.blockBox, slotX, startY, mSlotColor,mOptions.isColoredEnabled());
 
         string slotText = string.format("%d", slot);
         int    textX    = slotX + SLOT_SIZE / 2 - aFont.stringWidth(slotText) / 2;
@@ -104,7 +104,7 @@ class gb_BlockyView
 
         // big box blockBigSel
         drawAlphaTexture(isSelectedWeapon ? mTextureCache.blockBigSel : mTextureCache.blockBig, 
-		slotX, weaponY, weaponColor,true);
+		slotX, weaponY, weaponColor,mOptions.isColoredEnabled());
 
         // weapon
         {
@@ -140,11 +140,14 @@ class gb_BlockyView
           int lineEndY = weaponY + SELECTED_WEAPON_HEIGHT - CORNER_SIZE;
           TextureID cornerTexture = mTextureCache.corner;
           // top left, top right, bottom left, bottom right
-          drawFlippedTexture(cornerTexture, slotX,    weaponY,  NoHorizontalFlip, NoVerticalFlip);
-          drawFlippedTexture(cornerTexture, lineEndX, weaponY,    HorizontalFlip, NoVerticalFlip);
-          drawFlippedTexture(cornerTexture, slotX,    lineEndY, NoHorizontalFlip,   VerticalFlip);
-          drawFlippedTexture(cornerTexture, lineEndX, lineEndY,   HorizontalFlip,   VerticalFlip);
-        }
+		  if(mOptions.isColoredEnabled())	//the box is green already if not colored
+		  {
+			  drawFlippedTexture(cornerTexture, slotX,    weaponY,  NoHorizontalFlip, NoVerticalFlip);
+			  drawFlippedTexture(cornerTexture, lineEndX, weaponY,    HorizontalFlip, NoVerticalFlip);
+			  drawFlippedTexture(cornerTexture, slotX,    lineEndY, NoHorizontalFlip,   VerticalFlip);
+			  drawFlippedTexture(cornerTexture, lineEndX, lineEndY,   HorizontalFlip,   VerticalFlip);
+		  }
+		}
 
         // quantity indicators
         TextureID ammoTexture = mTextureCache.ammoLine;
@@ -186,7 +189,7 @@ class gb_BlockyView
       else // not selected slot (small boxes)
       {
         int boxY = startY - MARGIN + (SLOT_SIZE + MARGIN) * (inSlotIndex + 1);
-        drawAlphaTexture(mTextureCache.blockBox, slotX, boxY, mBaseColor,true);
+        drawAlphaTexture(mTextureCache.blockBox, slotX, boxY, mBaseColor,mOptions.isColoredEnabled());
       }
 
       if (i + 1 < nWeapons && viewModel.slots[i + 1] != slot)
@@ -412,18 +415,18 @@ class gb_BlockyView
   private
   void drawFlippedTexture(TextureID texture, int x, int y, int horFlip, int verFlip) const
   {
-    Screen.drawTexture( texture
-                      , NO_ANIMATION
-                      , x
-                      , y
-                      , DTA_Alpha         , mAlpha
-                      , DTA_VirtualWidth  , mScreenWidth
-                      , DTA_VirtualHeight , mScreenHeight
-                      , DTA_KeepRatio     , true
-                      , DTA_FlipX         , horFlip
-                      , DTA_FlipY         , verFlip
-                      , DTA_FillColor     , mSelectedColor
-					  );
+		Screen.drawTexture( texture
+						  , NO_ANIMATION
+						  , x
+						  , y
+						  , DTA_Alpha         , mAlpha
+						  , DTA_VirtualWidth  , mScreenWidth
+						  , DTA_VirtualHeight , mScreenHeight
+						  , DTA_KeepRatio     , true
+						  , DTA_FlipX         , horFlip
+						  , DTA_FlipY         , verFlip
+						  , DTA_FillColor     , mSelectedColor
+						  );
   }
 
   private
