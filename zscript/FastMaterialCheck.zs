@@ -89,7 +89,7 @@ class PB_Materialsys : StaticEventHandler
 
 		for (int i = 0; i < FLATS_FLESH.Size(); i++) 
 			texnamesBuf.Push(FLATS_FLESH[i]);
-        SetupMaterial(texnamesBuf, "flash");
+        SetupMaterial(texnamesBuf, "flesh");
         texnamesBuf.Clear();
 
 		for (int i = 0; i < FLATS_LAVA.Size(); i++) 
