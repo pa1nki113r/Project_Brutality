@@ -121,6 +121,7 @@ class gb_VmAbortHandler : EventHandler
         intCvarToString   ("gb_frozen_can_open"         ),
 
         intCvarToString   ("gb_time_freeze"             ),
+		intCvarToString   ("gb_colored_ui"         		),
 
         floatCvarToString ("gb_mouse_sensitivity_x"     ),
         floatCvarToString ("gb_mouse_sensitivity_y"     )

@@ -35,7 +35,7 @@ class gb_WheelView
     result.mOptions        = options;
     result.mFontSelector   = fontSelector;
     result.mMultiWheelMode = multiWheelMode;
-    result.mText           = gb_Text.from(textureCache, screen, fontSelector);
+    result.mText           = gb_Text.from(textureCache, screen, fontSelector,options);
     result.mTextureCache   = textureCache;
     result.mIsRotating     = true;
 
@@ -215,35 +215,69 @@ class gb_WheelView
   void drawInnerWheel()
   {
     int wheelDiameter = mScreen.getWheelRadius() * 2;
-    Screen.drawTexture( mTextureCache.circle
-                      , NO_ANIMATION
-                      , mCenter.x
-                      , mCenter.y
-                      , DTA_FillColor    , mBaseColor
-                      , DTA_AlphaChannel , true
-                      , DTA_Alpha        , mAlpha
-                      , DTA_CenterOffset , true
-                      , DTA_DestWidth    , wheelDiameter
-                      , DTA_DestHeight   , wheelDiameter
-                      );
+	if(mOptions.isColoredEnabled())
+	{
+		Screen.drawTexture( mTextureCache.circle
+						  , NO_ANIMATION
+						  , mCenter.x
+						  , mCenter.y
+						  , DTA_FillColor    , mBaseColor
+						  , DTA_AlphaChannel , true
+						  , DTA_Alpha        , mAlpha
+						  , DTA_CenterOffset , true
+						  , DTA_DestWidth    , wheelDiameter
+						  , DTA_DestHeight   , wheelDiameter
+						  );
+	}
+	else
+	{
+		Screen.drawTexture( mTextureCache.circle
+						  , NO_ANIMATION
+						  , mCenter.x
+						  , mCenter.y
+						  , DTA_AlphaChannel , true
+						  , DTA_Alpha        , mAlpha
+						  , DTA_CenterOffset , true
+						  , DTA_DestWidth    , wheelDiameter
+						  , DTA_DestHeight   , wheelDiameter
+						  );
+	}
   }
 
   private
   void drawOuterWheel(double x, double y, double angle)
   {
     int wheelDiameter = mScreen.getWheelRadius() * 2;
-    Screen.drawTexture( mTextureCache.halfCircle
-                      , NO_ANIMATION
-                      , x
-                      , y
-                      , DTA_FillColor    , mBaseColor
-                      , DTA_AlphaChannel , true
-                      , DTA_Alpha        , mAlpha
-                      , DTA_CenterOffset , true
-                      , DTA_Rotate       , angle
-                      , DTA_DestWidth    , wheelDiameter
-                      , DTA_DestHeight   , wheelDiameter
-                      );
+	if(mOptions.isColoredEnabled())
+	{
+		Screen.drawTexture( mTextureCache.halfCircle
+						  , NO_ANIMATION
+						  , x
+						  , y
+						  , DTA_FillColor    , mBaseColor
+						  , DTA_AlphaChannel , true
+						  , DTA_Alpha        , mAlpha
+						  , DTA_CenterOffset , true
+						  , DTA_Rotate       , angle
+						  , DTA_DestWidth    , wheelDiameter
+						  , DTA_DestHeight   , wheelDiameter
+						  );
+	}
+	else
+	{
+		Screen.drawTexture( mTextureCache.halfCircle
+					  , NO_ANIMATION
+					  , x
+					  , y
+					  , DTA_AlphaChannel , true
+					  , DTA_Alpha        , mAlpha
+					  , DTA_CenterOffset , true
+					  , DTA_Rotate       , angle
+					  , DTA_DestWidth    , wheelDiameter
+					  , DTA_DestHeight   , wheelDiameter
+					  );
+
+	}
   }
 
   private
@@ -472,34 +506,66 @@ class gb_WheelView
     double  sectorAngleHalfWidth = max(6, 360.0 / 2.0 / nPlaces - 2);
     double  scaleFactor          = mScreen.getScaleFactor();
     vector2 size                 = TexMan.getScaledSize(mTextureCache.hand) * scaleFactor;
+	
+	if(mOptions.isColoredEnabled())
+	{
+		Screen.drawTexture( mTextureCache.hand
+						  , NO_ANIMATION
+						  , center.x
+						  , center.y
+						  , DTA_KeepRatio     , true
+						  , DTA_CenterOffset  , true
+						  , DTA_Alpha         , mAlpha
+						  , DTA_Rotate        , handsAngle - sectorAngleHalfWidth
+						  , DTA_FlipX         , true
+						  , DTA_DestWidthF    , size.x
+						  , DTA_DestHeightF   , size.y
+						  , DTA_FillColor    , mSelectedColor//mBaseColor
+						  );
 
-    Screen.drawTexture( mTextureCache.hand
-                      , NO_ANIMATION
-                      , center.x
-                      , center.y
-                      , DTA_KeepRatio     , true
-                      , DTA_CenterOffset  , true
-                      , DTA_Alpha         , mAlpha
-                      , DTA_Rotate        , handsAngle - sectorAngleHalfWidth
-                      , DTA_FlipX         , true
-                      , DTA_DestWidthF    , size.x
-                      , DTA_DestHeightF   , size.y
-                      , DTA_FillColor    , mSelectedColor//mBaseColor
-                      );
+		Screen.drawTexture( mTextureCache.hand
+						  , NO_ANIMATION
+						  , center.x
+						  , center.y
+						  , DTA_KeepRatio     , true
+						  , DTA_CenterOffset  , true
+						  , DTA_CenterOffset  , true
+						  , DTA_Alpha         , mAlpha
+						  , DTA_Rotate        , handsAngle + sectorAngleHalfWidth
+						  , DTA_DestWidthF    , size.x
+						  , DTA_DestHeightF   , size.y
+						  , DTA_FillColor    , mSelectedColor//mBaseColor
+						  );
+	}
+	else
+	{
+		Screen.drawTexture( mTextureCache.hand
+						  , NO_ANIMATION
+						  , center.x
+						  , center.y
+						  , DTA_KeepRatio     , true
+						  , DTA_CenterOffset  , true
+						  , DTA_Alpha         , mAlpha
+						  , DTA_Rotate        , handsAngle - sectorAngleHalfWidth
+						  , DTA_FlipX         , true
+						  , DTA_DestWidthF    , size.x
+						  , DTA_DestHeightF   , size.y
+						  );
 
-    Screen.drawTexture( mTextureCache.hand
-                      , NO_ANIMATION
-                      , center.x
-                      , center.y
-                      , DTA_KeepRatio     , true
-                      , DTA_CenterOffset  , true
-                      , DTA_CenterOffset  , true
-                      , DTA_Alpha         , mAlpha
-                      , DTA_Rotate        , handsAngle + sectorAngleHalfWidth
-                      , DTA_DestWidthF    , size.x
-                      , DTA_DestHeightF   , size.y
-                      , DTA_FillColor    , mSelectedColor//mBaseColor
-                      );
+		Screen.drawTexture( mTextureCache.hand
+						  , NO_ANIMATION
+						  , center.x
+						  , center.y
+						  , DTA_KeepRatio     , true
+						  , DTA_CenterOffset  , true
+						  , DTA_CenterOffset  , true
+						  , DTA_Alpha         , mAlpha
+						  , DTA_Rotate        , handsAngle + sectorAngleHalfWidth
+						  , DTA_DestWidthF    , size.x
+						  , DTA_DestHeightF   , size.y
+						  );
+	}
+	
   }
 
   private
