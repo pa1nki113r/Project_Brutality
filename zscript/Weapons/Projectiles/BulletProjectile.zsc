@@ -15,12 +15,10 @@ class PB_Projectile : FastProjectile abstract
 	}
 	
 	array<PlayerPawnBase> alreadyWhizzedBy;
-	array<PlayerPawnBase> alreadyWhizzedOut;
-	array<int> ticsToPlayWhizOut;
 	double distanceTraveled;
 	vector3 oldPos;
 	sound whizSound;
-	F3DFloor PBBlocking3DFloor, PBBlocking3DCeiling;
+	F3DFloor PBBlocking3DCeiling, PBBlocking3DFloor;
 	
 	// whiz radii
 	const WHIZ_DIST_STEP = 1500;
@@ -98,13 +96,19 @@ class PB_Projectile : FastProjectile abstract
 		
 		victim.DamageMobj(self, target, ceil(scaled_damage), dmgType, 0, angle);
 		
+		// ( victim.bISMONSTER || victim.BloodType != 'Blood' ) 
+
 		if( !victim.bNOBLOOD && 
 			!victim.bINVULNERABLE && 
 			!victim.bDORMANT && 
 			!victim.bREFLECTIVE &&
-			( victim.bISMONSTER || victim.BloodType != 'Blood' ) ) 
+			victim.bSHOOTABLE ) 
 		{
 			victim.SpawnBlood( pos, angle, ceil(scaled_damage) );
+		}
+		else
+		{
+			SpawnPuff("PB_BulletPuff", pos, angle, 0, 0, PF_HITTHING);
 		}
 		
 		OnHitActor(target, dmgType);
@@ -472,24 +476,6 @@ class PB_Projectile : FastProjectile abstract
 		PB_PlayerPawn plr = PB_PlayerPawn(players[consoleplayer].mo);
 		if(!target || plr == target)
 			return;
-			
-		string whizdist;
-		if(distanceTraveled > WHIZ_DIST_FAR)
-			whizDist = "far";
-		else if(distanceTraveled > WHIZ_DIST_MED)
-			whizDist = "med";
-		else
-			whizDist = "near";
-			
-
-		for(int i = ticsToPlayWhizOut.Size() - 1; i >= 0; i--)
-		{
-			if(level.maptime >= ticsToPlayWhizOut[i])
-			{
-				A_StartSound("whiz/"..whizDist.."/out", CHAN_BODY, CHANF_OVERLAP, pitch: frandom(0.9, 1.1));
-				ticsToPlayWhizOut.Delete(i);
-			}
-		}
 		
 		if(alreadyWhizzedBy.Find(plr) != alreadyWhizzedBy.Size())		
 			return;
@@ -502,7 +488,6 @@ class PB_Projectile : FastProjectile abstract
 
 		if (distanceSq < WHIZ_PLRDIST_LIMIT)
 		{
-			
 			string playerDist;
 			if(distanceSq > WHIZ_PLRDIST_FAR)
 				playerDist = "far";
@@ -510,6 +495,14 @@ class PB_Projectile : FastProjectile abstract
 				playerDist = "med";
 			else
 				playerDist = "near";
+
+			string whizdist;
+			if(distanceTraveled > WHIZ_DIST_FAR)
+				whizDist = "far";
+			else if(distanceTraveled > WHIZ_DIST_MED)
+				whizDist = "med";
+			else
+				whizDist = "near";
 				
 			vector3 soundDir = (soundPosition - oldpos);
 			vector3 dir = (pos - oldpos);
@@ -519,7 +512,6 @@ class PB_Projectile : FastProjectile abstract
 			if(dotProduct > 0.0 && dotProduct < bulletDist)	
 			{
 				sound whizSound = "whiz/"..whizDist.."/"..playerDist.."/in";
-				ticsToPlayWhizOut.Push(level.maptime + 35);
 
 				if(bWHIZCRACK) 
 					A_StartSound("bulletcrack/"..playerDist, CHAN_AUTO);
@@ -674,7 +666,41 @@ class PB_Projectile : FastProjectile abstract
 	vector3 startPos;
 	int noActivation;
 
-	void PB_SpawnImpact(bool floor = false, int id = 0) {
+	TextureID PB_GetLineTex(Line refLine, bool lineSide, double zPos)
+	{
+		sector backsec, frontsec;
+		TextureID surfaceTexId;
+
+		// [gng] ideally front would be the only side i need, but
+		// some maps have weird lines where the front faces the back
+		if(lineSide == 0)
+		{
+			backsec = BlockingLine.backsector;
+			frontsec = BlockingLine.frontsector;
+		}
+		else
+		{
+			backsec = BlockingLine.frontsector;
+			frontsec = BlockingLine.backsector;
+		}
+
+		side refSide = refLine.sidedef[lineSide];
+
+		if(refSide)
+		{
+			if(!backsec)
+				surfaceTexId = refSide.GetTexture(refSide.mid);
+			else if(backsec.floorplane.ZAtPoint(pos.xy) >= zPos)
+				surfaceTexId = refSide.GetTexture(refSide.bottom);
+			else if (backsec.ceilingplane.ZAtPoint(pos.xy) <= zPos)
+				surfaceTexId = refSide.GetTexture(refSide.top);
+		}
+
+		return surfaceTexId;
+	}
+
+	void PB_SpawnImpact(bool floor = false, int id = 0) 
+	{
 		PB_BaseBulletImpact puff;
 		double normal;
 		int hitSurfaceType;
@@ -683,7 +709,7 @@ class PB_Projectile : FastProjectile abstract
 		if(!target)
 			return;
 			
-		int side;
+		bool side;
 		vector3 linepos;
 
 		if(BlockingLine)
@@ -697,50 +723,34 @@ class PB_Projectile : FastProjectile abstract
 
 			side = Level.PointOnLineSide(target.pos.xy, BlockingLine, true);
 
+			// vector2 blDelta = BlockingLine.delta.Unit();
+			// console.printf("d = (\cg%f\c-, \cd%f\c-), side = %i", blDelta.x, blDelta.y, side);
+
 			Side hitSide = BlockingLine.sidedef[side];
-			sector backsec, frontsec;
 
 			//console.printf("line at id: %i", BlockingLine.Index());
 
 			// facing the void, flip and test
 			if(!hitSide || !hitSide.sector)
 			{
-				/*side ^= 1;
-
-				Side hitSide = BlockingLine.sidedef[side];
-
-				if(!hitSide)*/
-					return;
+				return;
 			}
 
 			// find what angle the line is facing
 			vector2 normals = PB_Math.GetLineNormal(side, BlockingLine);
 			double wallNormal = -atan2(normals.x, normals.y);
 			
-			// [gng] ideally front would be the only side i need, but
-			// some maps have weird lines where the front faces the back
-			if(side == 0)
-			{
-				backsec = BlockingLine.backsector;
-				frontsec = BlockingLine.frontsector;
-			}
-			else
-			{
-				backsec = BlockingLine.frontsector;
-				frontsec = BlockingLine.backsector;
-			}
+			surfaceTexId = PB_GetLineTex(BlockingLine, side, pos.z);
 
-			if(hitside)
+			if(!surfaceTexId)
 			{
-				if(!backsec)
-					surfaceTexId = hitSide.GetTexture(hitSide.mid);
-				else if(backsec.floorplane.ZAtPoint(pos.xy) >= pos.Z)
-					surfaceTexId = hitSide.GetTexture(hitSide.bottom);
-				else if (backsec.ceilingplane.ZAtPoint(pos.xy) <= pos.Z)
-					surfaceTexId = hitSide.GetTexture(hitSide.top);
-			}
+				side = 1 - side;
 
-			//console.printf("%s", TexMan.GetName(surfaceTexId));
+				normals = PB_Math.GetLineNormal(side, BlockingLine);
+				wallNormal = -atan2(normals.x, normals.y);
+
+				surfaceTexId = PB_GetLineTex(BlockingLine, side, pos.z);
+			}
 
 			normal = wallNormal;
 			hitSurfaceType = 1;
@@ -779,10 +789,6 @@ class PB_Projectile : FastProjectile abstract
 				puff.hitWhat = hitSurfaceType;
 				puff.wallNormal = normal + 90;
 			}
-		}
-		else
-		{
-			SpawnPuff("PB_BulletPuff", pos, angle, 0, 0, PF_HITTHING);
 		}
 	}
 

@@ -173,17 +173,17 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 			vls = (0,0,1);
 		}
 		PUFSPRK.Vel = vls;
-		PUFSPRK.accel = (0,0,frandom[justtobesafe](-0.1, 0.1));
+		PUFSPRK.accel = (0,0,0);
 		if(CeilingPic == SkyFlatNum)
 			PUFSPRK.accel += (0.1, 0.05, 0.05);
 
 		PUFSPRK.Startroll = random[justtobesafe](0, 359);
 		PUFSPRK.RollVel = frandom[justtobesafe](1, 2);
-		PUFSPRK.StartAlpha = 0.7;
+		PUFSPRK.StartAlpha = 1.0;
 		PUFSPRK.FadeStep = -1;
-		PUFSPRK.Size = random[justtobesafe](20,50);
-		PUFSPRK.SizeStep = 4;
-		PUFSPRK.Lifetime = random[justtobesafe](6,35); 
+		PUFSPRK.Size = random[justtobesafe](40,50);
+		PUFSPRK.SizeStep = 2;
+		PUFSPRK.Lifetime = random[justtobesafe](10,35); 
 		PUFSPRK.Pos = pos;
 		Level.SpawnParticle(PUFSPRK);
 	}
