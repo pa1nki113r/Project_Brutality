@@ -174,8 +174,11 @@ Class PB_SpawnerBase : Actor
 				newmobj.args[4]    = args[4];
 				newmobj.special1   = special1;
 				newmobj.special2   = special2;
-				newmobj.SpawnFlags = SpawnFlags & ~MTF_SECRET;	// MTF_SECRET needs special treatment to avoid incrementing the secret counter twice. It had already been processed for the spawner itself.
-				newmobj.HandleSpawnFlags();
+				newmobj.SpawnFlags = SpawnFlags & ~(MTF_SECRET|MTF_DORMANT);	// MTF_SECRET needs special treatment to avoid incrementing the secret counter twice. It had already been processed for the spawner itself.
+				SpawnFlags &= ~MTF_DORMANT; //we dont want the spawner to be deactivated
+				newmobj.HandleSpawnFlags();	
+				if(isdormant)
+					SpawnFlags |= MTF_DORMANT;
 				newmobj.SpawnFlags = SpawnFlags;
 				newmobj.bCountSecret = SpawnFlags & MTF_SECRET;	// "Transfer" count secret flag to spawned actor
 				newmobj.ChangeTid(tid);
@@ -185,6 +188,7 @@ Class PB_SpawnerBase : Actor
 				newmobj.tracer = tracer;
 				newmobj.CopyFriendliness(self, false);
 				newmobj.bAMBUSH = bAMBUSH;
+				
 				// This handles things such as projectiles with the MF4_SPECTRAL flag that have
 				// a health set to -2 after spawning, for internal reasons.
 				if (health != SpawnHealth()) newmobj.health = health;
@@ -212,11 +216,19 @@ Class PB_SpawnerBase : Actor
 			}
 			else
 			{
-				console.printf("could not spawn: "..spawner..". \n");
+				console.printf(self.getclassname().." could not spawn: "..spawner..". \n");
 				return null;
 			}
 		}
 		return null;
+	}
+	
+	bool isdormant;
+	override void beginplay()
+	{
+		super.beginplay();
+		bool isdormant = (SpawnFlags & MTF_DORMANT);	//save this
+		
 	}
 	
 	override void Tick()
@@ -521,7 +533,8 @@ class PBRandomSpawner : RandomSpawner abstract
 		{
 			Species = Name(GetReplacement(s));
 		}
-
+		
+		//actual spawning happens here
 		Super.PostBeginPlay();
 	}
 	
