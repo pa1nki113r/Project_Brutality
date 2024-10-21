@@ -11,19 +11,19 @@ Class PB_InvulSpawner : PB_SpawnerBase //replaces invulnerabilitysphere
 	{
 		Tier4:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_InvulSpawnerT4",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_InvulSpawnerT4");
 			Stop;
 		Tier3:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_InvulSpawnerT3",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_InvulSpawnerT3");
 			Stop;
 		Tier2:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_InvulSpawnerT2",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_InvulSpawnerT2");
 			Stop;
 		Tier1:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_InvulSpawnerT1",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_InvulSpawnerT1");
 			Stop;
 		Death:
 		    TNT1 A 0;
@@ -83,19 +83,19 @@ Class PB_RadSuitSpawner : PB_SpawnerBase //replaces radsuit
 	{
 		Tier4:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_RadSuitSpawnerT4",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_RadSuitSpawnerT4");
 			Stop;
 		Tier3:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_RadSuitSpawnerT3",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_RadSuitSpawnerT3");
 			Stop;
 		Tier2:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_RadSuitSpawnerT2",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_RadSuitSpawnerT2");
 			Stop;
 		Tier1:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_RadSuitSpawnerT1",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_RadSuitSpawnerT1");
 			Stop;
 		Death:
 		    TNT1 A 0;
@@ -155,19 +155,19 @@ Class PB_BlurSpawner : PB_SpawnerBase //replaces blursphere
 	{
 		Tier4:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_BlurSpawnerT4",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_BlurSpawnerT4");
 			Stop;
 		Tier3:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_BlurSpawnerT3",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_BlurSpawnerT3");
 			Stop;
 		Tier2:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_BlurSpawnerT2",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_BlurSpawnerT2");
 			Stop;
 		Tier1:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_BlurSpawnerT1",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_BlurSpawnerT1");
 			Stop;
 		Death:
 		    TNT1 A 0;
@@ -225,19 +225,19 @@ Class PB_InfraRedSpawner : PB_SpawnerBase //replaces infrared
 	{
 		Tier4:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_InfraRedSpawnerT4",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_InfraRedSpawnerT4");
 			Stop;
 		Tier3:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_InfraRedSpawnerT3",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_InfraRedSpawnerT3");
 			Stop;
 		Tier2:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_InfraRedSpawnerT2",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_InfraRedSpawnerT2");
 			Stop;
 		Tier1:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_InfraRedSpawnerT1",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_InfraRedSpawnerT1");
 			Stop;
 		Death:
 		    TNT1 A 0;
@@ -296,19 +296,19 @@ Class PB_SoulSphereSpawner : PB_SpawnerBase //replaces soulsphere
 	{
 		Tier4:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_SoulSphereSpawnerT4",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSphereSpawnerT4");
 			Stop;
 		Tier3:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_SoulSphereSpawnerT3",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSphereSpawnerT3");
 			Stop;
 		Tier2:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_SoulSphereSpawnerT2",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSphereSpawnerT2");
 			Stop;
 		Tier1:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_SoulSphereSpawnerT1",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSphereSpawnerT1");
 			Stop;
 		Death:
 		    TNT1 A 0;
@@ -366,19 +366,19 @@ Class PB_MegaSpawner : PB_SpawnerBase //replaces megasphere
 	{
 		Tier4:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_MegaSpawnerT4",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_MegaSpawnerT4");
 			Stop;
 		Tier3:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_MegaSpawnerT3",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_MegaSpawnerT3");
 			Stop;
 		Tier2:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_MegaSpawnerT2",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_MegaSpawnerT2");
 			Stop;
 		Tier1:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_MegaSpawnerT1",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_MegaSpawnerT1");
 			Stop;
 		Death:
 		    TNT1 A 0;
@@ -436,19 +436,19 @@ Class PB_BerserkSpawner : PB_SpawnerBase //replaces Berserk
 	{
 		Tier4:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_BerserkSpawnerT4",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_BerserkSpawnerT4");
 			Stop;
 		Tier3:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_BerserkSpawnerT3",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_BerserkSpawnerT3");
 			Stop;
 		Tier2:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_BerserkSpawnerT2",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_BerserkSpawnerT2");
 			Stop;
 		Tier1:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_BerserkSpawnerT1",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_BerserkSpawnerT1");
 			Stop;
 		Death:
 		    TNT1 A 0;
@@ -506,19 +506,19 @@ Class PB_AllMapSpawner : PB_SpawnerBase //replaces AllMap
 	{
 		Tier4:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_AllMapSpawnerT4",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_AllMapSpawnerT4");
 			Stop;
 		Tier3:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_AllMapSpawnerT3",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_AllMapSpawnerT3");
 			Stop;
 		Tier2:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_AllMapSpawnerT2",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_AllMapSpawnerT2");
 			Stop;
 		Tier1:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_AllMapSpawnerT1",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_AllMapSpawnerT1");
 			Stop;
 		Death:
 		    TNT1 A 0;
@@ -576,19 +576,19 @@ Class PB_DoomSpawner : PB_SpawnerBase
 	{
 		Tier4:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_DoomSpawnerT4",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_DoomSpawnerT4");
 			Stop;
 		Tier3:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_DoomSpawnerT3",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_DoomSpawnerT3");
 			Stop;
 		Tier2:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_DoomSpawnerT2",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_DoomSpawnerT2");
 			Stop;
 		Tier1:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_DoomSpawnerT1",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_DoomSpawnerT1");
 			Stop;
 		Death:
 		    TNT1 A 0;
@@ -646,19 +646,19 @@ Class PB_HasteSpawner : PB_SpawnerBase
 	{
 		Tier4:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_HasteSpawnerT4",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_HasteSpawnerT4");
 			Stop;
 		Tier3:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_HasteSpawnerT3",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_HasteSpawnerT3");
 			Stop;
 		Tier2:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_HasteSpawnerT2",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_HasteSpawnerT2");
 			Stop;
 		Tier1:
 			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_HasteSpawnerT1",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_HasteSpawnerT1");
 			Stop;
 		Death:
 		    TNT1 A 0;
