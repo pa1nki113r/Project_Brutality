@@ -1,50 +1,97 @@
-// Copyright 2006-2019 Nash Muhandes
-// All rights reserved.
+// “Commons Clause” License Condition v1.0
+//
+// The Software is provided to you by the Licensor under the License, as
+// defined below, subject to the following condition.
+//
+// Without limiting other conditions in the License, the grant of rights under
+// the License will not include, and the License does not grant to you, the
+// right to Sell the Software.
+//
+// For purposes of the foregoing, “Sell” means practicing any or all of the
+// rights granted to you under the License to provide to third parties, for a
+// fee or other consideration (including without limitation fees for hosting or
+// consulting/ support services related to the Software), a product or service
+// whose value derives, entirely or substantially, from the functionality of
+// the Software. Any license notice or attribution required by the License must
+// also include this Commons Clause License Condition notice.
+//
+// Software: NashGore NEXT v1.0
+//
+// License: BSD-2-Clause
+//
+// Licensor: Nash Muhandes
+
+// The 2-Clause BSD License
+//
+// Copyright (c) 2006 - 2024, Nash Muhandes
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
+// modification, are permitted provided that the following conditions are met:
 //
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-// 3. The name of the author may not be used to endorse or promote products
-//    derived from this software without specific prior written permission.
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
 //
-// THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
-// IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-// OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-// IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
-// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-// NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-// THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
 //===========================================================================
 //
+// You MAY:
+// - Use this mod in your play session, as long as all licenses and headers
+//   remain intact
+// - Embed this mod into your mods or projects that are FREELY downloadable
+//   without any kind of monetary transaction involved, as long as all licenses
+//   and headers remain intact
 //
+// You MAY NOT:
+// - Use or embed this mod into your project (either partially or fully) if
+//   you are making money off your mod/project, including commercially-sold
+//   games, or via crowdfunding platforms like Kickstarter, Patreon, Ko-fi
+//   and other similar platforms
 //
 //===========================================================================
 
 class NashGoreBloodBase : Blood
 {
+	const BLOOD_FLAGS = SXF_TRANSFERTRANSLATION | SXF_ABSOLUTEPOSITION | SXF_ABSOLUTEANGLE |
+		SXF_ABSOLUTEVELOCITY | SXF_NOCHECKPOSITION;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
 	Default
 	{
 		FloatBobPhase 0;
+		Speed 4;
 		+NOBLOCKMAP
 		+PUFFGETSOWNER
 		+FORCEXYBILLBOARD
 		+RANDOMIZE
 		+DONTSPLASH
+		// +NOINTERACTION
 		+NOTELEPORT
+		+NOTONAUTOMAP
+		// +MISSILE
+		// -NOGRAVITY
 		-SOLID
 	}
-
-	const BLOOD_FLAGS = SXF_TRANSFERTRANSLATION | SXF_ABSOLUTEPOSITION | SXF_ABSOLUTEANGLE |
-		SXF_ABSOLUTEVELOCITY | SXF_NOCHECKPOSITION;
 
 	//===========================================================================
 	//
@@ -69,14 +116,14 @@ class NashGoreBloodBase : Blood
 			if (nashgore_bloodtype == 0 || nashgore_bloodtype == 1)
 			{
 				class<Actor> cls;
-				cls = "PB_BloodSpotCeiling";
+				cls = "NashGoreBloodSpotCeiling";
 
 				[result, obj] = A_SpawnItemEx(cls, flags: SXF_USEBLOODCOLOR | BLOOD_FLAGS, 150);
 				if (obj)
 				{
 					obj.Gravity = 0;
 					obj.SetOrigin(t.HitLocation, true);
-					PB_BloodSpotCeiling(obj).bOnCeiling = true;
+					NashGoreBloodSpotCeiling(obj).bOnCeiling = true;
 
 					// flip sprite Y
 					if (nashgore_spriteblood) obj.Scale.Y *= -1;
@@ -84,12 +131,12 @@ class NashGoreBloodBase : Blood
 			}
 		}
 	}
-	
+
 	override void BeginPlay(void)
 	{
 		Super.BeginPlay();
 
-		if (!level.IsPointInLevel(Pos))
+		if (!Level.IsPointInLevel(Pos))
 		{
 			Destroy();
 			return;
@@ -100,8 +147,31 @@ class NashGoreBloodBase : Blood
 
 	override void PostBeginPlay(void)
 	{
-		if (random() < (255 - nashgore_bloodamount)) { Destroy(); return; }
 		Super.PostBeginPlay();
+
+		// need to copy blood color to get correct decal color for TraceBleed
+		if (Target)
+			CopyBloodColor(Target);
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	static void SprayBloodDecals(Actor self, int defaultAmount = 14)
+	{
+		if (defaultAmount <= 0)
+			defaultAmount = 1;
+		int amt = NashGoreStatics.GetAmountMult(nashgore_bloodmult);
+		for (int i = 0; i < defaultAmount; i++)
+		{
+			for (int j = 0; j < amt; j++)
+			{
+				self.TraceBleedAngle(random[rnd_SprayBloodDecals](10, 100), frandom[rnd_SprayBloodDecals](0.0, 360.0), frandom[rnd_SprayBloodDecals](-70.0, 0.0));
+			}
+		}
 	}
 }
 
@@ -113,11 +183,31 @@ class NashGoreBloodBase : Blood
 
 class NashGoreBloodImpact : NashGoreBloodBase
 {
+	double impactSoundVolume;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
 	Default
 	{
 		Scale 0.75;
 		+NOINTERACTION
 		+NOGRAVITY
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	override void BeginPlay(void)
+	{
+		Super.BeginPlay();
+		impactSoundVolume = NashGoreHandler.GetBloodImpactSoundVolume();
 	}
 
 	override void PostBeginPlay(void)
@@ -126,11 +216,17 @@ class NashGoreBloodImpact : NashGoreBloodBase
 		NashGoreStatics.RandomXFlip(self);
 	}
 
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
 	States
 	{
 	Spawn:
-		TNT1 A 0 NoDelay A_StartSound("bulletfleshimpact");
-		bimp ABCDE 2;
+		TNT1 A 0 NoDelay A_StartSound("nashgore/bullethitflesh", volume: impactSoundVolume);
+		BLIM ABCDE 3;
 		Stop;
 	}
 }
@@ -258,13 +354,19 @@ class PB_GibBloodCloud : PB_BloodCloud
 
 class NashGoreBlood : NashGoreBloodBase replaces Blood
 {
+	int chanceMod;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
 	Default
 	{
 		+NOGRAVITY
 		-RANDOMIZE
 	}
-
-	uint8 chanceMod;
 
 	//===========================================================================
 	//
@@ -278,38 +380,58 @@ class NashGoreBlood : NashGoreBloodBase replaces Blood
 		TNT1 A 0 { chanceMod = 0;		return ResolveState("Spawn2"); }
 		TNT1 A 0 { chanceMod = 100;		return ResolveState("Spawn2"); }
 		TNT1 A 0 { chanceMod = 220;		return ResolveState("Spawn2"); }
-		
 	Spawn2:
 		TNT1 A 0
 		{
-			A_SpawnItemEx("PB_BloodCloud", frandom(-5, 5), frandom(-5, 5), frandom(-5, 5), flags: BLOOD_FLAGS | SXF_TRANSFERPOINTERS);
-			
 			A_SpawnItemEx("NashGoreBloodImpact", flags: BLOOD_FLAGS);
-			
-			A_SpawnProjectile("BloodSplasher", 0, 0, random (0, 360), 2, random (0, 160));
-			
-			A_SpawnProjectile ("WaterBloodCHecker", 7, 0, random (0, 360), 2, random (30, 60));
-			for (int i = 0; i < 4; i++)
+			A_SpawnItemEx("PB_BloodCloud", frandom(-5, 5), frandom(-5, 5), frandom(-5, 5), flags: BLOOD_FLAGS | SXF_TRANSFERPOINTERS);
+
+			for (int i = 0; i < 10; i++)
 			{
-				A_SpawnItemEx("NashGoreBloodParticle1",
-					frandom(-8, 8), frandom(-8, 8), frandom(-8, 8),
-					frandom(-2.0, 2.0), frandom(-2.0, 2.0), frandom(0.0, 4.0),
-					frandom(0, 360), BLOOD_FLAGS | SXF_TRANSFERPOINTERS, chanceMod);
+				int amt, cmul;
+				[amt, cmul] = NashGoreStatics.GetAmountMult(nashgore_bloodmult, chanceMod);
+				for (int i = 0; i < amt; i++)
+				{
+					A_SpawnItemEx("NashGoreBloodParticle1",
+						frandom[rnd_SpawnBloodParticle1](-8.0, 8.0), frandom[rnd_SpawnBloodParticle1](-8.0, 8.0), frandom[rnd_SpawnBloodParticle1](-8.0, 8.0),
+						frandom[rnd_SpawnBloodParticle1](-2.0, 2.0), frandom[rnd_SpawnBloodParticle1](-2.0, 2.0), frandom[rnd_SpawnBloodParticle1](0.0, 4.0),
+						frandom[rnd_SpawnBloodParticle1](0.0, 360.0), BLOOD_FLAGS | SXF_TRANSFERPOINTERS, cmul);
+				}
 			}
 		}
-		TNT1 AA 1
+		TNT1 AAAAA 0
 		{
-			A_SpawnItemEx("NashGoreBloodParticle2",
-				frandom(-8, 8), frandom(-8, 8), frandom(-8, 8),
-				frandom(-2.5, 2.5), frandom(-2.5, 2.5), frandom(1.0, 2.0),
-				frandom(0, 360), BLOOD_FLAGS, chanceMod);
+			int amt, cmul;
+			[amt, cmul] = NashGoreStatics.GetAmountMult(nashgore_bloodmult, chanceMod);
+			for (int i = 0; i < amt; i++)
+			{
+				if (random[rnd_SpawnBloodParticle2]() < 177)
+				{
+					A_SpawnItemEx("NashGoreBloodParticle2",
+						frandom[rnd_SpawnBloodParticle2](-8.0, 8.0), frandom[rnd_SpawnBloodParticle2](-8.0, 8.0), frandom[rnd_SpawnBloodParticle2](-8.0, 8.0),
+						frandom[rnd_SpawnBloodParticle2](-2.5, 2.5), frandom[rnd_SpawnBloodParticle2](-2.5, 2.5), frandom[rnd_SpawnBloodParticle2](1.0, 2.0),
+						frandom[rnd_SpawnBloodParticle2](0.0, 360.0), BLOOD_FLAGS | SXF_TRANSFERPOINTERS, cmul);
+				}
+				else
+				{
+					A_SpawnItemEx("NashGoreBloodParticle3",
+						frandom[rnd_SpawnBloodParticle3](-4.0, 4.0), frandom[rnd_SpawnBloodParticle3](-4.0, 4.0), frandom[rnd_SpawnBloodParticle3](-4.0, 4.0),
+						frandom[rnd_SpawnBloodParticle3](-5.0, 5.0), frandom[rnd_SpawnBloodParticle3](-5.0, 5.0), frandom[rnd_SpawnBloodParticle3](1.0, 4.0),
+						frandom[rnd_SpawnBloodParticle3](0.0, 360.0), BLOOD_FLAGS | SXF_TRANSFERPOINTERS, cmul);
+				}
+			}
 		}
-		TNT1 AA 1
+		TNT1 AAAA 0
 		{
-			A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
-				0, 0, 0,
-				frandom(-4.0, 4.0), frandom(-4.0, 4.0), frandom(1.0, 4.0),
-				frandom(0, 360), BLOOD_FLAGS, chanceMod);
+			int amt, cmul;
+			[amt, cmul] = NashGoreStatics.GetAmountMult(nashgore_bloodmult * 0.25, chanceMod);
+			for (int i = 0; i < amt; i++)
+			{
+				A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
+					0, 0, 0,
+					frandom[rnd_BloodFloorSplash](-4.0, 4.0), frandom[rnd_BloodFloorSplash](-4.0, 4.0), frandom[rnd_BloodFloorSplash](1.0, 4.0),
+					frandom[rnd_BloodFloorSplash](0.0, 360.0), BLOOD_FLAGS | SXF_TRANSFERPOINTERS, cmul);
+			}
 		}
 		Stop;
 	}
@@ -320,42 +442,6 @@ class NashGoreBlood_Green : NashGoreBlood
 	Default {
 		translation "168:191=112:127", "16:47=123:127";
 	}
-	
-	States
-	{
-		Spawn2:
-			TNT1 A 0
-			{
-				A_SpawnItemEx("PB_BloodCloud", frandom(-5, 5), frandom(-5, 5), frandom(-5, 5), flags: BLOOD_FLAGS | SXF_TRANSFERPOINTERS);
-				A_SpawnItemEx("NashGoreBloodImpact", flags: BLOOD_FLAGS);
-				A_RadiusGive("GreenBloodSplatterz", 96, RGF_PLAYERS | RGF_OBJECTS | RGF_MONSTERS, 1);
-				A_SpawnProjectile("GreenBloodSplasher", 0, 0, random (0, 360), 2, random (0, 160));
-				
-				A_SpawnProjectile ("WaterBloodCHeckerGreen", 7, 0, random (0, 360), 2, random (30, 60));
-				for (int i = 0; i < 3; i++)
-				{
-					A_SpawnItemEx("NashGoreBloodParticle1",
-						frandom(-8, 8), frandom(-8, 8), frandom(-8, 8),
-						frandom(-2.0, 2.0), frandom(-2.0, 2.0), frandom(0.0, 4.0),
-						frandom(0, 360), BLOOD_FLAGS | SXF_TRANSFERPOINTERS, chanceMod);
-				}
-			}
-			TNT1 AA 1
-			{
-				A_SpawnItemEx("NashGoreBloodParticle2",
-					frandom(-8, 8), frandom(-8, 8), frandom(-8, 8),
-					frandom(-2.5, 2.5), frandom(-2.5, 2.5), frandom(1.0, 2.0),
-					frandom(0, 360), BLOOD_FLAGS, chanceMod);
-			}
-			TNT1 AA 1
-			{
-				A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
-					0, 0, 0,
-					frandom(-4.0, 4.0), frandom(-4.0, 4.0), frandom(1.0, 4.0),
-					frandom(0, 360), BLOOD_FLAGS, chanceMod);
-			}
-			Stop;
-	}
 }
 
 class NashGoreBlood_Blue : NashGoreBlood
@@ -363,54 +449,27 @@ class NashGoreBlood_Blue : NashGoreBlood
 	Default {
 		translation "168:191=192:207","16:47=240:247";
 	}
-	States
-	{
-		Spawn2:
-			TNT1 A 0
-			{
-				A_SpawnItemEx("PB_BloodCloud", frandom(-5, 5), frandom(-5, 5), frandom(-5, 5), flags: BLOOD_FLAGS | SXF_TRANSFERPOINTERS);
-				A_SpawnItemEx("NashGoreBloodImpact", flags: BLOOD_FLAGS);
-				A_RadiusGive("BlueBloodSplatterz", 96, RGF_PLAYERS | RGF_OBJECTS | RGF_MONSTERS, 1);
-				A_SpawnProjectile("BlueBloodSplasher", 0, 0, random (0, 360), 2, random (0, 160));
-				
-				A_SpawnProjectile ("WaterBloodCHeckerBlue", 7, 0, random (0, 360), 2, random (30, 60));
-				for (int i = 0; i < 3; i++)
-				{
-					A_SpawnItemEx("NashGoreBloodParticle1",
-						frandom(-8, 8), frandom(-8, 8), frandom(-8, 8),
-						frandom(-2.0, 2.0), frandom(-2.0, 2.0), frandom(0.0, 4.0),
-						frandom(0, 360), BLOOD_FLAGS | SXF_TRANSFERPOINTERS, chanceMod);
-				}
-			}
-			TNT1 AA 1
-			{
-				A_SpawnItemEx("NashGoreBloodParticle2",
-					frandom(-8, 8), frandom(-8, 8), frandom(-8, 8),
-					frandom(-2.5, 2.5), frandom(-2.5, 2.5), frandom(1.0, 2.0),
-					frandom(0, 360), BLOOD_FLAGS, chanceMod);
-			}
-			TNT1 AA 1
-			{
-				A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
-					0, 0, 0,
-					frandom(-4.0, 4.0), frandom(-4.0, 4.0), frandom(1.0, 4.0),
-					frandom(0, 360), BLOOD_FLAGS, chanceMod);
-			}
-			Stop;
-	}
 }
-//===========================================================================
-//
-//
-//
-//===========================================================================
 
+//===========================================================================
+//
+//
+//
+//===========================================================================
 
 class NashGoreBloodParticle1 : NashGoreBloodBase
 {
+	bool inDeepWater;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
 	Default
 	{
-		Scale 0.5;
+		Scale 0.4;
 		Gravity 0.6;
 		+NOCLIP
 		+CORPSE
@@ -422,25 +481,46 @@ class NashGoreBloodParticle1 : NashGoreBloodBase
 	//
 	//===========================================================================
 
+	override void BeginPlay(void)
+	{
+		Super.BeginPlay();
+
+		// it spawned too deep in the water
+		if (WaterLevel >= 3)
+			inDeepWater = true;
+	}
+
 	override void Tick(void)
 	{
 		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
 
-		if (GetAge() == 10) A_SetRenderStyle(1, STYLE_Translucent);
-		if (GetAge() > 10) Alpha *= 0.9;
+		if (!bNoTimeFreeze && isFrozen())
+			return;
 
+		// scale up
 		A_SetScale(Scale.X + 0.0075);
 
-		if (GetAge() > 350)
+		// fade out
+		if (GetAge() == 10)
+			A_SetRenderStyle(1.0, STYLE_Translucent);
+		if (GetAge() > 10)
+			Alpha *= 0.9;
+
+		// time out
+		if (Alpha < 0.01)
 		{
 			Destroy();
 			return;
 		}
 
-		if (waterlevel > 0 && waterlevel < 3)
+		// the blood spawned while it was deep in water
+		// there's no point in continuing the tick as this blood is too deep in water
+		if (inDeepWater)
+			return;
+
+		// blood wasn't deep in water, and has collided with the water surface
+		if (WaterLevel > 0)
 		{
-			SetZ(Pos.Z - Vel.Z);
 			NashGoreLiquidBlood.SpawnLiquidBlood(self);
 			Destroy();
 			return;
@@ -456,10 +536,7 @@ class NashGoreBloodParticle1 : NashGoreBloodBase
 	States
 	{
 	Spawn:
-		TNT1 A 1 NoDelay {
-			SpawnCeilingBlood();
-			A_Jump(256, "Blood1", "Blood2", "Blood3", "Blood4", "Blood5", "Blood6");
-		}
+		TNT1 A 1 NoDelay A_Jump(256, "Blood1", "Blood2", "Blood3", "Blood4", "Blood5", "Blood6");
 		Stop;
 	Blood1:
 		NBL1 A -1;
@@ -480,7 +557,18 @@ class NashGoreBloodParticle1 : NashGoreBloodBase
 		NBL1 F -1;
 		Stop;
 	Crash:
-		TNT1 A 1 A_SpawnItemEx("PB_BloodSpot", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION);
+		TNT1 A 1
+		{
+			class<Actor> cls;
+
+			if (random[rnd_FloorSplashSpot]() < 33)
+				cls = "NashGoreBloodSpot";
+			else
+				cls = "NashGoreBloodSpotSmall";
+
+			int failChance = 190;
+			A_SpawnItemEx(cls, flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, failChance);
+		}
 		Stop;
 	}
 }
@@ -489,10 +577,9 @@ class NashGoreBloodParticle2 : NashGoreBloodBase
 {
 	Default
 	{
-		Radius 1;
-		Height 2;
+		Radius 1.0;
+		Height 2.0;
 		Gravity 0.4;
-		Scale 0.4;
 		+NOCLIP
 		+NOBLOCKMAP
 		+CORPSE
@@ -506,32 +593,59 @@ class NashGoreBloodParticle2 : NashGoreBloodBase
 
 	States
 	{
-	/*
 	Spawn:
 		NBL2 ABCD 4;
 		Stop;
-		*/
-		
-	Spawn:
-		TNT1 A 1 NoDelay {
-			SpawnCeilingBlood();
-			A_Jump(256, "Blood1", "Blood2", "Blood3", "Blood4", "Blood5", "Blood6");
-		}
-	Spawn1:
-		X057 ABCDEFGHIJKLMNOPQRS 1;
-		Stop;
-	Spawn2:
-		X058 ABCDEFGHIJKLMNOPQR 1;
-		Stop;
-	Spawn3:
-		X059 ABCDEFGHIJKLM 1;
-		Stop;
 	Crash:
-		TNT1 A 1 A_SpawnItemEx("PB_BloodSpot", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, failchance: 255 - nashgore_bloodamount);
+		TNT1 A 1;
 		Stop;
 	}
 }
 
+class NashGoreBloodParticle3 : NashGoreBloodBase
+{
+	Default
+	{
+		Gravity 0.5;
+		Projectile;
+		+THRUACTORS
+		+ROLLSPRITE
+		+ROLLCENTER
+	}
+
+	override void BeginPlay(void)
+	{
+		Super.BeginPlay();
+		Roll = NashGoreStatics.RandomAngle4();
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	States
+	{
+	Spawn:
+		NBL3 A 1
+		{
+			A_SetScale(Scale.X * 0.96);
+			Vel.Z -= 0.33;
+
+			if (Scale.X < 0.01)
+				Destroy();
+		}
+		Loop;
+	Death:
+		#### # 1
+		{
+			if (Target)
+				TraceBleedAngle(10, Angle, Pitch);
+		}
+		Stop;
+	}
+}
 
 class NashGoreBloodParticle_Large : NashGoreBloodBase
 {
@@ -575,7 +689,7 @@ class NashGoreBloodParticle_Large : NashGoreBloodBase
 		X059 ABCDEFGHIJKLM 1;
 		Stop;
 	Crash:
-		TNT1 A 1 A_SpawnItemEx("PB_BloodSpot", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, failchance: 255 - nashgore_bloodamount);
+		TNT1 A 1 A_SpawnItemEx("NashGoreBloodSpot", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, failchance: 255 - nashgore_bloodamount);
 		Stop;
 	}
 }
@@ -606,10 +720,15 @@ class NashGoreClassicBlood : NashGoreBloodBase
 		{
 			A_SpawnItemEx("NashGoreBloodImpact", flags: BLOOD_FLAGS);
 
-			// This shit needs to be in the Spawn state for translations to work correctly. >8[
-			A_SpawnItemEx("NashGoreClassicBloodTrailSpawner",
-				xvel: frandom(-6, 6), frandom(-6, 6), frandom(0, 8),
-				frandom(0.0, 360.0), SXF_TRANSFERTRANSLATION, 110);
+			int amt, cmul;
+			[amt, cmul] = NashGoreStatics.GetAmountMult(nashgore_bloodmult, 110);
+			for (int i = 0; i < amt; i++)
+			{
+				// This shit needs to be in the Spawn state for translations to work correctly. >8[
+				A_SpawnItemEx("NashGoreClassicBloodTrailSpawner",
+					xvel: frandom[rnd_SpawnBloodTrail](-6.0, 6.0), frandom[rnd_SpawnBloodTrail](-6.0, 6.0), frandom[rnd_SpawnBloodTrail](0.0, 8.0),
+					frandom[rnd_SpawnBloodTrail](0.0, 360.0), SXF_TRANSFERTRANSLATION, cmul);
+			}
 		}
 		Stop;
 	}
@@ -617,17 +736,23 @@ class NashGoreClassicBlood : NashGoreBloodBase
 
 class NashGoreClassicBloodTrailSpawner : NashGoreBloodBase
 {
+	const DECELERATION_SPEED = 0.963;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
 	Default
 	{
-		Radius 8;
-		Height 2;
+		Radius 8.0;
+		Height 2.0;
 		Gravity 0.235;
 		+NOFRICTION
 		+NOCLIP
 		+CORPSE
 	}
-
-	const DECELERATION_SPEED = 0.963;
 
 	//===========================================================================
 	//
@@ -638,14 +763,14 @@ class NashGoreClassicBloodTrailSpawner : NashGoreBloodBase
 	override void Tick(void)
 	{
 		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
+
+		if (!bNoTimeFreeze && isFrozen())
+			return;
 
 		Vel.XY *= DECELERATION_SPEED;
 
-		if (waterlevel >= 3)
-		{
+		if (WaterLevel >= 3)
 			A_FadeOut(0.07);
-		}
 	}
 
 	//===========================================================================
@@ -676,12 +801,13 @@ class NashGoreClassicBloodTrail : NashGoreBloodBase
 {
 	Default
 	{
-		Radius 1;
-		Height 1;
+		Radius 1.0;
+		Height 1.0;
 		Gravity 0.235;
 		Scale 0.67;
 		+CORPSE
 	}
+
 	//===========================================================================
 	//
 	//
@@ -691,9 +817,11 @@ class NashGoreClassicBloodTrail : NashGoreBloodBase
 	override void Tick(void)
 	{
 		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
 
-		if (waterlevel > 0)
+		if (!bNoTimeFreeze && isFrozen())
+			return;
+
+		if (WaterLevel > 0)
 		{
 			A_FadeOut(0.01);
 			Vel.Z = -1;
@@ -714,13 +842,15 @@ class NashGoreClassicBloodTrail : NashGoreBloodBase
 	Crash:
 		TNT1 AAAAA 1
 		{
+			int failChance = 220;
 			A_SpawnItemEx("NashGoreBloodFloorSplash",
-				frandom(-32, 32), frandom(-32, 32),
-				flags: SXF_TRANSFERTRANSLATION | SXF_ABSOLUTEPOSITION | SXF_NOCHECKPOSITION, 220);
+				frandom[rnd_SpawnFloorSplash](-32.0, 32.0), frandom[rnd_SpawnFloorSplash](-32.0, 32.0),
+				flags: SXF_TRANSFERTRANSLATION | SXF_ABSOLUTEPOSITION | SXF_NOCHECKPOSITION, failChance);
 
-			A_SpawnItemEx("PB_BloodSpotTiny",
-				frandom(-32, 32), frandom(-32, 32),
-				flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 240);
+			failChance = 254;
+			A_SpawnItemEx("NashGoreBloodSpotClassic",
+				frandom[rnd_SpawnFloorSplash](-32.0, 32.0), frandom[rnd_SpawnFloorSplash](-32.0, 32.0),
+				flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, failChance);
 		}
 		Stop;
 	}
@@ -732,8 +862,18 @@ class NashGoreClassicBloodTrail : NashGoreBloodBase
 //
 //===========================================================================
 
-class NashGoreBloodSpurtSpawner : Actor
+class NashGoreBloodSpurtSpawner : Actor 
 {
+	int spurtInterval;
+	int spurtDuration;
+	Actor spurter;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
 	Default
 	{
 		FloatBobPhase 0;
@@ -745,9 +885,6 @@ class NashGoreBloodSpurtSpawner : Actor
 		-SOLID
 	}
 
-	uint8 spurtInterval;
-	uint8 spurtDuration;
-
 	//===========================================================================
 	//
 	//
@@ -757,12 +894,20 @@ class NashGoreBloodSpurtSpawner : Actor
 	override void Tick(void)
 	{
 		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
+
+		if (!bNoTimeFreeze && isFrozen())
+			return;
+
+		if (!spurter)
+		{
+			Destroy();
+			return;
+		}
 
 		if (spurtInterval == 0)
 		{
-			spurtInterval = random(10, 75);
-			spurtDuration = random(5, 20);
+			spurtInterval = random[rnd_BloodSpurtInit](10, 75);
+			spurtDuration = random[rnd_BloodSpurtInit](5, 20);
 		}
 		else if (spurtInterval > 0)
 		{
@@ -771,16 +916,27 @@ class NashGoreBloodSpurtSpawner : Actor
 
 		if (spurtDuration > 0)
 		{
-			A_SpawnItemEx("NashGoreBloodSpurt",
-				frandom(-5, 5), frandom(-5, 5), frandom(15, 25),
-				frandom(-2, 2), frandom(-2, 2), frandom(4, 8),
-				frandom(0, 360),
-				NashGoreBloodBase.BLOOD_FLAGS);
+			int amt, cmul;
+			[amt, cmul] = NashGoreStatics.GetAmountMult(nashgore_bloodmult);
+			for (int i = 0; i < amt; i++)
+			{
+				A_SpawnItemEx("NashGoreBloodSpurt",
+					frandom[rnd_SpawnBloodSpurt](-5.0, 5.0), frandom[rnd_SpawnBloodSpurt](-5.0, 5.0), frandom[rnd_SpawnBloodSpurt](15.0, 25.0),
+					frandom[rnd_SpawnBloodSpurt](-2.0, 2.0), frandom[rnd_SpawnBloodSpurt](-2.0, 2.0), frandom[rnd_SpawnBloodSpurt](4.0, 8.0),
+					frandom[rnd_SpawnBloodSpurt](0.0, 360.0),
+					NashGoreBloodBase.BLOOD_FLAGS);
+			}
+
+			if (WaterLevel == 0)
+			{
+				if (random[rnd_SprayBloodDecals]() < 44)
+					NashGoreBloodBase.SprayBloodDecals(self, 1);
+			}
 
 			spurtDuration--;
 		}
 
-		if (GetAge() >= 175)
+		if (GetAge() >= (Thinker.TICRATE * 5))
 		{
 			Destroy();
 			return;
@@ -818,20 +974,25 @@ class NashGoreBloodSpurt : NashGoreBloodBase
 	override void BeginPlay(void)
 	{
 		Super.BeginPlay();
-
-		Gravity *= frandom(1.0, 1.5);
+		Gravity *= frandom[rnd_BloodSpurtGravity](1.0, 1.5);
 	}
 
 	override void Tick(void)
 	{
 		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
 
-		if (waterlevel > 1)
-		{
-			NashGoreLiquidBlood.SpawnLiquidBlood(self);
-			Destroy();
+		if (!bNoTimeFreeze && isFrozen())
 			return;
+
+		if (WaterLevel > 0)
+		{
+			A_SetRenderStyle(Alpha, STYLE_Translucent);
+			Alpha *= 0.945;
+			if (Alpha < 0.01)
+			{
+				Destroy();
+				return;
+			}
 		}
 	}
 
@@ -849,10 +1010,23 @@ class NashGoreBloodSpurt : NashGoreBloodBase
 	Crash:
 		TNT1 A 1
 		{
-			A_SpawnItemEx("PB_BloodSpot", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, failchance: 128);
+			int failChance = 100;
 			A_SpawnItemEx("NashGoreBloodFloorSplash",
-				frandom(-32, 32), frandom(-32, 32),
-				flags: SXF_TRANSFERTRANSLATION | SXF_ABSOLUTEPOSITION | SXF_NOCHECKPOSITION);
+				frandom[rnd_BloodFloorSplash](-32.0, 32.0), frandom[rnd_BloodFloorSplash](-32.0, 32.0),
+				flags: SXF_TRANSFERTRANSLATION | SXF_ABSOLUTEPOSITION | SXF_NOCHECKPOSITION, failChance);
+
+			if (nashgore_bloodtype == 0 || nashgore_bloodtype == 1)
+			{
+				class<Actor> cls;
+
+				if (nashgore_bloodtype == 0)
+					cls = "NashGoreBloodSpot";
+				else if (nashgore_bloodtype == 1)
+					cls = "NashGoreBloodSpotClassic";
+
+				failChance = 230;
+				A_SpawnItemEx(cls, flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, failChance);
+			}
 		}
 		Stop;
 	}
@@ -868,8 +1042,8 @@ class NashGoreBloodFloorSplashSpawner : Actor
 {
 	Default
 	{
-		Radius 1;
-		Height 1;
+		Radius 1.0;
+		Height 1.0;
 		Gravity 0.5;
 		FloatBobPhase 0;
 		+CORPSE
@@ -901,8 +1075,8 @@ class NashGoreBloodFloorSplash : NashGoreBloodBase
 {
 	Default
 	{
-		Radius 1;
-		Height 2;
+		Radius 1.0;
+		Height 2.0;
 		Scale 0.5;
 		-NOBLOCKMAP
 		-RANDOMIZE
@@ -917,9 +1091,11 @@ class NashGoreBloodFloorSplash : NashGoreBloodBase
 	override void Tick(void)
 	{
 		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
 
-		if (waterlevel > 1)
+		if (!bNoTimeFreeze && isFrozen())
+			return;
+
+		if (WaterLevel > 1)
 		{
 			Destroy();
 			return;
@@ -935,7 +1111,7 @@ class NashGoreBloodFloorSplash : NashGoreBloodBase
 	States
 	{
 	Spawn:
-		BDRP BCDEF 2;
+		BDRP BCDEF 4;
 		Stop;
 	}
 }
@@ -961,6 +1137,46 @@ class NashGoreBloodDrop : NashGoreBloodBase
 	//
 	//===========================================================================
 
+	override void BeginPlay(void)
+	{
+		Super.BeginPlay();
+
+		// it spawned too deep in the water
+		if (WaterLevel >= 3)
+		{
+			Destroy();
+			return;
+		}
+	}
+
+	override void Tick(void)
+	{
+		Super.Tick();
+
+		if (!bNoTimeFreeze && isFrozen())
+			return;
+
+		if (WaterLevel > 0)
+		{
+			NashGoreLiquidBlood.SpawnLiquidBlood(self);
+			A_PlayBloodDropSound();
+			Destroy();
+			return;
+		}
+	}
+
+	void A_PlayBloodDropSound(void)
+	{
+		if (random[rnd_BloodDropSound]() < 180)
+			A_StartSound("nashgore/blooddrop");
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
 	States
 	{
 	Spawn:
@@ -969,9 +1185,12 @@ class NashGoreBloodDrop : NashGoreBloodBase
 	Crash:
 		TNT1 A 0
 		{
-			A_SpawnItemEx("NashGoreBloodFloorSplash", flags: BLOOD_FLAGS);
-			A_SpawnItemEx("PB_BloodSpotTiny", flags: (BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION);
-			if (random() < 180) A_StartSound("nashgore/blooddrop");
+			if (NashGoreStatics.CheckLiquid(self))
+				NashGoreLiquidBlood.SpawnLiquidBlood(self);
+			else
+				A_SpawnItemEx("NashGoreBloodFloorSplash", flags: BLOOD_FLAGS);
+
+			A_PlayBloodDropSound();
 		}
 		Stop;
 	}

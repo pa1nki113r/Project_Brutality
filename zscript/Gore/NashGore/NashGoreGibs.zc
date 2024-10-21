@@ -1,44 +1,90 @@
-// Copyright 2006-2019 Nash Muhandes
-// All rights reserved.
+// “Commons Clause” License Condition v1.0
+//
+// The Software is provided to you by the Licensor under the License, as
+// defined below, subject to the following condition.
+//
+// Without limiting other conditions in the License, the grant of rights under
+// the License will not include, and the License does not grant to you, the
+// right to Sell the Software.
+//
+// For purposes of the foregoing, “Sell” means practicing any or all of the
+// rights granted to you under the License to provide to third parties, for a
+// fee or other consideration (including without limitation fees for hosting or
+// consulting/ support services related to the Software), a product or service
+// whose value derives, entirely or substantially, from the functionality of
+// the Software. Any license notice or attribution required by the License must
+// also include this Commons Clause License Condition notice.
+//
+// Software: NashGore NEXT v1.0
+//
+// License: BSD-2-Clause
+//
+// Licensor: Nash Muhandes
+
+// The 2-Clause BSD License
+//
+// Copyright (c) 2006 - 2024, Nash Muhandes
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
+// modification, are permitted provided that the following conditions are met:
 //
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-// 3. The name of the author may not be used to endorse or promote products
-//    derived from this software without specific prior written permission.
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
 //
-// THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
-// IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-// OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-// IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
-// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-// NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-// THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
 //===========================================================================
 //
+// You MAY:
+// - Use this mod in your play session, as long as all licenses and headers
+//   remain intact
+// - Embed this mod into your mods or projects that are FREELY downloadable
+//   without any kind of monetary transaction involved, as long as all licenses
+//   and headers remain intact
 //
+// You MAY NOT:
+// - Use or embed this mod into your project (either partially or fully) if
+//   you are making money off your mod/project, including commercially-sold
+//   games, or via crowdfunding platforms like Kickstarter, Patreon, Ko-fi
+//   and other similar platforms
 //
 //===========================================================================
 
 class NashGoreGibs : Actor
 {
+	int rollDir;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
 	Default
 	{
-		Radius 8;
-		Height 4;
-		Gravity 0.875;
+		Radius 8.0;
+		Height 4.0;
+		Gravity 0.575;
 		BounceType 'Doom';
 		BounceFactor 0.5;
 		BounceSound "nashgore/gibbounce";
+		DistanceCheck "pb_floorwallblooddrawdist";
+		+DONTSPLASH
 		+MISSILE
 		+NOBLOCKMAP
 		+THRUACTORS
@@ -46,9 +92,13 @@ class NashGoreGibs : Actor
 		+CANBOUNCEWATER
 		+FLOORCLIP
 		+MOVEWITHSECTOR
+		+USEBOUNCESTATE
+		+ROLLSPRITE
+		+ROLLCENTER
+		+INTERPOLATEANGLES
 		+FORCEXYBILLBOARD
+		+NOTONAUTOMAP
 		-SOLID
-		DistanceCheck "pb_floorwallblooddrawdist";
 	}
 
 	//===========================================================================
@@ -62,20 +112,38 @@ class NashGoreGibs : Actor
 		ChangeStatNum(STAT_NashGore_Gore);
 		NashGoreStatics.QueueGore();
 		NashGoreStatics.RandomXFlip(self);
+		rollDir = RandomPick[rnd_GibRollDir](-1, 1);
+		bouncefactor *= frandom[rnd_GibBounceFac](0.5, 1.25);
 		Super.BeginPlay();
-	}
-
-	override void PostBeginPlay(void)
-	{
-		if (random() < (255 - nashgore_gibamount)) { Destroy(); return; }
-		Super.PostBeginPlay();
 	}
 
 	override void Tick(void)
 	{
 		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
-		if (NashGoreStatics.CheckSky(self)) { Destroy(); return; }
+
+		if (!bNoTimeFreeze && isFrozen())
+			return;
+
+		if (NashGoreStatics.CheckSky(self))
+		{
+			Destroy();
+			return;
+		}
+
+		// unboing sprite scale
+		if (Scale.X > 1.0)
+			Scale.X *= 0.935;
+
+		if (WaterLevel >= 3)
+		{
+			Vel.X *= 0.95;
+			Vel.Y *= 0.95;
+			bNoBounceSound = true;
+		}
+		else
+		{
+			bNoBounceSound = false;
+		}
 	}
 
 	//===========================================================================
@@ -86,47 +154,53 @@ class NashGoreGibs : Actor
 
 	static void SpawnGibs(Actor mo)
 	{
-		if (nashgore_gibtype == 2) return;
-		if (!mo) return;
+		if (nashgore_gibtype == 2)
+			return;
+
+		if (!mo)
+			return;
+
+		mo.A_StartSound("nashgore/xdeath", CHAN_AUTO);
+
+		// spray blood decals
+		NashGoreBloodBase.SprayBloodDecals(mo);
 
 		double spawnRadius = mo.Default.Radius;
-		double spawnHeight = mo.Default.Height / 2;
+		double spawnHeight = mo.Default.Height * 0.5;
 
 		// get monster's "size" and cap it to something sensible
-		int size = int(mo.Mass * 0.2);
+		int size = int(mo.Mass * 0.150);
+		//Console.Printf("size before clamp: %d", size);
 		size = clamp(size, 0, 50);
-		//Console.Printf("%d", size);
-		
-		bool result;
-		Actor obj;
-		float truescale = mo.Default.Radius / 10.0;
-		
-		[result, obj] =
-		mo.A_SpawnItemEx("PB_GibBloodCloud", zofs: spawnHeight, flags: SXF_USEBLOODCOLOR | SXF_NOCHECKPOSITION);
-		if (obj) { 
-			obj.target = mo;
-			obj.scale = (truescale, truescale);
-		}
+		//Console.Printf("size after clamp: %d", size);
 
 		for (int i = 0; i < size; i++)
-		{		
+		{
 			// spawn gibs
-			[result, obj] =
-			mo.A_SpawnItemEx("NashGoreGibs",
-				zofs: spawnHeight,
-				frandom(-5.5, 5.5), frandom(-5.5, 5.5), frandom(0, 12.5),
-				flags: SXF_USEBLOODCOLOR, 100);
-			if (obj) obj.target = mo;
+			int amt, cmul;
+			[amt, cmul] = NashGoreStatics.GetAmountMult(nashgore_gibmult, 100);
+			for (int i = 0; i < amt; i++)
+			{
+				mo.A_SpawnItemEx("NashGoreGibs",
+					zofs: spawnHeight,
+					frandom[rnd_SpawnGibs](-3.125, 3.125), frandom[rnd_SpawnGibs](-3.125, 3.125), frandom[rnd_SpawnGibs](0.0, 12.5),
+					flags: SXF_USEBLOODCOLOR, cmul);
+			}
 
 			// spawn lots of blood
-			if (random() < 70)
+			if (random[rnd_SpawnGibs]() < 192)
 			{
-				[result, obj] =
-				mo.A_SpawnItemEx("NashGoreBlood",
-					frandom(-spawnRadius, spawnRadius), frandom(-spawnRadius, spawnRadius), spawnHeight,
-					frandom(-2.0, 2.0), frandom(-2.0, 2.0), frandom(0.0, 4.0),
-					frandom(0, 360), SXF_USEBLOODCOLOR);
-				if (obj) obj.target = mo;
+				bool result;
+				Actor blood;
+				[result, blood] =
+				mo.A_SpawnItemEx("Blood",
+					frandom[rnd_SpawnGibs](-spawnRadius, spawnRadius), frandom[rnd_SpawnGibs](-spawnRadius, spawnRadius), frandom[rnd_SpawnGibs](spawnHeight, (spawnHeight * 2.0)),
+					frandom[rnd_SpawnGibs](-2.0, 2.0), frandom[rnd_SpawnGibs](-2.0, 2.0), frandom[rnd_SpawnGibs](0.0, 5.0),
+					frandom[rnd_SpawnGibs](0.0, 360.0), SXF_USEBLOODCOLOR);
+
+				// target holds the correct blood color
+				if (blood)
+					blood.Target = mo;
 			}
 
 			// spawn sticky gibs and ceiling blood
@@ -135,54 +209,71 @@ class NashGoreGibs : Actor
 				FLineTraceData t;
 				int flags = TRF_THRUACTORS;
 
-				double ang = frandom(0, 360);
+				double ang = frandom[rnd_SpawnGibs](0.0, 360.0);
 
-				mo.LineTrace(ang, 128, frandom(-90, 0), flags, spawnHeight, data: t);
+				double dist = 128.0;
 
-				if (t.HitType == t.TRACE_HitCeiling)
+				int amt = NashGoreStatics.GetAmountMult(nashgore_gibmult);
+				for (int i = 0; i < amt; i++)
 				{
-					bool result;
-					Actor obj;
+					mo.LineTrace(ang, dist, frandom[rnd_SpawnGibs](-90.0, 0.0), flags, spawnHeight, data: t);
 
-					// ceiling blood
-					if (nashgore_bloodtype == 0 || nashgore_bloodtype == 1)
+					if (t.HitType == t.TRACE_HitCeiling)
 					{
-						class<Actor> cls;
-						cls = "PB_BloodSpotCeiling";
-
-						[result, obj] = mo.A_SpawnItemEx(cls, flags: SXF_USEBLOODCOLOR);
-						if (obj)
+						// ceiling blood
+						if (nashgore_bloodtype == 0 || nashgore_bloodtype == 1)
 						{
-							obj.Gravity = 0;
-							obj.SetOrigin(t.HitLocation, true);
-							PB_BloodSpotCeiling(obj).bOnCeiling = true;
+							class<Actor> cls;
+							if (nashgore_bloodtype == 0)
+								cls = "NashGoreBloodSpotCeiling";
+							else if (nashgore_bloodtype == 1)
+								cls = "NashGoreBloodSpotClassicCeiling";
 
-							// flip sprite Y
-							if (nashgore_spriteblood) obj.Scale.Y *= -1;
+							let blood = (random[rnd_SpawnGibs]() < 150) ? Spawn(cls, mo.Pos, ALLOW_REPLACE) : NULL;
+							if (blood)
+							{
+								blood.Translation = mo.BloodTranslation;
+								blood.Gravity = 0.0;
+								blood.SetOrigin(t.HitLocation, true);
+								NashGoreBloodSpot(blood).bOnCeiling = true;
+
+								// flip sprite Y
+								if (nashgore_spriteblood)
+									blood.Scale.Y *= -1;
+							}
+						}
+
+						// ceiling gib
+						let gib = (random[rnd_SpawnGibs]() < 200) ? Spawn("NashGoreStickyGibsCeiling", mo.Pos, ALLOW_REPLACE) : NULL;
+						if (gib)
+						{
+							gib.Translation = mo.BloodTranslation;
+							gib.SetOrigin(t.HitLocation, true);
+							NashGoreStickyGibsCeiling(gib).bOnCeiling = true;
+							gib.Angle = ang;
 						}
 					}
 
-					// ceiling gib
-					[result, obj] = mo.A_SpawnItemEx("NashGoreStickyGibsCeiling", flags: SXF_USEBLOODCOLOR | SXF_NOCHECKPOSITION, 200);
-					if (obj)
+					// spawn wall gibs
+					if (t.HitType == t.TRACE_HitWall)
 					{
-						obj.SetOrigin(t.HitLocation, true);
-						NashGoreStickyGibsCeiling(obj).bOnCeiling = true;
-					}
-				}
+						// wall gib
+						let gib = (random[rnd_SpawnGibs]() < 100) ? Spawn("NashGoreStickyGibsWall", mo.Pos, ALLOW_REPLACE) : NULL;
+						if (gib)
+						{
+							gib.Translation = mo.BloodTranslation;
+							double posAdjust = -4.0f;
+							Vector3 stickPos = (t.HitLocation.X + cos(ang) * posAdjust, t.HitLocation.Y + sin(ang) * posAdjust, t.HitLocation.Z);
+							gib.SetOrigin(stickPos, true);
 
-				// spawn wall gibs
-				if (t.HitType == t.TRACE_HitWall)
-				{
-					// wall gib
-					bool result;
-					Actor obj;
-					[result, obj] = mo.A_SpawnItemEx("NashGoreStickyGibsWall", flags: SXF_USEBLOODCOLOR | SXF_NOCHECKPOSITION, 100);
-					if (obj)
-					{
-						double posAdjust = -4.f;
-						Vector3 stickPos = (t.HitLocation.X + cos(ang) * posAdjust, t.HitLocation.Y + sin(ang) * posAdjust, t.HitLocation.Z);
-						obj.SetOrigin(stickPos, true);
+							// actually face the wall's angle
+							let wall = t.HitLine;
+							double wallAngle = atan2(wall.delta.Y, wall.delta.X) + 90.0;
+							if (t.LineSide == 1)
+								wallAngle += 180.0;
+							wallAngle += 180.0;
+							gib.Angle = wallAngle;
+						}
 					}
 				}
 			}
@@ -231,22 +322,73 @@ class NashGoreGibs : Actor
 		GIB0 A 0;
 		Goto SpawnLoop;
 	SpawnLoop:
-		"####" ABCD 3;
+		"####" A 1
+		{
+			A_SetRoll(Roll + ((2.25 * Vel.Length()) * rollDir), SPF_INTERPOLATE);
+
+			// spawn some blood particles
+			int failChance = 222;
+			bool res;
+			Actor mo;
+			[res, mo] = A_SpawnItemEx("NashGoreBloodParticle1", flags: NashGoreBloodBase.BLOOD_FLAGS, failChance);
+			if (mo)
+				mo.A_SetScale(frandom[rnd_GibParticleScale](0.14, 0.4));
+		}
 		Loop;
+	Bounce.Floor:
+		"####" "#" 0
+		{
+			bouncefactor *= 0.73;
+
+			// boing boing
+			if (WaterLevel == 0)
+				Scale.X = 2.224;
+
+			// spawn one large blood splash upon bounce impact
+			Actor bloodSplash;
+			bool result;
+			[result, bloodSplash] = A_SpawnItemEx("NashGoreBloodFloorSplash", flags: NashGoreBloodBase.BLOOD_FLAGS);
+			if (bloodSplash)
+				bloodSplash.Scale = (bloodSplash.Scale.X * 2.0, bloodSplash.Scale.Y * 2.0);
+		}
+		Goto SpawnLoop;
 	Death:
-		"####" E 0 {
+		"####" B 0
+		{
+			A_SetRoll(0);
+
+			// clip gib into terrain
+			let t = GetFloorTerrain();
+
+			// clip by 2 map units; ignore the terrain's FootClip value
+			if (t && t.FootClip > 0)
+				FloorClip = 2.0;
+
 			class<Actor> cls;
-			if (nashgore_bloodtype == 0)		cls = "NashGoreBloodSpot";
-			else if (nashgore_bloodtype == 1)	cls = "NashGoreBloodSpotClassic";
-			A_SpawnItemEx(cls, flags: (NashGoreBloodBase.BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 150);
+			if (nashgore_bloodtype == 0)
+				cls = "NashGoreBloodSpot";
+			else if (nashgore_bloodtype == 1)
+				cls = "NashGoreBloodSpotClassic";
+			int failChance = 150;
+			A_SpawnItemEx(cls, flags: (NashGoreBloodBase.BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, failChance);
+
+			if (NashGoreHandler.CheckForVoxels())
+				NashGoreStatics.AlignToPlane(self);
+
+			NashGoreStatics.FixZFighting(self);
 		}
-		"####" EEEEEEEEEE 1 {
-			A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
-				0, 0, 0,
-				frandom(-4.0, 4.0), frandom(-4.0, 4.0), frandom(1.0, 4.0),
-				frandom(0, 360), NashGoreBlood.BLOOD_FLAGS, 175);
+		"####" BBBBBBBBBB 1
+		{
+			if (WaterLevel < 3)
+			{
+				int failChance = 175;
+				A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
+					0, 0, 0,
+					frandom[rnd_GibFloorSplash](-4.0, 4.0), frandom[rnd_GibFloorSplash](-4.0, 4.0), frandom[rnd_GibFloorSplash](1.0, 4.0),
+					frandom[rnd_GibFloorSplash](0.0, 360.0), NashGoreBloodBase.BLOOD_FLAGS, failChance);
+			}
 		}
-		"####" E -1;
+		"####" B -1;
 		Stop;
 	}
 }
@@ -259,6 +401,17 @@ class NashGoreGibs : Actor
 
 class NashGoreStickyGibs : NashGoreGibs
 {
+	const STICKTIME_MAX = 8;
+
+	int stickTime;
+	bool bOnCeiling;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
 	Default
 	{
 		Gravity 0.0005;
@@ -266,11 +419,6 @@ class NashGoreStickyGibs : NashGoreGibs
 		-MISSILE
 		-NOBLOCKMAP
 	}
-
-	int stickTime;
-	const STICKTIME_MAX = 8;
-
-	bool bOnCeiling;
 
 	//===========================================================================
 	//
@@ -280,31 +428,40 @@ class NashGoreStickyGibs : NashGoreGibs
 
 	override void BeginPlay(void)
 	{
-		stickTime = (35 * STICKTIME_MAX) - random(0, 35 * (STICKTIME_MAX / 2));
+		stickTime = (Thinker.TICRATE * STICKTIME_MAX) - random[rnd_SpawnStickyGibs](0, Thinker.TICRATE * (STICKTIME_MAX / 2));
 		Super.BeginPlay();
 	}
 
 	override void PostBeginPlay(void)
 	{
-		if (bOnCeiling) Gravity = 0;
+		if (bOnCeiling)
+		{
+			Gravity = 0.0;
+
+			if (NashGoreHandler.CheckForVoxels())
+				NashGoreStatics.AlignToPlane(self, bOnCeiling);
+		}
+
 		Super.PostBeginPlay();
 	}
 
 	override void Tick(void)
 	{
 		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
 
-		if (stickTime > 0) stickTime--;
+		if (!bNoTimeFreeze && isFrozen())
+			return;
+
+		if (stickTime > 0)
+			stickTime--;
 
 		if (stickTime == 1)
 		{
-			Scale.Y = 1;
+			Scale.Y = 1.0;
 			SetStateLabel('Falling');
 			Gravity = 1.0;
 			bCeilingHugger = false;
 			bCorpse = true;
-
 		}
 	}
 }
@@ -313,7 +470,7 @@ class NashGoreStickyGibsCeiling : NashGoreStickyGibs
 {
 	Default
 	{
-		YScale -1;
+		YScale -1.0;
 		+SPAWNCEILING
 		+CEILINGHUGGER
 		-MOVEWITHSECTOR
@@ -337,13 +494,38 @@ class NashGoreStickyGibsCeiling : NashGoreStickyGibs
 		SGC2 A 0;
 		Goto SpawnLoop;
 	SpawnLoop:
-		"####" A -1;
-		Stop;
+		"####" A 1
+		{
+			Vel.Z = 0.0;
+		}
+		Loop;
 	Falling:
-		"####" B -1;
+		"####" B -1
+		{
+			bForceYBillboard = true;
+			bForceXYBillboard = false;
+
+			if (Pitch != 0.0 || Roll != 0.0)
+			{
+				Pitch = 0.0;
+				Roll = 0.0;
+			}
+		}
 		Stop;
 	Crash:
-		"####" A 0 A_StartSound("nashgore/gibsmall");
+		"####" A 0
+		{
+			if (WaterLevel < 3)
+				A_StartSound("nashgore/gibsmall");
+
+			bForceYBillboard = false;
+			bForceXYBillboard = true;
+
+			if (NashGoreHandler.CheckForVoxels())
+				NashGoreStatics.AlignToPlane(self);
+
+			NashGoreStatics.FixZFighting(self);
+		}
 		"####" A -1;
 		Stop;
 	}
@@ -367,18 +549,14 @@ class NashGoreStickyGibsWall : NashGoreStickyGibs
 	override void Tick(void)
 	{
 		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
+
+		if (!bNoTimeFreeze && isFrozen())
+			return;
 
 		if (stickTime > 0)
-		{
 			Scale.Y *= 1.001;
-		}
 		else
-		{
 			Scale.Y = 1.0;
-			bForceYBillboard = false;
-			bForceXYBillboard = true;
-		}
 	}
 
 	//===========================================================================
@@ -405,8 +583,34 @@ class NashGoreStickyGibsWall : NashGoreStickyGibs
 		"####" A -1;
 		Stop;
 	Crash:
-		"####" B 0 A_StartSound("nashgore/gibsmall");
+		"####" B 0
+		{
+			if (WaterLevel < 3)
+				A_StartSound("nashgore/gibsmall");
+
+			bForceYBillboard = false;
+			bForceXYBillboard = true;
+
+			NashGoreStatics.FixZFighting(self);
+		}
 		"####" B -1;
 		Stop;
+	}
+}
+
+class NashGoreRealGibs : RealGibs
+{
+	override void BeginPlay(void)
+	{
+		Destroy();
+		return;
+	}
+}
+
+class NashGoreRealGibsPlayer : RealGibs
+{
+	Default
+	{
+		+MASTERNOSEE
 	}
 }

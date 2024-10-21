@@ -1,28 +1,69 @@
-// Copyright 2006-2019 Nash Muhandes
-// All rights reserved.
+// “Commons Clause” License Condition v1.0
+//
+// The Software is provided to you by the Licensor under the License, as
+// defined below, subject to the following condition.
+//
+// Without limiting other conditions in the License, the grant of rights under
+// the License will not include, and the License does not grant to you, the
+// right to Sell the Software.
+//
+// For purposes of the foregoing, “Sell” means practicing any or all of the
+// rights granted to you under the License to provide to third parties, for a
+// fee or other consideration (including without limitation fees for hosting or
+// consulting/ support services related to the Software), a product or service
+// whose value derives, entirely or substantially, from the functionality of
+// the Software. Any license notice or attribution required by the License must
+// also include this Commons Clause License Condition notice.
+//
+// Software: NashGore NEXT v1.0
+//
+// License: BSD-2-Clause
+//
+// Licensor: Nash Muhandes
+
+// The 2-Clause BSD License
+//
+// Copyright (c) 2006 - 2024, Nash Muhandes
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
+// modification, are permitted provided that the following conditions are met:
 //
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-// 3. The name of the author may not be used to endorse or promote products
-//    derived from this software without specific prior written permission.
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
 //
-// THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
-// IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-// OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-// IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
-// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-// NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-// THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
+//===========================================================================
+//
+// You MAY:
+// - Use this mod in your play session, as long as all licenses and headers
+//   remain intact
+// - Embed this mod into your mods or projects that are FREELY downloadable
+//   without any kind of monetary transaction involved, as long as all licenses
+//   and headers remain intact
+//
+// You MAY NOT:
+// - Use or embed this mod into your project (either partially or fully) if
+//   you are making money off your mod/project, including commercially-sold
+//   games, or via crowdfunding platforms like Kickstarter, Patreon, Ko-fi
+//   and other similar platforms
+//
+//===========================================================================
 
 //===========================================================================
 //
@@ -50,10 +91,10 @@ class OptionMenuItemNashGoreSlider : OptionMenuItemSlider
 {
 	String mTooltip;
 
-	OptionMenuItemNashGoreSlider Init(String label, String tooltip, Name command, double min, double max, double step, int showval = 1)
+	OptionMenuItemNashGoreSlider Init(String label, String tooltip, Name command, double min, double max, double step, int showval = 1, CVar graycheck = NULL)
 	{
 		mTooltip = tooltip;
-		Super.Init(label, command, min, max, step, showval);
+		Super.Init(label, command, min, max, step, showval, graycheck);
 		return self;
 	}
 }
@@ -87,51 +128,156 @@ class OptionMenuItemNashGoreSafeCommand : OptionMenuItemSafeCommand
 
 //===========================================================================
 //
-// NashGore Menu
+// NashGoreMenu
 //
 //===========================================================================
 
 class NashGoreMenu : OptionMenu
 {
-	override void Drawer ()
+	const START_TIME = 85;
+	const END_TIME = 120;
+	const SCROLL_SPEED = 6;
+	const MAX_ASPECT = 16.0 / 9.0;
+
+	int mDefaultPosition;
+	String mTooltip;
+
+	private int startTimer;
+	private int endTimer;
+	private int scrollTimer;
+	private int prevSelected;
+
+	private int textBoxWidth;
+	private int textBoxStart;
+	private int fHeight;
+	private int padding;
+	private int xOfs;
+	private int txtLength;
+
+	private Font optFnt;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	override void Init(Menu parent, OptionMenuDescriptor desc)
 	{
+		Super.Init(parent, desc);
+
+		optFnt = OptionFont();
+
+		mDefaultPosition = mDesc.mPosition;
+		prevSelected = -1;
+	}
+
+	override void Ticker(void)
+	{
+		Super.Ticker();
+
+		mToolTip = "";
+
+		if (mDesc.mSelectedItem >= 0)
+		{
+			let item = mDesc.mItems[mDesc.mSelectedItem];
+			if (item is "OptionMenuItemNashGoreOption")
+				mToolTip = StringTable.Localize(OptionMenuItemNashGoreOption(item).mTooltip);
+			else if (item is "OptionMenuItemNashGoreSlider")
+				mToolTip = StringTable.Localize(OptionMenuItemNashGoreSlider(item).mTooltip);
+			else if (item is "OptionMenuItemNashGoreControl")
+				mToolTip = StringTable.Localize(OptionMenuItemNashGoreControl(item).mTooltip);
+		}
+
+		fHeight = optFnt.GetHeight() * CleanYFac_1;
+		padding = fHeight << 1;
+
+		if (prevSelected != mDesc.mSelectedItem)
+		{
+			startTimer = START_TIME;
+			endTimer = 0;
+			scrollTimer = 0;
+		}
+
+		if (mToolTip.Length() > 0)
+		{
+			int realWidth = Screen.GetWidth();
+			int height = Screen.GetHeight();
+
+			int width = realWidth;
+			if (width / height > MAX_ASPECT)
+				width = int(height * MAX_ASPECT);
+
+			textBoxWidth = int(width * 3 / 4.0);
+			textBoxStart = width / 8 + (realWidth - width) / 2;
+
+			txtLength = optFnt.StringWidth(mToolTip) * CleanXFac_1;
+			xOfs = (realWidth - txtLength) / 2;
+			if (txtLength > textBoxWidth)
+			{
+				xOfs = textBoxStart;
+				if (startTimer <= 0)
+				{
+					xOfs -= SCROLL_SPEED * (endTimer <= 0 ? scrollTimer++ : scrollTimer);
+
+					int end = xOfs + txtLength;
+					if (endTimer > 0 || end < textBoxStart + textBoxWidth)
+					{
+						xOfs += (textBoxStart + textBoxWidth - end);
+						if (endTimer <= 0)
+							endTimer = END_TIME;
+					}
+				}
+
+				if (endTimer <= 0)
+					textBoxWidth -= optFnt.StringWidth("...") * CleanXFac_1;
+			}
+		}
+
+		if (startTimer > 0)
+			startTimer--;
+
+		if (endTimer > 0)
+		{
+			endTimer--;
+			if (endTimer <= 0)
+			{
+				scrollTimer = 0;
+				startTimer = START_TIME;
+			}
+		}
+	}
+
+	override void Drawer(void)
+	{
+		int cx, cy, cw, ch;
+		[cx, cy, cw, ch] = Screen.GetClipRect();
+		Screen.SetClipRect(textBoxStart, padding, textBoxWidth, fHeight);
+
+		Screen.DrawText(optFnt, OptionMenuSettings.mFontColorValue,
+						xOfs, padding,
+						mToolTip,
+						DTA_CleanNoMove_1, true);
+
+		Screen.SetClipRect(cx, cy, cw, ch);
+
+		if (txtLength > textBoxWidth && endTimer <= 0 && mDesc.mSelectedItem != -1)
+		{
+			Screen.DrawText(optFnt, OptionMenuSettings.mFontColorValue,
+							textBoxStart + textBoxWidth, padding,
+							"...",
+							DTA_CleanNoMove_1, true);
+		}
+
+		int shift = -padding / CleanYFac_1;
+		if (shift > mDefaultPosition)
+			shift = mDefaultPosition;
+
+		mDesc.mPosition = shift;
+		prevSelected = mDesc.mSelectedItem;
+
 		Super.Drawer();
 
-		String tt;
-
-		if (mDesc.mSelectedItem > 0)
-		{
-			if (mDesc.mItems[mDesc.mSelectedItem] is "OptionMenuItemNashGoreOption")
-			{
-				tt = StringTable.Localize(OptionMenuItemNashGoreOption(mDesc.mItems[mDesc.mSelectedItem]).mTooltip);
-			}
-
-			if (mDesc.mItems[mDesc.mSelectedItem] is "OptionMenuItemNashGoreSlider")
-			{
-				tt = StringTable.Localize(OptionMenuItemNashGoreSlider(mDesc.mItems[mDesc.mSelectedItem]).mTooltip);
-			}
-
-			if (mDesc.mItems[mDesc.mSelectedItem] is "OptionMenuItemNashGoreControl")
-			{
-				tt = StringTable.Localize(OptionMenuItemNashGoreControl(mDesc.mItems[mDesc.mSelectedItem]).mTooltip);
-			}
-
-			/*
-			// This doesn't work because mUh eXpLoiTs lmaaaaoooo
-			if (mDesc.mItems[mDesc.mSelectedItem] is "OptionMenuItemNashGoreSafeCommand")
-			{
-				tt = StringTable.Localize(OptionMenuItemNashGoreSafeCommand(mDesc.mItems[mDesc.mSelectedItem]).mTooltip);
-			}
-			*/
-		}
-
-		if (tt.Length() > 0)
-		{
-			Screen.DrawText (OptionFont(), OptionMenuSettings.mFontColorValue,
-				(Screen.GetWidth() - SmallFont.StringWidth (tt) * CleanXfac_1) / 2,
-				BigFont.GetHeight() * CleanYfac_1 * 2.5,
-				tt,
-				DTA_CleanNoMove_1, true);
-		}
+		mDesc.mPosition = mDefaultPosition;
 	}
 }

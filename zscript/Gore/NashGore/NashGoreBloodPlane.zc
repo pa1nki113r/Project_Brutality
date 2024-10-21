@@ -1,51 +1,96 @@
-// Copyright 2006-2019 Nash Muhandes
-// All rights reserved.
+// “Commons Clause” License Condition v1.0
+//
+// The Software is provided to you by the Licensor under the License, as
+// defined below, subject to the following condition.
+//
+// Without limiting other conditions in the License, the grant of rights under
+// the License will not include, and the License does not grant to you, the
+// right to Sell the Software.
+//
+// For purposes of the foregoing, “Sell” means practicing any or all of the
+// rights granted to you under the License to provide to third parties, for a
+// fee or other consideration (including without limitation fees for hosting or
+// consulting/ support services related to the Software), a product or service
+// whose value derives, entirely or substantially, from the functionality of
+// the Software. Any license notice or attribution required by the License must
+// also include this Commons Clause License Condition notice.
+//
+// Software: NashGore NEXT v1.0
+//
+// License: BSD-2-Clause
+//
+// Licensor: Nash Muhandes
+
+// The 2-Clause BSD License
+//
+// Copyright (c) 2006 - 2024, Nash Muhandes
 //
 // Redistribution and use in source and binary forms, with or without
-// modification, are permitted provided that the following conditions
-// are met:
+// modification, are permitted provided that the following conditions are met:
 //
-// 1. Redistributions of source code must retain the above copyright
-//    notice, this list of conditions and the following disclaimer.
-// 2. Redistributions in binary form must reproduce the above copyright
-//    notice, this list of conditions and the following disclaimer in the
-//    documentation and/or other materials provided with the distribution.
-// 3. The name of the author may not be used to endorse or promote products
-//    derived from this software without specific prior written permission.
+// 1. Redistributions of source code must retain the above copyright notice,
+//    this list of conditions and the following disclaimer.
 //
-// THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR
-// IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES
-// OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED.
-// IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT,
-// INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT
-// NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-// DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-// THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-// (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF
-// THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+// 2. Redistributions in binary form must reproduce the above copyright notice,
+//    this list of conditions and the following disclaimer in the documentation
+//    and/or other materials provided with the distribution.
+//
+// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+//
+// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+// ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+// LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+// CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+// SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+// INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+// CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+// ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+// POSSIBILITY OF SUCH DAMAGE.
+
 //===========================================================================
 //
+// You MAY:
+// - Use this mod in your play session, as long as all licenses and headers
+//   remain intact
+// - Embed this mod into your mods or projects that are FREELY downloadable
+//   without any kind of monetary transaction involved, as long as all licenses
+//   and headers remain intact
 //
+// You MAY NOT:
+// - Use or embed this mod into your project (either partially or fully) if
+//   you are making money off your mod/project, including commercially-sold
+//   games, or via crowdfunding platforms like Kickstarter, Patreon, Ko-fi
+//   and other similar platforms
 //
 //===========================================================================
 
-class NashGoreBloodPlane : Actor
+class NashGoreBloodPlane : Actor abstract
 {
-	Default
-	{
-		Height 2;
-		FloatBobPhase 0;
-		+NOGRAVITY
-		DistanceCheck "pb_floorwallblooddrawdist";
-	}
-
 	bool bSloped;
 	bool bCheckedFloating;
 	bool bOnCeiling;
 	bool bStopTicking;
-	int tryCheckFloating;
 	double rndzoffset;
 	double zOld, zNew;
+
+	protected int bpFlags;
+	flagdef NoRandomAngle: bpFlags, 0;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	Default
+	{
+		Height 2;
+		FloatBobPhase 0;
+		DistanceCheck "pb_floorwallblooddrawdist";
+		+NOTONAUTOMAP
+		+NOGRAVITY
+	}
 
 	//===========================================================================
 	//
@@ -57,11 +102,11 @@ class NashGoreBloodPlane : Actor
 	{
 		ChangeStatNum(STAT_NashGore_Gore);
 		NashGoreStatics.QueueGore();
-		rndzoffset = frandom(0.0001, 0.0100);
-		A_SetScale(frandom(0.9, 1.0));
+		rndzoffset = frandom[rnd_SpawnBloodPlane](0.0001, 0.0100);
+		A_SetScale(frandom[rnd_SpawnBloodPlane](0.9, 1.0));
 		Super.BeginPlay();
 
-		if (!level.IsPointInLevel(Pos))
+		if (!Level.IsPointInLevel(Pos))
 		{
 			Destroy();
 			return;
@@ -70,40 +115,67 @@ class NashGoreBloodPlane : Actor
 
 	override void PostBeginPlay(void)
 	{
-		if (!bOnCeiling && Pos.Z > FloorZ) { Destroy(); return; }
-		if (bOnCeiling) rndzoffset *= -1;
-		if (!(self is "NashGoreFootPrint")) Angle = NashGoreStatics.RandomAngle4();
+		if (!bOnCeiling && Pos.Z > FloorZ)
+		{
+			Destroy();
+			return;
+		}
+
+		if (bOnCeiling)
+			rndzoffset *= -1;
+
+		// not all blood planes should have randomized angles
+		if (!bNoRandomAngle)
+			Angle = NashGoreStatics.RandomAngle4();
+
 		zOld = zNew = Pos.Z;
+
 		Super.PostBeginPlay();
 	}
 
 	override void Tick()
 	{
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
+		if (!bNoTimeFreeze && isFrozen())
+			return;
 
 		if (!bStopTicking)
 		{
 			Super.Tick();
 			bStopTicking = true;
+
+			// do some stuff for a single tick
+			if (IsOnSkyFlat() || IsOnLiquid() || IsFloating())
+			{
+				Destroy();
+				return;
+			}
+
+			DoAlignToSlope();
+
+			// corpse blood needs collision for footprint effects
+			if (!(self is "NashGoreCorpseBlood"))
+				bNoInteraction = true;
+
+			// end of single tick
+			return;
 		}
 		else
 		{
-			zNew = Pos.Z;
-			if (zOld != zNew && tryCheckFloating == 0)
+			if (nashgore_precisefloatcheck)
 			{
-				if (bOnCeiling && NashGoreStatics.CheckFloating(self, true))
+				// re-run the float check if Z position changed
+				// this is potentially fucking slow... especially on moving sectors...
+				zNew = Pos.Z;
+				if (zOld != zNew)
 				{
-					Destroy();
-					return;
+					bCheckedFloating = false;
+					if (IsFloating())
+					{
+						Destroy();
+						return;
+					}
+					zOld = zNew;
 				}
-				else if (!bOnCeiling && NashGoreStatics.CheckFloating(self, false))
-				{
-					Destroy();
-					return;
-				}
-
-				zOld = zNew;
-				tryCheckFloating = 1;
 			}
 
 			// advance states
@@ -111,57 +183,79 @@ class NashGoreBloodPlane : Actor
 			{
 				if (--tics <= 0)
 				{
-					if (!SetState(curstate.NextState)) return;
+					if (!SetState(curstate.NextState))
+						return;
 				}
 			}
 
 			return;
 		}
+	}
 
-		if (NashGoreStatics.CheckSky(self) || NashGoreStatics.CheckLiquid(self))
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	bool IsOnSkyFlat(void)
+	{
+		bool result = false;
+		if (NashGoreStatics.CheckSky(self))
+			result = true;
+		return result;
+	}
+
+	bool IsOnLiquid(void)
+	{
+		bool result = false;
+		if (NashGoreStatics.IsOnFloor(self) && NashGoreStatics.CheckLiquid(self))
 		{
-			if (NashGoreStatics.CheckLiquid(self))
-			{
-				NashGoreLiquidBlood.SpawnLiquidBlood(self);
-			}
-			Destroy();
-			return;
+			NashGoreLiquidBlood.SpawnLiquidBlood(self);
+			result = true;
 		}
+		return result;
+	}
 
-		// don't float beyond ledges
+	bool IsFloating(void)
+	{
+		bool result = false;
+
 		if (!bCheckedFloating)
 		{
 			if (!bOnCeiling)
 			{
 				// floor
-				if (Pos.Z <= FloorZ && NashGoreStatics.CheckFloating(self, false))
-				{
-					Destroy();
-					return;
-				}
+				if (Pos.Z <= FloorZ && FloaterDetector.IsFloating(self, false))
+					result = true;
 			}
 			else
 			{
 				// ceiling
-				if (Pos.Z <= CeilingZ && NashGoreStatics.CheckFloating(self, true))
-				{
-					Destroy();
-					return;
-				}
+				if (Pos.Z <= CeilingZ && FloaterDetector.IsFloating(self, true))
+					result = true;
 			}
 
 			bCheckedFloating = true;
 		}
 
-		// align to slope
-		if (!bSloped)
+		return result;
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	void DoAlignToSlope(void)
+	{
+		// TO DO: blood trails aren't slope-aligned
+		if (!bSloped && !(self is "NashGoreBloodTrail"))
 		{
 			NashGoreStatics.AlignToPlane(self, ceiling: bOnCeiling);
 			bSloped = true;
 		}
-
-		// corpse blood needs collision for footprint effects
-		if (!(self is "NashGoreCorpseBlood")) bNoInteraction = true;
 	}
 }
 
@@ -173,15 +267,20 @@ class NashGoreBloodPlane : Actor
 
 class NashGoreBloodSpot : NashGoreBloodPlane
 {
-	Default
-	{
-		Radius 32;
-	}
-
+	// 30 seconds
+	const DRIP_DURATION_MAX = Thinker.TICRATE * 30;
 	int dripDuration, dripInterval;
 
-	// 30 seconds
-	const dripDuration_MAX = 35 * 30;
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	Default
+	{
+		Radius 32.0;
+	}
 
 	//===========================================================================
 	//
@@ -191,14 +290,12 @@ class NashGoreBloodSpot : NashGoreBloodPlane
 
 	override void PostBeginPlay(void)
 	{
-		if (random() < (255 - nashgore_bloodamount)) { Destroy(); return; }
-
 		/*
-		if (target && !nashgore_spriteblood)
+		if (Target && !nashgore_spriteblood)
 		{
-			Color bc = target.BloodColor;
+			Color bc = Target.BloodColor;
 			if (bc == 0) bc = gameinfo.defaultbloodcolor;
-			else bc = Color(bc.R / 2, bc.G / 2, bc.B / 2);
+			bc = Color(bc.R / 2, bc.G / 2, bc.B / 2);
 			A_SetRenderStyle(1, STYLE_Shaded);
 			SetShade(bc);
 		}
@@ -216,18 +313,20 @@ class NashGoreBloodSpot : NashGoreBloodPlane
 	override void Tick(void)
 	{
 		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
 
-		if (bOnCeiling)
+		if (!bNoTimeFreeze && isFrozen())
+			return;
+
+		if (WaterLevel == 0 && bOnCeiling)
 		{
-			if (dripDuration < dripDuration_MAX)
+			if (dripDuration < DRIP_DURATION_MAX)
 			{
 				dripDuration++;
 
 				if (dripInterval <= 0)
 				{
-					dripInterval = random(20, 200);
-					A_SpawnItemEx("NashGoreBloodDrop", flags: NashGoreBloodBase.BLOOD_FLAGS, 20);
+					dripInterval = random[rnd_BloodDripInterval](20, 200);
+					A_SpawnItemEx("NashGoreBloodDrop", flags: NashGoreBloodBase.BLOOD_FLAGS);
 				}
 
 				dripInterval--;
@@ -246,11 +345,25 @@ class NashGoreBloodSpot : NashGoreBloodPlane
 	Spawn:
 		TNT1 A 1 NoDelay
 		{
-			A_StartSound("nashgore/bloodsplash");
-			if (nashgore_spriteblood) return A_Jump(256, "BloodSpotSprite1", "BloodSpotSprite2", "BloodSpotSprite3", "BloodSpotSprite4");
-			return A_Jump(256, "BloodSpot1", "BloodSpot2", "BloodSpot3", "BloodSpot4");
+			if (WaterLevel < 3)
+				A_StartSound("nashgore/bloodsplash");
+
+			if (nashgore_spriteblood)
+				return A_Jump(256, "BloodSpotSprite1", "BloodSpotSprite2", "BloodSpotSprite3", "BloodSpotSprite4");
+
+			return A_Jump(256, "BloodSpot1", "BloodSpot2", "BloodSpot3", "BloodSpot4", "BloodSpot5", "BloodSpot6", "BloodSpot7", "BloodSpot8");
 		}
 		Stop;
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	States
+	{
 	BloodSpot1:
 		NGMV A -1;
 		Stop;
@@ -263,6 +376,28 @@ class NashGoreBloodSpot : NashGoreBloodPlane
 	BloodSpot4:
 		NGMV D -1;
 		Stop;
+	BloodSpot5:
+		NGMV E -1;
+		Stop;
+	BloodSpot6:
+		NGMV F -1;
+		Stop;
+	BloodSpot7:
+		NGMV G -1;
+		Stop;
+	BloodSpot8:
+		NGMV H -1;
+		Stop;
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	States
+	{
 	BloodSpotSprite1:
 		NSPT A -1;
 		Stop;
@@ -282,7 +417,7 @@ class NashGoreBloodSpotSmall : NashGoreBloodSpot
 {
 	Default
 	{
-		Radius 8;
+		Radius 8.0;
 	}
 }
 
@@ -295,7 +430,7 @@ class NashGoreBloodSpotClassic : NashGoreBloodSpot
 {
 	Default
 	{
-		Radius 8;
+		Radius 8.0;
 	}
 }
 
@@ -312,15 +447,22 @@ class NashGoreBloodSpotClassicCeiling : NashGoreBloodSpotClassic
 
 class NashGoreCorpseBlood : NashGoreBloodPlane
 {
+	bool bDepletedCorpseBlood;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
 	Default
 	{
-		Radius 32;
-		Height 1;
-		+SOLID
+		Radius 32.0;
+		Height 1.0;
+		+SPECIAL
+		-SOLID
 		-NOGRAVITY
 	}
-
-	bool bDepletedCorpseBlood;
 
 	//===========================================================================
 	//
@@ -330,30 +472,40 @@ class NashGoreCorpseBlood : NashGoreBloodPlane
 
 	override void BeginPlay(void)
 	{
-		if (nashgore_corpseblood == 0) { Destroy(); return; }
+		if (nashgore_corpseblood == 0)
+		{
+			Destroy();
+			return;
+		}
+
 		Super.BeginPlay();
 	}
 
 	override void Tick()
 	{
 		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
 
-		if (!target || bDepletedCorpseBlood)
+		if (!bNoTimeFreeze && isFrozen())
+			return;
+
+		if (bDepletedCorpseBlood)
 		{
 			Destroy();
 			return;
 		}
 	}
 
-	override bool CanCollideWith(Actor other, bool passive)
+	override void Touch(Actor other)
 	{
-		if (passive && other && other is "PlayerPawn")
+		if (nashgore_footprints == 0)
+			return;
+
+		if (other && other is "PlayerPawn")
 		{
-			let a = NashGoreActor(other.FindInventory("NashGoreActor", true));
+			let a = NashGoreActor.Find(other);
 			if (a)
 			{
-				a.lastCorpseBlood = self;
+				a.lastCorpseBloodSteppedOn = self;
 				a.footprintDuration = NashGoreActor.MAX_FOOTPRINT_DURATION;
 
 				// reduce blood size every time it is stepped on
@@ -365,14 +517,11 @@ class NashGoreCorpseBlood : NashGoreBloodPlane
 
 				if (Scale.X <= 0.01)
 				{
-					// not recommended to destroy actors inside CanCollideWith
-					// so instead let's just mark it for destruction later
+					// mark it for destruction later
 					bDepletedCorpseBlood = true;
 				}
 			}
 		}
-
-		return false;
 	}
 
 	//===========================================================================
@@ -390,6 +539,16 @@ class NashGoreCorpseBlood : NashGoreBloodPlane
 	}
 }
 
+// These are separate classes, rather than just state variations in the base class
+// due to the simplicity of interpolated vertex scaling with a very slow model animation.
+// If interpolated actor scaling gets added into the engine, we can condense all
+// variations into the base class.
+class NashGoreCorpseBlood01 : NashGoreCorpseBlood {}
+class NashGoreCorpseBlood02 : NashGoreCorpseBlood {}
+class NashGoreCorpseBlood03 : NashGoreCorpseBlood {}
+class NashGoreCorpseBlood04 : NashGoreCorpseBlood {}
+class NashGoreCorpseBlood05 : NashGoreCorpseBlood {}
+
 //===========================================================================
 //
 //
@@ -400,7 +559,8 @@ class NashGoreFootprint : NashGoreBloodPlane
 {
 	Default
 	{
-		Radius 10;
+		Radius 10.0;
+		+NashGoreBloodPlane.NORANDOMANGLE
 	}
 
 	//===========================================================================
@@ -411,7 +571,12 @@ class NashGoreFootprint : NashGoreBloodPlane
 
 	override void BeginPlay(void)
 	{
-		if (nashgore_footprints == 0) { Destroy(); return; }
+		if (nashgore_footprints == 0)
+		{
+			Destroy();
+			return;
+		}
+
 		Super.BeginPlay();
 	}
 
@@ -424,7 +589,130 @@ class NashGoreFootprint : NashGoreBloodPlane
 	States
 	{
 	Spawn:
+		TNT1 A 0 NoDelay
+		{
+			sprite = GetSpriteIndex('NGMV');
+			frame = nashgore_footprinttype;
+		}
+		#### # -1;
+		Stop;
+	}
+}
+
+class NashGoreFootprintLeft : NashGoreFootprint {}
+class NashGoreFootprintRight : NashGoreFootprint {}
+
+//===========================================================================
+//
+//
+//
+//===========================================================================
+
+class NashGoreBloodTrail : NashGoreBloodPlane
+{
+	// TO DO: the model is actually being rendered with the backface side up. PLEASE FIX!!!
+
+	// the corpse that's producing this blood trail
+	Actor mo;
+
+	bool stopSliding;
+	int fadeTics;
+
+	const TOO_FAR = 128.0;
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	Default
+	{
+		Radius 8.0;
+		+NashGoreBloodPlane.NORANDOMANGLE
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	override void BeginPlay(void)
+	{
+		Super.BeginPlay();
+		Scale.X = 1.0;
+		Scale.Y = 0.0;
+	}
+
+	override void Tick(void)
+	{
+		Super.Tick();
+
+		if (mo)
+		{
+			// fix overly-stretched trail if teleporting too far
+			bool isTooFar = false;
+			if (Distance2D(mo) > TOO_FAR)
+				isTooFar = true;
+			if (isTooFar)
+				stopSliding = true;
+
+			if (!stopSliding)
+			{
+				Scale.Y = Distance2D(mo) + mo.Radius;
+
+				if (mo.Vel ~== (0, 0, 0) || mo.FloorZ != FloorZ)
+				{
+					// if the corpse's elevation changed, shorten the blood a bit to reduce overhanging
+					if (mo.FloorZ != FloorZ)
+						Scale.Y -= (mo.Vel.XY.Length() + mo.Radius);
+
+					stopSliding = true;
+				}
+			}
+		}
+
+		if (!mo || stopSliding)
+		{
+			fadeTics++;
+			if (fadeTics > (Thinker.TICRATE * 5))
+				A_FadeOut(0.07);
+		}
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	States
+	{
+	Spawn:
+		TNT1 A 1 NoDelay
+		{
+			return A_Jump(256, "BloodTrail1", "BloodTrail2", "BloodTrail3");
+		}
+		Stop;
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	States
+	{
+	BloodTrail1:
 		NGMV A -1;
+		Stop;
+	BloodTrail2:
+		NGMV B -1;
+		Stop;
+	BloodTrail3:
+		NGMV C -1;
 		Stop;
 	}
 }
