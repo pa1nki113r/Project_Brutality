@@ -69,6 +69,7 @@ Class PB_Deagle : PB_WeaponBase
 		Select:
 			TNT1 A 0 PB_WeaponRaise("weapons/deagle/equip");
 			TNT1 A 0 PB_WeapTokenSwitch("DeagleSelected");
+			TNT1 A 0 A_SetInventory("RandomHeadExploder",1);	//little test
 			TNT1 A 0 PB_TakeIfUpgrade("PB_Revolver");
 			TNT1 A 0 PB_RespectIfNeeded();
 		SelectContinue:
@@ -224,6 +225,9 @@ Class PB_Deagle : PB_WeaponBase
 		NoAmmoUnloaded:
 			D1E0 A 1 A_StartSound("weapons/empty");
 			goto ready;
+		NoAmmoDual:
+			TNT1 A 1;
+			goto ready;
 		
 		Reload:
 			TNT1 A 0 {
@@ -289,7 +293,11 @@ Class PB_Deagle : PB_WeaponBase
 				int am1 = countinv(invoker.ammotype1);
 				int am2 = countinv(invoker.ammotype2);
 				int tr = countinv("LeftDeagleAmmo");
-				if(am1 < 1 || (tr >= 8 && am2 >= 8))
+				
+				if(am1 < 2)
+					return resolvestate("NoAmmoDual");	// some futureproofing
+				
+				if(tr >= 8 && am2 >= 8)
 					return resolvestate("Ready");
 				
 				//A_setinventory(invoker.UnloaderToken,0);
@@ -297,7 +305,7 @@ Class PB_Deagle : PB_WeaponBase
 				return resolvestate(null);
 			}
 			TNT1 A 0 A_ClearOverlays(10,11);
-			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") <= 0 || countinv(invoker.ammotype2) <= 0,"EmptyDualReload");
+			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") <= 0 || countinv(invoker.ammotype2) <= 1,"EmptyDualReload");
 			DR30 ABCDE 1;
 			TNT1 A 0 A_Startsound("Ironsights", 23,CHANF_OVERLAP);
 			DR30 FGHIJ 1;
@@ -316,7 +324,7 @@ Class PB_Deagle : PB_WeaponBase
 			DR32 FGHIJ 1;
 			DR32 KLMNO 1;
 			TNT1 A 1;
-			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") < 8 && countinv(invoker.ammotype1) > 0,"ToPartialLeft");
+			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") < 8 && countinv(invoker.ammotype1) > 1,"ToPartialLeft");
 			goto FinishDualReload;
 			
 		ToPartialLeft:
@@ -412,7 +420,7 @@ Class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 A_Startsound("weapons/deagle/click2",17,CHANF_OVERLAP);
 			DR02 KLMNOP 1;
 			TNT1 A 1;
-			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") >= 8 || countinv(invoker.ammotype1) < 1,"FinishDualReload");
+			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") >= 8 || countinv(invoker.ammotype1) < 2,"FinishDualReload");
 			
 			//raise left w/right reloaded
 			DR24 ABCD 1;
@@ -468,7 +476,7 @@ Class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 A_Startsound("weapons/deagle/click2",20,CHANF_OVERLAP);
 			DR12 KLMNOP 1;
 			TNT1 A 1;
-			TNT1 A 0 A_jumpif(countinv("DeagleAmmo") >= 8 || countinv(invoker.ammotype1) < 1,"FinishDualReload");
+			TNT1 A 0 A_jumpif(countinv("DeagleAmmo") >= 8 || countinv(invoker.ammotype1) < 2,"FinishDualReload");
 			goto ToPartialRight;
 			//DR36 ABCD 1;
 			
@@ -503,7 +511,7 @@ Class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 A_Startsound("weapons/deagle/click2",17,CHANF_OVERLAP);
 			DR22 KLMNOP 1;
 			TNT1 A 1;
-			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") >= 8 || countinv(invoker.ammotype1) < 1,"FinishDualReload");
+			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") >= 8 || countinv(invoker.ammotype1) < 2,"FinishDualReload");
 			goto ToPartialLeft;
 		
 		FinishDualReload:
