@@ -145,10 +145,6 @@ class PB_CasingEjectionSmoke : PB_GunFireSmoke
     }
 }
 
-#include "zscript/Effects/BulletImpacts.zs"
-
-// [gng] partially based on beautiful doom's smoke
-// https://github.com/jekyllgrim/Beautiful-Doom/blob/96fcd0cec039eca762a8b206e522e8111a62ad95/Z_BDoom/bd_main.zc#L932
 class PB_BarrelHeatSmoke: PB_GunFireSmoke
 {   
     override void SmokeTick()
