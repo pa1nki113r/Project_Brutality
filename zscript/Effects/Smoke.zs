@@ -7,7 +7,7 @@ class PB_GunFireSmoke: Actor
     Default {
         Alpha 0.3;
         //Scale 0.2;
-        Renderstyle "Add";
+       	//Renderstyle "Add";
         Speed 1;
         BounceFactor 0;
         Radius 0;
@@ -51,10 +51,8 @@ class PB_GunFireSmoke: Actor
         m_sprite = random(0, 25);
     }
     
-    override void Tick()
-    {
-    	Super.Tick();
-    	
+    virtual void SmokeTick()
+    {    	
     	if(Level.IsFrozen())
     		return;
     	
@@ -92,6 +90,12 @@ class PB_GunFireSmoke: Actor
                 A_Fadeout(0.04 * fadeSpeed, FTF_CLAMP|FTF_REMOVE);
         }
     }
+
+	override void Tick()
+	{
+		Super.Tick();
+		SmokeTick();
+	}
 
     States 
     {
@@ -138,5 +142,51 @@ class PB_CasingEjectionSmoke : PB_GunFireSmoke
                 }
             }
             Loop;
+    }
+}
+
+#include "zscript/Effects/BulletImpacts.zs"
+
+// [gng] partially based on beautiful doom's smoke
+// https://github.com/jekyllgrim/Beautiful-Doom/blob/96fcd0cec039eca762a8b206e522e8111a62ad95/Z_BDoom/bd_main.zc#L932
+class PB_BarrelHeatSmoke: PB_GunFireSmoke
+{   
+    override void SmokeTick()
+    {    	
+    	if(Level.IsFrozen())
+    		return;
+			
+		vel.xy *= 0.9;
+        int age = GetAge();
+        if(age < 5 && age > 1) 
+        {
+            A_Fadeout(0.05 * fadeSpeed, FTF_CLAMP|FTF_REMOVE);
+            scale *= blowSpeed;
+            roll += dissipateRotation;
+            dissipateRotation *= 0.96;
+            
+            if(CeilingPic == SkyFlatNum) {
+                vel.y += 0.2; // wind
+                vel.z += 0.1;
+                vel.x -= 0.1;
+            }
+        }
+        else
+        {
+            scale *= 1.01;
+            roll += dissipateRotation;
+            dissipateRotation *= 0.95;
+            
+            if(CeilingPic == SkyFlatNum) {
+                vel.y += 0.1; // wind
+                vel.z += 0.05;
+                vel.x -= 0.05;
+            }
+
+            if (alpha < 0.1)
+                A_FadeOut(0.02 * fadeSpeed, FTF_CLAMP|FTF_REMOVE);
+            else
+                A_Fadeout(0.04 * fadeSpeed, FTF_CLAMP|FTF_REMOVE);
+        }
     }
 }

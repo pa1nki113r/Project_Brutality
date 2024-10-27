@@ -1,5 +1,42 @@
 extend class PB_WeaponBase
 {
+	uint8 barrelHeat, leftBarrelHeat;
+	
+	action void PB_IncrementHeat(int flAmount = 1, bool flLeft = false)
+	{
+		if(!flLeft)
+		{
+			if(invoker.barrelHeat < 200)
+				invoker.barrelHeat += flAmount * 10;
+		}
+		else	
+		{
+			if(invoker.leftBarrelHeat < 200)
+				invoker.leftBarrelHeat += flAmount * 10;
+		}
+	}
+
+	action void PB_CoolDownBarrel(double posOfsx = 0, double posOfsy = 0, double posOfsz = 0, double velOfsx = 0, double velOfsy = 0, double velOfsz = 0)
+	{
+		if((posOfsx <= 0 && invoker.barrelHeat < 1) || (posOfsx > 0 && invoker.leftBarrelHeat < 1))
+			return;
+
+		PB_GunSmokeSpawn(
+			(posOfsx, posOfsy, posOfsz), 
+			(velOfsx, velOfsy, velOfsz) + (0, frandom(-0.25, 0.25), frandom(0, 1)),
+			"PB_BarrelHeatSmoke",
+			0.2,
+			0.5,
+			1.3,
+			0.4
+		);
+
+		if(posOfsx > 0)
+			invoker.leftBarrelHeat--;
+		else
+			invoker.barrelHeat--;
+	}
+	
 	action void PB_ReFire(statelabel flash = null)
 	{
 		A_ReFire(flash);

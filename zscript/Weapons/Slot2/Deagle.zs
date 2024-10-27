@@ -91,7 +91,10 @@ Class PB_Deagle : PB_WeaponBase
 		Ready3:
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReadyDualWield");
 			TNT1 A 0 A_jumpif(invoker.ammo2.amount < 1,"ReadyUnloaded");
-			D4E0 E 1 A_DoPBWeaponAction();
+			D4E0 E 1 {
+				A_DoPBWeaponAction();
+				PB_CoolDownBarrel(0, 0, 3);
+			}
 			loop;
 		ReadyUnloaded:
 		Ready4:	//man i hate this
@@ -120,6 +123,7 @@ Class PB_Deagle : PB_WeaponBase
 					PB_LowAmmoSoundWarning("pistol");
 					A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 					A_AlertMonsters();
+					PB_IncrementHeat(2);
 					PB_GunSmoke(0,0,0);
 					A_FireProjectile("YellowFlareSpawn",0,0,0,0);
 					PB_SpawnCasing("EmptyBrassDeagle",30,0,31,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
@@ -584,6 +588,7 @@ Class PB_Deagle : PB_WeaponBase
 		ReadyToFire2:	//ads ready loop
 			D3E0 A 1
 			{		
+				PB_CoolDownBarrel(0, 0, 4);
 				if(Cvar.GetCvar("pb_toggle_aim_hold",player).getint() == 1) 
 				{
 					if(!PressingAltfire() || JustReleased(BT_ALTATTACK))
@@ -611,12 +616,14 @@ Class PB_Deagle : PB_WeaponBase
 				}
 			TNT1 A 0 PB_jumpIfNoAmmo("Reload",1);
 			D3E0 B 1 BRIGHT {	
+					PB_IncrementHeat();
 					A_StartSound("weapons/deagle/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0);
 					PB_DynamicTail("shotgun", "pistol_mag");
 					PB_LowAmmoSoundWarning("pistol");
 					A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 					A_AlertMonsters();
 					PB_GunSmoke(0,0,0);
+					PB_IncrementHeat(2);
 					A_FireProjectile("YellowFlareSpawn",0,0,0,0);
 					PB_SpawnCasing("EmptyBrassDeagle",26,0,38,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
 					A_Takeinventory("DeagleAmmo",1);
@@ -717,6 +724,7 @@ Class PB_Deagle : PB_WeaponBase
 		
 		IdleLeft_Overlay:
 			D6E1 I 1 {
+				PB_CoolDownBarrel(15, 0, 6);
 				if(countinv("LeftDeagleAmmo") < 1)
 					A_SetWeaponFrame(9);	//A0B1C2D3E4F5G6H7I8J9
 					
@@ -752,6 +760,7 @@ Class PB_Deagle : PB_WeaponBase
 			
 		IdleRight_Overlay:
 			D6E0 I 1 {
+				PB_CoolDownBarrel(-15, 0, 6);
 				if(countinv("DeagleAmmo") < 1)
 					A_SetWeaponFrame(9);	//A0B1C2D3E4F5G6H7I8J9
 				
@@ -795,9 +804,10 @@ Class PB_Deagle : PB_WeaponBase
 		
 		FireLeft_Overlay:
 			D6E1 A 1 BRIGHT {	
+				PB_IncrementHeat(2, true);
 				A_SetFiringLeftWeapon(True);
 				A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,-6,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
-				PB_GunSmoke(4,0,0);
+				PB_GunSmoke(15,0,6);
 				PB_SpawnCasing("EmptyBrassDeagle",26,-12,38,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
 				A_StartSound("weapons/deagle/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0);
 				PB_DynamicTail("shotgun", "pistol_mag");
@@ -886,10 +896,11 @@ Class PB_Deagle : PB_WeaponBase
 			Goto IdleLeft_Overlay;
 	
 		FireRight_Overlay:
-			D6E0 A 1 BRIGHT {	
+			D6E0 A 1 BRIGHT {
+					PB_IncrementHeat(2);	
 					A_SetFiringRightWeapon(True);
 					A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,6,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
-					PB_GunSmoke(-4,0,0);
+					PB_GunSmoke(-15,0,6);
 					PB_SpawnCasing("EmptyBrassDeagle",26,25,38,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
 					A_StartSound("weapons/deagle/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0);
 					PB_DynamicTail("shotgun", "pistol_mag");

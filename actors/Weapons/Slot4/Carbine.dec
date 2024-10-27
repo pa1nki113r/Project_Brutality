@@ -162,7 +162,7 @@ ACTOR PB_Carbine : PB_Weapon
 			4AFG A 1 
 			{
 				A_SetInventory("CarbineBurstCounter",0);
-				if (CountInv("CarbineBarrelHeat") >= 60) {A_Gunflash("BarrelSmoke1");}
+				PB_CoolDownBarrel;
 					
 				if(GetCvar("pb_toggle_aim_hold")) 
 				{
@@ -252,6 +252,8 @@ ACTOR PB_Carbine : PB_Weapon
 			if(CountInv("LeftXRifleAmmo")<=0 && CountInv("XRifleAmmo")>0){
 				A_GiveInventory("DualFiring",1);
 			}
+
+			PB_CoolDownBarrel(14);
 			
 			//	basically, the idea is:
 			//	if you already fired and have burst or single fire selected, you need to release the fire button (releasing the button will take a dummy token)
@@ -336,6 +338,7 @@ ACTOR PB_Carbine : PB_Weapon
 		Loop
 	IdleRight_Overlay:
 		CB01 G 1 {
+			PB_CoolDownBarrel(-14);
 			// Full-Auto
 			if(CountInv("LeftXRifleAmmo")>0 && CountInv("XRifleAmmo")<=0){
 				A_TakeInventory("DualFiring",1);
@@ -448,6 +451,7 @@ ACTOR PB_Carbine : PB_Weapon
 	
 	FireLeft_Overlay:
 		CB02 A 1 BRIGHT {
+			PB_IncrementHeat(1, true);
 			A_AlertMonsters;
 			A_GiveInventory("FiringCarbineL",1);
 			A_StartSound("Weapons/Carbine/Fire", CHAN_WEAPON, CHANF_OVERLAP, 0.75);
@@ -486,6 +490,7 @@ ACTOR PB_Carbine : PB_Weapon
 		
 	FireRight_Overlay:
 		CB03 A 1 BRIGHT {
+			PB_IncrementHeat;
 			A_AlertMonsters;
 			A_GiveInventory("FiringCarbineR",1);
 			A_StartSound("Weapons/Carbine/Fire", CHAN_WEAPON, CHANF_OVERLAP, 0.75);
@@ -793,14 +798,15 @@ ACTOR PB_Carbine : PB_Weapon
 			A_OverlayPivotAlign(6,PSPA_CENTER,PSPA_CENTER);
 			A_Overlayscale(6,0.78,0.65 );
 			}
+			else
+			{
+				PB_CoolDownBarrel(0, 0, 5);
+			}
 		}
 		TNT1 A 0 {
 			//Updated code for far superior smooth gameplay
 			if (!PressingFire())
 			{A_SetInventory("CarbineBurstCounter",0);}
-			if (CountInv("CarbineBarrelHeat") >= 60) {
-				A_Gunflash("BarrelSmoke2");
-			}
 			
 			if(GetCvar("pb_toggle_aim_hold")) {
 				if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){
@@ -1050,6 +1056,7 @@ ACTOR PB_Carbine : PB_Weapon
 			if (CountInv("CarbineMuzzleFlash1") >= 1 ) { A_SetWeaponSprite("4AFF");}
 			if (CountInv("CarbineMuzzleFlash2") >= 1 ) { A_SetWeaponSprite("4BFF");}
 			if (CountInv("CarbineMuzzleFlash3") >= 1 ) { A_SetWeaponSprite("4CFF");}
+			PB_IncrementHeat;
 			A_GunFlash;
 			//A_FireBullets (0.1, 0.1, -1, 20, "HitPuff", FBF_NORANDOM,8192,"Tracer", -2,0);
 			PB_FireBullets("PB_556x45mm", 1, 2, 0, 0, 2);
@@ -1124,6 +1131,7 @@ ACTOR PB_Carbine : PB_Weapon
         TNT1 A 0 A_JumpIfInventory("XRifleAmmo",1,1)
         Goto Reload
 		4A2F A 1 BRIGHT {
+			PB_IncrementHeat;
 			A_ZoomFactor(1.485);
 			if(Countinv("Semifire")==1)
 			{
@@ -1452,9 +1460,6 @@ ACTOR PB_Carbine : PB_Weapon
 			A_Giveinventory("PB_LockScreenTilt",1);
 			A_SetCrosshair(5);
 			A_StartSound("Ironsights", CHAN_AUTO, CHANF_OVERLAP);
-			if (CountInv("CarbineBarrelHeat") >= 60) {
-					A_Gunflash("BarrelSmoke3");
-			}
 			
 			return state("");
 		}

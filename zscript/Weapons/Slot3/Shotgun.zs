@@ -192,6 +192,7 @@ Class PB_Shotgun : PB_WeaponBase
 		ReadyToFire:
 			SHTG A 1
 			{
+				PB_CoolDownBarrel(0,0,-4);
 				PB_SetShellSprite("SHTG","SHTS","SHTD");
 				// This token is given upon picking up the magazine upgrade.
 				if (CountInv("PumpshotgunMagNotInserted") >= 1 ) 
@@ -232,6 +233,7 @@ Class PB_Shotgun : PB_WeaponBase
 			SH2F A 0;
 			SHTF A 1 BRIGHT 
 			{
+				PB_IncrementHeat(3);
 				PB_SetShellSprite("SHTF","SH1F","SH2F");
 				A_SetInventory("CantDoAction",1);
 				PB_LowAmmoSoundWarning("shotgun");
@@ -722,6 +724,7 @@ Class PB_Shotgun : PB_WeaponBase
 		ReadyToFire2:
 			SHT8 A 1
 			{		
+				PB_CoolDownBarrel(0,-2,6);
 				PB_SetShellSprite("SHT8","SHT6","SHT4");
 				if (CountInv("PumpshotgunMagNotInserted") >= 1 ) 
 					return resolvestate("InsertMagShotgunRespectAlreadyRespected"); 
@@ -756,6 +759,7 @@ Class PB_Shotgun : PB_WeaponBase
 			TNT1 A 0 PB_jumpIfNoAmmo("Reload",1);
 			TNT1 A 0 
 			{
+				PB_IncrementHeat();
 				 A_AlertMonsters();
 				 A_Fireprojectile("YellowFlareSpawn", 0, 0, 0, 0);
 				 PB_LowAmmoSoundWarning("shotgun");
