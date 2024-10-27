@@ -326,6 +326,7 @@ Class PB_Revolver : PB_WeaponBase
 					{
 						A_SetAkimbo(False);
 						A_SetInventory("DualWieldingRevolver",0); // this
+						A_ClearOverlays(10,11);
 						return resolvestate("SwitchFromDualWield");
 					}
 					
@@ -337,6 +338,12 @@ Class PB_Revolver : PB_WeaponBase
 			R3V1 E 1;
 			R3V1 EFGHI 1 A_SetRoll(roll-0.8, SPF_INTERPOLATE);
 			Goto ReadyDualWield;
+		StopDualWield:
+			TNT1 A 0 {
+				A_SetAkimbo(False);
+				A_SetInventory("DualWieldingRevolver",0);
+				A_ClearOverlays(10,11);
+			}
 		SwitchFromDualWield:
 			R3V2 ABCDE 1 A_SetRoll(roll-0.8, SPF_INTERPOLATE);
 			R3V2 E 1;
@@ -500,6 +507,10 @@ Class PB_Revolver : PB_WeaponBase
 							A_SetInventory("DualFireReload",1);
 					}
 				}
+				
+				if(!PB_CanDualWield())
+					return resolvestate("StopDualWield");
+				
 				return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
 			}
 			Loop;
