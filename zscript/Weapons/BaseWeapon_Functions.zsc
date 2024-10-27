@@ -20,13 +20,15 @@ extend class PB_WeaponBase
 	{
 		if((posOfsx <= 0 && invoker.barrelHeat < 1) || (posOfsx > 0 && invoker.leftBarrelHeat < 1))
 			return;
+			
+		double endingScale = clamp(PB_Math.LinearMap(posOfsX <= 0 ? invoker.barrelHeat : invoker.leftBarrelHeat, 0, 20.0, 0.2, 1.0), 0.2, 1.0);
 
 		PB_GunSmokeSpawn(
 			(posOfsx, posOfsy, posOfsz), 
-			(velOfsx, velOfsy, velOfsz) + (0, frandom(-0.25, 0.25), frandom(0, 1)),
+			(velOfsx, velOfsy, velOfsz) + (0, frandom(-0.25, 0.25), frandom(-0.2, 0.7)),
 			"PB_BarrelHeatSmoke",
-			0.2,
-			0.5,
+			0.2 * endingScale,
+			0.7 * endingScale,
 			1.3,
 			0.4
 		);
@@ -502,6 +504,15 @@ extend class PB_WeaponBase
 		ofs.z -= 10.5;
 		ofs.y += 15;
 		double fovOfs = (120 - self.player.desiredfov) / 3.f; // good enough
+		
+		PlayerPawnBase plr = PlayerPawnBase(self);
+		
+		if(plr)
+		{
+			ofs.x -= plr.FinalBob.x * 0.3;
+			ofs.z -= plr.FinalBob.y * 0.3;
+		}
+		
 		Vector3 spos = PB_Math.RelativeToGlobalCoords((self.pos.xy, self.player.viewz), (self.angle, self.pitch, self.roll), (self.radius + ofs.y - (5.0 * abs(sin(self.pitch))) + fovOfs, -ofs.x, ofs.z), true);
 		Vector3 svel = PB_Math.RelativeToGlobalCoords((self.vel.xy, 0), (self.angle, self.pitch, self.roll), vofs);
 		
@@ -1358,6 +1369,14 @@ extend class PB_WeaponBase
 	{
 		vertOfs -= (self.player.viewz - self.pos.z) / self.player.CrouchFactor;
 		double fovOfs = (120 - self.player.desiredfov) / 3.f; // good enough
+		
+		PlayerPawnBase plr = PlayerPawnBase(self);
+		
+		if(plr)
+		{
+			horOfs -= plr.FinalBob.x * 0.3;
+			vertOfs -= plr.FinalBob.y * 0.3;
+		}
 	
 		Vector3 spos = PB_Math.RelativeToGlobalCoords((self.pos.xy, self.player.viewz), (self.angle, self.pitch, self.roll), (xOfs - (5.0 * abs(sin(self.pitch))) + fovOfs, horOfs, vertOfs), true);
 		Vector3 svel = PB_Math.RelativeToGlobalCoords((self.vel.xy, 0), (self.angle, self.pitch, self.roll), (xSpeed, horSpeed, vertSpeed));
