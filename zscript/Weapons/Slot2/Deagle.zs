@@ -93,8 +93,8 @@ Class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReadyDualWield");
 			TNT1 A 0 A_jumpif(invoker.ammo2.amount < 1,"ReadyUnloaded");
 			D4E0 E 1 {
-				A_DoPBWeaponAction();
 				PB_CoolDownBarrel(0, 0, 3);
+return A_DoPBWeaponAction();
 			}
 			loop;
 		ReadyUnloaded:
