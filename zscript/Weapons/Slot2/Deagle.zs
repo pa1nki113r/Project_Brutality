@@ -670,7 +670,7 @@ class PB_Deagle : PB_WeaponBase
 			}
 			Loop;
 		
-		Fire2:
+			Fire2:
 			TNT1 A 0 {
 					A_WeaponOffset(0,32);
 				}
@@ -692,8 +692,8 @@ class PB_Deagle : PB_WeaponBase
 				}
 			D3E0 C 1 BRIGHT PB_WeaponRecoil(-0.90,-0.25);
 			D3E0 DEF 1 A_ZoomFactor(1.2);
-			D3E0 GHA 1 A_ZoomFactor(1.18);
-			D3E0 AAAA 1 {
+			D3E0 GH 1 A_ZoomFactor(1.18);
+			D3E0 AAAAA 1 {
 				A_SetInventory("CantDoAction",0);
 				 
 				if(Cvar.GetCvar("pb_toggle_aim_hold",player).getint()) 
