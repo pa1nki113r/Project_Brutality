@@ -38,14 +38,12 @@ Class PB_Deagle : PB_WeaponBase
 				A_SetCrosshair(5);
 				}
 			D4E1 ABCDEEE 1 A_DoPBWeaponAction();
-			D4E1 FGHI 1 A_DoPBWeaponAction();
+			D4E1 FGHIJK 1 A_DoPBWeaponAction();
 			TNT1 A 0 A_Startsound("weapons/smg_magfly1",18,CHANF_OVERLAP );
 			TNT1 A 0 A_QuakeEx(0,0,0,12,0,10,"",QF_WAVE|QF_RELATIVE|QF_SCALEDOWN,0.6,0,0.2,0,0,0.3,0.40);
-			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
-			D4E1 JKLMNOPQ 1 A_DoPBWeaponAction();
-			TNT1 A 0 A_Startsound("Ironsights",11,CHANF_OVERLAP);
-			D4E1 RST 1 A_DoPBWeaponAction();
-			TNT1 A 0 A_Startsound("weapons/deagle/click1",18,CHANF_OVERLAP);
+			D4E1 LMNOPQR 1 A_DoPBWeaponAction();
+			TNT1 A 0 A_Startsound("weapons/deagle/catchf",18,CHANF_OVERLAP);
+			D4E1 ST 1 A_DoPBWeaponAction();
 			D4E1 UU 1 A_DoPBWeaponAction();
 			D4E1 UUUUU 1 { A_DoPBWeaponAction(); A_weaponoffset(-0.25,-0.25,WOF_ADD);}
 			D4E1 UU 1 A_DoPBWeaponAction();
@@ -53,16 +51,15 @@ Class PB_Deagle : PB_WeaponBase
 			D4E1 U 1 A_DoPBWeaponAction();
 			D4E1 U 1 { A_DoPBWeaponAction(); A_weaponoffset(0,32,WOF_interpolate);}
 			TNT1 A 0 A_QuakeEx(0,0,0,10,0,10,"",QF_WAVE|QF_RELATIVE|QF_SCALEDOWN,0.75,0,0.25,0,0,-0.3,0.45);
-			TNT1 A 0 A_startsound("PSRLFIN",24,CHANF_OVERLAP);
+			TNT1 A 0 A_Startsound("weapons/deagle/RotateFol",18,CHANF_OVERLAP);
 			D4E1 VWXYZ 1 A_DoPBWeaponAction();
-			TNT1 A 0 A_Startsound("Ironsights",13,CHANF_OVERLAP);
 			D4E2 A 1 A_DoPBWeaponAction();
 			D4E2 B 1 A_DoPBWeaponAction();
 			D4E2 BBBBBBB 1 { A_DoPBWeaponAction(); A_weaponoffset(-0.75,-0.4,WOF_ADD);}
 			D4E2 BB 1 A_DoPBWeaponAction();
 			D4E2 BBBBBBB 1 { A_DoPBWeaponAction(); A_weaponoffset(0.75,0.4,WOF_ADD);}
 			D4E2 B 1 { A_DoPBWeaponAction(); A_weaponoffset(0,32,WOF_interpolate);}
-			TNT1 A 0 A_startsound("Weapons/Revolver/Click2",23,CHANF_OVERLAP);
+			TNT1 A 0 A_Startsound("weapons/deagle/swapfol",18,CHANF_OVERLAP);
 			D4E2 CDEFG 1 A_DoPBWeaponAction();
 			goto ready3;
 			
@@ -254,42 +251,54 @@ return A_DoPBWeaponAction();
 				A_ClearOverlays(10,11);
 				}
 
-			D0E0 ABCDEFGHIJKLMNOPQRST 1;
+			D0E0 ABCDEFGHIJKLMNOPQ 1;
+			TNT1 A 0 A_Startsound("weapons/deagle/magrelease",18,CHANF_OVERLAP);
+			D0E0 RS 2;
 			TNT1 A 0 A_Startsound("weapons/deagle/magout",18,CHANF_OVERLAP);
 			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
-			D0E0 UVWXY 1;
+			D0E0 TUVWXXXXY 1;
 			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",8,2);
 			TNT1 A 0 A_SetInventory("DeagleHasUnloaded",0);
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",11,CHANF_OVERLAP);
 			D0E0 Z 1;
-			D0E1 ABCDEFGHI 1;
+			D0E1 ABCCCCCDEFG 1;
 			TNT1 A 0 A_Startsound("Ironsights",13,CHANF_OVERLAP);
-			D0E1 JKL 1;
+			D0E1 HIJKL 1;
 			goto ready;
 		
 		EmptyReload:
-			D1E0 ABCDEFGHI 1;
+			D1E0 ABCDE 1;
 			TNT1 A 0 A_Startsound("weapons/smg_magfly1",11,CHANF_OVERLAP);
-			D1E0 J 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/click1",19);
-			D1E0 KLMNOPQRST 1;
+			D1E0 FGHIJKLM 1;
+			TNT1 A 0 A_Startsound("weapons/deagle/CatchF",19,CHANF_OVERLAP);
+			D1E0 NOPQ 1;
+			TNT1 A 0 A_Startsound("weapons/deagle/MagRelease",0,CHANF_OVERLAP);
+			D1E0 R 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/magout",13,CHANF_OVERLAP);
 			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
 			TNT1 A 0 {
 				if(!findinventory(invoker.UnloaderToken))
 					PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,-2,-2,false); //only drop mags if wasnt unloaded already
 			}
+			D1E0 ST 1;
+			TNT1 A 0 A_Startsound("weapons/deagle/MagToss",0,CHANF_OVERLAP);
 			D1E0 UVWXYZ 1;
-			D1E1 ABCDEFGHI 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/magin",18,CHANF_OVERLAP);
+			D1E1 ABCD 1;
+			TNT1 A 0 A_Startsound("weapons/deagle/CatchF",0,CHANF_OVERLAP,0.5);
+			D1E1 EFG 1;
+			TNT1 A 0 A_Startsound("weapons/deagle/magin",0,CHANF_OVERLAP);
 			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
 			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",7,2);
-			D1E1 JKLMNOPQRSTUVWXYZ 1;
-			D1E2 ABC 1;
+			D1E1 HIJKLMNOPQ 1;
+			TNT1 A 0 A_Startsound("weapons/deagle/RotateFol",0,CHANF_OVERLAP);
+			D1E1 RSTUVWXYZ 1;
+			D1E2 A 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/click1",14,CHANF_OVERLAP);
-			D1E2 DEF 1;
+			D1E2 BCDDDDDE 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/click2",15,CHANF_OVERLAP);
-			D1E2 GHIJKL 1;
+			D1E2 FFFGH 1;
+			TNT1 A 0 A_Startsound("Ironsights",0,CHANF_OVERLAP);
+			D1E2 IJKL 1;
 			goto ready;
 		
 		ReloadDualWield:
