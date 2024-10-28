@@ -1,4 +1,4 @@
-Class PB_Deagle : PB_WeaponBase
+class PB_Deagle : PB_WeaponBase
 {
 	default
 	{
@@ -338,7 +338,7 @@ Class PB_Deagle : PB_WeaponBase
 				return resolvestate(null);
 			}
 			TNT1 A 0 A_ClearOverlays(10,11);
-			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") <= 0 || countinv(invoker.ammotype2) <= 0,"EmptyDualReload");
+			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") < 1 || countinv(invoker.ammotype2) < 1,"EmptyDualReload");
 			DR30 ABCDE 1;
 			TNT1 A 0 A_Startsound("Ironsights", 23,CHANF_OVERLAP);
 			DR30 FGHIJ 1;
