@@ -69,6 +69,10 @@ Class PB_BaseBulletImpact : BulletPuff abstract
 		{
 			DistantHit();
 		}
+		else if(!bNODISTANT)
+		{
+			CloseHit();
+		}
 	}
 
 	// extra feedback for far away hits
@@ -84,6 +88,24 @@ Class PB_BaseBulletImpact : BulletPuff abstract
 		MAINPUF.StartAlpha = 1.0;
 		MAINPUF.FadeStep = 0;
 		MAINPUF.Size = random[justtobesafe](25,28);
+		MAINPUF.SizeStep = random[justtobesafe](2,4);
+		MAINPUF.Lifetime = 4; 
+		MAINPUF.Pos = pos;
+		Level.SpawnParticle(MAINPUF);
+	}
+	
+	void CloseHit()
+	{
+		FSpawnParticleParams MAINPUF;
+		string f = String.Format("%c", int("A") + random[justtobesafe](0,7));
+		MAINPUF.Texture = TexMan.CheckForTexture("IPF2"..f..0);
+		MAINPUF.Style = STYLE_ADD;
+		MAINPUF.Color1 = "FFFFFF";
+		MAINPUF.Flags = SPF_FULLBRIGHT|SPF_ROLL;
+		MAINPUF.StartRoll = random[justtobesafe](0,360);
+		MAINPUF.StartAlpha = 1.0;
+		MAINPUF.FadeStep = 0;
+		MAINPUF.Size = random[justtobesafe](5,10);
 		MAINPUF.SizeStep = random[justtobesafe](2,4);
 		MAINPUF.Lifetime = 4; 
 		MAINPUF.Pos = pos;
@@ -173,13 +195,13 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 			vls = (0,0,1);
 		}
 		PUFSPRK.Vel = vls;
-		PUFSPRK.accel = (0,0,0);
+		PUFSPRK.accel = (0,0,-0.05);
 		if(CeilingPic == SkyFlatNum)
-			PUFSPRK.accel += (0.1, 0.05, 0.05);
+			PUFSPRK.accel += (0.05, 0.1, 0.1);
 
 		PUFSPRK.Startroll = random[justtobesafe](0, 359);
 		PUFSPRK.RollVel = frandom[justtobesafe](1, 2);
-		PUFSPRK.StartAlpha = 1.0;
+		PUFSPRK.StartAlpha = 0.8;
 		PUFSPRK.FadeStep = -1;
 		PUFSPRK.Size = random[justtobesafe](40,50);
 		PUFSPRK.SizeStep = 2;
@@ -230,21 +252,24 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 			PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[justtobesafe](0, 25)).."0");//("SMK2A0"); //SMk3G0
 			PUFSMK.Style = STYLE_TRANSLUCENT;
 			PUFSMK.Color1 = "c9c9c9";
-			vector3 vls, accl;
+			vector3 vls, accl, posOfs;
 			if(hitWhat == 1)
 			{
-				vls = (RotateVector(((frandom[justtobesafe](3, 6) * (i * 0.5)), frandom[justtobesafe](-1,1)), wallNormal), frandom[justtobesafe](-3,2));
+				vls = (RotateVector(((4 * (i * 0.5)), frandom[justtobesafe](-1,1)), wallNormal), frandom[justtobesafe](-3,-1));
 				accl = -(vls.xy * 0.07, (0.1 * i));
+				posofs = (RotateVector((15+(i*2), 0), wallNormal), 0);
 			} 
-			else if(hitWhat >= 2)
+			else if(hitWhat > 1)
 			{
 				vls.xy = (frandom[justtobesafe](-2,2), frandom[justtobesafe](-2,2));
 				vls.z = 4 * (i * 0.5);
                 accl = -(0, 0, (0.3 * i));
+                posOfs = (0, 0, 15+(i*2));
 
-				if(hitWhat == 3);
+				if(hitWhat == 3)
                 {
 					vls.z *= -1;
+					posOfs.z *= -1;
                     accl.z *= -1;
                 }
 			}
@@ -256,17 +281,17 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 			PUFSMK.vel = vls;
 			PUFSMK.accel = accl;
 			if(CeilingPic == SkyFlatNum)
-				PUFSMK.accel += (0.1, 0.05, 0.05);;
+				PUFSMK.accel += (0.05, 0.1, 0.05);
+				
 			PUFSMK.Flags = SPF_ROLL;
 			PUFSMK.StartRoll = random[justtobesafe](0,360);
 			PUFSMK.RollVel = random[justtobesafe](-4,4);
-			PUFSMK.StartAlpha = 0.8;
+			PUFSMK.StartAlpha = 0.6;
 			PUFSMK.FadeStep = -1;
 			PUFSMK.Size = random[justtobesafe](28,32);
 			PUFSMK.SizeStep = random[justtobesafe](1,3);
-			PUFSMK.Lifetime = 10; 
-			vector2 posofs = RotateVector((5, 0), angle);
-			PUFSMK.Pos = vec3Offset(posofs.x, posofs.y, 0);
+			PUFSMK.Lifetime = 13; 
+			PUFSMK.Pos = pos + posOfs;
 			Level.SpawnParticle(PUFSMK);
 		}
 	}
@@ -289,7 +314,7 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 		PUFSMK.Vel = (frandom(-1, 1), frandom(-1, 1), frandom(-1, 1));
 		PUFSMK.accel = (0, 0, 0);
 		if(CeilingPic == SkyFlatNum)
-			PUFSMK.accel += (0.1, 0.05, 0.05);;
+			PUFSMK.accel += (0.05, 0.1, 0.05);
 		PUFSMK.Startroll = random[justtobesafe](0, 359);
 		PUFSMK.RollVel = frandom[justtobesafe](1, 2);
 		PUFSMK.StartAlpha = 0.6;
@@ -312,12 +337,6 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 	states
 	{
 		Spawn:
-			/*TNT1 A 0 {
-				A_SpawnProjectile("SparkX", 0, 0, random (0, 360), 2, random (0, 360));
-				A_SpawnProjectile("HitSpark", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-				A_SpawnProjectile("HitSpark22", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-				A_SpawnProjectile("HitSpark23", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-			}*/
 		Puff:
 			TNT1 A 0 NoDelay {
 				A_StartSound("bulletimpact/wood", pitch: frandom(0.9, 1.1));
@@ -357,7 +376,7 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 		PUFSPRK.Vel = vls;
 		PUFSPRK.accel = (0,0,frandom[justtobesafe](-0.1, 0.1));
 		if(CeilingPic == SkyFlatNum)
-			PUFSPRK.accel += (0.1, 0.05, 0.05);;
+			PUFSPRK.accel += (0.05, 0.1, 0.05);
 
 		PUFSPRK.Startroll = random[justtobesafe](0, 359);
 		PUFSPRK.RollVel = frandom[justtobesafe](1, 2);
@@ -437,7 +456,7 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 			PUFSMK.vel = vls;
 			PUFSMK.accel = accl;
 			if(CeilingPic == SkyFlatNum)
-				PUFSMK.accel += (0.1, 0.05, 0.05);;
+				PUFSMK.accel += (0.05, 0.1, 0.05);
 
 			PUFSMK.Flags = SPF_ROLL;
 			PUFSMK.StartRoll = random[justtobesafe](0,360);
@@ -447,7 +466,7 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 			PUFSMK.Size = random[justtobesafe](28,32);
 			PUFSMK.SizeStep = random[justtobesafe](1,3);
 			PUFSMK.Lifetime = 10; 
-			vector2 posofs = RotateVector((5, 0), angle);
+			vector2 posofs = RotateVector((5, 0), wallNormal);
 			PUFSMK.Pos = vec3Offset(posofs.x, posofs.y, 0);
 			Level.SpawnParticle(PUFSMK);
 		}
@@ -463,12 +482,15 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
 	states
 	{
 		Spawn:
-			TNT1 AAAA 0;
-			TNT1 A 0 {
-				A_SpawnProjectile("SparkX", 0, 0, random (0, 360), 2, random (0, 360));
-				A_SpawnProjectile("HitSpark", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-				A_SpawnProjectile("HitSpark22", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-				A_SpawnProjectile("HitSpark23", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
+			TNT1 A 0 NoDelay {
+				Angle = wallNormal;
+				
+				for(int i = 0; i < 4; i++)
+					A_SpawnProjectile("SparkX", 0, 0, random (-25, 25), 2, random (-25, 25));
+					
+				A_SpawnProjectile("HitSpark", 0, 0, random (-25, 25), 2, random (-25, 25));
+				A_SpawnProjectile("HitSpark22", 0, 0, frandom (-45, 45), 2, frandom(-45, 45));
+				A_SpawnProjectile("HitSpark23", 0, 0, frandom (-180, 180), 2, frandom(-180, 180));
 			}
 		Puff:
 			TNT1 A 0 NoDelay {
@@ -585,7 +607,7 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
 		PUFSMK.vel = vls;
 		PUFSMK.accel = -(vls * 0.07);
 		if(CeilingPic == SkyFlatNum)
-			PUFSMK.accel += (0.1, 0.05, 0.05);;
+			PUFSMK.accel += (0.05, 0.1, 0.05);
 
 		PUFSMK.Flags = SPF_ROLL;
 		PUFSMK.StartRoll = random[justtobesafe](0,360);
@@ -606,13 +628,6 @@ Class PB_BulletImpactSheetMetal : PB_BulletImpactMetal
 	states
 	{
         Spawn:
-			TNT1 AAAA 0;
-			/*TNT1 A 0 {
-				A_SpawnProjectile("SparkX", 0, 0, random (0, 360), 2, random (0, 360));
-				A_SpawnProjectile("HitSpark", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-				A_SpawnProjectile("HitSpark22", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-				A_SpawnProjectile("HitSpark23", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-			}*/
 		Puff:
 			TNT1 A 0 NoDelay {
                 A_StartSound("bulletimpact/metal/b", pitch: frandom(0.9, 1.1));
@@ -643,12 +658,6 @@ Class PB_BulletImpactDirt : PB_BaseBulletImpact
 	states
 	{
 		Spawn:
-			/*TNT1 A 0 {
-				A_SpawnProjectile("SparkX", 0, 0, random (0, 360), 2, random (0, 360));
-				A_SpawnProjectile("HitSpark", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-				A_SpawnProjectile("HitSpark22", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-				A_SpawnProjectile("HitSpark23", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-			}*/
 		Puff:
 			TNT1 A 0 NoDelay {
 				A_StartSound("bulletimpact/wood", pitch: frandom(0.9, 1.1));
@@ -688,7 +697,7 @@ Class PB_BulletImpactDirt : PB_BaseBulletImpact
 		PUFSPRK.Vel = vls;
 		PUFSPRK.accel = (0,0,frandom[justtobesafe](-0.1, 0.1));
 		if(CeilingPic == SkyFlatNum)
-			PUFSPRK.accel += (0.1, 0.05, 0.05);;
+			PUFSPRK.accel += (0.05, 0.1, 0.05);
 
 		PUFSPRK.Startroll = random[justtobesafe](0, 359);
 		PUFSPRK.RollVel = 5;
@@ -768,7 +777,7 @@ Class PB_BulletImpactDirt : PB_BaseBulletImpact
 			PUFSMK.vel = vls;
 			PUFSMK.accel = accl;
 			if(CeilingPic == SkyFlatNum)
-				PUFSMK.accel += (0.1, 0.05, 0.05);;
+				PUFSMK.accel += (0.05, 0.1, 0.05);
 			PUFSMK.Flags = SPF_ROLL;
 			PUFSMK.StartRoll = random[justtobesafe](0,360);
 			PUFSMK.RollVel = random[justtobesafe](-4,4);
@@ -789,12 +798,6 @@ Class PB_BulletImpactBrownRock : PB_BaseBulletImpact
 	states
 	{
 		Spawn:
-			/*TNT1 A 0 {
-				A_SpawnProjectile("SparkX", 0, 0, random (0, 360), 2, random (0, 360));
-				A_SpawnProjectile("HitSpark", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-				A_SpawnProjectile("HitSpark22", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-				A_SpawnProjectile("HitSpark23", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-			}*/
 		Puff:
 			TNT1 A 0 NoDelay {
 				A_StartSound("bulletimpact", pitch: frandom(0.9, 1.1));
@@ -834,7 +837,7 @@ Class PB_BulletImpactBrownRock : PB_BaseBulletImpact
 		PUFSPRK.Vel = vls;
 		PUFSPRK.accel = (0,0,frandom[justtobesafe](-0.1, 0.1));
 		if(CeilingPic == SkyFlatNum)
-			PUFSPRK.accel += (0.1, 0.05, 0.05);;
+			PUFSPRK.accel += (0.05, 0.1, 0.05);
 			
 		PUFSPRK.Startroll = random[justtobesafe](0, 359);
 		PUFSPRK.RollVel = frandom[justtobesafe](1, 2);
@@ -914,7 +917,7 @@ Class PB_BulletImpactBrownRock : PB_BaseBulletImpact
 			PUFSMK.vel = vls;
 			PUFSMK.accel = accl;
 			if(CeilingPic == SkyFlatNum)
-				PUFSMK.accel += (0.1, 0.05, 0.05);;
+				PUFSMK.accel += (0.05, 0.1, 0.05);
 
 			PUFSMK.Flags = SPF_ROLL;
 			PUFSMK.StartRoll = random[justtobesafe](0,360);
@@ -944,12 +947,6 @@ Class PB_BulletImpactWater : PB_BaseBulletImpact
     states
 	{
 		Spawn:
-			/*TNT1 A 0 {
-				A_SpawnProjectile("SparkX", 0, 0, random (0, 360), 2, random (0, 360));
-				A_SpawnProjectile("HitSpark", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-				A_SpawnProjectile("HitSpark22", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-				A_SpawnProjectile("HitSpark23", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-			}*/
 		Puff:
 			TNT1 A 0 NoDelay {
 				A_StartSound("bulletimpact/water", pitch: frandom(0.9, 1.1));
