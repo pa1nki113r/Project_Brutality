@@ -197,7 +197,7 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 		PUFSPRK.Vel = vls;
 		PUFSPRK.accel = (0,0,-0.05);
 		if(CeilingPic == SkyFlatNum)
-			PUFSPRK.accel += (0.05, 0.1, 0.1);
+			PUFSPRK.accel += (-0.05, 0.1, 0.1);
 
 		PUFSPRK.Startroll = random[justtobesafe](0, 359);
 		PUFSPRK.RollVel = frandom[justtobesafe](1, 2);
@@ -281,7 +281,7 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 			PUFSMK.vel = vls;
 			PUFSMK.accel = accl;
 			if(CeilingPic == SkyFlatNum)
-				PUFSMK.accel += (0.05, 0.1, 0.05);
+				PUFSMK.accel += (-0.05, 0.1, 0.05);
 				
 			PUFSMK.Flags = SPF_ROLL;
 			PUFSMK.StartRoll = random[justtobesafe](0,360);
@@ -314,7 +314,7 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 		PUFSMK.Vel = (frandom(-1, 1), frandom(-1, 1), frandom(-1, 1));
 		PUFSMK.accel = (0, 0, 0);
 		if(CeilingPic == SkyFlatNum)
-			PUFSMK.accel += (0.05, 0.1, 0.05);
+			PUFSMK.accel += (-0.05, 0.1, 0.05);
 		PUFSMK.Startroll = random[justtobesafe](0, 359);
 		PUFSMK.RollVel = frandom[justtobesafe](1, 2);
 		PUFSMK.StartAlpha = 0.6;
@@ -376,7 +376,7 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 		PUFSPRK.Vel = vls;
 		PUFSPRK.accel = (0,0,frandom[justtobesafe](-0.1, 0.1));
 		if(CeilingPic == SkyFlatNum)
-			PUFSPRK.accel += (0.05, 0.1, 0.05);
+			PUFSPRK.accel += (-0.05, 0.1, 0.05);
 
 		PUFSPRK.Startroll = random[justtobesafe](0, 359);
 		PUFSPRK.RollVel = frandom[justtobesafe](1, 2);
@@ -456,7 +456,7 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 			PUFSMK.vel = vls;
 			PUFSMK.accel = accl;
 			if(CeilingPic == SkyFlatNum)
-				PUFSMK.accel += (0.05, 0.1, 0.05);
+				PUFSMK.accel += (-0.05, 0.1, 0.05);
 
 			PUFSMK.Flags = SPF_ROLL;
 			PUFSMK.StartRoll = random[justtobesafe](0,360);
@@ -607,7 +607,7 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
 		PUFSMK.vel = vls;
 		PUFSMK.accel = -(vls * 0.07);
 		if(CeilingPic == SkyFlatNum)
-			PUFSMK.accel += (0.05, 0.1, 0.05);
+			PUFSMK.accel += (-0.05, 0.1, 0.05);
 
 		PUFSMK.Flags = SPF_ROLL;
 		PUFSMK.StartRoll = random[justtobesafe](0,360);
@@ -697,7 +697,7 @@ Class PB_BulletImpactDirt : PB_BaseBulletImpact
 		PUFSPRK.Vel = vls;
 		PUFSPRK.accel = (0,0,frandom[justtobesafe](-0.1, 0.1));
 		if(CeilingPic == SkyFlatNum)
-			PUFSPRK.accel += (0.05, 0.1, 0.05);
+			PUFSPRK.accel += (-0.05, 0.1, 0.05);
 
 		PUFSPRK.Startroll = random[justtobesafe](0, 359);
 		PUFSPRK.RollVel = 5;
@@ -777,7 +777,7 @@ Class PB_BulletImpactDirt : PB_BaseBulletImpact
 			PUFSMK.vel = vls;
 			PUFSMK.accel = accl;
 			if(CeilingPic == SkyFlatNum)
-				PUFSMK.accel += (0.05, 0.1, 0.05);
+				PUFSMK.accel += (-0.05, 0.1, 0.05);
 			PUFSMK.Flags = SPF_ROLL;
 			PUFSMK.StartRoll = random[justtobesafe](0,360);
 			PUFSMK.RollVel = random[justtobesafe](-4,4);
@@ -837,7 +837,7 @@ Class PB_BulletImpactBrownRock : PB_BaseBulletImpact
 		PUFSPRK.Vel = vls;
 		PUFSPRK.accel = (0,0,frandom[justtobesafe](-0.1, 0.1));
 		if(CeilingPic == SkyFlatNum)
-			PUFSPRK.accel += (0.05, 0.1, 0.05);
+			PUFSPRK.accel += (-0.05, 0.1, 0.05);
 			
 		PUFSPRK.Startroll = random[justtobesafe](0, 359);
 		PUFSPRK.RollVel = frandom[justtobesafe](1, 2);
@@ -917,7 +917,7 @@ Class PB_BulletImpactBrownRock : PB_BaseBulletImpact
 			PUFSMK.vel = vls;
 			PUFSMK.accel = accl;
 			if(CeilingPic == SkyFlatNum)
-				PUFSMK.accel += (0.05, 0.1, 0.05);
+				PUFSMK.accel += (-0.05, 0.1, 0.05);
 
 			PUFSMK.Flags = SPF_ROLL;
 			PUFSMK.StartRoll = random[justtobesafe](0,360);
