@@ -230,7 +230,7 @@ class PB_Projectile : FastProjectile abstract
 		ClearInterpolation();
 		double oldz = pos.Z;
 
-		if (isFrozen())
+		if (!bNOTIMEFREEZE && isFrozen())
 			return;
 
 		// [RH] Ripping is a little different than it was in Hexen
@@ -348,7 +348,9 @@ class PB_Projectile : FastProjectile abstract
 							if(PenetrateWall(frac)) return;
 						}
 						
-						PB_SpawnImpact(false, 1);
+						if(!lastripped)
+							PB_SpawnImpact(false, 1);
+							
 						ExplodeMissile (BlockingLine, BlockingMobj);
 						OnExplode (FindExplosionType(BlockingMobj));
 						return;
@@ -453,7 +455,7 @@ class PB_Projectile : FastProjectile abstract
 	
 	override void Tick()
 	{
-		if (IsFrozen())
+		if (!bNOTIMEFREEZE && IsFrozen())
 			return;
 		
 		activateLines();
@@ -662,6 +664,7 @@ class PB_Projectile : FastProjectile abstract
 	flagdef RANGED: BehaviorFlags, 4;
 	flagdef NOWHIZBY: BehaviorFlags, 5;
 	flagdef WHIZCRACK: BehaviorFlags, 6;
+	flagdef SMALLIMPACT: BehaviorFlags, 7;
 	
 	vector3 startPos;
 	int noActivation;
@@ -788,6 +791,7 @@ class PB_Projectile : FastProjectile abstract
 				
 				puff.hitWhat = hitSurfaceType;
 				puff.wallNormal = normal + 90;
+				puff.smallCal = bSMALLIMPACT;
 			}
 		}
 	}
@@ -812,6 +816,8 @@ class PB_Projectile : FastProjectile abstract
 		+BLOODLESSIMPACT
 		-NOGRAVITY
 		+PB_Projectile.RipOnce;
+		-PB_Projectile.SMALLIMPACT;
+		+NOTIMEFREEZE;
 		ProjectileKickBack 20;
 		Renderstyle "Add";
 		// Decal "ConcreteBullethole";
