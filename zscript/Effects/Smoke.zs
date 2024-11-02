@@ -13,7 +13,8 @@ class PB_GunFireSmoke: Actor
         Radius 0;
         Height 0;
         Mass 0;
-        Scale 0.22;
+        YScale 0.22;
+        XScale 0.264;
         +NOBLOCKMAP;
         +NOTELEPORT;
         +DONTSPLASH;
@@ -26,6 +27,7 @@ class PB_GunFireSmoke: Actor
         +ROLLSPRITE;
         +ROLLCENTER;
         +NOCLIP;
+        +NOTIMEFREEZE;
     }
 
     double dissipateRotation;
@@ -53,9 +55,6 @@ class PB_GunFireSmoke: Actor
     
     virtual void SmokeTick()
     {    	
-    	if(Level.IsFrozen())
-    		return;
-    	
         int age = GetAge();
         if(age < 5 && age > 1) 
         {
@@ -149,9 +148,6 @@ class PB_BarrelHeatSmoke: PB_GunFireSmoke
 {   
     override void SmokeTick()
     {    	
-    	if(Level.IsFrozen())
-    		return;
-			
 		vel.xy *= 0.9;
         int age = GetAge();
         if(age < 5 && age > 1) 

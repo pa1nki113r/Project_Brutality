@@ -18,7 +18,7 @@ class PB_Materialsys : StaticEventHandler
         for (int i = 0; i < refArray.Size(); i++) 
         {
             textureNames.Push(refArray[i].MakeLower());
-            console.printf("PB_Materialsys: Texture %s added to %s", refArray[i], materialId);
+            //console.printf("PB_Materialsys: Texture %s added to %s", refArray[i], materialId);
         }
 
         // push end range
@@ -29,7 +29,7 @@ class PB_Materialsys : StaticEventHandler
         materialRanges.Push(lastMaterialKey);
         materialKeyMap.Insert(lastMaterialKey, materialId);
 
-        console.printf("PB_Materialsys: %s takes range %i..%i, with a key of %i.", materialId, materialRanges[materialRanges.Size() - 3], materialRanges[materialRanges.Size() - 2], materialRanges[materialRanges.Size() - 1]);
+        //console.printf("PB_Materialsys: %s takes range %i..%i, with a key of %i.", materialId, materialRanges[materialRanges.Size() - 3], materialRanges[materialRanges.Size() - 2], materialRanges[materialRanges.Size() - 1]);
         console.printf("PB_Materialsys: Finished setting up %s.", materialId);
     }
 
