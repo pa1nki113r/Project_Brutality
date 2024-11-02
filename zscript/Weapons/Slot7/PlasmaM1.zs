@@ -5,7 +5,8 @@ Class PB_M1Plasma : PB_WeaponBase
 		weapon.slotnumber 7;							
 		weapon.ammotype1 "PB_Cell";	
 		Weapon.AmmoGive1 60;		
-		weapon.ammotype2 "PlasmaAmmo";		
+		weapon.ammotype2 "PlasmaAmmo";
+		PB_WeaponBase.AmmoTypeLeft "LeftPlasmaAmmo";
 		Inventory.MaxAmount 3;
 		PB_WeaponBase.unloadertoken "PlasmaRifleHasUnloaded";
 		PB_WeaponBase.respectItem "RespectPlasmaGun";	

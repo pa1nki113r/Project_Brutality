@@ -5,7 +5,8 @@ class PB_Deagle : PB_WeaponBase
 		weapon.slotnumber 2;							
 		weapon.ammotype1 "PB_LowCalMag";								
 		weapon.ammogive1 8;		
-		weapon.ammotype2 "DeagleAmmo";								
+		weapon.ammotype2 "DeagleAmmo";
+		PB_WeaponBase.AmmoTypeLeft "LeftDeagleAmmo";
 		Inventory.MaxAmount 2;
 		PB_WeaponBase.unloadertoken "DeagleHasUnloaded";	
 		PB_WeaponBase.respectItem "RespectDeagle";		
