@@ -670,6 +670,11 @@ Class PB_M1Plasma : PB_WeaponBase
 			TNT1 A 0 A_StartSound("PLSDRAW", 12,CHANF_OVERLAP);
 			goto ReadyDualWield;
 			
+		DeselectDualWield:
+			DPRS DCBA 1;
+			TNT1 A 0 A_lower(120);
+			wait;
+			
 		ReadyDualWield:
 			TNT1 A 0 {
 					//set the overlays for the sides and other things needed, like
