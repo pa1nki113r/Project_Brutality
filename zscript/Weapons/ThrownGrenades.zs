@@ -125,7 +125,7 @@ class PB_ThrownGrenade : Actor
 			{
 				wentKaput = true;
 				
-				bBOUNCEONWALLS = bBOUNCEONFLOORS = bBOUNCEONCEILINGS = bALLOWBOUNCEONACTORS = bBOUNCEONACTORS = false;
+				bBOUNCEONWALLS = bBOUNCEONFLOORS = bBOUNCEONCEILINGS = bALLOWBOUNCEONACTORS = false;
 				
 				if(flareActor)
 					flareActor.Destroy();
@@ -223,13 +223,13 @@ class PB_ThrownGrenade : Actor
 	{
 		FSpawnParticleParams PUFSPRK;
 		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[grenade](0, 25)).."0");
-		PUFSPRK.Color1 = "B0B0B0";
+		PUFSPRK.Color1 = "7a7a7a";
 		PUFSPRK.Style = STYLE_TRANSLUCENT;
 		PUFSPRK.Flags = SPF_ROLL;
 		PUFSPRK.Vel = (0, 0, (5-smokephase) * 0.5);
 		PUFSPRK.Startroll = random[grenade](0, 359);
 		PUFSPRK.RollVel = frandom[grenade](-3, 3);
-		PUFSPRK.StartAlpha = 1.0;
+		PUFSPRK.StartAlpha = 0.8;
 		PUFSPRK.Size = 100;
 		PUFSPRK.SizeStep = 2;
 		PUFSPRK.Lifetime = random[grenade](55,100); 
