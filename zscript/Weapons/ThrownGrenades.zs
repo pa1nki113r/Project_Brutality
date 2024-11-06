@@ -135,7 +135,7 @@ class PB_ThrownGrenade : Actor
 				A_Explode(pbGrenadeDamage, pbGrenadeRange, XF_HURTSOURCE | XF_CIRCULAR);
 
 				if(target && target.Player)
-					A_SpawnItemEx("HandGrenadeExplosion",0,0,30,0,0,0,0,SXF_NOCHECKPOSITION,0);
+					A_Explode(180, 220, XF_HURTSOURCE | XF_CIRCULAR);
 
 				//A_SpawnItemEx("WhiteShockwave");
 				//A_SpawnProjectile("SparkSpawner",0,0,frandom(0,359),2,-15);
@@ -151,6 +151,9 @@ class PB_ThrownGrenade : Actor
 				A_AlertMonsters();
 				Radius_Quake(2, 24, 0, 15, 0);
 				
+				A_SpawnItemEx("PB_ExplosionFlames", zofs: 10, flags: SXF_NOCHECKPOSITION);
+				A_SpawnItemEx("NewExplosionFlare", zofs: 15, flags: SXF_NOCHECKPOSITION);
+				
 				if(pb_grenadeshrapnel)
 				{
 					for(int i = 0; i < 20; i++)
@@ -161,9 +164,7 @@ class PB_ThrownGrenade : Actor
 			}
 			TNT1 AAA 0
 			{	
-				A_SpawnProjectile("ExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360));
-				
-				for(int i = 0; i < 5; i++)
+				for(int i = 0; i < 10; i++)
 				{
 					SpawnExplosionParticleHeavySpark();
 					SpawnShrapnerParticleSpark();
@@ -186,16 +187,16 @@ class PB_ThrownGrenade : Actor
 		PUFSPRK.Color1 = "FFFFFF";
 		PUFSPRK.Style = STYLE_Add;
 		PUFSPRK.Flags = SPF_ROLL | SPF_FULLBRIGHT;
-		PUFSPRK.Vel = (random(-5,5),random(-5,5),random(0,9));
-		PUFSPRK.accel = (-PUFSPRK.vel.xy * 0.028,-0.1);
+		PUFSPRK.Vel = (random(-38,28),random(-38,38),frandom(2, 10));
+		PUFSPRK.accel = (-PUFSPRK.vel.xy * 0.2,-0.1);
 		PUFSPRK.Startroll = random(0, 359);
 		PUFSPRK.RollVel = 0;
 		PUFSPRK.StartAlpha = 1.0;
 		PUFSPRK.FadeStep = -1;
 		PUFSPRK.Size = 7;
 		PUFSPRK.SizeStep = -0.5;
-		PUFSPRK.Lifetime = 35; 
-		PUFSPRK.Pos = pos + (random(-60, 60), random(-60, 60), random(0, 50));
+		PUFSPRK.Lifetime = 5; 
+		PUFSPRK.Pos = pos;
 		Level.SpawnParticle(PUFSPRK);
 	}
 
@@ -206,16 +207,16 @@ class PB_ThrownGrenade : Actor
 		PUFSPRK.Color1 = "FFFFFF";
 		PUFSPRK.Style = STYLE_Add;
 		PUFSPRK.Flags = SPF_ROLL | SPF_FULLBRIGHT;
-		PUFSPRK.Vel = (random(-7,7),random(-7,7),random(0,8));
-		PUFSPRK.accel = (-PUFSPRK.vel.xy * 0.014,frandom(-0.5, -0.3));
+		PUFSPRK.Vel = (random(-37,37),random(-37,37),frandom(2,10));
+		PUFSPRK.accel = (-PUFSPRK.vel.xy * 0.14,frandom(-0.5, -0.3));
 		PUFSPRK.Startroll = random(0, 359);
 		PUFSPRK.RollVel = 0;
 		PUFSPRK.StartAlpha = 1.0;
 		PUFSPRK.FadeStep = -1;
 		PUFSPRK.Size = 8;
 		PUFSPRK.SizeStep = -0.05;
-		PUFSPRK.Lifetime = 70; 
-		PUFSPRK.Pos = pos + (random(-60, 60), random(-60, 60), random(0, 60));
+		PUFSPRK.Lifetime = 7; 
+		PUFSPRK.Pos = pos/* + (random(-60, 60), random(-60, 60), random(0, 50))*/;
 		Level.SpawnParticle(PUFSPRK);
 	}
 	
@@ -226,7 +227,7 @@ class PB_ThrownGrenade : Actor
 		PUFSPRK.Color1 = "7a7a7a";
 		PUFSPRK.Style = STYLE_TRANSLUCENT;
 		PUFSPRK.Flags = SPF_ROLL;
-		PUFSPRK.Vel = (0, 0, (5-smokephase) * 0.5);
+		PUFSPRK.Vel = (0, 0, (6-smokephase) * 0.5);
 		PUFSPRK.Startroll = random[grenade](0, 359);
 		PUFSPRK.RollVel = frandom[grenade](-3, 3);
 		PUFSPRK.StartAlpha = 0.8;
@@ -310,5 +311,53 @@ class PB_GrenadeWarningFlare_Red : PB_GrenadeWarningFlare_Green
 		Spawn:
 			LENR B 1 bright;
 			Loop;
+	}
+}
+
+/*class PB_NewFragGrenadeExplosion : Actor
+{
+	Default
+	{
+		+NOBLOCKMAP;
+		+MISSILE;
+		Damagetype ExplosiveImpact;
+		DeathSound "Explosion";
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner", flags: SXF_NOCHECKPOSITION)
+			TNT1 AAA 0 A_CustomMissile ("ExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360))
+			TNT1 AAA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180))
+			TNT1 AAA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180))
+			BEXP B 0 BRIGHT A_Scream
+			TNT1 A 0 A_Playsound("excavator/explode", 1)
+			TNT1 A 0 A_SpawnItem("BarrelExplosionSmokeColumn")
+			TNT1 AAA 8 A_CustomMissile ("ExplosionSmoke", 1, 0, random (0, 360), 2, random (50, 130))
+			Stop
+	}
+}*/
+
+class PB_ExplosionFlames : PB_LightActor
+{
+	Default {
+		Scale 0.7;
+		RenderStyle "Add";
+		+NOBLOCKMAP;
+		+NOTELEPORT;
+		+NOCLIP;
+		+NOINTERACTION;
+		+FORCEXYBILLBOARD;
+	}
+	
+	States
+	{
+		Spawn:
+			X125 ABCD 2 BRIGHT Light("EXPLOSIONFLASH");
+			X125 EFGHIJKLMOPQR 1 {
+				Scale *= 1.05;
+			}
+			Stop;
 	}
 }
