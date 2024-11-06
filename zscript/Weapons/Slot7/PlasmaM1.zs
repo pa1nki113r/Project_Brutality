@@ -2,6 +2,8 @@ Class PB_M1Plasma : PB_WeaponBase
 {
 	default
 	{
+		//$Category Project Brutality - Weapons
+		//$Sprite PLASA0
 		weapon.slotnumber 7;							
 		weapon.ammotype1 "PB_Cell";	
 		Weapon.AmmoGive1 60;		
@@ -18,6 +20,7 @@ Class PB_M1Plasma : PB_WeaponBase
 		FloatBobStrength 0.5;
 		PB_WeaponBase.OffsetRecoilX 2.5;
 		PB_WeaponBase.OffsetRecoilY 2.0;
+		+WEAPON.NOAUTOAIM
 	}
 	
 	states

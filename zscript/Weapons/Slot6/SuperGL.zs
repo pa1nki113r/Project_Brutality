@@ -149,6 +149,14 @@ Class PB_SuperGL : PB_Weapon
 			}
 			Loop;
 		
+		AltFire:
+			TNT1 A 0 PB_jumpIfHasBarrel("PlaceBarrel","PlaceFlameBarrel","PlaceIceBarrel");
+			SL02 E 1 {
+				SGL_ChangeModeSprite("SL02","SL12","SL22","SL32","SL42","S001");
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+			}
+			goto ready;
+		
 		Fire:
 			TNT1 A 0 PB_jumpIfHasBarrel("ThrowBarrel","ThrowFlameBarrel","ThrowIceBarrel");
 			TNT1 A 0 {

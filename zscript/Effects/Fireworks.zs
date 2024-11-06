@@ -382,9 +382,9 @@ Class FT_GroundFireSpawner : TinyBurningPiece2
 			TNT1 A 0 A_jumpif(waterlevel > 0,"StopBurning");
 			TNT1 A 0 A_StartSound("props/torchfire", CHAN_BODY, CHANF_NOSTOP);
 			TNT1 A 2;
-			TNT1 A 0 A_SpawnItemEx("FT_GroundFire", random(-24,24), random(-7,7), random(1,4));
+			TNT1 A 0 A_SpawnItemEx("FT_GroundFire", random(-24,24), random(-8,8), random(1,4));
 			TNT1 A 2;
-			TNT1 A 0 A_SpawnItemEx("FT_GroundFire2", random(-24,24), random(-7,7), random(1,4));
+			TNT1 A 0 A_SpawnItemEx("FT_GroundFire2", random(-42,42), random(-28,28), random(0,6));
 			TNT1 A 0 A_Explode(12, 36, 0, 0, 36);
 			TNT1 A 0 {
 				SpawnParticleFast();
@@ -404,7 +404,8 @@ Class FT_GroundFireSpawner : TinyBurningPiece2
 	override void beginplay()
 	{
 		if(!pb_performance_fire)
-			A_AttachLightDef('FlamethrowerLight', 'FT_GroundFire');
+			A_AttachLightDef('FlamethrowerLight', 'HUEHUESMALL');
+			//A_AttachLightDef('FlamethrowerLight', 'FT_GroundFire');
 		
 		super.beginplay();
 	}
@@ -412,7 +413,13 @@ Class FT_GroundFireSpawner : TinyBurningPiece2
 	void SpawnParticleFast()
 	{
 		FSpawnParticleParams SPRKSL;
-		string tx = random(0,1) == 1 ? "FRFXL0" : "FIR1C0";
+		string tx = "X123G0";
+		switch(random(1,3))
+		{
+			case 1: tx = "X123G0";	break;
+			case 2: tx = "FRFXL0";	break;
+			case 3: tx = "FIR1C0";	break;
+		}
 		SPRKSL.Texture = TexMan.CheckForTexture(tx);
 		SPRKSL.Color1 = "FFFFFF";
 		SPRKSL.Style = STYLE_Add;
@@ -476,21 +483,29 @@ Class FT_GroundFire : Actor
 		-SOLID;
 		+FORCEXYBILLBOARD;
 		RenderStyle "Add";
-		Scale 0.29;
+		Scale 0.21;
 	}
 	States
 	{
 		Spawn:
+			TNT1 A 0 nodelay A_jump(256,"Var1","Var2");
+		Var1:
 			CFCF ABCDEFGHIJKLMABCDEFGHIJKLM 1 BRIGHT;
-			CFCF A 1 A_Setscale(0.1);
-			CFCF B 1 A_Setscale(0.05);
-			CFCF C 1 A_Setscale(0.01);
+			CFCF ABC 1 {A_setscale(scale.x * 0.9); A_Fadeout(0.15);}
 			Stop;
+		Var2:
+			TNT1 A 0 A_Setscale(0.12);
+		Var2Loop:
+			X123 ABCDEFGHIJKLMABCDEFGHIJKLMNOPQ 1 bright;
+			X123 ABC 1 {A_setscale(scale.x * 0.9); A_Fadeout(0.15);}
+			Stop;
+		
     }
 	override void beginplay()
 	{
 		//if(!pb_performance_fire)
 		//	A_AttachLightDef('FlamethrowerLight', 'FT_GroundFire');
+		bxflip = random(0,1);
 		super.beginplay();
 	}	
 }
@@ -499,16 +514,22 @@ Class FT_GroundFire2 : FT_GroundFire
 {
 	default
 	{
-		Scale 0.55;
+		Scale 0.42;
 	}
 	
 	States
 	{
 		Spawn:
+			TNT1 A 0 nodelay A_jump(256,"Var2","Var3");
+		Var2:
+			TNT1 A 0 A_SetScale(0.28);
+		Var2Loop:
+			X123 ABCDEFGHIJKLMABCDEFGHIJKLMNOPQ 1 bright;
+			X123 ABC 1 {A_setscale(scale.x * 0.9); A_Fadeout(0.15);}
+			Stop;
+		Var3:
 			FLME ABCDEFGHIJKLMNABCDEFGHIJKLMN 1 BRIGHT;
-			FLME A 1 A_Setscale(0.3);
-			FLME B 1 A_Setscale(0.2);
-			FLME C 1 A_Setscale(0.05);
+			FLME ABC 1 {A_setscale(scale.x * 0.9); A_Fadeout(0.15);}
 			Stop;
     }
 }
