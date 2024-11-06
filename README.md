@@ -7,7 +7,7 @@ This is the bleeding-edge version that is constantly being developed on, and not
 
 ### How To Download
 
-You will need the latest version of [GZDooM](https://zdoom.org/downloads "GZDooM")[^zandronum?] (or [Delta Touch](https://play.google.com/store/apps/details?id=com.opentouchgaming.deltatouch&hl=en_US&gl=US "Delta Touch") for Android, or [GenZD](https://apps.apple.com/us/app/genzd/id6503916449 "GenZD") for iOS) and either a copy of the one of the official IWADs[^Steam][^GOG] or [Freedoom phase 1+2](https://freedoom.github.io/download.html "FreeDoom"). To download the latest build, scroll up to the top and click the green button labeled __Code__ then click [Download Zip](https://github.com/pa1nki113r/Project_Brutality/archive/refs/heads/master.zip "You can also click here to download."). If you are on mobile and don't see a button, you'll need to turn on desktop view.
+You will need the latest version of [GZDoom](https://zdoom.org/downloads "GZDoom")[^zandronum?] ([Delta Touch](https://play.google.com/store/apps/details?id=com.opentouchgaming.deltatouch&hl=en_US&gl=US "Delta Touch") for Android, or [GenZD](https://apps.apple.com/us/app/genzd/id6503916449 "GenZD") for iOS) and either a copy of the one of the official IWADs[^Steam][^GOG] or [Freedoom Phase 1+2](https://freedoom.github.io/download.html "Freedoom"). To download the latest build, scroll up to the top and click the green button labeled __Code__ then click [Download Zip](https://github.com/pa1nki113r/Project_Brutality/archive/refs/heads/master.zip "You can also click here to download."). If you are on mobile and don't see a button, you'll need to turn on desktop view.
 
 <dl>
   <dt><u>For more help,</u></dt>
@@ -17,7 +17,7 @@ You will need the latest version of [GZDooM](https://zdoom.org/downloads "GZDooM
 
 ### Running addons
 
-When loading more than just PB, It is highly recommended you use a Front-end Launcher, such as [ZDL](https://github.com/lcferrum/qzdl/releases "A rather simple, yet extremely flexible launcher"), [DoomRunner](https://github.com/Youda008/DoomRunner/releases "Want something that is just as flexible as ZDL or newer than zde"), or [SSGL](https://github.com/FreaKzero/ssgl-doom-launcher/releases/tag/v2.0.0-devpreview.24 "First timer, casual player, a Doomsday Engine launcher fan, or just want something with more personality?")
+When loading more than just PB, It is highly recommended you use a Front-end Launcher, such as [ZDL](https://github.com/lcferrum/qzdl/releases "A rather simple, yet extremely flexible launcher"), [DoomRunner](https://github.com/Youda008/DoomRunner/releases "If you want something that is just as flexible or newer than ZDL") or [SSGL](https://github.com/FreaKzero/ssgl-doom-launcher/releases/tag/v2.0.0-devpreview.24 "First timer, casual player, a Doomsday Engine launcher fan, or just want something with more personality?")
 
 ## Feedback and Bug Reporting
 
