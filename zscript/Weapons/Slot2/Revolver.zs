@@ -9,6 +9,7 @@ Class PB_Revolver : PB_WeaponBase
 		weapon.ammotype1 "PB_LowCalMag";
 		weapon.ammogive1 6;	
 		weapon.ammotype2 "RevolverAmmo";
+		PB_WeaponBase.AmmoTypeLeft "LeftRevolverAmmo";
 		inventory.pickupsound "REVOUP";
 		Inventory.Pickupmessage "UAC-B750 \"Death Adder\" .500 Magnum (Slot 2)";
 		Inventory.MaxAmount 3;					

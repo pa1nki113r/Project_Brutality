@@ -1513,6 +1513,7 @@ extend class PB_WeaponBase
 	override void AttachToOwner(Actor Other)
 	{
 		Super.AttachToOwner(other);
+		if(AmmoTypeLeft) {AmmoLeft = AddAmmo (Owner, AmmoTypeLeft, AmmoGive2);}
 		let toucher = other;
 		bool IsAlreadyPicked = false;
 		/*if (toucher.FindInventory("PB_PDAWeaponContainer",true))
@@ -1902,8 +1903,10 @@ extend class PB_WeaponBase
 		if(invoker is "PB_BFG9000" && FindInventory("BFGBlackHoleMode")){weapFlags |= WRF_ALLOWRELOAD;}
 		if(invoker is "PB_MG42" && (CountInv("MG42HasOverheated") || CountInv("MG42BarrelOverheat") >= 1) ){weapFlags |= WRF_ALLOWRELOAD;}
 		bool dualWieldCheck = invoker.DualWieldToken && FindInventory(invoker.DualWieldToken);
+		bool canLoadAmmoLeft = invoker.AmmoTypeLeft && countinv(invoker.ammotype1) > 0 && countInv(invoker.AmmoTypeLeft) < GetAmmoCapacity(invoker.AmmoTypeLeft);
 		bool canLoadAmmo = invoker.ammotype2 && countinv(invoker.ammotype1) > 0 && countinv(invoker.ammotype2) < GetAmmoCapacity(invoker.ammotype2);
-		bool ReloadCheck = !noReload && initialWRF_ALLOWRELOAD && (canLoadAmmo || dualWieldCheck);
+		bool dualReloadCheck = dualWieldCheck && (canLoadAmmoLeft||canLoadAmmo);
+		bool ReloadCheck = !noReload && initialWRF_ALLOWRELOAD && (canLoadAmmo || dualReloadCheck);
 		if( !(invoker is "PB_Unmaker") && ReloadCheck ){weapFlags |= WRF_ALLOWRELOAD;}
 		static const string PBWeapEmptyToken[] = 
 		{
@@ -1960,6 +1963,7 @@ extend class PB_WeaponBase
 		}
 		if (CountInv("Unloading")>=1 && ResolveState("Unload") && !(pbFlags & PBWEAP_UNLOADED) && CountInv(invoker.UnloaderToken) != 1)
 		{
+			A_TakeInventory("Unloading",0);
 			return ResolveState("Unload");
 		}
 		else A_TakeInventory("Unloading", CountInv("Unloading"));
