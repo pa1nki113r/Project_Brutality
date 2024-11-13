@@ -67,6 +67,7 @@ Class PB_Chaingunguy : PB_Monster
 	int grenadeCount;
 	
 	bool minigunspun;
+	int TrackTicker;
 	
 	Void PB_Chaingun_Fire (Bool Crouching = False)
 	{
@@ -74,13 +75,13 @@ Class PB_Chaingunguy : PB_Monster
 		{
 			A_SpawnProjectile("MarineMuzzle1", 26, 6);
 			A_SpawnProjectile("OrangeLensFlareAlt", 26, 16, 15, 0);
-			A_SpawnProjectile("PB_MonsterMinigunTracer", 26, 0, frandom(6,-6), CMF_OFFSETPITCH, frandom(2,-2));
+			A_SpawnProjectile("PB_MonsterMinigunTracer", 26, 0, self.angle + frandom(6,-6), CMF_OFFSETPITCH | CMF_AIMDIRECTION | CMF_ABSOLUTEANGLE | CMF_ABSOLUTEPITCH, self.Pitch + frandom(2,-2));
 		}
 		else
 		{
 			A_SpawnProjectile("MarineMuzzle1", 38, 6);
 			A_SpawnProjectile("OrangeLensFlareAlt", 38, 16, 15, 0);
-			A_SpawnProjectile("PB_MonsterMinigunTracer", 38, 0, frandom(8,-8), CMF_OFFSETPITCH, frandom(4,-4));
+			A_SpawnProjectile("PB_MonsterMinigunTracer", 38, 0, self.angle + frandom(8,-8), CMF_OFFSETPITCH | CMF_AIMDIRECTION | CMF_ABSOLUTEANGLE | CMF_ABSOLUTEPITCH, self.Pitch + frandom(4,-4));
 		}
 		A_SpawnItem ("PB_EmptyBrass", 0, 30,0);
 		A_StartSound("weapons/minigun/chaingunmode/fire", 0, CHANF_OVERLAP);
@@ -101,6 +102,7 @@ Class PB_Chaingunguy : PB_Monster
 		HitBoxSpawned = False;
 		PickRandomName(RANK_MILITARY);
 		minigunspun = false;
+		TrackTicker = 0;
 	}
 	
 	override void Tick()
@@ -302,13 +304,34 @@ Class PB_Chaingunguy : PB_Monster
 				A_GiveInventory("EnemyMinigunAmmo", 1);
 				return A_JumpIfInventory("EnemyMinigunAmmo", 300, "Reload");
 			}
-			TNT1 A 0 PB_MonsterRefire(20, 50, "Attack1End");
+			TNT1 A 0
+			{
+				if(!CheckSight(target))
+				{
+					if(TrackTicker < 4)
+					{
+						A_FaceTarget(5);
+						TrackTicker++;
+					}
+					if(random(0,300) <= 10)
+					{
+						SetStateLabel("Attack1End");
+					}
+				}
+				else
+				{
+					A_FaceTarget(10);
+					TrackTicker = 0;
+				}
+				A_LogInt(TrackTicker);
+			}
 			Goto Attack1Loop;
 		Attack1End:
 			MPOS E 24;
 			TNT1 A 0
 			{
 				MinigunSpun = false;
+				TrackTicker = 0;
 				A_StopSound(80);
 				A_StartSound("weapons/minigun/chaingunmode/spindown");
 			}
@@ -335,7 +358,27 @@ Class PB_Chaingunguy : PB_Monster
 				A_GiveInventory("EnemyMinigunAmmo", 1);
 				return A_JumpIfInventory("EnemyMinigunAmmo", 300, "Reload");
 			}
-			TNT1 A 0 PB_MonsterRefire(20, 25, "Attack2End");
+			TNT1 A 0
+			{
+				if(!CheckSight(target))
+				{
+					if(TrackTicker < 4)
+					{
+						A_FaceTarget(5);
+						TrackTicker++;
+					}
+					if(random(0,300) <= 2)
+					{
+						SetStateLabel("Attack2End");
+					}
+				}
+				else
+				{
+					A_FaceTarget(10);
+					TrackTicker = 0;
+				}
+				A_LogInt(TrackTicker);
+			}
 			Goto Attack2Loop;
 		Attack2End:
 			MP1S A 24;
@@ -374,6 +417,12 @@ Class PB_Chaingunguy : PB_Monster
 			Goto See;
 		
 		Reload:
+			MPOS E 30
+			{
+				MinigunSpun = false;
+				A_StopSound(80);
+				A_StartSound("weapons/minigun/chaingunmode/spindown");
+			}
 			TNT1 A 0 A_Jumpif(CountInv("EnemyMinigunAmmo") < 1, "SeeContinue");
 			TNT1 A 0 A_StartSound("monsters/zombie/reload",CHAN_AUTO);
 			POSS E 4 {
