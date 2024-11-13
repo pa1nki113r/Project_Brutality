@@ -241,7 +241,7 @@ class PB_Deagle : PB_WeaponBase
 				A_SetInventory("Zoomed",0);
 				A_ZoomFactor(1.0);
 				A_WeaponOffset(0,32);
-				PB_HandleCrosshair(42);
+				PB_HandleCrosshair(5);
 			}
 			TNT1 A 0 PB_jumpIfHasBarrel("IdleBarrel","IdleFlameBarrel","IdleIceBarrel");
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReloadDualWield");
