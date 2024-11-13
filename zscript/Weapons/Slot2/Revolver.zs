@@ -362,7 +362,7 @@ Class PB_Revolver : PB_WeaponBase
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				A_SetRoll(0);
-				PB_HandleCrosshair(69);
+				PB_HandleCrosshair(5);
 				A_SetInventory("PB_LockScreenTilt",0);
 			}
 			TNT1 A 0 A_jumpif(countinv("zoomed") > 0,"zoomout");
@@ -379,7 +379,7 @@ Class PB_Revolver : PB_WeaponBase
 			TNT1 A 0 {
 				A_SetInventory("Zoomed",0);
 				A_ZoomFactor(1.0);
-				PB_HandleCrosshair(69);
+				PB_HandleCrosshair(42);
 			}
 			R4V2 EDCBA 1;
 			Goto Ready3;
