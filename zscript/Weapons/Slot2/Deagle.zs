@@ -62,6 +62,7 @@ class PB_Deagle : PB_WeaponBase
 			D4E2 B 1 { A_DoPBWeaponAction(); A_weaponoffset(0,32,WOF_interpolate);}
 			TNT1 A 0 A_Startsound("weapons/deagle/swapfol",18,CHANF_OVERLAP);
 			D4E2 CDEFG 1 A_DoPBWeaponAction();
+			TNT1 A 0 A_SetCrosshair(42);
 			goto ready3;
 			
 		Select:
