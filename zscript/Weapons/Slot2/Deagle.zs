@@ -87,6 +87,7 @@ class PB_Deagle : PB_WeaponBase
 		
 		Ready:
 			TNT1 A 0 A_WeaponOffset(0,32);
+			TNT1 A 0 A_SetCrosshair(42);
 		Ready3:
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReadyDualWield");
 			TNT1 A 0 A_jumpif(invoker.ammo2.amount < 1,"ReadyUnloaded");
