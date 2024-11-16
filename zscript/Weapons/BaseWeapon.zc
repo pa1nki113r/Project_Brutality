@@ -87,6 +87,56 @@ class PB_WeaponBase : DoomWeapon
 	double tailPitch;
 	property TailPitch : tailPitch;
 	
+	//////////////////////////////////////////////
+	//////////////////////////////////////////////
+	int cap,ca,res; string p;
+	override bool TryPickup(in out actor toucher)
+	{
+		if (ammotype1){
+			if (AmmoGive1 > 0){
+				class<Ammo> type = ammotype1;
+				int aa = AmmoGive1;
+				if(toucher && toucher is "PlayerPawn")
+				{
+					let item = Inventory(toucher.FindInventory(type));
+					if (item)
+					{
+					  cap = toucher.GetAmmoCapacity(type);
+					  ca = toucher.CountInv(type);//
+					}
+				}
+				res = cap-ca;
+				if(res<aa && cap>0){
+					AmmoCheck();
+				}
+				else { 
+					res = aa;
+					AmmoCheck();
+				}
+			}
+		}
+		return Super.TryPickup(toucher);
+	}
+	void AmmoCheck() { 
+		if (AmmoGive1 > 0){
+			if(res==1 || ammotype1 == "PB_Fuel" || ammotype1 == "PB_DTech" ) p = "%s (+%d %s)"; else p = "%s (+%d %ss)"; 
+		} 
+	}
+	override string PickupMessage() { 
+		string msg = StringTable.Localize(pickupMsg);
+		if (res > 0){
+			return string.format(p,msg,res,GetDefaultByType(ammotype1).GetTag());
+		}
+		else{
+			return string.format("%s",msg);
+		}
+	}
+	class<Ammo> AmmoTypeLeft;
+	Ammo AmmoLeft;
+	Property AmmoTypeLeft: AmmoTypeLeft;
+	//////////////////////////////////////////////
+	//////////////////////////////////////////////
+	
 	//[AD] Use when all weapons converted to ZS
 	/*
 	int cmag1,cmag2,pmag;
