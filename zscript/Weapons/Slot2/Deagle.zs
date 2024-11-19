@@ -62,7 +62,7 @@ class PB_Deagle : PB_WeaponBase
 			D4E2 B 1 { A_DoPBWeaponAction(); A_weaponoffset(0,32,WOF_interpolate);}
 			TNT1 A 0 A_Startsound("weapons/deagle/swapfol",18,CHANF_OVERLAP);
 			D4E2 CDEFG 1 A_DoPBWeaponAction();
-			TNT1 A 0 A_SetCrosshair(42);
+			TNT1 A 0 PB_HandleCrosshair(42);
 			goto ready3;
 			
 		Select:
@@ -88,7 +88,7 @@ class PB_Deagle : PB_WeaponBase
 		
 		Ready:
 			TNT1 A 0 A_WeaponOffset(0,32);
-			TNT1 A 0 A_SetCrosshair(42);
+			TNT1 A 0 PB_HandleCrosshair(42);
 		Ready3:
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReadyDualWield");
 			TNT1 A 0 A_jumpif(invoker.ammo2.amount < 1,"ReadyUnloaded");
@@ -249,7 +249,7 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 {
 				A_setinventory(invoker.UnloaderToken,0);
 				A_ZoomFactor(1.0);
-				A_SetCrosshair(5);
+				PB_HandleCrosshair(5);
 				A_SetInventory("ADSmode",0);
 				A_SetInventory("Zoomed",0);
 				A_SetInventory("PB_LockScreenTilt",1);
@@ -630,7 +630,7 @@ class PB_Deagle : PB_WeaponBase
 				 A_StartSound("IronSights", 13,CHANF_OVERLAP);
 				 A_SetInventory("Zoomed",1);
 				 A_ZoomFactor(1.3);
-				 A_SetCrosshair(5);
+				 PB_HandleCrosshair(5);
 			}
 			D3E1 ABCDE 1;
 			Goto Ready2;
