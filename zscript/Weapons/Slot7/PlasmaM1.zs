@@ -2,10 +2,13 @@ Class PB_M1Plasma : PB_WeaponBase
 {
 	default
 	{
+		//$Category Project Brutality - Weapons
+		//$Sprite PLASA0
 		weapon.slotnumber 7;							
 		weapon.ammotype1 "PB_Cell";	
 		Weapon.AmmoGive1 60;		
-		weapon.ammotype2 "PlasmaAmmo";		
+		weapon.ammotype2 "PlasmaAmmo";
+		PB_WeaponBase.AmmoTypeLeft "LeftPlasmaAmmo";
 		Inventory.MaxAmount 3;
 		PB_WeaponBase.unloadertoken "PlasmaRifleHasUnloaded";
 		PB_WeaponBase.respectItem "RespectPlasmaGun";	
@@ -18,6 +21,7 @@ Class PB_M1Plasma : PB_WeaponBase
 		FloatBobStrength 0.5;
 		PB_WeaponBase.OffsetRecoilX 2.5;
 		PB_WeaponBase.OffsetRecoilY 2.0;
+		+WEAPON.NOAUTOAIM
 	}
 	
 	states
@@ -669,6 +673,11 @@ Class PB_M1Plasma : PB_WeaponBase
 			DPRS ABCD  1;
 			TNT1 A 0 A_StartSound("PLSDRAW", 12,CHANF_OVERLAP);
 			goto ReadyDualWield;
+			
+		DeselectDualWield:
+			DPRS DCBA 1;
+			TNT1 A 0 A_lower(120);
+			wait;
 			
 		ReadyDualWield:
 			TNT1 A 0 {

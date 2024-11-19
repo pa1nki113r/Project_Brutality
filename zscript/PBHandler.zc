@@ -13,6 +13,10 @@ class PB_EventHandler : EventHandler
 	int taunttimer;
 	const tauntcooldown = 40;
 	
+	bool WSuSinMap;	//check for WolfensteinSS	
+	
+	bool gz413detected;
+	
 	transient int pickuptic[MAXPLAYERS];
 	
 	///////////////////////////////////////////////////////////////////////////
@@ -97,6 +101,50 @@ class PB_EventHandler : EventHandler
 					
 				holder.ToggleFlashlight();
 			}
+		}
+	}
+	
+	override void OnRegister()
+	{
+		if(StringTable.Localize("$OPTVAL_MBF21STRICT") != "OPTVAL_MBF21STRICT")
+		{
+			gz413detected = true;
+			console.PrintfEx(PRINT_NONOTIFY , "PB_EventHandler: \cgGZDoom 4.13+ detected.");
+			static const String verWarning[] = {
+				"\n",
+				"\n",
+				"\c-Please use \cdGZDoom 4.12.2 or older\c-.\n",
+				"\c-\cyGZDoom 4.13+ \c-creates scaling issues with enemies that may make aiming for headshots harder.\n",
+				"\c-This is also \cgnot\c- the way our sprites were intended to be displayed.\n",
+				"\c-Its developers have stated that they \cgdo not plan\c- on reverting this change.\n",
+				"\c-The GitHub issue in question: \cnhttps://github.com/ZDoom/gzdoom/issues/2759\c-.\n",
+				"\n",
+				"\c-\cd4.12.x\c- also has issues:\n",
+				"\c--Partial invisibility does not work;\n", 
+				"\c--Monsters can detect you even if you are not in their line of sight.\n",
+				"\n",
+				"\c-Therefore the recommended version of GZDoom for Project Brutality is 4.11.3:\n",
+				"\c-4.11.3 for Windows: \cnhttps://zdoom.org/files/gzdoom/bin/gzdoom-4-11-3.a.-Windows-64bit.zip\n",
+				"\c-4.11.3 for macOS: \cnhttps://zdoom.org/files/gzdoom/bin/gzdoom-4-11-3-macOS.zip\n",
+				"\c-4.11.3 for Linux: \cnhttps://zdoom.org/files/gzdoom/bin/gzdoom-g4.11.3-linux-portable.tar.xz\n\c-",
+				"\n",
+				"\cgYou may not be able to quit the game using the menu, type \ckexit \cgor \ckquit \cgto close GZDoom.\n\c-",
+				"\n",
+				"\n"
+			};
+			
+			string megaString;
+			for(int i = 0; i < verWarning.Size(); i++)
+			{
+				megaString.AppendFormat("%s", verWarning[i]);
+			}
+			ThrowAbortException("READ ME:\n %s", megaString);
+			//\nThis will enable actor scaling workarounds.");
+		}
+		else
+		{
+			gz413detected = false;
+			//console.PrintfEx(PRINT_NONOTIFY , "PB_EventHandler: Player is NOT using GZDoom 4.13+.");
 		}
 	}
 	
@@ -324,6 +372,12 @@ class PB_EventHandler : EventHandler
 		{
 			HatExists = true;
 		}
+		
+		/*if(gz413detected && e.Thing.bROLLSPRITE)
+		{
+			vector2 scaleFixer;
+			e.Thing.bSTRETCHPIXELS = true;
+		}*/
 	}
 	
 	//////////////////////
@@ -414,7 +468,7 @@ class PB_EventHandler : EventHandler
 			case 'Fatso':					e.replacement = 'PBMancubusSpawner';			break;
 			case 'Cyberdemon':				e.replacement = 'PBCyberDemonSpawner';			break;
 			case 'SpiderMastermind':		e.replacement = 'PBSpiderMasterMindSpawner';	break;
-			case 'WolfensteinSS':			e.replacement = 'EvilNaziSpawner';				break;
+			case 'WolfensteinSS':			e.replacement = 'EvilNaziSpawner';	WSuSinMap = true;	break;
 			
 		}
 	}

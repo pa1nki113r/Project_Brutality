@@ -47,11 +47,10 @@ class PB_Projectile : FastProjectile abstract
 		if (!bNOCRITICALS && Pos.Z > victim.Pos.Z + victim.Height * ((ptrPBMon) ? ptrPBMon.posTorsoHB : 0.65))
 		{
 			//Console.Printf("Critical");
-			scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgTorsoMult : 1.1);
+			scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgTorsoMult : 1.25);
 			dmgtype = damagetype;
 			if (Pos.Z > victim.Pos.Z + victim.Height * ((ptrPBMon) ? ptrPBMon.posHeadHB : 0.80))
 			{
-				//Console.Printf("Headshot");
 				// Check if the monster doesn't ignore headshots else default to 0 (its funky)
 				if(!((ptrPBMon) ? ptrPBMon.ignoreHeadDamage : 0))
 				{
@@ -79,7 +78,7 @@ class PB_Projectile : FastProjectile abstract
 				//Console.Printf("Legshot");
 				//A_StartSound("apenshotmarker", CHAN_AUTO, CHAN_UI);
 				dmgtype = "Leg";
-				scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgLegMult : 0.8);
+				scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgLegMult : 0.7);
 			}
 		}
 		else if (!bOMNIDIRECTIONAL && ang > 32 && ang < 148 && !((ptrPBMon) ? ptrPBMon.ignoreArmDamage : 0))
@@ -87,7 +86,7 @@ class PB_Projectile : FastProjectile abstract
 			//Console.Printf("Armshot");
 			//A_StartSound("apenshotmarker", CHAN_AUTO, CHAN_UI);
 			dmgtype = "Arm";
-			scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgArmMult : 0.7);
+			scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgArmMult : 0.8);
 		}
 		else
 		{
@@ -102,17 +101,12 @@ class PB_Projectile : FastProjectile abstract
 		
 		// ( victim.bISMONSTER || victim.BloodType != 'Blood' ) 
 
-		if( !victim.bNOBLOOD && 
-			!victim.bINVULNERABLE && 
-			!victim.bDORMANT && 
-			!victim.bREFLECTIVE &&
-			victim.bSHOOTABLE ) 
+		if(victim.bsolid || victim.bshootable)	//dont spawn puffs on casings,ammo,etc
 		{
-			victim.SpawnBlood( pos, angle, ceil(scaled_damage) );
-		}
-		else
-		{
-			SpawnPuff("PB_BulletPuff", pos, angle, 0, 0, PF_HITTHING);
+			if(victim.bNOBLOOD || victim.bINVULNERABLE || victim.bDORMANT || victim.bREFLECTIVE || (victim.bsolid && ! victim.bShootable))
+				SpawnPuff("PB_NoBloodPuff", pos, angle, 0, 0, PF_HITTHING);
+			else
+				victim.SpawnBlood( pos, angle, ceil(scaled_damage) );
 		}
 		
 		OnHitActor(target, dmgType);
@@ -131,7 +125,7 @@ class PB_Projectile : FastProjectile abstract
 	
 	override int SpecialMissileHit(Actor victim)
 	{
-		if (victim == Target && !bHitOwner)
+		if (victim == Target && !bHitOwner  || !victim.bSHOOTABLE)
 		{
 			return 1; //[inkoalawetrust] //This is default behavior though ?
 		}

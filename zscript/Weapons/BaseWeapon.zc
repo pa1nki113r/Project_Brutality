@@ -87,12 +87,64 @@ class PB_WeaponBase : DoomWeapon
 	double tailPitch;
 	property TailPitch : tailPitch;
 	
+	//////////////////////////////////////////////
+	//////////////////////////////////////////////
+	int cap,ca,res; string p;
+	override bool TryPickup(in out actor toucher)
+	{
+		if (ammotype1){
+			if (AmmoGive1 > 0){
+				class<Ammo> type = ammotype1;
+				int aa = AmmoGive1;
+				if(toucher && toucher is "PlayerPawn")
+				{
+					let item = Inventory(toucher.FindInventory(type));
+					if (item)
+					{
+					  cap = toucher.GetAmmoCapacity(type);
+					  ca = toucher.CountInv(type);//
+					}
+				}
+				res = cap-ca;
+				if(res<aa && cap>0){
+					AmmoCheck();
+				}
+				else { 
+					res = aa;
+					AmmoCheck();
+				}
+			}
+		}
+		return Super.TryPickup(toucher);
+	}
+	void AmmoCheck() { 
+		if (AmmoGive1 > 0){
+			if(res==1 || ammotype1 == "PB_Fuel" || ammotype1 == "PB_DTech" ) p = "%s (+%d %s)"; else p = "%s (+%d %ss)"; 
+		} 
+	}
+	override string PickupMessage() { 
+		string msg = StringTable.Localize(pickupMsg);
+		if (res > 0){
+			return string.format(p,msg,res,GetDefaultByType(ammotype1).GetTag());
+		}
+		else{
+			return string.format("%s",msg);
+		}
+	}
+	//////////////////////////////////////////////
+	//////////////////////////////////////////////
+
 	//[AD] Use when all weapons converted to ZS
 	/*
 	int cmag1,cmag2,pmag;
 	property MagSize : pmag;
 	*/
+	class<Ammo> AmmoTypeLeft;
+	Ammo AmmoLeft;
+	Property AmmoTypeLeft: AmmoTypeLeft;
 	
+	Const PSP_RevenantLauncherLayer = -85;
+
 	Default
 	{
 		Weapon.BobRangeX 0.3;
@@ -342,51 +394,95 @@ class PB_WeaponBase : DoomWeapon
 			return ResolveState(null);
 			}
 			Loop;
-		Melee_Equipment_Handler_Overlay:
-			TNT1 A 1 {
-				if(!((PressingFire() || JustPressed(BT_ATTACK)) || (ResolveState("AltFire") && (PressingAltFire() || JustPressed(BT_ALTATTACK)))))
-				{
-					if(JustPressed(BT_USER1) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() && !CheckInventory("CantDoAction",1)) 
+			Melee_Equipment_Handler_Overlay:
+				TNT1 A 1 {
+					if( (!((PressingFire() || JustPressed(BT_ATTACK)) || (ResolveState("AltFire") && (PressingAltFire() || JustPressed(BT_ALTATTACK))))) && !FindInventory("RevGunSelected"))
 					{
-						if(CheckInventory("DoingHelmetAnim",1))
+						if(JustPressed(BT_USER1) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() && !CheckInventory("CantDoAction",1)) 
 						{
-							A_TakeInventory("PB_NoEffectInvul",1);
-							A_TakeInventory("sae_extcam", 1);
-							A_TakeInventory("sae_deathcam", 1);
-							A_TakeInventory("CantDoAction",1);
-							A_TakeInventory("DoingHelmetAnim", 1);
+							if(CheckInventory("DoingHelmetAnim",1))
+							{
+								A_TakeInventory("PB_NoEffectInvul",1);
+								A_TakeInventory("sae_extcam", 1);
+								A_TakeInventory("sae_deathcam", 1);
+								A_TakeInventory("CantDoAction",1);
+								A_TakeInventory("DoingHelmetAnim", 1);
+							}
+							
+							if(!PB_usingKick())
+							{
+								A_OverlayOffset(PSP_WEAPON, 0, 32);
+								PB_SetUsingEquipment(true);
+								A_Overlay(PSP_WEAPON, "UseEquipment");
+								A_OverlayOffset(PSP_WEAPON, 0, 32);
+							}
 						}
 						
-						if(!PB_usingKick())
+						if(JustPressed(BT_USER2) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() && !CheckInventory("Zoomed", 1) && !CheckInventory("CantDoAction",1)) 
 						{
-							A_OverlayOffset(PSP_WEAPON, 0, 32);
-							PB_SetUsingEquipment(true);
-							A_Overlay(PSP_WEAPON, "UseEquipment");
-							A_OverlayOffset(PSP_WEAPON, 0, 32);
+							if(CheckInventory("DoingHelmetAnim",1))
+							{
+								A_TakeInventory("PB_NoEffectInvul",1);
+								A_TakeInventory("sae_extcam", 1);
+								A_TakeInventory("sae_deathcam", 1);
+								A_TakeInventory("CantDoAction",1);
+								A_TakeInventory("DoingHelmetAnim", 1);
+							}
+							 
+							{
+								A_OverlayOffset(PSP_WEAPON, 0, 32);
+								PB_SetUsingMelee(true);
+								A_Overlay(PSP_WEAPON, "QuickMelee");
+								A_OverlayOffset(PSP_WEAPON, 0, 32);
+							}
 						}
 					}
-					
-					if(JustPressed(BT_USER2) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() && !CheckInventory("Zoomed", 1) && !CheckInventory("CantDoAction",1)) 
-					{
-						if(CheckInventory("DoingHelmetAnim",1))
+					else{
+						if(JustPressed(BT_USER1) && !PB_executingEnemy() && !PB_usingMelee() ) //&& !CheckInventory("CantDoAction",1)
 						{
-							A_TakeInventory("PB_NoEffectInvul",1);
-							A_TakeInventory("sae_extcam", 1);
-							A_TakeInventory("sae_deathcam", 1);
-							A_TakeInventory("CantDoAction",1);
-							A_TakeInventory("DoingHelmetAnim", 1);
+							if(CheckInventory("DoingHelmetAnim",1))
+							{
+								A_TakeInventory("PB_NoEffectInvul",1);
+								A_TakeInventory("sae_extcam", 1);
+								A_TakeInventory("sae_deathcam", 1);
+								A_TakeInventory("CantDoAction",1);
+								A_TakeInventory("DoingHelmetAnim", 1);
+							}
+							if(FindInventory("RevGunSelected") && !player.FindPSprite(PSP_RevenantLauncherLayer)){
+								A_OverlayOffset(PSP_RevenantLauncherLayer, 0, 32);
+								A_Overlay(PSP_RevenantLauncherLayer, "FireRevGun");
+								A_OverlayPivotAlign(PSP_RevenantLauncherLayer,PSPA_CENTER,PSPA_CENTER);
+								A_OverlayFlags(PSP_RevenantLauncherLayer,PSPF_RENDERSTYLE,true);
+								A_OverlayOffset(PSP_RevenantLauncherLayer, 0, 32);
+							}
 						}
-						 
+						if(JustPressed(BT_USER2) && !PB_usingMelee() && !PB_executingEnemy() && !PB_usingEquipment() && !CheckInventory("Zoomed", 1) && !CheckInventory("CantDoAction",1) && (!((PressingFire() || JustPressed(BT_ATTACK)) || (ResolveState("AltFire") && (PressingAltFire() || JustPressed(BT_ALTATTACK))))) ) 
 						{
-							A_OverlayOffset(PSP_WEAPON, 0, 32);
-							PB_SetUsingMelee(true);
-							A_Overlay(PSP_WEAPON, "QuickMelee");
-							A_OverlayOffset(PSP_WEAPON, 0, 32);
+							if(CheckInventory("DoingHelmetAnim",1))
+							{
+								A_TakeInventory("PB_NoEffectInvul",1);
+								A_TakeInventory("sae_extcam", 1);
+								A_TakeInventory("sae_deathcam", 1);
+								A_TakeInventory("CantDoAction",1);
+								A_TakeInventory("DoingHelmetAnim", 1);
+							}
+							 
+							{
+								A_OverlayOffset(PSP_WEAPON, 0, 32);
+								PB_SetUsingMelee(true);
+								A_Overlay(PSP_WEAPON, "QuickMelee");
+								A_OverlayOffset(PSP_WEAPON, 0, 32);
+							}
 						}
+					}
+					if(CountInv("Zoomed")>0 && FindInventory("RevGunSelected") && (PressingUser1() || player.FindPSprite(PSP_RevenantLauncherLayer)) ){
+						A_OverlayScale(PSP_RevenantLauncherLayer,1.3398);
+					}else{
+						A_OverlayScale(PSP_RevenantLauncherLayer,1.0);
+						A_OverlayRenderstyle(PSP_RevenantLauncherLayer,STYLE_Normal);
 					}
 				}
-			}
-			Loop;
+				Loop;
 		KickHandler_Overlay:
 			TNT1 A 1 {
 				if(CountInv("ResetKick")>=1)
