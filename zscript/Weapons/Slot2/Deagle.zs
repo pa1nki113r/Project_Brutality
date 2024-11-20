@@ -122,7 +122,8 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 A_JumpIfInventory("Zoomed",1,"Fire2");
 			TNT1 A 0 PB_jumpIfNoAmmo("Reload",1);
 			D2E0 A 1 BRIGHT {	
-					A_StartSound("weapons/deagle/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0);
+					A_StartSound("weapons/deagle/fire", 0, CHANF_OVERLAP, 1.0);
+					A_StartSound("weapons/deagle/afire", 0, CHANF_OVERLAP, 0.70);
 					PB_DynamicTail("shotgun", "pistol_mag");
 					PB_LowAmmoSoundWarning("pistol");
 					A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
@@ -680,7 +681,8 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 PB_jumpIfNoAmmo("Reload",1);
 			D3E0 B 1 BRIGHT {	
 					PB_IncrementHeat();
-					A_StartSound("weapons/deagle/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0);
+					A_StartSound("weapons/deagle/fire", 0, CHANF_OVERLAP, 1.0);
+					A_StartSound("weapons/deagle/afire", 0, CHANF_OVERLAP, 0.70);
 					PB_DynamicTail("shotgun", "pistol_mag");
 					PB_LowAmmoSoundWarning("pistol");
 					A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
