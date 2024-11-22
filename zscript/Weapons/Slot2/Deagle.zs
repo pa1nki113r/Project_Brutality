@@ -246,7 +246,7 @@ class PB_Deagle : PB_WeaponBase
 			}
 			TNT1 A 0 PB_jumpIfHasBarrel("IdleBarrel","IdleFlameBarrel","IdleIceBarrel");
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReloadDualWield");
-			TNT1 A 0 PB_checkReload("EmptyReload","Ready","NoAmmo",8,2);
+			TNT1 A 0 PB_checkReload("EmptyReload","Ready","NoAmmo",8,1);
 			TNT1 A 0 {
 				A_setinventory(invoker.UnloaderToken,0);
 				A_ZoomFactor(1.0);
@@ -269,7 +269,7 @@ class PB_Deagle : PB_WeaponBase
 			D0E0 X 1 A_weaponoffset(-0.75,0.75,WOF_ADD);
 			D0E0 X 1 A_weaponoffset(-0.2,0.2,WOF_ADD);
 			D0E0 Y 1 A_weaponoffset(1.525,-1.125,WOF_ADD);
-			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",8,2);
+			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",8,1);
 			TNT1 A 0 A_SetInventory("DeagleHasUnloaded",0);
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",11,CHANF_OVERLAP);
 			D0E0 Z 1 A_weaponoffset(1.725,-1.325,WOF_ADD);
@@ -305,7 +305,7 @@ class PB_Deagle : PB_WeaponBase
 			D1E1 EFG 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",0,CHANF_OVERLAP);
 			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
-			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",7,2);
+			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",7,1);
 			D1E1 HIJKLMNOPQ 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/RotateFol",0,CHANF_OVERLAP);
 			D1E1 RSTUVWXYZ 1;
@@ -358,7 +358,7 @@ class PB_Deagle : PB_WeaponBase
 		PartialReloadRight:
 			//right
 			DR32 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",8,2);
+			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",8,1);
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",21,CHANF_OVERLAP);
 			DR32 FGHIJ 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
@@ -373,7 +373,7 @@ class PB_Deagle : PB_WeaponBase
 		PartialReloadLeft:
 			//left
 			DR31 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("LeftDeagleAmmo","PB_LowCalMag",8,2);
+			TNT1 A 0 PB_AmmoIntoMag("LeftDeagleAmmo","PB_LowCalMag",8,1);
 			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",22,CHANF_OVERLAP);
 			DR31 FGHIJ 1;
@@ -393,7 +393,7 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
 			DR33 GHIJKL 1;
 			DR31 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("LeftDeagleAmmo","PB_LowCalMag",8,2);
+			TNT1 A 0 PB_AmmoIntoMag("LeftDeagleAmmo","PB_LowCalMag",8,1);
 			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",14,CHANF_OVERLAP);
 			DR31 FGHIJ 1;
@@ -411,7 +411,7 @@ class PB_Deagle : PB_WeaponBase
 		PartialReloadRightFromLeft:
 			//right
 			DR32 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",8,2);
+			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",8,1);
 			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",16,CHANF_OVERLAP);
 			DR32 FGHIJ 1;
@@ -453,7 +453,7 @@ class PB_Deagle : PB_WeaponBase
 			DR00 QRSTUV 1;
 			//Insert Right w/left empty
 			DR01 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",7,2);
+			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",7,1);
 			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",16,CHANF_OVERLAP);
 			DR01 FGHIJ 1;
@@ -475,7 +475,7 @@ class PB_Deagle : PB_WeaponBase
 			DR24 ABCD 1;
 			//insert left w/right reloaded
 			DR11 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("LeftDeagleAmmo","PB_LowCalMag",7,2);
+			TNT1 A 0 PB_AmmoIntoMag("LeftDeagleAmmo","PB_LowCalMag",7,1);
 			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",19,CHANF_OVERLAP);
 			DR11 FGHIJ 1;
@@ -515,7 +515,7 @@ class PB_Deagle : PB_WeaponBase
 			
 			//insert left w/right reloaded
 			DR11 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("LeftDeagleAmmo","PB_LowCalMag",7,2);
+			TNT1 A 0 PB_AmmoIntoMag("LeftDeagleAmmo","PB_LowCalMag",7,1);
 			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",16,CHANF_OVERLAP);
 			DR11 FGHIJ 1;
@@ -554,7 +554,7 @@ class PB_Deagle : PB_WeaponBase
 			
 			//insert right w/left reloaded
 			DR21 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",7,2);
+			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",7,1);
 			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",19,CHANF_OVERLAP);
 			DR21 FGHIJ 1;
@@ -588,7 +588,7 @@ class PB_Deagle : PB_WeaponBase
 			D2E1 ABCD 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/magout",16,CHANF_OVERLAP);
 			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
-			TNT1 A 0 PB_UnloadMag("DeagleAmmo","PB_LowCalMag",2);
+			TNT1 A 0 PB_UnloadMag("DeagleAmmo","PB_LowCalMag",1);
 			TNT1 A 0 A_giveinventory(invoker.UnloaderToken,1);
 			D2E1 E 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/click2",22,CHANF_OVERLAP);
@@ -605,8 +605,8 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
 			DR34 F 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/click2",19,CHANF_OVERLAP);
-			TNT1 A 0 PB_UnloadMag("DeagleAmmo","PB_LowCalMag",2);
-			TNT1 A 0 PB_UnloadMag("LeftDeagleAmmo","PB_LowCalMag",2);
+			TNT1 A 0 PB_UnloadMag("DeagleAmmo","PB_LowCalMag",1);
+			TNT1 A 0 PB_UnloadMag("LeftDeagleAmmo","PB_LowCalMag",1);
 			TNT1 A 0 A_giveinventory(invoker.UnloaderToken,1);
 			//DR00 H 1;
 			DR00 GFEDCBA 1;
@@ -874,7 +874,8 @@ class PB_Deagle : PB_WeaponBase
 				A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,-6,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 				PB_GunSmoke(15,0,6);
 				PB_SpawnCasing("EmptyBrassDeagle",26,-12,38,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
-				A_StartSound("weapons/deagle/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0);
+				A_StartSound("weapons/deagle/fire", 0, CHANF_OVERLAP, 1.0);
+				A_StartSound("weapons/deagle/afire", 0, CHANF_OVERLAP, 0.70);
 				PB_DynamicTail("shotgun", "pistol_mag");
 				PB_LowAmmoSoundWarning("pistol", "LeftDeagleAmmo");
 				A_Takeinventory("LeftDeagleAmmo",1);
@@ -967,7 +968,8 @@ class PB_Deagle : PB_WeaponBase
 					A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,6,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 					PB_GunSmoke(-15,0,6);
 					PB_SpawnCasing("EmptyBrassDeagle",26,25,38,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
-					A_StartSound("weapons/deagle/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0);
+					A_StartSound("weapons/deagle/fire", 0, CHANF_OVERLAP, 1.0);
+					A_StartSound("weapons/deagle/afire", 0, CHANF_OVERLAP, 0.70);
 					PB_DynamicTail("shotgun", "pistol_mag");
 					PB_LowAmmoSoundWarning("pistol");
 					A_ZoomFactor(0.985);
