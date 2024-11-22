@@ -66,7 +66,6 @@ class PB_GunFireSmoke: PB_LightActor
             
             if(CeilingPic == SkyFlatNum) {
                 vel.y += 0.02; // wind
-                vel.z += 0.01;
                 vel.x -= 0.01;
             }
         }
@@ -78,15 +77,16 @@ class PB_GunFireSmoke: PB_LightActor
             dissipateRotation *= 0.95;
             
             if(CeilingPic == SkyFlatNum) {
-                vel.y += 0.03; // wind
-                vel.z += 0.015;
+                vel.y += 0.03;
                 vel.x -= 0.015;
             }
+            
+            vel.z += 0.04;
 
             if (alpha < 0.1)
-                A_FadeOut(0.002 * fadeSpeed, FTF_CLAMP|FTF_REMOVE);
+                A_FadeOut(alpha * (0.02 * fadeSpeed), FTF_CLAMP|FTF_REMOVE);
             else
-                A_Fadeout(0.004 * fadeSpeed, FTF_CLAMP|FTF_REMOVE);
+                A_Fadeout(alpha * (0.04 * fadeSpeed), FTF_CLAMP|FTF_REMOVE);
         }
     }
 
