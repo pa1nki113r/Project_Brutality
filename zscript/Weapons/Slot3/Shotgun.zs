@@ -1470,7 +1470,7 @@ Class PB_SGMagazine: PB_UpgradeItem
 			LOOP;
 		
 		Pickup:
-			TNT1 A 0 A_JumpIf(!FindInventory("DragonBreathUpgrade") || !FindInventory("PB_Shotgun") || CountInv("ShotgunAmmo") < GetAmmoCapacity("ShotgunAmmo"),1) ;
+			TNT1 A 0 A_JumpIf(!FindInventory("DragonBreathUpgrade") || !FindInventory("PB_Shotgun") || CountInv("PB_Shell") < GetAmmoCapacity("PB_Shell"),1) ;
 			fail;
 			TNT1 A 0
 			{
