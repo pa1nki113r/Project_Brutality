@@ -117,29 +117,29 @@ Class PB_SpawnerBase : Actor
 			case Tier_4:		st = "Tier4";			break;
 			
 			case Tier_Tiered:
-				if(Count <= lvtp) 						{st = "Tier1";}
-				else if(Count <= (lvtp * 2)) 			{st = "Tier2";}
-				else if(Count <= (lvtp * 3)) 			{st = "Tier3";}
-				else if(Count > (lvtp * 3)) 			{st = "Tier4";}
+				if(Count <= lvtp)						{st = "Tier1";}
+				else if(Count <= (lvtp * 2))			{st = "Tier2";}
+				else if(Count <= (lvtp * 3))			{st = "Tier3";}
+				else if(Count > (lvtp * 3))				{st = "Tier4";}
 				break;
 				
 			case Tier_Dynamic:
-				if(Count < (lvtp)) 						{st = "Tier1";}
-				else if(Count == (lvtp)) 				{st = "T2Random64";}
-				else if(Count == ((lvtp) + 1)) 			{st = "T2Random128";}
-				else if(Count == ((lvtp) + 2)) 			{st = "T2Random192";}
+				if(Count < (lvtp))						{st = "Tier1";}
+				else if(Count == (lvtp))				{st = "T2Random64";}
+				else if(Count == ((lvtp) + 1))			{st = "T2Random128";}
+				else if(Count == ((lvtp) + 2))			{st = "T2Random192";}
 					
-				else if(Count < ((lvtp) * 2)) 			{st = "Tier2";}
-				else if(Count == ((lvtp) * 2)) 			{st = "T3Random64";}
-				else if(Count == (((lvtp) * 2) + 1)) 	{st = "T3Random128";}
-				else if(Count == (((lvtp) * 2) + 2)) 	{st = "T3Random192";}
+				else if(Count < ((lvtp) * 2))			{st = "Tier2";}
+				else if(Count == ((lvtp) * 2))			{st = "T3Random64";}
+				else if(Count == (((lvtp) * 2) + 1))	{st = "T3Random128";}
+				else if(Count == (((lvtp) * 2) + 2))	{st = "T3Random192";}
 					
-				else if(Count < ((lvtp) * 3)) 			{st = "Tier3";}
-				else if(Count == ((lvtp) * 3)) 			{st = "T4Random64";}
-				else if(Count == (((lvtp) * 3) + 1)) 	{st = "T4Random128";}
-				else if(Count == (((lvtp) * 3) + 2)) 	{st = "T4Random192";}
+				else if(Count < ((lvtp) * 3))			{st = "Tier3";}
+				else if(Count == ((lvtp) * 3))			{st = "T4Random64";}
+				else if(Count == (((lvtp) * 3) + 1))	{st = "T4Random128";}
+				else if(Count == (((lvtp) * 3) + 2))	{st = "T4Random192";}
 				
-				else if(Count > (((lvtp) * 3) + 2)) 	{st = "Tier4";}
+				else if(Count > (((lvtp) * 3) + 2))		{st = "Tier4";}
 				break;
 		}
 		
@@ -161,22 +161,22 @@ Class PB_SpawnerBase : Actor
 			if (newmobj != null)
 			{
 				// copy everything relevant
-				newmobj.SpawnAngle = SpawnAngle;
+				newmobj.SpawnAngle	= SpawnAngle;
 				newmobj.Angle		= Angle;
 				newmobj.Pitch		= Pitch;
 				newmobj.Roll		= Roll;
-				newmobj.SpawnPoint = SpawnPoint;
-				newmobj.special    = special;
-				newmobj.args[0]    = args[0];
-				newmobj.args[1]    = args[1];
-				newmobj.args[2]    = args[2];
-				newmobj.args[3]    = args[3];
-				newmobj.args[4]    = args[4];
-				newmobj.special1   = special1;
-				newmobj.special2   = special2;
+				newmobj.SpawnPoint	= SpawnPoint;
+				newmobj.special		= special;
+				newmobj.args[0]		= args[0];
+				newmobj.args[1]		= args[1];
+				newmobj.args[2]		= args[2];
+				newmobj.args[3]		= args[3];
+				newmobj.args[4]		= args[4];
+				newmobj.special1	= special1;
+				newmobj.special2	= special2;
 				newmobj.SpawnFlags = SpawnFlags & ~(MTF_SECRET|MTF_DORMANT);	// MTF_SECRET needs special treatment to avoid incrementing the secret counter twice. It had already been processed for the spawner itself.
 				SpawnFlags &= ~MTF_DORMANT; //we dont want the spawner to be deactivated
-				newmobj.HandleSpawnFlags();	
+				newmobj.HandleSpawnFlags();
 				if(isdormant)
 					SpawnFlags |= MTF_DORMANT;
 				newmobj.SpawnFlags = SpawnFlags;
@@ -188,7 +188,7 @@ Class PB_SpawnerBase : Actor
 				newmobj.tracer = tracer;
 				newmobj.CopyFriendliness(self, false);
 				newmobj.bAMBUSH = bAMBUSH;
-				
+				newmobj.bSTEALTH = bSTEALTH; //handles stealth flags for replacing stealth monsters
 				// This handles things such as projectiles with the MF4_SPECTRAL flag that have
 				// a health set to -2 after spawning, for internal reasons.
 				if (health != SpawnHealth()) newmobj.health = health;
@@ -227,6 +227,7 @@ Class PB_SpawnerBase : Actor
 	override void beginplay()
 	{
 		super.beginplay();
+		bSTEALTH = GetDefaultByType(GetReplacee(self.GetClass())).bSTEALTH;
 		bool isdormant = (SpawnFlags & MTF_DORMANT);	//save this
 		
 	}
@@ -254,34 +255,34 @@ Class PB_SpawnerBase : Actor
 			TNT1 A 1;
 			stop;
 		T2Random64:
-		    TNT1 A 0 A_Jump(64,"Tier2");
-		    TNT1 A 0 A_Jump(256,"Tier1");
+			TNT1 A 0 A_Jump(64,"Tier2");
+			TNT1 A 0 A_Jump(256,"Tier1");
 		T2Random128:
-		    TNT1 A 0 A_Jump(128,"Tier2");
+			TNT1 A 0 A_Jump(128,"Tier2");
 			TNT1 A 0 A_Jump(256,"Tier1");
 		T2Random192:
-		    TNT1 A 0 A_Jump(192,"Tier2");
+			TNT1 A 0 A_Jump(192,"Tier2");
 			TNT1 A 0 A_Jump(256,"Tier1");
 		T3Random64:
-		    TNT1 A 0 A_Jump(64,"Tier3");
+			TNT1 A 0 A_Jump(64,"Tier3");
 			TNT1 A 0 A_Jump(256,"Tier2");
 		T3Random128:
-		    TNT1 A 0 A_Jump(128,"Tier3");
+			TNT1 A 0 A_Jump(128,"Tier3");
 			TNT1 A 0 A_Jump(256,"Tier2");
 		T3Random192:
-		    TNT1 A 0 A_Jump(192,"Tier3");
+			TNT1 A 0 A_Jump(192,"Tier3");
 			TNT1 A 0 A_Jump(256,"Tier2");
 		T4Random64:
-		    TNT1 A 0 A_Jump(64,"Tier4");
+			TNT1 A 0 A_Jump(64,"Tier4");
 			TNT1 A 0 A_Jump(256,"Tier3");
 		T4Random128:
-		    TNT1 A 0 A_Jump(128,"Tier4");
+			TNT1 A 0 A_Jump(128,"Tier4");
 			TNT1 A 0 A_Jump(256,"Tier3");
 		T4Random192:
-		    TNT1 A 0 A_Jump(192,"Tier4");
+			TNT1 A 0 A_Jump(192,"Tier4");
 			TNT1 A 0 A_Jump(256,"Tier3");
 		CHAOTICRANDOM:
-		    TNT1 A 0 A_Jump(256, "Tier4","Tier3", "Tier2", "Tier1");
+			TNT1 A 0 A_Jump(256, "Tier4","Tier3", "Tier2", "Tier1");
 			Stop;
 		Tier4:
 		Tier3:
@@ -299,27 +300,27 @@ CLASS droppedbase:CustomInventory
 {
 default
 {
-    Radius 8;
-    Height 10;
-    Scale 0.5;
-    gravity 1;
+	Radius 8;
+	Height 10;
+	Scale 0.5;
+	gravity 1;
 	Decal "none";
-    //+MOVEWITHSECTOR;
-    +DONTGIB;
-    //+NOTELEPORT;
+	//+MOVEWITHSECTOR;
+	+DONTGIB;
+	//+NOTELEPORT;
 	+FLOORCLIP;
 	Inventory.PickupMessage "";
-    Inventory.PickupSound "";
+	Inventory.PickupSound "";
 	+NOTIMEFREEZE;
 }
-    States
-    {
-    Spawn:
+	States
+	{
+	Spawn:
 		//TNT1 AA 1
 		TNT1 AA 0;
 	Spawn2:	
-	    TNT1 A 0;
-        Stop;
+		TNT1 A 0;
+		Stop;
 	Pickup:
 		TNT1 A 0;
 		Stop;
@@ -327,9 +328,9 @@ default
 		TNT1 A 0;
 		Stop;
 	Death:
-        TNT1 A 0;
-        Stop;
-    }
+		TNT1 A 0;
+		Stop;
+	}
 }
 
 class PBSpawnInfo play
@@ -471,6 +472,7 @@ class PBRandomSpawner : RandomSpawner abstract
 	override void PostSpawn(Actor spawned)
 	{
 		spawned.bDropped = bDropped;
+		spawned.bSTEALTH = bSTEALTH;
 		return;
 		
 		let wpn = PB_Weapon(spawned);

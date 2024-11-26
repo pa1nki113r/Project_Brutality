@@ -26,7 +26,7 @@ Class PB_InvulSpawner : PB_SpawnerBase //replaces invulnerabilitysphere
 			TNT1 A 0 PB_SpawnerSpawn("PB_InvulSpawnerT1");
 			Stop;
 		Death:
-		    TNT1 A 0;
+			TNT1 A 0;
 			Goto Spawn;
 	}
 }
@@ -98,7 +98,7 @@ Class PB_RadSuitSpawner : PB_SpawnerBase //replaces radsuit
 			TNT1 A 0 PB_SpawnerSpawn("PB_RadSuitSpawnerT1");
 			Stop;
 		Death:
-		    TNT1 A 0;
+			TNT1 A 0;
 			Goto Spawn;
 	}
 }
@@ -170,7 +170,7 @@ Class PB_BlurSpawner : PB_SpawnerBase //replaces blursphere
 			TNT1 A 0 PB_SpawnerSpawn("PB_BlurSpawnerT1");
 			Stop;
 		Death:
-		    TNT1 A 0;
+			TNT1 A 0;
 			Goto Spawn;
 	}
 }
@@ -240,7 +240,7 @@ Class PB_InfraRedSpawner : PB_SpawnerBase //replaces infrared
 			TNT1 A 0 PB_SpawnerSpawn("PB_InfraRedSpawnerT1");
 			Stop;
 		Death:
-		    TNT1 A 0;
+			TNT1 A 0;
 			Goto Spawn;
 	}
 }
@@ -311,7 +311,7 @@ Class PB_SoulSphereSpawner : PB_SpawnerBase //replaces soulsphere
 			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSphereSpawnerT1");
 			Stop;
 		Death:
-		    TNT1 A 0;
+			TNT1 A 0;
 			Goto Spawn;
 	}
 }
@@ -381,7 +381,7 @@ Class PB_MegaSpawner : PB_SpawnerBase //replaces megasphere
 			TNT1 A 0 PB_SpawnerSpawn("PB_MegaSpawnerT1");
 			Stop;
 		Death:
-		    TNT1 A 0;
+			TNT1 A 0;
 			Goto Spawn;
 	}
 }
@@ -451,7 +451,7 @@ Class PB_BerserkSpawner : PB_SpawnerBase //replaces Berserk
 			TNT1 A 0 PB_SpawnerSpawn("PB_BerserkSpawnerT1");
 			Stop;
 		Death:
-		    TNT1 A 0;
+			TNT1 A 0;
 			Goto Spawn;
 	}
 }
@@ -521,7 +521,7 @@ Class PB_AllMapSpawner : PB_SpawnerBase //replaces AllMap
 			TNT1 A 0 PB_SpawnerSpawn("PB_AllMapSpawnerT1");
 			Stop;
 		Death:
-		    TNT1 A 0;
+			TNT1 A 0;
 			Goto Spawn;
 	}
 }
@@ -591,7 +591,7 @@ Class PB_DoomSpawner : PB_SpawnerBase
 			TNT1 A 0 PB_SpawnerSpawn("PB_DoomSpawnerT1");
 			Stop;
 		Death:
-		    TNT1 A 0;
+			TNT1 A 0;
 			Goto Spawn;
 	}
 }
@@ -661,7 +661,7 @@ Class PB_HasteSpawner : PB_SpawnerBase
 			TNT1 A 0 PB_SpawnerSpawn("PB_HasteSpawnerT1");
 			Stop;
 		Death:
-		    TNT1 A 0;
+			TNT1 A 0;
 			Goto Spawn;
 	}
 }
