@@ -114,6 +114,7 @@ Actor HDMRSniperMode: Inventory
 inventory.maxamount 1
 }
 
+Actor PullPBRifleBolt : Inventory{inventory.maxamount 1}
 
 Actor FiringUnderBarrelGrenadeLauncher: Inventory
 {
@@ -385,7 +386,7 @@ ACTOR Rifle : PB_Weapon
 			
 		ReallyReady:
 			TNT1 A 0 A_JumpIf(CountInv("UpgradeInspect") == 0 && CountInv("DMRUpgraded") == 1, "InspectUpgradeContinue")
-			
+			TNT1 A 0 A_JumpIfInventory("PullPBRifleBolt",1,"LoadChamber2")
 			R0F6 E 1 {
 				if (CountInv("HDMRSniperMode") == 1) {
 					A_SetWeaponSprite("H3F0");
@@ -1323,15 +1324,20 @@ ACTOR Rifle : PB_Weapon
 			A_GiveInventory("HDMRSniperMode",1);
 			
 			// If 30+1 round chamber, recover the extra round
-			if(CountInv("RifleAmmo") >= 31) {
+			if(CountInv("RifleAmmo")%2 == 1) {
 				A_TakeInventory("RifleAmmo", 1);
 				A_GiveInventory("SpareRifleBullets", 1);
 			}
-			if(CountInv("LeftRifleAmmo") >= 31) {
+			if(CountInv("LeftRifleAmmo")%2 == 1) {
 				A_TakeInventory("LeftRifleAmmo", 1);
 				A_GiveInventory("SpareRifleBullets", 1);
 			}
 		}
+		TNT1 A 0 {
+			PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,1);
+			PB_AmmoIntoMag("LeftRifleAmmo","PB_HighCalMag",30,1);
+		}
+		Goto Continue_NtoS
 	RefreshAmmo_NtoS:
 		TNT1 A 0 A_JumpIfInventory("RifleAmmo",30,"Continue_NtoS")
 		TNT1 A 0 A_JumpIfInventory("PB_HighCalMag",1,1)
@@ -2420,6 +2426,7 @@ ACTOR Rifle : PB_Weapon
 			}
 			A_PlaySoundEx("weapons/rifle/magin", "Auto");
 		}
+		
 		R2F1 EFGHIJKL 1 {
 			if (CountInv("DMRUpgraded") == 1) {
 				if(CountInv("HDMRSniperMode") == 1) {
@@ -2433,6 +2440,14 @@ ACTOR Rifle : PB_Weapon
 	FinishingReload:
 		R2F1 M 1 {
 			A_PlaySoundEx("weapons/rifle/magslap", "Auto");
+			if(CountInv("RifleAmmo") < 1){
+				A_GiveInventory("PullPBRifleBolt",1);
+				if(FindInventory("HDMRSniperMode")){PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",28,2,2);}
+				else{PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,1);}
+			}else{
+				if(FindInventory("HDMRSniperMode")){PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,2,2);}
+				else{PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",31,1);}
+			}
 			if (CountInv("DMRUpgraded") == 1) {
 				if(CountInv("HDMRSniperMode") == 1) {
 					A_SetWeaponSprite("H5F1");
@@ -2463,10 +2478,22 @@ ACTOR Rifle : PB_Weapon
 				}
 			}
 		}
+		//goto FinishInsertBullets
+		TNT1 A 0 A_JumpIfInventory("PullPBRifleBolt",1,"LoadChamber")
  		TNT1 A 0 A_JumpIfInventory("RifleAmmo",1,"NormalReload")
 	LoadChamber:
-		TNT1 A 0 A_PlaySoundEx("Ironsights", "Auto")
-		R2F3 ABCD 1 {
+		R2F3 A 1 { A_PlaySoundEx("Ironsights", "Auto");
+			if (CountInv("DMRUpgraded") == 1) {
+				if(CountInv("HDMRSniperMode") == 1) {
+					A_SetWeaponSprite("H5F3");
+				}
+				else {
+					A_SetWeaponSprite("H0F8");
+				}
+			}
+		}
+	LoadChamber2:
+		R2F3 BCD 1 {
 			if (CountInv("DMRUpgraded") == 1) {
 				if(CountInv("HDMRSniperMode") == 1) {
 					A_SetWeaponSprite("H5F3");
@@ -2487,9 +2514,12 @@ ACTOR Rifle : PB_Weapon
 				}
 			}
 		}
- 		TNT1 A 0 A_JumpIfInventory("HDMRSniperMode",1,"InsertBulletsSniper")
-		Goto InsertBullets
+		
+		TNT1 A 0 {A_Takeinventory("RifleWasEmpty",1);A_Takeinventory("HasUnloadedDMR",1);A_TakeInventory("PullPBRifleBolt");}
+		Goto Ready3
+ 		//TNT1 A 0 A_JumpIfInventory("HDMRSniperMode",1,"InsertBulletsSniper")
 	NormalReload:
+		TNT1 A 0 A_JumpIfInventory("PullPBRifleBolt",1,"LoadChamber")
 		R2F2 ABCDEFG 1 {
 			
 			if (CountInv("DMRUpgraded") == 1) {
@@ -2502,11 +2532,13 @@ ACTOR Rifle : PB_Weapon
 			}
 			
 		}
- 		TNT1 A 0 A_JumpIfInventory("HDMRSniperMode",1,"InsertBulletsSniper")
-		Goto InsertBullets2
+		TNT1 A 0 {A_Takeinventory("RifleWasEmpty",1);A_Takeinventory("HasUnloadedDMR",1);A_TakeInventory("PullPBRifleBolt");}
+		Goto Ready3
+ 		//TNT1 A 0 A_JumpIfInventory("HDMRSniperMode",1,"InsertBulletsSniper")
+		//goto FinishInsertBullets
 	SkipLeftReload:
 		R2F6 ABCD 1
- 		Goto InsertBullets4		
+ 		Goto InsertBullets4
 		
 	SkipRightReload:
 		R2F7 ABCD 1
@@ -2566,6 +2598,16 @@ ACTOR Rifle : PB_Weapon
 		R3F1 EFGHIJKLMN 1 
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/magslap", "Auto")
 		TNT1 A 0 A_PlaySoundEx("weapons/riflemagslap", "Auto")
+		"----" A 0 {
+			if(CountInv("RifleAmmo") < 1){
+				//A_GiveInventory("PullPBRifleBolt",1);
+				if(FindInventory("HDMRSniperMode")){PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",28,2,2);}
+				else{PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,1);}
+			}else{
+				if(FindInventory("HDMRSniperMode")){PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,2,2);}
+				else{PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",31,1);}
+			}
+		}
 		R3F1 OPQRSTUVWXYZ 1 
 		R3F2 A 1 
 	ReloadLeftGun:
@@ -2587,11 +2629,22 @@ ACTOR Rifle : PB_Weapon
 		R3F3 ABCDEFGHI 1 
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/magslap", "Auto")
 		TNT1 A 0 A_PlaySoundEx("weapons/riflemagslap", "Auto")
-		R3F3 JKLMN 1 
+		"----" A 0 {
+			if(CountInv("LeftRifleAmmo") < 1){
+				//A_GiveInventory("PullPBRifleBolt",1);
+				if(FindInventory("HDMRSniperMode")){PB_AmmoIntoMag("LeftRifleAmmo","PB_HighCalMag",28,2,2);}
+				else{PB_AmmoIntoMag("LeftRifleAmmo","PB_HighCalMag",30,1);}
+			}else{
+				if(FindInventory("HDMRSniperMode")){PB_AmmoIntoMag("LeftRifleAmmo","PB_HighCalMag",30,2,2);}
+				else{PB_AmmoIntoMag("LeftRifleAmmo","PB_HighCalMag",31,1);}
+			}
+		}
+		R3F3 JKLMNOP 1 
 		R3F3 OP 1
-		TNT1 A 0 A_JumpIfInventory("DMRUpgraded", 1, "InsertBullets4")
+		//TNT1 A 0 A_JumpIfInventory("DMRUpgraded", 1, "InsertBullets4")
 		R3F3 QRSTUVWXYZ 1
- 		Goto InsertBullets4
+		TNT1 A 0 {A_Takeinventory("RifleWasEmpty",1);A_Takeinventory("HasUnloadedDMR",1);}
+		Goto Ready3
 		
 	DWReloadUnloaded:
 		R8F3 ABCDEFGHI 1 
@@ -2720,6 +2773,16 @@ ACTOR Rifle : PB_Weapon
 		}
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/magslap", "Auto")
 		TNT1 A 0 A_PlaySoundEx("weapons/riflemagslap", "Auto")
+		"----" A 0 {
+			if(CountInv("RifleAmmo") < 1){
+				//A_GiveInventory("PullPBRifleBolt",1);
+				if(FindInventory("HDMRSniperMode")){PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",28,2,2);}
+				else{PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,1);}
+			}else{
+				if(FindInventory("HDMRSniperMode")){PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,2,2);}
+				else{PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",31,1);}
+			}
+		}
 		H8F1 OPQRSTUVWX 1 {
 			if(CountInv("HDMRSniperMode") == 1) {
 				A_SetWeaponSprite("H91F");
@@ -2764,16 +2827,6 @@ ACTOR Rifle : PB_Weapon
 				}
 			}
 		TNT1 A 0 A_JumpIfInventory("HasUnloadedDMR",1,"Finish_DWReloadLeft")
-		TNT1 A 0 {
-			if(CountInv("LeftRifleAmmo") < 1) {
-				if(CountInv("HDMRSniperMode") == 1) {
-				PB_SpawnCasing("EmptyHDMRMag_Sniper",38,-20,7,frandom(0, 3.5),frandom(3.3, 7.2),frandom(3,7));
-				}
-				else {
-				PB_SpawnCasing("EmptyDMRMag",38,-20,7,frandom(0, 3.5),frandom(3.3, 7.2),frandom(3,7));
-				}
-			}
-		}
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/magchange", "Auto")
 		H8F2 STU 1 {
 			if(CountInv("HDMRSniperMode") == 1) {
@@ -2800,6 +2853,16 @@ ACTOR Rifle : PB_Weapon
 		Finish_DWReloadLeft:
 		TNT1 A 0 A_PlaySoundEx("weapons/rifle/magslap", "Auto")
 		TNT1 A 0 A_PlaySoundEx("weapons/riflemagslap", "Auto")
+		"----" A 0 {
+			if(CountInv("LeftRifleAmmo") < 1){
+				//A_GiveInventory("PullPBRifleBolt",1);
+				if(FindInventory("HDMRSniperMode")){PB_AmmoIntoMag("LeftRifleAmmo","PB_HighCalMag",28,2,2);}
+				else{PB_AmmoIntoMag("LeftRifleAmmo","PB_HighCalMag",30,1);}
+			}else{
+				if(FindInventory("HDMRSniperMode")){PB_AmmoIntoMag("LeftRifleAmmo","PB_HighCalMag",30,2,2);}
+				else{PB_AmmoIntoMag("LeftRifleAmmo","PB_HighCalMag",31,1);}
+			}
+		}
 		H8F3 FGHI 1 {
 			if(CountInv("HDMRSniperMode") == 1) {
 				A_SetWeaponSprite("H93F");
@@ -2815,7 +2878,9 @@ ACTOR Rifle : PB_Weapon
 				A_SetWeaponSprite("H93F");
 			}
 		}
- 		Goto Upgraded_InsertBullets4
+		TNT1 A 0 {A_Takeinventory("RifleWasEmpty",1);A_Takeinventory("HasUnloadedDMR",1);A_TakeInventory("PullPBRifleBolt");}
+		Goto Ready3
+ 		//Goto Upgraded_InsertBullets4
 		
 	Reload_LeftUpgradedUnload:
 		TNT1 A 0
@@ -3335,7 +3400,6 @@ ACTOR RifleAmmo : Ammo
 	Inventory.Icon "RIFLA0"
 	+INVENTORY.IGNORESKILL
 }
-
 
 ACTOR LeftRifleAmmo : Ammo
 {
