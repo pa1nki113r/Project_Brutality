@@ -354,7 +354,7 @@ Class PB_RifleWheel : wheelinfocontainer
 			PB_SpecialWheel_Mode rifle_single = new ("PB_SpecialWheel_Mode");
 			rifle_single.img = "graphics/pywheel/hdmr_single.png";
 			rifle_single.Alias = "Single DMR";
-			rifle_single.tokentogive = "SelectDualWieldRifles";
+			rifle_single.tokentogive = "SelectDualWieldDMRs";
 			rifle_single.scalex = iconscale.x;
 			rifle_single.scaley = iconscale.y;
 			
@@ -365,7 +365,7 @@ Class PB_RifleWheel : wheelinfocontainer
 			PB_SpecialWheel_Mode rifle_dual = new ("PB_SpecialWheel_Mode");
 			rifle_dual.img = "graphics/pywheel/hdmr_dual.png";
 			rifle_dual.Alias = "Akimbo DMRs";
-			rifle_dual.tokentogive = "SelectDualWieldRifles";
+			rifle_dual.tokentogive = "SelectDualWieldDMRs";
 			rifle_dual.scalex = iconscale.x;
 			rifle_dual.scaley = iconscale.y;
 			

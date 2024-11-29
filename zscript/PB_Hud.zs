@@ -1005,13 +1005,13 @@ class PB_Hud_ZS : BaseStatusBar
 					case 'Rifle':
 						if(CheckInventory("DualWieldingDMRs"))
 						{
-							leftAmmoAmount = "LeftRifleAmmo";
+							leftAmmoAmount = "LeftDMRAmmo";
 						   
 							//Left Rifle Ammo
 							PBHud_DrawImage("BARBACY3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
 							
-							PBHud_DrawBar("ABAR1", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftRifleAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftRifleAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
+							PBHud_DrawBar("ABAR1", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftDMRAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
+							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftDMRAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
 						}
 
 						if(CheckInventory("HDMRGrenadeMode") && !CheckInventory("DualWieldingDMRs"))
@@ -1028,12 +1028,12 @@ class PB_Hud_ZS : BaseStatusBar
 					case 'PB_Carbine':
 						if(CheckInventory("DualWieldingCarbines"))
 						{
-							leftAmmoAmount = "LeftXRifleAmmo";
+							leftAmmoAmount = "LeftXDMRAmmo";
 							
 							PBHud_DrawImage("BARBACY3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
 							
-							PBHud_DrawBar("ABAR1", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftXRifleAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftXRifleAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
+							PBHud_DrawBar("ABAR1", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftXDMRAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
+							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftXDMRAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
 						}
 						break;
 					case 'PB_Pistol':
