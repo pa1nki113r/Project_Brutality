@@ -1291,7 +1291,7 @@ Class PB_Shotgun : PB_WeaponBase
 }
 
 
-Class ShotgunAmmo : Ammo
+Class ShotgunAmmo : PB_WeaponAmmo
 {
 	default
 	{

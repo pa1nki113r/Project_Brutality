@@ -722,7 +722,7 @@ Class PB_SuperGL : PB_Weapon
 //	sgl tokens
 //
 
-Class GrenadeRounds : Ammo
+Class GrenadeRounds : PB_WeaponAmmo
 {
 	default
 	{

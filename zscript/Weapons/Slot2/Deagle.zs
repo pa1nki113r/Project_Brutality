@@ -1196,7 +1196,7 @@ class PB_Deagle : PB_WeaponBase
 }
 
 
-Class DeagleAmmo : Ammo
+Class DeagleAmmo : PB_WeaponAmmo
 {
 	default
 	{
@@ -1209,7 +1209,7 @@ Class DeagleAmmo : Ammo
 	}
 }
 
-Class LeftDeagleAmmo : Ammo
+Class LeftDeagleAmmo : PB_WeaponAmmo
 {
    default
 	{
