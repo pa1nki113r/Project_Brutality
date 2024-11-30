@@ -143,6 +143,7 @@ Class PB_Shotgun : PB_WeaponBase
 			TNT1 A 0 PB_WeaponRaise();
 			TNT1 A 0 PB_WeapTokenSwitch("ShotgunSelected");
 			TNT1 A 0 A_SetInventory( "RandomHeadExploder", 1);
+		Ready:
 			TNT1 A 0 PB_RespectIfNeeded();
 		SelectAnimation:
 			TNT1 A 0 A_StartSound("weapons/shotgun/equip", 10,CHANF_OVERLAP);
@@ -169,7 +170,7 @@ Class PB_Shotgun : PB_WeaponBase
 			TNT1 A 0 A_lower(120);
 			wait;
 		
-		Ready:
+		
 		Ready3:
 			TNT1 A 0 {
 				A_SetRoll(0);
@@ -638,7 +639,7 @@ Class PB_Shotgun : PB_WeaponBase
 		CancelWheel:
 			//TNT1 A 1;
 			TNT1 A 0 pb_postwheel();
-			goto ready;
+			goto ready3;
 		
 		Unload:
 			SHTG A 1 {
@@ -1291,7 +1292,7 @@ Class PB_Shotgun : PB_WeaponBase
 }
 
 
-Class ShotgunAmmo : Ammo
+Class ShotgunAmmo : PB_WeaponAmmo
 {
 	default
 	{

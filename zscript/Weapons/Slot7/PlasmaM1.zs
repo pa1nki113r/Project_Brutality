@@ -1022,7 +1022,7 @@ Class PB_M1Plasma : PB_WeaponBase
 //
 //	tokens
 //
-Class PlasmaAmmo : Ammo
+Class PlasmaAmmo : PB_WeaponAmmo
 {
 	default
 	{
@@ -1035,7 +1035,7 @@ Class PlasmaAmmo : Ammo
 	}
 }
 
-Class LeftPlasmaAmmo : Ammo
+Class LeftPlasmaAmmo : PB_WeaponAmmo
 {
 	default
 	{
