@@ -68,8 +68,8 @@ Actor PB_AutoshotgunUpgrade: PB_UpgradeItem
 	SpawnID 9350
 	Height 24
 	//-COUNTITEM
-	+INVENTORY.ALWAYSPICKUP
-	+COUNTITEM
+	-INVENTORY.ALWAYSPICKUP
+	-COUNTITEM
 	+DONTGIB
 	Inventory.Pickupsound "H4SGCOCK"
 	Inventory.PickupMessage "Auto Shotgun Upgrade!"
@@ -85,22 +85,22 @@ Actor PB_AutoshotgunUpgrade: PB_UpgradeItem
 		"####" A 0 A_PbvpInterpolate()
 		LOOP
 	
-    Pickup:
-	  TNT1 A 0 ACS_NamedExecuteAlways("AutoShotgunDrumMag", 0)
-	  TNT1 A 1
-	  {
-		A_GiveInventory("PB_Autoshotgun", 1);
-		A_GiveInventory("Autoshotgunammo", 24);
-		A_GiveInventory("LeftASGAmmo", 24);
-		if (CountInv("AutoshotgunDrumMag") == 0) {A_GiveInventory("DrumMagNotInserted", 1);}
-		A_GiveInventory("AutoshotgunDrumMag", 1);
-	  }
-	  TNT1 A 1
-	  {
-		A_GiveInventory("Autoshotgunammo", 24);
-		A_GiveInventory("LeftASGAmmo", 24);
-	  }
-      Stop
+	Pickup:
+		//TNT1 A 0 ACS_NamedExecuteAlways("AutoShotgunDrumMag", 0)
+		TNT1 A 0 A_JumpIf(!FindInventory("AutoshotgunDrumMag") || !FindInventory("PB_Autoshotgun") || CountInv("PB_Shell") < GetAmmoCapacity("PB_Shell"),1)
+		fail
+		TNT1 A 1{
+		if (CountInv("AutoshotgunDrumMag") == 0) {
+			A_GiveInventory("DrumMagNotInserted", 1);
+			SetAmmoCapacity("AutoShotgunAmmo",24);
+			SetAmmoCapacity("LeftASGAmmo",24);
+			A_GiveInventory("Autoshotgunammo", 24);
+			A_GiveInventory("LeftASGAmmo", 24);
+		}
+			A_GiveInventory("PB_Autoshotgun", 1);
+			A_GiveInventory("AutoshotgunDrumMag", 1);
+		}
+		Stop
 	}
 }
 
@@ -2317,41 +2317,41 @@ ACTOR PB_Autoshotgun  : PB_Weapon
 	}
 }
 
-ACTOR AutoShotgunAmmo : Ammo 
+ACTOR AutoShotgunAmmo : PB_WeaponAmmo 
 {
-   Inventory.Amount 0
-   Inventory.MaxAmount 12
-   Ammo.BackpackAmount 0
-   Ammo.BackpackMaxAmount 12
-   +INVENTORY.IGNORESKILL
-   Inventory.Icon "AUSCA0"
+	Inventory.Amount 0
+	Inventory.MaxAmount 12
+	Ammo.BackpackAmount 0
+	Ammo.BackpackMaxAmount 12
+	+INVENTORY.IGNORESKILL
+	Inventory.Icon "AUSCA0"
 }
 
-ACTOR LeftASGAmmo : Ammo
+ACTOR LeftASGAmmo : PB_WeaponAmmo
 {
-   Inventory.Amount 0
-   Inventory.MaxAmount 12
-   Ammo.BackpackAmount 0
-   Ammo.BackpackMaxAmount 12
-   +INVENTORY.IGNORESKILL
-   Inventory.Icon "AUSCA0"
+	Inventory.Amount 0
+	Inventory.MaxAmount 12
+	Ammo.BackpackAmount 0
+	Ammo.BackpackMaxAmount 12
+	+INVENTORY.IGNORESKILL
+	Inventory.Icon "AUSCA0"
 }
 
 ACTOR FlakTrail
 { 
-    RenderStyle Add
-    Scale 0.016
-    Alpha 0.65
-    +NOINTERACTION
-    +NOGRAVITY
-    States
-    {
-    Spawn:
+	RenderStyle Add
+	Scale 0.016
+	Alpha 0.65
+	+NOINTERACTION
+	+NOGRAVITY
+	States
+	{
+	Spawn:
 	YAE4 A 0 NoDelay A_JumpIf(ScaleX <= 0, "NULL")
 	YAE4 A 0 A_SetScale(ScaleX-0.002)
-    YA36 C 1 bright A_FadeOut(0.05)
-    Loop
-    }
+	YA36 C 1 bright A_FadeOut(0.05)
+	Loop
+	}
 }
 
 ACTOR Chunk1
@@ -2404,8 +2404,8 @@ ACTOR Chunk2 : Chunk1
 ACTOR Chunk3 : Chunk1
 {
 	Damagetype Blast
-    States
-    {
+	States
+	{
 		Spawn:
 			FLAS C 1 Bright {
 				A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0);
@@ -2413,14 +2413,14 @@ ACTOR Chunk3 : Chunk1
 				A_SetRoll(Roll+45);
 			}
 			loop
-    }
+	}
 }
 
 ACTOR Chunk4 : Chunk1
 {
 	Damagetype Shotgun
-    States
-    {
+	States
+	{
 		Spawn:
 			FLAS D 1 Bright {
 				A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0);
@@ -2428,5 +2428,5 @@ ACTOR Chunk4 : Chunk1
 				A_SetRoll(Roll+45);
 			}
 			loop
-    }
+	}
 }

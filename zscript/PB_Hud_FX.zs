@@ -54,7 +54,7 @@ extend class PB_Hud_ZS
 		if(!showGlassCracks)
 			return;
 		
-		if(glassCracks.Size() > 3)
+		if(glassCracks.Size() > 8)
 			glassCracks.Delete(0);
 
 		PB_CrackFXStorage crack = PB_CrackFXStorage.CreateCrackFX();

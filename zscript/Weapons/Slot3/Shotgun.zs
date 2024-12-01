@@ -143,6 +143,7 @@ Class PB_Shotgun : PB_WeaponBase
 			TNT1 A 0 PB_WeaponRaise();
 			TNT1 A 0 PB_WeapTokenSwitch("ShotgunSelected");
 			TNT1 A 0 A_SetInventory( "RandomHeadExploder", 1);
+		Ready:
 			TNT1 A 0 PB_RespectIfNeeded();
 		SelectAnimation:
 			TNT1 A 0 A_StartSound("weapons/shotgun/equip", 10,CHANF_OVERLAP);
@@ -169,7 +170,7 @@ Class PB_Shotgun : PB_WeaponBase
 			TNT1 A 0 A_lower(120);
 			wait;
 		
-		Ready:
+		
 		Ready3:
 			TNT1 A 0 {
 				A_SetRoll(0);
@@ -638,7 +639,7 @@ Class PB_Shotgun : PB_WeaponBase
 		CancelWheel:
 			//TNT1 A 1;
 			TNT1 A 0 pb_postwheel();
-			goto ready;
+			goto ready3;
 		
 		Unload:
 			SHTG A 1 {
@@ -770,7 +771,7 @@ Class PB_Shotgun : PB_WeaponBase
 				 A_Fireprojectile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17));
 				 PB_GunSmoke(-1,0,0);
 				 PB_GunSmoke(1,0,0);
-				 PB_DynamicTail("shotgun", "shotgun");    
+				 PB_DynamicTail("shotgun", "shotgun");
 				 A_SetInventory("CantDoAction",1);
 				 
 				switch(getshellsmode())
@@ -1291,7 +1292,7 @@ Class PB_Shotgun : PB_WeaponBase
 }
 
 
-Class ShotgunAmmo : Ammo
+Class ShotgunAmmo : PB_WeaponAmmo
 {
 	default
 	{
@@ -1452,8 +1453,8 @@ Class PB_SGMagazine: PB_UpgradeItem
 		//SpawnID 9310
 		//Game "Doom";
 		Height 24;
-		+INVENTORY.ALWAYSPICKUP
-		+COUNTITEM
+		-INVENTORY.ALWAYSPICKUP
+		-COUNTITEM
 		Inventory.Pickupsound "SHOTPICK";
 		Inventory.PickupMessage "Pump Shotgun Upgrade! (Mag + Dragon's Breath shells)";
 		Tag "Pump Shotgun Magazine";
@@ -1470,8 +1471,8 @@ Class PB_SGMagazine: PB_UpgradeItem
 			LOOP;
 		
 		Pickup:
-			//TNT1 A 0 ACS_NamedExecuteAlways("PumpShotgunMag", 0);
-			TNT1 A 0;
+			TNT1 A 0 A_JumpIf(!FindInventory("DragonBreathUpgrade") || !FindInventory("PB_Shotgun") || CountInv("PB_Shell") < GetAmmoCapacity("PB_Shell"),1) ;
+			fail;
 			TNT1 A 0
 			{
 				A_GiveInventory("PB_Shotgun", 1);

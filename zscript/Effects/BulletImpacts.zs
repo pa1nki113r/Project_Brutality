@@ -210,7 +210,7 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 		PUFSPRK.Color1 = randompick[jtbs](0, 1) ? color3 : color2;
 		PUFSPRK.Style = STYLE_TRANSLUCENT;
 		PUFSPRK.Flags = SPF_ROLL | SPF_REPLACE;
-		vector3 vls = (smallCal ? 0.5 : frandom[jtbs](0, 1), 0, 0);
+		vector3 vls = (smallCal ? 0.5 : frandom[jtbs](0, 1), frandom[jtbs](-1, 1), frandom[jtbs](-1, 1));
 		if(hitWhat == 1)
 		{
 			vls = (RotateVector((vls.x, vls.y), wallNormal), vls.z);

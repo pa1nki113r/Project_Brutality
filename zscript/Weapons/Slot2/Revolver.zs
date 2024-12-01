@@ -876,7 +876,7 @@ Class PB_Revolver : PB_WeaponBase
 }
 
 
-Class LeftRevolverAmmo : Ammo //Your weapon's magazine ammo.
+Class LeftRevolverAmmo : PB_WeaponAmmo //Your weapon's magazine ammo.
 {
 	default
 	{
@@ -889,7 +889,7 @@ Class LeftRevolverAmmo : Ammo //Your weapon's magazine ammo.
 	}
 }
 
-Class RevolverAmmo : Ammo
+Class RevolverAmmo : PB_WeaponAmmo
 {
    default
 	{

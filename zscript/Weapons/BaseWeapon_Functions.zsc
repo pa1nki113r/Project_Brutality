@@ -16,7 +16,7 @@ extend class PB_WeaponBase
 		}
 	}
 
-	action void PB_CoolDownBarrel(double posOfsx = 0, double posOfsy = 0, double posOfsz = 0, double velOfsx = 0, double velOfsy = 0, double velOfsz = 0)
+	action void PB_CoolDownBarrel(double posOfsx = 0, double posOfsy = 0, double posOfsz = 0, double velOfsx = 0, double velOfsy = 0, double velOfsz = 0, double scaleadjust = 1, double alphaadjust = 1)
 	{
 		if((posOfsx <= 0 && invoker.barrelHeat < 1) || (posOfsx > 0 && invoker.leftBarrelHeat < 1))
 			return;
@@ -27,8 +27,8 @@ extend class PB_WeaponBase
 			(posOfsx, posOfsy, posOfsz), 
 			(velOfsx, velOfsy, velOfsz) + (frandom(0, 4) * endingScale, frandom(-0.5, 0.5), frandom(-0.5, 0.5) * endingScale),
 			"PB_BarrelHeatSmoke",
-			0.2 * endingScale,
-			0.7 * endingScale,
+			0.2 * endingScale * scaleadjust,
+			0.7 * endingScale * alphaadjust,
 			1.3,
 			0.4
 		);
@@ -308,17 +308,17 @@ extend class PB_WeaponBase
 	}
 	
 	action void PB_UseLine(int range = 64)
-    {
-        double pz = height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor;
-        FLineTraceData ltd;
-        LineTrace(angle, range, pitch, offsetz: pz, data: ltd);
-        if (ltd.HitLine)
-        {
-            ltd.HitLine.Activate(player.mo, ltd.LineSide, SPAC_Use);
-        }
-    }
-    
-    action void PB_FireOffset(bool interp = true) 
+	{
+		double pz = height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor;
+		FLineTraceData ltd;
+		LineTrace(angle, range, pitch, offsetz: pz, data: ltd);
+		if (ltd.HitLine)
+		{
+			ltd.HitLine.Activate(player.mo, ltd.LineSide, SPAC_Use);
+		}
+	}
+	
+	action void PB_FireOffset(bool interp = true) 
 	{
 		if( !cvar.GetCVar("PB_ExaggeratedRecoil", invoker.owner.player).GetBool() )
 			return;
@@ -527,6 +527,12 @@ extend class PB_WeaponBase
 			Smoke.alpha *= alphamul;
 			Smoke.blowSpeed = blowspeed;
 			Smoke.fadeSpeed = fadeSpeed;
+			
+			if(invoker.smokeColor != "FFFFFF")
+			{
+				Smoke.A_SetRenderStyle(Smoke.alpha, STYLE_STENCIL);
+				Smoke.SetShade(invoker.smokeColor);
+			}
 		}
 
 		return Smoke;
@@ -536,7 +542,7 @@ extend class PB_WeaponBase
 	// [gng] alias for old PB_GunSmoke format function arguments
 	Action void PB_GunSmoke_Basic(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
 	{
-		PB_GunSmokeSpawn((d1, d2, d3), (0, 0, 0), SActor, 0.5, 1.5, 1.2, 1.1); 
+		PB_GunSmokeSpawn((d1, d2, d3), (0, 0, 0), SActor, 0.5, 1.5, 1.2, 2); 
 		NashGoreStatics.QueueSmoke();
 	}
 
@@ -562,39 +568,39 @@ extend class PB_WeaponBase
 		/*PB_GunSmokeSpawn(
 			(d1, d2, d3), // offsets
 			(0, 0, 0), 	  // velocites
-			SActor,       // actor
-			0.95,          // scale multiplier
-			1.0,          // alpha multiplier
-			1.02,          // blow speed
+			SActor,		// actor
+			0.95,		  // scale multiplier
+			1.0,		  // alpha multiplier
+			1.02,		  // blow speed
 			1.0  		  // fade speed
 		);*/
 		
 		PB_GunSmokeSpawn(
 			(d1, d2 - 2, d3), // offsets
 			(0, 0, -0.5), 	  // velocites
-			SActor,       // actor
-			2.2,          // scale multiplier
-			0.6,          // alpha multiplier
-			1.03          // blow speed
+			SActor,		// actor
+			2.2,		  // scale multiplier
+			0.6,		  // alpha multiplier
+			1.03		  // blow speed
 		);
 
 		/*PB_GunSmokeSpawn(
 			(d1, d2 + 6, d3), // offsets
 			(1, 0, 0), 	  // velocites
-			SActor,       // actor
-			2.2,          // scale multiplier
-			0.7,          // alpha multiplier
-			1.05          // blow speed
+			SActor,		// actor
+			2.2,		  // scale multiplier
+			0.7,		  // alpha multiplier
+			1.05		  // blow speed
 		);*/
 
 		PB_GunSmokeSpawn(
 			(d1, d2 + 5.1, d3),
 			(0, 0, 0),
 			SActor,
-			3.5,
-			0.5,
-			1.01,
-			1.0
+			2.5,
+			1.0,
+			1.02,
+			1.2
 		);
 
 		PB_GunSmokeSpawn(
@@ -611,25 +617,25 @@ extend class PB_WeaponBase
 
 		vector2 smkPOfs;
 
-		smkPOfs = (frandom(6, 10), frandom(-2, 2));
+		smkPOfs = (frandom(8, 17), frandom(-2, 2));
 		PB_GunSmokeSpawn(
-			(d1 - 20, d2, d3 - smkPOfs.y),
+			(d1 - 20, d2, d3 - 5 - smkPOfs.y),
 			(0, smkPOfs.x, -smkPOfs.y),
 			SActor,
 			4,
 			0.4,
 			1.5,
-			1.2
+			0.9
 		);
 
 		PB_GunSmokeSpawn(
-			(d1 + 20, d2, d3 + smkPOfs.y),
+			(d1 + 20, d2, d3 - 5 + smkPOfs.y),
 			(0, -smkPOfs.x, smkPOfs.y),
 			SActor,
 			5,
 			0.4,
 			1.5,
-			1.2
+			0.9
 		);
 
 		smkPOfs = (frandom(-6, -15), frandom(-6, 3));
@@ -640,7 +646,7 @@ extend class PB_WeaponBase
 			1.4,
 			0.5,
 			1.3,
-			1.2
+			0.9
 		);
 	
 		smkPOfs = (frandom(6, 15), frandom(-6, 3));
@@ -651,7 +657,7 @@ extend class PB_WeaponBase
 			1.4,
 			0.5,
 			1.3,
-			1.2
+			0.9
 		);
 
 		NashGoreStatics.QueueSmoke();
@@ -715,10 +721,10 @@ extend class PB_WeaponBase
 		/*PB_GunSmokeSpawn(
 			(d1, d2 - 2, d3), // offsets
 			(0, 0, -0.5), 	  // velocites
-			SActor,       // actor
-			2.2,          // scale multiplier
-			0.5,          // alpha multiplier
-			1.03          // blow speed
+			SActor,		// actor
+			2.2,		  // scale multiplier
+			0.5,		  // alpha multiplier
+			1.03		  // blow speed
 		);*/
 		PB_GunSmokeSpawn(
 			(d1, d2, d3), 
@@ -727,7 +733,7 @@ extend class PB_WeaponBase
 			1.5, 
 			0.7, 
 			1.2
-		);    
+		);	
 
 		double spd = frandom(5, 8);
 		PB_GunSmokeSpawn(
@@ -790,9 +796,9 @@ extend class PB_WeaponBase
 			(1.44, 0, -0.5),
 			SActor,
 			3.2,
-			0.8,
+			1.0,
 			1.05,
-			1.03
+			1.2
 		);
 
 		NashGoreStatics.QueueSmoke();
@@ -819,10 +825,10 @@ extend class PB_WeaponBase
 		PB_GunSmokeSpawn(
 			(d1, d2 + 6, d3), // offsets
 			(1, 0, 0), 	  // velocites
-			SActor,       // actor
-			2.3,          // scale multiplier
-			0.9,          // alpha multiplier
-			1.03          // blow speed
+			SActor,		// actor
+			2.3,		  // scale multiplier
+			0.9,		  // alpha multiplier
+			1.03		  // blow speed
 		);
 		PB_GunSmokeSpawn(
 			(d1, d2 + 15.6, d3),
@@ -1017,12 +1023,12 @@ extend class PB_WeaponBase
 		int selector = (random(1,4));
 		FLineTraceData RemoteRay;
 		bool wallcheck = LineTrace(
-		   angle,
-		   120,
-		   pitch,
-		   TRF_THRUACTORS,
-		   offsetz: height-12,
-		   data: RemoteRay
+			angle,
+			120,
+			pitch,
+			TRF_THRUACTORS,
+			offsetz: height-12,
+			data: RemoteRay
 		);
 		
 		result = "Execution_Generic";
@@ -1034,12 +1040,12 @@ extend class PB_WeaponBase
 		int selector = (random(1,4));
 		FLineTraceData RemoteRay;
 		bool wallcheck = LineTrace(
-		   angle,
-		   120,
-		   pitch,
-		   TRF_THRUACTORS,
-		   offsetz: height-12,
-		   data: RemoteRay
+			angle,
+			120,
+			pitch,
+			TRF_THRUACTORS,
+			offsetz: height-12,
+			data: RemoteRay
 		);
 		
 		// Drop Kick Fatality
@@ -1073,18 +1079,36 @@ extend class PB_WeaponBase
 		return result;
 	}
 	
+	// Cacodemon
+	action StateLabel PB_ExecuteCacodemon() {
+		//A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
+		StateLabel result;
+		int selector = 1;//(random(1,2));
+		
+		// Generic Fatalities
+		switch(selector){
+			case 1:
+				result = "Execution_Cacodemon1";
+				break;
+// 			case 2:
+// 				result = "Execution_Imp2";
+// 				break;
+		}
+		return result;
+	}
+	
 	action StateLabel PB_ExecuteShotguny() {
 		//A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
 		StateLabel result;
 		int selector = (random(1,4));
 		FLineTraceData RemoteRay;
 		bool wallcheck = LineTrace(
-		   angle,
-		   120,
-		   pitch,
-		   TRF_THRUACTORS,
-		   offsetz: height-12,
-		   data: RemoteRay
+			angle,
+			120,
+			pitch,
+			TRF_THRUACTORS,
+			offsetz: height-12,
+			data: RemoteRay
 		);
 		
 		// Drop Kick Fatality
@@ -1126,12 +1150,12 @@ extend class PB_WeaponBase
 // 		int selector = 2;
 		FLineTraceData RemoteRay;
 		bool wallcheck = LineTrace(
-		   angle,
-		   120,
-		   pitch,
-		   TRF_THRUACTORS,
-		   offsetz: height-12,
-		   data: RemoteRay
+			angle,
+			120,
+			pitch,
+			TRF_THRUACTORS,
+			offsetz: height-12,
+			data: RemoteRay
 		);
 		
 		// Drop Kick Fatality
@@ -1156,23 +1180,6 @@ extend class PB_WeaponBase
 			case 2:
 				result = "Execution_Imp2";
 				break;
-		}
-		return result;
-	}
-	// Cacodemon
-	action StateLabel PB_ExecuteCacodemon() {
-		//A_GiveInventory("ExecutionToken", 1, AAPTR_PLAYER_GETTARGET); // Todo: Move this to a higher function once more fatalities are done
-		StateLabel result;
-		int selector = 1;//(random(1,2));
-		
-		// Generic Fatalities
-		switch(selector){
-			case 1:
-				result = "Execution_Cacodemon1";
-				break;
-// 			case 2:
-// 				result = "Execution_Imp2";
-// 				break;
 		}
 		return result;
 	}
@@ -1275,7 +1282,7 @@ extend class PB_WeaponBase
 	action state PB_Execute() {
 		if(CountInv("GrabbedBarrel") >= 1 || CountInv("GrabbedFlameBarrel") >= 1 || CountInv("GrabbedIceBarrel") >= 1) { return null; }
 	
-//         CVar experimental_settings = CVar.FindCVar('pb_experimental');
+//		 CVar experimental_settings = CVar.FindCVar('pb_experimental');
 		
 // 		if(experimental_settings.GetBool()){
 			//
@@ -1357,8 +1364,8 @@ extend class PB_WeaponBase
 	}
 	
 	// Shoutout to Matt on ZDoom forums for the helpful weapon functions
-    action bool PressingFire(){return player.cmd.buttons & BT_ATTACK;}
-    action bool PressingAltfire(){return player.cmd.buttons & BT_ALTATTACK;}
+	action bool PressingFire(){return player.cmd.buttons & BT_ATTACK;}
+	action bool PressingAltfire(){return player.cmd.buttons & BT_ALTATTACK;}
 	action bool PressingReload(){return player.cmd.buttons & BT_RELOAD;}
 	action bool PressingUser1(){return player.cmd.buttons & BT_USER1;}
 	action bool PressingUser4(){return player.cmd.buttons & BT_USER4;} //Particularly for the fist combos
@@ -1373,17 +1380,17 @@ extend class PB_WeaponBase
 			fac *= 0.33;
 		}
 		
-        pitch += (pitchDelta * pb_weapon_recoil_mod_vertical * fac);
-        angle += (angleDelta * pb_weapon_recoil_mod_horizontal * fac);
+		pitch += (pitchDelta * pb_weapon_recoil_mod_vertical * fac);
+		angle += (angleDelta * pb_weapon_recoil_mod_horizontal * fac);
 	}
 	
 	//Adds weapon recoil, modifying it if the owner has a berserk powerup
 	action void PB_WeaponRecoil(float pitchDelta, float angleDelta, float powerMod = 0.5)
 	{
-        if (invoker.OwnerHasBerserk())
-            PB_WeaponRecoilBasic(pitchDelta * powerMod, angleDelta * powerMod);
-        else
-            PB_WeaponRecoilBasic(pitchDelta, angleDelta);
+		if (invoker.OwnerHasBerserk())
+			PB_WeaponRecoilBasic(pitchDelta * powerMod, angleDelta * powerMod);
+		else
+			PB_WeaponRecoilBasic(pitchDelta, angleDelta);
 	}
 	
 	action void PB_SpawnCasing(class<Actor> casing, double xOfs = 0, double horOfs = 0, double vertOfs = 0, double xSpeed = 0, double horSpeed = 0, double vertSpeed = 0, bool ejectionSmoke = true)
@@ -1419,6 +1426,7 @@ extend class PB_WeaponBase
 				pSmoke.vel = svel * 0.3;
 				pSmoke.alpha = 0.5;
 				pSmoke.blowSpeed = 1.1;
+				pSmoke.fadeSpeed = 2;
 				pSmoke.scale *= 0.36;
 				pSmoke.master = self;
 			}
@@ -1438,29 +1446,29 @@ extend class PB_WeaponBase
 	}
 	
 	//A way to perform pretty much take all of the "Insertbullets" states and turn it into a function
-	//An example of this action: PB_AmmoIntoMag("RifleAmmo","PB_HighCalMag",30,1) 
-	action void PB_AmmoIntoMag(String AmmoMag_Action,String AmmoPool_Action,int MagazineMaxFill_Action, int takeReserve)
+	//An example of this action: PB_AmmoIntoMag("DMRAmmo","PB_HighCalMag",30,1) 
+	action void PB_AmmoIntoMag(String AmmoMag_Action,String AmmoPool_Action,int MagazineMaxFill_Action, int takeReserve, int giveMag = 1)
 		{
 			for(int i = 0; i < MagazineMaxFill_Action; i++)
 			{
 				if((CountInv(AmmoMag_Action) >= MagazineMaxFill_Action) || CountInv(AmmoPool_Action) < takeReserve)
 					return;
 				
-				A_GiveInventory(AmmoMag_Action, 1);
+				A_GiveInventory(AmmoMag_Action, giveMag);
 				A_TakeInventory(AmmoPool_Action, takeReserve);
 			}
 		}
 	
 	//Copy of Cemtex's PB_AmmoIntoMag but for unloading
 	//A way to perform pretty much take all of the "RemoveBullets" states and turn it into a function	
-	//An example of this action: PB_UnloadMag("RifleAmmo","PB_HighCalMag",1) 
-	action void PB_UnloadMag(String AmmoMag_Action,String AmmoPool_Action, int giveReserve)
+	//An example of this action: PB_UnloadMag("DMRAmmo","PB_HighCalMag",1) 
+	action void PB_UnloadMag(String AmmoMag_Action,String AmmoPool_Action, int giveReserve, int takeMag = 1)
 		{
 			int amnt = CountInv(AmmoMag_Action);
 			
 			for(int i = amnt; i > 0; i--)
 			{
-				A_TakeInventory(AmmoMag_Action, 1);
+				A_TakeInventory(AmmoMag_Action, takeMag);
 				A_GiveInventory(AmmoPool_Action, giveReserve);
 			}
 		}
@@ -1503,33 +1511,33 @@ extend class PB_WeaponBase
 	//Checks if the owner has a berserk
 	bool OwnerHasBerserk()
 	{
-        return (owner.CountInv("PB_PowerStrength") >= 1);
+		return (owner.CountInv("PB_PowerStrength") >= 1);
 	}
 	
 	//Allows us to specify pitch and angle manually for berserk and non-berserk owners.
 	//Used occasionally where berserk recoil numbers aren't exactly half/double in a few cases, such as the pistol
 	action void PB_WeaponRecoilSpecial(float pitchDelta, float angleDelta, float pitchDeltaBerserk, float angleDeltaBerserk)
 	{
-        if (invoker.OwnerHasBerserk())
-            PB_WeaponRecoilBasic(pitchDeltaBerserk, angleDeltaBerserk);
-        else
-            PB_WeaponRecoilBasic(pitchDelta, angleDelta);
+		if (invoker.OwnerHasBerserk())
+			PB_WeaponRecoilBasic(pitchDeltaBerserk, angleDeltaBerserk);
+		else
+			PB_WeaponRecoilBasic(pitchDelta, angleDelta);
 	}
 	
-    action bool JustPressed(int which) // "which" being any BT_* value, mentioned above or not
-    {
-        return player.cmd.buttons & which && !(player.oldbuttons & which);
-    }
-    action bool JustReleased(int which)
-    {
-        return !(player.cmd.buttons & which) && player.oldbuttons & which;
-    }
+	action bool JustPressed(int which) // "which" being any BT_* value, mentioned above or not
+	{
+		return player.cmd.buttons & which && !(player.oldbuttons & which);
+	}
+	action bool JustReleased(int which)
+	{
+		return !(player.cmd.buttons & which) && player.oldbuttons & which;
+	}
 	
-    action bool IsPressingInput(int which){return player.cmd.buttons & which;}
+	action bool IsPressingInput(int which){return player.cmd.buttons & which;}
 	action bool IsHoldingInput(int which)
-    {
-        return (player.cmd.buttons & which) && (player.oldbuttons & which);
-    }
+	{
+		return (player.cmd.buttons & which) && (player.oldbuttons & which);
+	}
 
 	override void AttachToOwner(Actor Other)
 	{
@@ -1556,8 +1564,8 @@ extend class PB_WeaponBase
 			A_SetInventory("ADSMode",0);
 			A_SetInventory("Zoomed",0);
 			A_SetInventory("Unloading",0);
-			A_SetInventory("RifleWasEmpty",0);
-			A_SetInventory("RifleSelected",0);
+			A_SetInventory("DMRWasEmpty",0);
+			A_SetInventory("DMRSelected",0);
 			A_SetInventory("CarbineSelected",0);
 			A_SetInventory("FistsSelected",0);
 			A_SetInventory("SawSelected",0);
@@ -1889,9 +1897,9 @@ extend class PB_WeaponBase
 		  InStateSequence(PSPState,invoker.ResolveState("ActuallyReady3"))||
 		  InStateSequence(PSPState,invoker.ResolveState("Ready3"))||
 		  InStateSequence(PSPState,invoker.ResolveState("JavelinReady3"))|| //Nailgun Gavelin Mode
-		   InStateSequence(PSPState,invoker.ResolveState("ReadyToFire2"))|| //Hell Rifle Green mode
-		   InStateSequence(PSPState,invoker.ResolveState("ReadyMissile"))|| //LMG Micro Missile mode
-		   InStateSequence(PSPState,invoker.ResolveState("ReadyToFire_Red"))) 
+			InStateSequence(PSPState,invoker.ResolveState("ReadyToFire2"))|| //Hell Rifle Green mode
+			InStateSequence(PSPState,invoker.ResolveState("ReadyMissile"))|| //LMG Micro Missile mode
+			InStateSequence(PSPState,invoker.ResolveState("ReadyToFire_Red"))) 
 		 ||
 		(InStateSequence(invoker.owner.player.GetPSprite(10).Curstate,invoker.ResolveState("IdleLeft_Overlay")) && 
 		 InStateSequence(invoker.owner.player.GetPSprite(11).Curstate,invoker.ResolveState("IdleRight_Overlay")) && 
@@ -1920,7 +1928,7 @@ extend class PB_WeaponBase
 		bool initialWRF_ALLOWRELOAD = false;
 		if (weapflags & WRF_ALLOWRELOAD) initialWRF_ALLOWRELOAD = true;
 		weapFlags &= ~(WRF_ALLOWRELOAD);
-		if(invoker is "Melee_Attacks"){weapFlags |= WRF_ALLOWRELOAD;}
+		if(invoker is "PB_Fists"){weapFlags |= WRF_ALLOWRELOAD;}
 		if(invoker is "PB_BFG9000" && FindInventory("BFGBlackHoleMode")){weapFlags |= WRF_ALLOWRELOAD;}
 		if(invoker is "PB_MG42" && (CountInv("MG42HasOverheated") || CountInv("MG42BarrelOverheat") >= 1) ){weapFlags |= WRF_ALLOWRELOAD;}
 		bool dualWieldCheck = invoker.DualWieldToken && FindInventory(invoker.DualWieldToken);
@@ -1931,7 +1939,7 @@ extend class PB_WeaponBase
 		if( !(invoker is "PB_Unmaker") && ReloadCheck ){weapFlags |= WRF_ALLOWRELOAD;}
 		static const string PBWeapEmptyToken[] = 
 		{
-			"PB_PistolWasEmpty","RifleWasEmpty","UACSMGWasEmpty"
+			"PB_PistolWasEmpty","DMRWasEmpty","UACSMGWasEmpty"
 		};
 		static const string PBWeapUnloadedToken[] =
 		{
@@ -2038,7 +2046,7 @@ extend class PB_WeaponBase
 	
 	action void PB_HandleCrosshair(int num)
 	{
-        CVar crosshair_settings = CVar.FindCVar('pb_weapon_crosshairs');
+		CVar crosshair_settings = CVar.FindCVar('pb_weapon_crosshairs');
 		
 		if(crosshair_settings.GetBool()){
 			A_SetCrosshair(num); // Set crosshair to specific weapon
@@ -2069,17 +2077,17 @@ extend class PB_WeaponBase
 	}
 	
 	action void A_SetOverlaySprite(int layer, String str)
-        {
-                    let psp = player.GetPSprite(layer);
-                    psp.sprite = GetSpriteIndex(str);
-        }
+		{
+					let psp = player.GetPSprite(layer);
+					psp.sprite = GetSpriteIndex(str);
+		}
   
 	action void A_SetWeaponSprite(String str)
-        {
-                    let psp = player.GetPSprite(PSP_WEAPON);
-                  //  let psp = player.GetPSprite(1);
-                    psp.sprite = GetSpriteIndex(str);
-        }
+		{
+					let psp = player.GetPSprite(PSP_WEAPON);
+				  //  let psp = player.GetPSprite(1);
+					psp.sprite = GetSpriteIndex(str);
+		}
 
 	action void A_SetWeaponFrame(int frame)
 	{
@@ -2101,7 +2109,7 @@ extend class PB_WeaponBase
 
 	action void A_SetSpawnSprite(String str)
 	{
-	   sprite = GetSpriteIndex(str);
+		sprite = GetSpriteIndex(str);
 	}
 	
 	action void LedgeReach(float HeightDecrease)
@@ -2114,12 +2122,12 @@ extend class PB_WeaponBase
 	
 	action state PB_RespectIfNeeded()
 	{
+		//A_Log("PB_RespectIfNeeded");
 		Actor own = invoker.owner;
-		bool shouldHelmet = ACS_NamedExecuteWithResult("ToggleHelmetAnimation",0,0,0) == 0 && own.CountInv("IntroductionSequence") == 0;
-		bool shouldRespect = invoker.respectInventoryItem != "" && own.CountInv(invoker.respectInventoryItem) == 0;
+		bool shouldHelmet = !Cvar.GetCvar("PB_NoHelmetAnimation",player).GetBool() && !FindInventory("IntroductionSequence"); //ACS_NamedExecuteWithResult("ToggleHelmetAnimation",0,0,0) == 0
+		bool shouldRespect = invoker.respectInventoryItem != "" && !FindInventory(invoker.respectInventoryItem);
 		if (shouldHelmet)
 		{
-			own.GiveInventory("IntroductionSequence",1);
 			own.GiveInventory("CantDoAction",1);
 			//Console.printf("Setting State: HelmetAnimation");
 			return invoker.resolveState("HelmetAnimation");
@@ -2567,11 +2575,11 @@ extend class PB_WeaponBase
 		}
 		
 		if(t.hitactor)
-        {
-            t.hitactor.damagemobj(p ? p : self, self, overcharge ? 25 : 15,overcharge ? "ExplosiveImpact" : "Fire");
-            if(t.hitactor.bISMONSTER&&t.hitactor.health <=0&&CountInv("UnmakerOverchargeCounter")<50)
-                GiveInventory("UnmakerOverchargeCounter",1);
-        }
+		{
+			t.hitactor.damagemobj(p ? p : self, self, overcharge ? 25 : 15,overcharge ? "ExplosiveImpact" : "Fire");
+			if(t.hitactor.bISMONSTER&&t.hitactor.health <=0&&CountInv("UnmakerOverchargeCounter")<50)
+				GiveInventory("UnmakerOverchargeCounter",1);
+		}
 	}
 	
 	//[AD] Use when all weapons converted to ZS

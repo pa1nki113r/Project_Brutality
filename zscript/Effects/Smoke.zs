@@ -2,7 +2,7 @@
 
 // [gng] partially based on beautiful doom's smoke
 // https://github.com/jekyllgrim/Beautiful-Doom/blob/96fcd0cec039eca762a8b206e522e8111a62ad95/Z_BDoom/bd_main.zc#L932
-class PB_GunFireSmoke: Actor
+class PB_GunFireSmoke: PB_LightActor
 {
     Default {
         Alpha 0.3;
@@ -66,7 +66,6 @@ class PB_GunFireSmoke: Actor
             
             if(CeilingPic == SkyFlatNum) {
                 vel.y += 0.02; // wind
-                vel.z += 0.01;
                 vel.x -= 0.01;
             }
         }
@@ -78,20 +77,22 @@ class PB_GunFireSmoke: Actor
             dissipateRotation *= 0.95;
             
             if(CeilingPic == SkyFlatNum) {
-                vel.y += 0.03; // wind
-                vel.z += 0.015;
+                vel.y += 0.03;
                 vel.x -= 0.015;
             }
+            
+            vel.z += 0.04;
 
             if (alpha < 0.1)
-                A_FadeOut(0.02 * fadeSpeed, FTF_CLAMP|FTF_REMOVE);
+                A_FadeOut(alpha * (0.02 * fadeSpeed), FTF_CLAMP|FTF_REMOVE);
             else
-                A_Fadeout(0.04 * fadeSpeed, FTF_CLAMP|FTF_REMOVE);
+                A_Fadeout(alpha * (0.04 * fadeSpeed), FTF_CLAMP|FTF_REMOVE);
         }
     }
 
 	override void Tick()
 	{
+		SetOrigin(Vec3Offset(vel.x, vel.y, vel.z), true);
 		Super.Tick();
 		SmokeTick();
 	}
