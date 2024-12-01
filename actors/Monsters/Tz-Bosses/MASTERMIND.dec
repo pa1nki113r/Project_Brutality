@@ -39,7 +39,7 @@ ACTOR PB_Mastermind : SpiderMastermind //Replaces SpiderMastermind
 	PainChance "Incinerate", 27
 	Game Doom
 	SpawnID 7
-	Health 4000
+	Health 6500
 	Radius 90
 	damagefactor "Crush", 30.0
 	Scale 1
@@ -47,7 +47,7 @@ ACTOR PB_Mastermind : SpiderMastermind //Replaces SpiderMastermind
 	Height 100
 	Mass 500000
 	Speed 18
-	FastSpeed 20
+	FastSpeed 22
 	PainChance 30
 	Monster
 	//MinMissileChance 200
@@ -60,7 +60,7 @@ ACTOR PB_Mastermind : SpiderMastermind //Replaces SpiderMastermind
 	+NOBLOOD
 	+MISSILEMORE
 	+SOLID
-	+MISSILEEVENMORE
+// 	+MISSILEEVENMORE
 	+SHOOTABLE
 	SeeSound "spider/sight"
 	AttackSound "spider/attack"
@@ -102,82 +102,56 @@ ACTOR PB_Mastermind : SpiderMastermind //Replaces SpiderMastermind
 		TNT1 A 0 A_GiveInventory("TargetIsAMastermind")
 		Goto Spawn+2
 	See:
-		TNT1 A 0 
-		SPID A 2 A_PlaySound("master/walk", 5)
-		TNT1 A 0 
-		SPID A 2 A_Chase
-		TNT1 A 0 
-		SPID B 2 A_Chase
-		TNT1 A 0 
-		SPID B 2 A_Chase
-
-
-		TNT1 A 0 
-		SPID C 2 A_Chase
-		TNT1 A 0 
-		SPID C 2 A_Chase
-		
-		
-		
-		
-		TNT1 A 0 
-		SPID D 2 A_Chase
-		TNT1 A 0 
-		SPID D 2 A_PlaySound("master/walk", 5)
-
-		TNT1 A 0 
-		SPID E 2 A_Chase
-		TNT1 A 0 
-		SPID E 2 A_Chase
-		TNT1 A 0 
-		SPID F 2 A_Chase
-		TNT1 A 0 
-		
-		
-		
+		SPID A 2 A_StartSound("master/walk", CHAN_AUTO)
+		SPID ABBCCD 2 A_Chase
+		SPID D 2 A_StartSound("master/walk", CHAN_AUTO)
+		SPID EEF 2 A_Chase
 		Loop
-
+	ConsiderReposition:
+		TNT1 A 0 A_Jump(64, "Reposition")
+		Goto Missile
+	Reposition:
+		SPID A 1 A_StartSound("master/walk", CHAN_AUTO)
+		SPID ABBBCCCDD 1 A_Wander
+		SPID D 1 A_StartSound("master/walk", CHAN_AUTO)
+		SPID EE 1 A_Wander
 	Missile:
-		TNT1 A 0 A_TakeInventory ("BrutalCounter2", 500)
-		TNT1 A 0 
-		SPID A 4 A_FaceTarget 
-		TNT1 A 0 
-		SPID A 4 A_FaceTarget 
-		TNT1 A 0 
-		SPID A 4 A_FaceTarget 
-		TNT1 A 0 
-		SPID H 4 A_FaceTarget
-		TNT1 A 0 
-		TNT1 AAAAAAAAAAAAAAAAA 0
-		
-		TNT1 A 0 A_PlaySound("Mastermind/Chaingun", 5, 1, 1)
-		Firing:
-		TNT1 A 0 
-		SPID G 2 A_FaceTarget
-		TNT1 A 0 
-		SPID H 2 BRIGHT A_CustomMissile("MastermindTracer", 40, 0, random(-7, 7), 1, random(-4, 2))
-		TNT1 A 0 A_SpawnItem ("MasterMindCaseSpawn", 0, 60,0)
-		TNT1 A 0 
-		
-		
-		SPID G 0 A_SpidRefire
-		TNT1 A 0 A_StopSound(5)
-		Goto Missile+20
+		TNT1 A 0 {
+			A_StartSound("DTHDLRST",CHAN_6);
+			A_TakeInventory("BrutalCounter", 500);
+		}
+		SPID GTGTGTGT 2 LIGHT("DemonTechImpact") A_FaceTarget 
+	Firing:
+		TNT1 A 0 A_JumpIfInventory("BrutalCounter", 500, "StopFiring")
+		SPID G 1 A_FaceTarget
+		SPID H 1 BRIGHT Light("PB_IMPBALL"){
+			A_SpawnProjectile("PB_MasterMindTracer", 42, 0, random(-2, 2), 1, random(-2, 2));
+			A_StartSound("Mastermind/Chaingun", CHAN_5, CHANF_OVERLAP);
+			A_SpawnItem ("MasterMindCaseSpawn", 0, 60,0);
+			A_SpawnItemEx ("OrangeLensFlareAlt",3,1,41,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			A_GiveInventory("BrutalCounter", 5);
+			A_FaceTarget;
+		}
+		SPID T 1 A_MonsterRefire(11, "StopFiring")
+		Loop
+	StopFiring:
+		SPID G 0 {
+			A_StartSound("DTHDLRSP",CHAN_6);
+		}
+		SPID GTGTGTGTGTGTGTGT 2 LIGHT("DemonTechImpact") {
+			A_FaceTarget;
+			A_SpawnProjectile("GunFireSmoke", 42, 1, 0, 0, -30);
+		}
+		TNT1 A 0 A_CheckSight("ConsiderReposition")
+		Goto See
 
 	BossPossession:
-	TNT1 A 0 A_SetInvulnerable
-	SPID I 3
-	SPID I 3 A_Pain
-	"####" "#" 35 ACS_NamedExecuteAlways("Pos - Flicker effect")
-	TNT1 A 0 A_UnSetInvulnerable
-	Goto See
-	
-	StopFiring:
-	TNT1 A 0 A_StopSound(5)
-	TNT1 A 0 
-	SPID A 6 A_FaceTarget 
-	Goto See
-	
+    TNT1 A 0 A_SetInvulnerable
+    SPID I 3
+    SPID I 3 A_Pain
+    "####" "#" 35 ACS_NamedExecuteAlways("Pos - Flicker effect")
+    TNT1 A 0 A_UnSetInvulnerable
+    Goto See
 		Avoid:
 		 NULL A 0 A_FaceTarget
 		 SPID A 6 A_FastChase
@@ -194,7 +168,7 @@ ACTOR PB_Mastermind : SpiderMastermind //Replaces SpiderMastermind
 		 Goto Missile
 		
 	Pain:
-		TNT1 A 0 A_StopSound(5)
+		TNT1 A 0 A_StopSound(CHAN_5)
 		TNT1 A 0 
 		SPID I 4 A_Pain
 		Goto See
@@ -230,7 +204,7 @@ ACTOR PB_Mastermind : SpiderMastermind //Replaces SpiderMastermind
 				return A_Jump(255, "DeathRare", "NormalDeath");
 			}
 	NormalDeath:
-		TNT1 A 0 A_StopSound(5)
+		TNT1 A 0 A_StopSound(CHAN_5)
 		SPID J 20 A_Scream
 		TNT1 AAAA 0 A_CustomMissile ("ExplosionSpawner", 50, 0, random (0, 360), 2, random (0, 360))
 		TNT1 A 0
@@ -366,10 +340,10 @@ ACTOR PB_Mastermind : SpiderMastermind //Replaces SpiderMastermind
 
 ACTOR XSpiderMastermindCuttedBrain
 {
-	Radius 8
-	Height 8
-	Speed 10
-	Scale 1.2
+    Radius 8
+    Height 8
+    Speed 10
+    Scale 1.0
 	Mass 1
 	+NOBLOCKMAP
 	+MISSILE
@@ -412,7 +386,7 @@ ACTOR DyingSpiderMastermind
 	Mass 9999999
 	Speed 0
 	Health 200
-	Scale 1.35
+	Scale 1.0
 	PainSound "spider/pain"
 	DeathSound "spider/death"
 	damagefactor "Fatality", 6.0
@@ -539,7 +513,7 @@ ACTOR BrutalizedSpidermastermind
 	+FLOORCLIP
 	+DONTSPLASH
 	DeathSound "spider/death"
-	Scale 1.3
+	Scale 1.0
 	States
 	{
 			
