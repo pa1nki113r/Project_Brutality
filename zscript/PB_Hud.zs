@@ -1001,7 +1001,7 @@ class PB_Hud_ZS : BaseStatusBar
 					PBHud_DrawImage("BRACICON", (-82, -50), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
 				
 				//handles dual wielding ammo
-				if(PB_Weap.DualWieldToken && CheckInventory(PB_Weap.DualWieldToken) && PB_Weap.AmmoTypeLeft){
+				if(PB_Weap && PB_Weap.DualWieldToken && CheckInventory(PB_Weap.DualWieldToken) && PB_Weap.AmmoTypeLeft){
 					leftAmmoAmount = PB_Weap.AmmoTypeLeft.GetClassName();
 					if(WeaponUsesAmmoType("PB_HighCalMag")){
 						PBHud_DrawImage("BARBACY3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
