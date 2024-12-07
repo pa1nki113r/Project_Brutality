@@ -534,7 +534,7 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
 				A_SpawnProjectile("HitSpark23", 0, 0, frandom (-180, 180), 2, frandom(-180, 180));
 			}
 		Puff:
-			TNT1 A 0 NoDelay {
+			TNT1 A 0 {
                 A_StartSound("bulletimpact/metal/a", pitch: frandom(0.9, 1.1));
                 if(random(0, 100) < 25) A_StartSound("ricochet/hit");
 
