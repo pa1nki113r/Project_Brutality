@@ -246,7 +246,7 @@ class PB_Deagle : PB_WeaponBase
 			}
 			TNT1 A 0 PB_jumpIfHasBarrel("IdleBarrel","IdleFlameBarrel","IdleIceBarrel");
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReloadDualWield");
-			TNT1 A 0 PB_checkReload("EmptyReload","Ready","NoAmmo",8,1);
+			TNT1 A 0 PB_checkReload("EmptyReload","Ready","NoAmmo",8,2);
 			TNT1 A 0 {
 				A_setinventory(invoker.UnloaderToken,0);
 				A_ZoomFactor(1.0);
