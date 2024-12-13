@@ -22,6 +22,7 @@ ACTOR PB_ChainsawPickup : PB_UpgradeItem
 	//$Sprite CSAWA0
 	Inventory.PickupSound ""
 	Inventory.PickupMessage ""
+	Tag "Beavertooth Painsaw"
 	Scale .49
 	FloatBobStrength 0.5
 	+DONTGIB
@@ -35,7 +36,7 @@ ACTOR PB_ChainsawPickup : PB_UpgradeItem
 
 	Pickup:
 		TNT1 A 0 A_JumpIfInventory("PB_Chainsaw",1,"PickupFuel")
-		TNT1 A 0 A_Log("\c-Chainsaw (Slot 1)")
+		TNT1 A 0 A_Log("\c-MIXOM Beavertooth Painsaw (Slot 1)")
         TNT1 A 0 {
 			A_GiveInventory ("PB_Chainsaw");
 			if(GetCvar("nodoomguytalk") >= 1){
@@ -45,7 +46,7 @@ ACTOR PB_ChainsawPickup : PB_UpgradeItem
 		}
 		STOP
 	PickupFuel:
-		TNT1 A 0 A_JumpIfInventory("PB_Fuel",999,"DontPickup")
+		TNT1 A 0 A_JumpIfInventory("PB_Fuel",0,"DontPickup")
 		TNT1 A 0 A_StartSound("CSAWGAS", 3, CHANF_NOPAUSE)
 		TNT1 A 0 A_Log("\c-You already have the chainsaw, so you collect it's fuel instead!")
 		TNT1 A 0 A_GiveInventory("PB_Fuel",30)
@@ -70,13 +71,13 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 	Inventory.PickUpSound "CSAWPICK"
 	Weapon.UpSound "none"
 	weapon.readysound "weapons/chainsaw/idle"
-	Inventory.PickupMessage "Chainsaw (Slot 1)"
+	Inventory.PickupMessage "MIXOM Beavertooth Painsaw (Slot 1)"
 	+WEAPON.NOAUTOAIM
 	+WEAPON.AXEBLOOD
 	+WEAPON.NOALERT
 	+WEAPON.MELEEWEAPON
 	+WEAPON.AMMO_OPTIONAL
-	Tag "Chainsaw"
+	Tag "Beavertooth Painsaw"
 	Scale .49
 	Inventory.AltHUDIcon "CSAWA0"
 	FloatBobStrength 0.5
@@ -94,25 +95,17 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			PB_HandleCrosshair(90);
-			A_TakeInventory("PB_LockScreenTilt",1);
+			A_SetInventory("PB_LockScreenTilt",0);
 		}
 		Goto SelectFirstPersonLegs
-		SelectContinue:
-			TNT1 A 0 PB_WeapTokenSwitch("SawSelected")
-			TNT1 A 0 A_Takeinventory("PowerBloodOnVisor",1)
-			TNT1 A 0 A_Takeinventory("PowerBlueBloodOnVisor",1)
-			TNT1 A 0 A_Takeinventory("PowerGreenBloodOnVisor",1)
+	SelectContinue:
+		TNT1 A 0 PB_WeapTokenSwitch("SawSelected")
+		TNT1 A 0 PB_ResetVisorBloodTokens
+		TNT1 A 0 PB_ResetBarrelTokens
 			
-			TNT1 A 0 A_TakeInventory("HasBarrel",1)
-			TNT1 A 0 A_TakeInventory("HasIceBarrel",1)
-			TNT1 A 0 A_TakeInventory("HasFlameBarrel",1)
-			TNT1 A 0 A_TakeInventory("GrabbedBarrel",1)
-			TNT1 A 0 A_TakeInventory("GrabbedIceBarrel",1)
-			TNT1 A 0 A_TakeInventory("GrabbedFlameBarrel",1)
-			
-			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
-			TNT1 AAAA 1 A_Raise
-			Wait
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
+		TNT1 AAAA 1 A_Raise
+		Wait
 		
 	Deselect:
 		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
@@ -122,11 +115,11 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			PB_HandleCrosshair(90);
-			A_TakeInventory("PB_LockScreenTilt",1);
+			A_SetInventory("PB_LockScreenTilt",0);
 		}
-		TNT1 A 0 A_Takeinventory("HasCutingWeapon",1)
-		TNT1 A 0 A_Takeinventory("SawSelected",1)
-		TNT1 A 0 A_TakeInventory("ComboSeq", 2)
+		TNT1 A 0 A_SetInventory("HasCutingWeapon",0)
+		TNT1 A 0 A_SetInventory("SawSelected",0)
+		TNT1 A 0 A_SetInventory("ComboSeq", 0)
 		
 		TNT1 A 0 A_Stopsound(1)
 		S3WS A 0 A_JumpIfInventory("PowerGreenBloodOnVisor",1,4)
@@ -138,9 +131,7 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 		"####" W 1 Offset(-25,58)
 		"####" W 1 Offset(-35,70)
 		TNT1 A 1 A_WeaponOffset(0,0)
-		TNT1 A 0 A_TakeInventory("PowerBloodOnVisor",1)
-		TNT1 A 0 A_TakeInventory("PowerBlueBloodOnVisor",1)
-		TNT1 A 0 A_TakeInventory("PowerGreenBloodOnVisor",1)
+		TNT1 A 0 PB_ResetVisorBloodTokens
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
 
@@ -155,14 +146,14 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 
     Ready:
 	    SAWS A 0
-		TNT1 A 0 A_TakeInventory("ComboSeq", 2)
-		TNT1 A 0 A_TakeInventory("FiredGun", 1)
-		TNT1 A 0 A_Takeinventory("HasCutingWeapon",1)
+		TNT1 A 0 A_SetInventory("ComboSeq", 0)
+		TNT1 A 0 A_SetInventory("FiredGun", 0)
+		TNT1 A 0 A_SetInventory("HasCutingWeapon",0)
 		TNT1 A 0 PB_RespectIfNeeded
 	WeaponRespect:
 		TNT1 A 0 {
-			A_Giveinventory("RespectSaw",1);
-			A_Giveinventory("ChainsawResourceGather",1);
+			A_SetInventory("RespectSaw",1);
+			A_SetInventory("ChainsawResourceGather",1);
 		}
 	SelectAnimation:
         SAWS WXYZ 1 A_SetRoll(roll+0.6,SPF_INTERPOLATE)
@@ -185,9 +176,9 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
  		TNT1 A 0 { 
 			A_StartSound("weapons/chainsaw/idle",CHAN_WEAPON,CHANF_LOOPING, 0.5);
 			A_SetRoll(0);
-			A_TakeInventory("ComboSeq", 2);
-			A_TakeInventory("FiredGun", 1);
-			A_Takeinventory("HasCutingWeapon",1);
+			A_SetInventory("ComboSeq", 0);
+			A_SetInventory("FiredGun", 0);
+			A_SetInventory("HasCutingWeapon",0);
 		}
 	OnLoop1:
 		TNT1 A 0 {
@@ -204,19 +195,21 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 		Loop
 	Ready.GreenBlood:
 		TNT1 A 0 {
-			A_TakeInventory("PowerBlueBloodOnVisor", 1);
-			A_TakeInventory("PowerBloodOnVisor", 1);
+			A_SetInventory("PowerBlueBloodOnVisor", 0);
+			A_SetInventory("PowerBloodOnVisor", 0);
 		}
 		Goto OnLoop
 	Ready.BlueBlood:
 		TNT1 A 0 {
-			A_TakeInventory("PowerBloodOnVisor", 1);
-			A_TakeInventory("PowerGreenBloodOnVisor", 1);
+			A_SetInventory("PowerBloodOnVisor", 0);
+			A_SetInventory("PowerGreenBloodOnVisor", 0);
 		}
 		Goto OnLoop
 	Ready.Blood:
-		TNT1 A 0 A_TakeInventory("PowerBlueBloodOnVisor", 1)
-		TNT1 A 0 A_TakeInventory("PowerGreenBloodOnVisor", 1)
+		TNT1 A 0 {
+			A_SetInventory("PowerBlueBloodOnVisor", 0);
+			A_SetInventory("PowerGreenBloodOnVisor", 0);
+		}
 		Goto OnLoop
 		
 	BloodDrop:
@@ -249,13 +242,13 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 		TNT1 A 0 
 			{
 				A_WeaponOffset(0,32);
-				A_Takeinventory("GoWeaponSpecialAbility",1);
+				A_SetInventory("GoWeaponSpecialAbility",0);
 				if (CountInv("ChainsawResourceGather") >= 1) { 
-					A_Takeinventory("ChainsawResourceGather",1);
+					A_SetInventory("ChainsawResourceGather",0);
 					A_Print("Chainsaw Resource Gather: Disabled");
 				}
 				else {
-					A_GiveInventory("ChainsawResourceGather",1);
+					A_SetInventory("ChainsawResourceGather",1);
 					A_Print("Chainsaw Resource Gather: Enabled");
 				}
 		}
@@ -287,7 +280,7 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 		Goto Ready.GreenBlood
 		
 	SSGFlash:
-		TNT1 A 0 A_Takeinventory("HasCutingWeapon",1)
+		TNT1 A 0 A_SetInventory("HasCutingWeapon",0)
 		CSSG ATUB 1 A_SetRoll(roll+0.8,SPF_INTERPOLATE)
 		TNT1 A 0 A_PlaySound("insertshell", 5)
 		CSSG CEF 1
@@ -356,30 +349,30 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 			A_SetRoll(0);
 			PB_HandleCrosshair(90);
 		}
-		"####" A 0 A_GiveInventory("PB_LockScreenTilt",1)
+		"####" A 0 A_SetInventory("PB_LockScreenTilt",1)
 		"####" A 0
 			{
 				A_AlertMonsters;
 				A_StartSound("weapons/chainsaw/start", CHAN_AUTO,  CHANF_OVERLAP);
-				A_Giveinventory("HasCutingWeapon",1);
+				A_SetInventory("HasCutingWeapon",1);
 				return state("");
 			}
 		"####" A 0
 			{
 				if (CountInv("GreenBloodSplatterz") == 1) { 
-					A_TakeInventory("GreenBloodSplatterz", 1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+					A_SetInventory("GreenBloodSplatterz", 0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
 				else if (CountInv("BlueBloodSplatterz") == 1) {	
-					A_TakeInventory("BlueBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+					A_SetInventory("BlueBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
 				else if (CountInv("RedBloodSplatterz") == 1) {
-					A_TakeInventory("RedBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
+					A_SetInventory("RedBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
 				}
 			}
 //No Blood
@@ -393,7 +386,7 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 		"####" A 0
 			{
 				A_AlertMonsters;
-				A_Giveinventory("HasCutingWeapon",1);
+				A_SetInventory("HasCutingWeapon",1);
 				
 				
 //				if(IsPressingInput(BT_MOVERIGHT)) { return state("RightAttackClean"); }
@@ -435,31 +428,31 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 		}
 		"####" A 0
 			{
-				if (CountInv("GreenBloodSplatterz") == 1) {
-					A_TakeInventory("GreenBloodSplatterz", 1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				if (CountInv("GreenBloodSplatterz") == 1) { 
+					A_SetInventory("GreenBloodSplatterz", 0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
-				else if (CountInv("BlueBloodSplatterz") == 1) {
-					A_TakeInventory("BlueBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				else if (CountInv("BlueBloodSplatterz") == 1) {	
+					A_SetInventory("BlueBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
 				else if (CountInv("RedBloodSplatterz") == 1) {
-					A_TakeInventory("RedBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
+					A_SetInventory("RedBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
 				}
 			}
 		"####" A 0 A_StartSound ("weapons/chainsaw/loop", CHAN_7 , CHANF_LOOPING | CHANF_OVERLAP)
 		"####" A 0 Saw_SwingDirection()
-		"####" A 0 A_ReFire("ClassicAttackCleanLoop")
+		"####" A 0 PB_ReFire("ClassicAttackCleanLoop")
 	ClassicAttackStop:
 		"####" A 0 {
 			A_StopSound(CHAN_7);
 			A_StartSound("CSAWSTAT", CHAN_AUTO, CHANF_OVERLAP );
 			A_StartSound("weapons/chainsaw/stop", CHAN_AUTO);
-			A_TakeInventory("ComboSeq", 2);
+			A_SetInventory("ComboSeq", 0);
 		}
 		"####" DCBA 1 A_FireCustomMissile("GunFireSmoke", 0, 0, -5, -5, 0, 0)
 		SAWG A 0 {
@@ -484,20 +477,20 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 		Goto ForwardAttackCleanContinue+3
 	ForwardAttackCleanContinue:
 		CSS1 A 0 {
-				if (CountInv("GreenBloodSplatterz") == 1) {
-					A_TakeInventory("GreenBloodSplatterz", 1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				if (CountInv("GreenBloodSplatterz") == 1) { 
+					A_SetInventory("GreenBloodSplatterz", 0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
-				else if (CountInv("BlueBloodSplatterz") == 1) {
-					A_TakeInventory("BlueBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				else if (CountInv("BlueBloodSplatterz") == 1) {	
+					A_SetInventory("BlueBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
 				else if (CountInv("RedBloodSplatterz") == 1) {
-					A_TakeInventory("RedBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
+					A_SetInventory("RedBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
 				}
 				if (CountInv("PowerGreenBloodOnVisor") == 1) { A_SetWeaponSprite("CSS4"); }
 				if (CountInv("PowerBlueBloodOnVisor") == 1) { A_SetWeaponSprite("CSS3"); }
@@ -521,25 +514,25 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 		"####" PQRS 1 A_SetRoll(roll+0.25,SPF_INTERPOLATE)
 		"####" A 0
 			{
-				if (CountInv("GreenBloodSplatterz") == 1) {
-					A_TakeInventory("GreenBloodSplatterz", 1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				if (CountInv("GreenBloodSplatterz") == 1) { 
+					A_SetInventory("GreenBloodSplatterz", 0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
-				else if (CountInv("BlueBloodSplatterz") == 1) {
-					A_TakeInventory("BlueBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				else if (CountInv("BlueBloodSplatterz") == 1) {	
+					A_SetInventory("BlueBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
 				else if (CountInv("RedBloodSplatterz") == 1) {
-					A_TakeInventory("RedBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
+					A_SetInventory("RedBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
 				}
 			}
 		"####" A 0 A_StartSound ("weapons/chainsaw/loop", CHAN_7 , CHANF_LOOPING | CHANF_OVERLAP )
 		"####" A 0 Saw_SwingDirection()
-		"####" A 0 A_ReFire("ForwardAttackClean1")
+		"####" A 0 PB_ReFire("ForwardAttackClean1")
 		"####" A 0 A_StopSound(CHAN_7)
 		"####" A 0 A_StartSound("weapons/chainsaw/stop", CHAN_AUTO, CHANF_OVERLAP )
 		"####" A 0 A_StartSound("CSAWSTAT", CHAN_AUTO, CHANF_OVERLAP )
@@ -588,25 +581,25 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 			}
 		"####" A 0
 			{
-				if (CountInv("GreenBloodSplatterz") == 1) {
-					A_TakeInventory("GreenBloodSplatterz", 1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				if (CountInv("GreenBloodSplatterz") == 1) { 
+					A_SetInventory("GreenBloodSplatterz", 0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
-				else if (CountInv("BlueBloodSplatterz") == 1) {
-					A_TakeInventory("BlueBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				else if (CountInv("BlueBloodSplatterz") == 1) {	
+					A_SetInventory("BlueBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
 				else if (CountInv("RedBloodSplatterz") == 1) {
-					A_TakeInventory("RedBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
+					A_SetInventory("RedBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
 				}
 			}
 		"####" A 0 A_StartSound ("weapons/chainsaw/loop", CHAN_7 , CHANF_LOOPING )
 		"####" A 0 Saw_SwingDirection()
-		TNT1 A 2 A_Refire("RightAttackClean2")
+		TNT1 A 2 PB_ReFire("RightAttackClean2")
 		"####" A 0 A_StopSound(CHAN_7)
 		"####" A 0 A_StartSound("weapons/chainsaw/stop", CHAN_AUTO, CHANF_OVERLAP)
 		"####" A 0 A_StartSound("CSAWSTAT", CHAN_AUTO, CHANF_OVERLAP)
@@ -659,25 +652,25 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 			}
 		"####" A 0
 			{
-				if (CountInv("GreenBloodSplatterz") == 1) {
-					A_TakeInventory("GreenBloodSplatterz", 1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				if (CountInv("GreenBloodSplatterz") == 1) { 
+					A_SetInventory("GreenBloodSplatterz", 0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
-				else if (CountInv("BlueBloodSplatterz") == 1) {
-					A_TakeInventory("BlueBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				else if (CountInv("BlueBloodSplatterz") == 1) {	
+					A_SetInventory("BlueBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
 				else if (CountInv("RedBloodSplatterz") == 1) {
-					A_TakeInventory("RedBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
+					A_SetInventory("RedBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
 				}
 			}
 		"####" A 0 A_StartSound ("weapons/chainsaw/loop", CHAN_7 , CHANF_LOOPING |CHANF_OVERLAP )
 		"####" A 0 Saw_SwingDirection()
-		TNT1 A 2 A_Refire("RightAttackClean")
+		TNT1 A 2 PB_ReFire("RightAttackClean")
 		"####" A 0 A_StopSound(CHAN_7)
 		"####" A 0 A_StartSound("weapons/chainsaw/stop", CHAN_AUTO, CHANF_OVERLAP)
 		"####" A 0 A_StartSound("CSAWSTAT", CHAN_AUTO, CHANF_OVERLAP)
@@ -732,25 +725,25 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 			}
 		"####" A 0
 			{
-				if (CountInv("GreenBloodSplatterz") == 1) {
-					A_TakeInventory("GreenBloodSplatterz", 1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				if (CountInv("GreenBloodSplatterz") == 1) { 
+					A_SetInventory("GreenBloodSplatterz", 0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
-				else if (CountInv("BlueBloodSplatterz") == 1) {
-					A_TakeInventory("BlueBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				else if (CountInv("BlueBloodSplatterz") == 1) {	
+					A_SetInventory("BlueBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
 				else if (CountInv("RedBloodSplatterz") == 1) {
-					A_TakeInventory("RedBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
+					A_SetInventory("RedBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
 				}
 			}
 		"####" A 0 A_StartSound ("weapons/chainsaw/loop", CHAN_7 , CHANF_LOOPING|CHANF_OVERLAP )
 		"####" A 0 Saw_SwingDirection()
-		TNT1 A 1 A_Refire("LeftAttackClean2")
+		TNT1 A 1 PB_ReFire("LeftAttackClean2")
 		"####" A 0 A_StopSound(CHAN_7)
 		"####" A 0 A_StartSound("weapons/chainsaw/stop", CHAN_AUTO, CHANF_OVERLAP)
 		"####" A 0 A_StartSound("CSAWSTAT", CHAN_AUTO, CHANF_OVERLAP)
@@ -804,25 +797,25 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 			}
 		"####" A 0
 			{
-				if (CountInv("GreenBloodSplatterz") == 1) {
-					A_TakeInventory("GreenBloodSplatterz", 1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				if (CountInv("GreenBloodSplatterz") == 1) { 
+					A_SetInventory("GreenBloodSplatterz", 0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
-				else if (CountInv("BlueBloodSplatterz") == 1) {
-					A_TakeInventory("BlueBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				else if (CountInv("BlueBloodSplatterz") == 1) {	
+					A_SetInventory("BlueBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
 				else if (CountInv("RedBloodSplatterz") == 1) {
-					A_TakeInventory("RedBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
+					A_SetInventory("RedBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
 				}
 			}
 		"####" A 0 A_StartSound ("weapons/chainsaw/loop", CHAN_7 , CHANF_LOOPING | CHANF_OVERLAP  )
 		"####" A 0 Saw_SwingDirection()
-		TNT1 A 1 A_Refire("LeftAttackClean")
+		TNT1 A 1 PB_ReFire("LeftAttackClean")
 		"####" A 0 A_StopSound(CHAN_7)
 		"####" A 0 A_StartSound("weapons/chainsaw/stop", CHAN_AUTO, CHANF_OVERLAP)
 		"####" A 0 A_StartSound("CSAWSTAT", CHAN_AUTO, CHANF_OVERLAP)
@@ -877,25 +870,25 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 		"####" HIJKLMNO 1 A_SetRoll(roll-0.2,SPF_INTERPOLATE)
 		"####" A 0
 			{
-				if (CountInv("GreenBloodSplatterz") == 1) {
-					A_TakeInventory("GreenBloodSplatterz", 1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				if (CountInv("GreenBloodSplatterz") == 1) { 
+					A_SetInventory("GreenBloodSplatterz", 0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
-				else if (CountInv("BlueBloodSplatterz") == 1) {
-					A_TakeInventory("BlueBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				else if (CountInv("BlueBloodSplatterz") == 1) {	
+					A_SetInventory("BlueBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
 				else if (CountInv("RedBloodSplatterz") == 1) {
-					A_TakeInventory("RedBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
+					A_SetInventory("RedBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
 				}
 			}
 		"####" A 0 A_StartSound ("weapons/chainsaw/loop", CHAN_7 , CHANF_LOOPING | CHANF_OVERLAP )
 		"####" A 0 Saw_SwingDirection()
-		"####" A 1 A_ReFire("BackwardAttackClean1")
+		"####" A 1 PB_ReFire("BackwardAttackClean1")
 		"####" A 0 A_StopSound(CHAN_7)
 		"####" A 0 A_StartSound("weapons/chainsaw/stop", CHAN_AUTO, CHANF_OVERLAP)
 		"####" A 0 A_StartSound("CSAWSTAT", CHAN_AUTO, CHANF_OVERLAP)
@@ -1026,7 +1019,7 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 			PB_HandleCrosshair(90);
 		}
 		//"####" A 0 A_GiveInventory("PB_LockScreenTilt",1)
-		"####" A 0 A_Giveinventory("HasCutingWeapon",1)
+		"####" A 0 A_SetInventory("HasCutingWeapon",1)
 		"####" A 0 A_JumpIfInventory("FiredGun", 1, "SlashDown")
 		"####" A 0 A_JumpIfInventory("ComboSeq", 2, "ClassicAttackClean")
 		C7S1 A 0 {
@@ -1038,20 +1031,20 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 		"####" ABCDEFGHIJKLMNOPQ 1 A_SetRoll(roll+2)
 		"####" A 0
 			{
-				if (CountInv("GreenBloodSplatterz") == 1) {
-					A_TakeInventory("GreenBloodSplatterz", 1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				if (CountInv("GreenBloodSplatterz") == 1) { 
+					A_SetInventory("GreenBloodSplatterz", 0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
-				else if (CountInv("BlueBloodSplatterz") == 1) {
-					A_TakeInventory("BlueBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				else if (CountInv("BlueBloodSplatterz") == 1) {	
+					A_SetInventory("BlueBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
 				else if (CountInv("RedBloodSplatterz") == 1) {
-					A_TakeInventory("RedBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
+					A_SetInventory("RedBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
 				}
 			}	
 		Goto SlashLeftClean
@@ -1068,7 +1061,7 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 // 		TNT1 A 0 A_Jump(256,5)
 // 	HoldLoop:
 // 		"####" NOPQ 1
-// 		"####" A 0 A_Refire
+// 		"####" A 0 PB_ReFire
 // 		"####" A 0 A_AlertMonsters
 	SlashLeftClean:
 		C7S1 A 0 {
@@ -1139,20 +1132,20 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 		"####" XYZ 1 A_SetRoll(roll-4)
 		
 		"####" A 0 {
-				if (CountInv("GreenBloodSplatterz") == 1) {
-					A_TakeInventory("GreenBloodSplatterz", 1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				if (CountInv("GreenBloodSplatterz") == 1) { 
+					A_SetInventory("GreenBloodSplatterz", 0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
-				else if (CountInv("BlueBloodSplatterz") == 1) {
-					A_TakeInventory("BlueBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBloodOnVisor",1);
+				else if (CountInv("BlueBloodSplatterz") == 1) {	
+					A_SetInventory("BlueBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBloodOnVisor",0);
 				}
 				else if (CountInv("RedBloodSplatterz") == 1) {
-					A_TakeInventory("RedBloodSplatterz", 1);
-					A_TakeInventory("PowerGreenBloodOnVisor",1);
-					A_TakeInventory("PowerBlueBloodOnVisor",1);
+					A_SetInventory("RedBloodSplatterz", 0);
+					A_SetInventory("PowerGreenBloodOnVisor",0);
+					A_SetInventory("PowerBlueBloodOnVisor",0);
 				}
 			}
 		
@@ -1247,8 +1240,8 @@ Actor PB_Chainsaw  : PB_Weapon //replaces Chainsaw
 		"####" A 0 A_SetRoll(0)
 		"####" A 0 A_AlertMonsters
 		"####" A 0 A_WeaponReady(WRF_NOFIRE|WRF_NOSWITCH)
-		"####" A 0 A_TakeInventory("ComboSeq", 2)
-		"####" A 0 A_TakeInventory("FiredGun", 1)
+		"####" A 0 A_SetInventory("ComboSeq", 0)
+		"####" A 0 A_SetInventory("FiredGun", 0)
 		"####" A 0 A_PlaySound("sawswing", 7, 0.5)
 		"####" A 0 A_PlaySound("weapons/gswing", 0, 0.8)
 		"####" A 0 A_Recoil(-5)

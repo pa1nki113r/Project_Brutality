@@ -1,9 +1,31 @@
 class PB_Math abstract
 {
+	// [gng] thank you agent ash as usual for the math functions
+	clearscope static vector2 GetLineNormal(int iSide, Line vLine)
+	{
+		vector2 lineNormal = (-vLine.delta.y, vLine.delta.x).Unit();
+
+		if(!iSide)
+			lineNormal *= -1;
+
+		return lineNormal;
+	}
+	
 	ClearScope Static Vector3 VecFromAngles (double angle, double pitch, double mag = 1.)
 	{
 		double cosp = cos(pitch);
 		return (cos(angle)*cosp, sin(angle)*cosp, -sin(pitch)) * mag;
+	}
+	
+	static Vector3 RelativeToGlobalCoords(Vector3 startpos, Vector3 viewAngles, Vector3 offset, bool isPosition = true)
+	{
+		Quat dir = Quat.FromAngles(viewAngles.x, viewAngles.y, viewAngles.z);
+		vector3 ofs = dir * (offset.x, -offset.y, offset.z);
+		if (isPosition)
+		{
+			return Level.vec3offset(startpos, ofs);
+		}
+		return ofs;
 	}
 	
 	//[inkoalawetrust] Written by Agent_Ash, makes the Val ranging from O_Min to O_Man be crushed down to the range of N_Min and N_Max.
@@ -72,6 +94,12 @@ mixin class PB_BetterPickupSound
 {
 	override void PlayPickupSound(actor toucher)
 	{
+		let hnd  = PB_EventHandler(EventHandler.Find("PB_EventHandler"));
+		if(hnd)
+		{
+			if(hnd.pickuptic[toucher.PlayerNumber()]==gametic) return;
+			hnd.pickuptic[toucher.PlayerNumber()] = gametic;
+		}
 		double atten;
 		int flags = CHANF_OVERLAP|CHANF_MAYBE_LOCAL;
 		if(bNoAttenPickupSound) atten = ATTN_NONE;
@@ -138,7 +166,9 @@ mixin class PB_RandomZombieNameHandler
 		"Harrison",
 		"Kevin",
 		"Carl",
-		"Adrian"
+		"Adrian",
+		"Walter",
+		"Samuel"
     };
     
     static const String PB_ZombiemanLastNames[] =
@@ -167,7 +197,13 @@ mixin class PB_RandomZombieNameHandler
 		"Johnson",
 		"Brown",
 		"Taylor",
-		"Carmack"
+		"Carmack",
+		"Bezos",
+		"Sneed",
+		"DeSanta",
+		"Meisenhelter",
+		"James",
+		"Teghetmeyer"
     };
 	
 	static const String PB_CivvieRanks[] = //Jobs??

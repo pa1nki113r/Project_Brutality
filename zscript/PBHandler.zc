@@ -13,6 +13,12 @@ class PB_EventHandler : EventHandler
 	int taunttimer;
 	const tauntcooldown = 40;
 	
+	bool WSuSinMap;	//check for WolfensteinSS	
+	
+	bool gz413detected;
+	
+	transient int pickuptic[MAXPLAYERS];
+	
 	///////////////////////////////////////////////////////////////////////////
 	
 	override void WorldTick()
@@ -98,6 +104,50 @@ class PB_EventHandler : EventHandler
 		}
 	}
 	
+	override void OnRegister()
+	{
+		if(StringTable.Localize("$OPTVAL_MBF21STRICT") != "OPTVAL_MBF21STRICT")
+		{
+			gz413detected = true;
+			console.PrintfEx(PRINT_NONOTIFY , "PB_EventHandler: \cgGZDoom 4.13+ detected.");
+			static const String verWarning[] = {
+				"\n",
+				"\n",
+				"\c-Please use \cdGZDoom 4.11.3\c-.\n",
+				"\c-\cyGZDoom 4.13+ \c-creates scaling issues with enemies that may make aiming for headshots harder.\n",
+				"\c-This is also \cgnot\c- the way our sprites were intended to be displayed.\n",
+				"\c-Its developers have stated that they \cgdo not plan\c- on reverting this change.\n",
+				"\c-The GitHub issue in question: \cnhttps://github.com/ZDoom/gzdoom/issues/2759\c-.\n",
+				"\n",
+				"\c-\cd4.12.x\c- also has issues:\n",
+				"\c--Partial invisibility does not work;\n", 
+				"\c--Monsters can detect you even if you are not in their line of sight.\n",
+				"\n",
+				"\c-Therefore the recommended version of GZDoom for Project Brutality is 4.11.3:\n",
+				"\c-4.11.3 for Windows: \cnhttps://zdoom.org/files/gzdoom/bin/gzdoom-4-11-3.a.-Windows-64bit.zip\n",
+				"\c-4.11.3 for macOS: \cnhttps://zdoom.org/files/gzdoom/bin/gzdoom-4-11-3-macOS.zip\n",
+				"\c-4.11.3 for Linux: \cnhttps://zdoom.org/files/gzdoom/bin/gzdoom-g4.11.3-linux-portable.tar.xz\n\c-",
+				"\n",
+				"\cgYou may not be able to quit the game using the menu, type \ckexit \cgor \ckquit \cgto close GZDoom.\n\c-",
+				"\n",
+				"\n"
+			};
+			
+			string megaString;
+			for(int i = 0; i < verWarning.Size(); i++)
+			{
+				megaString.AppendFormat("%s", verWarning[i]);
+			}
+			ThrowAbortException("READ ME:\n %s", megaString);
+			//\nThis will enable actor scaling workarounds.");
+		}
+		else
+		{
+			gz413detected = false;
+			//console.PrintfEx(PRINT_NONOTIFY , "PB_EventHandler: Player is NOT using GZDoom 4.13+.");
+		}
+	}
+	
 	override void RenderOverlay(RenderEvent e)
 	{
 		if(gamestate == GS_TITLELEVEL)
@@ -130,24 +180,26 @@ class PB_EventHandler : EventHandler
 		let plr = PlayerPawnBase(players[e.PlayerNumber].mo);
 		if (plr)
 		{
-			plr.GiveInventory("ResetKick",1);
-			plr.GiveInventory("ResetZoom",1);
-			plr.TakeInventory("KnifeHasHit",1);
-			plr.TakeInventory("PB_NoEffectInvul",1);
-			plr.TakeInventory("HasCutingWeapon", 1);
-			plr.TakeInventory("PB_LockScreenTilt",1);
+			plr.SetInventory("ResetKick",1);
+			plr.SetInventory("ResetZoom",1);
+			plr.SetInventory("KnifeHasHit",0);
+			plr.SetInventory("PB_NoEffectInvul",0);
+			plr.SetInventory("HasCutingWeapon", 0);
+			plr.SetInventory("PB_LockScreenTilt",0);
 			
-			plr.TakeInventory("HasBarrel",1);
-			plr.TakeInventory("HasIceBarrel",1);
-			plr.TakeInventory("HasFlameBarrel",1);
-			plr.TakeInventory("GrabbedBarrel",1);
-			plr.TakeInventory("GrabbedIceBarrel",1);
-			plr.TakeInventory("GrabbedFlameBarrel",1);
+			plr.SetInventory("HasBarrel",0);
+			plr.SetInventory("HasIceBarrel",0);
+			plr.SetInventory("HasFlameBarrel",0);
+			plr.SetInventory("GrabbedBarrel",0);
+			plr.SetInventory("GrabbedIceBarrel",0);
+			plr.SetInventory("GrabbedFlameBarrel",0);
+			plr.SetInventory("BarrelIsFrozen",0);
+			plr.SetInventory("BarrelIsFlaming",0);
 			for(int i=8;i>0;i--)
 			{
-				plr.TakeInventory("Grab"..i,1);
-				plr.TakeInventory("IGrab"..i,1);
-				plr.TakeInventory("FGrab"..i,1);
+				plr.SetInventory("Grab"..i,0);
+				plr.SetInventory("IGrab"..i,0);
+				plr.SetInventory("FGrab"..i,0);
 			}
 			
 			plr.A_SetRoll(0);
@@ -155,7 +207,8 @@ class PB_EventHandler : EventHandler
 			plr.A_OverlayFlags(-9,PSPF_PLAYERTRANSLATED, false);
 			plr.A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, false);
 			plr.A_SetBlend("black",1.0,70);
-			plr.TakeInventory("ExecutionToken",1);
+			plr.SetInventory("ExecutionToken",0);
+			plr.Setinventory("KeepWeapManager",1);
 			players[e.PlayerNumber].cheats &= ~CF_TOTALLYFROZEN;
 			plr.bNODAMAGE = false;
 		}
@@ -181,21 +234,24 @@ class PB_EventHandler : EventHandler
 		let plinf = plr.player;
 		if (plr)
 		{
-			Plr.A_TakeInventory ("PlayerIsDead",1); //this was causing resurrection without kicks
-			Plr.A_TakeInventory ("DeathFader",1);
+			Plr.SetInventory ("PlayerIsDead",0); //this was causing resurrection without kicks
+			Plr.SetInventory ("DeathFader",0);
 			Plr.ACS_NamedExecuteAlways("UnFadder");
 			
-			Plr.A_TakeInventory("HasBarrel",1);
-			Plr.A_TakeInventory("HasIceBarrel",1);
-			Plr.A_TakeInventory("HasFlameBarrel",1);
-			Plr.A_TakeInventory("GrabbedBarrel",1);
-			Plr.A_TakeInventory("GrabbedIceBarrel",1);
-			Plr.A_TakeInventory("GrabbedFlameBarrel",1);
+			plr.SetInventory("HasBarrel",0);
+			plr.SetInventory("HasIceBarrel",0);
+			plr.SetInventory("HasFlameBarrel",0);
+			plr.SetInventory("GrabbedBarrel",0);
+			plr.SetInventory("GrabbedIceBarrel",0);
+			plr.SetInventory("GrabbedFlameBarrel",0);
+			plr.SetInventory("BarrelIsFrozen",0);
+			plr.SetInventory("BarrelIsFlaming",0);
+			plr.Setinventory("KeepWeapManager",1);
 			for(int i=8;i>0;i--)
 			{
-				Plr.A_TakeInventory("Grab"..i,1);
-				Plr.A_TakeInventory("IGrab"..i,1);
-				Plr.A_TakeInventory("FGrab"..i,1);
+				plr.SetInventory("Grab"..i,0);
+				plr.SetInventory("IGrab"..i,0);
+				plr.SetInventory("FGrab"..i,0);
 			}
 			
 			//clean the first person deaths from here when resurrected, if -for some reason- resurrecting skips the spawn state from the player, the overlay is already cleaned here
@@ -316,6 +372,12 @@ class PB_EventHandler : EventHandler
 		{
 			HatExists = true;
 		}
+		
+		/*if(gz413detected && e.Thing.bROLLSPRITE)
+		{
+			vector2 scaleFixer;
+			e.Thing.bSTRETCHPIXELS = true;
+		}*/
 	}
 	
 	//////////////////////
@@ -329,6 +391,101 @@ class PB_EventHandler : EventHandler
 			int HatMonthInt = HatMonthString.ToInt();
 			HatMonthInt = HatMonthString.ToInt(10);
 			EventHandler.SendNetworkEvent("PB_MonthCheck", HatMonthInt);
+		}
+	}
+	
+	
+	override void CheckReplacement (ReplaceEvent e)
+	{
+		switch(e.replacee.getclassname())
+		{
+			//
+			//	Weapons
+			//
+			case 'Pistol':				e.replacement = 'PBPistolSpawner';				break;
+			case 'Shotgun':				e.replacement = 'PBShotgunSpawner';				break;
+			case 'SuperShotgun':		e.replacement = 'PBSSGSpawner';					break;
+			case 'Chaingun':			e.replacement = 'PBChaingunSpawner';			break;
+			case 'RocketLauncher':		e.replacement = 'PBRocketLauncherSpawner';		break;
+			case 'PlasmaRifle':			e.replacement = 'PBPlasmaRifleSpawner';			break;
+			case 'BFG9000':				e.replacement = 'PBBFGSpawner';					break;
+			case 'Chainsaw':			e.replacement = 'PBChainSawSpawner';			break;
+			
+			//
+			//	Ammo
+			//
+			case 'Clip':				e.replacement = 'PBClipSpawner';				break;
+			case 'ClipBox':				e.replacement = 'PBClipBoxSpawner';				break;
+			case 'Shell':				e.replacement = 'PBShellSpawner';				break;
+			case 'Shellbox':			e.replacement = 'PBShellboxSpawner';			break;
+			case 'RocketAmmo':			e.replacement = 'PBRocketSpawner';				break;
+			case 'RocketBox':			e.replacement = 'PBRocketBoxSpawner';			break;
+			case 'Cell':				e.replacement = 'PBCellSpawner';				break;
+			case 'CellPack':			e.replacement = 'PBCellPackSpawner';			break;
+			
+			case 'Backpack':			e.replacement = 'PBBackpackSpawner';			break;
+			
+			//
+			//	Health & Armor
+			//
+			case 'HealthBonus':			e.replacement = 'PBHPBonusSpawner';				break;
+			case 'Stimpack':			e.replacement = 'PBStimSpawner';				break;
+			case 'Medikit':				e.replacement = 'PBMedikitSpawner';				break;
+			
+			case 'ArmorBonus':			e.replacement = 'PBAPBonusSpawner';				break;
+			case 'GreenArmor':			e.replacement = 'PBGreenSpawner';				break;
+			case 'BlueArmor':			e.replacement = 'PBBlueSpawner';				break;
+			
+			//
+			//	Powerups
+			//
+			case 'invulnerabilitysphere':		e.replacement = 'PB_InvulSpawner';			break;
+			case 'radsuit':						e.replacement = 'PB_RadSuitSpawner';		break;
+			case 'blursphere':					e.replacement = 'PB_BlurSpawner';			break;
+			case 'infrared':					e.replacement = 'PB_InfraRedSpawner';		break;
+			case 'soulsphere':					e.replacement = 'PB_SoulSphereSpawner';		break;
+			case 'megasphere':					e.replacement = 'PB_MegaSpawner';			break;
+			case 'Berserk':						e.replacement = 'PB_BerserkSpawner';		break;
+			case 'AllMap':						e.replacement = 'PB_AllMapSpawner';			break;
+			
+			//
+			//	Monsters
+			//
+			case 'ZombieMan':				e.replacement = 'PBZombieManSpawner';			break;
+			case 'ShotgunGuy':				e.replacement = 'PBShotgunGuySpawner';			break;
+			case 'DoomImp':					e.replacement = 'PBImpSpawner';					break;
+			case 'Demon':					e.replacement = 'PBPinkySpawner';				break;
+			case 'Spectre':					e.replacement = 'PBSpectreSpawner';				break;
+			case 'ChaingunGuy':				e.replacement = 'PBChainGunGuySpawner';			break;
+			case 'Cacodemon':				e.replacement = 'PBCacoDemonSpawner';			break;
+			case 'HellKnight':				e.replacement = 'PBHKSpawner';					break;
+			case 'Arachnotron':				e.replacement = 'PBArachnotronSpawner';			break;
+			case 'BaronOfHell':				e.replacement = 'PBBOHSpawner';					break;
+			case 'Revenant':				e.replacement = 'PBRevSpawner';					break;
+			case 'LostSoul':				e.replacement = 'PBLSSpawner';					break;
+			case 'PainElemental':			e.replacement = 'PBPESpawner';					break;
+			case 'ArchVile':				e.replacement = 'PBArchVileSpawner';			break;
+			case 'Fatso':					e.replacement = 'PBMancubusSpawner';			break;
+			case 'Cyberdemon':				e.replacement = 'PBCyberDemonSpawner';			break;
+			case 'SpiderMastermind':		e.replacement = 'PBSpiderMasterMindSpawner';	break;
+			case 'WolfensteinSS':			e.replacement = 'EvilNaziSpawner';	WSuSinMap = true;	break;
+
+			//
+			//	Stealth Monsters
+			//
+			case 'StealthArachnotron':		e.replacement = 'PBStealthArachnotronSpawner';	break;
+			case 'StealthArchvile':			e.replacement = 'PBStealthArchVileSpawner';	break;
+			case 'StealthBaron':			e.replacement = 'PBStealthBOHSpawner';	break;
+			case 'StealthCacodemon':		e.replacement = 'PBStealthCacoDemonSpawner';	break;
+			case 'StealthChaingunGuy':		e.replacement = 'PBStealthChainGunGuySpawner';	break;
+			case 'StealthDemon':			e.replacement = 'PBStealthPinkySpawner';	break;
+			case 'StealthDoomImp':			e.replacement = 'PBStealthImpSpawner';	break;
+			case 'StealthFatso':			e.replacement = 'PBStealthMancubusSpawner';	break;
+			case 'StealthHellKnight':		e.replacement = 'PBStealthHKSpawner';	break;
+			case 'StealthRevenant':			e.replacement = 'PBStealthRevSpawner';	break;
+			case 'StealthShotgunGuy':		e.replacement = 'PBStealthShotgunGuySpawner';	break;
+			case 'StealthZombieMan':		e.replacement = 'PBStealthZombieManSpawner';	break;
+			
 		}
 	}
 	

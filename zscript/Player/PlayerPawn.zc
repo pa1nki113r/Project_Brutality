@@ -27,6 +27,9 @@ class PlayerPawnBase : PlayerPawn
 	string TankTurretSpriteActor;
 	
 	Array<String> CollectedWeapons, BaseWeapons;
+
+	array<int> oldPTics;
+  	array<int> oldPUTics;
 	
 	///////////////////////////////////
 	//Common
@@ -126,6 +129,7 @@ class PlayerPawnBase : PlayerPawn
 	double	YBob;
 	double	YBobOffset;
 	float	BobTime;
+	vector2 FinalBob;
 	
 	///////////////////////////////////
 	//Painkiller only
@@ -185,18 +189,23 @@ class PlayerPawnBase : PlayerPawn
 		UserCmd cmd = player.cmd;
 		
 		//Set some basic parameters
-		ActualSpeed = Speed * GetPowerSpeed();
-		bNOFRICTION = True;
-		GetFloorInfo();
-		MaxGroundSpeed = pb_maxgroundspeed * ActualSpeed;
-		Pain = InStateSequence(CurState, FindState("Pain"));
-		StrafeRunning = cmd.forwardmove && cmd.sidemove;
-		ZMoveFactor = ZMScale();
-		
+		if(CheckNotPredicting())
+		{
+			ActualSpeed = Speed * GetPowerSpeed();
+			bNOFRICTION = True;
+			GetFloorInfo();
+			MaxGroundSpeed = (multiplayer || PB_MP_MovementTesting) ? 10.1 * ActualSpeed : pb_maxgroundspeed * ActualSpeed;
+			Pain = InStateSequence(CurState, FindState("Pain"));
+			StrafeRunning = cmd.forwardmove && cmd.sidemove;
+			ZMoveFactor = ZMScale();
+		}
 		
 		//Execute Player tic cycle
 		Super.PlayerThink();
 		
+		if(!CheckNotPredicting())
+			return;
+
 		bool wasOnGround = player.onGround;
 		Player.OnGround = (Pos.Z <= FloorZ) || bONMOBJ || bMBFBOUNCER || (Player.Cheats & CF_NOCLIP2); // Moved after super call, otherwise it doesn't register.
 
@@ -223,8 +232,6 @@ class PlayerPawnBase : PlayerPawn
 		
 		//Old values for comparisons
 		OldRealFloorZ = RealFloorZ;
-		
-		
 	}
 	
 	bool frozenByExecution;
@@ -438,7 +445,7 @@ class PlayerPawnBase : PlayerPawn
 			}
 			else if(!player.centering)
 			{
-				A_SetPitch(Pitch - clook * (360. / 65536.), SPF_INTERPOLATE);
+				Pitch = clamp(Pitch - clook * (360. / 65536.), player.MinPitch, player.MaxPitch);
 			}
 		}
 		
@@ -459,6 +466,11 @@ class PlayerPawnBase : PlayerPawn
 			}
 		}
 	}
+
+	bool CheckNotPredicting()
+	{
+		return !(player.cheats & CF_PREDICTING);
+	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -477,12 +489,20 @@ class PlayerPawnBase : PlayerPawn
 		UserCmd cmd = Player.cmd;
 		
 		//Slime Dissolving sound effect
-		CheckSlime();
-		if (SlimeSoundCooler) {SlimeSoundCooler--;}
-			if(InSlime == true){
-				if(!SlimeSoundCooler)
-					A_Startsound("world/barrelloop", 12, CHANF_LOOPING  );
-					SlimeSoundCooler = 8;
+		if(CheckNotPredicting())
+			CheckSlime();
+
+		if (SlimeSoundCooler) 
+		{
+			SlimeSoundCooler--;
+		}
+		if(InSlime == true)
+		{
+			if(!SlimeSoundCooler && CheckNotPredicting())
+			{
+				A_Startsound("world/barrelloop", 12, CHANF_LOOPING  );
+				SlimeSoundCooler = 8;
+			}
 		}
 		
 		// [RH] Check for fast turn around
@@ -501,11 +521,11 @@ class PlayerPawnBase : PlayerPawn
 			if(Player.TurnTicks) //moved here to save many doubled lines
 			{
 				Player.TurnTicks--;
-				A_SetAngle(Angle + (180.0 / TURN180_TICKS), SPF_INTERPOLATE);
+				Angle += ViewAngleDelta;
 			}
 			else
 			{
-				A_SetAngle(Angle + ViewAngleDelta, SPF_INTERPOLATE);
+				angle += ViewAngleDelta;
 				if(LedgeGrabbed) { Angle = clamp(Angle, LedgeAngle - 20, LedgeAngle + 20); }
 			}
 			
@@ -533,6 +553,8 @@ class PlayerPawnBase : PlayerPawn
 // 				if(ADashCooler) { ADashCooler--; }
 // 				if(ADashTargetSpeed) { AirDashFriction(); }
 // 			}
+			if(!CheckNotPredicting())
+				return;
 			//Wall Jumping
 			if(CheckForWJump) { DashInitiator(); }
 			//Crouchsliding
@@ -544,11 +566,11 @@ class PlayerPawnBase : PlayerPawn
 			
 			/////////////////////////////////////////
 			//Actual Movement selection
-			if(LedgeCheck)
+			if(LedgeCheck && CheckNotPredicting())
 			{
 				LedgeReach();
 			}
-			else if(LedgeGrabbed)
+			else if(LedgeGrabbed && CheckNotPredicting())
 			{
 				LedgeGrab();
 			}
@@ -557,14 +579,17 @@ class PlayerPawnBase : PlayerPawn
 				if(!pb_movetype)
 					DoomWaterMove();
 				
-				if(pb_ledgegrab) { LedgeGrabInitiator(); }
+				if(pb_ledgegrab && CheckNotPredicting()) 
+				{ 
+					LedgeGrabInitiator(); 
+				}
 			}
 			else if(bNOGRAVITY)
 			{
 				if(!pb_movetype)
 					DoomFlyMove();
 			}
-			else if(CanCSlide)
+			else if(CanCSlide && CheckNotPredicting())
 			{
 				if(pb_cslidetype)
 					QSlideMove();
@@ -726,7 +751,7 @@ class PlayerPawnBase : PlayerPawn
 			
 			//Check if player is above a damaging floor. We don't cheese map design here!
 			sector sss=floorsector;
-			if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
+			if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement && CheckNotPredicting()) {
 				if(!JumpSoundCooler)
 					A_StartSound("Daedabus/impact", CHAN_BODY);
 					JumpSoundCooler = 4;
@@ -747,7 +772,7 @@ class PlayerPawnBase : PlayerPawn
 				bOnMobj = false;
 				ZMJumpTics = True;
 				
-				if(!(player.cheats & CF_PREDICTING) && !JumpSoundCooler)
+				if(CheckNotPredicting() && !JumpSoundCooler)
 				{
 					A_StartSound("*jump", CHAN_BODY);
 					JumpSoundCooler = 4;
@@ -767,7 +792,7 @@ class PlayerPawnBase : PlayerPawn
 				bOnMobj = false;
 				ZMJumpTics = True;
 				
-				if(!(player.cheats & CF_PREDICTING)) { A_StartSound("JMPBOOT", CHAN_BODY); }
+				if(CheckNotPredicting()) { A_StartSound("JMPBOOT", CHAN_BODY); }
 				
 				CanDoubleJump = False;
 			}
@@ -1419,7 +1444,7 @@ class PlayerPawnBase : PlayerPawn
 		{
 			Int BT=cmd.buttons;
 			
-			if(Player.CrouchFactor != 1 && !CSlideStartTime && (BT & BT_USER4))
+			if(Player.CrouchFactor != 1 && !CSlideStartTime && (BT & BT_USER4) && CheckNotPredicting())
 			{
 				sector sss=floorsector;
 				if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
@@ -1450,7 +1475,7 @@ class PlayerPawnBase : PlayerPawn
 				
 				CSlideStartTime = Level.MapTime;
 			}
-			else if(!CanCSlide)
+			else if(!CanCSlide && CheckNotPredicting())
 			{
 				QSlideDuration = 0;
 			}
@@ -1713,7 +1738,7 @@ class PlayerPawnBase : PlayerPawn
 		if(JumpFac) { DashVelZ *= JumpFac; }
 		Vel.Z = DashVelZ;
 		
-		if(!(player.cheats & CF_PREDICTING)) { 
+		if(CheckNotPredicting()) { 
 			A_StartSound("JMPBOOT", CHAN_BODY);
 			A_StartSound("DBLJUMP", CHAN_AUTO);
 			A_GiveInventory("PlayerDashed");
@@ -1738,7 +1763,7 @@ class PlayerPawnBase : PlayerPawn
 		ADashCooler = 53;
 		DashNumber++;
 		
-		if(!(player.cheats & CF_PREDICTING)) { A_StartSound("*jump", CHAN_BODY); }
+		if(CheckNotPredicting()) { A_StartSound("*jump", CHAN_BODY); }
 		
 		if(Vel.XY.Length() <= MaxGroundSpeed)
 		{
@@ -1807,7 +1832,7 @@ class PlayerPawnBase : PlayerPawn
 		
 		if(zm_wjdoublejumprenew) { CanDoubleJump = True; }
 		
-		if(!(player.cheats & CF_PREDICTING)) { A_StartSound("*jump", CHAN_BODY); }
+		if(CheckNotPredicting()) { A_StartSound("*jump", CHAN_BODY); }
 		
 		Float EstimatedWJumpSpeed1 = pb_wjumpboost * MaxGroundSpeed;
 		Float EstimatedWJumpSpeed2 = pb_multipledashes + max(WJumpSpeed, Vel.XY.Length()); //WJumpSpeed can be stored a few tics before wall inpact which slows down player, allowing for more satisfying WJumps
@@ -1954,7 +1979,7 @@ class PlayerPawnBase : PlayerPawn
 		ZMPlayer = self.player;
 		
 		if(
-			CountInv("GrabbedIceBarrel") > 0 || CountInv("GrabbedFlameBarrel") > 0 || CountInv("GrabbedBarrel") > 0 ||
+			WaterLevel > 2 || CountInv("GrabbedIceBarrel") > 0 || CountInv("GrabbedFlameBarrel") > 0 || CountInv("GrabbedBarrel") > 0 ||
 			CountInv("HasIceBarrel") > 0 || CountInv("HasFlameBarrel") > 0 || CountInv("HasBarrel") > 0
 		) { return; }
 		
@@ -2048,7 +2073,7 @@ class PlayerPawnBase : PlayerPawn
 			LedgeGrabbed = True;
 			return;
 		}
-		if((player.readyweapon is "Melee_Attacks") || (player.readyweapon is "PB_Chainsaw") || (player.readyweapon is "PB_Axe"))
+		if((player.readyweapon is "PB_Fists") || (player.readyweapon is "PB_Chainsaw") || (player.readyweapon is "PB_Axe"))
 		{
 			player.SetPSprite(PSP_WEAPON,player.ReadyWeapon.FindState("StainedLedgeClimb"));
 		}
@@ -2106,6 +2131,9 @@ class PlayerPawnBase : PlayerPawn
 	
 	void BobWeaponAuxiliary()
 	{	
+		if(multiplayer)
+			return;
+
 		///////////////////////////
 		//Bobbing Speed
 		if(MoveRangeMulti) { BobTime += Vel.XY.Length() / pb_maxgroundspeed; }
@@ -2135,6 +2163,9 @@ class PlayerPawnBase : PlayerPawn
 	
 	Override Vector2 BobWeapon(double ticfrac)
 	{
+		if(multiplayer)
+			return Super.BobWeapon(ticfrac);
+
 		let player = self.player;
 		UserCmd cmd = player.cmd;
 		
@@ -2323,6 +2354,7 @@ class PlayerPawnBase : PlayerPawn
 				{
 					r.Y += clamp(YBobOffset, 0, SwayRange);
 				}
+
 			}
 			else
 			{
@@ -2334,34 +2366,30 @@ class PlayerPawnBase : PlayerPawn
 			
 			if(i == 0) p1 = r; else p2 = r;
 		}
-		return p1 * (1. - ticfrac) + p2 * ticfrac;
+		FinalBob = (p1 * (1. - ticfrac) + p2 * ticfrac) * (CountInv("Zoomed") >= 1 ? 0.2 : 1.0);
+		return FinalBob;
 	}
 	
 	// The rest of Project Brutality player class
-	Default
-	{
-		
-	}
 	void SpawnTankSprite()
 	{
-		
-		
 		TankTurretSprite = Spawn(TankTurretSpriteActor,self.pos + self.vel,ALLOW_REPLACE);
 	}
 	void DestroyTankSprites()
-	{
-		
+	{	
 		TankTurretSprite.Destroy();
 		
 		TankTurretSprite = NULL;
 	}
-	void SetTankSpritePosition(int spritestate,double angle = 0)
+	
+	// huh????
+	/*void SetTankSpritePosition(int spritestate,double angle = 0)
 	{
 		
 		{
 			
 		}
-	}
+	}*/
 	
 	void CheckTargetHitRegistration()
 	{
@@ -2404,7 +2432,7 @@ class PlayerPawnBase : PlayerPawn
 		 if(CountInv("PlayerHasCarbinePermanent")==1){A_GiveInventory("PB_Carbine",1);}
 		 if(CountInv("PlayerHasCarbinePermanent")>1){A_GiveInventory("PB_Carbine",2);}
 		 if(CountInv("PlayerHasNailGunPermanent")==1){A_GiveInventory("PB_Nailgun",1);}
-		 if(CountInv("PlayerHasHDMRPermanent")==1){A_GiveInventory("RifleUpgrade",1);}
+		 if(CountInv("PlayerHasHDMRPermanent")==1){A_GiveInventory("PB_HDMRUpgrade",1);}
 		 if(CountInv("PlayerHasSMGPermanent")==1){A_GiveInventory("PB_SMG",1);}
 		 if(CountInv("PlayerHasSMGPermanent")>1){A_GiveInventory("PB_SMG",2);}
 		 if(CountInv("PlayerHasMGUPermanent")==1){A_GiveInventory("PB_MinigunUpgrade",1);}
@@ -2455,9 +2483,13 @@ class PlayerPawnBase : PlayerPawn
 		Super.Tick();
 		
 		//Just to make sure NO TRACES of this softlocking motherfucker is left -generic name guy
-		A_SetInventory("GoFatality", 0);
+		if(player && self && CheckNotPredicting())
+		{
+			A_SetInventory("GoFatality", 0);
+			// CheckTargetHitRegistration();
+		}
 		//CatchUpOnTiers();
-		CheckTargetHitRegistration();
+		
 
 		//Screen Overlay Handlers
 		//Disabled until we can convert the screen splatters to ZScript
@@ -2533,7 +2565,7 @@ class PlayerPawnBase : PlayerPawn
 			if (selector == 5){ACS_NamedExecute("LavaScreenSplash555", 0);}
 		}
 		*/
-		if (IsTank && !(health <= 0))
+		if (player && self && CheckNotPredicting() && IsTank && !(health <= 0))
 		{
 			if (TankTurretSprite != NULL)
 			{
@@ -2581,7 +2613,7 @@ Class SpeedoMeterHandler : EventHandler
 {
 	override void renderOverlay(RenderEvent e)
 	{
-		if(CVar.FindCVar("zm_speedometer").GetInt())
+		if(CVar.GetCvar("zm_speedometer", players[consoleplayer]).GetInt())
 		{
 			Actor mo = players[consoleplayer].mo;
 			if(mo != NULL && PlayerInGame[consoleplayer])
@@ -2590,7 +2622,7 @@ Class SpeedoMeterHandler : EventHandler
 				Vector2 scaler = (1 / scalevec.x, 1 / scalevec.y);
 				Vector2 screenSize = (Screen.GetWidth() * scaler.x, Screen.GetHeight() * scaler.y);
 			
-				if(CVar.FindCVar("zm_speedometer").GetInt() == 2)
+				if(CVar.GetCvar("zm_speedometer", players[consoleplayer]).GetInt() == 2)
 				{
 					Vector2 drawPos = (-4 * (screenSize.x / 320), 106 * (screenSize.y / 200));
 					Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y, String.format("%i", mo.Vel.XY.Length() * 32), DTA_HUDRules, true);
@@ -2696,7 +2728,14 @@ class DEDashJumpHandler : EventHandler
 {
 	override void PlayerEntered(PlayerEvent e)
 	{
-		players[e.PlayerNumber].mo.A_GiveInventory("DEDashJump", 1);
+		if(!multiplayer || !pb_mp_movementtesting)
+		{
+			players[e.PlayerNumber].mo.A_GiveInventory("DEDashJump", 1);
+		}
+		if(multiplayer || pb_mp_movementtesting)
+		{
+			players[e.PlayerNumber].mo.A_TakeInventory("DEDashJump", 1);
+		}
 	}
 }
 
@@ -2708,7 +2747,7 @@ class DEDashJump : Inventory
 	bool dJump, waiting;
 	
 	const DASHMAXCHARGE = 35;
-
+	Default{+INVENTORY.UNCLEARABLE +INVENTORY.UNDROPPABLE} //This is an ESSENTIAL part of the PlayerPawn. it also turns out that some maps can force you to clear and drop this item. Declared New Apocalypse is where I found this issue. DO NOT REMOVE.
 	override void Tick()
 	{
 		Super.Tick();

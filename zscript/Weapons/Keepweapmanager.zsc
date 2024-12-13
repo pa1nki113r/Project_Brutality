@@ -1,0 +1,149 @@
+//
+//	this inventory class handles picking up a weapon that has a replacement upgrade based on pb_keepweapons option
+//
+class KeepWeapManager : inventory
+{
+	default
+	{
+		inventory.maxamount 1;
+		+INVENTORY.UNDROPPABLE;
+		+INVENTORY.UNTOSSABLE;
+	}
+	
+	override bool HandlePickup(Inventory item)
+	{
+		//Handling map scripts that would give the player vanilla weapons directly
+		if(item is "Fist"){
+			class<Inventory> Fists = GetReplacement(item.GetClassName()).GetClassName();
+			if(Fists){
+				owner.A_GiveInventory(Fists,1);
+				let itemToSelect = Weapon(owner.FindInventory(Fists));
+				if(itemToSelect){
+					if (owner.player.ReadyWeapon != itemToSelect){
+						owner.player.PendingWeapon = itemToSelect;
+						item.Destroy();
+						return true;
+					}
+				}
+			}
+		}
+		switch(item.GetClassName()){
+			case 'Chainsaw': owner.A_GiveInventory("PB_Chainsaw",1); item.Destroy(); return true; break;
+			case 'Pistol': owner.A_GiveInventory("PB_Pistol",1); item.Destroy(); return true; break;
+			case 'Shotgun': owner.A_GiveInventory("PB_Shotgun",1); item.Destroy(); return true; break;
+			case 'SuperShotgun': owner.A_GiveInventory("PB_SSG",1); item.Destroy(); return true; break;
+			case 'ChainGun': owner.A_GiveInventory("PB_Minigun",1); item.Destroy(); return true; break;
+			case 'RocketLauncher': owner.A_GiveInventory("PB_RocketLauncher",1); item.Destroy(); return true; break;
+			case 'PlasmaRifle': owner.A_GiveInventory("PB_M1Plasma",1); item.Destroy(); return true; break;
+			case 'BFG9000': owner.A_GiveInventory("PB_BFG9000",1); item.Destroy(); return true; break;
+			
+			//Card Handlers for max map compatibility
+			//only works when vanilla class blue card is given directly to player, not the other way around.
+			case 'BlueCard': 
+				if(!owner.FindInventory("PB_BlueCard")){
+					owner.SetInventory("PB_BlueCard",1);
+					return false; break;
+				}
+				return true; break;
+				/*
+			case 'PB_BlueCard': 
+				if(!owner.FindInventory("BlueCard")){
+					owner.SetInventory("BlueCard",1);
+					return false; break;
+				}
+				return true; break;
+				*/
+			//case 'PB_BlueCard': owner.SetInventory("BlueCard",1); return true; break;
+			case 'RedCard': 
+				owner.SetInventory("PB_RedCard",1); 
+				return false; break;
+			//case 'PB_RedCard': owner.SetInventory("RedCard",1); return true; break;
+			case 'YellowCard': 
+				owner.SetInventory("PB_YellowCard",1);
+				return false; break;
+			//case 'PB_YellowCard': owner.SetInventory("YellowCard",1); return true; break;
+			case 'BlueSkull': 
+				owner.SetInventory("PB_BlueSkull",1); 
+				return false; break;
+			//case 'PB_BlueSkull': owner.SetInventory("BlueSkull",1); return true; break;
+			case 'RedSkull': 
+				owner.SetInventory("PB_RedSkull",1); 
+				return false; break;
+			//case 'PB_RedSkull': owner.SetInventory("RedSkull",1); return true; break;
+			case 'YellowSkull': 
+				owner.SetInventory("PB_YellowSkull",1); 
+				return false; break;
+			//case 'PB_YellowSkull': owner.SetInventory("YellowSkull",1); return true; break;
+		}
+		
+		//stop if the keep weapons option is enabled, no special handling needed
+		if(pb_keepweapons)
+			return super.handlepickup(item);
+		
+		name pk = item.getclassname();
+		switch(pk)
+		{
+			//easily expandable, ig
+			case 'PB_Carbine':
+			case 'PB_SSG':
+			case 'PB_Revolver':
+			case 'PB_Pistol':
+				string upg = getupgrade(pk);
+				bool hasupgrade = upg != "" && owner.findinventory(upg);
+				if(!hasupgrade)
+					return super.handlepickup(item);	//if no upgrade, proccess normally
+				
+				let wp = weapon(item);
+				bool weapGone = false;
+				if(wp)
+				{
+					//if the weapon actually gives you ammo, give that ammo
+					//this checks both ammo1 and ammo2, just in case
+					
+					bool gotbackpack = owner.findinventory("Backpack",true);
+					
+					if(wp.AmmoType1 != null && wp.AmmoGive1 > 0)
+					{
+						ammo amu1 = ammo(owner.findinventory(wp.ammotype1));
+						int left1 = owner.GetAmmoCapacity(amu1.GetClass()) - amu1.amount;
+						
+						if(left1 > 0)
+						{
+							weapGone = true;
+							owner.giveinventory(wp.ammotype1,wp.AmmoGive1);
+						}
+					}
+					
+					if(wp.AmmoType2 != null && wp.AmmoGive2 > 0)
+					{
+						ammo amu2 = ammo(owner.findinventory(wp.ammotype2));
+						int left2 = owner.GetAmmoCapacity(amu2.GetClass()) - amu2.amount;
+						
+						if(left2 > 0)
+						{
+							weapGone = true;
+							owner.giveinventory(wp.ammotype2,wp.AmmoGive2);
+						}
+					}
+					
+				}
+				item.bPickupgood = weapGone;	//if ammo was given, make the weapon dissapear
+				return true;
+				break;
+		}
+		return super.handlepickup(item);
+	}
+	
+	//a property in the pb weapon base indicating if it has a replacing upgrade would be better, tho
+	string getupgrade(name wpn)
+	{
+		switch(wpn)
+		{
+			case 'PB_Carbine':		return "PB_LMG";			break;
+			case 'PB_SSG':			return "PB_QuadSG";			break;
+			case 'PB_Revolver':		return "PB_Deagle";			break;
+			case 'PB_Pistol':		return "PB_SMG";			break;
+		}
+		return "";
+	}
+}

@@ -1,0 +1,180 @@
+class PB_SuperBFGBall : Actor
+{
+	Default
+	{
+		Projectile;
+		Speed 24;
+		RenderStyle "Add";
+		Scale 0.9;
+		Radius 4;
+		Height 8;
+		DamageFunction 500;
+		Decal "BFGLightning";
+		DeathSound "BFGEXPLO";
+		DamageType "Disintegrate";
+		Species "Marines";
+		+Friendly;
+		+THRUSPECIES;
+		+MTHRUSPECIES;
+		+DONTHARMSPECIES;
+		+FORCEXYBILLBOARD;
+		+BRIGHT;
+	}
+	States
+	 {
+		Spawn:
+			098G ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Light("BFGBALL") SpawnBFGBallTrail();
+			099G ABCD 1 Light("BFGBALL") SpawnBFGBallTrail();
+			Loop;	 
+		Death:
+			#### # 0
+			{
+				DoTracers = false;
+				A_StopSound(6);
+				A_SpawnItemEx("GreenShockWave");
+				A_SpawnItemEx("MegaGibRemoving");
+				A_StartSound("BFGAR",3);
+				for(int i=0;i<30;i++)
+				{
+					A_SpawnProjectile("BFGBIGFOG",0,0,random(0,360),2,random(0,360));
+					A_SpawnProjectile("BFGDeathParticleFast",0,0,random(0,360),2,random(0,360));
+					A_SpawnProjectile("BFGDeathParticleFast",0,0,random(0,360),2,random(0,360));
+					A_SpawnProjectile("BFGDeathParticleFast",0,0,random(0,360),2,random(0,360));
+					A_SpawnProjectile("BFGDeathParticleSuperFast",0,0,random(0,360),2,random(0,360));
+				}
+			}
+			BFGB ABCDE 1 Light("BFGBALL") A_SpawnItemEx("GreenFlare");
+			BFE1 F 1 Light("BFGBALL")
+			{
+				A_BFGSpray("SuperBFGExtra",200,30,360,1024,32,0,BFGF_MISSILEORIGIN);
+				A_SpawnItemEx("SuperBFGExtraGiant");
+				A_SpawnItemEx("GreenFlare");
+			}
+			BFE1 GGHHIIJJKK 1 Light("BFGBALL") A_SpawnItemEx("GreenFlare");
+			Stop;
+	 }
+	
+
+	override void PostBeginPlay()
+	{
+		DoTracers = true;
+		A_StartSound("Bfgfly1",CHAN_BODY,CHANF_OVERLAP|CHANF_LOOPING);
+		Super.PostBeginPlay();
+	}
+
+	override void Tick()
+	{
+		Super.Tick();
+		if(isfrozen())
+			return;
+		if (DoTracers && level.time % 3 == 0) 
+			DoBFGBeams();
+	}
+	
+	override int DoSpecialDamage(actor victim,int damage,name damagetype)
+	{
+		if(victim == target) return 0;
+		return Super.DoSpecialDamage(victim,damage,damagetype);
+	}
+	
+	bool DoTracers;
+	
+	const Dist_BT_Fx = 25; //the space between particles, used to determine how many particles are going to spawn to create the "rail"
+	
+	Void DoBFGBeams(int dist = 1024,int dmg = 18)
+	{
+		if(!target) return;
+		BlockThingsIterator bti = BlockThingsIterator.Create(self,dist);
+		actor current;
+		
+		//was not fired by a player?
+		bool bad = (target && !target.player);
+		
+		while(bti.next())
+		{
+			current = bti.thing;
+			//if there no monster, the monster is dead, isnt shootable, the monster is a player (and its not fired from a player)
+			//the monster is not on sight
+			if(!current || current == target || current.health < 1 ||!current.bshootable || !current.bsolid || 
+			!self.checksight(current) || (!bad && current.player) || (!bad && !current.bismonster) || current.isfriend(target))
+				continue;
+			
+			//check if the thing is not too far away
+			int distance = self.distance3D(current);
+			if(distance > dist)
+				continue;
+				
+			//get the difference between the bfgball pos and the enemy pos
+			vector3 dif = levellocals.vec3diff((self.pos.x,self.pos.y,self.pos.z + self.height*0.5),(current.pos.x,current.pos.y,current.pos.z + current.height*0.5));
+			//get the direction
+			vector3 direction = dif.unit();
+			//the total distance as a magnitude instead of a vector
+			double magnitude = dif.length();
+			//get the amount of steps based on the space between the particles
+			int steps = int(magnitude/Dist_BT_Fx);
+			//save the actual pos of the ball
+			vector3 actpos = self.pos;
+			
+			for(int i = 1; i <= steps; i++)
+			{
+				actpos += (direction * Dist_BT_Fx);
+				SpawnBFGLightng(actpos);
+			}
+			
+			//apply the damage directly to the mobj instead of firing a railgun
+			//anyways the "rail" is spawned in the for loop
+			current.damagemobj(self,self.target,dmg,"Disintegrate");
+	
+		}
+		
+	}
+	
+	
+	//visuals
+	
+	//this function spawns a textured particle of a little bfg spark in the desired pos
+	Void SpawnBFGLightng(vector3 where)
+	{
+		FSpawnParticleParams BFGLGT;
+		BFGLGT.Texture = TexMan.CheckForTexture ("SRKGM0"); //DB46Q0 DB08C0 YAE6A0
+		BFGLGT.Color1 = "FFFFFF";
+		BFGLGT.Style = STYLE_Add;
+		BFGLGT.Flags = SPF_ROLL|SPF_FULLBRIGHT;
+		BFGLGT.Vel = (frandom(-3,3),frandom (-3,3),frandom (-3,3)); 
+		BFGLGT.Startroll = random(0,360);
+		BFGLGT.RollVel = frandom(-5,5);
+		BFGLGT.StartAlpha = 1.0;
+		BFGLGT.FadeStep = 0.25;
+		BFGLGT.Size = random(8,13);
+		BFGLGT.SizeStep = random(7,25);
+		BFGLGT.Lifetime = random (2,4); 
+		BFGLGT.Pos = where;
+		
+		Level.SpawnParticle(BFGLGT);
+	}
+	
+	//the lightning trail fx
+	void SpawnBFGBallTrail()
+	{
+		FSpawnParticleParams BFGTrail;
+		int fm = random(1,5);
+		BFGTrail.Texture = TexMan.CheckForTexture ("DLI"..fm.."G0R0");
+		BFGTrail.Color1 = "FFFFFF";
+		BFGTrail.Style = STYLE_Add;
+		BFGTrail.Flags = SPF_ROLL|SPF_FULLBRIGHT;
+		BFGTrail.Vel = (frandom(-6,6),frandom (-3,3),frandom (-0.3,0.3)); 
+		BFGTrail.Startroll = random(0,360);
+		//BFGTrail.RollVel = frandom(-5,5);
+		BFGTrail.StartAlpha = 1.0;
+		BFGTrail.FadeStep = 0.1;
+		BFGTrail.Size = random(12,24);
+		BFGTrail.SizeStep = random(10,25);
+		BFGTrail.Lifetime = random (10,15);
+		vector3 randvar = (random(-13,13),random(-13,13),random(-10,22));
+		BFGTrail.Pos = self.vec3offset(randvar.x,randvar.y,randvar.z);
+		
+		Level.SpawnParticle(BFGTrail);
+	}
+	
+
+}

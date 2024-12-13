@@ -1,0 +1,2328 @@
+ACTOR RailgunAmmo : PB_WeaponAmmo
+{
+	Inventory.Amount 0
+	Inventory.MaxAmount 60
+	Ammo.BackpackAmount 0
+	Ammo.BackpackMaxAmount 60
+	+INVENTORY.IGNORESKILL
+	Inventory.Icon "SRCGA0"
+}
+
+Actor RailgunLaserCharge : Inventory
+{
+inventory.maxamount 60
+}
+
+Actor InfraredActivated : Inventory
+{
+inventory.maxamount 1
+}
+
+Actor RailgunUnloaded : Inventory
+{
+inventory.maxamount 1
+}
+
+Actor RailgunCooldown : Inventory
+{
+inventory.maxamount 25
+}
+
+Actor RailgunLaserMode : Inventory
+{
+inventory.maxamount 1
+}
+
+Actor MicrowaveCharge : Inventory
+{
+inventory.maxamount 20
+}
+
+Actor RespectRailgun : Inventory
+{
+inventory.maxamount 1
+}
+//
+actor PowerRailgunCoolDown : PowerupGiver{
+	+INVENTORY.AUTOACTIVATE
+	+INVENTORY.ALWAYSPICKUP
+	Inventory.MaxAmount 0
+	Powerup.Type "PowerRailCoolDown"
+}
+actor PowerRailCoolDown : PowerUp{
+	Powerup.Duration 41
+}
+// --------------------------------------------------------------------------
+//
+// Railgun
+//
+// --------------------------------------------------------------------------
+ACTOR PB_Railgun : PB_Weapon
+{
+	//$Category Project Brutality - Weapons
+	//$Sprite SRCGA0
+	SpawnID 9710
+	//damagetype SSG
+	Weapon.AmmoUse1 0
+	Weapon.AmmoUse2 0
+	Weapon.AmmoGive1 60
+	Weapon.AmmoGive2 0
+	Weapon.AmmoType1 "PB_Cell"
+	Weapon.AmmoType2 "RailgunAmmo"
+	Obituary "%o was pierced by %k's Railgun."
+	Inventory.PickupSound "PLSDRAW"
+	Inventory.Pickupmessage "UAC-MKIII Railgun (Slot 9)"
+	+WEAPON.NOAUTOAIM
+	+WEAPON.NOAUTOFIRE
+	+WEAPON.NOALERT
+	+FLOORCLIP
+	+DONTGIB
+	Tag "MKIII Railgun"
+	Scale 0.46
+	PB_WeaponBase.UnloaderToken "RailgunUnloaded"
+	Inventory.AltHUDIcon "SRCGA0"
+	PB_WeaponBase.respectItem "RespectRailgun"
+	FloatBobStrength 0.5
+	PB_WeaponBase.OffsetRecoilX 3.0 //Used for the shaking effect for the Laser charge hold
+	PB_WeaponBase.OffsetRecoilY 2.3 //Used for the shaking effect for the Laser charge hold
+	PB_WeaponBase.MuzzleSmokeColor "618DB8"
+	
+	States
+	{
+		
+		Steady:
+			TNT1 A 1
+			Goto Ready
+
+		Deselect:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+			TNT1 A 0 {
+				A_Setinventory("RailgunInfrared", 0);
+				A_Setinventory("InfraredActivated", 0);
+//				A_Setinventory("RailgunUnloaded",0);
+				A_Setinventory("Unloading",0);
+				A_StopSound(3);
+				A_StopSound(6);
+				A_StopSound(CHAN_7);
+				A_StopSound(1);
+				A_Setinventory("Zoomed",0);
+				A_Setinventory("HasCutingWeapon",0);
+				A_Setinventory("ADSMode",0);
+				A_ZoomFactor(1.0);
+			}
+			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") < 12, 3)
+			TNT1 A 0 A_JumpIfInventory("RailgunUnloaded",1,2)
+			TNT1 A 0 {
+				if (CountInv("RailgunLaserMode") == 1) { 
+					A_StartSound("weapons/railgun/deselectred", CHAN_AUTO, CHANF_OVERLAP);
+				}
+				else {
+					A_StartSound("weapons/railgun/deselectblue", CHAN_AUTO, CHANF_OVERLAP);
+				}
+			}
+			R024 ABCD 0 //Red
+			R023 ABCD 0 //Empty, Blue
+			R025 ABCD 0 //Empty, Red
+			R022 ABCD 1 {
+				if (CountInv("RailgunAmmo") < 12 || CountInv("RailgunCooldown") > 0) { A_SetWeaponSprite("R023");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R024");}
+				if (CountInv("RailgunAmmo") < 12 && CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R025");}		
+			}
+			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+			Wait
+
+			
+		Select:
+			TNT1 A 0
+			TNT1 A 0 PB_ResetBarrelTokens
+			Goto SelectFirstPersonLegs
+			SelectContinue:
+			//TNT1 A 0 A_Takeinventory("RailgunUnloaded",1)
+			TNT1 A 0 PB_WeapTokenSwitch("RailGunSelected")
+			TNT1 A 0 A_TakeInventory("RailgunCooldown",25)
+			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
+			TNT1 AAAAAAAA 1 A_Raise
+			Wait
+		
+	
+		Ready:
+			TNT1 A 0 PB_RespectIfNeeded
+		WeaponRespect:
+			TNT1 A 0 {
+				A_Setinventory("PB_LockScreenTilt",1);
+				A_Setinventory("RespectRailgun",1);
+				A_SetCrosshair(5);
+				A_StartSound("weapons/railgun/inspect1", CHAN_AUTO, CHANF_OVERLAP);
+			}
+			TNT1 A 0 A_TakeInventory("RailgunCooldown",25)
+			R000 ABCDEFGHIJKLMNOPQRSTUV 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("weapons/nailgun/up", CHAN_AUTO, CHANF_OVERLAP)
+			R000 WXYZ 1 A_DoPBWeaponAction
+			R001 ABCDEFGH 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect2", CHAN_AUTO, CHANF_OVERLAP)
+			R001 IJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect2", CHAN_AUTO, CHANF_OVERLAP)
+			R002 ABCD 1 A_DoPBWeaponAction
+			R002 EFGHIJKLMNOPQRST 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect4", CHAN_AUTO, CHANF_OVERLAP)
+			R002 UVWXYZ 1 A_DoPBWeaponAction
+			R003 ABCDEFG 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("weapons/nailgun/up", CHAN_AUTO, CHANF_OVERLAP)
+			R003 HIJKLMNOPQRSTUV 1 
+			TNT1 A 0 A_StartSound("LIGHTON", CHAN_AUTO, CHANF_OVERLAP)
+			R003 WXYZ 1 A_DoPBWeaponAction
+			R004 ABC 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("weapons/carbine/fancybutton", CHAN_AUTO, CHANF_OVERLAP)
+			R004 DEFGHIJKLMNO 1 A_DoPBWeaponAction
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect5", CHAN_AUTO, CHANF_OVERLAP)
+			R004 PQRSTUVWXYZ 1 BRIGHT A_DoPBWeaponAction
+			TNT1 A 0 A_SetBlend("Blue",0.3,12)
+			R005 ABCDEFGHIJK 1 BRIGHT A_DoPBWeaponAction
+			Goto Ready3
+			
+		SelectAnimation:
+			TNT1 A 0 A_TakeInventory("Zoomed",1)
+			R010 ABCD 0 //Red
+			R009 ABCD 0 //Empty, Blue
+			R011 ABCD 0 //Empty, Red
+			TNT1 A 0 A_JumpIfInventory("GoFatality",1,"Steady")
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect1", CHAN_AUTO, CHANF_OVERLAP)
+			R008 ABCD 1 {
+				if (CountInv("RailgunAmmo") < 12 ) { A_SetWeaponSprite("R009");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R010");}
+				if (CountInv("RailgunAmmo") < 12 && CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R011");}		
+			}
+		Ready3:
+			TNT1 A 0
+			TNT1 A 0 A_TakeInventory("RailgunLaserCharge", 60) //Fixes incorrect charge level bug
+			TNT1 A 0 A_SetInventory("CantDoAction",0)
+			//TNT1 A 0 A_TakeInventory("RailgunCooldown", 25)
+			TNT1 A 0 {
+				if (CountInv("Zoomed") == 1) { A_StartSound("weapons/railgun/scopeloop", 7, CHANF_LOOPING|CHANF_OVERLAP );}
+				if (CountInv("RailgunAmmo") > 0 && CountInv("RailgunLaserMode") == 1) { A_StartSound("weapons/railgun/loop_red", 6, CHANF_LOOPING|CHANF_OVERLAP );}
+				else {
+					if(CountInv("RailgunAmmo") >= 12){A_StartSound("weapons/railgun/loop_blue", 6, CHANF_LOOPING);}
+				}
+			}
+			TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "ReadyToFire_Scoped")
+			TNT1 A 0 A_JumpIfInventory("RailgunLaserMode", 1, "ReadyToFire_Red")
+			TNT1 A 0 {
+				A_Setinventory("PB_LockScreenTilt",0);
+				PB_HandleCrosshair(77);
+			}
+		ReadyToFire_Blue:
+			R006 ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 BRIGHT
+			{
+				PB_CoolDownBarrel(0,0,3,0,0,0,2,2);
+				// Consumes 12 cell per shot
+				if (CountInv("RailgunAmmo") < 12){return state("ReadyToFire_Blue_Empty");}
+				if (PressingAltfire()){return state("AltFire");}
+				if (PressingFire() && CountInv("RailgunAmmo") > 0 && !FindInventory("PowerRailCoolDown") && !FindInventory("PowerRailgunCoolDown") ){return state("Fire");}
+				if(FindInventory("PowerRailCoolDown") || FindInventory("PowerRailgunCoolDown")){return A_DoPBWeaponAction(WRF_NOFIRE|WRF_ALLOWRELOAD);}
+				else {return A_DoPBWeaponAction(WRF_ALLOWRELOAD);}
+			}
+			R007 ABCD 1 BRIGHT
+			{
+				PB_CoolDownBarrel(0,0,3,0,0,0,2,2);
+				if (CountInv("RailgunAmmo") < 12){return state("ReadyToFire_Blue_Empty");}
+				if (PressingAltfire()){return state("AltFire");}
+				if (PressingFire() && CountInv("RailgunAmmo") > 0 && !FindInventory("PowerRailCoolDown") && !FindInventory("PowerRailgunCoolDown") ){return state("Fire");}
+				if(FindInventory("PowerRailCoolDown") || FindInventory("PowerRailgunCoolDown")){return A_DoPBWeaponAction(WRF_NOFIRE|WRF_ALLOWRELOAD);}
+				else {return A_DoPBWeaponAction(WRF_ALLOWRELOAD);}
+			}
+			Loop
+		ReadyToFire_Blue_Empty:
+			R007 E 1
+			{
+				PB_CoolDownBarrel(0,0,3,0,0,0,2,2);
+				if (PressingFire() && CountInv("RailgunAmmo") > 0 ){return state("Fire");}
+				if (PressingAltfire()){return state("AltFire");}
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+			}
+			Loop
+			
+		ReadyToFire_Red:
+			R012 ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 BRIGHT
+			{
+				PB_CoolDownBarrel(0,0,3,0,0,0,2,2);
+				if (CountInv("RailgunAmmo") < 1){return state("ReadyToFire_Red_Empty");}
+				if (PressingAltfire()){return state("AltFire");}
+				if (PressingFire() && CountInv("RailgunAmmo") > 0){return state("Fire");}
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+			}
+			R013 ABCD 1 BRIGHT
+			{
+				PB_CoolDownBarrel(0,0,3,0,0,0,2,2);
+				if (CountInv("RailgunAmmo") < 1){return state("ReadyToFire_Red_Empty");}
+				if (PressingFire() && CountInv("RailgunAmmo") > 0){return state("Fire");}
+				if (PressingAltfire()){return state("AltFire");}
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+			}
+			Loop
+		ReadyToFire_Red_Empty:
+			R013 E 1
+			{
+				PB_CoolDownBarrel(0,0,3,0,0,0,2,2);
+				if (PressingFire() && CountInv("RailgunAmmo") > 0){return state("Fire");}
+				if (PressingAltfire()){return state("AltFire");}
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+			}
+			Loop
+			
+		Ready3Cooldown:
+			//PowerRailCoolDown
+			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") < 12, "ReadiedScope_Empty")
+			R038 QQQQQQQQQQQQQQQQQQ 1 BRIGHT
+			{
+				PB_CoolDownBarrel(0,0,3,0,0,0,2,2);
+				A_Zoomfactor(4.0);
+				if(CountInv("InfraredActivated") == 1) {A_SetInventory("RailgunInfrared", 1);}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R030");}
+				if (CountInv("RailgunAmmo") == 0 ) { 
+					return state("ReadyToFire_Scoped_Empty");
+				}
+				if(GetCvar("pb_toggle_aim_hold")) {
+					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){
+						return state("Zoomout");
+					}
+					if (PressingFire() && PressingAltfire() && CountInv("RailgunAmmo" ) > 0 && !FindInventory("PowerRailCoolDown") && !FindInventory("PowerRailgunCoolDown") ){
+							return state("Fire_Scope");
+					}
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOBOB|WRF_NOFIRE);
+					
+					}
+				else {
+					if (PressingFire() && CountInv("RailgunAmmo") > 0 && !FindInventory("PowerRailCoolDown") && !FindInventory("PowerRailgunCoolDown") ){
+						return state("Fire_Scope");
+					}
+					if(FindInventory("PowerRailCoolDown") || FindInventory("PowerRailgunCoolDown")){return A_DoPBWeaponAction(WRF_NOFIRE|WRF_ALLOWRELOAD|WRF_NOBOB);}
+					else {return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOBOB);}
+				}
+				return state("");
+			}
+		ReadiedScope_Empty:
+			R038 RSTUVWXY 1 BRIGHT
+			R026 A 0 A_SetInventory("CantDoAction",0)
+			Goto ReadyToFire_Scoped
+		ReadyToFire_Scoped:
+			R028 F 1 BRIGHT
+			{
+				PB_CoolDownBarrel(0,0,3,0,0,0,2,2);
+				//Change Sprite if in Laser Mode
+				A_Zoomfactor(4.0);
+//				A_SetRenderStyle(1,STYLE_Normal);
+				if(CountInv("InfraredActivated") == 1) {A_SetInventory("RailgunInfrared", 1);}
+				
+				//A_WeaponOffset(0,32);
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R030");}
+				if (CountInv("RailgunAmmo") == 0 ) { 
+					return state("ReadyToFire_Scoped_Empty");
+				}
+				if(GetCvar("pb_toggle_aim_hold")) {
+					
+					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){
+						return state("Zoomout");
+					}
+			
+					if (PressingFire() && PressingAltfire() && CountInv("RailgunAmmo" ) > 0 && !FindInventory("PowerRailCoolDown") && !FindInventory("PowerRailgunCoolDown") ){
+							return state("Fire_Scope");
+					}
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOBOB|WRF_NOFIRE);
+					
+					}
+				else {
+					if (PressingFire() && CountInv("RailgunAmmo") > 0 && !FindInventory("PowerRailCoolDown") && !FindInventory("PowerRailgunCoolDown") ){
+						return state("Fire_Scope");
+					}
+					if(FindInventory("PowerRailCoolDown") || FindInventory("PowerRailgunCoolDown")){return A_DoPBWeaponAction(WRF_NOFIRE|WRF_ALLOWRELOAD|WRF_NOBOB);}
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOBOB);
+				}
+				return state("");
+
+			}
+			Loop
+			
+		ReadyToFire_Scoped_Empty:
+			R030 GH 0 // <-- Initialize sprites into virtual memory
+			R007 GGGGGGGGGGHHHHHHHHHH 1
+			{
+				PB_CoolDownBarrel(0,0,3,0,0,0,2,2);
+				//Change Sprite if in Laser Mode
+				if(CountInv("InfraredActivated") == 1) {A_SetInventory("RailgunInfrared", 1);}
+				A_WeaponOffset(0,32);
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R030");}
+				
+				if(GetCvar("pb_toggle_aim_hold")) {
+					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){
+						return state("Zoomout");
+					}
+					if (PressingFire() && PressingAltfire() && CountInv("RailgunAmmo") > 0){
+							return state("Fire_Scope");
+					}
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOBOB|WRF_NOFIRE);
+				}
+				else {
+					if (PressingFire() && CountInv("RailgunAmmo") > 0){
+						return state("Fire_Scope");
+					}
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOBOB);
+				}
+				return state("");
+			}
+			Loop
+		
+		SwitchInfrared:
+			TNT1 A 0 {
+				A_StartSound("LIGHTON", CHAN_AUTO, CHANF_OVERLAP);
+				if(CountInv("InfraredActivated") == 1) { 
+					A_Setinventory("InfraredActivated", 0);
+					A_Setinventory("RailgunInfrared", 0);
+				}
+				else { A_Setinventory("InfraredActivated", 1); }
+			}
+			Goto Ready3
+			
+		/*
+		WeaponSpecialZoomOut:
+			
+			TNT1 A 0 A_JumpIfInventory("Zoomed",1,"SwitchInfraredOn")
+			TNT1 A 0 {
+				A_PlaySound("RAIL_ZM");
+				A_Takeinventory("Zoomed",1);
+				A_StopSound(7);
+				PB_HandleCrosshair(77);
+				A_ZoomFactor(1.0);
+				A_ChangeFlag("DONTBOB", False);
+			}
+			R033 ABCDE 0 // Blue, Empty
+			R034 ABCDE 0 // Red
+			R035 ABCDE 0 // Red, Empty
+			R032 ABCDE 1 {
+				if (CountInv("RailgunAmmo") < 12 ) { A_SetWeaponSprite("R033");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R034");}
+				if (CountInv("RailgunAmmo") < 12 && CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R035");}
+			}
+			Goto WeaponSpecial
+		*/
+		
+		WeaponSpecial:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+			TNT1 A 0 A_Setinventory("GoWeaponSpecialAbility",0)
+			TNT1 A 0 A_JumpIfInventory("Zoomed",1,"SwitchInfrared")
+			TNT1 A 0 {
+				A_StopSound(1);
+				A_StopSound(6);
+				A_StopSound(7);
+				A_StartSound("Ironsights", CHAN_AUTO, CHANF_OVERLAP);
+			}
+			TNT1 A 0 A_JumpIfInventory("RailgunLaserMode",1,"SwitchToRailgun")
+		SwitchToLaser:
+			TNT1 A 0 A_Print ("Firemode: \cgLaser")
+			TNT1 A 0 A_Setinventory("RailgunLaserMode",1)
+			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") == 0, "SwitchToLaser_Empty")
+			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") < 12, "SwitchToLaser_Partial")
+			R014 ABCDEF 1 
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect4", CHAN_AUTO, CHANF_OVERLAP)
+			TNT1 A 0 A_StartSound("weapons/railgun/powerdownblue", CHAN_AUTO, CHANF_OVERLAP)
+			R014 GHIJKLMNOP 1
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect6", CHAN_AUTO, CHANF_OVERLAP)
+			R014 QRSTUVWXYZ 1
+			R015 ABCD 1
+			TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO, CHANF_OVERLAP)
+			R015 EFGHI 1
+			Goto Ready3
+		
+		SwitchToLaser_Partial:
+			R017 ABCDEF 1 
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect4", CHAN_AUTO, CHANF_OVERLAP)
+			R017 GHIJKLM 1
+			R014 LMNOP 1 
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect6", CHAN_AUTO, CHANF_OVERLAP)
+			R014 QRSTUVWXYZ 1 
+			R015 ABCD 1 
+			TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO, CHANF_OVERLAP)
+			R015 EFGHI 1
+			Goto Ready3
+			
+		SwitchToLaser_Empty:
+			R016 ABCDEF 1 
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect4", CHAN_AUTO, CHANF_OVERLAP)
+			R016 GHIJKLMNOPQRSTUVW 1 
+			TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO, CHANF_OVERLAP)
+			R016 XYZ 1
+			Goto Ready3
+			
+		SwitchToRailgun:
+			TNT1 A 0 A_Print ("Firemode: \chRail")
+			TNT1 A 0 A_Setinventory("RailgunLaserMode",0)
+			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") == 0, "SwitchToRailgun_Empty")
+			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") < 12, "SwitchToRailgun_Partial")
+			R018 ABCDEF 1 
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect4", CHAN_AUTO, CHANF_OVERLAP)
+			TNT1 A 0 A_StartSound("weapons/railgun/powerdownred", CHAN_AUTO, CHANF_OVERLAP)
+			R018 GHIJKLMNOP 1 
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect5", CHAN_AUTO, CHANF_OVERLAP)
+			R018 QRSTUVWXYZ 1
+			R019 ABC 1 
+			TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO, CHANF_OVERLAP)
+			R019 DEFGH 1
+			Goto Ready3
+			
+		SwitchToRailgun_Partial:
+			R018 ABCDEF 1 
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect4", CHAN_AUTO, CHANF_OVERLAP)
+			TNT1 A 0 A_StartSound("weapons/railgun/powerdownred", CHAN_AUTO, CHANF_OVERLAP)
+			R018 GHIJK 1
+			R020 LMNOPQ 1 
+			TNT1 A 0 A_StartSound("weapons/carbine/fancybutton", CHAN_AUTO, CHANF_OVERLAP)
+			R020 RSTUVWXYZ 1
+			R021 ABCDE 1
+			Goto Ready3
+			
+		SwitchToRailgun_Empty:
+			R020 ABCDEF 1 
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect4", CHAN_AUTO, CHANF_OVERLAP)
+			R020 GHIJKLMNOPQ 1 
+			TNT1 A 0 A_StartSound("weapons/carbine/fancybutton", CHAN_AUTO, CHANF_OVERLAP)
+			R020 RSTUVW 1 
+			TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO, CHANF_OVERLAP)
+			R020 XYZ 1
+			R021 ABCDE 1
+			Goto Ready3
+		
+		ScopeOverlayPeriphery:
+			H4F6 Z 1
+			H4F6 Z 0 A_JumpIf(CountInv("Zoomed") < 1, 1)
+			Loop
+		
+			
+		StopScopeOverlay:
+			TNT1 AA 0
+			TNT1 A 5
+			Stop
+			
+		AltFire:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+			TNT1 A 0 A_WeaponOffset(0,32)
+			TNT1 A 0 A_JumpIfInventory("Zoomed",1,"ZoomOut")
+		ZoomIn:
+			TNT1 A 0 {
+				A_StartSound("weapons/railgun/zoomin");
+				A_Setinventory("Zoomed",1);
+				A_Setinventory("ADSMode",1);
+				A_SetCrosshair(5);
+				A_ZoomFactor(4.0);
+				A_ChangeFlag("DONTBOB", True);
+				
+			}
+			R029 ABCDEF 0 // Blue, Empty
+			R030 ABCDEF 0 // Red
+			R031 ABCDEF 0 // Red, Empty
+			R028 ABCDEF 1 {
+				if (CountInv("RailgunAmmo") < 12 ) { A_SetWeaponSprite("R029");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R030");}
+				if (CountInv("RailgunAmmo") < 12 && CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R031");}
+				A_Overlay(-80,"ScopeOverlayPeriphery");
+			}
+			Goto Ready3
+		ZoomOut:
+			TNT1 A 0 {
+				A_StopSound(7);
+				A_StartSound("weapons/railgun/zoomout");
+				A_Setinventory("Zoomed",0);
+				PB_HandleCrosshair(77);
+				A_ZoomFactor(1.0);
+				A_ChangeFlag("DONTBOB", False);
+				A_Setinventory("RailgunInfrared", 0);
+				A_Setinventory("ADSMode",0);
+			}
+			R033 ABCDE 0 // Blue, Empty
+			R034 ABCDE 0 // Red
+			R035 ABCDE 0 // Red, Empty
+			R032 ABCDE 1 {
+				if (CountInv("RailgunAmmo") < 12 ) { A_SetWeaponSprite("R033");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R034");}
+				if (CountInv("RailgunAmmo") < 12 && CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R035");}
+			}
+			Goto Ready3
+
+		Railgun_Cooldown:
+			TNT1 A 1 A_TakeInventory("RailgunCooldown",1)
+			TNT1 A 0 A_JumpIfInventory("RailgunCooldown", 1, "Railgun_Cooldown")
+			Stop
+			//41
+		Fire:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
+			TNT1 A 0 {
+				A_WeaponOffset(0,32);
+				A_SetRoll(0);
+				PB_HandleCrosshair(77);
+				A_Setinventory("PB_LockScreenTilt",0);
+				A_StopSound(6);
+			}
+			TNT1 A 0 A_JumpIfInventory("Zoomed",1, "Fire_Scope")
+			TNT1 A 0 A_JumpIfInventory("RailgunLaserMode",1,"Fire_Laser")
+			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",12,1)
+			Goto Reload
+		FireRailgun:
+			R026 A 1 BRIGHT {
+				PB_IncrementHeat(6);
+				A_StartSound("weapons/railgf", 10);//CHAN_WEAPON
+				PB_DynamicTail("sniper", "sniper");
+				A_AlertMonsters;
+				A_Takeinventory("RailgunAmmo",12);
+				A_GiveInventory("RailgunCooldown", 25);
+				A_GiveInventory("PowerRailgunCoolDown",1);
+				A_Overlay(20, "Railgun_Cooldown");
+				A_FireCustomMissile("RailgunWallPenetrationHitscan", 0, 0, -1, 0, 0, 0);
+				PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+				PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+				PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+				PB_IncrementHeat(10);
+				A_FireProjectile("GaussSiegeDamageAndPuff",0,0,0,0);
+				A_RailAttack(300,0,0,"None","None",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"RailgunPuff1",0,0,8192,0,15,1.0); //to spawn the trail "GaussTrailMain"
+				PB_VisualRailBlue();
+				//A_RailAttack(0,0,0,"None","None",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"RailgunPuff1",0,0,8192,0,64,1.0,"SP_GaussTrailSiegeAOE"); //to spawn the trail
+				//A_RailAttack(0,0,0,"none","none",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"RailgunPuff1",0,0,8192,0,1,1.0,"gausssmoke_spawner_gc");
+				//A_RailAttack(200, 0, 0, "Green","Cyan", RGF_SILENT, 0, "RAILGUNPUFF1",0,0,0,0,5,1.0,"RailGunTrail");
+				A_ZoomFactor(0.96);
+				A_GunFlash;
+				A_SetInventory("CantDoAction",1);
+				PB_WeaponRecoil(-2.5,-0.2);
+			}
+			R026 B 1 BRIGHT {
+				A_ZoomFactor(0.98);
+				PB_WeaponRecoil(-2.5,-0.2);
+			}
+			R026 C 1 {
+				A_ZoomFactor(1.0);
+				PB_WeaponRecoil(-2.5,-0.2);
+				A_Overlay(-6, "RailFireSparks", true);
+			}
+			R026 DE 1
+			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") < 12, "FireRailgun_Empty")
+			R026 F 1 Offset(0,33)
+			R026 G 2 Offset(0,34)
+			R026 G 7 Offset(0,35)
+			R026 G 6 A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
+			R026 GHI 1 Offset(0,34) A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
+			R026 JK 1 Offset(0,33) A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
+			R026 LMNOPQRSTUVWXYZ 1 Offset(0,32) A_WeaponReady(WRF_NOFIRE|WRF_NOBOB)
+			R026 A 0 A_SetInventory("CantDoAction",0)
+			goto Ready3
+		FireRailgun_Empty:
+			R026 FG 1
+			R027 ABCDEFGHIJK 1
+			goto Ready3
+		
+		RailFireSparks:
+			R126 CDE 1 BRIGHT
+			Stop
+
+		Fire_Laser:
+			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",1,1)
+			Goto Reload
+			R026 A 0 A_SetInventory("CantDoAction",1)
+			R036 A 1 BRIGHT {
+				A_StartSound("weapons/railgun/laserchargeup", 5, CHANF_OVERLAP|CHANF_LOOP);
+				A_AlertMonsters;
+			}
+		Laser_Stage_1:
+			R036 BCDEF 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NullPuff",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.1,6);
+				if(CountInv("RailgunAmmo") < 1) {
+					return state("Laser_Blast");
+				}
+				A_TakeInventory("RailgunAmmo", 1);
+				A_GiveInventory("RailgunLaserCharge", 1);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast");
+				}
+				return state("");
+			}
+			R036 G 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NullPuff",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.1,6);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast");
+				}
+				if(CountInv("RailgunLaserCharge") >= 15) {
+					A_StartSound("weapons/railgun/lasercharge1", CHAN_AUTO, CHANF_OVERLAP);
+					return state("Laser_Stage_2");
+				}
+				return state("Laser_Stage_1"); //Return state fixes the laser mode charge where it stops charging if altfire isn't held down.
+			}
+		Laser_Stage_2:
+			R036 HIJKL 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NullPuff",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.18,6);
+				if(CountInv("RailgunAmmo") < 1) {
+					return state("Laser_Blast");
+				}
+				A_TakeInventory("RailgunAmmo", 1);
+				A_GiveInventory("RailgunLaserCharge", 1);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast");
+				}
+				return state("");
+			}
+			R036 M 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NullPuff",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.18,6);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast");
+				}
+				if(CountInv("RailgunLaserCharge") >= 30) {
+					A_StartSound("weapons/railgun/lasercharge2", CHAN_AUTO, CHANF_OVERLAP);
+					return state("Laser_Stage_3");
+				}
+				
+				return state("Laser_Stage_2");
+			}
+		Laser_Stage_3:
+			R036 NOPQR 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NullPuff",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.26,6);
+				if(CountInv("RailgunAmmo") < 1) {
+					return state("Laser_Blast");
+				}
+				A_TakeInventory("RailgunAmmo", 1);
+				A_GiveInventory("RailgunLaserCharge", 1);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast");
+				}
+				return state("");
+			}
+			R036 S 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NullPuff",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.26,6);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast");
+				}
+				if(CountInv("RailgunLaserCharge") >= 45) {
+					A_StartSound("weapons/railgun/lasercharge3", CHAN_AUTO, CHANF_OVERLAP);
+					return state("Laser_Stage_4");
+				}
+				return state("Laser_Stage_3");
+			}
+		Laser_Stage_4:
+			R036 TUVWX 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NullPuff",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.32,6);
+				if(CountInv("RailgunLaserCharge") == 60) {
+					A_StartSound("weapons/railgun/lasercharge4", CHAN_AUTO, CHANF_OVERLAP);
+					return State("HoldLaser");
+				}
+				if(CountInv("RailgunAmmo") < 1) {
+					return state("Laser_Blast");
+				}
+				A_TakeInventory("RailgunAmmo", 1);
+				A_GiveInventory("RailgunLaserCharge", 1);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast");
+				}
+				return state("");
+			}
+			R036 Y 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NullPuff",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.32,6);
+				if(CountInv("RailgunLaserCharge") == 60) {
+					A_StartSound("weapons/railgun/lasercharge4", CHAN_AUTO, CHANF_OVERLAP);
+				}
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast");
+				}
+				return state("Laser_Stage_4");
+			}
+		HoldLaser:
+			RAIL A 0 A_StartSound("weapons/railgun/laserfullycharged", CHAN_5, CHANF_OVERLAP|CHANF_LOOPING,0.37, ATTN_NORM, 1.1)
+			R036 TUVWXY 1 BRIGHT {
+				PB_FireOffset;
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NullPuff",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.32,6);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast");
+				}
+				if(JustPressed(BT_RELOAD)) {
+					return state("CancelLaserHold");
+				}
+				return state("");
+			}
+			Loop
+
+// Cancel the Railgun laser charge ------------------------------------------------------------
+		CancelLaserHold:
+			RAIL A 0 
+			{
+				A_StopSound(CHAN_5);
+				A_StartSound("weapons/railgun/powerdownred", CHAN_AUTO, CHANF_OVERLAP);
+				A_StartSound("RA1IF2", CHAN_AUTO, CHANF_OVERLAP, 0.4);
+			}
+			R039 A 0 A_JumpIfInventory("Zoomed",1,2)
+			R036 A 0
+		Cancel_Stage1:
+			"####" YXWVU 1 BRIGHT {
+				if(CountInv("Zoomed") >= 1) 
+				{A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);}
+				else
+				{PB_FireOffset;}
+				A_SetBlend("Red",0.32,6);
+				A_GiveInventory("RailgunAmmo", 1);
+				A_TakeInventory("RailgunLaserCharge", 1);
+				return state("");
+			}
+			"####" T 1 BRIGHT {
+				if(CountInv("Zoomed") >= 1) 
+				{A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);}
+				else
+				{PB_FireOffset;}
+				A_SetBlend("Red",0.32,6);
+				if(CountInv("RailgunLaserCharge") < 45) {
+					return State("Cancel_Stage2");
+				}
+				return state("Cancel_Stage1");
+			}
+		Cancel_Stage2:
+			"####" SRQPO 1 BRIGHT {
+				if(CountInv("Zoomed") >= 1) 
+				{A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);}
+				else
+				{PB_FireOffset;}
+				A_SetBlend("Red",0.26,6);
+				A_GiveInventory("RailgunAmmo", 1);
+				A_TakeInventory("RailgunLaserCharge", 1);
+				return state("");
+			}
+			"####" N 1 BRIGHT {
+				if(CountInv("Zoomed") >= 1) 
+				{A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);}
+				else
+				{PB_FireOffset;}
+				A_SetBlend("Red",0.26,6);
+				if(CountInv("RailgunLaserCharge") < 30) {
+					A_StartSound("weapons/railgun/lasercancel",CHAN_AUTO,CHANF_OVERLAP);
+					return State("Cancel_Stage3");
+				}
+				return state("Cancel_Stage2");
+			}
+		Cancel_Stage_3:
+			"####" MLKJI 1 BRIGHT {
+				if(CountInv("Zoomed") >= 1) 
+				{A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);}
+				else
+				{PB_FireOffset;}
+				A_SetBlend("Red",0.18,6);
+				A_GiveInventory("RailgunAmmo", 1);
+				A_TakeInventory("RailgunLaserCharge", 1);
+				return state("");
+			}
+			"####" H 1 BRIGHT {
+				if(CountInv("Zoomed") >= 1) 
+				{A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);}
+				else
+				{PB_FireOffset;}
+				A_SetBlend("Red",0.18,6);
+				if(CountInv("RailgunLaserCharge") < 15) {
+					return state("Cancel_Stage_4");
+				}
+				return state("Cancel_Stage_3");
+			}
+		Cancel_Stage_4:
+			"####" GFEDCB 1 BRIGHT {
+				if(CountInv("Zoomed") >= 1) 
+				{A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);}
+				else
+				{PB_FireOffset;}
+				A_SetBlend("Red",0.18,6);
+				A_GiveInventory("RailgunAmmo", 1);
+				A_TakeInventory("RailgunLaserCharge", 1);
+				return state("");
+			}
+			"####" A 1 BRIGHT {
+				if(CountInv("Zoomed") >= 1) 
+				{A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);}
+				else
+				{PB_FireOffset;}
+				A_SetBlend("Red",0.18,6);
+				if(CountInv("RailgunLaserCharge") < 1) {
+					return state("Ready3");
+				}
+				return state("Cancel_Stage_4");
+			}
+		CancelDone:
+			"####" A 1
+		Goto Ready3
+		
+		Laser_Blast:
+			R036 Z 1 BRIGHT {
+				A_StopSound(5);
+				A_ZoomFactor(0.9);
+				//A_SetBlend("Red",0.5,22);
+				A_GunFlash;
+				if(CountInv("RailgunLaserCharge") == 60) {
+					PB_IncrementHeat(6);
+					A_StartSound("weapons/railgun/laser_huge", 5, CHANF_OVERLAP);
+					A_FireCustomMissile("RailgunLaserBlast1", 0, 0, 0, 0);
+					PB_VisualRailRed(1,CountInv("RailgunLaserCharge")); // 0 for the aim beam, 1 for the firing beam
+					//A_RailAttack(0,0,0,"None","None",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"ChargedMicrowavePuff",0,0,8192,0,15,1.0,"GaussTrailUber",-5); //to spawn the trail
+					//A_RailAttack(0,0,0,"None","None",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"ChargedMicrowavePuff",0,0,8192,0,64,1.0,"SP_GaussTrailUberSiegeAOE",-5); //to spawn the trail
+					A_RailAttack(7*(5*CountInv("RailgunLaserCharge")), 0, 0, None,None, RGF_SILENT, 0, "ChargedMicrowavePuff",0,0,0,0,5,1.0,none, 0, 0, 2);
+				}
+				if(CountInv("RailgunLaserCharge") < 15) {
+					PB_IncrementHeat(2);
+					//Does not pierce more than 2 targets
+					A_StartSound("weapons/railgun/laser_small", 5, CHANF_OVERLAP);
+					PB_VisualRailRed(1,CountInv("RailgunLaserCharge")); // 0 for the aim beam, 1 for the firing beam
+					//A_RailAttack(0,0,0,"None","None",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"MicrowavePuff",0,0,8192,0,15,1.0,"GaussTrailUber",-5); //to spawn the trail
+					A_RailAttack(9*(5*CountInv("RailgunLaserCharge")), 0, 0, None,None, RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,none, 0, 0, 2);
+				}
+				else {
+					PB_IncrementHeat(4);
+					A_StartSound("weapons/railgun/laser_big", 5, CHANF_OVERLAP);
+					PB_VisualRailRed(1,CountInv("RailgunLaserCharge")); // 0 for the aim beam, 1 for the firing beam
+					//A_RailAttack(0,0,0,"None","None",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"MicrowavePuff",0,0,8192,0,15,1.0,"GaussTrailUber",-5); //to spawn the trail
+					A_RailAttack(9*(2*CountInv("RailgunLaserCharge")), 0, 0, None,None, RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,none, 0, 0, 0);
+				}
+				if (pb_weapon_recoil_extra_weapons) //only add recoil in the "extra" weapons case
+				{
+					PB_WeaponRecoil(-0.25 * CountInv("RailgunLaserCharge"),-0.2 * CountInv("RailgunLaserCharge")); //do recoil based on how charged our weapon was
+				}
+				A_TakeInventory("RailgunLaserCharge", 60);
+				A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			}
+			R037 A 1 BRIGHT A_ZoomFactor(0.92)
+			R037 B 1 BRIGHT A_ZoomFactor(0.94)
+			R037 C 1 BRIGHT A_ZoomFactor(0.96)
+			R037 D 1 BRIGHT A_ZoomFactor(0.98)
+			R037 E 1 BRIGHT A_ZoomFactor(1.0)
+			R037 FG 1 
+			R037 HIJKLMNOPQRSTU 1 BRIGHT
+			R026 A 0 A_SetInventory("CantDoAction",0)
+			Goto Ready3
+			
+		Fire_Scope:
+			TNT1 A 0 A_JumpIfInventory("RailgunLaserMode",1,"Fire_Scope_Laser")
+			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",12,1)
+			Goto Reload
+			R026 AA 0
+			R038 C 1 BRIGHT {
+				PB_IncrementHeat(6);
+				A_StartSound("weapons/railgf", 10);//CHAN_WEAPON
+				PB_DynamicTail("sniper", "sniper");
+				A_AlertMonsters;
+				A_Takeinventory("RailgunAmmo",12);
+				A_GiveInventory("PowerRailgunCoolDown",1);
+				A_FireCustomMissile("RailgunWallPenetrationHitscan", 0, 0, -1, 0, 0, 0);
+				PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+				PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+				PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+				A_GiveInventory("RailgunCooldown", 25);
+				A_Overlay(20, "Railgun_Cooldown");
+				A_SetInventory("CantDoAction",1);
+				A_FireProjectile("GaussSiegeDamageAndPuff",0,0,0,0);
+				A_RailAttack(300,0,0,"None","None",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"RailgunPuff1",0,0,8192,0,15,1.0); //to spawn the trail
+				PB_VisualRailBlue();
+				//A_RailAttack(0,0,0,"None","None",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"RailgunPuff1",0,0,8192,0,64,1.0,"SP_GaussTrailSiegeAOE"); //to spawn the trail
+				//A_RailAttack(0,0,0,"none","none",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"RailgunPuff1",0,0,8192,0,1,1.0,"gausssmoke_spawner_gc");
+				//A_RailAttack(200, 0, 0, "Green","Cyan", RGF_SILENT, 0, "RAILGUNPUFF1",0,0,0,0,5,1.0,"RailGunTrail");
+				PB_WeaponRecoil(-2.5,-0.2);
+				
+			}
+			R038 D 1 BRIGHT {
+				PB_WeaponRecoil(-2.5,-0.2);
+			}
+			R038 EFGHIJKLMNOPQ 1 BRIGHT {
+				if(GetCvar("pb_toggle_aim_hold")) {
+					
+					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){return state("Zoomout");}
+			
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+					
+					}
+				else {
+					if (PressingAltfire()){return state("Zoomout");}
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+				}
+				return state("");
+			}
+			goto Ready3Cooldown
+			/*
+			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") < 12, "FireScope_Empty")
+			goto Ready3Cooldown
+			R038 Q 18 BRIGHT 
+			FireScope_Empty:
+			R038 RSTUVWXY 1 BRIGHT
+			R026 A 0 A_SetInventory("CantDoAction",0)
+			Goto Ready3
+			*/
+		Fire_Scope_Laser:
+			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",1,1)
+			Goto Reload
+			R026 A 0
+			R026 A 0 A_SetInventory("CantDoAction",1)
+			R039 A 1 BRIGHT {
+				A_StartSound("weapons/railgun/laserchargeup", 5, CHANF_OVERLAP|CHANF_LOOP);
+				A_AlertMonsters;
+			}
+		Laser_Stage_1_Scope:
+			R039 BCDEF 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NULLPUFF",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.1,6);
+				if(CountInv("RailgunAmmo") < 1) {
+					return state("Laser_Blast");
+				}
+				A_TakeInventory("RailgunAmmo", 1);
+				A_GiveInventory("RailgunLaserCharge", 1);
+				
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast_Scope");
+				}
+				return state("");
+			}
+			R039 G 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NULLPUFF",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.1,6);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast_Scope");
+				}
+				if(CountInv("RailgunLaserCharge") >= 15) {
+					A_StartSound("weapons/railgun/lasercharge1", CHAN_AUTO, CHANF_OVERLAP);
+					return state("Laser_Stage_2_Scope");
+				}
+				return state("Laser_Stage_1_Scope"); //Return state fixes the laser mode charge where it stops charging if altfire isn't held down.
+			}
+		Laser_Stage_2_Scope:
+			R039 HIJKL 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NULLPUFF",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.18,6);
+				if(CountInv("RailgunAmmo") < 1) {
+					return state("Laser_Blast_Scope");
+				}
+				A_TakeInventory("RailgunAmmo", 1);
+				A_GiveInventory("RailgunLaserCharge", 1);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast_Scope");
+				}
+				return state("");
+			}
+			R039 M 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NULLPUFF",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.18,6);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast_Scope");
+				}
+				if(CountInv("RailgunLaserCharge") >= 30) {
+					A_StartSound("weapons/railgun/lasercharge2", CHAN_AUTO, CHANF_OVERLAP);
+					return state("Laser_Stage_3_Scope");
+				}
+				return state("Laser_Stage_2_Scope");
+			}
+		Laser_Stage_3_Scope:
+			R039 NOPQR 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NULLPUFF",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.26,6);
+				if(CountInv("RailgunAmmo") < 1) {
+					return state("Laser_Blast_Scope");
+				}
+				A_TakeInventory("RailgunAmmo", 1);
+				A_GiveInventory("RailgunLaserCharge", 1);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast_Scope");
+				}
+				return state("");
+			}
+			R039 S 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NULLPUFF",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.26,6);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast_Scope");
+				}
+				if(CountInv("RailgunLaserCharge") >= 45) {
+					A_StartSound("weapons/railgun/lasercharge3", CHAN_AUTO, CHANF_OVERLAP);
+					return state("Laser_Stage_4_Scope");
+				}
+				return state("Laser_Stage_3_Scope");
+			}
+		Laser_Stage_4_Scope:
+			R039 TUVWX 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NULLPUFF",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.32,6);
+				if(CountInv("RailgunLaserCharge") == 60) {
+					A_StartSound("weapons/railgun/lasercharge4", CHAN_AUTO, CHANF_OVERLAP);
+					return state("HoldLaser_Scope");
+				}
+				if(CountInv("RailgunAmmo") < 1) {
+					return state("Laser_Blast_Scope");
+				}
+				A_TakeInventory("RailgunAmmo", 1);
+				A_GiveInventory("RailgunLaserCharge", 1);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast_Scope");
+				}
+				return state("");
+			}
+			R039 Y 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NULLPUFF",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.32,6);
+				if(CountInv("RailgunLaserCharge") == 60) {
+					A_StartSound("weapons/railgun/lasercharge4", CHAN_AUTO, CHANF_OVERLAP);
+				}
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast_Scope");
+				}
+				return state("Laser_Stage_4_Scope");
+			}
+		HoldLaser_Scope:
+			RAIL A 0 A_StartSound("weapons/railgun/laserfullycharged", CHAN_5, CHANF_OVERLAP|CHANF_LOOPING,0.37, ATTN_NORM, 1.1)
+			R039 TUVWXY 1 BRIGHT {
+				PB_VisualRailRed(0); // 0 for the aim beam, 1 for the firing beam
+				//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,"NullPuff",0,0,2000,0,1,1.0,"Tracer_Trail_ChexRed",0,0,0);
+				A_SetBlend("Red",0.32,6);
+				A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+				if(JustReleased(BT_ATTACK) || !PressingFire()) {
+					return state("Laser_Blast_Scope");
+				}
+				if(JustPressed(BT_RELOAD)) {
+					return state("CancelLaserHold");
+				}
+				return state("");
+			}
+			Loop
+		Laser_Blast_Scope:
+			R096 Z 0
+			R097 Z 0
+			R098 Z 0
+			R039 Z 0
+			
+			R096 Z 1 BRIGHT {
+				//A_SetBlend("Red",0.5,22);
+				A_StopSound(5);
+				if (CountInv("RailgunLaserCharge") >= 15 ) { A_SetWeaponSprite("R097");}
+				if (CountInv("RailgunLaserCharge") >= 30 ) { A_SetWeaponSprite("R098");}
+				if (CountInv("RailgunLaserCharge") >= 45 ) { A_SetWeaponSprite("R039");}
+				
+				if(CountInv("RailgunLaserCharge") == 60) {
+					A_StartSound("weapons/railgun/laser_huge", 5, CHANF_OVERLAP);
+					A_FireCustomMissile("RailgunLaserBlast1", 0, 0, 0, 0);
+					PB_VisualRailRed(1,CountInv("RailgunLaserCharge"));
+					//A_RailAttack(0,0,0,"None","None",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"ChargedMicrowavePuff",0,0,8192,0,15,1.0,"GaussTrailUber",-5); //to spawn the trail
+					A_RailAttack(7*(5*CountInv("RailgunLaserCharge")), 0, 0, None,None, RGF_SILENT, 0, "ChargedMicrowavePuff",0,0,0,0,5,1.0,none, 0, 0, 0);
+				}
+				if(CountInv("RailgunLaserCharge") < 15) {
+					//Does not pierce more than 2 targets
+					A_StartSound("weapons/railgun/laser_small", 5, CHANF_OVERLAP);
+					PB_VisualRailRed(1,CountInv("RailgunLaserCharge"));
+					//A_RailAttack(0,0,0,"None","None",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"MicrowavePuff",0,0,8192,0,15,1.0,"GaussTrailUber",-5); //to spawn the trail
+					A_RailAttack(9*(5*CountInv("RailgunLaserCharge")), 0, 0, None,None, RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,none, 0, 0, 2);
+				}
+				else {
+					A_StartSound("weapons/railgun/laser_big", 5, CHANF_OVERLAP);
+					PB_VisualRailRed(1,CountInv("RailgunLaserCharge"));
+					//A_RailAttack(0,0,0,"None","None",RGF_SILENT|RGF_FULLBRIGHT|RGF_NOPIERCING,0,"MicrowavePuff",0,0,8192,0,15,1.0,"GaussTrailUber",-5); //to spawn the trail
+					A_RailAttack(9*(2*CountInv("RailgunLaserCharge")), 0, 0, None,None, RGF_SILENT, 0, "MicrowavePuff",0,0,0,0,5,1.0,none, 0, 0, 0);
+				}
+				if (pb_weapon_recoil_extra_weapons) //only add recoil in the "extra" weapons case
+				{
+					PB_WeaponRecoil(-0.25 *CountInv("RailgunLaserCharge"),-0.2 *CountInv("RailgunLaserCharge")); //do recoil based on how charged our weapon was
+				}
+				A_TakeInventory("RailgunLaserCharge", 60);
+				A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			}
+			R040 BCDEFGHIJKLMNOPQRST 1 BRIGHT /*{
+				if(GetCvar("pb_toggle_aim_hold")) {
+					
+					if(!PressingAltfire() || JustReleased(BT_ALTATTACK)){return state("Zoomout");}
+			
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+					
+					}
+				else {
+					if (PressingAltfire()){return state("Zoomout");}
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+				}
+				return state("");
+			}*/
+			R026 A 0 A_SetInventory("CantDoAction",0)
+			Goto Ready3
+			
+		// I swear I'm not trying to code like Yandere Dev (if... if... if...)
+		// But hey its better than having 20 different states with "A_JumpIfInventory..."
+		// Also this is probably hands-down the most detailed reload animation featured in a Doom mod
+		// Thanks to Metalman and Galdoc for making this possible!!!
+		Reload:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",60,"Ready3")
+			TNT1 A 0 A_JumpIfInventory("PB_Cell",1,1)
+			Goto NoAmmo
+				TNT1 A 0 {
+					PB_HandleCrosshair(77);
+					A_ZoomFactor(1.0);
+					A_SetInventory("RailgunInfrared", 0);
+					A_StopSound(1);
+					A_StopSound(7);
+					if (CountInv("RailgunAmmo") == 0 ) {
+						A_StopSound(6);
+					}
+					A_SetInventory("Zoomed",0);
+					A_SetInventory("RailgunInfrared", 0);
+					A_StartSound("weapons/nailgun/up", CHAN_AUTO, CHANF_OVERLAP);
+				}
+		Reload_Part1:
+			R042 ABCD 0
+			R043 ABCD 0
+			R044 ABCD 0
+			R041 ABCD 1 BRIGHT {
+				if (CountInv("RailgunAmmo") < 12 ) { A_SetWeaponSprite("R042");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R043");}
+				if (CountInv("RailgunAmmo") < 12 && CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R044");}		
+			}
+		Reload_Part2:
+			R045 ABCDEFGHIJKLMNOPQRSTUVWXY 0
+			R046 ABCDEFGHIJKLMNOPQRSTUVWXY 0
+			R048 ABC 0
+			R049 ABCDEFGHIJKLMNOPQRSTUVWXY 0
+			R050 ABCDEFGHIJKLMNOPQRSTUVWXY 0
+			R051 ABCDEFGHIJKLMNOPQRSTUVWXY 0
+			R052 ABC 0
+		
+			R047 ABC 1 BRIGHT {
+				//Blue
+				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
+				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
+				if (CountInv("RailgunAmmo") == 0  && CountInv("RailgunUnloaded") == 1 ) { A_SetWeaponSprite("R048");}
+				
+				//Red
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R049");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R050");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R051");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0  && CountInv("RailgunUnloaded") == 1 ) { A_SetWeaponSprite("R052");}
+				
+					
+			}
+			TNT1 A 0 A_JumpIfInventory("RailgunUnloaded",1,"ReloadUnloaded")
+			R047 DEFGHIJK 1 BRIGHT {
+				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
+				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
+				
+				
+				
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R049");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R050");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R051");}	
+			}
+			TNT1 A 0 A_StartSound("weapons/CryoRifle/respect2", CHAN_AUTO, CHANF_OVERLAP)
+			R047 LMNOPQR 1 BRIGHT {
+				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
+				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
+				
+				
+				
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R049");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R050");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R051");}	
+			}
+			TNT1 A 0 PB_SpawnCasing("EmptyCell", 28, 11, 20, 1, random(2,4), 4)
+			R047 STUVWXY 1 BRIGHT {
+				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
+				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
+				
+				
+				
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R049");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R050");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R051");}	
+			}
+		// Let's get complicated...
+		Reload_Part3:
+			R059 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			R055 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			R061 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			R057 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			R064 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			R070 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			R072 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			R068 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			R066 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			R060 ABCDEF 0
+			R059 ABCDEF 0
+			R056 ABCDEF 0
+			R062 ABCDEF 0
+			R058 ABCDEF 0
+			R065 ABCDEF 0
+			R071 ABCDEF 0
+			R067 ABCDEF 0
+			R073 ABCDEF 0
+			R069 ABCDEF 0
+		
+			TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO, CHANF_OVERLAP)
+			R053 ABCDE 1 BRIGHT {
+				//Blue
+				if (CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R059");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R055");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R061");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R057");}
+				//Red
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R064");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R070");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R066");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R072");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R068");}
+			}
+			TNT1 A 0 A_StartSound("weapons/plasma/cellin", CHAN_AUTO, CHANF_OVERLAP)
+			R053 FGHIJKLMNOPQRS 1 BRIGHT {
+				//Blue
+				if (CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R059");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R055");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R061");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R057");}
+				//Red
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R064");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R070");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R066");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R072");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R068");}
+			}
+			TNT1 A 0 A_StartSound("weapons/riflemagslap", CHAN_AUTO, CHANF_OVERLAP)
+			
+			ReloadUnloadedContinue: //ReloadUnloaded jumps 2 frames ahead of here
+			R053 TUV 1 BRIGHT {
+				//Blue
+				if (CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R059");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R055");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R061");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R057");}
+				//Red
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R064");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R070");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R066");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R072");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R068");}
+			}
+			TNT1 A 0 A_StartSound("weapons/carbine/fancybutton", CHAN_AUTO, CHANF_OVERLAP)
+			R053 WXYZ 1 BRIGHT {
+				//Blue
+				if (CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R059");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R055");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R061");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R057");}
+				//Red
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R064");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R070");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R066");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R072");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R068");}
+			}
+			R054 AB 1 BRIGHT {
+				//Blue
+				if (CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R060");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R056");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R062");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R058");}
+				//Red
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R065");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R071");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R067");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R073");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R069");}
+			}
+			TNT1 A 0 A_StartSound("weapons/nailgun/inspect1", CHAN_AUTO, CHANF_OVERLAP)
+			R054 CDEF 1 BRIGHT {
+				//Blue
+				if (CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R060");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R056");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R062");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R058");}
+				//Red
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R065");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R071");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R067");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R073");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R069");}
+			}
+		Reload_Part4:
+			TNT1 A 0 A_JumpIf(CountInv("RailgunAmmo") == 0, "Reload_Part4_Rechamber")
+		Reload_Part4_Chambered:
+			R076 ABCDE 0
+			R075 ABCDE 1 {
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R076");}
+			}
+			Goto InsertBullets
+		Reload_Part4_Rechamber:
+			TNT1 A 0 A_JumpIf(CountInv("RailgunLaserMode") == 1, "Reload_Part4_Rechamber_Red")
+			R077 ABCDE 1 
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect5", CHAN_AUTO, CHANF_OVERLAP)
+			R077 FGHIJKLMNOPQRSTUVWXYZ 1 BRIGHT
+			R078 AB 1 BRIGHT
+			Goto InsertBullets
+		Reload_Part4_Rechamber_Red:
+			R079 ABCDEFG 1 BRIGHT
+			TNT1 A 0 A_StartSound("weapons/railgun/inspect6", CHAN_AUTO, CHANF_OVERLAP)
+			R079 HIJKLMNOPQRSTUVW 1 BRIGHT
+			Goto InsertBullets
+		
+		ReloadUnloaded:
+			R052 D 0 A_JumpIfInventory("RailgunLaserMode",1,2) //Red
+			R048 D 0 //Blue
+			"####" DDDDEFGHI 1
+			"####" A 0 A_StartSound("weapons/plasma/cellin", CHAN_AUTO, CHANF_OVERLAP)
+			"####" JKLMNOPQRSTUVWX 1
+			TNT1 A 0 A_StartSound("weapons/riflemagslap", CHAN_AUTO, CHANF_OVERLAP)
+			Goto ReloadUnloadedContinue+2 //Jumps two frames ahead of this state so less code is being used
+		InsertBullets:
+			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",60,"Ready3")
+			TNT1 A 0 A_JumpIfInventory("PB_Cell",1,1)
+			Goto Ready3
+			TNT1 A 0 {
+				A_Giveinventory("RailgunAmmo",1);
+				A_Takeinventory("PB_Cell",1);
+				A_SetInventory("RailgunUnloaded",0);
+			}
+			Goto InsertBullets	
+//I had to make this NoAmmo state to fix a major bug with the game crashing when you 
+//attempted to fire the Railgun in rail mode with no reserve cell ammo.
+	NoAmmo: 
+		TNT1 A 0 A_JumpIfInventory("Zoomed",1,"NoAmmoScoped")
+		R007 E 1 {
+		if(CountInv("RailgunLaserMode") == 1) {A_SetWeaponSprite("R013");}
+		}
+		Goto Ready3
+	NoAmmoScoped: // Same for the scoped mode
+		R007 G 1 {
+		a_setcrosshair(5);
+		if(CountInv("RailgunLaserMode") == 1) {A_SetWeaponSprite("R030");}
+		}
+		Goto Ready3
+	AlreadyUnloaded:
+		TNT1 A 0 A_SetInventory("Unloading",0)
+		Goto Ready3
+	
+	Unload:
+		TNT1 A 0 A_SetInventory("Unloading",0) //Prevents crash when unloading with no railgun ammo.
+		TNT1 A 0 A_JumpIfInventory("RailgunUnloaded", 1, "AlreadyUnloaded")
+		TNT1 A 0 A_JumpIfInventory("RailgunAmmo", 1,1)
+		Goto Ready3
+		TNT1 A 0 {
+			PB_HandleCrosshair(77);
+			A_ZoomFactor(1.0);
+			A_StopSound(1);
+			A_StopSound(7);
+			A_StopSound(6);
+			A_SetInventory("RailgunInfrared", 0);
+			A_SetInventory("Zoomed",0);
+			A_SetInventory("RailgunInfrared", 0);
+			A_StartSound("weapons/nailgun/up", CHAN_AUTO, CHANF_OVERLAP);
+		}
+	Unload_Part1:
+		R042 ABCD 0
+		R043 ABCD 0
+		R044 ABCD 0
+		R041 ABCD 1 BRIGHT {
+			if (CountInv("RailgunAmmo") < 12 ) { A_SetWeaponSprite("R042");}
+			if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R043");}
+			if (CountInv("RailgunAmmo") < 12 && CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R044");}		
+		}
+	Unload_Part2:
+			R045 ABCDEFGHIJKLMNOPQRSTUVWXY 0
+			R046 ABCDEFGHIJKLMNOPQRSTUVWXY 0
+			R048 ABC 0
+			R049 ABCDEFGHIJKLMNOPQRSTUVWXY 0
+			R050 ABCDEFGHIJKLMNOPQRSTUVWXY 0
+			R051 ABCDEFGHIJKLMNOPQRSTUVWXY 0
+			R052 ABC 0
+		
+			R047 A 1 BRIGHT {
+				//Blue
+				if (CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R046");}
+				if (CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R045");}
+				if (CountInv("RailgunUnloaded") == 0 ) { A_SetWeaponSprite("R048");}	
+				//Red
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R049");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") < 30 ) { A_SetWeaponSprite("R050");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 ) { A_SetWeaponSprite("R051");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunUnloaded") == 0 ) { A_SetWeaponSprite("R052");}	
+			}
+			R054 FEDCBA 1 BRIGHT {
+				//Blue
+				if (CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R060");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R056");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R062");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R058");}
+				//Red
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R065");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R071");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R067");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R073");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R069");}
+			}
+			R053 ZYXWVUPONMLKJIHGF 1 BRIGHT {
+				//Blue
+				if (CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R059");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R056");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R062");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R058");}
+				//Red
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R064");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R070");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R067");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R073");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R069");}
+			}
+			
+			TNT1 A 0 A_StartSound("weapons/plasma/cellout", CHAN_AUTO, CHANF_OVERLAP)
+			
+			TNT1 A 0 {
+				if (CountInv("RailgunLaserMode") == 1) { 
+					A_StartSound("weapons/railgun/powerdownred", CHAN_AUTO, CHANF_OVERLAP);
+				}
+				else {
+					A_StartSound("weapons/railgun/powerdownblue", CHAN_AUTO, CHANF_OVERLAP);
+				}
+			}
+			
+			R053 EDCBA 1 BRIGHT {
+				//Blue
+				if (CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R059");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R056");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R062");}
+				if (CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R058");}
+				//Red
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R064");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R070");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") >= 60) { A_SetWeaponSprite("R067");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") < 60) { A_SetWeaponSprite("R073");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0 && CountInv("PB_Cell") <= 30) { A_SetWeaponSprite("R069");}
+			}
+		Unload_Part3:
+			R074 ABCD 0 
+			TNT1 A 0 A_StartSound("weapons/nailgun/inspect1", CHAN_AUTO, CHANF_OVERLAP)
+			R063 ABCD 1 BRIGHT {
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R074");}
+			}
+		RemoveBullets:
+			TNT1 A 0 A_JumpIfInventory("RailgunAmmo",1,1)
+			Goto FinishUnload
+			TNT1 A 0 {
+				A_Takeinventory("RailgunAmmo",1);
+				A_Giveinventory("PB_Cell",1);
+			}
+			Goto RemoveBullets
+		FInishUnload:
+			TNT1 A 0 {
+				A_SetInventory("RailgunUnloaded", 1);
+				A_SetInventory("Unloading",0);
+			}
+			Goto Ready3
+
+//////////////////////////////////////////Unloading
+
+		Spawn:
+			VRCG A 0 NoDelay
+			SRCG A 10 A_PbvpFramework("VRCG")
+			"####" "#" 0 A_PbvpInterpolate()
+			LOOP
+
+
+	FlashKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_TakeInventory("RailgunInfrared", 1)
+		R083 ABCDEFGHIJKLM 0
+		R082 ABCDEFGHIJKLM 0
+		R081 ABCDEFGHIJKLM 0
+		R080 ABCDEFGGHIJKLM 1 {
+				if (CountInv("RailgunAmmo") < 12 ) { A_SetWeaponSprite("R081");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R082");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0) { A_SetWeaponSprite("R083");}
+		}
+		Goto Ready3
+		
+	FlashAirKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_TakeInventory("RailgunInfrared", 1)
+		R083 ABCDEFGHIJKLM 0
+		R082 ABCDEFGHIJKLM 0
+		R081 ABCDEFGHIJKLM 0
+		R080 ABCDEFGGGGHIJKLM 1 {
+				if (CountInv("RailgunAmmo") < 12 ) { A_SetWeaponSprite("R081");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R082");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0) { A_SetWeaponSprite("R083");}
+		}
+		Goto Ready3
+		
+	FlashSlideKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_TakeInventory("RailgunInfrared", 1)
+		R086 AB 0
+		R089 AB 0
+		R085 ABCDEFGHIJKLMNOPQRQPOPQRSTUV 0
+		R087 ABCDEFGHIJKLMNOPQRQPOPQRSTUV 0
+		R088 ABCDEFGHIJKLMNOPQRQPOPQRSTUV 0
+	
+		R084 AB 1 {
+				if (CountInv("RailgunAmmo") < 12 ) { A_SetWeaponSprite("R085");}
+				if (CountInv("RailgunUnloaded") == 1) { A_SetWeaponSprite("R086");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R087");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0) { A_SetWeaponSprite("R088");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunUnloaded") == 1) { A_SetWeaponSprite("R089");}
+		}
+		R084 CDEFGHIJKLMNOPQRQPOPQRSTUV 1  {
+				if (CountInv("RailgunAmmo") < 12 ) { A_SetWeaponSprite("R085");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R087");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0) { A_SetWeaponSprite("R088");}
+		}
+		Goto Ready3
+		
+	FlashSlideKickingStop:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
+		R084 PQRSTUV 1 {
+				if (CountInv("RailgunAmmo") < 12 ) { A_SetWeaponSprite("R085");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetWeaponSprite("R087");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0) { A_SetWeaponSprite("R088");}
+		}
+		Goto Ready3
+
+	FlashPunching:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_TakeInventory("RailgunInfrared", 1)
+		R091 ABCDEFGHIJKLM 0
+		R092 A 0
+		R093 ABCDEFGHIJKLM 0
+		R094 ABCDEFGHIJKLM 0
+		R095 A 0
+		
+		R090 A 1 {
+				if (CountInv("RailgunAmmo") < 12 ) { A_SetFlashWeaponSprite("R091");}
+				if (CountInv("RailgunUnloaded") == 1) { A_SetFlashWeaponSprite("R092");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetFlashWeaponSprite("R093");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0) { A_SetFlashWeaponSprite("R094");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunUnloaded") == 1) { A_SetFlashWeaponSprite("R095");}
+		}
+		R090 BCDEFGHIJKLMN 1 {
+				if (CountInv("RailgunAmmo") < 12 ) { A_SetFlashWeaponSprite("R091");}
+				if (CountInv("RailgunLaserMode") == 1) { A_SetFlashWeaponSprite("R093");}
+				if (CountInv("RailgunLaserMode") == 1 && CountInv("RailgunAmmo") == 0) { A_SetFlashWeaponSprite("R094");}
+		}
+		Stop
+	}
+}
+/*
+ACTOR RailgunLaserBlast1 : FastProjectile
+{
+  Speed 300
+  Radius 12
+  Height 16
+  Damage 20
+  Renderstyle Add
+  +RIPPER
+  -CANNOTPUSH
+  +NODAMAGETHRUST
+  +EXTREMEDEATH
+  +FORCERADIUSDMG
+  DamageType Incinerate
+  DeathSound ""
+  MissileType "LaserTrail"
+  MissileHeight 10
+  Decal "BigScorch"
+  DeathSound "belphegor/missile"
+  Scale 1.5
+  states
+  {
+		Spawn:
+			TNT1 A 0
+			TNT1 A 0 A_PlaySound("Weapons/StachanovFly",5,1.0,1)
+		Fly:
+			TNT1 A 4
+			Loop
+		Death:
+			TNT1 A 0
+			TNT1 A 0 A_StopSound(6)
+			TNT1 A 0 A_PlaySound("Weapons/YamatoExp",5)
+			TNT1 AAA 0 A_SpawnItemEx("ObeliskTrailSpark", random(19,-19), random(19,-19), random(19,-19), 0, 0, 0, 0, 128, 0)
+			TNT1 A 0 A_SpawnItemEx("ObeliskExplode",0,0,0,0,0,0,0,128,0)
+			TNT1 A 0 A_Explode(200,250,0,1)
+			TNT1 A 0 A_SpawnItem("WhiteShockwave")
+			TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 AAA 0 A_CustomMissile ("FireworkSFXType2", 0, 0, random (0, 360), 2, random (30, 60))
+			EXPL AAA 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (0, 90))
+			TNT1 AAA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180))
+			EXPL A 0 Radius_Quake (3, 120, 0, 120, 0)
+			BEXP B 0 BRIGHT A_Scream
+			X001 ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 BRIGHT
+			TNT1 AAA 10 A_CustomMissile ("BigBlackSmoke", 0, 0, random (0, 360), 2, random (40, 160))
+			stop
+  }
+}
+*/
+ACTOR LaserTrail
+{
+  RenderStyle Add
+  Scale 0.4
+  Alpha 1
+  +NOINTERACTION
+  +NOGRAVITY
+	//+CLIENTSIDEONLY
+  States
+  {
+  Spawn:
+	TNT1 A 0
+	TNT1 A 0 A_SetScale(ScaleX, ScaleY -0.1)
+	//YAE4 A 1 bright //A_SpawnItemEx("ObeliskTrailSpark", random(4,-4), random(4,-4), random(4,-4), 0, 0, 0, 0, 128, 0)
+  Trolololo:
+	YAE4 A 0 A_JumpIf(ScaleY <= 0, "NULL")
+	YAE4 A 2 bright {
+		A_SetScale(ScaleX -0.01, ScaleY -0.01);
+		A_FadeOut(0.275);
+	}
+	Loop
+  }
+}
+
+ACTOR RailgunInfrared : PowerLightAmp { Powerup.Duration -1800 }
+
+ACTOR RailGunTrail
+{
+  RenderStyle Add
+  Scale 0.03
+  Alpha 0.7
+  
+  +NOINTERACTION
+  +NOGRAVITY
+	//+CLIENTSIDEONLY
+  States
+  {
+  Spawn:
+	TNT1 A 0
+	TNT1 A 0 A_SetScale(ScaleX, ScaleY -0.003)
+	RA36 B 1 bright A_SpawnItemEx("RailGunTrailSpark", random(4,-4), random(4,-4), random(4,-4), 0, 0, 0, 0, 128, 0)
+  Trolololo:
+	RA36 B 0 A_JumpIf(ScaleY <= 0, "NULL")
+	RA36 B 0 A_SetScale(ScaleX -0.01, ScaleY -0.01)
+	RA36 B 1 bright A_FadeOut(0.025)
+	Loop
+  }
+}
+
+ACTOR RailGunTrailSpark
+{ 
+	RenderStyle Add
+	Scale 0.010
+	Alpha 0.95
+	//Translation "0:255=%[0,0,0]:[0,0,1]"
+	+NOINTERACTION
+	+NOGRAVITY
+	//+CLIENTSIDEONLY
+	States
+	{
+	Spawn:
+	YAE5 A 0 NoDelay A_JumpIf(ScaleX <= 0, "NULL")
+	YAE5 A 0 A_SetScale(ScaleX-0.0008)
+	YAE5 A 1 bright A_ChangeVelocity (frandom(-0.2, 0.2), frandom(-0.2, 0.2), frandom(-0.2, 0.2), 0)
+	YAE5 A 2 bright A_FadeOut(0.05)
+	Loop
+	}
+}
+
+ACTOR RailGunTrailSpark_Fast
+{ 
+	RenderStyle Add
+	Scale 0.010
+	Alpha 0.95
+	+MISSILE
+	Speed 15
+	//Translation "0:255=%[0,0,0]:[0,0,1]"
+	+NOINTERACTION
+	+NOGRAVITY
+	//+CLIENTSIDEONLY
+	States
+	{
+	Spawn:
+	YAE5 A 0 NoDelay A_JumpIf(ScaleX <= 0, "NULL")
+	YAE5 A 0 A_SetScale(ScaleX-0.0008)
+	YAE5 A 1 bright A_ChangeVelocity (frandom(-0.2, 0.2), frandom(-0.2, 0.2), frandom(-0.2, 0.2), 0)
+	YAE5 A 2 bright A_FadeOut(0.05)
+	Loop
+	}
+}
+
+ACTOR MicrowaveTrail
+{
+  RenderStyle Add
+  Scale 0.03
+  Alpha 0.7
+  +NOINTERACTION
+  +NOGRAVITY
+	//+CLIENTSIDEONLY
+	
+  States
+  {
+  Spawn:
+	TNT1 A 0
+	TNT1 A 0 A_SetScale(ScaleX, ScaleY -0.005)
+	YAE4 A 1 bright A_SpawnItemEx("MicrowaveTrailSpark", random(4,-4), random(4,-4), random(4,-4), 0, 0, 0, 0, 128, 0)
+  Trolololo:
+	YAE4 A 0 A_JumpIf(ScaleY <= 0, "NULL")
+	YAE4 A 0 A_SetScale(ScaleX -0.01, ScaleY -0.01)
+	YAE4 A 1 bright A_FadeOut(0.025)
+	Loop
+  }
+}
+
+ACTOR MicrowaveTrailSpark : RailGunTrailSpark
+{ 
+	States
+	{
+	Spawn:
+	YAE4 A 0 NoDelay A_JumpIf(ScaleX <= 0, "NULL")
+	YAE4 A 0 A_SetScale(ScaleX-0.0008)
+	YAE4 A 1 bright A_ChangeVelocity (frandom(-0.2, 0.2), frandom(-0.2, 0.2), frandom(-0.2, 0.2), 0)
+	YAE4 A 2 bright A_FadeOut(0.05)
+	Loop
+	}
+}
+
+ACTOR LaserCannonPointer
+{
+  RenderStyle Add
+  Scale 0.02
+  Alpha 0.8
+  
+  +NOINTERACTION
+  +NOGRAVITY
+  States
+  {
+  Spawn:
+	TNT1 A 0
+	TNT1 A 0 A_SetScale(ScaleX+0.03, ScaleY -0.01)
+	YAE4 A 1 bright
+	YAE4 A 1 bright A_FadeOut(0.020)
+  Trolololo:
+	YAE4 A 0 //A_JumpIf(ScaleY <= 0, "NULL")
+	YAE4 A 0 A_SetScale(ScaleX -0.01, ScaleY -0.01)
+	YAE4 A 1 bright A_FadeOut(0.1)
+	Loop
+  }
+}
+
+//Railgun Effects From Tib
+
+actor gauss_smoke_gc {
+	scale 0.055
+	alpha 0.8
+	Translation "0:255=%[0,0,0]:[0.2,0.7,2.0]"
+	renderstyle add
+	+NOINTERACTION
+	+NOGRAVITY
+	+FORCEXYBILLBOARD
+	+NOTELEPORT
+	//+CLIENTSIDEONLY
+	states {
+		spawn:
+			TNT1 A 0
+			TNT1 A 0 A_Jump(255, "Smok1","Smok2","Smok3","Smok4")
+		Smok1:
+			SMO1 A 2 A_FadeOut(0.05)
+			TNT1 A 0 A_ScaleVelocity(0.9)
+			loop
+		Smok2:
+			SMO1 B 2 A_FadeOut(0.05)
+			TNT1 A 0 A_ScaleVelocity(0.9)
+			loop
+		Smok3:
+			SMO1 C 2 A_FadeOut(0.05)
+			TNT1 A 0 A_ScaleVelocity(0.9)
+			loop
+		Smok4:
+			SMO1 D 2 A_FadeOut(0.05)
+			TNT1 A 0 A_ScaleVelocity(0.9)
+			loop
+
+	}
+}
+
+actor gauss_smoke_uber {
+	scale 0.25
+	alpha 0.8
+	Translation "0:255=%[0,0,0]:[2.0,0.2,0.0]"
+	renderstyle add
+	+NOINTERACTION
+	+NOGRAVITY
+	+FORCEXYBILLBOARD
+	+NOTELEPORT
+	//+CLIENTSIDEONLY
+	states {
+		spawn:
+			TNT1 A 0
+			TNT1 A 0 A_Jump(255, "Smok1","Smok2","Smok3","Smok4")
+		Smok1:
+			SMO1 A 2 A_FadeOut(0.05)
+			TNT1 A 0 A_ScaleVelocity(0.9)
+			loop
+		Smok2:
+			SMO1 B 2 A_FadeOut(0.05)
+			TNT1 A 0 A_ScaleVelocity(0.9)
+			loop
+		Smok3:
+			SMO1 C 2 A_FadeOut(0.05)
+			TNT1 A 0 A_ScaleVelocity(0.9)
+			loop
+		Smok4:
+			SMO1 D 2 A_FadeOut(0.05)
+			TNT1 A 0 A_ScaleVelocity(0.9)
+			loop
+
+	}
+}
+
+actor gausssmoke_spawner_gc {
+	+NOINTERACTION
+	+NOGRAVITY
+	+NOTELEPORT
+	+NOCLIP
+	states{
+		spawn:
+			NULL A 0
+			NULL A 0 A_SpawnItemEx("gauss_smoke_gc", 20, 0, -2, 0, frandom(-0.5,0.5), frandom(0.1,0.6), 0, SXF_TRANSFERPOINTERS, 0)
+			stop
+	}
+
+}
+
+actor gausssmoke_spawner_ubersiege {
+	+NOINTERACTION
+	+NOGRAVITY
+	+NOTELEPORT
+	+NOCLIP
+	states{
+		spawn:
+			NULL A 0
+			NULL A 0 A_SpawnItemEx("gauss_smoke_uber", 20, 0, -2, 0, frandom(-0.5,0.5), frandom(0.1,0.6), 0, SXF_TRANSFERPOINTERS, 0)
+			stop
+	}
+
+}
+
+Actor GaussTrailMain
+{
+	+NOINTERACTION
+	+FORCEXYBILLBOARD
+	//+CLIENTSIDEONLY
+	Scale 0.15
+	RenderStyle Add
+	Translation "0:255=%[0,0,0]:[0.2,0.7,2.0]"
+	States
+	{
+	Spawn:
+		HSPL A 0 NODELAY A_Jump(256,1,2,3,4,5,6,7,8)
+		HSPL ABCDEFGH 0 A_Jump(256,"Play")
+	Play:
+		//"####" "#" 4 BRIGHT 
+	Looper:
+		"####" "#" 1 BRIGHT A_FadeOut(0.05)
+		"####" "#" 0 BRIGHT A_SetScale(scalex-0.007)
+		Loop
+	}
+}
+
+Actor GaussTrailUber
+{
+	+NOINTERACTION
+	+FORCEXYBILLBOARD
+	//+CLIENTSIDEONLY
+	Scale 0.45
+	RenderStyle Add
+	Translation "0:255=%[0,0,0]:[2.0,0.2,0.0]"
+	States
+	{
+	Spawn:
+		HSPL A 0 NODELAY A_Jump(256,1,2,3,4,5,6,7,8)
+		HSPL ABCDEFGH 0 A_Jump(256,"Play")
+	Play:
+		//"####" "#" 4 BRIGHT 
+	Looper:
+		"####" "#" 1 BRIGHT A_FadeOut(0.05)
+		"####" "#" 0 BRIGHT A_SetScale(scalex-0.007)
+		Loop
+	}
+}
+
+Actor GaussCannonPuffNormal //main puff, shockwave fast
+{
+	+NOINTERACTION
+	Translation "0:255=%[0,0,0]:[0.2,0.7,2.0]"
+	Scale 0.44
+	RenderStyle Add
+	+ALWAYSPUFF
+	+PUFFONACTORS
+	+FORCEXYBILLBOARD
+	+PUFFGETSOWNER
+	States
+	{
+	Spawn:
+		TNT1 A 0 NODELAY A_Warp(AAPTR_DEFAULT,5,0,0,WARPF_NOCHECKPOSITION) //moves it 5MU towards the player, to get it unstuck from walls
+		TNT1 AA 0 A_SpawnItemEx("GaussCannonParticle",3,0,0,frandom(0.3,3.5),frandom(-3.5,3.5),frandom(0.6,5),0,SXF_NOCHECKPOSITION)
+		TNT1 AA 0 A_SpawnItemEx("GaussCannonPuffGas",0,0,0,frandom(0,1),frandom(1,-1),frandom(1,-1),0,SXF_NOCHECKPOSITION)
+		TNT1 A 0 A_SetScale(scalex*1.2)
+		TNT1 A 0 A_Jump(256, "Idle")
+		Goto Idle
+		
+	Idle:
+		TNT1 AA 0 A_SpawnItemEx("GaussParticlesFew",0,0,0,0,0,0,0,32)
+		X060 A 1 Bright 
+		Goto PreLooper
+		
+	PreLooper:
+		X060 A 0 A_SpawnItemEx("GaussCannonShockwave2",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION)
+		X060 A 1 Bright A_SetScale(scalex*1.2)	//grows a bit before fading out
+	Looper:
+		X060 A 1 Bright  A_SetScale(scalex*1.2)
+		X060 A 0 A_FadeOut(0.1)
+		Loop
+	}
+}
+
+Actor GaussCannonPuffSiege : GaussCannonPuffNormal //main puff, shockwave fast
+{
+	Obituary "%o fell to %k's siege."
+	Translation "0:255=%[0,0,0]:[0.2,0.7,2.0]"
+	Scale 0.55
+	States
+	{
+	Idle:
+		TNT1 A 0 A_SpawnItemEx("GaussParticlesManyBig",0,0,0,0,0,0,0,32)
+		TNT1 A 0 A_SpawnItemEx("GaussParticlesFewBig",0,0,0,0,0,0,0,32)
+		X060 A 1 Bright
+		Goto PreLooper
+	}
+}
+
+Actor GaussCannonShockwave2 //secondary shockwave, slow
+{
+	+NOINTERACTION
+	Translation "0:255=%[0,0,0]:[0.2,0.7,2.0]"
+	Scale 0.3
+	RenderStyle Add
+	+FORCEXYBILLBOARD
+	//+CLIENTSIDEONLY
+	States
+	{
+	Spawn:
+		X060 B 1 Bright NODELAY A_SetScale(scalex*1.2)	//grows a bit before fading out
+	Looper:
+		X060 B 1 Bright  A_SetScale(scalex*1.2)
+		X060 B 0 A_FadeOut(0.1)
+		Loop
+	}
+}
+
+Actor GaussCannonParticle
+{
+	Projectile
+	Speed 10
+	-NOGRAVITY
+	+THRUACTORS
+	+PAINLESS
+	+DOOMBOUNCE
+	+FORCEXYBILLBOARD
+	//+CLIENTSIDEONLY
+	Alpha 0.5
+	Radius 2
+	Height 5
+	Gravity 0.2
+	BounceFactor 0.2
+	WallBounceFactor 1.0
+	RenderStyle Add
+	Translation "0:255=%[0,0,0]:[0.2,0.7,2.0]"
+	Scale 0.05
+	states
+	{
+	Spawn:
+		FX01 A 20 Bright
+		FX01 A 1 Bright A_FadeOut(0.14)
+		Wait
+	}
+}
+
+Actor GaussCannonPuffGas
+{
+	+NOINTERACTION
+	+FORCEXYBILLBOARD
+	//+CLIENTSIDEONLY
+	Translation "0:255=%[0,0,0]:[0.2,0.7,2.0]"
+	Scale 0.15
+	Alpha 0.99
+	RenderStyle Add
+	States
+	{
+	Spawn:
+		TNT1 A 0 NODELAY A_Jump(240,4,8,12,16,20,24,28,32,26,40,44,48,52,56,60,64,68,72,76,80)
+	Looper:
+		X102 A 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 A 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 B 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 B 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 C 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 C 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 D 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 D 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 E 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 E 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 F 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 F 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 G 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 G 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 H 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 H 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 I 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 I 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 J 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 J 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 K 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 K 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 L 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 L 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 M 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 M 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 N 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 N 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 O 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 O 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 P 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 P 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 Q 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 Q 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 R 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 R 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 S 1 Bright A_SetScale(scalex+0.03)		TNT1 A 0 A_FadeOut(0.021)
+		X102 S 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 T 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 T 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 U 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 U 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 V 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		X102 V 1 Bright A_SetScale(scalex+0.07)		TNT1 A 0 A_FadeOut(0.035)
+		Loop
+	}
+}
+
+Actor GaussParticlesMany
+{
+	+NOINTERACTION
+	+FORCEXYBILLBOARD
+	//+CLIENTSIDEONLY
+	RenderStyle Add
+	Translation "0:255=%[0,0,0]:[0.2,0.7,2.0]"
+	Scale 1.2
+	Alpha 0.99
+	States
+	{
+	Spawn:
+		TNT1 A 0 NODELAY A_Jump(256,"Type1","Type2","Type3","Type4","Type5","Type6","Type7","Type8")
+	Type1:
+		DB37 A 0
+		Goto EndAnimation
+	Type2:
+		DB38 A 0
+		Goto EndAnimation
+	Type3:
+		DB39 A 0
+		Goto EndAnimation
+	Type4:
+		DB40 A 0
+		Goto EndAnimation
+	Type5:
+		DB41 A 0
+		Goto EndAnimation
+	Type6:
+		DB42 A 0
+		Goto EndAnimation
+	Type7:
+		DB43 A 0
+		Goto EndAnimation
+	Type8:
+		DB44 A 0
+		Goto EndAnimation
+		
+	EndAnimation:
+		"####" ABCDE 2 Bright
+		"####" FGHIJK 2 Bright
+		"####" LMNOPQRSTUVWXYZ 2 Bright A_FadeOut(0.066)
+		Stop
+	}
+}
+
+Actor GaussParticlesFew : GaussParticlesMany
+{
+	States
+	{
+	Spawn:
+		TNT1 A 0 NODELAY A_Jump(256,"Type1","Type2","Type3","Type4","Type5","Type6","Type7","Type8")
+	Type1:
+		DB29 A 0
+		Goto EndAnimation
+	Type2:
+		DB30 A 0
+		Goto EndAnimation
+	Type3:
+		DB31 A 0
+		Goto EndAnimation
+	Type4:
+		DB32 A 0
+		Goto EndAnimation
+	Type5:
+		DB33 A 0
+		Goto EndAnimation
+	Type6:
+		DB34 A 0
+		Goto EndAnimation
+	Type7:
+		DB35 A 0
+		Goto EndAnimation
+	Type8:
+		DB36 A 0
+		Goto EndAnimation
+		
+	EndAnimation:
+		"####" ABCDE 2 Bright
+		"####" FGHIJK 2 Bright
+		"####" LMNOPQRSTUVWXYZ 2 Bright A_FadeOut(0.066)
+		Stop
+	}
+}
+
+Actor GaussParticlesManyBig : GaussParticlesMany
+{	Scale 2.2	}
+Actor GaussParticlesFewBig : GaussParticlesFew
+{	Scale 2.2	}
+
+Actor GaussParticlesManyUber : GaussParticlesMany
+{	
+Translation "0:255=%[0,0,0]:[2.0,0.2,0.0]"
+Scale 4.4	
+}
+Actor GaussParticlesFewUber : GaussParticlesFew
+{	
+Translation "0:255=%[0,0,0]:[2.0,0.2,0.0]"
+Scale 4.4
+}
+
+Actor GaussSiegeDamageAndPuff : FastProjectile
+{
+	Speed 4000	//holy crap, im amazed it still works
+	Radius 2
+	Height 2
+	RenderStyle None
+	Decal "D4GaussPrimary"
+	Damage (20)
+	+RIPPER
+	-CANNOTPUSH
+	+NODAMAGETHRUST
+	+EXTREMEDEATH
+	+FORCERADIUSDMG
+	DamageType SSG
+	Obituary "%o was railed by %k."
+	States
+	{
+	Spawn:
+		TNT1 A 1
+		Loop
+	Death:
+		TNT1 A 2 A_SpawnItemEx("GaussCannonPuffSiege",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION)
+		TNT1 A 0
+		TNT1 A 0 A_StopSound(6)
+		TNT1 A 0 A_Explode(120,15)
+		TNT1 A 0 A_SpawnItem("WhiteShockwave")
+		TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 A 0 A_SpawnItemEx("RailgunImpactExplosionSFX", 0, 0, 0, 0, 0, 0, 0, 128)
+		TNT1 A 0 A_CustomMissile ("FireworkSFXType2", 0, 0, random (0, 360), 2, random (30, 60))
+		TNT1 AA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180))
+		X005 ABCDEFGHIJKLMNOPQRSTUVWX 1 BRIGHT
+		TNT1 AAA 10 A_CustomMissile ("BigBlackSmoke", 0, 0, random (0, 360), 2, random (40, 160))
+		Stop
+	}
+}
+
+Actor SP_GaussTrailSiegeAOE
+{
+	+NOINTERACTION
+	+FORCEXYBILLBOARD
+	+FORCERADIUSDMG
+	+PUFFGETSOWNER
+	+NODAMAGETHRUST
+	Scale 0.08
+	RenderStyle Add
+	Alpha 0.7
+	Translation "0:255=%[0,0,0]:[0.2,0.7,2.0]"
+	Obituary "%o was besieged by %k."
+	States
+	{
+	Spawn:
+		X060 B 0
+		X060 B 5 Bright A_Explode(128,128,0,0,96)
+	Looper:
+		X060 B 1 Bright  A_SetScale(scalex*1.2)
+		X060 B 0 A_FadeOut(0.07)
+		Loop
+	}
+}
+
+Actor SP_GaussTrailUberSiegeAOE
+{
+	+NOINTERACTION
+	+FORCEXYBILLBOARD
+	+PUFFGETSOWNER
+	Scale 0.32
+	RenderStyle Add
+	Alpha 0.7
+	Translation "0:255=%[0,0,0]:[2.0,0.2,0.0]"
+	States
+	{
+	Spawn:
+		X060 B 0
+		X060 B 5 Bright
+	Looper:
+		X060 B 1 Bright  A_SetScale(scalex*1.2)
+		X060 B 0 A_FadeOut(0.07)
+		Loop
+	}
+}

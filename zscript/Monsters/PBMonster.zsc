@@ -24,6 +24,8 @@ class PB_Monster : Actor abstract
 	bool canFallback;
 	property CanIFallback : canFallback;
 	//bools controlling whether an enemy can Dodge if the player is looking at them
+	bool canReload;
+	property CanIReload : canReload;
 	
 	double combatSpeed;
 	double chaseSpeed;
@@ -52,15 +54,48 @@ class PB_Monster : Actor abstract
 	
 	//The main custom A_Chase function
 	
-	void A_SmartChase(statelabel s1 = "Missile", statelabel s2 = "Melee", int flags = 0)
+	int retargetSkips;
+
+	double tailPitch;
+	property TailPitch : tailPitch;
+	
+	//Finer grain control over PB monsters reacting to "hitbox" damage calculations
+	bool ignoreArmDamage;
+	bool ignoreHeadDamage;
+	bool ignoreDickDamage;
+	bool ignoreLegDamage;
+	property ignoreArmDamage : ignoreArmDamage;
+	property ignoreHeadDamage : ignoreHeadDamage;
+	property ignoreDickDamage : ignoreDickDamage;
+	property ignoreLegDamage : ignoreLegDamage;
+
+	action void PB_DynamicTailMonster(string tailInside, string tailOutside)
+	{	
+		string tmpTailSound;
+		if(Ceilingpic == SkyFlatNum && tailOutside)
+			tmpTailSound = "ext/"..tailOutside;
+		else if(tailInside)
+			tmpTailSound = "int/"..tailInside;
+		else 
+			return;
+
+		double sndPitch = frandom(0.75, 1.25) * invoker.tailPitch;
+		
+		A_StartSound("weapons/atmo/"..tmpTailSound, 19, 0.5, pitch: sndPitch);
+		A_StartSound("weapons/atmo/dist/"..tmpTailSound, 20, 0.6, pitch: sndPitch);
+		A_StartSound("weapons/atmo/far/"..tmpTailSound, 21, pitch: sndPitch);
+		A_StartSound("weapons/atmo/med/"..tmpTailSound, 22, pitch: sndPitch);
+	}
+	
+	void A_SmartChase(statelabel s1 = "_a_chase_default", statelabel s2 = "_a_chase_default", int flags = 0)
 	{
 		//A_LogFloat(self.speed);
 		//A_LogFloat(self.fastspeed);
 		
-		if (willBeLooking)
-			return;
+		if (willBeLooking) return;
+		if (retargetSkips > 0) retargetSkips--;
 		
-		if (target && (target is "PossessionWarperA" || isFriend(target)))
+		if (target != NULL && isFriend(target)) //(target is "PossessionWarperA" || isFriend(target)))
 		{
 			A_ClearTarget();
 			A_ClearLastHeard();
@@ -68,107 +103,109 @@ class PB_Monster : Actor abstract
 			target = NULL;
 		}
 		
-		if (target == NULL || Wandering == true || (target && (target.health <= 0)))
+		if (target == NULL || Wandering == true || (target != NULL && target.health <= 0))
 		{
 			Wandering == true;
 			A_GiveInventory("Wandering",1);
 			if(patrolTimer > 700)
 			{
-				self.Speed = self.patrolSpeed;
+				if(self.patrolSpeed) self.Speed = self.patrolSpeed;
 				//self.FastSpeed = self.patrolSpeed * 2;
 				OnPatrol = true;
 				A_SetTics(2);
 			}
 			else
 			{
-				self.Speed = self.searchSpeed;
+				if(self.searchSpeed) self.Speed = self.searchSpeed;
 				//self.FastSpeed = self.searchSpeed * 2;
 			}
 			A_Wander();
-			A_LookEx();
+			if(retargetSkips <= 0) {
+				retargetSkips = 3;
+				A_LookEx();
+			}
 			patrolTimer++;
 			return;
 		}
 
-		if (target && target.Health > 0)
+		Double Dist = Distance3DSquared (Target);
+		
+		if (Dist <= 150*150 && Dist >= 50*50 && CheckSight(target))
 		{
-			Double Dist = Distance3DSquared (Target);
-			
-			if (Dist <= 150*150 && Dist >= 50*50 && CheckSight(target))
-			{
-				if(canFallback)
-					SetStateLabel("Fallback");
-			}
-			
-			if(waterlevel >= 1 && Target.Pos.Z > (self.Pos.Z + 10))
+			if(random(1,2) == 2)
 			{
 				A_Chase(s2, s1, flags);
-				A_FaceTarget(30);
-				A_Recoil(-3);
-				ThrustThingZ(0, 5, 0, 1);
+				return;
+			}
+			if(canFallback && ResolveState("Fallback"))
+				SetStateLabel("Fallback");
+		}
+		
+		if(waterlevel >= 1 && Target.Pos.Z > (self.Pos.Z + 10))
+		{
+			A_Chase(s2, s1, flags);
+			A_FaceTarget(30);
+			A_Recoil(-3);
+			ThrustThingZ(0, 5, 0, 1);
+		}
+		
+		if (Dist <= 3000*3000 && CheckSight(target))
+		{
+			double dist = Distance3D(target);
+			let aimActor = AimTarget();
+			let fw = 33;
+			
+			//check if sight the player is close enough to "hear" them for memory
+			if (Dist <= 150*150)
+			{
+				EnemyLastSighted = Level.MapTime;
+				Wandering == false;
+				OnPatrol = false;
+				patrolTimer == 0;
 			}
 			
-			if (Dist <= 3000*3000 && CheckSight(target))
+			if(self.combatSpeed) self.Speed = self.combatSpeed;
+			//self.FastSpeed = self.combatSpeed * 2;
+			
+			if(canRoll && ResolveState("Roll"))
 			{
-				double dist = Distance3D(target);
-				let aimActor = AimTarget();
-				let fw = 33;
-				
-				//check if sight the player is close enough to "hear" them for memory
-				if (Dist <= 150*150)
+				//dodging system check
+				LookExParams look;
+				look.FOV = 2;
+				int chance = (random(1,30));
+				if(Dist <= 1500*1500 && Chance <= 2 && target.IsVisible(self, false, look))
 				{
-					EnemyLastSighted = Level.MapTime;
-					Wandering == false;
-					OnPatrol = false;
-					patrolTimer == 0;
-				}
-				
-				self.Speed = self.combatSpeed;
-				//self.FastSpeed = self.combatSpeed * 2;
-				
-				if(canRoll)
-				{
-					//dodging system check
-					LookExParams look;
-					look.FOV = 2;
-					int chance = (random(1,30));
-					if(target != NULL)
+					if(GetCVar("pb_disabledynamicavoid") == 0)
 					{
-						if(Dist <= 1500*1500 && Chance <= 5 && target.IsVisible(self, false, look))
-						{
-							if(GetCVar("pb_disabledynamicavoid") == 0)
-							{
-								A_FaceTarget();
-								SetStateLabel("Roll");
-							}
-						}
+						A_FaceTarget();
+						SetStateLabel("Roll");
 					}
 				}
-				A_Chase(s2, s1, flags);
 			}
-			else if (abs(Level.MapTime - EnemyLastSighted) < 360 && !CheckSight(target))
+			A_Chase(s2, s1, flags);
+		}
+		else if (abs(Level.MapTime - EnemyLastSighted) < 360 && !CheckSight(target))
+		{
+			if(self.chaseSpeed) self.Speed = self.chaseSpeed;
+			//self.FastSpeed = self.chaseSpeed * 2;
+			A_Chase(s2, s1, flags);
+			
+			int chanceR = (random(1,10));
+			
+			if(bFRIGHTENED && canReload && chanceR <= 5 && ResolveState("Reload"))
 			{
-				self.Speed = self.chaseSpeed;
-				//self.FastSpeed = self.chaseSpeed * 2;
-				A_Chase(s2, s1, flags);
-				
-				int chanceR = (random(1,10));
-				
-				if(bFRIGHTENED && chanceR <= 5)
-				{
-					SetStateLabel("Reload");
-				}
+				SetStateLabel("Reload");
 			}
-			else
-			{
-				Wandering == true;
-				self.Speed = self.searchSpeed;
-				//self.FastSpeed = self.searchSpeed * 2;
-				A_ClearTarget();
-				A_ClearLastHeard();
-				A_ClearSoundTarget();
-				target == NULL;
-			}
+		}
+		else
+		{
+			Wandering == true;
+			if(self.searchSpeed) self.Speed = self.searchSpeed;
+			//self.FastSpeed = self.searchSpeed * 2;
+			A_ClearTarget();
+			A_ClearLastHeard();
+			A_ClearSoundTarget();
+			target == NULL;
 		}
 	}
 	
@@ -291,16 +328,16 @@ class PB_Monster : Actor abstract
 		{
 			
 			int ticstotake=dist/spd;
-            int dropamt=0;
-            for(int i=1;i<=ticstotake;i++)
+			int dropamt=0;
+			for(int i=1;i<=ticstotake;i++)
 			{
-                dropamt+=i;
-            }
-            self.pitch -= min(atan(dropamt*gravity/dist),30);
-        }
+				dropamt+=i;
+			}
+			self.pitch -= min(atan(dropamt*gravity/dist),30);
+		}
 
-        //because we don't shoot from height 32 but 42
-        if(dist>0 && gravity != 0) {self.pitch += atan(10/dist);}
+		//because we don't shoot from height 32 but 42
+		if(dist>0 && gravity != 0) {self.pitch += atan(10/dist);}
 		else { self.pitch = 0;}
 		
 		double finalAngle =  PredAngle+1024;
@@ -313,7 +350,7 @@ class PB_Monster : Actor abstract
 		}
 		
 		self.A_DropProjectile(missiletype,offX,offY,offZ,tarDist,finalAngle, spawnOffsetY);
-    }
+	}
 	
 	void A_DropProjectile(class<actor> missiletype, double offX, double offY, double offZ, double targdist, double PredictAngle, double spawnOffsetY=0.0)
 	{
@@ -388,6 +425,7 @@ class PB_Monster : Actor abstract
 		BloodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
 		PB_Monster.CanIRoll true;
 		PB_Monster.CanIFallback true;
+		PB_Monster.CanIReload true;
 		PB_Monster.MonDMGMult 1.25, 1.1, 0.70, 1.0, 0.95, 0.80;
 		PB_Monster.MonPosHB 0.8, 0.65, 0.38, 0.40;
 		PB_Monster.AttackRange 5000;

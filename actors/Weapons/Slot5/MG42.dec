@@ -1,0 +1,707 @@
+//RATTATATATATATATATA
+//
+// MG42
+//  
+// HITLER'S MUZZSAW
+//
+//BRBRBRBRBRBRBRBRBR
+
+ACTOR MG42HeatLevel : Ammo
+{
+	Inventory.Amount 0
+	Inventory.MaxAmount 100
+	Ammo.BackpackAmount 0
+	Ammo.BackpackMaxAmount 100
+	+INVENTORY.IGNORESKILL
+	Inventory.Icon "TNT1A0"
+}
+
+ACTOR MG42Respected : Inventory { Inventory.MaxAmount 1}
+
+ACTOR MG42HasOverheated : Inventory { Inventory.MaxAmount 1} 
+
+ACTOR MG42BarrelOverheat : Inventory { Inventory.MaxAmount 1} //Token for the MG42 heat meter to increase higher if the barrel has overheated.
+
+ACTOR PB_MG42 : PB_Weapon
+{
+	//$Title MG-42
+	//$Category Project Brutality - Weapons
+	//$Sprite HBUSD0
+	Game Doom
+	SpawnID 9400
+	+FLOORCLIP
+	Weapon.AmmoType1 "PB_HighCalMag"
+	Weapon.AmmoType2 "MG42HeatLevel"
+	Weapon.AmmoGive1 30
+	Weapon.AmmoGive2 0
+	Weapon.AmmoUse1 0
+	Inventory.PickupMessage "MG-42 (Slot 5)"
+	Weapon.AmmoUse2 0
+	Inventory.PickupSound "weapons/MG42/Pickup"
+	Obituary "%o tasted the power of %k's MG42"
+	+WEAPON.NOAUTOAIM
+	+WEAPON.AMMO_OPTIONAL
+	+WEAPON.NOAUTOFIRE
+	+WEAPON.NOALERT
+	+dontgib
+	Scale 0.28
+	Tag "MG-42"
+	Inventory.AltHUDIcon "HBUSD0"
+	PB_WeaponBase.respectItem "MG42Respected"
+	//FloatBobStrength 0.5
+	PB_WeaponBase.OffsetRecoilX 7
+	PB_WeaponBase.OffsetRecoilY 5
+
+	States {
+	
+	//Short stuff first
+	WeaponSpecial:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+		TNT1 A 0 A_Setinventory("GoWeaponSpecialAbility",0)
+		Goto Ready3
+	EmptyFire:
+		TNT1 A 0 A_PlaySoundEx("weapons/empty", "Auto")
+		Goto Ready3
+	Steady:
+		TNT1 A 1
+		Goto Ready
+	Cooling:
+		TNT1 A 4 A_TakeInventory("MG42HeatLevel", 1)
+		TNT1 A 0 {
+			if(CountInv("MG42HeatLevel") <= 60) {A_SetInventory("MG42HasOverheated", 0);}
+			}
+		Loop
+	Spawn: 
+		HBUS D 1
+		Loop
+	/*Spawn: //Model not implemented
+		VBUS A 0 NoDelay
+		HBUS A 10 A_PbvpFramework("VBUS")
+		"####" "#" 0 A_PbvpInterpolate()
+		LOOP*/
+		
+	Select:
+		TNT1 A 0 {
+			A_WeaponOffset(0,32);
+			A_SetRoll(0);
+			PB_HandleCrosshair(50);
+			A_SetInventory("PB_LockScreenTilt",0);
+		}
+		
+		TNT1 A 0 PB_ResetBarrelTokens
+		
+		Goto SelectFirstPersonLegs
+		SelectContinue:
+		TNT1 A 0
+		TNT1 A 0 A_ZoomFactor(1.0)
+		TNT1 A 0 PB_WeapTokenSwitch("MG42Selected")
+ 		TNT1 A 0 A_Setinventory("RandomHeadExploder",1)
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
+		TNT1 AAAAAAAA 1 A_Raise
+		Wait
+	
+	BarrelSmoke1:
+		TNT1 A 0 A_JumpIfInventory("MG42HeatLevel", 35, "SmokeReal")
+		Stop
+	SmokeReal:
+		TNT1 A 0 {
+			If(CountInv("MG42HeatLevel") >=85 || CountInv("MG42HeatLevel") ==100) {
+				return state("OverheatedSmoke");
+				}
+				return state("");
+			}
+	ActualSmoke:
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 {
+			A_FireCustomMissile("GunBarrelSmoke", 0, 0, 0, 0, 0, 0);
+			A_FireCustomMissile("GunBarrelSmoke", 0, 0, 0, 0, 0, 0);
+		}
+	Stop
+	OverheatedSmoke:
+		TNT1 AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 {
+			A_FireCustomMissile("GunFireSmoke_Overheat", 0, 0, 0, 1, 0, 0);
+			A_FireCustomMissile("GunFireSmoke_Overheat", 0, 0, 0, -1, 0, 0);
+			}
+		Goto ActualSmoke
+	
+	WeaponRespect:
+		TNT1 A 0 {
+		A_SetCrosshair(5);
+		A_SetInventory("MG42Respected", 1);
+		A_PlaySound("weapons/MG42/Select");
+		A_SetInventory("MG42HeatLevel",0); // If give all or give everything is used
+		}
+		MGR1 ABCDEFGHIJKLMNOPQRST 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySound("MG42OP")
+		MGR1 UVWXYZ 1 A_DoPBWeaponAction
+		MGR2 ABCDEFGHIJK 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySound("MG42RE")
+		MGR2 LMNOPQRSRSTUVWXYZ 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySound("weapons/smg_magfly1")
+		MGR3 ABCDEFGHIJKLMNOPQRST 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySound("MG42BUL")
+		MGR3 UVWXYZ 1 A_DoPBWeaponAction
+		MGR4 ABCDE 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySound("MG42BUL")
+		MGR4 FGHIJKLMNOPQRSTUV 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySound("weapons/MG42/Pickup")
+		MGR4 WXYZ 1 A_DoPBWeaponAction
+		MGR5 ABCDEF 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySound("MG42IN")
+		MGR5 GHIJKLMNOP 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySoundEx("weapons/riflemagslap", "Auto")
+		MGR5 QRSTUVWXYZ 1 A_DoPBWeaponAction
+		MGR6 ABCDEFHI 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySound("MG42CL")
+		MGR6 JKLMNOPQRST 1 A_DoPBWeaponAction
+		MGRC EFGH 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySound("MG42RC")
+		MGRC HHHHGFE 1 A_DoPBWeaponAction
+		MGR6 UVWX 1 A_DoPBWeaponAction
+		TNT1 A 0 PB_HandleCrosshair(50)
+		Goto Ready3
+		
+		
+	SelectBelt:
+		MGS5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGS4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGS3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGKS A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		TNT1 A 0
+		"####" A 0
+		"####" CBA 1
+		Stop
+		
+	Ready:
+		TNT1 A 1 A_WeaponReady(WRF_NOFIRE)
+		TNT1 A 0 A_Overlay(3, "Cooling")
+		TNT1 A 0 A_TakeInventory("MG42HeatLevel", 20)
+		TNT1 A 0 PB_RespectIfNeeded
+	SelectAnimation:
+		TNT1 A 0 A_SetInventory("Zoomed", 0)
+		TNT1 A 0 {
+		A_PlaySound("weapons/MG42/Select");
+		if(CountInv("MG42HeatLevel") > 1) {A_Overlay(3, "Cooling");}
+		}
+		MGSE FE 1 
+		TNT1 A 0 {
+		A_GunFlash("SelectBelt");
+		}
+		MGSE DCB 1
+
+	Ready3: 
+		MG5R A 0
+		MG4R A 0
+		MG3R A 0
+		MG2R A 0
+		MG1R A 0 
+		"####" A 0 {
+			if(CountInv("MG42HeatLevel") > 1) {A_Overlay(3, "Cooling");}
+		}
+	ReadyToFire:	
+		MG1R A 1 {
+			PB_CoolDownBarrel(0,0,2);
+			if(CountInv("PB_HighCalMag") >= 14) {A_SetWeaponSprite("MG5R");}
+			if(CountInv("PB_HighCalMag") >= 12 && CountInv("PB_HighCalMag") < 14) {A_SetWeaponSprite("MG4R");}
+			if(CountInv("PB_HighCalMag") >= 10 && CountInv("PB_HighCalMag") < 12) {A_SetWeaponSprite("MG3R");}
+			if(CountInv("PB_HighCalMag") >= 8 && CountInv("PB_HighCalMag") < 10) {A_SetWeaponSprite("MG2R");
+			}
+			return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+		}
+		Loop
+	
+	ChangeBullet:
+		MA15 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MA14 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MA13 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MA12 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		TNT1 A 0
+		"####" ABCDEFGHIIIJKLMNOPQRSTTTTTTUVVVVWXYZ 1
+		MA25 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MA24 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MA23 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MA22 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		TNT1 A 0
+		"####" AAAAAABCDEFFFFFFGHHHHIJKLMNNNN 1
+		//RECHAMBER
+		MG5C A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MG4C A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MG3C A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MG2C A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		TNT1 A 0
+		"####" ABCDDDDCBA 1
+		MA25 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MA24 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MA23 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MA22 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		TNT1 A 0
+		"####" NNOPQRST 1
+		Stop
+	Reload:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+		TNT1 A 0 A_JumpIf(CountInv("MG42HasOverheated") || CountInv("MG42BarrelOverheat") >= 1, "BarrelChange")
+		Goto ReadyToFire
+	UnzoomOverheat:
+		TNT1 A 0 {
+		A_SetInventory("Zoomed", 0);
+		A_SetInventory("ADSMode", 0);
+		A_PlaySoundEx("IronSights", "Auto");
+		A_Overlay(5, "BeltUnzoomFlash");
+		A_ZoomFactor(1);
+		A_PlaySound("MG42HEAT");
+		PB_HandleCrosshair(50);
+		}
+		MRGZ DCB 1
+		Goto Overheat+1
+	UnzoomBarrelChange:
+	TNT1 A 0 {
+		A_SetInventory("Zoomed", 0);
+		A_SetInventory("ADSMode", 0);
+		A_PlaySoundEx("IronSights", "Auto");
+		A_Overlay(5, "BeltUnzoomFlash");
+		A_ZoomFactor(1);
+		PB_HandleCrosshair(50);
+		}
+	MRGZ DCB 1
+	Goto BarrelChange+2
+	BarrelChange:
+		TNT1 A 0 A_JumpIfInventory("Zoomed",1,"UnzoomBarrelChange")
+		TNT1 AA 0
+		TNT1 A 0{
+		A_ClearOverlays(5, 6);
+		A_Overlay(3, "ChangeBullet");
+		A_SetInventory("CantDoAction",1);
+		}
+		MGC1 ABCDEFGHIJKLMNO 1
+		TNT1 A 0 A_PlaySound("MG42OP")
+		MGC1 PQRSTUVWXYZ 1
+		MGC2 ABCDEF 1
+		TNT1 A 0 A_PlaySound("MG42RE")
+		MGC2 GHIJKLMNOP 1
+		TNT1 A 0 A_PlaySound("MG42IN")
+		MGC2 QRSTUVWXYZ 1
+		MGC3 ABCDEFG 1
+		TNT1 A 0 A_PlaySound("MG42CL")
+		MGC3 HIJKLMN 1
+		MGRC ABC 1
+		TNT1 A 0 A_PlaySound("MG42RC")
+		MGRC DDDDCBA 1
+		MGC3 OPQRST 1
+		TNT1 A 0 A_Overlay(3, "Cooling")
+		TNT1 A 0 {
+			A_SetInventory("CantDoAction",0);
+			A_SetInventory("MG42HeatLevel", 0);
+			A_SetInventory("MG42HasOverheated", 0);
+			A_SetInventory("MG42BarrelOverheat", 0);
+			}
+		Goto Ready3
+	Fire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
+		TNT1 A 0 A_JumpIfInventory("MG42HasOverheated",1,"BarrelChange")
+		TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "Fire2")
+		TNT1 A 0 {
+		if (CountInv("PB_HighCalMag") >= 1 && CountInv("MG42HeatLevel") != 100) {
+			return state ("ActualFire");
+			}
+		else if (CountInv("MG42HeatLevel") == 100) {
+			return state ("Overheat");
+			}
+		else {
+			return state ("");
+			}
+		}
+		Goto EmptyFire
+	
+	MuzzleFlash:
+		TNT1 A 0 A_Jump(128, "Flash1", "Flash2", "Flash3")
+	Flash3:
+		MGMZ EF 1 BRIGHT
+		Stop
+	Flash2:
+		MGMZ CD 1 BRIGHT
+		Stop
+	Flash1:
+		MGMZ AB 1 BRIGHT
+		Stop
+	
+	BeltFlash:
+		MGF5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGF4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGF3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGF2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		TNT1 A 0
+		"####" ABCD 1
+		Stop
+	ActualFire:
+		TNT1 A 0 {
+			PB_IncrementHeat;
+		A_ClearOverlays(3, 6);
+		A_Overlay(-3, "MuzzleFlash");
+		A_Overlay(5, "BeltFlash");
+		if(CountInv("MG42BarrelOverheat") >= 1) {
+			A_GiveInventory("MG42HeatLevel",3);
+			}
+		else{
+			A_GiveInventory("MG42HeatLevel", 1);
+			}
+		A_TakeInventory("PB_HighCalMag", 1);
+		A_StartSound("MG42FIR", CHAN_Weapon, CHANF_DEFAULT, 1.0);
+		PB_DynamicTail("lmg", "lmg");
+		//A_FireBullets(5, 6, 1, 28, "MachineGunBulletPuff", 1);
+		PB_FireBullets("PB_792x57mm", 1, 4, 0, 0, 4);
+		//A_Firecustommissile("MG42CaseSpawn",0,0,24,-20, 0, -50);
+		PB_SpawnCasing("MG42Casing", 13, 0, 10, 0, 0, 0, false);
+		PB_SpawnCasing("LMGBeltLink", 13, 5, 34, 0, 2,frandom(-2,0.5), false);
+		A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
+		A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
+		PB_GunSmoke_Basic(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+		A_AlertMonsters;
+		PB_WeaponRecoil(-2.2,-0.6);
+		PB_FireOffset;
+		}
+		MGFI AB 1
+		TNT1 A 0 PB_ReFire
+		TNT1 A 0 A_Overlay(6, "BarrelSmoke1")
+		MGFI CD 1
+		TNT1 A 0 A_Overlay(3, "Cooling")
+		Goto Ready3
+	Overheat:
+		TNT1 A 0 A_PlaySound("MG42HEAT")
+		TNT1 A 0 A_SetInventory("MG42HasOverheated",1)
+		TNT1 A 0 A_SetInventory("MG42BarrelOverheat",1)
+		MG5R A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MG4R A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MG3R A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MG2R A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		MG1R A 0
+		"####" A 0
+		"####" A 0 A_Overlay(3,"Cooling")
+		"####" A 0 A_Overlay(6, "BarrelSmoke1")
+		"####" A 45 A_DoPBWeaponAction(WRF_NOFIRE|WRF_NOSWITCH)
+		Goto ReadyToFire
+	
+	BeltZoomFlash:
+		MGZ5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGZ4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGZ3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGZ2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		TNT1 A 0
+		"####" A 0
+		"####" AB 1
+		MGZ3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGZ2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		TNT1 A 0
+		"####" A 0
+		"####" C 1
+		Stop
+	
+	AltFire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+		TNT1 A 0 A_JumpIfInventory("Zoomed", 1, "Unzoom")
+		TNT1 A 0 {
+		A_SetInventory("Zoomed", 1);
+		A_SetInventory("ADSMode", 1);
+		A_PlaySoundEx("IronSights", "Auto");
+		A_Overlay(5, "BeltZoomFlash");
+		A_ZoomFactor(1.25);
+		A_SetCrosshair(5);
+		}
+		MRGZ BCD 1
+		Goto Ready2
+	
+	BeltUnzoomFlash:
+		MGZ3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGZ2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		TNT1 A 0
+		"####" A 0
+		"####" C 1
+		"####" A 0
+		MGZ5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGZ4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGZ3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGZ2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		TNT1 A 0
+		"####" A 0
+		"####" BA 1
+		Stop
+	
+	Unzoom:
+		TNT1 A 0 {
+		A_SetInventory("Zoomed", 0);
+		A_SetInventory("ADSMode", 0);
+		A_PlaySoundEx("IronSights", "Auto");
+		A_Overlay(5, "BeltUnzoomFlash");
+		A_ZoomFactor(1);
+		PB_HandleCrosshair(50);
+		}
+		MRGZ DCB 1
+		Goto Ready3
+	
+	Ready2:
+		MG3Z A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MG2Z A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		MG1Z A 0
+		"####" A 0
+		"####" A 1 {
+			PB_CoolDownBarrel(0,0,3);
+		//Some ADS toggle stuff
+		//I am sorry for YandereDev shit... i didn't code for a long time lol
+		A_SetCrosshair(5);
+		if(GetCvar("pb_toggle_aim_hold")) {
+				if(!PressingAltfire() || JustReleased(BT_ALTATTACK) ) {
+					return state("Unzoom");
+				}
+				if (PressingFire() && PressingAltfire() && CountInv("PB_HighCalMag") > 1 && CountInv("MG42HeatLevel") < 100)
+							{
+							Return State("Fire2");
+							}
+					else if (PressingFire() && PressingAltfire() && CountInv("PB_HighCalMag") > 1 && CountInv("MG42HeatLevel") == 100) {
+							Return State ("UnzoomOverheat");
+						}
+					else if (PressingFire() && PressingAltfire() && CountInv("PB_HighCalMag") <= 1) {
+							Return State ("Unzoom");
+						}
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY);
+			}
+		else {
+			return A_DoPBWeaponAction;
+		}
+	}
+	Loop
+	
+	BeltFlashZoomFire:
+		MZF3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MZF2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		TNT1 A 0
+		"####" A 0
+		"####" AC 1
+		Stop
+	BeltFlashZoomFireFinished:
+		TNT1 B 1{
+			if(CountInv("PB_HighCalMag") >= 10) {A_SetOverlaySprite(5, "MZF3");}
+			else if (CountInv("PB_HighCalMag")  == 8 || CountInv("PB_HighCalMag")  == 9)  {A_SetOverlaySprite(5, "MZF2");}
+		}
+		STOP
+		
+	MuzzleFlashZoom:
+		TNT1 A 0 A_Jump(128, "MuzzleZoom1", "MuzzleZoom2", "MuzzleZoom3")
+	MuzzleZoom1:
+		MGZM A 1 BRIGHT
+		Stop
+	MuzzleZoom2:
+		MGZM B 2 BRIGHT
+		Stop
+	MuzzleZoom3:
+		MGZM C 1 BRIGHT
+		Stop
+	Fire2:
+		TNT1 A 0 A_JumpIfInventory("MG42HasOverheated",1,"UnzoomBarrelChange")
+		TNT1 A 0 {
+		if (CountInv("PB_HighCalMag") >= 1 && CountInv("MG42HeatLevel") != 100) {
+			return state ("ActualFire2");
+			}
+		else if (CountInv("MG42HeatLevel") == 100) {
+			return state ("UnzoomOverheat");
+			}
+		else {
+			return state ("Unzoom");
+			}	
+		}	
+		Goto Ready2
+	ActualFire2:
+		TNT1 A 0 {
+			PB_IncrementHeat;
+		A_ClearOverlays(3, 4);
+		A_Overlay(-3, "MuzzleFlashZoom");
+		A_Overlay(5, "BeltFlashZoomFire");
+		if(CountInv("MG42BarrelOverheat") >= 1) {
+			A_GiveInventory("MG42HeatLevel",4);
+			}
+		else{
+			A_GiveInventory("MG42HeatLevel", 2);
+			}
+		A_TakeInventory("PB_HighCalMag", 1);
+		A_StartSound("MG42FIR", CHAN_Weapon, CHANF_DEFAULT, 1.0);
+		PB_DynamicTail("lmg", "lmg");
+		//A_FireBullets(5, 5, 1, 28, "MachineGunBulletPuff", 1);
+		PB_FireBullets("PB_792x57mm", 1, 4, 0, 0, 4);
+		PB_SpawnCasing("MG42Casing", 13, 0, 19, 0, 0, 0, false);
+		PB_SpawnCasing("LMGBeltLink", 10, 3.2, 39, 0, 2,frandom(-2,0.5), false);
+		A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
+		A_FireCustomMissile("MinigunTracer", random(-3,3), 0, -1, random(-3,3));
+		PB_GunSmoke_Basic(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+		A_AlertMonsters;
+		PB_WeaponRecoil(-2.0,-0.5);
+		}
+		MGZF AB 1
+		TNT1 A 0 {
+		if (CountInv("MG42HeatLevel") == 100) {
+			return state ("UnzoomOverheat");
+			}
+		else {
+			A_Overlay(3, "Cooling");
+			return state ("FinishedZoomFire");
+			}	
+		}
+	FinishedZoomFire:
+		TNT1 A 0 {		
+			if(GetCvar("pb_toggle_aim_hold")) {
+				if(JustReleased(BT_ALTATTACK)){
+					return state("UnZoom");
+				}
+		
+				if (PressingFire() && PressingAltfire()){
+						return state("Fire2");
+				}
+			}
+			else {
+				if(PressingAltfire()){
+					return state("UnZoom");
+				}
+				PB_ReFire("Fire2");
+			}
+			return state("");
+		}
+		MGZF C 1 A_Overlay(5, "BeltFlashZoomFireFinished")
+		MG1Z A 1 {
+			if(CountInv("PB_HighCalMag") >= 10) {A_SetWeaponSprite("MG3Z");}
+			if(CountInv("PB_HighCalMag") == 8 || CountInv("PB_HighCalMag") == 9) {A_SetWeaponSprite("MG2Z");}
+			}
+		TNT1 A 0 A_Overlay(3, "Cooling")
+		Goto Ready2
+	
+	FlashKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		MGKI  A 0
+		"####" A 0
+		"####" BCD 1
+		MGKI EFGHHGFE 1
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		MGKI  A 0
+		"####" A 0
+		"####" DCB 1
+		Goto Ready3
+	FlashAirKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")	
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		MGKI  A 0
+		"####" A 0
+		"####" BCD 1
+		MGKI EFGHIIIHGFE 1
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		MGKI  A 0
+		"####" A 0
+		"####" DCB 1
+		Goto Ready3
+	FlashSlideKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		MGKI  A 0
+		"####" A 0
+		"####" BCD 1
+		MGKI EFGHIIIIIIIIIIHGFE 1
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		MGKI  A 0
+		"####" A 0
+		"####" DCB 1
+		Goto Ready3
+	FlashSlideKickingStop:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
+		MGKI IIII 1
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		MGKI  A 0
+		"####" A 0
+		"####" DCB 1
+		Goto Ready3
+	FlashPunching:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		MGKI  A 0
+		"####" A 0
+		"####" BCD 1
+		MGKI EFGHHGFE 1
+		MGK5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGK4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGK3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGK2 A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		MGKI  A 0
+		"####" A 0
+		"####" DCB 1
+		Stop
+	
+	DeselectFlash:
+		MGS5 A 0 A_JumpIfInventory("PB_HighCalMag", 14, 5)
+		MGS4 A 0 A_JumpIfInventory("PB_HighCalMag", 12, 4)
+		MGS3 A 0 A_JumpIfInventory("PB_HighCalMag", 10, 3)
+		MGKS A 0 A_JumpIfInventory("PB_HighCalMag", 8, 2)
+		TNT1 A 0
+		"####" A 0
+		"####" ABC 1
+		Stop
+	
+	Deselect:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+		TNT1 A 0 {
+			A_WeaponOffset(0,32);
+			A_SetRoll(0);
+			PB_HandleCrosshair(50);
+			A_SetInventory("PB_LockScreenTilt",0);
+			A_ClearOverlays(10,11);
+		}
+		TNT1 A 0 {
+			A_GunFlash("DeselectFlash");
+			A_Setinventory("Zoomed",0);
+			A_Setinventory("ADSmode",0);
+			A_ZoomFactor(1.0);
+			A_PlaySoundEx("weapons/changing", "Auto");
+			}
+		MGSE BCDEF 1
+		TNT1 A 0 A_Setinventory("RandomHeadExploder",0)
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+		Wait
+		}
+	}

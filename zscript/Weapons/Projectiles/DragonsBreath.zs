@@ -216,8 +216,8 @@ Class PB_DragonBreath : Actor
 				TNT1 A 0 A_Spawnprojectile ("FireworkSFXType2", 0, 0, random (0, 360), 2, random (-60, -30));
 				TNT1 A 0 A_SpawnItemEx("DragonsBreathPiece2", random (-35, 35), random (-35, 35));
 				TNT1 A 0 A_SpawnItemEx("DragonsBreathPiece3", random (-45, 45), random (-45, 35));
-				TNT1 AAAAAAAAAAAAAA 0 A_Spawnprojectile("SparkX", 2, 0, random (0, 360), 2, random (0, 360));
-				TNT1 A 0 A_SpawnItemEx ("RicoChet",0,0,-5,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				TNT1 AAAAAAAAAAA 0 A_Spawnprojectile("SparkX", 2, 0, random (0, 360), 2, random (0, 360));
+				TNT1 A 0 A_SpawnItemEx ("PB_BulletPuff",0,0,-5,0,0,0,0,SXF_NOCHECKPOSITION,0);
 				Stop;
 			Death:
 				Stop;

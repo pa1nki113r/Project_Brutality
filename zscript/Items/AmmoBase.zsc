@@ -1,56 +1,61 @@
 class PB_Ammo : Ammo
 {
-    int cap,ca,res; name ammotype; string p;
+	int cap,ca,res; name ammotype; string p;
 	property ammotype : ammotype;
 	
 	mixin PB_BetterPickupSound;
 	
-    Default
-    {
-        +FLOORCLIP
-	    +DONTGIB
-	    +INVENTORY.IGNORESKILL
-    }
+	Default
+	{
+		+FLOORCLIP
+		+DONTGIB
+		+INVENTORY.IGNORESKILL
+	}
 
-    override void PostBeginPlay()
-    {
-        Super.PostBeginPlay();
-        switch(ammotype)
-        {
-            case 'lowcal': sprite = GetSpriteIndex("MBLK"); break;
-            case 'lowcalbox': sprite = GetSpriteIndex("AMOK"); break;
-            case 'highcal': sprite = GetSpriteIndex("CLIP"); break;
-            case 'highcalbox': sprite = GetSpriteIndex("AMMO"); break;
-            case 'shell': sprite = GetSpriteIndex("SHEL"); break;
-            case 'shellbox': sprite = GetSpriteIndex("SBOX"); break;
-            case 'exp': sprite = GetSpriteIndex("R0CK"); break;
-            case 'expbox': sprite = GetSpriteIndex("BROK"); break;
-            case 'cell' : SetStateLabel("SpawnCell"); break;
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		switch(ammotype)
+		{
+			case 'lowcal': sprite = GetSpriteIndex("MBLK"); break;
+			case 'lowcalbox': sprite = GetSpriteIndex("AMOK"); break;
+			case 'highcal': sprite = GetSpriteIndex("CLIP"); break;
+			case 'highcalbox': sprite = GetSpriteIndex("AMMO"); break;
+			case 'shell': sprite = GetSpriteIndex("SHEL"); break;
+			case 'shellbox': sprite = GetSpriteIndex("SBOX"); break;
+			case 'exp': sprite = GetSpriteIndex("R0CK"); break;
+			case 'expbox': sprite = GetSpriteIndex("BROK"); break;
+			case 'cell' : SetStateLabel("SpawnCell"); break;
 			case 'cellpack' : SetStateLabel("SpawnCellPack"); break;
-            case 'fuel': sprite = GetSpriteIndex("GSLN"); break;
-            case 'dtech': SetStateLabel("SpawnDTech"); break;
+			case 'fuel': sprite = GetSpriteIndex("GSLN"); break;
+			case 'dtech': SetStateLabel("SpawnDTech"); break;
 			case 'nade': SetStateLabel("SpawnNade"); break;
 			case 'nadestun': sprite = GetSpriteIndex("STNG"); break;
 			case 'proxmine': sprite = GetSpriteIndex("XPFP"); break;
 			case 'ql': SetStateLabel("SpawnQL"); break;
-        }
-    }
+		}
+	}
 
-    override class<Ammo> GetParentAmmo()
+	override class<Ammo> GetParentAmmo()
 	{
 		class<Object> type = GetClass();
 		while(type.GetParentClass()!= "PB_Ammo"&&type.GetParentClass()!=null) type = type.GetParentClass();
 		return(class<Ammo>)(type);
 	}
 
-    override bool TryPickup(in out actor toucher)
+	override bool TryPickup(in out actor toucher)
 	{
 		class<Ammo> type = GetParentAmmo();
 		double factor = G_SkillPropertyFloat(SKILLP_AmmoFactor)*(bDROPPED?-G_SkillPropertyFloat(SKILLP_DropAmmoFactor):1);
 		int aa = self.amount*factor;
 		if(toucher && toucher is "PlayerPawn")
 		{
-			cap = toucher.FindInventory("Backpack",true)?self.BackpackMaxAmount:self.MaxAmount;
+			if (!toucher.FindInventory(self.GetParentAmmo(),true)){
+				cap = toucher.FindInventory("Backpack",true)?self.BackpackMaxAmount:self.MaxAmount;
+			}
+			else{
+				cap = toucher.FindInventory(self.GetParentAmmo(),true).MaxAmount;
+			}
 			ca = toucher.CountInv(type);
 		}
 		res = cap-ca;
@@ -63,7 +68,7 @@ class PB_Ammo : Ammo
 	
 	override string PickupMessage() { return string.format(p,res,GetTag()); }
 
-    States
+	States
 	{
 	Spawn:
 		TNT1 A 0;

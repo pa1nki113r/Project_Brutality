@@ -54,7 +54,7 @@ extend class PB_Hud_ZS
 		if(!showGlassCracks)
 			return;
 		
-		if(glassCracks.Size() > 3)
+		if(glassCracks.Size() > 8)
 			glassCracks.Delete(0);
 
 		PB_CrackFXStorage crack = PB_CrackFXStorage.CreateCrackFX();
@@ -155,7 +155,7 @@ class PB_CrackFXStorage : PB_GenericHudEffect
 		
 		cls.graphic = TexMan.CheckForTexture(gfxname);
 		
-		float randscale = frandom[hud](0.3, 0.5);
+		float randscale = frandom[hud](0.5, 0.8);
 		cls.scale.x = randscale;
 		cls.scale.y = randscale;
 		cls.scalenomod = cls.scale;
@@ -263,10 +263,9 @@ class PB_HUDFXHandler : EventHandler
 		if(sb.CheckInventory("sae_extcam"))
 			return;
 
-		if(e.name == "PB_HUDBloodDroplet")	
+		if(e.name == "PB_HUDBloodDroplet")
 			sb.CreateBloodDrop(e.args[0]);
-
-		if(e.name == "PB_HUDGlassBreak")
+		else if(e.name == "PB_HUDGlassBreak")
 			sb.CreateCrack();
 	}
 	
@@ -276,7 +275,7 @@ class PB_HUDFXHandler : EventHandler
 			return;
 		
 		PB_PlayerPawn pmo = PB_PlayerPawn(players[consoleplayer].mo);
-		if(e.Thing == pmo && random[hud](0, 10) > 8)
+		if(e.Thing == pmo && e.DamageType == 'Head')
 		{
 			EventHandler.SendInterfaceEvent(pmo.PlayerNumber(), "PB_HUDGlassBreak");
 		}

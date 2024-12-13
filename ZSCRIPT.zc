@@ -1,9 +1,11 @@
-version "4.11"
+version "4.11.3"
 
 const MAXITERATIONS = 32676;
 
-#include "actors/Weapons/Slot8/BlackHole.zc"
-#include "actors/Weapons/Slot8/SuperBFGBall.zc"
+#include "zscript/FastMaterialCheck.zs"
+
+#include "actors/Weapons/Slot9/BlackHole.zc"
+#include "actors/Weapons/Slot9/SuperBFGBall.zc"
 
 //PB_CORE
 #include "zscript/PBCore.zsc"
@@ -25,9 +27,90 @@ const MAXITERATIONS = 32676;
 #include "zscript/Weapons/executionGUI/pb_uihack.zs" 
 #include "zscript/Weapons/executionGUI/pb_execution_handler.zs" 
 #include "zscript/ZMoveMenu.ZMV"
-#include "zscript/PbWheel/parse.zsc"
-#include "zscript/PbWheel/ev_core_special.zsc"
-#include "zscript/PbWheel/ev_drawer_special.zsc"
+//#include "zscript/PbWheel/parse.zsc"
+//#include "zscript/PbWheel/ev_core_special.zsc"
+//#include "zscript/PbWheel/ev_drawer_special.zsc"
+
+////////////////////////////////////////////////////////
+//	Gearbox includes
+///////////////////////////////////////////////////////
+#include "zscript/gearbox/weapon_data.zs"
+#include "zscript/gearbox/weapon_data_loader.zs"
+#include "zscript/gearbox/printer.zs"
+
+#include "zscript/MD5/MD5.zs"
+#include "zscript/gearbox/custom_weapon_order_storage.zs"
+
+#include "zscript/gearbox/activity.zs"
+#include "zscript/gearbox/input.zs"
+#include "zscript/gearbox/input_processor.zs"
+#include "zscript/gearbox/event_processor.zs"
+#include "zscript/gearbox/sounds.zs"
+
+#include "zscript/gearbox/weapon_menu.zs"
+#include "zscript/gearbox/inventory_menu.zs"
+
+//pb things
+#include "zscript/gearbox/specials_menu.zs"
+#include "zscript/gearbox/EquipmentMenu.zs"
+#include "zscript/gearbox/pb/tokens.zs"	//this is were specials and equipments are defined to be used by the handler
+
+#include "zscript/gearbox/inventory_user.zs"
+
+#include "zscript/gearbox/sender.zs"
+
+#include "zscript/gearbox/netevent_processor.zs"
+#include "zscript/gearbox/changer.zs"
+
+#include "zscript/gearbox/view_model.zs"
+
+// Displaying data on screen.
+#include "zscript/gearbox/display/dim.zs"
+#include "zscript/gearbox/display/blur.zs"
+#include "zscript/gearbox/display/blocky_view.zs"
+#include "zscript/gearbox/display/text_view.zs"
+#include "zscript/gearbox/display/fade_in_out.zs"
+#include "zscript/gearbox/display/caption.zs"
+
+#include "zscript/gearbox/options.zs"
+#include "zscript/gearbox/font_selector.zs"
+
+// Weapon Wheel implementation.
+#include "zscript/gearbox/wheel/view.zs"
+#include "zscript/gearbox/wheel/controller.zs"
+#include "zscript/gearbox/wheel/controller_model.zs"
+#include "zscript/gearbox/wheel/inner_indexer.zs"
+#include "zscript/gearbox/wheel/indexer.zs"
+#include "zscript/gearbox/wheel/multiwheel.zs"
+#include "zscript/gearbox/wheel/multiwheel_mode.zs"
+#include "zscript/gearbox/wheel/text.zs"
+#include "zscript/gearbox/wheel/screen.zs"
+
+// Utility tools.
+#include "zscript/gearbox/tools/cvar.zs"
+#include "zscript/gearbox/tools/log.zs"
+#include "zscript/gearbox/tools/texture_cache.zs"
+#include "zscript/gearbox/tools/ammo.zs"
+
+// Helper classes gearbox/that wrap access to game information provided by the engine.
+#include "zscript/gearbox/engine/level.zs"
+#include "zscript/gearbox/engine/weapon_watcher.zs"
+#include "zscript/gearbox/engine/player.zs"
+
+#include "zscript/gearbox/freezer.zs"
+
+#include "zscript/gearbox/event_handler.zs"
+
+#include "zscript/gearbox/service/service.zs"
+#include "zscript/gearbox/service/icon_service.zs"
+#include "zscript/gearbox/service/hide_service.zs"
+
+// Libraries
+#include "zscript/m_gizmos/previous_weapon.zs"
+#include "zscript/zabor/event_handler.zs"
+//
+//	end of gearbox includes
+//
 
 //Spices and Seasoning
 #include "zscript/TiltPlus/TiltPlusPlus.zc"
@@ -95,15 +178,22 @@ const MAXITERATIONS = 32676;
 #include "zscript/Monsters/Sergeants/ZombieSergeantHelmet.zc"
 #include "zscript/Monsters/Sergeants/ZombieSergeantShield.zc"
 
+#include "zscript/Monsters/Chaingunner/Commando.zc"
+#include "zscript/Monsters/Chaingunner/HelmetCommando.zc"
+
 #include "zscript/Monsters/Imps/Imp.zc"
+
+#include "zscript/Monsters/Cacodemons/Cacodemon.zc"
 
 //Effects
 #include "zscript/Effects/Casings.txt"
+#include "zscript/Effects/EmptyMag.txt"
 #include "zscript/Effects/IceShards.txt"
 #include "zscript/Effects/BulletPuffs.txt"
 #include "zscript/Effects/Smoke.zs"
 #include "zscript/Effects/FxBase.zs"
 #include "zscript/Effects/MonsterBeam.zs"
+#include "zscript/Effects/Fireworks.zs"
 
 //Weapons
 #include "zscript/Weapons/BaseWeapon.zc"
@@ -113,7 +203,6 @@ const MAXITERATIONS = 32676;
 #include "zscript/Weapons/BaseWeapon_Executions.zsc"
 #include "zscript/Weapons/BaseWeapon_Barrels.zsc"
 #include "zscript/Weapons/Taunting.zc"
-#include "actors/Weapons/Slot9/UnmakerCharge.zsc"
 #include "zscript/Weapons/FlamerStuff.zsc"
 #include "zscript/Weapons/Projectiles/BulletProjectile.zsc"
 #include "zscript/Weapons/Projectiles/BulletDef.SmallCal.zsc"
@@ -123,6 +212,16 @@ const MAXITERATIONS = 32676;
 #include "zscript/Weapons/Projectiles/BulletDef.EnemyProjectiles.zsc"
 #include "zscript/Weapons/Projectiles/RailGunPj.zs"
 #include "zscript/Weapons/Projectiles/DragonsBreath.zs"
+#include "zscript/Weapons/Projectiles/Shrapnel.zsc"
+#include "zscript/Weapons/ThrownGrenades.zs"
+#include "zscript/Weapons/Keepweapmanager.zsc"
+
+#include "actors/Weapons/Slot0/UnmakerCharge.zsc"
+#include "zscript/Weapons/Slot2/Revolver.zs"
+#include "zscript/Weapons/Slot2/Deagle.zs"
+#include "zscript/Weapons/Slot3/Shotgun.zs"
+#include "zscript/Weapons/Slot6/SuperGL.zs"
+#include "zscript/Weapons/Slot7/PlasmaM1.zs"
 
 //Spawners
 #include "zscript/Spawner/PB_SpawnerBase.zc"
@@ -143,6 +242,7 @@ const MAXITERATIONS = 32676;
 #include "zscript/Spawner/Items/PB_APBonusSpawner.zc"
 #include "zscript/Spawner/Items/PB_GreenSpawner.zc"
 #include "zscript/Spawner/Items/PB_BlueSpawner.zc"
+#include "zscript/Spawner/Items/PB_PowerUpsSpawner.zs"
 
 #include "zscript/Spawner/Monsters/PBZombiemanSpawner.zc"
 #include "zscript/Spawner/Monsters/PBShotgunGuySpawner.zc"
@@ -162,6 +262,7 @@ const MAXITERATIONS = 32676;
 #include "zscript/Spawner/Monsters/PBMastermindSpawner.zc"
 #include "zscript/Spawner/Monsters/PBCyberDemonSpawner.zc"
 #include "zscript/Spawner/Monsters/PBNaziSpawner.zc"
+#include "zscript/Spawner/Monsters/PBStealthMonsterSpawner.zc"
 
 #include "zscript/Spawner/Ammo/PB_PackSpawner.zc"
 #include "zscript/Spawner/Ammo/PB_MagSpawner.zc"
@@ -176,16 +277,6 @@ const MAXITERATIONS = 32676;
 //PBVP
 #include "zscript/PBVP/PBVP.zc"
 
-Class PB_SpecialWheel_Mode
-{
-	string specialName;
-	string specialAlias;
-	TextureID specialIcon;
-	Vector2 iconScale;
-	int specialPriority;
-	bool hidden;
-	bool mergeDir;
-}
 
 class Demonpickup: CustomInventory
 {
