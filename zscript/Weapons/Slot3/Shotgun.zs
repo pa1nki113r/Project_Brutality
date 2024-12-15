@@ -176,6 +176,7 @@ Class PB_Shotgun : PB_WeaponBase
 				A_SetRoll(0);
 				PB_HandleCrosshair(69);
 				A_SetInventory("PB_LockScreenTilt",0);
+				A_SetInventory("CantWeaponSpecial",0);
 				A_SetInventory("CantDoAction",0);
 				}
 			TNT1 A 0 
