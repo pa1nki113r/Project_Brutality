@@ -2123,27 +2123,25 @@ extend class PB_WeaponBase
 	action state PB_RespectIfNeeded()
 	{
 		//A_Log("PB_RespectIfNeeded");
-		Actor own = invoker.owner;
-		//if(Cvar.GetCvar("PB_NoHelmetAnimation",player).GetBool()){A_Log("Cvar.GetCvar(\"PB_NoHelmetAnimation\",player).GetBool()");}
-		//if(CountInv("IntroductionSequence") < 1){A_Log("IntroductionSequence not in inventory");}
-		bool shouldHelmet = !Cvar.GetCvar("PB_NoHelmetAnimation",player).GetBool() && (CountInv("IntroductionSequence") < 1); //ACS_NamedExecuteWithResult("ToggleHelmetAnimation",0,0,0) == 0
-		bool shouldRespect = invoker.respectInventoryItem != "" && !FindInventory(invoker.respectInventoryItem);
+		bool shouldHelmet = !Cvar.GetCvar("PB_NoHelmetAnimation",player).GetBool() && (CountInv("IntroductionSequence") < 1); 
+		bool shouldRespect = (invoker.respectInventoryItem != "" && !FindInventory(invoker.respectInventoryItem) && !invoker.alreadyRespected);
 		if (shouldHelmet)
 		{
-			own.GiveInventory("CantDoAction",1);
+			GiveInventory("CantDoAction",1);
 			//Console.printf("Setting State: HelmetAnimation");
-			return invoker.resolveState("HelmetAnimation");
+			return resolveState("HelmetAnimation");
 		}			
 		else if (shouldRespect)
 		{
 			//Console.printf("Setting State: WeaponRespect");
-			own.GiveInventory(invoker.respectInventoryItem,1);
-			return invoker.resolveState("WeaponRespect");
+			GiveInventory(invoker.respectInventoryItem,1);
+			invoker.alreadyRespected = true;
+			return resolveState("WeaponRespect");
 		}
 		else
 		{
 			//Console.printf("Setting State: SelectAnimation");
-			return invoker.A_Jump(256,"SelectAnimation");
+			return resolveState("SelectAnimation");
 		}
 	}
 	
