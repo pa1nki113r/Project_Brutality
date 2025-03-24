@@ -125,6 +125,9 @@ class pb_ExecutionHandler : EventHandler
     Vector2 centerPos = makeDrawPos(event, target, target.height / 2.0);
     double   distance = player.mo.distance3D(target);
     if (distance == 0) return;
+	
+	CVar draw_box = CVar.FindCVar('pb_execution_box');
+	if (!draw_box.GetBool()) return;
 
     double  height        = target.height;
     double  radius        = target.radius;
@@ -137,17 +140,18 @@ class pb_ExecutionHandler : EventHandler
     double  halfWidth  = visibleRadius / 2.0 * size;
     double  halfHeight = visibleHeight / 2.0 * size;
 
-    Vector2 left   = (centerPos.x - halfWidth, centerPos.y);
+	Vector2 left   = (centerPos.x - halfWidth, centerPos.y);
     Vector2 right  = (centerPos.x + halfWidth, centerPos.y);
     Vector2 top    = (centerPos.x, centerPos.y - halfHeight);
     Vector2 bottom = (centerPos.x, centerPos.y + halfHeight);
+
+	Vector2 centerTop   = (centerPos.x,  top.y);
 
     Vector2 topLeft     = (left.x,  top.y);
     Vector2 topRight    = (right.x, top.y);
     Vector2 bottomLeft  = (left.x,  bottom.y);
     Vector2 bottomRight = (right.x, bottom.y);
-
-      
+	
 	let  frameName      = "ts_framr";
 	let  topLeftTex     = TexMan.checkForTexture(frameName                  , TexMan.TryAny);
 	let  topRightTex    = TexMan.checkForTexture(frameName.."_top_right"    , TexMan.TryAny);
@@ -165,6 +169,7 @@ class pb_ExecutionHandler : EventHandler
 	Screen.drawTexture(topRightTex,    animate, topRight.x,    topRight.y   );
 	Screen.drawTexture(bottomLeftTex,  animate, bottomLeft.x,  bottomLeft.y );
 	Screen.drawTexture(bottomRightTex, animate, bottomRight.x, bottomRight.y);
+	
 	Screen.clearClipRect();
       
   }
@@ -172,7 +177,7 @@ class pb_ExecutionHandler : EventHandler
   private ui
   void draw(Actor target, RenderEvent event)
   {
-      drawFrame(event, target);
+	drawFrame(event, target);
   }
 
   private ui

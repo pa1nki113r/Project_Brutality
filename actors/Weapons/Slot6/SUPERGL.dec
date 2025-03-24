@@ -1,0 +1,1873 @@
+// --------------------------------------------------------------------------
+// Super Grenade Launcher
+// --------------------------------------------------------------------------
+
+ACTOR RespectSGL : Inventory
+{
+Inventory.MaxAmount 1
+}
+
+ACTOR GrenadeTypeImpact : Inventory
+{
+Inventory.MaxAmount 1
+}
+
+ACTOR GrenadeTypeSticky : Inventory
+{
+Inventory.MaxAmount 1
+}
+
+ACTOR GrenadeTypeIncendiary : Inventory
+{
+Inventory.MaxAmount 1
+}
+
+ACTOR GrenadeTypeCryo : Inventory
+{
+Inventory.MaxAmount 1
+}
+
+ACTOR GrenadeTypeAcid : Inventory
+{
+Inventory.MaxAmount 1
+}
+
+ACTOR GrenadeRounds : PB_WeaponAmmo
+{
+	Inventory.Amount 0
+	Inventory.MaxAmount 7
+	Ammo.BackpackAmount 0
+	Ammo.BackpackMaxAmount 7
+	+INVENTORY.IGNORESKILL
+	Inventory.Icon "SGL0Z0"
+}
+
+Actor GrenadeDetonator : Inventory
+{
+	Inventory.MaxAmount 1
+}
+
+Actor CycleAnimation : Inventory
+{
+	Inventory.MaxAmount 1
+}
+
+Actor JustFiredSGL: Inventory
+{
+Inventory.maxamount 200
+}
+
+Actor SGLDetonateSoundCooldown : Inventory
+{
+	Inventory.MaxAmount 22
+}
+
+
+Actor SGLUnloaded : Inventory
+{
+	Inventory.MaxAmount 1
+}
+
+ACTOR PB_SuperGL: PB_Weapon
+{
+	//$Title Automatic Grenade Launcher
+	//$Category Project Brutality - Weapons
+	//$Sprite SGL0Z0
+	SpawnID 9520
+	Game Doom
+	SpawnID 29
+	Speed 20
+	Damage 20
+	Scale .48
+	Weapon.SelectionOrder 2500
+	Weapon.AmmoUse1 0
+	Weapon.AmmoUse2 0
+	Weapon.AmmoGive2 0
+	Weapon.AmmoGive1 6
+	Weapon.AmmoType1 "PB_RocketAmmo" // Grenade launcher will share same ammo as rocket launcher
+	Weapon.AmmoType2 "GrenadeRounds"
+	Inventory.PickupSound "misc/rockboxa"
+	+WEAPON.NOAUTOAIM
+	+WEAPON.EXPLOSIVE
+	+WEAPON.NOALERT
+	+WEAPON.NOAUTOFIRE
+	+FLOORCLIP
+	Inventory.PickupMessage "UAC-MGL Automatic Grenade Launcher (Slot 6)"
+	Tag "UAC-M7 Super Grenade Launcher"
+	Inventory.AltHUDIcon "SGL0Z0"
+	PB_WeaponBase.respectItem "RespectSGL"
+	PB_WeaponBase.UsesWheel 1
+	PB_WeaponBase.WheelInfo "PB_SGLWheel"
+	States
+	{
+		Steady:
+			TNT1 A 1
+			Goto Ready
+	
+		Ready:
+			// Initialize sprites into virtual memory
+			SL02 ABCDEFGHI 0
+			SL12 ABCDEFGHI 0
+			SL22 ABCDEFGHI 0
+			SL32 ABCDEFGHI 0
+			SL42 ABCDEFGHI 0
+			S001 ABCDEFGHI 0
+			TNT1 A 0 A_SetInventory("HasExplosiveWeapon", 1)
+			TNT1 A 0 PB_RespectIfNeeded
+		WeaponRespect:
+			TNT1 A 0 {
+				A_SetInventory("RespectSGL",1);
+				A_SetInventory("PB_LockScreenTilt",1);
+				A_StartSound("weapons/sgl/inspect1", CHAN_AUTO);
+				A_SetCurrentGrenadeType("Impact");
+			}
+			SL00 ABCDEFGHIJKLMNOP 1 { 
+				A_SetRoll(roll+0.8,SPF_INTERPOLATE);
+				return A_DoPBWeaponAction;
+			}
+				
+			TNT1 A 0 A_StartSound("weapons/carbine/fancybutton", CHAN_AUTO)
+			
+			SL00 QRSTUVWV 1 {
+				A_SetRoll(roll-1.6,SPF_INTERPOLATE);
+				return A_DoPBWeaponAction;
+			}
+			
+			TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO)
+			SL00 XYZ 1 {
+				A_SetRoll(roll-0.4,SPF_INTERPOLATE);
+				return A_DoPBWeaponAction;
+			}
+			SL01 ABCD 1 {
+				A_SetRoll(roll+0.4,SPF_INTERPOLATE);
+				return A_DoPBWeaponAction;
+			}
+			TNT1 A 0 {
+				A_StartSound("LIGHTON", CHAN_AUTO);
+				A_SetRoll(roll+0.7,SPF_INTERPOLATE);
+				return A_DoPBWeaponAction;
+			}
+			TNT1 A 0 {
+				A_SetPitch(pitch-4.2, SPF_INTERPOLATE);
+				A_SetAngle(angle-4.2, SPF_INTERPOLATE);
+			}
+			SL01 EFGHIJK 1 {
+					A_SetRoll(roll-0.1,SPF_INTERPOLATE);
+					return A_DoPBWeaponAction;
+			}
+			TNT1 A 0 A_StartSound("Ironsights", CHAN_AUTO)
+			SL01 LMNOPQR 1 {
+					A_SetPitch(pitch+0.6, SPF_INTERPOLATE);
+					A_SetAngle(angle+0.6, SPF_INTERPOLATE);
+					A_SetRoll(roll-0.15,SPF_INTERPOLATE);
+					return A_DoPBWeaponAction;		
+			}
+			SL01 ST 1 {
+					A_SetRoll(0,SPF_INTERPOLATE);
+					return A_DoPBWeaponAction;
+			}
+			Goto Ready3
+			
+		SelectAnimation:
+			TNT1 A 0 A_JumpIfInventory("GoFatality",1,"Steady")
+			TNT1 A 0 A_PlaySoundEx("weapons/sgl/inspect2", CHAN_AUTO)
+			TNT1 A 0 A_SetInventory("CycleAnimation", 0)
+			SL02 ABCD 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL02");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL12");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL22");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL32");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL42");}
+				if (CountInv("SGLUnloaded") == 1) {A_SetWeaponSprite("S001");}
+			}
+		Ready3:
+			TNT1 A 0 {
+				A_SetRoll(0);
+				PB_HandleCrosshair(89);
+				A_SetInventory("PB_LockScreenTilt",0);
+				A_SetInventory("CycleAnimation", 0);
+				A_SetInventory("CantWeaponSpecial" ,0 );
+			}
+		ReadyToFire:
+			SL02 E 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL02");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL12");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL22");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL32");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL42");}
+				if (CountInv("SGLUnloaded") == 1) {A_SetWeaponSprite("S001");}
+				if (PressingFire() && CountInv("GrenadeRounds") > 0){
+					return state("Fire");
+				}
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD); //CheckUnloaded("blahblahblah"));
+			}
+			Loop
+			
+		Deselect:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+			TNT1 A 0 {
+				A_SetInventory("CycleAnimation", 0);
+				A_SetInventory("HasExplosiveWeapon", 0);
+			}
+			
+			SL02 FGHI 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL02");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL12");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL22");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL32");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL42");}
+				if (CountInv("SGLUnloaded") == 1) {A_SetWeaponSprite("S001");}
+			}
+			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+			Wait
+
+		Select:
+			TNT1 A 0
+			
+			TNT1 A 0 PB_ResetBarrelTokens
+			
+			Goto SelectFirstPersonLegs
+			SelectContinue:
+			TNT1 A 0
+			TNT1 A 0 PB_WeapTokenSwitch("SGLSelected")
+			TNT1 A 0 A_SetInventory("GrenadeDetonator",0)
+			TNT1 A 0 A_SetInventory("CantWeaponSpecial",0)
+			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
+			TNT1 AAAAAAAA 1 A_Raise
+			Wait
+				
+		WeaponSpecial:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+			TNT1 A 0 {
+				A_SetInventory("CantWeaponSpecial" ,1 );
+				A_SetInventory("PB_LockScreenTilt",1);
+				A_SetInventory("GoWeaponSpecialAbility", 0);
+				if ((CountInv("GrenadeTypeImpact") == 1) && A_GetCurrentGrenadeType() == "Impact") {
+					A_SetInventory("CantWeaponSpecial" ,0 );
+					A_SetInventory("GrenadeTypeImpact", 0);
+					A_SetInventory("GrenadeTypeSticky", 0);
+					A_SetInventory("GrenadeTypeIncendiary", 0);
+					A_SetInventory("GrenadeTypeCryo", 0);
+					A_SetInventory("GrenadeTypeAcid", 0);
+					return state("Ready3");
+				}
+				if ((CountInv("GrenadeTypeSticky") == 1) && A_GetCurrentGrenadeType() == "Sticky") {
+					A_SetInventory("CantWeaponSpecial" ,0 );
+					A_SetInventory("GrenadeTypeImpact", 0);
+					A_SetInventory("GrenadeTypeSticky", 0);
+					A_SetInventory("GrenadeTypeIncendiary", 0);
+					A_SetInventory("GrenadeTypeCryo", 0);
+					A_SetInventory("GrenadeTypeAcid", 0);
+					return state("Ready3");
+				}
+				if ((CountInv("GrenadeTypeAcid") == 1) && A_GetCurrentGrenadeType() == "Acid") {
+					A_SetInventory("CantWeaponSpecial" ,0 );
+					A_SetInventory("GrenadeTypeImpact", 0);
+					A_SetInventory("GrenadeTypeSticky", 0);
+					A_SetInventory("GrenadeTypeIncendiary", 0);
+					A_SetInventory("GrenadeTypeCryo", 0);
+					A_SetInventory("GrenadeTypeAcid", 0);
+					return state("Ready3");
+				}
+				if ((CountInv("GrenadeTypeIncendiary") == 1) && A_GetCurrentGrenadeType() == "Incendiary") {
+					A_SetInventory("CantWeaponSpecial" ,0 );
+					A_SetInventory("GrenadeTypeImpact", 0);
+					A_SetInventory("GrenadeTypeSticky", 0);
+					A_SetInventory("GrenadeTypeIncendiary", 0);
+					A_SetInventory("GrenadeTypeCryo", 0);
+					A_SetInventory("GrenadeTypeAcid", 0);
+					return state("Ready3");
+				}
+				if ((CountInv("GrenadeTypeCryo") == 1) && A_GetCurrentGrenadeType() == "Cryo") {
+					A_SetInventory("CantWeaponSpecial" ,0 );
+					A_SetInventory("GrenadeTypeImpact", 0);
+					A_SetInventory("GrenadeTypeSticky", 0);
+					A_SetInventory("GrenadeTypeIncendiary", 0);
+					A_SetInventory("GrenadeTypeCryo", 0);
+					A_SetInventory("GrenadeTypeAcid", 0);
+					return state("Ready3");
+				}
+				return state("");
+			}
+			
+			// Why do we have to do this...
+			SL03 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0 
+			SL04 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0 
+			SL05 ABCDEFGHIJKL 0 
+			SL14 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0 
+			SL15 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0 
+			SL16 ABCDEFGHIJKL 0 
+			SL24 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0 
+			SL25 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0 
+			SL26 ABCDEFGHIJKL 0 
+			SL34 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0 
+			SL35 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0 
+			SL36 ABCDEFGHIJKL 0 
+			SL44 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0 
+			SL45 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0 
+			SL46 ABCDEFGHIJKL 0 
+			
+			//Unload Previous Ammo Type
+			TNT1 A 0 A_JumpIf(CountInv("SGLUnloaded") >= 1, "LoadNewAmmoType")
+			TNT1 A 0 A_StartSound("Ironsights",15 )
+			TNT1 A 0 {
+				if(CountInv("GrenadeTypeImpact") == 1) {A_Print("$PB_SGLIMPACT", 2);}
+				if(CountInv("GrenadeTypeSticky") == 1) {A_Print("$PB_SGLSTICKY", 2);}
+				if(CountInv("GrenadeTypeIncendiary") == 1) {A_Print("$PB_SGLINCEN", 2);}
+				if(CountInv("GrenadeTypeCryo") == 1) {A_Print("$PB_SGLCRYO", 2);}
+				if(CountInv("GrenadeTypeAcid") == 1) {A_Print("$PB_SGLACID", 2);}
+				}
+			SL03 ABCDEF 1 {
+				A_SetRoll(roll-0.6,SPF_INTERPOLATE);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL03");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL14");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL24");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL34");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL44");}
+			}
+			
+			
+			SL03 GHIJKL 1 {
+				A_SetRoll(roll+0.6,SPF_INTERPOLATE);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL03");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL14");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL24");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL34");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL44");}
+			}
+			TNT1 A 0 A_StartSound("weapons/sgl/detach", 14)
+			SL03 MNOPQRST 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL03");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL14");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL24");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL34");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL44");}
+			}
+			
+			
+			SL03 WXYZ 1 {
+				A_SetRoll(roll+0.8,SPF_INTERPOLATE);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL03");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL14");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL24");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL34");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL44");}
+			}
+			
+		LoadNewAmmoType:
+			TNT1 A 0 A_JumpIf(CountInv("SGLUnloaded") <= 0, 5)
+			S003 ABCD 1
+			SL04 ABCDEF 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL04");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL15");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL25");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL35");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL45");}
+			}
+			TNT1 A 0 A_StartSound("weapons/nailgun/up", 10)
+			SL04 GHIJKLMN 1 {
+				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
+				if (CountInv("GrenadeTypeImpact") == 1) {A_SetWeaponSprite("SL04");}
+				if (CountInv("GrenadeTypeSticky") == 1) {A_SetWeaponSprite("SL15");}
+				if (CountInv("GrenadeTypeAcid") == 1) {A_SetWeaponSprite("SL25");}
+				if (CountInv("GrenadeTypeIncendiary") == 1) {A_SetWeaponSprite("SL35");}
+				if (CountInv("GrenadeTypeCryo") == 1) {A_SetWeaponSprite("SL45");}
+			}
+			TNT1 A 0 A_StartSound("weapons/sgl/inspect1", 16)
+			SL04 OPQRST 1 {
+				A_SetRoll(roll-0.5,SPF_INTERPOLATE);
+				if (CountInv("GrenadeTypeImpact") == 1) {A_SetWeaponSprite("SL04");}
+				if (CountInv("GrenadeTypeSticky") == 1) {A_SetWeaponSprite("SL15");}
+				if (CountInv("GrenadeTypeAcid") == 1) {A_SetWeaponSprite("SL25");}
+				if (CountInv("GrenadeTypeIncendiary") == 1) {A_SetWeaponSprite("SL35");}
+				if (CountInv("GrenadeTypeCryo") == 1) {A_SetWeaponSprite("SL45");}
+			}
+			//TNT1 A 0 A_StartSound("RLCYCLE2", 13)
+			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 15)
+			SL04 UVWXY 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				if (CountInv("GrenadeTypeImpact") == 1) {A_SetWeaponSprite("SL04");}
+				if (CountInv("GrenadeTypeSticky") == 1) {A_SetWeaponSprite("SL15");}
+				if (CountInv("GrenadeTypeAcid") == 1) {A_SetWeaponSprite("SL25");}
+				if (CountInv("GrenadeTypeIncendiary") == 1) {A_SetWeaponSprite("SL35");}
+				if (CountInv("GrenadeTypeCryo") == 1) {A_SetWeaponSprite("SL45");}
+			}
+			TNT1 A 0 A_StartSound("RLCYCLE2", 13)
+			SL04 Z 1 {
+				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
+				A_StartSound("weapons/nailgun/inspect4", 9, CHANF_OVERLAP );
+				if (CountInv("GrenadeTypeImpact") == 1) {A_SetWeaponSprite("SL04");}
+				if (CountInv("GrenadeTypeSticky") == 1) {A_SetWeaponSprite("SL15");}
+				if (CountInv("GrenadeTypeAcid") == 1) {A_SetWeaponSprite("SL25");}
+				if (CountInv("GrenadeTypeIncendiary") == 1) {A_SetWeaponSprite("SL35");}
+				if (CountInv("GrenadeTypeCryo") == 1) {A_SetWeaponSprite("SL45");}
+			}
+			SL72 BCDEFGHIJK 1 {
+				A_SetRoll(roll-0.5,SPF_INTERPOLATE);
+				if (CountInv("GrenadeTypeImpact") == 1) {A_SetWeaponSprite("SL72");}
+				if (CountInv("GrenadeTypeSticky") == 1) {A_SetWeaponSprite("S072");}
+				if (CountInv("GrenadeTypeAcid") == 1) {A_SetWeaponSprite("S272");}
+				if (CountInv("GrenadeTypeIncendiary") == 1) {A_SetWeaponSprite("S172");}
+				if (CountInv("GrenadeTypeCryo") == 1) {A_SetWeaponSprite("S372");}
+			}
+			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 18)
+			SL72 LMNO 1 {
+				A_SetRoll(roll+2.0,SPF_INTERPOLATE);
+				if (CountInv("GrenadeTypeImpact") == 1) {A_SetWeaponSprite("SL72");}
+				if (CountInv("GrenadeTypeSticky") == 1) {A_SetWeaponSprite("S072");}
+				if (CountInv("GrenadeTypeAcid") == 1) {A_SetWeaponSprite("S272");}
+				if (CountInv("GrenadeTypeIncendiary") == 1) {A_SetWeaponSprite("S172");}
+				if (CountInv("GrenadeTypeCryo") == 1) {A_SetWeaponSprite("S372");}
+			}
+			TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
+			SL72 PQRSTUVWXYZ 1 {
+				if (CountInv("GrenadeTypeImpact") == 1) {A_SetWeaponSprite("SL72");}
+				if (CountInv("GrenadeTypeSticky") == 1) {A_SetWeaponSprite("S072");}
+				if (CountInv("GrenadeTypeAcid") == 1) {A_SetWeaponSprite("S272");}
+				if (CountInv("GrenadeTypeIncendiary") == 1) {A_SetWeaponSprite("S172");}
+				if (CountInv("GrenadeTypeCryo") == 1) {A_SetWeaponSprite("S372");}
+			}
+			SL73 ABCD 1 {
+				A_SetRoll(roll+0.5,SPF_INTERPOLATE);
+				if (CountInv("GrenadeTypeImpact") == 1) {A_SetWeaponSprite("SL73");}
+				if (CountInv("GrenadeTypeSticky") == 1) {A_SetWeaponSprite("S073");}
+				if (CountInv("GrenadeTypeAcid") == 1) {A_SetWeaponSprite("S273");}
+				if (CountInv("GrenadeTypeIncendiary") == 1) {A_SetWeaponSprite("S173");}
+				if (CountInv("GrenadeTypeCryo") == 1) {A_SetWeaponSprite("S373");}
+			}
+			SL73 EF 1 {
+				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
+				if (CountInv("GrenadeTypeImpact") == 1) {A_SetWeaponSprite("SL73");}
+				if (CountInv("GrenadeTypeSticky") == 1) {A_SetWeaponSprite("S073");}
+				if (CountInv("GrenadeTypeAcid") == 1) {A_SetWeaponSprite("S273");}
+				if (CountInv("GrenadeTypeIncendiary") == 1) {A_SetWeaponSprite("S173");}
+				if (CountInv("GrenadeTypeCryo") == 1) {A_SetWeaponSprite("S373");}
+			}
+			TNT1 A 0 {
+				if (CountInv("GrenadeTypeImpact") == 1) {A_SetCurrentGrenadeType("Impact");}
+				if (CountInv("GrenadeTypeSticky") == 1) {A_SetCurrentGrenadeType("Sticky");}
+				if (CountInv("GrenadeTypeAcid") == 1) {A_SetCurrentGrenadeType("Acid");}
+				if (CountInv("GrenadeTypeIncendiary") == 1) {A_SetCurrentGrenadeType("Incendiary");}
+				if (CountInv("GrenadeTypeCryo") == 1) {A_SetCurrentGrenadeType("Cryo");}
+				A_SetInventory("CantWeaponSpecial" ,0 );
+				A_SetInventory("GrenadeTypeImpact", 0);
+				A_SetInventory("GrenadeTypeSticky", 0);
+				A_SetInventory("GrenadeTypeIncendiary", 0);
+				A_SetInventory("GrenadeTypeCryo", 0);
+				A_SetInventory("GrenadeTypeAcid", 0);
+			}		  
+		SpecialReload:
+			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",1,"InsertBullets2")
+			Goto InsertBullets
+		
+		// A more elegant approach instead of having tons of states for different variations
+		// Shoutout to Galdoc for the modular design of these animations
+		Fire:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
+			TNT1 A 0 {
+				A_WeaponOffset(0,32);
+				A_SetRoll(0);
+				PB_HandleCrosshair(89);
+				A_SetInventory("PB_LockScreenTilt",0);
+			}
+			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",1,1)
+			Goto Reload
+			// Sigh...
+			SL60 ABCDEFGHIJKLMNOPQRSTUVWX 0
+			SL61 ABCDEFGHIJKLMNOPQRSTUVWX 0
+			SL62 ABCDEFGHIJKLMNOPQRSTUVWX 0
+			SL63 ABCDEFGHIJKLMNOPQRSTUVWX 0
+			SL64 ABCDEFGHIJKLMNOPQRSTUVWX 0
+			
+			SL60 A 1 BRIGHT {
+				if (A_GetCurrentGrenadeType() == "Impact") {
+					A_SetWeaponSprite("SL60");
+					A_FireCustomMissile("PB_FragGrenade", 0, False, 0, 0, 0, 0);
+				}
+				if (A_GetCurrentGrenadeType() == "Sticky") {
+					A_SetWeaponSprite("SL61");
+					A_FireCustomMissile("PB_StickyGrenade", 0, False, 0, 0, 0, 0);
+				}
+				if (A_GetCurrentGrenadeType() == "Acid") {
+					A_SetWeaponSprite("SL62");
+					A_FireCustomMissile("PB_AcidGrenade", 0, False, 0, 0, 0, 0);
+				}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {
+					A_SetWeaponSprite("SL63");
+					A_FireCustomMissile("PB_IncendiaryGrenade", 0, False, 0, 0, 0, 0);
+				}
+				if (A_GetCurrentGrenadeType() == "Cryo") {
+					A_SetWeaponSprite("SL64");
+					A_FireCustomMissile("PB_CryoGrenade", 0, False, 0, 0, 0, 0);
+				}
+				A_FireCustomMissile("Alerter");
+				A_PlaySound ("weapons/firegrenade", CHAN_WEAPON);
+				A_AlertMonsters;
+				A_TakeInventory("GrenadeRounds",1);
+				A_ZoomFactor(0.98);
+				A_GunFlash;
+			}
+			SL60 B 1 BRIGHT {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL60");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL61");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL62");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL63");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL64");}
+				
+				A_FireCustomMissile("ShakeYourAssDouble", 0, 0, 0, 0);
+				PB_SpawnCasing("EmptyGrenadeBrass", 30, 0, 34, -frandom(1, 3), -frandom(2, 4), 5);
+				
+				A_ZoomFactor(0.99);
+				PB_WeaponRecoil(-3.2,+1.61);
+			}
+			SL60 C 1 {
+				A_Overlay(-6, "MuzzleSparks", true);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL60");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL61");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL62");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL63");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL64");}
+				A_ZoomFactor(1.0);
+				PB_WeaponRecoil(-3.2,+1.61);
+				
+			}
+			TNT1 A 0 A_GunFlash("CyclingAnimation")
+			Goto WaitForCyclingAnimation
+			
+		CyclingAnimation:
+			TNT1 A 0 A_SetInventory("CycleAnimation", 1)
+			TNT1 A 0 A_StartSound("RLCYCLE2", 13)
+			SL60 DEFGHIJKLMNOPQ 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetFlashWeaponSprite("SL60");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetFlashWeaponSprite("SL61");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetFlashWeaponSprite("SL62");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetFlashWeaponSprite("SL63");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetFlashWeaponSprite("SL64");}
+				return A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH); //A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH);
+			}
+			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 9)
+			SL60 RSTUVWX 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetFlashWeaponSprite("SL60");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetFlashWeaponSprite("SL61");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetFlashWeaponSprite("SL62");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetFlashWeaponSprite("SL63");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetFlashWeaponSprite("SL64");}
+				return A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH); //A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH);
+			}
+			TNT1 A 0 A_SetInventory("CycleAnimation", 0)
+			SL02 E 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetFlashWeaponSprite("SL02");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetFlashWeaponSprite("SL12");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetFlashWeaponSprite("SL22");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetFlashWeaponSprite("SL32");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetFlashWeaponSprite("SL42");}
+			}
+			Stop
+			
+		MuzzleSparks:
+			TNT1 A 0 A_Jump(256, "Spark1", "Spark2")
+		Spark1:
+			S060 A 1 Bright
+			Stop
+		Spark2:
+			S060 B 1 Bright
+			Stop
+			
+		AltFire:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+			TNT1 A 0 A_JumpIfInventory ("SGLUnloaded", 1, "Ready3")
+			TNT1 A 0 A_JumpIfInventory ("SGLDetonateSoundCooldown", 1, 3)
+			TNT1 A 0 A_PlaySoundEx ("weapons/pbarm", CHAN_BODY)
+			TNT1 A 0 A_GiveInventory ("SGLDetonateSoundCooldown", 22)
+		AltHold:
+			TNT1 A 0 A_SetInventory("GrenadeDetonator",1)
+			TNT1 E 1 {
+				if (CountInv("CycleAnimation") != 1 && A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL02");}
+				if (CountInv("CycleAnimation") != 1 && A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL12");}
+				if (CountInv("CycleAnimation") != 1 && A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL22");}
+				if (CountInv("CycleAnimation") != 1 && A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL32");}
+				if (CountInv("CycleAnimation") != 1 && A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL42");}
+			}
+			TNT1 A 0 A_SetInventory("GrenadeDetonator",0)
+		WaitForCyclingAnimation:
+			TNT1 E 1 {
+				A_TakeInventory("SGLDetonateSoundCooldown",1);
+				if (CountInv("CycleAnimation") != 1 && A_GetCurrentGrenadeType() == "Impact") {
+					A_SetWeaponSprite("SL02");
+					return state("CycleDone");
+				}
+				if (CountInv("CycleAnimation") != 1 && A_GetCurrentGrenadeType() == "Sticky") {
+					A_SetWeaponSprite("SL12");
+					return state("CycleDone");
+				}
+				if (CountInv("CycleAnimation") != 1 && A_GetCurrentGrenadeType() == "Acid") {
+					A_SetWeaponSprite("SL22");
+					return state("CycleDone");
+				}
+				if (CountInv("CycleAnimation") != 1 && A_GetCurrentGrenadeType() == "Incendiary") {
+					A_SetWeaponSprite("SL32");
+					return state("CycleDone");
+				}
+				if (CountInv("CycleAnimation") != 1 && A_GetCurrentGrenadeType() == "Cryo") {
+					A_SetWeaponSprite("SL42");
+					return state("CycleDone");
+				}
+				if (PressingAltFire()) { return state("AltFire"); }
+				return state("");
+			}
+			Loop
+		CycleDone:
+			SL02 E 1 {
+				A_TakeInventory("SGLDetonateSoundCooldown",22);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL02");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL12");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL22");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL32");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL42");}
+				PB_ReFire;
+			}
+			Goto Ready3
+		
+		ReloadUnloaded:
+			TNT1 A 0 A_StartSound("Ironsights",15 )
+			S003 ABCD 1
+			Goto ContinueFromReloadUnloaded
+		
+		
+		Reload:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+
+			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",7,"Ready3")
+			TNT1 A 0 A_JumpIfInventory("PB_RocketAmmo",1,1)
+			Goto Ready3
+			TNT1 A 0 {
+				A_ZoomFactor(1.0);
+				A_SetCrosshair(5);
+				A_SetInventory("PB_LockScreenTilt",1);
+			}
+			// Sigh...
+			SL60 ABCDEFGHIJKLMNOPQRSTUVWX 0
+			SL61 ABCDEFGHIJKLMNOPQRSTUVWX 0
+			SL62 ABCDEFGHIJKLMNOPQRSTUVWX 0
+			SL63 ABCDEFGHIJKLMNOPQRSTUVWX 0
+			SL64 ABCDEFGHIJKLMNOPQRSTUVWX 0
+			
+			SL72 BCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S072 BCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S272 BCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S172 BCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S372 BCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			
+			SL73 ABCDEF 0
+			S073 ABCDEF 0
+			S273 ABCDEF 0
+			S173 ABCDEF 0
+			S373 ABCDEF 0
+			
+			TNT1 A 0 A_JumpIfInventory("SGLUnloaded",1,"ReloadUnloaded")
+			TNT1 A 0 A_StartSound("Ironsights",15 )
+			SL03 ABCDEFGHIJ 1 {
+				A_SetRoll(roll-0.5,SPF_INTERPOLATE);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL03");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL14");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL24");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL34");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL44");}
+			}
+			TNT1 A 0 A_StartSound("weapons/sgl/detach", 14)
+			SL03 KLMNO 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL03");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL14");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL24");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL34");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL44");}
+			}
+			
+			SL03 PQRSTU 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL03");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL14");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL24");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL34");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL44");}
+			}
+			TNT1 A 0 {if (CountInv("GrenadeRounds") == 0 )
+			{
+				if(A_GetCurrentGrenadeType() == "Sticky")
+				{PB_SpawnCasing("SGL_StickyDrum",25,0,20,Frandom(3,4),Frandom(3,4),1);}
+				else if(A_GetCurrentGrenadeType() == "Incendiary")
+				{PB_SpawnCasing("SGL_IncendiaryDrum",25,0,20,Frandom(3,4),Frandom(3,4),1);}
+				else if(A_GetCurrentGrenadeType() == "Cryo")
+				{PB_SpawnCasing("SGL_CryoDrum",25,0,20,Frandom(3,4),Frandom(3,4),1);}
+				else if(A_GetCurrentGrenadeType() == "Acid")
+				{PB_SpawnCasing("SGL_AcidDrum",25,0,20,Frandom(3,4),Frandom(3,4),1);}
+				else {
+				PB_SpawnCasing("SGL_Drum",25,0,20,Frandom(3,4),Frandom(3,4),1);}
+				}
+			}
+			SL03 VWXYZ 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL03");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL14");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL24");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL34");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL44");}
+			}
+			SL04 ABC 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL04");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL15");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL25");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL35");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL45");}
+			}
+			SL04 DEFG 1 {
+				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL04");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL15");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL25");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL35");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL45");}
+			}
+		ContinueFromReloadUnloaded:
+			TNT1 A 0 A_StartSound("weapons/nailgun/up", 10)
+			SL04 HIJKLM 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL04");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL15");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL25");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL35");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL45");}
+			}
+			TNT1 A 0 A_StartSound("weapons/sgl/inspect1", 16)
+			SL04 NOPQRST 1 {
+				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL04");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL15");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL25");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL35");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL45");}
+			}
+			
+			SL04 UVW 1 {
+				A_SetRoll(roll+0.8,SPF_INTERPOLATE);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL04");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL15");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL25");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL35");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL45");}
+			}
+			
+			SL04 XYZ 1 {
+				A_SetRoll(roll-1.2,SPF_INTERPOLATE);
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL04");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL15");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL25");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL35");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL45");}
+			}
+			
+			
+			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",1,"ChamberedReload")
+			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 9, CHANF_OVERLAP )
+			//Rechamber Animation
+			TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
+			TNT1 A 0 A_StartSound("RLCYCLE2", 13)
+			SL72 BCDEFGHIJK 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL72");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S072");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S272");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S172");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S372");}
+			}
+			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 18)
+			SL72 LMNO 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL72");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S072");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S272");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S172");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S372");}
+			}
+			
+			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 12)
+			SL72 PQRSTUVWXYZ 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL72");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S072");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S272");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S172");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S372");}
+			}
+			SL73 ABCDEF 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL73");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S073");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S273");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S173");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S373");}
+			}
+		InsertBullets:
+			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",6,"Ready3")
+			TNT1 A 0 A_JumpIfInventory("PB_RocketAmmo",1,2)
+			TNT1 A 0 A_PlaySoundEx("weapons/empty", "Weapon")
+			Goto Ready3
+			TNT1 A 0 {
+				A_Giveinventory("GrenadeRounds",1);
+				A_Takeinventory("PB_RocketAmmo",1);
+				A_SetInventory("SGLUnloaded",0);
+				}
+			Loop
+			
+		ChamberedReload:
+			TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE)
+			TNT1 A 0 A_StartSound("weapons/sgl/slap", 9, CHANF_OVERLAP )
+			SL05 A 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL05");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL16");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL26");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL36");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL46");}
+			}
+			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 17, CHANF_OVERLAP )
+			SL05 BCDEF 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL05");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL16");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL26");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL36");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL46");}
+			}
+			TNT1 A 0 A_StartSound("Ironsights", 12)
+			SL05 GHIJKL 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("SL05");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("SL16");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("SL26");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("SL36");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("SL46");}
+			}
+		InsertBullets2:
+			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",7,"Ready3")
+			TNT1 A 0 A_JumpIfInventory("PB_RocketAmmo",1,1)
+			Goto Ready3
+			TNT1 A 0 {
+				A_Giveinventory("GrenadeRounds",1);
+				A_Takeinventory("PB_RocketAmmo",1);
+				A_SetInventory("SGLUnloaded",0);
+				}
+			Loop
+			
+		Unload:
+			TNT1 A 0 A_SetInventory("Unloading",0)
+			
+			
+			
+			TNT1 A 0 A_JumpIfInventory("SGLUnloaded", 1, "Ready3")
+			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",1,"UnloadChamber")
+			Goto UnloadNormal
+			
+		UnloadChamber:
+			TNT1 A 0 {
+				A_ZoomFactor(1.0);
+				A_SetCrosshair(5);
+				A_SetInventory("PB_LockScreenTilt",1);
+			}
+			
+			S400 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S401 ABCDE 0
+			S410 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S411 ABCDE 0
+			S420 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S421 ABCDE 0
+			S430 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S431 ABCDE 0
+			S440 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S441 ABCDE 0
+			
+			TNT1 A 0 A_StartSound("Weapons/GrenadeLoad", 9)
+			S400 ABCDEFGHIJKL 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S400");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S410");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S420");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S430");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S440");}
+			}
+			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 10)
+			S400 MNOPQRST 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S400");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S410");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S420");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S430");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S440");}
+			}
+			TNT1 A 0 A_StartSound("weapons/nailgun/up", 11)
+			S400 UVWXYZ 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S400");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S410");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S420");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S430");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S440");}
+			}
+			S401 ABCDE 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S401");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S411");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S421");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S431");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S441");}
+			}
+			Goto RemoveBullets
+			
+		UnloadNormal:
+			TNT1 A 0 {
+				A_ZoomFactor(1.0);
+				A_SetCrosshair(5);
+				A_SetInventory("PB_LockScreenTilt",1);
+			}
+			
+			S402 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S403 ABCDE 0
+			S412 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S413 ABCDE 0
+			S422 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S423 ABCDE 0
+			S432 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S433 ABCDE 0
+			S442 ABCDEFGHIJKLMNOPQRSTUVWXYZ 0
+			S443 ABCDE 0
+			
+			TNT1 A 0 A_StartSound("Weapons/GrenadeLoad", 9)
+			S402 ABCDEFGHIJKL 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S402");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S412");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S422");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S432");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S442");}
+			}
+			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 10)
+			S402 MNOPQRST 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S402");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S412");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S422");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S432");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S442");}
+			}
+			TNT1 A 0 A_StartSound("weapons/nailgun/up", 11)
+			S402 UVWXYZ 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S402");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S412");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S422");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S432");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S442");}
+			}
+			S403 ABCDE 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S403");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S413");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S423");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S433");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S443");}
+			}
+			Goto RemoveBullets
+			
+		RemoveBullets:
+			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",1,1)
+			Goto FinishUnload
+			TNT1 A 0 {
+				A_Takeinventory("GrenadeRounds",1);
+				A_Giveinventory("PB_RocketAmmo",1);
+				}
+			Loop
+		
+		FInishUnload:
+			TNT1 A 0 {
+				A_SetInventory("SGLUnloaded",1);
+				A_SetInventory("Unloading",0);
+			}
+			Goto Ready3
+
+		Spawn:
+			SGL0 Z -1
+			Stop
+		
+		FlashKicking:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
+			S006 ABCDEFGGGHIJKLM 0
+			S007 ABCDEFGGGHIJKLM 0
+			S019 ABCDEFGGGHIJKLM 0
+			S008 ABCDEFGGGHIJKLM 0
+			S009 ABCDEFGGGHIJKLM 0
+		
+			S006 ABCDEFGGGHIJKLM 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S006");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S007");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S019");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S008");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S009");}
+			}
+			Goto Ready3
+		
+		FlashAirKicking:
+			TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+			TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")	
+			S006 ABCDEFGGGHIJKLM 0
+			S007 ABCDEFGGGHIJKLM 0
+			S019 ABCDEFGGGHIJKLM 0
+			S008 ABCDEFGGGHIJKLM 0
+			S009 ABCDEFGGGHIJKLM 0
+		
+			S006 ABCDEFGGGGHIJKLM 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S006");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S007");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S019");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S008");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S009");}
+			}
+			Goto Ready3
+			
+	FlashSlideKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
+			S020 ABCDEFGHIJKLMNOPQRSSSTUVWX 0
+			S021 ABCDEFGHIJKLMNOPQRSSSTUVWX 0
+			S022 ABCDEFGHIJKLMNOPQRSSSTUVWX 0
+			S023 ABCDEFGHIJKLMNOPQRSSSTUVWX 0
+			S024 ABCDEFGHIJKLMNOPQRSSSTUVWX 0
+			
+			
+			S020 ABCDEFGHIJKLMNOPQRSSSTUVWX 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S020");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S021");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S022");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S023");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S024");}
+			}
+			Goto Ready3
+	FlashSlideKickingStop:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
+			S020 TTTUVWX 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetWeaponSprite("S020");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetWeaponSprite("S021");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetWeaponSprite("S022");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetWeaponSprite("S023");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetWeaponSprite("S024");}
+			}
+			Goto Ready3
+	
+	FlashPunching:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
+			S030 ABCDEFGHIJKLM 0
+			S031 ABCDEFGHIJKLM 0
+			S032 ABCDEFGHIJKLM 0
+			S033 ABCDEFGHIJKLM 0
+			S034 ABCDEFGHIJKLM 0
+	
+	
+			S030 ABCDEFGHHIJKLM 1 {
+				if (A_GetCurrentGrenadeType() == "Impact") {A_SetFlashWeaponSprite("S030");}
+				if (A_GetCurrentGrenadeType() == "Sticky") {A_SetFlashWeaponSprite("S031");}
+				if (A_GetCurrentGrenadeType() == "Acid") {A_SetFlashWeaponSprite("S032");}
+				if (A_GetCurrentGrenadeType() == "Incendiary") {A_SetFlashWeaponSprite("S033");}
+				if (A_GetCurrentGrenadeType() == "Cryo") {A_SetFlashWeaponSprite("S034");}
+			}
+			Stop
+	}
+}
+
+ACTOR PB_FragGrenade
+{
+	Radius 2
+	Height 2
+	speed 44
+	Damage 30
+	DamageType Explosive
+	+MISSILE
+	+BLOODSPLATTER
+	+EXTREMEDEATH
+	+FORCEXYBILLBOARD
+	+CANBOUNCEWATER
+	+DONTBOUNCEONSHOOTABLES
+	+USEBOUNCESTATE
+	+BOUNCEONWALLS
+	+BOUNCEONFLOORS
+	+BOUNCEONCEILINGS
+	Bouncetype "Doom"
+	BounceFactor 0.5
+	Scale .35
+	Gravity 1.0
+	Decal "Scorch"
+	SeeSound "weapon/grenade"
+	BounceSound "weapon/grenade"
+	DeathSound "Explosion"
+	Obituary "$OB_MPROCKET"
+	States
+	{
+		Spawn:
+			TNT1 A 0 {
+				if(waterlevel > 1) {A_SpawnItem ("RocketSmokeTrail52"); }
+				A_SpawnItem("YellowFlareSmall",0,0);
+			}
+			GRNP A 1 Bright Light("SGL_FRAG") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
+			Loop
+		Bounce:
+			TNT1 A 0
+			TNT1 A 0 {
+			if(GetCvar("pb_sglgrenadeimpact") == 1)
+			{ return state("Death");}
+			else if(GetCvar("pb_sglgrenadeimpact") >=2)
+			{
+				A_Stop;
+				return state("Rest");
+			 }
+			return state("");
+			}
+			Goto spawn
+		Rest:
+		GRNP A 35 Bright Light("SGL_FRAG") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
+		Detonate:
+			TNT1 A 0
+			TNT1 A 0 A_PlaySound("Explosion")
+		Death:
+		XDeath:
+			TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("ImpactGrenadeExplosion",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("NewRocketExploFX", 0, 0, 0)
+			TNT1 A 1
+			XXXX A 0 A_CustomMissile ("ExplosionQuake", 1, 0, random (0, 360), 2, random (0, 160))
+			TNT1 AAAAAAAAA 0 A_CustomMissile ("MediumExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360))
+			TNT1 A 0 A_PlaySound("FAREXPL",3)
+			EXPL AAA 0 A_CustomMissile ("ExplosionSmoke", 0, 0, random (0, 360), 2, random (0, 360))		
+			Stop
+	}
+}
+
+ACTOR PB_StickyGrenade: PB_FragGrenade
+{
+	-EXPLODEONWATER
+	-NOEXTREMEDEATH
+	+CANBOUNCEWATER
+	+BOUNCEONWALLS
+	+BOUNCEONFLOORS
+	+BOUNCEONCEILINGS
+	+MOVEWITHSECTOR
+	+USEBOUNCESTATE
+	+DONTSPLASH
+	+HITTRACER
+	Gravity 1.0
+	Damage 0
+	BounceFactor 0.1
+	Radius 2
+	Height 2
+	Damagetype ExplosiveImpact
+	DeathSound ""
+	var int user_stickycounter;
+	var int user_stuckEnemy;
+	States
+	{
+		Spawn:
+			TNT1 A 0 {
+				if(waterlevel > 1) {A_SpawnItem ("RocketSmokeTrail52"); }
+				A_SpawnItem("RedFlareSmall",0,0);
+			}
+			GRNP A 1 Bright Light("SGL_STICKY") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
+			Loop
+			
+		Bounce:
+		Death:
+		Crash:
+			TNT1 A 0 {
+				user_stickycounter = 0;
+				if (AAPTR_TRACER && CheckClass ("SwitchableDecoration", AAPTR_TRACER, TRUE)) { user_stuckEnemy = 1; }
+				A_NoGravity;
+				A_ScaleVelocity(0);
+			}
+		Stuck:
+			GRNP AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA 1 BRIGHT Light("SGL_STICKY") {
+				//A_Fire(22);
+				if(user_stuckEnemy == 1) {
+
+					if(AAPTR_TRACER) {
+						//A_Warp(AAPTR_TRACER,0,0,20,0,WARPF_NOCHECKPOSITION);
+						A_Warp(AAPTR_TRACER,0,0,0,0,WARPF_NOCHECKPOSITION,"",0.5);
+					}
+					else {
+						A_Fall;
+					}
+				}
+				if(CountInv("GrenadeDetonator", AAPTR_TARGET) == 1) {
+					return state("Detonate");
+				}
+				return state("");
+			}
+			TNT1 A 0 {
+				A_SpawnItem("RedFlareSmall",0,0);
+				A_PlaySound("BEPBEP", 4);
+				user_stickycounter++;
+			}
+			TNT1 A 0 A_JumpIf(user_stickycounter < 10, "Stuck")
+			TNT1 A 0 A_PlaySound("StunGrenadeDetonate", 6)
+			TNT1 A 0 A_JumpIf(user_stickycounter > 10, "Detonate")
+			Loop
+	
+		XDeath:
+		Bounce.Creature:
+			GRNP A 1 {
+				A_Changeflag("THRUACTORS", 1);
+				A_Changeflag("Solid", 1);
+				user_stuckEnemy = 1;
+				A_Stop;
+			}
+			GRNP A 1 {
+				A_Changeflag("THRUACTORS", 0);
+				A_Changeflag("Solid", 0);
+			}
+			Goto Stuck
+			
+		Detonate:
+			TNT1 A 0 A_StopSound(6)
+			TNT1 A 0 A_PlaySound("Explosion",4)
+			EXPL AAA 0 A_CustomMissile ("BigNeoSmoke", 0, 0, random (0, 360), 2, random (0, 360))
+			TNT1 AAA 0 A_CustomMissile ("ExplosionSmoke", 22, 0, random (0, 360), 2, random (0, 360))
+			TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("StickyExplosion",0,0,-2,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("NewRocketExploFX", 0, 0, 0)
+			TNT1 AAAAAAAAA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 360))
+			TNT1 AAAAAAAAA 0 A_CustomMissile ("ExplosionParticleVeryFast", 0, 0, random (0, 360), 2, random (0, 360))
+			XXXX A 0 A_CustomMissile ("ExplosionQuake", 1, 0, random (0, 360), 2, random (0, 160))
+			TNT1 AAAAAAAAA 0 A_CustomMissile ("MediumExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360))
+			TNT1 A 0 A_Playsound("excavator/explode", 1)
+			TNT1 A 0 A_PlaySound("FAREXPL",3)
+			EXPL AAA 0 A_CustomMissile ("ExplosionSmoke", 0, 0, random (0, 360), 2, random (0, 360))  
+			Stop
+	}
+}
+
+
+Actor IncendiaryGrenadeFX
+{
+	Radius 0
+	Height 0
+	RenderStyle Add
+	Alpha 1
+	Scale 1.35
+	  +NOGRAVITY
+	  +NOINTERACTION
+	  +NOBLOCKMAP
+	  +NOTELEPORT
+	  +ForceXYBillboard
+	  //+CLIENTSIDEONLY
+	States
+	{
+	Spawn:
+		TNT1 A 0
+		TNT1 A 0 A_PlaySoundEx("Afrit/Hellfire", CHAN_BODY)
+		TNT1 A 0 A_Jump(256, "Spawn1", "Spawn2")
+	Spawn1:
+		X007 ABCDEFGHIJ 1 bright
+		stop
+	Spawn2:
+		X007 KLMNOPQRST 1 bright
+		stop
+	
+	}
+}
+
+ACTOR IncendiaryGrenadeExplosion
+{
+	Radius 2
+	Height 1
+	Decal "Scorch"
+	Damage 1
+	DamageType "Fire"
+	Scale 1.32
+	Speed 0
+	Gravity 0
+	+NOBLOCKMAP
+	+NOTELEPORT
+	+NOEXTREMEDEATH
+	-EXTREMEDEATH
+	+FORCEXYBILLBOARD
+	+ALLOWPARTICLES
+	//+CLIENTSIDEONLY
+	+DONTSPLASH
+	+PAINLESS
+	-CAUSEPAIN
+	-FORCEPAIN
+	States
+	{
+		Spawn:
+			TNT1 A 0 A_Explode(100, 150)
+			TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
+						
+			TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			FRFX ZZ 0 BRIGHT A_CustomMissile ("BigNeoSmoke", 2, 0, random (0, 360), 2, random (0, 360))
+			EXPL AAAAA 0 A_CustomMissile ("FT_GroundFireSpawner", 12, random(-20,20), random (0, 360), 2, random (40, 60))
+			EXPL AAAAA 0 A_CustomMissile ("FT_GroundFireSpawner", 12, random(-20,20), random (0, 360), 2, random (50, 130))
+		
+		Death:
+			TNT1 A 0
+			Stop
+	}
+}
+
+ACTOR CryoGrenadeExplosion
+{
+	Radius 2
+	Height 1
+	Decal "FreezerBurn"
+	Damage 1
+	DamageType "Ice"
+	Scale 1.32
+	Speed 0
+	Gravity 0
+	+NOBLOCKMAP
+	+NOTELEPORT
+	+NOEXTREMEDEATH
+	-EXTREMEDEATH
+	+FORCEXYBILLBOARD
+	+ALLOWPARTICLES
+	//+CLIENTSIDEONLY
+	+DONTSPLASH
+	+PAINLESS
+	-CAUSEPAIN
+	-FORCEPAIN
+	States
+	{
+		Spawn:
+			TNT1 A 0 Bright A_Explode(100,150,0,0,150)
+			TNT1 AAAA 0 Bright A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_NOCHECKPOSITION)
+			TNT1 AAAA 0 Bright A_SpawnItemEx("CryoSmoke3", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_NOCHECKPOSITION,64)
+			TNT1 AAA 0 Bright A_SpawnItemEx("CryoRifleTrailSparksSmall", random(5,-5), random(5,-5), random(5,-5), random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_NOCHECKPOSITION,64)
+			TNT1 AAAA 0 Bright A_SpawnItemEx("CryoSmoke2", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_NOCHECKPOSITION,64)
+			TNT1 AAA 0 Bright A_SpawnItemEx("IceExplosionImpact", random(-2,2), random(-2,2), random(-2,2), 0, 0, 0, random(1,360), SXF_NOCHECKPOSITION)
+			TNT1 AAAAAAAAAA 0 A_SpawnItemEx ("DetectFloorIce",random(-150,150), random(-150,150),1,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterIce",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		Death:
+			TNT1 A 0
+			Stop
+	}
+}
+
+ACTOR PB_IncendiaryGrenade : PB_FragGrenade
+{
+	DamageType "Fire"
+	Decal "BigScorch"
+	SeeSound "weapon/grenade"
+	DeathSound "weapons/sgl/incendiary"
+	States
+	{
+		Spawn:
+			TNT1 A 0 {
+				if(waterlevel > 1) {A_SpawnItem ("BurningEmberParticlesFloating_Bigger"); }
+				A_SpawnItem("OrangeFlareSmall",0,0);
+			}
+			GRNP A 1 Bright Light("SGL_INCENDIARY") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
+			Loop
+			
+		Bounce:
+			TNT1 A 0
+			TNT1 A 0 {
+			if(GetCvar("pb_sglgrenadeimpact") == 1)
+			{ return state("Death");}
+			else if(GetCvar("pb_sglgrenadeimpact") >=2)
+			{
+				A_Stop;
+				return state("Rest");
+			 }
+			return state("");
+			}
+			Goto spawn
+		
+		Rest:
+		GRNP A 35 Bright Light("SGL_INCENDIARY") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
+		Detonate:
+			TNT1 A 0
+			TNT1 A 0 A_Playsound("weapons/sgl/incendiary")
+		Death:
+		XDeath:
+			TNT1 A 0 A_Explode(100, 100)
+			TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
+			EXPL A 0 A_SpawnItem("ExplosionParticleSpawner")
+			TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("IncendiaryGrenadeFX", 0, 0, 0)
+			TNT1 AAAA 0 A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60))
+			EXPL AAAAAAAAAA 0 A_CustomMissile ("FireballExplosionFlamesBig", 6, 0, random (0, 360), 2, random (0, 360))
+			FRFX ZZZ 0 BRIGHT A_CustomMissile ("BigNeoSmoke", 2, 0, random (0, 360), 2, random (0, 360))
+			EXPL AAAAA 0 A_CustomMissile ("FT_GroundFireSpawner", 12, random(-32,32), random (0, 360), 2, random (40, 60))
+			EXPL AAAAAAAAAA 0 A_CustomMissile ("FT_GroundFireSpawner", random(-32,32), 0, random (0, 360), 2, random (50, 130))
+			Stop
+	}
+}
+
+ACTOR PB_CryoGrenade: PB_FragGrenade
+{
+	DamageType "Freeze"
+	DeathSound "weapons/CryoRifle/missiledeath"
+	Decal "FreezerBurn"
+	+NODAMAGETHRUST
+	+FORCEXYBILLBOARD
+	+FORCERADIUSDMG
+	+BLOODLESSIMPACT
+	States{
+	
+		Spawn:
+			TNT1 A 0 {
+				if(waterlevel > 1) {A_SpawnItem ("CryoRifleTrailSparksSmall"); }
+				A_SpawnItem("BlueFlareSmall",0,0);
+			}
+			GRNP A 1 Bright Light("SGL_CRYO") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
+			Loop
+			
+		Bounce:
+			TNT1 A 0
+			TNT1 A 0 {
+			if(GetCvar("pb_sglgrenadeimpact") == 1)
+			{ return state("Death");}
+			else if(GetCvar("pb_sglgrenadeimpact") >=2)
+			{
+				A_Stop;
+				return state("Rest");
+			 }
+			return state("");
+			}
+			Goto spawn
+		
+		Rest:
+		GRNP A 35 Bright Light("SGL_CRYO") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
+		Detonate:
+			TNT1 A 0
+			TNT1 A 0 A_Scream
+		Death:
+		XDeath:
+			TNT1 A 0 Bright A_StopSound(CHAN_BODY)
+			TNT1 A 0 Bright A_ChangeFlag("ICEDAMAGE", 1)
+			TNT1 A 0 Bright A_ChangeFlag("NODAMAGETHRUST", 0) 
+			TNT1 A 0 Bright A_Explode(200,120, 0, 0, 120)
+			TNT1 AAA 0 Bright A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_NOCHECKPOSITION)
+			TNT1 AAA 0 Bright A_SpawnItemEx("CryoSmoke3", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_NOCHECKPOSITION,64)
+			TNT1 AAA 0 Bright A_SpawnItemEx("CryoRifleTrailSparksSmall", random(5,-5), random(5,-5), random(5,-5), random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_NOCHECKPOSITION,64)
+			TNT1 AAA 0 Bright A_SpawnItemEx("CryoSmoke2", 0, 0, 0, random(10, 30)*0.04, 0, random(0, 10)*0.04, random(1,360), SXF_NOCHECKPOSITION,64)
+			TNT1 AAA 0 Bright A_SpawnItemEx("IceExplosionImpact", random(-2,2), random(-2,2), random(-2,2), 0, 0, 0, random(1,360), SXF_NOCHECKPOSITION)
+			TNT1 AAAAA 0 A_SpawnItemEx ("DetectFloorIce",random(-150,150), random(-150,150),1,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterIce",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0)
+			Stop
+	}
+}
+
+ACTOR PB_AcidGrenade : PB_FragGrenade
+{
+	Damage 15
+	DamageType "Disintegrate"
+	Decal "Scorch"
+	DeathSound "Daedabus/impact"
+	Obituary "$OB_MPROCKET"
+	States
+	{
+		Spawn:
+			TNT1 A 0 {
+				if(waterlevel > 1) {A_SpawnItem ("GreenTrailSparks"); }
+				A_SpawnItem("GreenFlareSmall",0,0);
+			}
+			GRNP A 1 Bright Light("SGL_ACID") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
+			Loop
+		
+		Bounce:
+			TNT1 A 0
+			TNT1 A 0 {
+			if(GetCvar("pb_sglgrenadeimpact") == 1)
+			{ return state("Death");}
+			else if(GetCvar("pb_sglgrenadeimpact") >=2)
+			{
+				A_Stop;
+				return state("Rest");
+			 }
+			return state("");
+			}
+			Goto spawn
+		
+		Rest:
+		GRNP A 35 Bright Light("SGL_ACID") A_JumpIfInventory("GrenadeDetonator",1,"Detonate",AAPTR_TARGET) 
+		Detonate:
+			TNT1 A 0
+			TNT1 A 0 A_Playsound("Daedabus/impact")
+		Death:
+		XDeath:
+			TNT1 A 0 A_SpawnItem("BFGAltShockWave",0,0)
+			TNT1 A 0 A_SpawnItem("ACIDFOG", 0, 0)
+			Stop
+	}
+	
+}
+
+
+
+ACTOR ACIDFOG
+{
+	Radius 2
+	Height 1
+	//Alpha .8
+	Decal "Scorch"
+	//RenderStyle Translucent
+	Damage 1
+	DamageType "Disintegrate"
+	Scale 1.32
+	Speed 0
+	Gravity 0
+	+NOBLOCKMAP
+	+NOTELEPORT
+	+NOEXTREMEDEATH
+	-EXTREMEDEATH
+	+FORCEXYBILLBOARD
+	+ALLOWPARTICLES
+	//+CLIENTSIDEONLY
+	+DONTSPLASH
+	+PAINLESS
+	-CAUSEPAIN
+	-FORCEPAIN
+	States
+	{
+			Spawn:
+			TNT1 A 0 A_SpawnItemEx("PlasmaParticleSpawner", 0, 0, 0, 6, 6, 6, 0, 128)
+			TNT1 A 0 A_Explode ( 100, 120, 0, 0, 90 )
+			TNT1 AAAAAA 0 A_SpawnItemEx("GreenCloudLarge", random(3,-3), random(3,-3), random(3,-3), random(1,-1), random(1,-1), 0, 0, SXF_NOCHECKPOSITION, 0)
+			TNT1 AAAAAA 0 A_SpawnItemEx("GreenCloudMedium", random(3,-3), random(3,-3), random(3,-3), random(1,-1), random(1,-1), 0, 0, SXF_NOCHECKPOSITION, 0)
+			TNT1 AAAAAA 0 A_SpawnItemEx("GreenCloudSmall", random(3,-3), random(3,-3), random(3,-3), random(1,-1), random(1,-1), 0, 0, SXF_NOCHECKPOSITION, 0)
+			TNT1 AAAAA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+			
+			TNT1 A 0 A_SpawnItemEx("NewAcidExplosionSmoke", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION, 0)
+			TNT1 AAAA 2 BRIGHT Light("BARONBALL") A_SpawnItem("GreenFlare",0,20)
+			Goto Death
+			
+		Death:
+			TNT1 A 60
+			Stop
+	}
+}
+
+ACTOR ACIDFOG_GASPIPE : ACIDFOG {
+	States {
+		Spawn:
+			TNT1 A 0 A_Explode ( 50, 100 )
+			Goto Death	
+	}
+}
+
+ACTOR GreenCloudSmall
+{
+	PROJECTILE
+	-ACTIVATEIMPACT
+	-ACTIVATEPCROSS
+	+NODAMAGETHRUST
+	+ADDITIVEPOISONDAMAGE
+	+BLOODLESSIMPACT
+	+NOTELEPORT
+	+RIPPER
+	+NOBLOOD
+	+NOEXTREMEDEATH
+	-EXTREMEDEATH
+	+FORCEXYBILLBOARD
+	-ALLOWPARTICLES
+	+DONTSPLASH
+	+PAINLESS
+	-CAUSEPAIN
+	-FORCEPAIN
+	-SOLID
+	Radius 0
+	Height 0
+	Scale 0.85
+	PoisonDamage 1
+	DamageType "Disintegrate"
+	PoisonDamageType "Disintegrate"
+	Speed 1
+	Alpha 0.55
+	RenderStyle add
+	Seesound "redburn"
+	
+	States
+	{
+	
+	Spawn:
+		GTXL KLMNOPQRST 1 
+		{
+			if(CountInv("Timer555") < 1)
+			{
+				A_FadeIn(0.10);
+			}
+		}
+		TNT1 A 0 A_GiveInventory("Timer555",1)
+		TNT1 A 0 A_Explode ( 7, 100, 0, 40)
+		GTXL TSRQPONMLK 1 
+		TNT1 A 0 A_Explode ( 7, 100, 0, 40 )
+		TNT1 A 0 A_JumpIfInventory("Timer555",5,1)
+		Loop
+		TNT1 AA 0
+		GTXL KLMNOPQRST 1  A_FadeOut( 0.10)
+		Stop
+	}
+}
+
+ACTOR GreenCloudMedium : GreenCloudSmall
+{
+	Scale 1.3	
+	DamageType "Disintegrate"
+	States
+	{
+	Spawn:
+		GTXL KLMNOPQRST 1 
+		{
+			if(CountInv("Timer555") < 1)
+			{
+				A_FadeIn(0.10);
+			}
+		}
+		TNT1 A 0 A_GiveInventory("Timer555",1)
+		TNT1 A 0 A_Explode ( 9, 100, 0, 60)
+		GTXL TSRQPONMLK 1 
+		TNT1 A 0 A_Explode ( 9, 100, 0, 60)
+		TNT1 A 0 A_JumpIfInventory("Timer555",5,1)
+		Loop
+		TNT1 AA 0
+		GTXL KLMNOPQRST 1  A_FadeOut( 0.10)
+		Stop
+	}
+}
+
+ACTOR GreenCloudLarge : GreenCloudSmall
+{
+	Scale 1.55
+	DamageType "Disintegrate"
+	SeeSound "world/barrelloop"
+	States
+	{
+	
+	Spawn:
+		TNT1 A 0
+		TNT1 A 0 A_Playsound("world/barrelloop", 4, 1, 1)
+	SpawnLoop:
+		GTXL KLMNOPQRST 1 
+		{
+			if(CountInv("Timer555") < 1)
+			{
+				A_FadeIn(0.10);
+			}
+		}
+		TNT1 A 0 A_GiveInventory("Timer555",1)
+		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+		TNT1 A 0 A_Explode ( 12, 100, 0, 80)
+		GTXL TSRQPONMLK 1 
+		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+		TNT1 A 0 A_Explode ( 12, 100, 0, 80)
+		TNT1 A 0 A_JumpIfInventory("Timer555",5,1)
+		Loop
+		TNT1 AA 0
+		TNT1 A 0 A_StopSound(4)
+		GTXL KLMNOPQRST 1  A_FadeOut( 0.10)
+		Stop
+	}
+}
+
+ACTOR GreenCloudMissile
+{
+	+MISSILE
+	+NoGravity
+	-SHOOTABLE
+	+NOBLOOD
+	+RIPPER
+	+BLOODLESSIMPACT
+	+NODAMAGETHRUST
+	+THRUACTORS
+	Damage 0
+	RenderStyle add
+	DamageType "Disintegrate"
+	Speed 12
+	Scale 0.25
+	Alpha 0.7
+	Seesound "redburn"
+	States
+	{
+	Spawn:
+		GTXL KLMNOPQRST 1 BRIGHT Light("BARONBALL") A_SetScale(ScaleX+0.05, ScaleY+0.05)
+		TNT1 A 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+		TNT1 A 0 A_Explode ( 20, 100, 0)
+		GTXL TSRQPONMLK 1 BRIGHT Light("BARONBALL") A_SetScale(ScaleX+0.05, ScaleY+0.05)
+		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+		TNT1 A 0 A_Explode ( 20, 100, 0 )
+		GTXL KLMNOPQRST 1 BRIGHT A_SetScale(ScaleX+0.05, ScaleY+0.05)
+		TNT1 A 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+		TNT1 A 0 A_Explode ( 20, 100, 0)
+		GTXL TSRQPONMLK 1 BRIGHT A_SetScale(ScaleX+0.05, ScaleY+0.05)
+		TNT1 A 0 A_Explode ( 20, 100, 0 )
+		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+		TNT1 A 0 A_Explode ( 20, 100, 0 )
+		Death:
+		TNT1 A 0 A_Playsound("SZZLL", 3)
+		TNT1 A 0 A_Explode ( 20, 100, 0 )
+		TNT1 A 0 A_SpawnItem("MediumNewAcidExplosionSmoke_NoSound", 0, 0)
+		GTXL TSRQPONMLK 1 A_FadeOut( 0.05)
+		TNT1 A 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+		TNT1 A 0 A_Explode ( 20, 100, 0 )
+		GTXL KLMNOPQRST 1  A_FadeOut( 0.05)
+		Stop
+	}
+}
+
+ACTOR GreenCloudMissile_Enemy : GreenCloudMissile
+{
+	DamageType "Disintegrate"
+	Speed 10
+	Scale 0.15
+	Alpha 0.3
+	Seesound "redburn"
+	-RIPPER
+	-SOLID
+	+THRUACTORS
+	States
+	{
+	Spawn:
+		GTXL KLMNOPQRST 1 BRIGHT Light("BARONBALL") A_SetScale(ScaleX+0.05, ScaleY+0.05)
+		TNT1 A 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+		TNT1 A 0 A_Explode ( 2, 100, 0)
+		GTXL TSRQPONMLK 1 BRIGHT Light("BARONBALL") A_SetScale(ScaleX+0.05, ScaleY+0.05)
+		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+		TNT1 A 0 A_Explode ( 2, 100, 0 )
+		GTXL KLMNOPQRST 1 BRIGHT A_SetScale(ScaleX+0.05, ScaleY+0.05)
+		TNT1 A 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+		TNT1 A 0 A_Explode ( 2, 100, 0)
+		GTXL TSRQPONMLK 1 BRIGHT A_SetScale(ScaleX+0.05, ScaleY+0.05)
+		TNT1 A 0 A_Explode ( 2, 100, 0 )
+		TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+		TNT1 A 0 A_Explode ( 2, 100, 0 )
+		GTXL TSRQPONMLK 1 A_FadeOut( 0.05)
+		TNT1 A 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0)
+		TNT1 A 0 A_Explode ( 2, 100, 0 )
+		Goto Death
+		Death:
+		TNT1 A 0 A_Playsound("SZZLL", 3)
+		TNT1 A 0 A_Explode ( 8, 100, 0 )
+		TNT1 A 0 A_SpawnItem("SmallNewAcidExplosionSmoke", 0, 0)
+		GTXL KLMNOPQRST 1  A_FadeOut( 0.05)
+		Stop
+	}
+}
+
+
+
+ACTOR FlakShell
+{
+	Radius 2
+	Height 2
+	Speed 30
+	Scale 0.40
+	Damage (random(11,12))
+	DamageType Massacre
+	+MISSILE
+	+Friendly
+	+RANDOMIZE
+	+BLOODSPLATTER
+	+EXTREMEDEATH
+	+FORCEXYBILLBOARD
+	+CANBOUNCEWATER
+	+DOOMBOUNCE
+	-EXPLODEONWATER
+	+CANBOUNCEWATER
+	BounceFactor 0.75
+	Gravity 0.55
+	Decal "Scorch"
+	SeeSound ""
+	DeathSound "weapons/chainwiz"
+	Obituary "%o was shredded by shrapnel"
+	alpha 0.25
+	
+	States
+	{
+	 Spawn:
+		JNK3 ABCDEFGH 1 Bright A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
+		TNT1 A 0 A_CustomMissile ("SubFlakShell", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 AA 0 A_CustomMissile ("FlackTracer", 0, 0, random (0, 360), 2, random (0, 360))
+		JNK1 ABCDEFGH 1 Bright A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
+		TNT1 AA 0 A_CustomMissile ("SubFlakShell", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 AA 0 A_CustomMissile ("FlackTracer", 0, 0, random (0, 360), 2, random (0, 360))
+		JNK2 ABCDEFGH 1 Bright A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
+		TNT1 A 0 A_CustomMissile ("SubFlakShell", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 AA 0 A_CustomMissile ("FlackTracer", 0, 0, random (0, 360), 2, random (0, 360))
+		JNK1 ABCD 1 Bright A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
+		TNT1 A 0 A_CustomMissile ("FlackTracer", 0, 0, random (0, 360), 2, random (0, 360))
+		goto Death
+	 Death:
+	 XDeath:
+	 EXPL A 0 A_Explode (4, 55, 0)
+	 TNT1 A 1 A_SpawnItem("HitPuff")
+	 TNT1 AAA 0 A_CustomMissile ("FlackTracer", 0, 0, random (0, 360), 2, random (0, 360))
+	 TNT1 AAA 0 A_CustomMissile ("SubFlakShell", 0, 0, random (0, 360), 2, random (0, 360))
+		Stop
+	}
+}
+
+ACTOR SubFlakShell
+{
+	Radius 1
+	Height 1
+	Speed 35
+	Scale 0.20
+	Damage (random(10,11))
+	DamageType Massacre
+	+MISSILE
+	+Friendly
+	+RANDOMIZE
+	+BLOODSPLATTER
+	+EXTREMEDEATH
+	+FORCEXYBILLBOARD
+	+CANBOUNCEWATER
+	+DOOMBOUNCE
+	-EXPLODEONWATER
+	+CANBOUNCEWATER
+	Gravity 0.8
+	Bouncefactor 0.4
+	Decal "Scorch"
+	SeeSound "weapons/chainwiz"
+	Obituary "%o was shredded by shrapnel"
+	DeathSound ""
+	alpha 0.40
+	
+	States
+	{
+	 Spawn:
+		JNK2 ABCDEFGH 1 Bright A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
+		EXPL A 0 A_Explode (random(4,5), 45, 0)
+		TNT1 A 0 A_CustomMissile ("FlackTracer", 0, 0, random (0, 360), 2, random (0, 360))
+		JNK2 ABCDEFGH 1 Bright A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
+		EXPL A 0 A_Explode (random(4,5), 45, 0)
+		TNT1 A 0 A_CustomMissile ("FlackTracer", 0, 0, random (0, 360), 2, random (0, 360))
+		JNK1 ABCDEFGH 1 Bright A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
+		EXPL A 0 A_Explode (random(4,5), 45, 0)
+		TNT1 A 0 A_CustomMissile ("FlackTracer", 0, 0, random (0, 360), 2, random (0, 360))
+		JNK3 ABCDEFGH 1 Bright A_CustomMissile("YellowFlareSpawn", 0, 0, 0, 0)
+		EXPL A 0 A_Explode (random(4,5), 45, 0)
+		TNT1 A 0 A_CustomMissile ("FlackTracer", 0, 0, random (0, 360), 2, random (0, 360))
+		goto Death
+	 Death:
+	 XDeath:
+	 TNT1 A 0
+	 EXPL A 0 A_Explode (random(5,6), 55, 1)
+	 TNT1 AA 0 A_CustomMissile ("FlackTracer", 0, 0, random (0, 360), 2, random (0, 360))
+	 TNT1 A 1 A_SpawnItem("HitPuff")
+		Stop
+	}
+}
+

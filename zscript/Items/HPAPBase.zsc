@@ -1,4 +1,72 @@
 class PB_Health : Health abstract
 {
 	mixin PB_BetterPickupSound;
+	int cap,ca,res; string msg;
+	override bool TryPickup(in out actor toucher)
+	{
+		int aa = self.amount*G_SkillPropertyFloat(SKILLP_HealthFactor);
+		if(toucher && toucher is "PlayerPawn")
+		{
+			cap = Max(MaxAmount,toucher.GetMaxHealth(true));
+			ca = toucher.health;
+		}
+		res = cap-ca;
+		if(res>=aa){ res = aa;}
+		return Super.TryPickup(toucher);
+	}
+	override string PickupMessage(){
+		msg = Super.PickupMessage();
+		if( msg.IndexOf("(+%a HP)") != -1 ){
+			msg.Replace("%a", String.Format("%d", res));
+		}else{
+			string.format("%s (+%d HP)",msg,res);
+		}
+		return msg;
+	}
+}
+
+class PB_Armor : BasicArmorPickup abstract
+{
+	mixin PB_BetterPickupSound;
+	
+	Default
+	{
+		+INVENTORY.AUTOACTIVATE;
+		Inventory.MaxAmount 0;
+	}
+}
+
+class PB_Armor2 : BasicArmorBonus abstract
+{
+	mixin PB_BetterPickupSound;
+	
+	Default
+	{
+		+INVENTORY.AUTOACTIVATE;
+	}
+	int cap,ca,res; string msg;
+	override bool TryPickup(in out actor toucher)
+	{
+		let armor = BasicArmor(toucher.FindInventory("BasicArmor"));
+		if(armor){
+			int aa = self.SaveAmount*G_SkillPropertyFloat(SKILLP_ArmorFactor);
+			if(toucher && toucher is "PlayerPawn")
+			{
+				cap = self.MaxSaveAmount;
+				ca = armor.Amount;
+			}
+			res = cap-ca;
+			if(res>=aa){ res = aa;}
+		}
+		return Super.TryPickup(toucher);
+	}
+	override string PickupMessage(){
+		msg = Super.PickupMessage();
+		if( msg.IndexOf("(+%a AP)") != -1 ){
+			msg.Replace("%a", String.Format("%d", res));
+		}else{
+			string.format("%s (+%d AP)",msg,res);
+		}
+		return msg;
+	}
 }

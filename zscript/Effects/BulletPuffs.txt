@@ -1,0 +1,572 @@
+Class PB_BulletPuff : BulletPuff
+{
+	Default
+	{
+		+NOEXTREMEDEATH;
+		+THRUACTORS;
+		+NOCLIP;
+		Decal "BulletDecalNew1";
+		+DONTSPLASH;
+		-EXPLODEONWATER;
+		Scale 0.09;
+	}
+	states
+	{
+		Spawn:
+			/*TNT1 A 0 {
+				A_SpawnProjectile("SparkX", 0, 0, random (0, 360), 2, random (0, 360));
+				A_SpawnProjectile("HitSpark", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
+				A_SpawnProjectile("HitSpark22", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
+				A_SpawnProjectile("HitSpark23", 0, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
+			}*/
+		Puff:
+			TNT1 A 0 NoDelay {
+				// [gng] why are there even sparks anyways?
+				int sparkcount = random(3,5);
+				for(int i = 0; i < sparkcount; i++)
+				{
+					SpawnPuffSpark();
+				}
+			}
+			TNT1 A 0 {
+				SpawnPuffSmoke();
+				//SpawnPuffFlare();
+				SpawnMainPuff();
+			}
+			TNT1 A 4 Light("BulletPuffLight");
+			stop;
+		Melee:
+			TNT1 AAA 0 SpawnPuffSmoke();//A_SpawnProjectile ("OldschoolRocketSmokeTrail2", 0, 0, random (0, 360), 2, random (0, 360));
+			stop;
+	}
+	
+	//anything that doesnt need to be an actor, is now not an actor
+	void SpawnMainPuff()
+	{
+		FSpawnParticleParams MAINPUF;
+		string f = String.Format("%c", int("A") + random(0,7));
+		MAINPUF.Texture = TexMan.CheckForTexture("IPF2"..f..0);
+		MAINPUF.Style = STYLE_ADD;
+		MAINPUF.Color1 = "FFFFFF";
+		MAINPUF.Flags = SPF_FULLBRIGHT|SPF_ROLL;
+		MAINPUF.StartRoll = random(0,360);
+		MAINPUF.StartAlpha = 1.0;
+		MAINPUF.FadeStep = 0;
+		MAINPUF.Size = random(25,28);
+		MAINPUF.SizeStep = random(2,4);
+		MAINPUF.Lifetime = 4; 
+		MAINPUF.Pos = pos;
+		Level.SpawnParticle(MAINPUF);
+	}
+	
+	void SpawnPuffFlare(bool small = false)
+	{
+		FSpawnParticleParams FLARPUF;
+		FLARPUF.Texture = TexMan.CheckForTexture("LENYA0");
+		FLARPUF.Style = STYLE_ADD;
+		FLARPUF.Color1 = "FFFFFF";
+		FLARPUF.Flags =SPF_FULLBRIGHT;
+		FLARPUF.StartRoll = 0;
+		FLARPUF.StartAlpha = 1.0;
+		FLARPUF.FadeStep = 0.25;
+		FLARPUF.Size = small ? random(45,60) : random(70,90);
+		FLARPUF.SizeStep = 1; //random(2,4);
+		FLARPUF.Lifetime = 4; 
+		FLARPUF.Pos = pos;
+		Level.SpawnParticle(FLARPUF);
+	}
+	
+	void SpawnPuffSpark()
+	{
+		FSpawnParticleParams PUFSPRK;
+		PUFSPRK.Texture = TexMan.CheckForTexture("SPKOA0");
+		PUFSPRK.Color1 = "FFFFFF";
+		PUFSPRK.Style = STYLE_Add;
+		PUFSPRK.Flags = SPF_ROLL|SPF_FULLBRIGHT;
+		PUFSPRK.Vel = (random(-5,5),random(-5,5),random(-2,9));
+		PUFSPRK.accel = (0,0,frandom(-1.75,-0.75));
+		PUFSPRK.Startroll = randompick(0,90,180,270,360);
+		PUFSPRK.RollVel = 0;
+		PUFSPRK.StartAlpha = 1.0;
+		PUFSPRK.FadeStep = 0.075;
+		PUFSPRK.Size = random(8,14);
+		PUFSPRK.SizeStep = -0.5;
+		PUFSPRK.Lifetime = random(12,18); 
+		PUFSPRK.Pos = pos;
+		Level.SpawnParticle(PUFSPRK);
+	}
+	
+	void SpawnPuffSmoke(int dq = 1)
+	{
+		FSpawnParticleParams PUFSMK;
+		PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random(0, 25)).."0");//("SMK2A0"); //SMk3G0
+		PUFSMK.Style = STYLE_TRANSLUCENT;
+		PUFSMK.Color1 = "404040";
+		vector3 vls = (frandom(-1,1),frandom(-1,1),frandom(1,2));
+		PUFSMK.vel = vls;
+		PUFSMK.accel = -(vls * 0.07);
+		PUFSMK.Flags = SPF_ROLL;
+		PUFSMK.StartRoll = random(0,360);
+		PUFSMK.RollVel = random(-4,4);
+		PUFSMK.StartAlpha = 1.0;
+		PUFSMK.FadeStep = 0.080;
+		PUFSMK.Size = random(28,32);
+		PUFSMK.SizeStep = random(1,3);
+		PUFSMK.Lifetime = 13; 
+		vector2 posofs = RotateVector((5, 0), angle);
+		PUFSMK.Pos = vec3Offset(posofs.x, posofs.y, 0);
+		Level.SpawnParticle(PUFSMK);
+	}
+}
+
+class PB_NewPuffSmoke : Actor
+{
+	Default 
+	{
+		Speed 32;
+		Scale 0.25;
+		
+		+NOBLOCKMAP;
+		+NOCLIP;
+		+NOINTERACTION;
+		+NOTELEPORT;
+		+NOGRAVITY;
+		+THRUACTORS;
+		// +FORCEXYBILLBOARD;
+		+ROLLSPRITE;
+		+ROLLCENTER;
+		+INTERPOLATEANGLES;
+		+FLATSPRITE;
+		+FORCEXYBILLBOARD;
+		-FORCEYBILLBOARD;
+		
+		-SOLID;
+		-SHOOTABLE;
+	}
+	
+	double rollVel;
+	
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		rollVel = frandom(-6, 6);
+		if(scale.x < 0.4)
+			scale.x *= 1.02;
+	}
+	
+	override void Tick()
+	{
+		Super.Tick();
+		
+		if(level.IsFrozen()) return;
+		
+		roll += rollVel;
+		rollVel *= 0.8;
+		vel *= 0.5;
+	}
+	
+	States 
+	{
+		Spawn:
+			SMK3 ABCDEFGHIJKL 1;
+		GoAway:
+			SMK3 M 1 A_FadeOut(0.05);
+			Loop;
+	}
+}
+
+Class CryoRifleBeamPuff : actor
+{
+	default
+	{
+		+noblockmap;
+		height 2;
+		radius 2;
+		renderstyle "add";
+		+nogravity;
+		DamageType "Freeze";
+		+NODAMAGETHRUST;
+		Decal "FreezerBurnSmall";
+		+forcexybillboard;
+	}
+	states
+	{
+		spawn:
+			BXPL A 0 nodelay Bright {
+				A_Explode(24, 60, 0, 90);
+				A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(10, 30)*0.1, 0, random(0, 10)*0.1, random(1,360), SXF_NOCHECKPOSITION);
+				A_SpawnItemEx("IceExplosionImpact", 0, 0, 0, 0, 0, 0, random(1,360), SXF_NOCHECKPOSITION);
+				
+				if(random(0,255) > 100)
+				{
+					A_SpawnItemEx ("RandomMediumIcecrystal",random(-30,30), random(-30,30),random(1,20),0,0,0,0,SXF_NOCHECKPOSITION,0);
+					A_SpawnItemEx ("RandomSmallIcecrystal",random(-30,30), random(-30,30),random(1,20),0,0,0,0,SXF_NOCHECKPOSITION,0);
+				}
+				
+				if(pos.z <= floorz + 5)
+					A_SpawnItemEx ("DetectFloorIce",random(-20,20), random(-20,20),1,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				if(pos.z >= ceilingz - 5)
+					A_SpawnItemEx ("DetectCeilIce",random(-10,10), random(-10,10),1,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				
+			}
+			BXPL ABCDEFGH 1 Bright;
+			BXPL IJKLM 1 Bright A_FadeOut(0.1);
+			stop;
+	}
+	
+	override void beginplay()
+	{
+		super.beginplay();
+		bxflip = random(0,1);
+		byflip = random(0,1);
+	}
+
+}
+
+Class UnmakerBeamPuff : actor
+{
+	Default
+	{
+		DamageType "Fire";
+		height 2;
+		radius 2;
+		+noblockmap;
+		renderstyle "Add";
+		+nogravity;
+	}
+	states
+	{
+		spawn:
+			TNT1 A 0 nodelay {
+				A_SpawnItem("RedLightningTrial",0);
+				A_SpawnItemEx("DTechBurningPiece", random (-15, 15), random (-15, 15),0, 0, 0, 0, 0, 128, 150);
+				A_SpawnItemEx("DTechBurningPiece2", random (-35, 35), random (-35, 35),0, 0, 0, 0, 0, 128, 150);
+				A_SpawnItemEx("DTechBurningPiece3", random (-45, 45), random (-45, 35), 0, 0, 0, 0, 0, 128, 150);
+				A_SpawnItemEx ("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,180);
+				A_SpawnItemEx ("DetectCeilCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,180);
+				A_explode(20, 100);
+			}
+			TNT1 A 1;
+			stop;
+	}
+}
+
+Class UnmakerOverchargePuff : actor
+{
+	Default
+	{
+		DamageType "ExplosiveImpact";
+		renderstyle "Add";
+		height 2;
+		radius 2;
+		+noblockmap;
+		+nogravity;
+		alpha 0.7;
+	}
+	states
+	{
+		Death:
+		Crash:
+			TNT1 A 1;
+			stop;
+		Spawn:
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15),0, 0, 0, 0, 0, 128, 150);
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35),0, 0, 0, 0, 0, 128, 150);
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35), 0, 0, 0, 0, 0, 128, 150);
+			TNT1 A 0 A_SpawnItemEx("OverchargeGroundSpike",frandom(-15,15),frandom(-15,15),0,0,0,0,0,0,150);
+			TNT1 AA 0 A_SpawnItemEx("OverchargeGroundLump",frandom(-30,30),frandom(-30,30),0,0,0,0,0,0,150);
+			TNT1 A 0 A_jump(24,"FullEffect");
+			TNT1 A 0 A_jump(32,"VisualFxEnd");
+			goto NoFxEnd;
+			
+		Xdeath:
+			
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15),0, 0, 0, 0, 0, 128, 150);
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35),0, 0, 0, 0, 0, 128, 150);
+			TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35), 0, 0, 0, 0, 0, 128, 150);
+			TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			TNT1 A 0 A_SpawnItemEx ("DetectCeilCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			TNT1 A 0 A_SpawnItemEx("OverchargeGroundSpikeG",frandom(-15,15),frandom(-15,15),0,0,0,0,0,0,150);
+			TNT1 AA 0 A_SpawnItemEx("OverchargeGroundLumpG",frandom(-30,30),frandom(-30,30),0,0,0,0,0,0,150);
+			TNT1 A 0 A_jump(24,"FullEffect");
+			TNT1 A 0 A_jump(32,"VisualFxEnd");
+			goto NoFxEnd;
+			
+		NoFxEnd:
+			TNT1 A 0 { 
+				A_explode(20, 100);
+				A_StartSound("FAREXPL", CHAN_AUTO|CHANF_OVERLAP);
+				Radius_Quake (3, 8, 0, 15, 0);
+			}
+			TNT1 A 1;
+			stop;
+		FullEffect:
+			TNT1 A 0 { 
+				A_explode(20, 100);
+				A_SpawnItem("ExcavatorExploFX");
+				A_StartSound("FAREXPL", CHAN_AUTO|CHANF_OVERLAP);
+				Radius_Quake (3, 8, 0, 15, 0);
+			}
+			REXP ABCDEFGHIJKLMNOPQRS 1 BRIGHT;
+			stop;
+		VisualFxEnd:
+			TNT1 A 0 { 
+				A_explode(20, 100);
+				A_StartSound("FAREXPL", CHAN_AUTO|CHANF_OVERLAP);
+				Radius_Quake (3, 8, 0, 15, 0);
+			}
+			REXP ABCDEFGHIJKLMNOPQRS 1 BRIGHT;
+			stop;
+	}
+	
+	override void Beginplay()
+	{
+		super.beginplay();
+		bxflip = random(0,1); //this doesnt even have rotations, so spriteflip is not really needed
+		A_Setscale(frandom(0.2,1.2));
+	}
+}
+
+//its not really a puff, but its similar to a puff, this just does the explode thing for the railgun rail
+Class RailgunAOEPuff : Actor
+{
+	default
+	{
+		radius 5;
+		height 5;
+		+nointeraction;
+		+noblockmap;
+		+nodamagethrust;
+		Obituary "%o was besieged by %k.";
+	}
+	
+	states
+	{
+		spawn:
+			TNT1 A 0 nodelay A_Explode(128,128,0,0,96); //this function is literally copypasted from SP_GaussTrailSiegeAOE, shouldnt behave different
+			TNT1 A 1;
+			stop;
+	}
+}
+
+//m2 upgrade primary attack
+Class LightningGunPuff : Actor
+{
+  default
+  {
+		//-COUNTKILL why?
+		//-SHOOTABLE
+		//+CLIENTSIDEONLY
+		+BLOODLESSIMPACT 
+		+FORCEXYBILLBOARD
+		+THRUACTORS
+		+NOGRAVITY
+		+NODAMAGETHRUST
+		+DONTTHRUST
+		+DONTSPLASH
+		-SHOOTABLE
+		+RANDOMIZE
+		+noblockmap
+		//Mass 9999999
+		RenderStyle "Add";
+		Speed 0;
+		Radius 1;
+		Height 1;
+		damagetype "Plasma";
+		scale 1.2;
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A 1;
+		Death:
+		Die:
+			TNT1 A 0 { 
+				if((pos.z <= (floorz + 4) || waterlevel > 0) && PB_ActorPosInfo.Mobj_isOnLiquid(self))
+					return resolvestate("ConductiveDeath");
+				return resolvestate(null);
+			}
+			DB08 AB 1 bright A_SetScale(Scale.X+frandom(0.04,0.08), Scale.Y+frandom(0.04,0.08));
+			TNT1 A 0 FireLightbeams();
+			DB08 CDEFGHIJKLM 1 bright A_SetScale(Scale.X+frandom(0.04,0.08), Scale.Y+frandom(0.04,0.08));
+			DB08 NOPQRSTUVWXYZABCDEFGHIJKLM 1 bright
+				{
+					A_SetScale(Scale.X-0.08, Scale.Y-0.08);
+					A_FadeOut(0.08);
+				}
+			Stop;
+			
+		ConductiveDeath:
+			TNT1 A 0 BRIGHT {
+				A_SpawnItem("LightningGunPuff_Big",0);
+				A_SpawnItem("BlueFlare",0);
+				if(randompick(0,1,0,0) == 1) //this look pretty bad if fired for more than a tic, due to additive rendering it just get white, so i reduced its spawn rate to 1/4
+					A_SpawnItem("ElectroBombFX",0);
+			}
+			TNT1 A 0 FireLightbeams(240,12);
+			TNT1 AA 0 A_SpawnProjectile("ElectroBlastTrail3",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(30,270));
+			TNT1 AAAAA 0 A_SpawnProjectile ("BluePlasmaParticle", 0, 0, random (0, 360), 2, random (0, 360));
+			TNT1 A 1 Light("LightningImpactLight");
+			Stop;
+	}
+	
+	void FireLightbeams(int dist = 100, int dmg = 6)
+	{
+		blockthingsiterator bti = blockthingsiterator.create(self,dist);
+		actor v;	//actual actor 
+		actor last;	//previous actor
+		vector3 lastpos;	//this saves the pos of the last actor anyway
+		while(bti.next())
+		{
+			v = bti.thing;
+			if(v && v.bismonster && v.health > 0 && checksight(v))
+			{
+				vector3 tp = (v.pos.xy,v.pos.z + v.height * 0.5);
+				vector3 sp = last ? (lastpos.xy,lastpos.z) : (pos.xy,pos.z + height * 0.5);
+				vector3 dif = levellocals.vec3diff(sp,tp);
+				vector3 dir = dif.unit();
+				double mg = dif.length();
+				int stp = int(mg / 25);
+				
+				vector3 newpos = sp;
+				for(int i = 0; i < stp; i++)
+				{
+					vector3 ofs = (random(-10,10),random(-10,10),random(-10,10));
+					newpos += (dir * 25);
+					drawLightning(newpos + ofs);
+				}
+				
+				lastpos = (v.pos.xy,v.pos.z + v.height * 0.5);
+				v.damagemobj(self,self.target,dmg,'plasma');
+				if(v.health > 0)
+					v.damagemobj(self,self.target,1,'Stun');
+				
+				last = v;
+				dmg *= 1.25; //damage increases by 25% for every enemy that got hit by the same call for this, can be clamped so it doesnt feel so op
+			}
+		}
+	}
+	
+	void DrawLightning(vector3 where)
+	{
+		FSpawnParticleParams LGTN;
+		LGTN.Texture = TexMan.CheckForTexture("DB08C0");
+		LGTN.Style = STYLE_ADD;
+		bool wt = random(0,1);
+		LGTN.Color1 = "FFFFFF";
+		LGTN.Flags =SPF_FULLBRIGHT|SPF_ROLL|SPF_NOTIMEFREEZE;
+		LGTN.StartRoll = random(0,360);
+		LGTN.StartAlpha = 1.0;
+		LGTN.FadeStep = -0.1;
+		LGTN.Size = random(45,65);
+		LGTN.SizeStep = random(-10,-5);
+		LGTN.Lifetime = 6; 
+		LGTN.Pos = where;
+		Level.SpawnParticle(LGTN);
+	}
+	
+}
+
+// m2 upgrade secondary attack
+Class StunBomb : Actor
+{
+	default
+	{
+		Radius 2;
+		Height 2;
+		Speed 24;
+		Damage 0;
+		RENDERSTYLE "ADD";
+		Damagetype "Stun"; //New Damage type!
+		Scale 0.1;
+		+MISSILE;
+		+THRUGHOST;
+		+FORCEXYBILLBOARD;
+		Gravity .5;
+		SeeSound "";
+		DeathSound "LGBOMB";
+	}
+	States
+	{
+		Spawn:
+			TNT1 A 0 nodelay A_Startsound("PZAPFLY", 6,CHANF_LOOPING);
+			STFL ABCD 1 A_SetScale(Scale.X+0.02,Scale.Y+0.02);
+		Fly:
+			STFL EFGH 1 Bright A_Spawnprojectile("ElectroBlastTrail",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(-40,40));
+			STFL IJKL 1 Bright Light("LightningImpactLight") A_Spawnprojectile("ElectroBlastTrail",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(-40,40));
+			STFL MNOP 1 Bright A_Spawnprojectile("ElectroBlastTrail",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(-40,40));
+			STFL ABCD 1 Bright Light("LightningImpactLight") A_Spawnprojectile("ElectroBlastTrail",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(-40,40));
+			Loop;
+			  
+		Death:
+			TNT1 A 0 { self.bnogravity = true; }
+			TNT1 A 0 A_StopSound(6);
+			STFL ABCDEFGHIJKL 1 BRIGHT Light("LightningImpactLight") A_SetScale(Scale.X+0.1,Scale.Y+0.1);
+			TNT1 A 0 FireLightbeams();
+			TNT1 A 0 BRIGHT A_SpawnItem("LightningGunPuff_Bigger",0);
+			TNT1 A 0 BRIGHT A_SpawnItem("BlueFlare",0);
+			//TNT1 A 0 A_explode(2, 200,0,0,300);
+			TNT1 A 0 A_Startsound("STNBOEX", 3);
+			TNT1 AAAAAAAAAAA 0 A_Spawnprojectile("ElectroBlastTrail3",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(30,270));
+			XELC AABBCCDDEEFF 1 Bright Light("LightningImpactLight") A_Spawnprojectile("ElectroBlastTrail3",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(30,270));
+			Stop;
+	}
+	
+	
+	void FireLightbeams(int dist = 600, int dmg = 2)
+	{
+		blockthingsiterator bti = blockthingsiterator.create(self,dist);
+		actor v;
+		actor last;
+		vector3 lastpos;
+		while(bti.next())
+		{
+			v = bti.thing;
+			if(v && v.bismonster && v.health > 0 && v != target && checksight(v))
+			{
+				vector3 tp = (v.pos.xy,v.pos.z + v.height * 0.5);
+				vector3 sp = last ? (lastpos.xy,lastpos.z) : (pos.xy,pos.z + height * 0.5);
+				vector3 dif = levellocals.vec3diff(sp,tp);
+				vector3 dir = dif.unit();
+				double mg = dif.length();
+				int stp = int(mg / 30);
+				
+				vector3 newpos = sp;
+				for(int i = 0; i < stp; i++)
+				{
+					vector3 ofs = (random(-10,10),random(-10,10),random(-10,10));
+					newpos += (dir * 30);
+					drawLightning(newpos + ofs);
+				}
+				
+				lastpos = (v.pos.xy,v.pos.z + v.height * 0.5);
+				
+				v.damagemobj(self,self.target,dmg,'electric');
+				
+				if(v.health > 0)
+					v.damagemobj(self,self.target,dmg,'Stun');
+				
+				last = v;
+			}
+		}
+	}
+	
+	void DrawLightning(vector3 where)
+	{
+		FSpawnParticleParams LGTN;
+		LGTN.Texture = TexMan.CheckForTexture("DB08C0");
+		LGTN.Style = STYLE_ADD;
+		bool wt = random(0,1);
+		LGTN.Color1 = "FFFFFF";
+		LGTN.Flags =SPF_FULLBRIGHT|SPF_ROLL|SPF_NOTIMEFREEZE;
+		LGTN.StartRoll = random(0,360);
+		LGTN.StartAlpha = 1.0;
+		LGTN.FadeStep = -0.1;
+		LGTN.Size = random(80,120);
+		LGTN.SizeStep = random(-10,-5);
+		LGTN.Lifetime = 10; 
+		LGTN.Pos = where;
+		Level.SpawnParticle(LGTN);
+	}
+}

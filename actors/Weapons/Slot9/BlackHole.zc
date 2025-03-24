@@ -1,0 +1,246 @@
+//TODO: The gravity effect should probably account for mass.
+class PB_BlackHole : Actor
+{
+	Default
+	{
+		Radius 20;
+		Height 20;
+		Speed 0;
+		Projectile;
+		+NOBLOCKMAP;
+		+DONTHARMSPECIES;
+		+NODAMAGETHRUST;
+		-THRUGHOST;
+		+Ripper;
+		+NOBOSSRIP;
+		//+ForcePain;
+		+FORCEYBILLBOARD;
+		+FORCERADIUSDMG;
+		+NOEXTREMEDEATH;
+		+Friendly; // [inkoalawetrust] Why ?
+		+DontThrust; //So black holes can't attract each other.
+		+DontBlast; //No Disc of Repulsion shit either.
+		+DONTSPLASH;
+		+RollSprite;
+		RenderStyle "Normal";
+		DamageType "BlackHole";
+		Scale 1.0;
+		ReactionTime 360;
+		Obituary "%o got absorbed by the darkness.";
+	}
+	
+	Bool Succ;
+	Array <Actor> affectedActors; // Create a list to hold affected actors
+	actor SuckedPlayer; //used if the player was affected to save a pointer to it, this isnt multiplayer friendly anyways, so just a single pointer and not an array
+	
+	States
+	{
+		Spawn:
+			TNT1 A 0;
+			TNT1 A 0 A_StartSound("bh_EXPLONG", CHAN_6, 1.0, ATTN_NORM, false);
+			TNT1 A 0 A_StartSound("bh_Sound", CHAN_7, 1.0, ATTN_NORM, false);
+			//TNT1 A 0 A_SetScale(3.0);
+			QHOL ABCDEFGHIJKLMNOP 1 BRIGHT Light("BlackholeVoid")
+			{
+				Succ = True;
+				//A_Explode(20,200);
+				//A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+			}
+			
+			TNT1 A 0 A_SetRoll(0);
+		Exist:
+			VHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright Light("BlackholeVoid") {
+				//A_SetRoll(roll-10);
+				//A_Explode(20,200);
+				//A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+				A_CountDown();
+			}
+			WHOL ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright Light("BlackholeVoid") {
+				//A_SetRoll(roll-10);
+				//A_Explode(20,200);
+				//A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+				A_CountDown();
+			}
+			ZHOL ABCDEFGHIJKLMNOPQR 1 Bright Light("BlackholeVoid") {
+				//A_SetRoll(roll-10);
+				//A_Explode(20,200);
+				//A_RadiusThrust(-700,1200, RTF_NOIMPACTDAMAGE);
+				A_CountDown();
+			}
+			
+			TNT1 A 0 A_Jump(249, 2);
+			TNT1 A 0
+			{
+				A_SpawnItemEx("BlackHoleLightning", random(-120, 120), random(-120, 120), random(-5, 120));
+				A_Quake(8,4,0,400, "None");
+			}
+			TNT1 A 0 ;
+			Loop;
+		
+		Death:
+			TNT1 A 0 A_StopSound(CHAN_7);
+			TNT1 A 0 A_StopSound(CHAN_6);
+			TNT1 A 0 A_StartSound("BHole/Explosion", CHAN_AUTO);
+			TNT1 A 0 Bright A_SpawnItem("PurpleShockWave",0,0,0); //PurpleTrailSparks
+			BHOL AAAAAAAAAAAAAAAAAA 0 A_SpawnItemEx("PurpleTrailSparks", 0, 0, 0, 0, 0, 0, 0, 128);
+			EHOL ABCDEFGHIJKLMNO 1 Bright Light("BlackholeVoid") A_FadeOut(0.067);
+			Stop;
+	}
+	
+	override void Tick() 
+	{
+		Super.Tick();
+		If (IsFrozen() || !Succ) Return; //Don't do this if frozen.
+
+		// Define the pull radius and outer radius
+		double pullRadius = 512.0;
+		double outerRadius = 1024.0;
+		double scaleFactor = 350 * 350; //Adjust this value to change the exponential effect
+		double DeathRadius = 200; //[inkoalawetrust] The radius in which actors are harmed. Once we finally decide to move to 4.11, just use A_Explode with XF_THRUSTLESS and XF_CIRCULAR !
+		Double EventHorizon = 60;
+		
+		
+		//probably a BlockThingsIterator would be a lot more performance friendly than a full range ThinkerIterator (specially when it runs every tick)
+		//or even setting the statnum check of the thinkeriterator to STAT_DEFAULT 
+		ThinkerIterator it = ThinkerIterator.Create("Actor");
+		Actor act;
+		while (act = Actor(it.Next()))
+		{
+			// Ensure it exists, is not an item is not yourself, is not another black hole, and is actually affected by thrust.
+			//also check for bNoSector to avoid sucking teleportdests or similar invisible things, bNoClip to avoid sucking spawnshots and bActLikeBridge to not suck actor bridges 
+			if (!act || act is "Inventory" || act == self || act is "PB_BlackHole" || act is "PB_Footsteps" || act.bDontThrust || act.bNoSector || act.bNoClip || act.bActLikeBridge) continue;
+
+			double distance = Distance3D(act);
+
+			// Skip this iteration if out of range.
+			if (distance > OuterRadius) 
+				continue;
+			
+			//only pull and damage things that can see the blackhole, unless they are really close to it
+			//if(!checksight(act) && distance > DeathRadius) //this makes it feel kinda weak, and doesnt really helps with performance:(
+			//	continue;
+			
+			double dx = pos.x - act.pos.x;
+			double dy = pos.y - act.pos.y;
+			
+			//Fade screen to purple the closer the player is.
+			//BUG: Directly changing the players' blend seems to permanently change it, including when picking up items and such, apparently those blend
+			//effects don't set their own blend colors for some reason. So it'll probably be best to make this into a RenderOverlay or some shit.
+			If (Act.Player)
+			{
+				SuckedPlayer = act;
+				Double Intensity = PB_Math.LinearMap (Distance, PullRadius, 0, 0.0, 0.8); //Map the distance to the black hole to an alpha range of 0.0 to 0.8.
+				//console.printf ("player black hole fade intensity %.4f, intensity with alpha included is %.4f",intensity,intensity*alpha);
+				Let Urple = Color (0, 128, 0, 128);
+				Act.Player.BlendA = Intensity*Alpha; //Ignore the alpha component (Of the color variable).
+				Act.Player.BlendR = Urple.R;
+				Act.Player.BlendG = Urple.G;
+				Act.Player.BlendB = Urple.B;
+			}
+			
+			// [inkoalawetrust] Hurt everything, including monsters with NORADIUSDMG, since this technically isn't an explosion.
+			If (!Act.bMissile && !Act.bNoBlockmap && Distance <= DeathRadius)
+			{
+				Act.DamageMobj (Self,Target,GetRadiusDamage (Act,20,Distance),DamageType,DMG_THRUSTLESS);
+				If (Distance <= EventHorizon) //Stop all velocity, so that things don't go flying in and out of the "event horizon".
+					Act.A_Stop();
+				if(!act.bISMONSTER && !Act.Player)
+				{
+					act.Destroy();
+				}
+				
+			}
+			
+			// Logic for actors within the pull radius
+			if (distance <= PullRadius) 
+			{
+				Double MissileForce = Exp(-(Distance / (ScaleFactor * 0.0008)));
+				// If it's a projectile and close enough, just delete it
+				if (act.bMissile && distance <= EventHorizon)
+					act.Destroy();
+				else if (act.bMissile && distance > EventHorizon)
+				{
+					act.Vel.X += dx * MissileForce;
+					act.Vel.Y += dy * MissileForce;
+				}
+				else if (!act.bMissile && !act.bNoBlockmap && !act.Player)
+				{
+					Vector3 ActorForce = PB_Math.AngleToVector3D (AngleTo(Act),-PitchTo (Act,Height/2,Height/2),-Exp(-(Distance / ScaleFactor)) );
+					//console.printf ("pushing non-projectile actor %s with a force of %.2f %.2f %.2f",act.getclassname(),actorforce);
+					//Act.Vel += ActorForce.PlusZ (Act.GetGravity()); //Also counter gravity when succ.
+				
+					//Act.Vel += ActorForce;
+					
+					//Console.Printf("Actor %s is added", act.GetClass());
+					if (affectedActors.Find(act) == affectedActors.Size())
+					{
+						affectedActors.Push(act);
+						act.bTHRUACTORS = True;
+						act.bTHRUSPECIES = True;
+					}
+
+					double actorForceMagnitude = Exp(-(distance / scaleFactor)); // You may need to adjust the function and scaleFactor
+
+					// Normalize the direction vector
+					double length = sqrt(dx * dx + dy * dy);
+					double dz = pos.z - act.pos.z;
+					dx /= length;
+					dy /= length;
+					dz /= length;
+					
+					// Apply the force to the actor's velocity
+					Act.Vel.X += dx * actorForceMagnitude;
+					Act.Vel.Y += dy * actorForceMagnitude;
+					//Act.Vel.Z += dz ;
+					Act.Vel.Z += ActorForce.z ;
+				}
+				else if (act.Player)
+				{
+					Vector3 ActorForce = PB_Math.AngleToVector3D (AngleTo(Act),-PitchTo (Act,Height/2,Height/2),-Exp(-(Distance / ScaleFactor)) );
+					Act.Vel += ActorForce.PlusZ (Act.GetGravity() );}
+			}
+			//If in the outer radius.
+			else
+			{
+				// Change the projectile's velocity for the slingshot effect
+				if (act.bMissile) 
+				{
+					double slingFactor = 0.0004;  // Adjust to change the strength of the slingshot
+					Act.Vel += Level.Vec3Diff (Act.Pos,Pos) * SlingFactor;
+				}
+			}
+		}
+	}
+	
+	override void OnDestroy()
+	{
+		// Insert the code to run when the actor is about to be removed here.
+		// For example, you could spawn particles, play a sound, or perform other cleanup tasks.
+
+		Super.OnDestroy(); // Calls the OnDestroy function of the superclass (important!)
+		
+		//temp fix ig, this ensures the player screen wont be purple forever 
+		//its better than jumping into the blackhole to clean the screen
+		if(SuckedPlayer)
+		{
+			SuckedPlayer.Player.BlendA = 0.0;
+			SuckedPlayer.Player.BlendR = 0.0;
+			SuckedPlayer.Player.BlendG = 0.0;
+			SuckedPlayer.Player.BlendB = 0.0;
+		}
+		
+		for (int i = 0; i < affectedActors.Size(); i++)
+		{
+			Actor act = affectedActors[i];
+			
+			if (act)
+			{
+//				Console.Printf("Actor: %s", act.GetClassName());
+				act.bTHRUACTORS = False;
+				act.bTHRUSPECIES = False;
+			}
+		}
+		
+	}
+}
+	

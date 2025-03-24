@@ -1,12 +1,17 @@
 class PB_Monster : Actor abstract
 {
+	mixin PB_RandomZombieNameHandler;
+	Mixin PB_CheckFunctions;
+	
 	int	HitBoxTimerNew;
 	int HitBoxTimerOld;
 	int EnemyLastSighted;
 	bool HitBoxSpawned;
 	bool Wandering;
+	bool OnPatrol;
 	bool willBeLooking;
 	int heardOpponent;
+	int patrolTimer;
 	
 	int avoidCooldown;
 	
@@ -19,6 +24,17 @@ class PB_Monster : Actor abstract
 	bool canFallback;
 	property CanIFallback : canFallback;
 	//bools controlling whether an enemy can Dodge if the player is looking at them
+	bool canReload;
+	property CanIReload : canReload;
+	
+	double combatSpeed;
+	double chaseSpeed;
+	double searchSpeed;
+	double patrolSpeed;
+	property PBMonSpeed : combatSpeed, chaseSpeed, searchSpeed, patrolSpeed;
+	//These are used for dynamically changing a monsters movement speed on the fly
+	//because why would a zombieman still be running around full speed if its not actively
+	//in combat with you.
 	
 	double dmgHeadMult; //1.25
 	double dmgTorsoMult; //1.1
@@ -38,95 +54,236 @@ class PB_Monster : Actor abstract
 	
 	//The main custom A_Chase function
 	
-	void A_SmartChase()
+	int retargetSkips;
+
+	double tailPitch;
+	property TailPitch : tailPitch;
+	
+	//Finer grain control over PB monsters reacting to "hitbox" damage calculations
+	bool ignoreArmDamage;
+	bool ignoreHeadDamage;
+	bool ignoreDickDamage;
+	bool ignoreLegDamage;
+	property ignoreArmDamage : ignoreArmDamage;
+	property ignoreHeadDamage : ignoreHeadDamage;
+	property ignoreDickDamage : ignoreDickDamage;
+	property ignoreLegDamage : ignoreLegDamage;
+
+	action void PB_DynamicTailMonster(string tailInside, string tailOutside)
+	{	
+		double sndPitch = frandom(0.75, 1.25) * invoker.tailPitch;
+		double dist = Distance3D(players[consoleplayer].mo);
+
+		if(Ceilingpic == SkyFlatNum && tailOutside)
+			PB_PlayTailExt(tailOutside, sndPitch, dist);
+		else if(tailInside)
+			PB_PlayTailInt(tailInside, sndPitch, dist);
+		else 
+			return;
+	}
+
+	action void PB_PlayTailExt(string tmpTailSound, double sndPitch, double dist)
 	{
-		if (willBeLooking)
-		{
-			return;
-		}
-		if (target && (target is "PossessionWarperA" || isFriend(target)))
+		A_StartSound("weapons/atmo/ext/"..tmpTailSound, 19, 0.5, pitch: sndPitch);
+		
+		if(dist >= 4500)
+			A_StartSound("weapons/atmo/dist/ext/"..tmpTailSound, 20, 0.6, pitch: sndPitch);
+		if(dist >= 1250 && dist < 7500)
+			A_StartSound("weapons/atmo/far/ext/"..tmpTailSound, 21, pitch: sndPitch);
+		if(dist >= 200 && dist < 4500)
+			A_StartSound("weapons/atmo/med/ext/"..tmpTailSound, 22, pitch: sndPitch);
+	}
+
+	action void PB_PlayTailInt(string tmpTailSound, double sndPitch, double dist)
+	{
+		A_StartSound("weapons/atmo/int/"..tmpTailSound, 19, 0.5, pitch: sndPitch);
+		
+		if(dist >= 2500)
+			A_StartSound("weapons/atmo/dist/int/"..tmpTailSound, 20, 0.6, pitch: sndPitch);
+		if(dist >= 1250 && dist < 3500)
+			A_StartSound("weapons/atmo/far/int/"..tmpTailSound, 21, pitch: sndPitch);
+		if(dist >= 200 && dist < 2500)
+			A_StartSound("weapons/atmo/med/int/"..tmpTailSound, 22, pitch: sndPitch);
+	}
+
+	void A_SmartChase(statelabel s1 = "_a_chase_default", statelabel s2 = "_a_chase_default", int flags = 0, bool seeAllaround = false)
+	{
+		LookExParams Look;
+		look.fov = 150;
+		look.minDist = 0;
+		look.maxDist = 0;
+		look.maxHeardist = 0;
+		look.flags = LOF_NOJUMP;
+
+		// Decrement the skips counter. When we reach 0 we Look for a new Target.
+		if (retargetSkips > 0) retargetSkips--;
+		//console.Printf("RetargetSkips: %i", retargetSkips);
+
+		// Clear Target if it's a friend
+		if (Target && isFriend(Target))
 		{
 			A_ClearTarget();
-			A_ClearLastHeard();
-			A_ClearSoundTarget();
-			target = NULL;
+			//console.Printf("Clearing Friendly Target");
 		}
-		if (target == NULL || Wandering == true || target.health <= 0)
+
+		// What to do when we're on Patrol.
+		if (!Target || OnPatrol)
 		{
-			A_ClearTarget();
-			A_ClearLastHeard();
-			A_ClearSoundTarget();
-			Wandering == true;
 			A_GiveInventory("Wandering",1);
-			A_Wander();
-			A_LookEx();
-			return;
-		}
-		if (CheckIfCloser(target, 150) && !CheckIfCloser(target, 50) && CheckSight(target))
-		{
-			if(canFallback)
+			// If we're below the Patrol Timer Threshold, we're on high alert.
+			if(OnPatrol && patrolTimer <= 700)
 			{
-				SetStateLabel("Fallback");
+				//console.Printf("High Alert.");
+				if(self.patrolSpeed) self.Speed = self.patrolSpeed * 2;
+				//self.FastSpeed = self.patrolSpeed * 2;
 			}
+			else
+			{
+				//console.Printf("No longer on Alert.");
+				if(self.searchSpeed) self.Speed = self.searchSpeed;
+				//self.FastSpeed = self.searchSpeed * 2;
+				tics = 2;
+			}
+			A_Wander();
+			//console.Printf("Wandered...");
+			if (retargetSkips <= 0) 
+			{
+				//console.Printf("Looking for Target.");
+				retargetSkips = 3;
+				//console.Printf("RetargetSkips Reset: %d", retargetSkips);
+				LookForPlayers(seeAllaround, look);
+				if (Target)
+				{
+					OnPatrol = False;
+					Wandering = False; // I set and unset this, but no monster actually used it. I may use it later.
+					patrolTimer = 0;
+					A_TakeInventory("Wandering", 75);
+					//console.Printf("Success: %s", Target.GetClassName());
+				}
+			}
+			patrolTimer++;
+			//console.Printf("Increment Patrol Timer - %d", patrolTimer);
+			//return;
 		}
-		if(waterlevel >= 1 && Target.Pos.Z > (self.Pos.Z + 10))
+		
+		// [DarynS] We've got a Target, figure out what to do with it.
+		if (Target)
 		{
-			A_Chase();
-			A_FaceTarget(30);
-			A_Recoil(-3);
-			ThrustThingZ(0, 5, 0, 1);
-		}
-		if (CheckSight(target) == true && CheckIfCloser(target, 3000))
-		{
-			double dist = Distance3D(target);
-			let aimActor = AimTarget();
-			let fw = 33;
+			Double Dist = Distance3DSquared (Target);
 			
-			//check if sight of player or close enough to "hear" player for memory
-			if (CheckSight(target) == true || CheckIfCloser(target, 500))
+			// No need for a sight check here. If the player is within 150mu, make note of the time.
+			if (Dist <= 150*150)
 			{
 				EnemyLastSighted = Level.MapTime;
-				Wandering == false;
+				Wandering = false;
+				OnPatrol = false;
+				A_TakeInventory("Wandering", 75);
+				patrolTimer = 0;
+				retargetSkips = 1;
+				//console.Printf("Update Last Sighted.");
+
+				// [DarynS] Close Range Attack
+				if (Dist >= 50*50 && CheckSight(target))
+				{
+					// Flip a Coin to see if we attack. If we do, exit here.
+					if (random(1,2) == 2)
+					{
+						A_Chase(s2, s1, flags);
+						//console.Printf("Coin Flip Won: Attacking");
+						return;
+					}
+					// Otherwise we check to see if we can Fall back.
+					if (canFallback && ResolveState("Fallback"))
+					{
+						//console.Printf("Falling Back");
+						SetStateLabel("Fallback");
+						return;
+					}
+				}
 			}
 			
-			if(canRoll)
+			// If we're underwater and the Target is above us, move up and forward.
+			if (waterlevel >= 1 && Target.Pos.Z > (self.Pos.Z + 10))
 			{
-				//dodging system check
-				LookExParams look;
-				look.FOV = 2;
-				int chance = (random(1,30));
-				if(target != NULL)
+				A_FaceTarget(30);
+				A_Recoil(-3);
+				ThrustThingZ(0, 5, 0, 1);
+				A_Chase(s2, s1, flags);
+				//console.Printf("Waterlevel Check and Motion");
+				return;
+			}
+			
+			// [DarynS] Too far to Attack, so let's try to close in.
+			if (Dist > 3000*3000 && !CheckSight(Target))
+			{
+				A_Chase(null, null, (random(1,3) == 2) ? flags|CHF_DONTTURN : flags);
+				//console.Printf("Too far, closing in.");
+				return;
+			}
+
+			// Long Range Attack Block. 
+			if (Dist <= 3000*3000 && CheckSight(target))
+			{
+				double dist = Distance3D(target);
+				let aimActor = AimTarget();
+				let fw = 33;
+				
+				if(self.combatSpeed) self.Speed = self.combatSpeed;
+				//self.FastSpeed = self.combatSpeed * 2;
+				
+				// If we're within 1500 mu, Do Roll Checks.
+				if(canRoll && ResolveState("Roll"))
 				{
-					if(target.IsVisible(self, false, look) && chance <= 5 && dist <= 1500)
+					//dodging system check
+					LookExParams lookToRoll;
+					lookToRoll.FOV = 2;
+					int chance = (random(1,30));
+					if(Dist <= 1500*1500 && Chance <= 2 && target.IsVisible(self, false, lookToRoll))
 					{
 						if(GetCVar("pb_disabledynamicavoid") == 0)
 						{
 							A_FaceTarget();
 							SetStateLabel("Roll");
+							//console.Printf("Rolling");
+							return;
 						}
 					}
 				}
+				// Otherwise, Attack.
+				A_Chase(s2, s1, flags);
+				//console.Printf("Long Range Attack");
+				return;
 			}
-			A_Chase();
-		}
-		else if (CheckSight(target) == false && abs(Level.MapTime - EnemyLastSighted) < 360)
-		{
-			A_Chase();
-			
-			int chanceR = (random(1,10));
-			
-			if(bFRIGHTENED && chanceR <= 5)
+			// If the Target is still fresh, but we can't see it, Chase after if.
+			else if (abs(Level.MapTime - EnemyLastSighted) < 360 && !CheckSight(target))
 			{
-				SetStateLabel("Reload");
+				if(self.chaseSpeed) self.Speed = self.chaseSpeed;
+				//self.FastSpeed = self.chaseSpeed * 2;
+				A_Chase(s2, s1, flags);
+				//if (Target) console.Printf("Last saw %s %d tics ago", Target.GetClassName(), abs(Level.MapTime - EnemyLastSighted));
+				
+				int chanceR = (random(1,10));
+				
+				// Do our Reload checks while the player is out of sight.
+				if(bFRIGHTENED && canReload && chanceR <= 5 && ResolveState("Reload"))
+				{
+					SetStateLabel("Reload");
+					//console.Printf("Reloading");
+					return;
+				}
 			}
-		}
-		else
-		{
-			Wandering == true;
-			A_ClearTarget();
-			A_ClearLastHeard();
-			A_ClearSoundTarget();
-			target == NULL;
+			// We've lost sight of the player for too long. Go Patrolling.
+			else
+			{
+				OnPatrol = True;
+				Wandering = True;
+				patrolTimer = 0;
+				if(self.searchSpeed) self.Speed = self.searchSpeed;
+				//self.FastSpeed = self.searchSpeed * 2;
+				target = NULL;
+				//console.Printf("Abandoning Chase");
+				return;
+			}
 		}
 	}
 	
@@ -136,6 +293,9 @@ class PB_Monster : Actor abstract
 	{
 		double dist = Distance3D(target);
 		let aimActor = AimTarget();
+		int chance = (random(1,4));
+		
+		A_FaceTarget(0, 180, 0, 0, FAF_TOP);
 		
 		if(dist > self.enemyRange) // Too far away.
 		{
@@ -145,6 +305,11 @@ class PB_Monster : Actor abstract
 		else if(CheckLOF() && dist <= self.enemyRange) /*(aimActor is "PlayerPawn" && dist <= self.enemyRange)*/ // Can aim at the player.
 		{
 			//Console.PrintF("Closer and LOF");
+			SetStateLabel(jumpstate);
+		}
+		else if(chance == 1)  //theyre zombie and feral demons, sometimes theyre just stupid yea?
+		{
+			//Console.PrintF("Attempting Anyways");
 			SetStateLabel(jumpstate);
 		}
 		else // Aim obstructed
@@ -200,7 +365,7 @@ class PB_Monster : Actor abstract
 	
 	double A_PrepairDrop()
 	{
-		vector2 aimbak =(self.angle,self.pitch);
+		vector2 aimbak=(self.angle,self.pitch);
 		self.A_FaceTarget(0,0);
 		self.angle=aimbak.x;
 		self.pitch=aimbak.y;
@@ -241,19 +406,19 @@ class PB_Monster : Actor abstract
 		{
 			
 			int ticstotake=dist/spd;
-            int dropamt=0;
-            for(int i=1;i<=ticstotake;i++)
+			int dropamt=0;
+			for(int i=1;i<=ticstotake;i++)
 			{
-                dropamt+=i;
-            }
-            self.pitch -= min(atan(dropamt*gravity/dist),30);
-        }
+				dropamt+=i;
+			}
+			self.pitch -= min(atan(dropamt*gravity/dist),30);
+		}
 
-        //because we don't shoot from height 32 but 42
-        if(dist>0 && gravity != 0) {self.pitch += atan(10/dist);}
+		//because we don't shoot from height 32 but 42
+		if(dist>0 && gravity != 0) {self.pitch += atan(10/dist);}
 		else { self.pitch = 0;}
 		
-		double finalAngle =  PredAngle+1024;
+		double finalAngle = PredAngle+1024;
 		
 		if(flipped) {
 			finalAngle = PredAngle-1024;
@@ -263,7 +428,7 @@ class PB_Monster : Actor abstract
 		}
 		
 		self.A_DropProjectile(missiletype,offX,offY,offZ,tarDist,finalAngle, spawnOffsetY);
-    }
+	}
 	
 	void A_DropProjectile(class<actor> missiletype, double offX, double offY, double offZ, double targdist, double PredictAngle, double spawnOffsetY=0.0)
 	{
@@ -305,6 +470,8 @@ class PB_Monster : Actor abstract
 	override void Tick()
 	{
 		Super.Tick();
+		if (isFrozen()) return;
+
 		//HitboxerHandler();
 		ExecutionHandler();
 		
@@ -320,6 +487,7 @@ class PB_Monster : Actor abstract
 		heardOpponent = 0;
 		HitBoxSpawned = False;
 		avoidCooldown = 0;
+		retargetSkips = 1;
 	}
 	
 	Default
@@ -333,14 +501,17 @@ class PB_Monster : Actor abstract
 		+ROLLCENTER;
 		+FORCEPAIN;
 		+JUMPDOWN;
-		+MISSILEMORE
-		+MISSILEEVENMORE
-		MaxStepHeight 24;
-		MaxDropOffHeight 32;
+		+SEEFRIENDLYMONSTERS;
+		//-MISSILEMORE;
+		//-MISSILEEVENMORE;
+		MissileChanceMult 1.0;
+		BloodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
 		PB_Monster.CanIRoll true;
 		PB_Monster.CanIFallback true;
+		PB_Monster.CanIReload true;
 		PB_Monster.MonDMGMult 1.25, 1.1, 0.70, 1.0, 0.95, 0.80;
 		PB_Monster.MonPosHB 0.8, 0.65, 0.38, 0.40;
 		PB_Monster.AttackRange 5000;
+		PB_Monster.PBMonSpeed 4, 3, 1.5, 2; //this should be the baseline, especially for zombies
 	}
 }

@@ -1,0 +1,1650 @@
+ACTOR UnmakerSelected : Inventory
+{
+Inventory.MaxAmount 1
+}
+
+Actor UnmakerFireSelected: Inventory
+{
+Inventory.MaxAmount 1
+}
+
+ACTOR UnmakerOverchargeCounter: Ammo
+{
+Inventory.MaxAmount 50
+}
+
+ACTOR UnmakerSpawner: CustomInventory
+{
+ scale 0.15
+ radius 24
+ height 24
+ +THRUACTORS +FORCEXYBILLBOARD
+	Inventory.PickupSound "UNMPCK"
+	Inventory.PickupMessage "Sinister Unmaker (Slot 0)"
+ Mass 1
+	States
+	{
+
+	 Spawn:
+		TNT1 A 0
+		TNT1 A 2
+		TNT1 A 0 A_ChangeFlag("THRUACTORS", 0)
+	Stay:
+		UNHD A 10 A_SetScale(0.15)
+		Loop
+	Pickup:
+		TNT1 A 0
+		TNT1 A 0 A_GiveInventory("PB_Unmaker", 1)
+		TNT1 A 0 A_GiveInventory("PB_DTech", 100)
+		Stop
+	}
+}
+
+Actor HasPlayedRunOutAnim: Inventory 
+{ 
+	Inventory.MaxAmount 1 
+}
+
+Actor RespectUnmaker : Inventory
+{
+Inventory.MaxAmount 1
+}
+
+ACTOR PB_Unmaker : PB_Weapon
+{
+	//$Title Unmaker
+	//$Category Project Brutality - Weapons
+	//$Sprite UNHDA0
+	Height 20
+	Weapon.SelectionOrder 1800
+	Weapon.AmmoUse1 0
+	Weapon.AmmoUse2 0
+	Weapon.AmmoGive1 200
+	Weapon.AmmoType1 "PB_DTech"
+	Weapon.AmmoType2 "UnmakerOverchargeCounter"
+	Inventory.PickupSound "UNMPCK"
+	Tag "Unmaker"
+	+WEAPON.NOAUTOAIM
+	+WEAPON.NOAUTOFIRE	
+	+WEAPON.AMMO_OPTIONAL
+	scale .5
+	Inventory.PickupMessage "Sinister Unmaker (Slot 0)"
+	PB_WeaponBase.respectItem "RespectUnmaker"
+	States
+	{		
+	
+	Spawn:
+		UNHD A -1
+		Stop
+		
+	Steady:
+		TNT1 A 1
+	Ready:
+		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+		TNT1 A 0 PB_RespectIfNeeded
+	WeaponRespect:
+		TNT1 A 0 {
+		A_SetCrosshair(5);
+		A_SetInventory("RespectUnmaker",1);
+		A_Startsound("UNMIDL", CHAN_AUTO);
+		}
+		UNR1 CDEFGHIJKLMNO 1 {
+		A_DoPBWeaponAction;
+		}
+		TNT1 A 0 A_StartSound("weapons/nailgun/up", CHAN_AUTO)
+		TNT1 A 0 A_StartSound("unmswtc", CHAN_AUTO)
+		UNR1 PQRSTUVWXYZ 1 A_DoPBWeaponAction
+		TNT1 A 0 A_Startsound("UNMIDL", CHAN_AUTO)
+		UNR2 ABC 3 A_DoPBWeaponAction
+		TNT1 A 0 {
+		A_Startsound("UNMPCK",CHAN_AUTO);
+		A_Startsound("UNMBAL1",CHAN_AUTO);
+		}
+		UNR2 DEFGHI 1 A_DoPBWeaponAction
+		TNT1 A 0 A_Startsound("UNMBAL1",CHAN_AUTO)
+		UNR2 JKLMNOPQ 1 A_DoPBWeaponAction
+		TNT1 A 0 {
+		A_Startsound("UNMCHG",CHAN_AUTO);
+		A_Startsound("UNMBAL2",CHAN_AUTO);
+		}
+		UNR2 RSTUVWXYZ 1 A_DoPBWeaponAction
+		UNR3 ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction
+		UNR4 ABCDEFGH 1 A_DoPBWeaponAction
+		TNT1 A 0 A_Startsound("UNMUP",CHAN_AUTO)
+		UNR4 IJKLMNOP 1 A_DoPBWeaponAction
+		TNT1 A 0 {
+		A_Overlay(-3,"RespectLightning");
+		A_Overlay(5,"RespectLightning2");
+		A_OverlayFlags(6,PSPF_FLIP|PSPF_MIRROR,random(false,true));
+		A_OverlayOffset(6,frandom(-2,2),frandom(-4,3));
+		A_OverlayPivotAlign(6,PSPA_CENTER,PSPA_CENTER);
+		A_OverlayRotate(6,frandom(-20,20));
+		A_Startsound("UNMSTO", CHAN_AUTO);
+		A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+		A_SetBlend("Red", 0.8,23,"Red"); 
+		}
+		UNR4 QRSTUVWXYZ 1 {	
+			A_DoPBWeaponAction;
+
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+		}
+		UNR5 ABCDEF 1 A_DoPBWeaponAction
+		TNT1 A 0 A_Overlay(7,"Idlescreen")
+		UNR5 GHIJKLM 1 A_DoPBWeaponAction
+		Goto Ready3
+	SelectAnimation:
+		TNT1 A 0 A_WeaponOffset(0,32)
+		TNT1 A 0 A_Playsound("UNMUP")
+		TNT1 A 0 A_SetInventory("HasIncendiaryWeapon", 1)
+		UNHS DCBA 1 {
+			if(CountInv("UnmakerFireSelected") == 1) {A_SetWeaponSprite("UNOS");}
+			}
+	Ready3:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
+		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected",1, "ReadyOvercharge")
+		TNT1 A 0 {
+		PB_HandleCrosshair(72);
+		A_Overlay(7,"IdleScreen");
+		A_Overlay(5,"CoreIdle");
+		}
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
+	ReadyToFire:
+		TNT1 A 0 A_SetInventory("HasIncendiaryWeapon",1)
+		TNT1 A 0 A_StartSound("UNMIDL", 6, CHANF_LOOPING)
+		UNHG AABCDEFGHIJKLLMMMNNNNNMMLKJIHGFEDCBARQPPOOOOOPPQQR 1 A_DoPBWeaponAction
+		Goto ReadyToFire+1
+
+	ReadyOvercharge:
+		TNT1 A 0 {
+		A_ClearOverlays(5);
+		A_Overlay(7,"OverchargeScreen");
+		if(CountInv("UnmakerOverchargeCounter")==0) { A_Print("Souls Depleted"); return state ("SwitchToNormal");}
+		return state ("");
+		}
+	ReadyToFire2:
+		TNT1 A 0 A_PlaySound("UNOCIDL", 6,1,1)
+		TNT1 A 0 {
+		if(CountInv("UnmakerOverchargeCounter")==0) { A_Print("Souls Depleted"); return state ("SwitchToNormal");}
+		return state ("");
+		}
+		TNT1 A 0 {
+		A_ClearOverlays(5);
+		A_Overlay(9,"UnmakerOverchargeTimer");
+		}
+		UNOG ABCDEFGHIJ 1 A_DoPBWeaponAction
+		TNT1 A 0 {
+		A_ClearOverlays(5);
+		A_Overlay(9,"UnmakerOverchargeTimer");
+		}
+		UNOG KLMNOPQRST 1 A_DoPBWeaponAction
+		Goto ReadyToFire2+1
+
+
+	Select:
+		TNT1 A 0
+		TNT1 A 0 PB_ResetBarrelTokens
+		TNT1 A 0 {
+		A_WeaponOffset(0,32);
+		A_SetRoll(0);
+		A_SetInventory("PB_LockScreenTilt",0);
+		A_ClearOverlays(5,9);
+		}
+		Goto SelectFirstPersonLegs
+	SelectContinue:
+		TNT1 A 0 
+		TNT1 A 0 PB_WeapTokenSwitch("UnmakerSelected")
+		TNT1 A 0 A_SetInventory("Unloading",0)
+		TNT1 AAAAAAAAAAAAA 0 A_Raise
+		TNT1 AAAAAAAA 1 A_Raise
+		Wait
+
+WeaponSpecial:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+		TNT1 A 0 A_ClearOverlays(5,7)
+		TNT1 A 0 A_SetInventory("GoWeaponSpecialAbility",0)
+		TNT1 A 0 {
+		if(CountInv("UnmakerFireSelected")==1) { A_Print("The Overcharge has to run its course."); return state ("Ready3");} 
+		return state ("");
+		}	
+		TNT1 A 0 {
+		if(CountInv("UnmakerOverchargeCounter")<50) { A_Print("Not enough souls, absorb them with the beam or orbs."); return state ("RunOut");} 
+		return state ("");
+		}	
+		TNT1 A 0 A_Playsound("UNMSWTC")
+		TNT1 A 0 A_Print("Overcharge Mode")
+		TNT1 A 0 A_SetInventory("UnmakerFireSelected",1)
+		TNT1 A 0 A_SetInventory("HasIncendiaryWeapon",0)
+		UNHS FGHI 1 BRIGHT
+		TNT1 A 0 A_Playsound("UNOCFIR2")
+		TNT1 AAAAA 0 A_FireCustomMissile("GunFireSmoke", random(-5,5), 0, random(-3,3),random(1,3))
+		TNT1 A 0 A_FireCustomMissile("MancubusSwitchModeEffect", 0, 0, 0, random(1,3))
+		TNT1 AAAAA 0 A_FireCustomMissile("ShotgunParticles", random(-5,5), 0, random(-3,3),random(1,3))
+		TNT1 A 0 A_Overlay(9,"UnmakerOverchargeTimer")
+		UNHS JKLM 1 BRIGHT 
+		Goto Ready3
+		
+SwitchToNormal:
+		TNT1 A 0 A_ClearOverlays(5,9)
+		//TNT1 A 0 A_Print("Desolation Mode")
+		TNT1 A 0 A_SetInventory("UnmakerFireSelected",0)
+		TNT1 A 0 A_SetInventory("HasIncendiaryWeapon",1)
+		UNHS MLKJ 1 BRIGHT
+		TNT1 A 0 A_FireCustomMissile("UnmakerSwitchModeEffect", 0, 0, 0, random(1,3))
+		TNT1 A 0 A_Playsound("UNMSWT2",3)
+		UNHS IHGF 1 BRIGHT //A_ClearOverlays(9)
+		Goto Ready3
+	
+	RunOut:
+		TNT1 A 0 A_StopSOund(1)
+		TNT1 A 0 A_StopSOund(4)
+		TNT1 A 0 A_StopSOund(5)
+		TNT1 A 0 A_StopSOund(6)
+		TNT1 A 0 A_SetInventory("UnmakerFireSelected",0)
+		TNT1 A 0 A_JumpIfInventory("HasPlayedRunOutAnim",1,1)
+		Goto WeaponEmpty
+		TNT1 A 0 A_ClearOverlays(5,9)
+		UNHH ONMLK 1 A_DoPBWeaponAction
+		TNT1 A 0 A_SetInventory("HasPlayedRunOutAnim",1)
+	WeaponEmpty:
+		TNT1 A 0 A_ClearOverlays(5,9)
+		UNHH K 1 A_DoPBWeaponAction
+		TNT1 A 0 A_JumpIfInventory("PB_DTech",10,"ReadyBackUp")
+		Loop
+	ReadyBackUp:
+		TNT1 A 0 A_SetInventory("HasPlayedRunOutAnim",0)
+		TNT1 A 0 A_ClearOverlays(5,9)
+		UNHH KLMNO 1 A_DoPBWeaponAction
+		Goto Ready3
+	
+	Reload:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("HasBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("HasFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("HasIceBarrel", 1, "IdleIceBarrel")
+		Goto Ready3
+
+
+//Overlays
+
+	UnmakerOverchargeTimer:
+		TNT1 A 1 A_TakeInventory("UnmakerOverchargeCounter",1)
+		TNT1 A 10
+		loop
+		
+	CoreIdle:
+		UNHH ABCDEFGHIJ 2 BRIGHT
+		Loop
+	
+	IdleScreen:
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S4","S5","S6","S7","S8","S9","S10","S11","S12","S13","S14","S15")
+	S1: 
+		UNSH ABCDE 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S2","S3","S4","S5","S6","S7","S8","S9","S10","S11","S12","S13","S14","S15")
+	S2: 
+		UNSH FGHIJKL 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S3","S4","S5","S6","S7","S8","S9","S10","S11","S12","S13","S14","S15")
+	S3: 
+		UNSH MNOPQ 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S4","S5","S6","S7","S8","S9","S10","S11","S12","S13","S14","S15")
+	S4: 
+		UNSH RST 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S5","S6","S7","S8","S9","S10","S11","S12","S13","S14","S15")
+	S5: 
+		UNSH UVW 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S4","S6","S7","S8","S9","S10","S11","S12","S13","S14","S15")
+	S6: 
+		UNSH XYZ 4 BRIGHT
+		UNSI ABC 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S4","S5","S7","S8","S9","S10","S11","S12","S13","S14","S15")
+	S7: 
+		UNSI DEF 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S4","S5","S6","S8","S9","S10","S11","S12","S13","S14","S15")
+	S8: 
+		UNSI GHI 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S4","S5","S6","S7","S9","S10","S11","S12","S13","S14","S15")
+	S9: 
+		UNSI JKLM 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S4","S5","S6","S7","S8","S10","S11","S12","S13","S14","S15")
+	S10: 
+		UNSI NOPQ 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S4","S5","S6","S7","S8","S9","S11","S12","S13","S14","S15")
+	S11: 
+		UNSI RSTUV 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S4","S5","S6","S7","S8","S9","S10","S12","S13","S14","S15")
+	S12: 
+		UNSI WXYZ 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S4","S5","S6","S7","S8","S9","S10","S11","S13","S14","S15")
+	S13: 
+		UNSJ ABC 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S4","S5","S6","S7","S8","S9","S10","S11","S12","S14","S15")
+	S14: 
+		UNSJ DEF 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S4","S5","S6","S7","S8","S9","S10","S11","S12","S13","S15")
+	S15: 
+		UNSJ GHI 4 BRIGHT
+		TNT1 A 0 A_Jump(256, "S1","S2","S3","S4","S5","S6","S7","S8","S9","S10","S11","S12","S13","S14")
+		Stop
+	
+	OverchargeScreen:
+		TNT1 A 0 A_Jump(256, "FS1","FS2","FS3","FS4","FS5","FS6","FS7")
+	FS1:
+		UNSF ABCDE 3 BRIGHT
+		TNT1 A 0 A_Jump(256, "FS2","FS3","FS4","FS5","FS6","FS7")
+	FS2:
+		UNSF FGHI 3 BRIGHT
+		TNT1 A 0 A_Jump(256, "FS1","FS3","FS4","FS5","FS6","FS7")
+	FS3:
+		UNSF JKLMN 3 BRIGHT
+		TNT1 A 0 A_Jump(256, "FS1","FS2","FS4","FS5","FS6","FS7")
+	FS4:
+		UNSF OPQR 3 BRIGHT
+		TNT1 A 0 A_Jump(256, "FS1","FS2","FS3","FS5","FS6","FS7")
+	FS5:
+		UNSF STUV 3 BRIGHT
+		TNT1 A 0 A_Jump(256, "FS1","FS2","FS3","FS4","FS6","FS7")
+	FS6:
+		UNSF WXYZ 3 BRIGHT
+		TNT1 A 0 A_Jump(256, "FS1","FS2","FS3","FS4","FS5","FS7")
+	FS7:
+		UNSG ABCDE 3 BRIGHT
+		TNT1 A 0 A_Jump(256, "FS1","FS2","FS3","FS4","FS5","FS6")
+		Stop
+
+	MuzzleFlashNormal:
+		TNT1 A 0 A_Jump(256, "Flash1", "Flash2", "Flash3", "Flash4","Flash5", "Flash6","Flash7", "Flash8","Flash9", "Flash10")
+	Flash1:
+		UNFL A 1 BRIGHT
+		Stop
+	Flash2:
+		UNFL B 1 BRIGHT
+		Stop
+	Flash3:
+		UNFL C 1 BRIGHT
+		Stop
+	Flash4:
+		UNFL D 1 BRIGHT
+		Stop
+	Flash5:
+		UNFL E 1 BRIGHT
+		Stop
+	Flash6:
+		UNFL F 1 BRIGHT
+		Stop
+	Flash7:
+		UNFL G 1 BRIGHT
+		Stop
+	Flash8:
+		UNFL H 1 BRIGHT
+		Stop
+	Flash9:
+		UNFL I 1 BRIGHT
+		Stop
+	Flash10:
+		UNFL J 1 BRIGHT
+		Stop
+		
+	MuzzleFlashOvercharge:
+		TNT1 A 0 A_Jump(256, "OCFlash1", "OCFlash2", "OCFlash3", "OCFlash4","OCFlash5", "OCFlash6","OCFlash7", "OCFlash8","OCFlash9", "OCFlash10")
+	OCFlash1:
+		UNOO A 1 BRIGHT
+		Stop
+	OCFlash2:
+		UNOO B 1 BRIGHT
+		Stop
+	OCFlash3:
+		UNOO C 1 BRIGHT
+		Stop
+	OCFlash4:
+		UNOO D 1 BRIGHT
+		Stop
+	OCFlash5:
+		UNOO E 1 BRIGHT
+		Stop
+	OCFlash6:
+		UNOO F 1 BRIGHT
+		Stop
+	OCFlash7:
+		UNOO G 1 BRIGHT
+		Stop
+	OCFlash8:
+		UNOO H 1 BRIGHT
+		Stop
+	OCFlash9:
+		UNOO I 1 BRIGHT
+		Stop
+	OCFlash10:
+		UNOO J 1 BRIGHT
+		Stop
+	
+	FiringLightning:
+		TNT1 A 0 A_Jump(256,"FiringLightning1","FiringLightning2","FiringLightning3")
+	FiringLightning1:
+		UNHL ABCCDDDD 1 BRIGHT
+		Stop
+	FiringLightning2:
+		UNHL EFGHH 1 BRIGHT
+		Stop
+	FiringLightning3:
+		UNHL IJKKLLL 1 BRIGHT
+		Stop
+		
+	OverchargeLightning:
+		TNT1 A 0 A_Jump(256,"OverchargeLightning1","OverchargeLightning2","OverchargeLightning3")
+	OverchargeLightning1:
+		UNOL ABCD 1 BRIGHT
+		Stop
+	OverchargeLightning2:
+		UNOL EFGH 1 BRIGHT
+		Stop
+	OverchargeLightning3:
+		UNOL IJKL 1 BRIGHT
+		Stop
+	OverchargeCharge:
+		UNOM ABCDEFGHIJKLMNOPQRSTUVW 1 BRIGHT
+		Stop
+		
+	RespectLightning:
+		UNHL MNOPQPRSTU 3 BRIGHT
+		Stop
+	RespectLightning2:
+		UNHL NMPOPGDJ 3 BRIGHT
+		Stop
+	
+//
+
+	Deselect:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+		TNT1 A 0 A_ClearOverlays
+		TNT1 A 0 A_StopSOund(1)
+		TNT1 A 0 A_StopSOund(6)
+		TNT1 A 0 A_StopSOund(CHAN_AUTO)
+		TNT1 A 0 A_SetInventory("HasIncendiaryWeapon",0)
+		TNT1 A 0 A_SetInventory("UnmakerSelected",0)
+		UNHS ABCD 1 {
+			if(CountInv("UnmakerFireSelected") == 1) {A_SetWeaponSprite("UNOS");}
+			}
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+		Wait
+
+	Fire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
+		TNT1 A 0 A_ClearOverlays(5,7)
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
+		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeFire")
+	Hold:	
+		TNT1 A 0 A_ClearOverlays(5,7)
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
+		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeFire")
+		UNHF ABCD 1
+		TNT1 A 0 A_PlaySOund("UNMCHG", 1)
+		TNT1 A 0 A_PlaySOund("UNMSTA", 3)
+		UNHF EFGHHIJJKLLMNNOPPQRR 1 BRIGHT
+	Fire1:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
+		UNHR A 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashNormal");
+		A_Overlay(6,"FiringLightning");
+		A_OverlayFlags(6,PSPF_FLIP|PSPF_MIRROR,random(false,true));
+		A_OverlayOffset(6,frandom(-2,2),frandom(-4,3));
+		A_OverlayPivotAlign(6,PSPA_CENTER,PSPA_CENTER);
+		A_OverlayRotate(6,frandom(-20,20));
+// 		A_PlaySOund("UNMLOP", 6, 1, 1);
+		A_StartSound("UNMLOP",CHAN_6, CHANF_LOOPING,0.9);
+		PB_UnmkrBeam(0);
+		//A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("Fire2")
+		Goto StopPrimary
+	Fire2:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
+		UNHR B 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashNormal");
+		PB_UnmkrBeam(0);
+		//A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("Fire3")
+		Goto StopPrimary
+	Fire3:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
+		UNHR C 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashNormal");
+		PB_UnmkrBeam(0);
+		//A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("Fire4")
+		Goto StopPrimary
+	Fire4:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
+		UNHR D 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashNormal");
+		PB_UnmkrBeam(0);
+		//A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("Fire5")
+		Goto StopPrimary
+	Fire5:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
+		UNHR E 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashNormal");
+		PB_UnmkrBeam(0);
+		//A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("Fire6")
+		Goto StopPrimary
+	Fire6:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
+		UNHR F 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashNormal");
+		A_Overlay(-2,"FiringLightning");
+		A_OverlayFlags(-2,PSPF_FLIP|PSPF_MIRROR,random(false,true));
+		A_OverlayOffset(-2,frandom(-5,5),frandom(-7,7));
+		A_OverlayPivotAlign(-2,PSPA_CENTER,PSPA_CENTER);
+		A_OverlayRotate(-2,frandom(-20,20));
+		PB_UnmkrBeam(0);
+		//A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("Fire7")
+		Goto StopPrimary
+	Fire7:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
+		UNHR G 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashNormal");
+		PB_UnmkrBeam(0);
+		//A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("Fire8")
+		Goto StopPrimary
+	Fire8:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
+		UNHR H 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashNormal");
+		PB_UnmkrBeam(0);
+		//A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("Fire9")
+		Goto StopPrimary
+	Fire9:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
+		UNHR I 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashNormal");
+		PB_UnmkrBeam(0);
+		//A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("Fire10")
+		Goto StopPrimary
+	Fire10:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopPrimary")
+		UNHR J 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashNormal");
+		PB_UnmkrBeam(0);
+		//A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("Fire1")
+	StopPrimary:
+		TNT1 A 0
+		TNT1 A 0 A_StopSOund(1)
+		TNT1 A 0 A_StopSOund(CHAN_6)
+		UNHR B 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashNormal");
+		PB_UnmkrBeam(0);
+		//A_FireCustomMissile("UnmakerLaser", 0, 0, 0, 0, 0, 0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 A_PlaySOund("UNMRLS", 3)
+		UNHF DCBA 3 A_DoPBWeaponAction
+		TNT1 A 0 A_ClearOverlays(5,7)
+		TNT1 A 0 A_Overlay(-3,"RespectLightning")
+		TNT1 A 0 A_Overlay(6,"RespectLightning2")
+		TNT1 A 0 A_PlaySOund("UNMSTO", 1)
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
+		Goto Ready3
+		
+	OverchargeFire:
+		TNT1 A 0 A_ClearOverlays(5,7)
+		TNT1 A 0 A_WeaponOffset(0,32)
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
+		UNOF JKLM 1
+		TNT1 A 0 A_Overlay(-2,"OverchargeCharge")
+		TNT1 A 0 A_OverlayFlags(-2,PSPF_FLIP|PSPF_MIRROR,true)
+		TNT1 A 0 A_PlaySOund("UNMCHG", 1)
+		TNT1 A 0 A_PlaySOund("UNMSTA", 3)
+		TNT1 A 0 A_Playsound("UNOCFIR",5)
+		UNOF NOPQRRSTTUVVWWXXYZZ 1 BRIGHT
+	OverchargeHold:	
+		TNT1 A 0 A_ClearOverlays(5,7)
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
+	OCFire1:
+		TNT1 A 0 {
+		if(CountInv("UnmakerOverchargeCounter")==0) { A_Print("Souls Depleted"); return state ("SwitchToNormal");} 
+		return state ("");
+		}
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
+		UNOF A 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-2,2),frandom(-2,2),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(6,"OverchargeLightning");
+		A_OverlayFlags(6,PSPF_FLIP|PSPF_MIRROR,random(false,true));
+		A_OverlayOffset(6,frandom(-2,2),frandom(-4,3));
+		A_OverlayPivotAlign(6,PSPA_CENTER,PSPA_CENTER);
+		A_OverlayRotate(6,frandom(-20,20));
+		A_Overlay(-3,"MuzzleFlashOvercharge");
+		A_PlaySOund("UNOCLOP", 6, 1, 1);
+		PB_UnmkrBeam(1);
+		//A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
+		//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,none,0,0,2000,0,1,1.0,none,-6,0,0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("OCFire2")
+		Goto OverchargeStopPrimary
+	OCFire2:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
+		UNOF B 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_Overlay(-3,"MuzzleFlashOvercharge");
+		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
+		PB_UnmkrBeam(1);
+		PB_UnmkrBeam(1,frandom(-10,10),frandom(-2,5));
+		//A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
+		//A_FireCustomMissile("OverchargeLaser", frandom(-10,10), 0, 0, 0, 0,frandom(-2,5));
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("OCFire3")
+		Goto OverchargeStopPrimary
+	OCFire3:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
+		UNOF C 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashOvercharge");
+		PB_UnmkrBeam(1);
+		//A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
+		//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,none,0,0,2000,0,1,1.0,none,-6,0,0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("OCFire4")
+		Goto OverchargeStopPrimary
+	OCFire4:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
+		UNOF D 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashOvercharge");
+		PB_UnmkrBeam(1);
+		PB_UnmkrBeam(1,frandom(-2,0),frandom(-2,3));
+		//A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
+		//A_FireCustomMissile("OverchargeLaser", frandom(-2,0), 0, 0, 0, 0,frandom(-2,3));
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("OCFire5")
+		Goto OverchargeStopPrimary
+	OCFire5:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
+		UNOF E 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashOvercharge");
+		PB_UnmkrBeam(1);
+		PB_UnmkrBeam(1,frandom(-1,2),frandom(-1,3));
+		//A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
+		//A_FireCustomMissile("OverchargeLaser", frandom(-1,2), 0, 0, 0, 0,frandom(-1,3));
+		//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,none,0,0,2000,0,1,1.0,none,-6,0,0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("OCFire6")
+		Goto OverchargeStopPrimary
+	OCFire6:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
+		UNOF F 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashOvercharge");
+		A_Overlay(-2,"OverchargeLightning");
+		A_OverlayFlags(-2,PSPF_FLIP|PSPF_MIRROR,random(false,true));
+		A_OverlayOffset(-2,frandom(-5,5),frandom(-7,7));
+		A_OverlayPivotAlign(-2,PSPA_CENTER,PSPA_CENTER);
+		A_OverlayRotate(-2,frandom(-20,20));
+		//A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
+		PB_UnmkrBeam(1);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("OCFire7")
+		Goto OverchargeStopPrimary
+	OCFire7:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
+		UNOF G 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashOvercharge");
+		PB_UnmkrBeam(1);
+		PB_UnmkrBeam(1,frandom(-2,4),frandom(-2,3));
+		//A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
+		//A_FireCustomMissile("OverchargeLaser", frandom(-2,4), 0, 0, 0, 0,frandom(-2,3));
+		//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,none,0,0,2000,0,1,1.0,none,-6,0,0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("OCFire8")
+		Goto OverchargeStopPrimary
+	OCFire8:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
+		UNOF H 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashOvercharge");
+		//A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
+		//A_FireCustomMissile("OverchargeLaser", frandom(-2,2), 0, 0, 0, 0,frandom(-2,10));
+		PB_UnmkrBeam(1);
+		PB_UnmkrBeam(1,frandom(-2,2),frandom(-2,10));
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("OCFire9")
+		Goto OverchargeStopPrimary
+	OCFire9:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "OverchargeStopPrimary")
+		UNOF I 1 BRIGHT {
+		A_WeaponOffset(0,32,WOF_INTERPOLATE);
+		A_WeaponOffset(frandom(-5,5),frandom(-5,5),WOF_INTERPOLATE|WOF_ADD);
+		A_Overlay(-3,"MuzzleFlashOvercharge");
+		PB_UnmkrBeam(1);
+		//A_FireCustomMissile("OverchargeLaser", 0, 0, 0, 0, 0, 0);
+		//A_RailAttack(0, -5, 0, none,none, RGF_SILENT|RGF_NOPIERCING|RGF_EXPLICITANGLE, 0,none,0,0,2000,0,1,1.0,none,-6,0,0);
+		A_TakeInventory("PB_DTech", 1);
+		PB_WeaponRecoil(-0.7,random(1, -1));
+		}
+		TNT1 A 0 PB_ReFire("OCFire1")
+	OverchargeStopPrimary:
+		TNT1 A 0 {
+		A_StopSOund(1);
+		A_StopSOund(4);
+		A_StopSOund(6);
+		A_PlaySOund("UNMRLS", 3);
+		A_WeaponOffset(0,32);
+		}
+		UNOF MLKJ 3
+		TNT1 A 0 A_PlaySOund("UNMSTO", 1)
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
+		Goto Ready3
+		
+	Altfire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+		TNT1 A 0 A_ClearOverlays(5,7)
+		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeAltfire")
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
+		TNT1 A 0 A_ClearOverlays(5,7)
+		UNHF ABCD 1
+		TNT1 A 0 A_PlaySOund("UNMCHG2", 1)
+	Althold:
+		TNT1 A 0 A_ClearOverlays(5,7)
+		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeAltfire")
+			TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "Runout")
+		UNHR M 1 BRIGHT A_FireCustomMissile("UnmakerDoomSeeker", 0, 0, 0, -10, 0, 0)
+		TNT1 A 0 A_TakeInventory("PB_DTech", 4)
+		UNHR NN 1 BRIGHT
+		TNT1 A 0 PB_WeaponRecoil(-0.5,random(1, -1))
+		UNHR OOOOOKKKLL 1 BRIGHT
+		TNT1 A 0 PB_ReFire("Althold2")
+		Goto StopDoomSeeker
+	Althold2:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopDoomSeeker")
+		UNHR M 1 BRIGHT A_FireCustomMissile("UnmakerDoomSeeker", 0, 0, 0, -10, 0, 0)
+		TNT1 A 0 A_TakeInventory("PB_DTech", 4)
+		UNHR NN 1 BRIGHT
+		TNT1 A 0 PB_WeaponRecoil(-0.5,random(1, -1))
+		UNHR OOOOOKKLL 1 BRIGHT
+		TNT1 A 0 PB_ReFire("Althold3")
+		Goto StopDoomSeeker
+	Althold3:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopDoomSeeker")
+		UNHR M 1 BRIGHT A_FireCustomMissile("UnmakerDoomSeeker", 0, 0, 0, -10, 0, 0)
+		TNT1 A 0 A_TakeInventory("PB_DTech", 4)
+		UNHR NN 1 BRIGHT
+		TNT1 A 0 PB_WeaponRecoil(-0.5,random(1, -1))
+		UNHR OOOOKKL 1 BRIGHT
+		TNT1 A 0 PB_ReFire("Althold4")
+		Goto StopDoomSeeker
+	Althold4:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopDoomSeeker")
+		UNHR M 1 BRIGHT A_FireCustomMissile("UnmakerDoomSeeker", 0, 0, 0, -10, 0, 0)
+		TNT1 A 0 A_TakeInventory("PB_DTech", 4)
+		UNHR NN 1 BRIGHT
+		TNT1 A 0 PB_WeaponRecoil(-0.5,random(1, -1))
+		UNHR OOOKKL 1 BRIGHT
+		TNT1 A 0 PB_ReFire("Althold5")
+		Goto StopDoomSeeker
+	Althold5:
+		TNT1 A 0 A_JumpIf(CountInv("PB_DTech") < 1, "StopDoomSeeker")
+		UNHR M 1 BRIGHT A_FireCustomMissile("UnmakerDoomSeeker", 0, 0, 0, -10, 0, 0)
+		TNT1 A 0 A_TakeInventory("PB_DTech", 4)
+		UNHR N 1 BRIGHT
+		TNT1 A 0 PB_WeaponRecoil(-0.5,random(1, -1))
+		UNHR OOKL 1 BRIGHT
+		TNT1 A 0 PB_ReFire("Althold5")
+	StopDoomSeeker:
+		UNHF DCBA 1
+		Goto Ready3
+		
+OverchargeAltfire:
+		TNT1 A 0 A_ClearOverlays(5,7)
+		TNT1 A 0 A_JumpIfInventory("PB_DTech",75,1)
+		
+		Goto RunOut
+		UNOF JKLM 1
+		TNT1 A 0 A_Overlay(-2,"OverchargeCharge")
+		TNT1 A 0 A_OverlayFlags(-2,PSPF_FLIP|PSPF_MIRROR,true)
+		//TNT1 A 0 A_PlaySOund("UNMCHG", 1)
+		//TNT1 A 0 A_PlaySOund("UNMSTA", 3)
+		TNT1 A 0 A_Playsound("UNOCFIR", 5)
+		UNOF NOPQRRSTTUVVWW 2 BRIGHT
+		UNOS FGHHII 2 BRIGHT
+		UNOS J 7 BRIGHT A_WeaponOffset(frandom(-1,1),frandom(-1,1),WOF_INTERPOLATE|WOF_ADD)
+	OverchargeAltHold:
+		TNT1 A 0 A_WeaponOffset(0,32,WOF_INTERPOLATE)
+		 UNOS J 7 BRIGHT {
+			A_Playsound("UNOCBLL",5);
+			A_Playsound("UNMLOP",3);
+			A_Overlay(-3,"MuzzleFlashOvercharge");
+			A_WeaponOffset(frandom(-2,2),frandom(-2,2),WOF_INTERPOLATE|WOF_ADD);
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			if(JustPressed(BT_RELOAD)){return state ("RunOut");}
+				return state ("");
+			}
+		TNT1 A 0 PB_ReFire("OverchargeAltHold")
+		TNT1 A 0 A_PlaySOund("UNMFLY1", 3)
+		TNT1 A 0 A_Playsound("UNOCFIR2", 5)
+		//TNT1 A 0 A_PlaySOund("UNMSTO", 1)
+		TNT1 A 0 A_FireCustomMissile("UnmakerBigPossessionGhost")
+		TNT1 A 0 A_TakeInventory("PB_DTech", 75)
+		UNOS KLMNO 2 BRIGHT
+		TNT1 A 0 A_PlaySOund("UNMUP", 3)
+		UNOS PQRSTUVW 2 BRIGHT
+		TNT1 A 0 
+		TNT1 A 0 A_ClearOverlays(5,7)
+		
+		Goto Ready3
+	
+//Flash States
+
+	FlashKicking:
+		TNT1 A 0 A_ClearOverlays(-3,7)
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeFlashKicking")
+		UNHS A 0
+		"####" NOPPQEEQPPONA 1 A_DoPBWeaponAction
+		Goto Ready3
+		
+	FlashAirKicking:
+		TNT1 A 0 A_ClearOverlays(-3,7)
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeFlashAirKicking")
+		UNHS A 0
+		"####" NOPPQEEQPPONA 1 A_DoPBWeaponAction
+		Goto Ready3
+		
+	FlashSlideKicking:
+		TNT1 A 0 A_ClearOverlays(-3,7)
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeFlashSlideKicking")
+		UNHS A 0
+		"####" NOPPQQQEEEEEEEEEEEEEEEEEE 1 A_DoPBWeaponAction
+		
+	FlashSlideKickingStop:
+		TNT1 A 0 A_ClearOverlays(-3,7)
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeFlashSlideKickingStop")
+		UNHS A 0
+		"####" QPPONA 1 A_DoPBWeaponAction
+		Goto Ready3
+		
+	FlashPunching:
+		TNT1 A 0 A_ClearOverlays(-3,7)
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory("UnmakerFireSelected", 1, "OverchargeFlashPunching")
+		UNHS A 0
+		"####" NOPPQEEEQPPONA 1 A_DoPBWeaponAction
+		Stop
+		
+	OverchargeFlashKicking:
+		UNOL A 0
+		"####" MNOOP 1 A_DoPBWeaponAction
+		UNOS A 0
+		"####" EE 1 A_DoPBWeaponAction
+		UNOL A 0
+		"####" POONM 1 A_DoPBWeaponAction
+		UNOS A 0
+		"####" A 1 A_DoPBWeaponAction
+		Goto Ready3
+
+	OverchargeFlashAirKicking:
+		UNOL A 0
+		"####" MNOOP 1 A_DoPBWeaponAction
+		UNOS A 0
+		"####" EE 1 A_DoPBWeaponAction
+		UNOL A 0
+		"####" POONM 1 A_DoPBWeaponAction
+		UNOS A 0
+		"####" A 1 A_DoPBWeaponAction
+		Goto Ready3
+
+	OverchargeFlashSlideKicking:
+		UNOL A 0
+		"####" MNOOPPP 1 A_DoPBWeaponAction
+		UNOS A 0
+		"####" EEEEEEEEEEE 1 A_DoPBWeaponAction
+	OverchargeFlashSlideKickingStop:
+		UNOL A 0
+		"####" POONM 1 A_DoPBWeaponAction
+		UNOS A 0
+		"####" A 1  A_DoPBWeaponAction
+		Goto Ready3
+
+	OverchargeFlashPunching:
+		UNOL A 0
+		"####" MNOOPP 1 A_DoPBWeaponAction
+		UNOS A 0
+		"####" E 1
+		UNOL A 0
+		"####" PPOONM 1 A_DoPBWeaponAction
+		UNOS A 0
+		"####" A 1 A_DoPBWeaponAction
+		Stop
+	}
+}
+
+Actor UnmakerLaser: FastProjectile
+{
+	+RANDOMIZE
+	+FORCEXYBILLBOARD
+	+DONTSPLASH
+	-BLOODSPLATTER
+	damage 15
+	radius 1
+	height 1
+	speed 500
+	//renderstyle ADD
+	alpha 0.0
+	scale .0
+	decal "scorch"
+	damagetype "Fire"
+	missiletype "UnmakerLaserTrail"
+	states
+		{
+		Spawn:
+			PBAL J 1 BRIGHT
+			Loop
+	XDeath:
+	Death:
+	TNT1 A 0 {
+	//A_SpawnItem("UnmakerPuff")
+	A_SpawnItem("RedLightningTrial",0);
+	A_SpawnItemEx("DTechBurningPiece", random (-15, 15), random (-15, 15),0, 0, 0, 0, 0, 128, 150);
+	A_SpawnItemEx("DTechBurningPiece2", random (-35, 35), random (-35, 35),0, 0, 0, 0, 0, 128, 150);
+	A_SpawnItemEx("DTechBurningPiece3", random (-45, 45), random (-45, 35), 0, 0, 0, 0, 0, 128, 150);
+	A_SpawnItemEx ("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,180);
+	A_SpawnItemEx ("DetectCeilCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,180);
+	A_explode(20, 100);
+	}
+	//TNT1 AAA 0 A_SpawnItemEx("ObeliskTrailSpark", random(-8, 8), random(-8, 8), random(-2,2), 0, 0, 0, 0, 128, 0)
+	Stop
+		}
+	}
+	
+Actor UnmakerLaserTrail
+{
+	+FORCEXYBILLBOARD
+	//+CLIENTSIDEONLY
+	+NOBLOCKMAP
+	+NOGRAVITY
+	+ROLLSPRITE
+	+NOTELEPORT
+	+CANNOTPUSH
+	+NODAMAGETHRUST
+	//renderstyle ADD
+	alpha 1.0
+	scale .15
+	states
+		{
+		Spawn:
+			PBAL J 0
+			PBAL J 1 BRIGHT {
+			A_SetRoll(frandom(0,359));
+			if(A_CheckRange(600,"Null")){ A_Setscale(.1); }
+			}
+			stop
+		}
+	}	
+	
+ACTOR UnmakerDoomSeeker
+{
+	+NOGRAVITY
+	+SEEKERMISSILE
+	+RANDOMIZE
+	+ROLLSPRITE
+	+SCREENSEEKER
+	PROJECTILE
+	SeeSound ""
+	Height 4
+	Radius 4
+	DeathSound "unmbal"
+	SeeSound "unmalt"
+	//RenderStyle Add
+	DamageType "Fire"
+	Scale 0.24
+	Speed 20
+	Decal "Scorch"
+	Obituary "%o was tainted by %k's Unmaker!"
+	Damage 75
+	States
+	{
+	Spawn:
+		UNHP AAA 1 BRIGHT {
+		A_Playsound("UNMFLY1", 1, 1, 1);
+		A_SetRoll(roll+random(0,200));
+		A_SeekerMissile(0,10,SMF_LOOK|SMF_PRECISE);
+		A_SpawnItem("RedLightningTrial_Small", 5);
+		}
+		
+		UNHP A 1 BRIGHT {
+		A_Playsound("UNMFLY1", 1, 1, 1);
+		A_SetRoll(roll+random(0,200));
+		A_SeekerMissile(0,10,SMF_LOOK|SMF_PRECISE);
+		A_SpawnItem("RedLightningTrial_Small", 5);
+		}
+		//TNT1 AA 0 A_SpawnItemEx("ObeliskTrailSpark", random(-1, 1), random(-1, 1), random(-1,1), 0, 0, 0, 0, 128, 0)
+		Loop
+		
+	Death:
+		TNT1 A 0 A_StopSound(1)
+		TNT1 A 0 BRIGHT A_SetRoll(0)
+		TNT1 AA 0 A_CustomMissile ("PBExplosionparticles", 0, 0, random (0, 360), 2, random (40, 90))
+		EXPL AA 0 A_CustomMissile ("ExplosionSmokeFast22", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 AAA 0 A_CustomMissile ("FireworkSFXUnmaker", 2, 0, random (0, 360), 2, random (10, 80))
+		TNT1 A 0 A_explode(35, 80)
+		TNT1 A 0 A_SpawnItemEx("ObeliskTrailSpark", random(-8, 8), random(-8, 8), random(-2,2), 0, 0, 0, 0, 128, 0)
+		TNT1 A 0 BRIGHT A_SpawnItem("RedLightningTrial",0)
+		HRX2 A 0 {
+		A_Setscale(frandom(.7,.9));
+		A_Setroll(frandom(-30,30));
+		A_Changeflag("SPRITEFLIP",random(1,0));
+		}
+		HRX2 ABCDEFGH 3 Bright {
+		A_Setscale(scalex*1.05,scaley*1.05);
+		A_Setroll(roll*1.05);
+		}
+		Stop
+	}
+}
+
+Actor OverchargeLaser : fastprojectile
+{
+	+RANDOMIZE
+	+FORCEXYBILLBOARD
+	+DONTSPLASH
+	
+	//damage (random(45, 50))
+	radius 2
+	height 2
+	speed 500
+	damage (25)
+	renderstyle ADD
+	scale .1
+	alpha 0.7
+	//decal "scorch"
+	damagetype "Fire"
+	missiletype "OverchargeLaserTrail"
+	states
+		{
+		Spawn:
+			TNT1 A 1 
+			Loop
+	Death:
+	TNT1 A 0
+	TNT1 A 0 A_Jump(256,"Explode1","Explode2",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+	//EXPL A 0 A_SpawnItem("UnmakerPuff")
+	//TNT1 A 0 BRIGHT A_SpawnItem("RedFlareLarge1X",0)
+	//TNT1 AA 0 A_SpawnItemEx("BurningEmberParticlesFloating_Bigger", random(19,-19), random(19,-19), random(4,-4), 0, 0, 0, 0, 128, 0)
+	TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15),0, 0, 0, 0, 0, 128, 150)
+	TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35),0, 0, 0, 0, 0, 128, 150)
+	TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35), 0, 0, 0, 0, 0, 128, 150)
+	//TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	//TNT1 A 0 A_SpawnItemEx ("DetectCeilCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	TNT1 A 0 A_SpawnItemEx("OverchargeGroundSpike",frandom(-15,15),frandom(-15,15),0,0,0,0,0,0,150)
+	TNT1 AA 0 A_SpawnItemEx("OverchargeGroundLump",frandom(-30,30),frandom(-30,30),0,0,0,0,0,0,150)
+	TNT1 A 0 A_explode(20, 100)
+	Stop
+	Explode1:
+	TNT1 A 0{
+	A_Setscale(frandom(.8,2.5));
+	A_Changeflag("SPRITEFLIP",random(1,0));
+	}
+	//TNT1 A 0 A_CustomMissile ("FireworkSFXType2", 2, 0, random (0, 360), 2, random (10, 80))
+	TNT1 A 0 {
+	A_SpawnItem("ExcavatorExploFX");
+	A_StartSound("FAREXPL", CHAN_AUTO|CHANF_OVERLAP);
+	Radius_Quake (3, 8, 0, 15, 0);
+	}
+	Stop
+	Explode2:
+	TNT1 A 0{
+	A_Setscale(frandom(0.2,0.5));
+	A_Changeflag("SPRITEFLIP",random(1,0));
+	}
+	//TNT1 A 0 A_CustomMissile ("FireworkSFXType2", 2, 0, random (0, 360), 2, random (10, 80))
+	REXP ABCDEFGHIJKLMNOPQRS 1 BRIGHT
+	Stop
+	XDeath:
+	TNT1 A 0
+	//EXPL A 0 A_SpawnItem("UnmakerPuff")
+	//TNT1 A 0 BRIGHT A_SpawnItem("RedFlareLarge1X",0)
+	//TNT1 AA 0 A_SpawnItemEx("BurningEmberParticlesFloating_Bigger", random(19,-19), random(19,-19), random(4,-4), 0, 0, 0, 0, 128, 0)
+	TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15),0, 0, 0, 0, 0, 128, 150)
+	TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35),0, 0, 0, 0, 0, 128, 150)
+	TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35), 0, 0, 0, 0, 0, 128, 150)
+	TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	TNT1 A 0 A_SpawnItemEx ("DetectCeilCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	TNT1 A 0 A_SpawnItemEx("OverchargeGroundSpikeG",frandom(-15,15),frandom(-15,15),0,0,0,0,0,0,150)
+	TNT1 AA 0 A_SpawnItemEx("OverchargeGroundLumpG",frandom(-30,30),frandom(-30,30),0,0,0,0,0,0,150)
+	TNT1 A 0 A_explode(20, 100)
+	TNT1 A 0 A_Jump(256,"Explode1","Explode2",0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0)
+	Stop
+	Explode1:
+	TNT1 A 0{
+	A_Setscale(frandom(.8,2.5));
+	A_Changeflag("SPRITEFLIP",random(1,0));
+	}
+	TNT1 A 0 A_CustomMissile ("FireworkSFXType2", 2, 0, random (0, 360), 2, random (10, 80))
+	TNT1 A 0 {
+	A_SpawnItem("ExcavatorExploFX");
+	A_StartSound("FAREXPL", CHAN_AUTO|CHANF_OVERLAP);
+	Radius_Quake (3, 8, 0, 15, 0);
+	}
+	Stop
+	Explode2:
+	TNT1 A 0{
+	A_Setscale(frandom(0.2,0.5));
+	A_Changeflag("SPRITEFLIP",random(1,0));
+	}
+	REXP ABCDEFGHIJKLMNOPQRS 1 BRIGHT
+	Stop
+		}
+	}
+	
+Actor OverchargeLaserTrail
+{
+	+FORCEXYBILLBOARD
+	//+CLIENTSIDEONLY
+	+NOBLOCKMAP
+	+NOGRAVITY
+	+NOTELEPORT
+	+CANNOTPUSH
+	+NODAMAGETHRUST
+	+ROLLSPRITE
+	//renderstyle ADD
+	alpha 1.0
+	scale .20
+	renderstyle add
+	states
+		{
+		Spawn:
+			TNT1 A 0
+			PBAL K 1 Bright {
+			A_Setroll(roll+frandom(-50,50));
+			if(A_CheckRange(600,"Null")){ A_Setscale(.15); }
+			}
+		Looper:
+			PBAL K 1 Bright {
+			A_Setroll(roll+frandom(-50,50));
+			if(A_CheckRange(600,"Null")){ A_Setscale(.15); }
+			}
+			Stop
+		}
+}
+
+Actor OverchargeGroundSpike
+{
+	+ROLLSPRITE
+	+RANDOMIZE
+	+NOGRAVITY
+	Translation "0:255=%[0,0,0]:[2.0,1.0,0.3]"
+	Renderstyle Add
+	//Alpha 0.8
+states
+	{
+	spawn:
+		UNOG U 0 Nodelay {
+		A_Setscale(frandom(.2,.6));
+		A_Setroll(frandom(-30,30));
+		A_Changeflag("SPRITEFLIP",random(1,0));
+		}
+		UNOG U 1 BRIGHT A_SpriteOffset(0,200) 
+		UNOG U 1 BRIGHT A_SpriteOffset(0,190)
+		UNOG U 1 BRIGHT A_SpriteOffset(0,140) 
+		UNOG U 1 BRIGHT A_SpriteOffset(0,100) 
+		UNOG U 1 BRIGHT A_SpriteOffset(0,90) 
+		UNOG U 1 BRIGHT A_SpriteOffset(0,80) 
+		UNOG U 1 BRIGHT A_SpriteOffset(0,70)
+		UNOG U 1 BRIGHT A_SpriteOffset(0,60) 
+		UNOG U 1 BRIGHT A_SpriteOffset(0,50) 
+		UNOG U 1 BRIGHT A_SpriteOffset(0,40)
+		UNOG U 1 BRIGHT A_SpriteOffset(0,30)
+		UNOG U 1 BRIGHT A_SpriteOffset(0,20) 
+		TNT1 A 0 A_Explode(20,20)
+		UNOG U 3 BRIGHT A_SpriteOffset(0,15)
+		UNOG U 3 BRIGHT A_SpriteOffset(0,10)
+		UNOG U 4 BRIGHT A_SpriteOffset(0,7) 
+		TNT1 A 0 A_Explode(20,20)
+		UNOG U 60 BRIGHT A_SpriteOffset(0,5) 
+		TNT1 A 0 {
+		A_Explode(50,50);
+		A_StartSound("FAREXPL", CHAN_AUTO|CHANF_OVERLAP);
+		Radius_Quake (3, 8, 0, 15, 0);
+		A_SpawnItem("ExcavatorExploFX");
+		}
+		stop
+		}
+}
+Actor OverchargeGroundLump
+{
+	+ROLLSPRITE
+	+RANDOMIZE
+	+NOGRAVITY
+	Translation "0:255=%[0,0,0]:[.5,.5,.5]"
+states
+	{
+	spawn:
+		UNOG V 0 Nodelay {
+		A_Setroll(frandom(-10,10));
+		A_Changeflag("SPRITEFLIP",random(1,0));
+		A_Setscale(frandom(.1,.3),frandom(.1,.3));
+		}
+		UNOG V 1 BRIGHT A_SpriteOffset(0,60) 
+		UNOG V 1 BRIGHT A_SpriteOffset(0,54)
+		UNOG V 1 BRIGHT A_SpriteOffset(0,43) 
+		UNOG V 1 BRIGHT A_SpriteOffset(0,33) 
+		UNOG V 1 BRIGHT A_SpriteOffset(0,30) 
+		UNOG V 1 BRIGHT A_SpriteOffset(0,25) 
+		UNOG V 1 BRIGHT A_SpriteOffset(0,22)
+		UNOG V 1 BRIGHT A_SpriteOffset(0,20) 
+		UNOG V 1 BRIGHT A_SpriteOffset(0,17) 
+		UNOG V 1 BRIGHT A_SpriteOffset(0,12)
+		UNOG V 1 BRIGHT A_SpriteOffset(0,10)
+		UNOG V 1 BRIGHT A_SpriteOffset(0,7) 
+		UNOG V 3 BRIGHT A_SpriteOffset(0,5)
+		UNOG V 3 BRIGHT A_SpriteOffset(0,3)
+		UNOG V 4 BRIGHT A_SpriteOffset(0,2) 
+		UNOG V 60 BRIGHT A_SpriteOffset(0,2)
+		UNOG V 4 BRIGHT A_SpriteOffset(0,2)
+		UNOG V 1 BRIGHT A_SpriteOffset(0,7) 
+		UNOG V 1 BRIGHT A_SpriteOffset(0,22)
+		UNOG V 1 BRIGHT A_SpriteOffset(0,30)
+		UNOG V 1 BRIGHT A_SpriteOffset(0,43) 
+		UNOG V 1 BRIGHT A_SpriteOffset(0,60)
+		stop
+		}
+}
+
+Actor OverchargeGroundSpikeG : OverchargeGroundSpike
+{
+-NOGRAVITY
+Gravity 100
+}
+
+Actor OverchargeGroundLumpG : OverchargeGroundLump
+{
+-NOGRAVITY
+Gravity 100
+}
+
+Actor RedLightningTrial
+{
+Damage 0
+Scale 0.95
++NOGRAVITY
++THRUACTORS
+	States
+	{
+		Spawn:
+			TNT1 A 0
+			TNT1 A 0 A_Jump (256, "Spawn2", "Spawn3", "Spawn4", "Spawn5", "Spawn6", "Spawn7", "Spawn8", "Spawn9")
+			Stop
+		Spawn2:
+			TNT1 A 0
+			HLI6 ABCDEFGHIJK 1 bright
+			Stop
+		Spawn3:
+			TNT1 A 0
+			HLI7 ABCDEFGHIJK 1 bright
+			Stop
+		Spawn4:
+			TNT1 A 0
+			HLI8 ABCDEFGHIJK 1 bright
+			Stop
+		Spawn5:
+			TNT1 A 0
+			HLI9 ABCDEFGHIJK 1 bright
+			Stop
+		Spawn6:
+			TNT1 A 0
+			HLI6 LMNOPQRSTUV 1 bright
+			Stop
+		Spawn7:
+			TNT1 A 0
+			HLI7 LMNOPQRSTUV 1 bright
+			Stop
+		Spawn8:
+			TNT1 A 0
+			HLI8 LMNOPQRSTUV 1 bright
+			Stop
+		Spawn9:
+			TNT1 A 0
+			HLI9 LMNOPQRSTUV 1 bright
+			Stop
+	}
+}
+
+Actor RedLightning_Small : RedLightningTrial {Scale 0.4}
+
+Actor UnmakerSwitchModeEffect 
+{
+	Speed 8
+	States
+	{
+		Spawn:
+		TNT1 AAAA 0 A_SpawnItemEx("RedLightningTrial_Small", random(5,6),random(-1,1),random(-12,-6),8,0,0,0,SXF_NOCHECKPOSITION)
+		TNT1 AAAA 0 A_SpawnItemEx("ObeliskTrailSpark", random(5,6),random(-1,1),random(-12,-6),8,0,0,0,SXF_NOCHECKPOSITION)
+		Stop
+	}
+}
+
+Actor RedLightningTrial_Small : RedLightningTrial
+{ Scale 0.12 }
+
+ACTOR UnmakerBigPossessionGhost
+{
+  Height 2
+  Projectile
+  Radius 2
+  RenderStyle "Add"
+  SeeSound "HRReady"
+  Speed 10
+  Scale 2
+  +BRIGHT
+  +RANDOMIZE
+
+  States
+  {
+	Spawn:
+		TNT1 A 0 A_PlaySound("SpiritSeeker", 3, 1.0, 1)
+	SpawnLoop:
+		TNT1 A 0 A_Startsound("UNOCBLL", CHAN_AUTO , CHANF_LOOP)
+		SHBA AAABBB 1 BRIGHT {
+			A_SpawnItem("UnmakerBigPossessionGhostTrail", 5);
+			A_Weave(2,2,.5,.5);
+			A_SpawnProjectile("UnmakerPossessionGhost",0,0,frandom(-500,500),CMF_OFFSETPITCH|CMF_AIMDIRECTION,frandom(-500,500));
+			A_SpawnProjectile("UnmakerDecorativeGhost1",frandom(-7,7),frandom(-7,7));
+			A_SpawnProjectile("UnmakerDecorativeGhost2",frandom(-7,7),frandom(-7,7));
+			if(A_JumpIfTracerCloser(100, "Possess")){
+				return A_Jump(256, "Possess");
+			}
+			return state("");
+		}
+		loop
+	Possess:
+		TNT1 A 0 {
+			A_StopSound(3);
+			A_Playsound("weapons/demontech/respect2");
+			A_RadiusGive("PossessBossMonster",60,RGF_MONSTERS, 1);
+		}
+		Stop
+	Death:
+		TNT1 A 0 {
+			A_StopSound(3);
+			A_Playsound("weapons/demontech/respect2");
+			A_RadiusGive("PossessBossMonster",60,RGF_MONSTERS, 1);
+		}
+		Stop
+	}
+}
+
+ACTOR PossessBossMonster : CustomInventory
+{
+  States
+  {
+  Pickup: // "Forces" the to-be-possessed monster to enter the Possession state
+	TNT1 A 0 ACS_NamedExecuteAlways("Pos - Execute Boss Possession state")
+	Stop
+  }
+}
+
+ACTOR UnmakerDecorativeGhost1
+{
+  Height 2
+  MaxTargetRange 32
+  Projectile
+  Radius 2
+  RenderStyle "Add"
+  SeeSound "HRReady"
+  Speed 10
+  Scale 1
+  +RANDOMIZE
+  States
+  {
+	Spawn:
+		TNT1 A 0 A_PlaySound("SpiritSeeker", 3, 1.0, 1)
+	SpawnLoop:
+		SHBA AAABBB 1 BRIGHT {
+			A_SpawnItem("UnmakerDecorativeGhostTrail", 5);
+			A_Weave(2,2,.5,.5);
+			}
+	Death:
+		TNT1 A 0
+		Stop
+	}
+}
+
+ACTOR UnmakerDecorativeGhost2
+{
+  Height 2
+  MaxTargetRange 32
+  Projectile
+  Radius 2
+  RenderStyle "Add"
+  SeeSound "HRReady"
+  Speed 10
+  +ROLLSPRITE
+  +RANDOMIZE
+  States
+  {
+	Spawn:
+		TNT1 A 0 A_PlaySound("SpiritSeeker", 3, 1.0, 1)
+	SpawnLoop:
+		SHGH AB 2 BRIGHT {
+		A_Setroll(frandom(0,359));
+		A_Changeflag("SPRITEFLIP",random(1,0));
+		A_Setscale(frandom(.7,1.3));
+		}
+		SHGH C 2 BRIGHT{ 
+		A_Setroll(roll+5);
+		A_Setscale(scalex + .2,scaley + .2);
+		}
+		SHGH D 2 BRIGHT {
+		A_Setroll(roll+5);
+		A_Setscale(scalex + .2,scaley + .2);
+		}
+		SHGH E 2 BRIGHT {
+		A_Setroll(roll+5);
+		A_Setscale(scalex + .2,scaley + .2);
+		}
+		SHGH F 2 BRIGHT {
+		A_Setroll(roll+5);
+		A_Setscale(scalex + .2,scaley + .2);
+		}
+		
+	Death:
+		TNT1 A 0
+		Stop
+	}
+}
+
+ACTOR UnmakerPossessionGhost
+{
+  Height 2
+  MaxTargetRange 32
+  Projectile
+  Radius 2
+  RenderStyle "Add"
+  SeeSound "HRReady"
+  Speed 25
+  Scale 1
+  +BRIGHT
+  +SCREENSEEKER
+  +SEEKERMISSILE
+  +THRUACTORS
+  +RANDOMIZE
+  +ROLLSPRITE
+
+  const int PSGH_JITC_DISTANCE = 20; // A_JumpIfTracerCloser distance parameter
+
+  States
+  {
+	Spawn:
+		TNT1 A 0 A_PlaySound("SpiritSeeker", 3, 1.0, 1)
+	SpawnLoop:
+		SHBA AB 1 BRIGHT {
+			A_SpawnItem("UnmakerPossessionGhostTrail", 1);
+			A_Weave(2,2,frandom(-5,5),frandom(-5,5));
+			A_SeekerMissile (4,8,SMF_LOOK|SMF_PRECISE);
+			if(A_JumpIfTracerCloser(PSGH_JITC_DISTANCE, "Possess")){
+				return A_Jump(256, "Possess");
+			}
+			return state("");
+		}
+		loop
+	Possess:
+		TNT1 A 0 {
+			A_StopSound(3);
+			A_Playsound("weapons/demontech/respect2");
+			A_GiveInventory("PossessMonster", 1 , AAPTR_TRACER);
+		}
+		SHGH A 0 {
+		A_Setscale(frandom(.8,2));
+		A_Setroll(frandom(-30,30));
+		A_Changeflag("SPRITEFLIP",random(1,0));
+		}
+		SHGH ABCDEFG 1 BRIGHT
+		Stop
+	Death:
+		SHGH A 0 {
+		A_Setscale(frandom(.8,2));
+		A_Setroll(frandom(-30,30));
+		A_Changeflag("SPRITEFLIP",random(1,0));
+		}
+		SHGH ABCDEFG 1 BRIGHT
+		stop
+	}
+}
+
+ACTOR UnmakerBigPossessionGhostTrail
+{
+  RenderStyle "Add"
+  Scale 0.5
+  +NOINTERACTION
+  States
+  {
+  Spawn:
+	HRX1 ABCDEFGH 3 Bright A_FadeOut(0.08)
+	Wait
+  }
+}
+
+ACTOR UnmakerDecorativeGhostTrail : UnmakerBigPossessionGhostTrail
+{
+  Scale 0.15
+  States
+  {
+  Spawn:
+	HRX1 BCDEFGH 3 Bright A_FadeOut(0.08)
+	Wait
+  }
+}
+
+ACTOR UnmakerPossessionGhostTrail : UnmakerBigPossessionGhostTrail
+{
+  scale 0.4
+  States
+  {
+  Spawn:
+	TNT1 A 2
+	SHBA CDEFGHIJKL 1 Bright A_FadeOut(0.1)
+	Stop
+  }
+}

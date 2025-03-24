@@ -1,0 +1,320 @@
+//
+//	base class for monsters weapon drops
+//
+const upgChance = 32; //12.5% chance
+class PB_MonsterDropBase : inventory
+{
+	string		weaponDrop,		//the weapon to drop
+				upgradeDrop,	//upgrade to drop, if any (not necessarily an upgrade, can be a rare weapon)
+				ammoDrop;		//the ammo to drop if weapon drops are disabled
+	
+	string 		weaponCvar,		//the cvar to check for the weapon (to avoid spawn it if its disabled)
+				UpgradeCvar;	//the same as above but for the upgrade (if any)
+				
+	property	weaponDrop:weaponDrop;
+	property	upgradeDrop:upgradeDrop;
+	property	ammoDrop:ammoDrop;
+	property	weaponCvar:weaponCvar;
+	property	UpgradeCvar:UpgradeCvar;
+	
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "";
+		PB_MonsterDropBase.weaponCvar "";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+	
+	override void postbeginplay()
+	{
+		super.postbeginplay();
+		switch(PB_WeaponDrops)
+		{
+			// PB_WeaponDrops 1 = spawn weapon drop (basically what vanilla doom does)
+			case 1:
+				if(weapondrop && isWeaponEnabled())
+					spawndrop(weapondrop);
+				else
+					spawndrop(ammodrop);
+				break;
+				
+			//	PB_WeaponDrops 2 = spawn upgrade based on rng (can be just a very rare weapon)
+			case 2:
+				int chance = random[upgchan](0,255);
+				bool upg = chance <= upgChance;
+				if(upgradeDrop && upg && isUpgradeEnabled())
+				{
+					//console.printf("Spawning: %s",upgradeDrop);
+					spawndrop(upgradeDrop);
+				}
+				else
+				{
+					//console.printf("paul mcartney explodes and fucking dies");
+					if(weapondrop && isWeaponEnabled())
+						spawndrop(weapondrop);
+					else
+						spawndrop(ammodrop);
+				}
+				break;
+				
+			//spawn just ammo
+			case 0:
+			default:
+				//console.printf("no weapons for you, just %s",ammodrop);
+				spawndrop(ammodrop);
+				break;
+		}
+		
+	}
+	
+	bool isUpgradeEnabled()
+	{
+		if(!upgradecvar)	//if theres no cvar, then it cant be disabled
+			return true;
+		if(upgradecvar && cvar.getcvar(upgradecvar).getbool())
+			return false;
+		return true;
+	}
+	
+	bool isWeaponEnabled()
+	{
+		if(!weaponCvar)
+			return true;
+		if(weaponCvar && cvar.getcvar(weaponCvar).getbool())
+			return false;
+		return true;
+	}
+	
+	void spawndrop(string drop)
+	{
+		if(!drop)
+			return;
+		
+		let dp = spawn(drop,pos);
+		if(dp)
+		{
+			dp.vel = vel;
+			double dropfactor = (G_SkillPropertyFloat(SKILLP_DropAmmoFactor) == -1 ? 0.5:G_SkillPropertyFloat(SKILLP_DropAmmoFactor));
+			if(dp is "weapon")
+			{
+				let wpdp = weapon(dp);
+				if(wpdp)
+					wpdp.ammogive1 = max(1,int(dropfactor * wpdp.ammogive1));
+				return;
+			}
+			if(dp is "ammo")
+			{
+				let amdp = ammo(dp);
+				if(amdp)
+				{
+					amdp.amount = max(1,int(dropfactor * amdp.amount)); //wouldnt make sense to receive 0 of something
+				}
+				return;
+			}
+			
+		}
+		
+	}
+	
+	states
+	{
+		spawn:
+			TNT1 A 1;
+			stop;
+	}
+}
+
+
+class PB_CarbineZombieDrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_Carbine";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "PB_HighCalMag";
+		PB_MonsterDropBase.weaponCvar "DisablePB_Carbine";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_PlasmaZombieDrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "";
+		PB_MonsterDropBase.upgradeDrop "PB_M1Plasma";
+		PB_MonsterDropBase.ammoDrop "PB_Cell";
+		PB_MonsterDropBase.weaponCvar "";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_ZombieManDrop1 : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_DMR";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "PB_HighCalMag";
+		PB_MonsterDropBase.weaponCvar "";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_ShotgunGuyDrop1 : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_Shotgun";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "PB_Shell";
+		PB_MonsterDropBase.weaponCvar "";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_ChaingunGuyDrop1 : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_Minigun";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "PB_HighCalMag";
+		PB_MonsterDropBase.weaponCvar "";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_ASGGuyDrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_Autoshotgun";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "PB_Shell";
+		PB_MonsterDropBase.weaponCvar "DisablePB_Autoshotgun";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_CultistDrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_Demontech";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "PB_DTech";
+		PB_MonsterDropBase.weaponCvar "";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+
+Class PB_WolfSSdrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_MP40";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "PB_LowCalMag";
+		PB_MonsterDropBase.weaponCvar "";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_NailgunGuydrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_Nailgun";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "PB_HighCalMag";
+		PB_MonsterDropBase.weaponCvar "DisablePB_Nailgun";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_QSGZombieDrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_SSG";
+		PB_MonsterDropBase.upgradeDrop "PB_QuadSG";
+		PB_MonsterDropBase.ammoDrop "PB_Shell";
+		PB_MonsterDropBase.weaponCvar "";
+		PB_MonsterDropBase.UpgradeCvar "DisablePB_QuadSG";
+	}
+}
+
+Class PB_RocketZombieDrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "";
+		PB_MonsterDropBase.upgradeDrop "PB_RocketLauncher";
+		PB_MonsterDropBase.ammoDrop "PB_RocketAmmo";
+		PB_MonsterDropBase.weaponCvar "";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_PyroGuyDrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_Flamethrower";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "PB_Fuel";
+		PB_MonsterDropBase.weaponCvar "DisablePB_Flamer";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_ZSpecSMGDrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_SMG";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "PB_LowCalMag";
+		PB_MonsterDropBase.weaponCvar "DisablePB_SMG";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_ScientistAxeDrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_Axe";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "";
+		PB_MonsterDropBase.weaponCvar "";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_ScientistSAWDrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_ChainsawPickup";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "PB_Fuel";
+		PB_MonsterDropBase.weaponCvar "";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}
+
+Class PB_PistolGuyDrop : PB_MonsterDropBase
+{
+	default
+	{
+		PB_MonsterDropBase.weaponDrop "PB_Pistol";
+		PB_MonsterDropBase.upgradeDrop "";
+		PB_MonsterDropBase.ammoDrop "PB_LowCalMag";
+		PB_MonsterDropBase.weaponCvar "";
+		PB_MonsterDropBase.UpgradeCvar "";
+	}
+}

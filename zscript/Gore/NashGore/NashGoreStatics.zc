@@ -30,6 +30,10 @@
 //
 //===========================================================================
 
+const STAT_PB_SMOKE = Thinker.STAT_USER_MAX - 2;
+const SLAUGHTERMAP_DIST = 1000.0;
+const MAP_EPSILON = 1 / 65536.;
+
 class NashGoreStatics play
 {
 	//===========================================================================
@@ -139,14 +143,10 @@ class NashGoreStatics play
 				it.Reinit();
 				if (mo = Actor(it.Next()))
 				{		
-					bool valid = (
+					/*bool valid = (
 						mo is "Actor" ||
-						mo.GetClassName() == "NashGoreGibs" ||
-						mo.GetClassName() == "NashGoreBloodPlane" ||
-						mo.GetClassName() == "NashGoreIceChunk" ||
-						mo.GetClassName() == "NashGoreSquishyGibs" ||
-						mo.GetClassName() == "NashGoreStickyGibsCeiling" ||
-						mo.GetClassName() == "NashGoreStickyGibs" ||
+						mo is "NashGoreStickyGibsCeiling" ||
+						mo is "NashGoreStickyGibs" ||
 						mo is "NashGoreGibs" ||
 						mo is "NashGoreBloodPlane" ||
 						mo is "NashGoreIceChunk" ||
@@ -156,7 +156,7 @@ class NashGoreStatics play
 						mo is "PB_XDeath1" ||
 						mo is "PB_XDeath2" ||
 						mo is "PB_XDeathOrgan1" ||
-						mo.GetClassName() == "PB_XDeathBurnedMeat" ||
+						mo is "PB_XDeathBurnedMeat" ||
 						mo is "FlyingGibBase" ||
 						mo is "PB_XDeathArm1" ||
 						mo is "PB_SmallBrainPiece" ||
@@ -167,12 +167,12 @@ class NashGoreStatics play
 						mo is "PB_XDeathZombieManHead" ||
 						mo is "PB_XDeathZombieManHead" ||
 						mo is "PB_Teeth"
-					);
+					);*/
 
-					if (valid) {
+					//if (valid) {
 						mo.Destroy();
 						//Console.Printf("Cleaning Gibs");
-					}
+					//}
 					count--;
 				}
 			}
@@ -203,58 +203,39 @@ class NashGoreStatics play
 				it.Reinit();
 				if (mo = Actor(it.Next()))
 				{		
-					bool valid = (
-						mo is "Actor" ||
-						mo.GetClassName() == "Mp40CaseSpawn" ||
-						mo.GetClassName() == "Mp40CaseSpawnRight" ||
-						mo.GetClassName() == "DeagleCasingRight" ||
-						mo.GetClassName() == "DeagleCasingLeft" ||
-						mo.GetClassName() == "MagnumCasing" ||
-						mo.GetClassName() == "PistolCasingSpawner" ||
-						mo is "SMGCasingSpawner" ||
-						mo is "RifleCaseSpawn" ||
-						mo is "ShotCaseSpawn" ||
-						mo is "ShotCaseSpawn2" ||
-						mo is "ShotCaseSpawn3" ||
-						mo is "SSGCaseSpawner" ||
-						mo is "FiftyCaseSpawn" ||
-						mo is "FiftyCaseSpawn2" ||
-						mo is "GrenadeCaseSpawn" ||
-						mo.GetClassName() == "BigEmptyCaseSpawn" ||
-						mo is "MastermindCaseSpawn" ||
-						mo is "EmptyBrass" ||
-						mo is "EmptyBrassMinigun" ||
-						mo is "EmptyGrenadeBrass" ||
-						mo is "GiantEmptyBrass" ||
-						mo is "BigEmptyBrass" ||
-						mo is "underwaterEmptyBrass" ||
-						mo is "ShotgunCasing" ||
-						mo is "ShotgunCasingSSG" ||
-						mo is "ShotgunCasing2" ||
-						mo is "ShotgunCasing3" ||
-						mo is "EmptyClipMP40" ||
-						mo.GetClassName() == "EmptyClip" ||
-						mo is "EmptyBrassMP40" ||
-						mo is "EmptyBrassDeagle" ||
-						mo is "EmptyBrassMagnum" ||
-						mo is "EmptyBrassPistol" ||
-						mo is "EmptyBrassSMG" ||
-						mo is "EmptyRocketChamber" ||
-						mo is "EmptyLMGMag" ||
-						mo is "EmptyASGDrum" ||
-						mo is "EmptyHMGDrum" ||
-						mo is "EmptyCell" ||
-						mo is "RocketCaseSpawn" ||
-						mo is "PlasmaCaseSpawn" ||
-						mo is "MinigunBeltPiece" ||
-						mo.GetClassName() == "MiniBeltPieceSpawn" ||
-						mo is "MiniBeltPieceSpawn2"
-						);
+					bool valid = mo is "PB_CasingBase" || mo is "EmptyMagBase";
 
 					if (valid) {
+						// console.printf("cleaned up casing %p", mo);
 						mo.Destroy();
 						//Console.Printf("Cleaning Gibs");
 					}
+					count--;
+				}
+			}
+		}
+	}
+
+	static void QueueSmoke(void)
+	{
+		// count current amount of smoke objects
+		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_PB_SMOKE);
+		Actor mo;
+		int count;
+		while (mo = Actor(it.Next()))
+		{
+			count++;
+		}
+
+		// clean up excessive smoke
+		while (count > 24)
+		{
+			// destroy the first one it can find
+			it.Reinit();
+			if(mo = Actor(it.Next()))
+			{
+				if(mo is "PB_GunFireSmoke") {
+					mo.Destroy();
 					count--;
 				}
 			}
@@ -271,6 +252,7 @@ class NashGoreStatics play
 	{
 		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_NashGore_Gore);
 		ThinkerIterator pb = ThinkerIterator.Create("Actor", STAT_PB_BULLETS);
+		ThinkerIterator sm = ThinkerIterator.Create("Actor", STAT_PB_SMOKE);
 		Actor mo;
 		while (mo = Actor(it.Next()))
 		{
@@ -280,8 +262,39 @@ class NashGoreStatics play
 		{
 			mo.Destroy();
 		}
-	}
+		while (mo = Actor(sm.Next()))
+		{
+			mo.Destroy();
+		}
+		
+		// clear wall decals by finding a sprayable line and spamming it with an empty decal :^)
+		// this workaround will have to do because of the lack of access to impact decals in ZScript
+		for (int l = 0; l < level.Lines.Size(); l++)
+		{
+			Line ln = level.Lines[l];
+			if (ln && !(ln.flags & Line.ML_TWOSIDED))
+			{
+				Vector2 mid = ln.v1.p + ln.delta * 0.5;
+				double ang = atan2(ln.delta.Y, ln.delta.X) + 90.0;
+				double dist = -1.0;
+				let sprayer = Actor.Spawn("Mapspot", (mid.X, mid.Y, 0.0), NO_REPLACE);
+				if (sprayer)
+				{
+					sprayer.SetOrigin(sprayer.Vec3Offset(cos(ang) * dist, sin(ang) * dist, 0.0), false);
+					sprayer.Angle = ang;
+					for (int i = 0; i < cl_maxdecals + 1; i++)
+					{
+						sprayer.A_SprayDecal("NoBlood");
+					}
+					sprayer.Destroy();
+				}
 
+				// no need to search anymore
+				break;
+			}
+		}
+	}
+	/*
 	//===========================================================================
 	//
 	// AlignToPlane
@@ -313,7 +326,121 @@ class NashGoreStatics play
 		self.Roll = -fpitch * ddiff1;
 		self.Angle = dang;
 	}
+*/
+	static void FixZFighting(Actor self)
+	{
+		self.WorldOffset = (0.0, 0.0, frandom[rnd_wofs](0.0, 0.10001));
+	}
 
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	// Returns the center of an Actor accounting for floor clipping.
+	// * mo - The Actor to get the center of.
+	// * ofs - How much to additionally offset.
+	clearscope static double Center(Actor mo, double ofs = 0.0)
+	{
+		return mo.Height * 0.5 - mo.FloorClip + ofs;
+	}
+
+	// Populates line trace data with ceiling or floor hit results without the need to fire off a tracer.
+	// * mo - The Actor considered the one doing the trace.
+	// * res - The output results. Distance traveled is relative to the center of the Actor.
+	// * ceiling - If true, get data on the ceiling instead of the floor.
+	static void SetFloorCeilingData(Actor mo, out FLineTraceData res, bool ceiling = false)
+	{
+		if (ceiling)
+		{
+			let [z, sec, ff] = mo.CurSector.NextHighestCeilingAt(mo.Pos.X, mo.Pos.Y, mo.Pos.Z, mo.Pos.Z + mo.Height);
+
+			res.HitSector = sec;
+			res.Hit3DFloor = ff;
+			res.HitTexture = ff ? ff.model.GetTexture(Sector.floor) : sec.GetTexture(Sector.ceiling);
+			res.HitLocation = (mo.Pos.XY, z);
+			res.HitDir = (0.0, 0.0, 1.0);
+			res.Distance = max(z - (mo.Pos.Z + Center(mo)), 0.0);
+			res.NumPortals = 0;
+			res.SectorPlane = Sector.ceiling;
+			res.HitType = TRACE_HitCeiling;
+		}
+		else
+		{
+			let [z, sec, ff] = mo.CurSector.NextLowestFloorAt(mo.Pos.X, mo.Pos.Y, mo.Pos.Z + MAP_EPSILON);
+
+			res.HitSector = sec;
+			res.Hit3DFloor = ff;
+			res.HitTexture = ff ? ff.model.GetTexture(Sector.ceiling) : sec.GetTexture(Sector.floor);
+			res.HitLocation = (mo.Pos.XY, z);
+			res.HitDir = (0.0, 0.0, -1.0);
+			res.Distance = max(mo.Pos.Z + Center(mo) - z, 0.0);
+			res.NumPortals = 0;
+			res.SectorPlane = Sector.floor;
+			res.HitType = TRACE_HitFloor;
+		}
+	}
+
+	// Returns the normal of a given surface. For walls this is based on the direction the trace came from.
+	// * res - The data from the fired trace.
+	static Vector3 GetSurfaceNormal(FLineTraceData res)
+	{
+		if (res.HitType != TRACE_HitWall && res.HitType != TRACE_HitFloor && res.HitType != TRACE_HitCeiling)
+			return (0.0, 0.0, 0.0);
+
+		Vector3 normal;
+		if (res.HitType == TRACE_HitWall)
+		{
+			if (Level.PointOnLineSide(res.HitLocation.XY - res.HitDir.XY, res.HitLine))
+				normal.XY = (res.HitLine.delta.Y, -res.HitLine.delta.X);
+			else
+				normal.XY = (-res.HitLine.delta.Y, res.HitLine.delta.X);
+
+			return normal.Unit();
+		}
+
+		if (res.HitType == TRACE_HitCeiling)
+			normal = res.Hit3DFloor ? -res.Hit3DFloor.model.FloorPlane.normal : res.HitSector.CeilingPlane.normal;
+		else
+			normal = res.Hit3DFloor ? -res.Hit3DFloor.model.CeilingPlane.normal : res.HitSector.FloorPlane.normal;
+
+		return normal;
+	}
+
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	static void AlignToPlane(Actor self, bool ceiling = false)
+	{
+		// Note: I leave the 'self' references intact because in my other projects
+		// that reuse this method, this is usually a static method.
+		// This helps with copy/pasting when doing an update pass on all of them.
+
+		if (!self)
+			return;
+
+		FLineTraceData data;
+		SetFloorCeilingData(self, data, ceiling);
+
+		Vector3 norm = GetSurfaceNormal(data);
+		if (abs(norm.Z) ~== 1.0)
+		{
+			self.Pitch = norm.Z < 0.0 ? 180.0 : 0.0;
+			self.Roll = 0.0;
+			return;
+		}
+
+		Vector2 angles = NashGoreMath.GetAngles(norm);
+		double actorPitch = angles.Y + 90.0;
+
+		double diff = Actor.DeltaAngle(self.Angle, angles.X);
+		self.Pitch = actorPitch * cos(diff);
+		self.Roll = -actorPitch * sin(diff);
+	}
 	//===========================================================================
 	//
 	//
@@ -356,6 +483,19 @@ class NashGoreStatics play
 		}
 
 		return false;
+	}
+	
+	static int, int GetAmountMult(double cv, int chance = 0)
+	{
+		int amt = int(cv);
+		if (amt < 1)
+			amt = 1;
+
+		int cmul = int(chance + (256 - chance) * (1.0 - cv));
+		if (cmul > 256)
+			cmul = 256;
+
+		return amt, cmul;
 	}
 
 	//===========================================================================
@@ -458,4 +598,69 @@ class NashGoreStatics play
 		}
 	}
 	*/
+}
+
+
+
+// NashGoreMath from nashgore next
+struct NashGoreMath
+{
+	// Is number even?
+	static bool IsEven(int n)
+	{
+		return (n % 2 == 0);
+	}
+
+	// Is number odd?
+	static bool IsOdd(int n)
+	{
+		return !NashGoreMath.IsEven(n);
+	}
+
+	// Rotates a given vector in the direction of another one. Note that this assumes neither wish
+	// nor current have a length of 0.
+	// * current - The direction the vector is currently pointing. Automatically normalized.
+	// * wish - The direction it wants to rotate towards. Automatically normalized.
+	// * maxOfs - The maximum amount of degrees that current can rotates towards wish.
+	// Returns the rotated unit vector.
+	static Vector3 RotateVector(Vector3 current, Vector3 wish, double maxOfs)
+	{
+		current = current.Unit();
+		wish = wish.Unit();
+
+		double angle = acos(current dot wish);
+		if (angle > maxOfs)
+			angle = maxOfs;
+		else
+			return wish;
+
+		Vector3 rot = (current cross wish).Unit();
+		double c = cos(angle);
+		double s = sin(angle);
+
+		return (current * c + (rot cross current) * s + rot * (rot dot current) * (1.0 - c)).Unit();
+	}
+
+	// Returns yaw from an XY velocity vector.
+	// * vel - The source XY velocity.
+	static double AngleFromVel(Vector2 vel)
+	{
+		return atan2(vel.Y, vel.X);
+	}
+
+	// Returns the yaw and pitch of a vector.
+	// * dir - The vector to get the angles of.
+	static Vector2 GetAngles(Vector3 dir)
+	{
+		return (atan2(dir.Y, dir.X), -atan2(dir.Z, dir.XY.Length()));
+	}
+
+	// Returns the vector that makes up the given angles.
+	// * yaw - Angle about the z axis.
+	// * pitch - Angle about the y axis.
+	// * length - Scalar for the vector's final size.
+	static Vector3 AnglesToVector(double yaw, double pitch, double length = 1.0)
+	{
+		return (yaw.ToVector() * cos(pitch), -sin(pitch)) * length;
+	}
 }

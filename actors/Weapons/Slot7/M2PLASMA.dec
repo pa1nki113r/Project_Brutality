@@ -1,0 +1,1781 @@
+// M2 Plasma Rifle Pickup
+ACTOR M2Plasma : CustomInventory //12000
+{
+	Inventory.PickupMessage "UAC-M2 Heavy Plasma Rifle (Slot 7)"
+	Inventory.PickupSound "PLSDRAW"
+	Scale 0.49
+	//FloatBobStrength 0.5
+	States
+	{
+	Spawn:
+		M2PR A 2
+		Loop
+	/*Spawn: //Model not implemented yet
+		VM2P A 0 NoDelay
+		M2PR A 10 A_PbvpFramework("VM2P")
+		"####" "#" 0 A_PbvpInterpolate()
+		LOOP*/
+	Pickup:
+		TNT1 A 0 A_GiveInventory ("PB_M2Plasma")
+		Stop
+	}
+}
+
+Actor M2PlasmaUnloaded : Inventory {}
+
+Actor RespectM2PlasmaGun : Inventory
+{inventory.maxamount 1}
+
+Actor LightningGunMode : Inventory
+{inventory.maxamount 1}
+
+Actor HasLightningGunUpgrade : Inventory
+{inventory.maxamount 1}
+
+Actor DualWieldingM2Plasma : Inventory
+{inventory.maxamount 1}
+
+Actor PB_M2PlasmaFireAnimation1 : Inventory
+{inventory.maxamount 1}
+Actor PB_M2PlasmaFireAnimation2 : Inventory
+{inventory.maxamount 1}
+
+Actor StunBombCooldown : PowerUp {PowerUp.Duration -3}
+Actor ActivateStunCooldown : PowerUpGiver
+{	PowerUp.Type "StunBombCooldown"
+	+AUTOACTIVATE
+}
+
+Actor PB_M2Upgrade: PB_UpgradeItem
+{
+//$Category Project Brutality - Weapon Upgrades
+	Game Doom
+	SpawnID 9370
+	Height 24
+	Scale 0.49
+	-INVENTORY.ALWAYSPICKUP
+	-COUNTITEM
+	Inventory.Pickupsound "PLSM2UP"
+	Inventory.PickupMessage "M2 Lightning Mode Upgrade!"
+	Tag "M2 Upgrade"
+	//FloatBobStrength 0.5
+	States
+	{
+		Spawn:
+			M2PR B 2
+			Loop
+		/*Spawn: //Model not implemented yet
+			VM2P B 0 NoDelay
+			M2PR B 10 A_PbvpFramework("VM2P")
+			"####" "#" 0 A_PbvpInterpolate()
+			LOOP*/
+
+		Pickup:
+			TNT1 A 0 A_JumpIf(!FindInventory("PB_M2Plasma") || !FindInventory("HasLightningGunUpgrade") || CountInv("PB_Cell") < GetAmmoCapacity("PB_Cell"),1)
+			fail
+			TNT1 A 0 A_GiveInventory ("PB_M2Plasma")
+			TNT1 A 0 A_SetInventory("HasLightningGunUpgrade", 1)
+			Stop
+	}
+}
+
+Actor M2PlasmaAmmo : PB_WeaponAmmo
+{
+inventory.maxamount 50
++INVENTORY.IGNORESKILL
+Inventory.Icon "M2PRA0"
+}
+Actor LeftM2PlasmaAmmo : PB_WeaponAmmo
+{
+inventory.maxamount 50
++INVENTORY.IGNORESKILL
+Inventory.Icon "M2PRA0"
+}
+Actor PlasmaSoundCounter : Inventory
+{
+	Inventory.MaxAmount 2
+}
+// --------------------------------------------------------------------------
+// M2 Plasma rifle
+// --------------------------------------------------------------------------
+
+ACTOR PB_M2Plasma : PB_Weapon //12222
+{
+	//$Category Project Brutality - Weapons
+	//$Sprite M2PRA0
+	Weapon.SelectionOrder 100
+	Weapon.AmmoUse1 0
+	Weapon.AmmoGive1 50
+	Weapon.AmmoUse2 0
+	Weapon.AmmoGive2 0
+	Inventory.PickupSound "PLSDRAW"
+	Weapon.AmmoType1 "PB_Cell"
+	Weapon.AmmoType2 "M2PlasmaAmmo"
+	PB_WeaponBase.AmmoTypeLeft "LeftM2PlasmaAmmo"
+		+WEAPON.NOAUTOAIM
+	+WEAPON.NOAUTOFIRE
+	+FLOORCLIP
+	+DONTGIB
+	Inventory.MaxAmount 3
+	Inventory.PickupMessage "UAC-M2 Heavy Plasma Rifle (Slot 7)"
+	Tag "UAC-M2 Plasma Rifle"
+	PB_WeaponBase.UnloaderToken "M2PlasmaUnloaded"
+	Scale 0.49
+	Inventory.AltHUDIcon "M2PRA0"
+	PB_WeaponBase.respectItem "RespectM2PlasmaGun"
+	PB_WeaponBase.DualWieldToken "DualWieldingM2Plasma"
+	//FloatBobStrength 0.5
+	States
+	{
+	Steady:
+		TNT1 A 1
+		Goto Ready
+	
+	Ready:
+		TNT1 A 0 A_JumpIfInventory("GoFatality",1,"Steady")
+		TNT1 A 0 PB_RespectIfNeeded
+	WeaponRespect:
+		TNT1 A 0 {
+			A_SetCrosshair(5);
+			A_SetInventory("RespectM2PlasmaGun",1);
+			A_Setinventory("PB_LockScreenTilt",1);
+			A_PlaySoundEx("Ironsights", "Auto");
+		}
+		M200 ABCDEFG 1 {
+			A_SetRoll(roll+0.3, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		M200 HIJKLMN 1{
+			A_SetRoll(roll-0.3, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		M200 OP 1 A_DoPBWeaponAction
+		M200 QQQQQQ 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySoundEx("weapons/m2plasma/screenup", "Auto")
+		M200 RSTU 2 A_DoPBWeaponAction
+		TNT1 A 0 A_StartSound("weapons/m2plasma/screenon", CHAN_AUTO)
+		M200 UVVUUVUVUVUUVVUVUVV 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySoundEx("weapons/carbine/fancybutton", "Auto")
+		M200 VUVVVVVV 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySoundEx("weapons/m2plasma/screenup", "Auto")
+		M200 TSRQ 2 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySoundEx("Ironsights", "Auto")
+		M200 PONMNLKJI 1 {
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		M200 HHGFEDCBA 1 {
+			A_SetRoll(roll-0.4, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		M200 WXYZZZZZZ 1{
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		TNT1 A 0 A_PlaySoundEx("weapons/plasma/cellout", "Auto")
+		M201 ABCDEF 1 {
+			A_SetRoll(roll+0.4, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		TNT1 A 0 A_PlaySoundEx("Weapons/CellEject", "Auto")
+		TNT1 AAA 0 A_FireCustomMissile("GunFireSmoke", -40, 0, -6, -9, 0, 0)
+		M201 GHIJKL 1 A_DoPBWeaponAction
+		M201 MNO 1 {
+			A_SetRoll(roll-0.8, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		TNT1 A 0 A_PlaySoundEx("weapons/plasma/cellin", "Auto")
+		M201 PQRS 1 {
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		M201 TTUVWXYZ 1 {
+			A_SetRoll(roll-0.1, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		M200 ZZZ 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySoundEx("Ironsights", "Auto")
+		M200 YXW 1 {
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		M200 ABCDEFG 1 {
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		M200 HIJKLMNOPP 1 {
+			A_SetRoll(roll-0.2, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		TNT1 A 0 A_PlaySoundEx("weapons/m2plasma/screenup", "Auto")
+		M202 ABC 1 {
+			A_SetRoll(roll-0.1, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		M202 DEF 1 {
+			A_SetRoll(roll+0.1, SPF_INTERPOLATE);
+			return A_DoPBWeaponAction;
+		}
+		TNT1 A 0 A_SetRoll(0, SPF_INTERPOLATE)
+		Goto Ready3
+	Ready3:
+		TNT1 A 0 {
+			A_Setinventory("PB_LockScreenTilt",0);
+			PB_HandleCrosshair(46);
+			}
+	ReallyReady3:
+		TNT1 A 0 A_JumpIfInventory("LightningGunMode", 1,"Ready2")
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1,"ReadyDualWield")
+		TNT1 A 0 A_GiveInventory("PlasmaSoundCounter",2)
+	ActuallyReady3:
+	M210 AABBCCDDEEFFGGHHIIHHGGFFEEDDCCBB 1 
+			{
+				if (CountInv("HasLightningGunUpgrade") > 0 ) {A_SetWeaponSprite("PR2G");}
+				A_GiveInventory("PlasmaSoundCounter",1);
+				if (CountInv("PlasmaSoundCounter") >= 2)
+				{
+					A_PlaySound("PLSM2LP", 6,0.1,1);
+					A_TakeInventory("PlasmaSoundCounter",2);
+				}
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("M2PlasmaUnloaded"));
+			}
+	Goto ReallyReady3
+	
+	Ready2:
+		TNT1 A 0 {
+			A_Setinventory("PB_LockScreenTilt",0);
+			PB_HandleCrosshair(46);
+			A_PlaySound("PLSMLG2");
+			}
+		PR1G ABCDEF 1
+	ReallyReady2:
+		TNT1 A 0 A_PlaySound("LGHUM1", 6,1,1)
+	ReallyReady2Loop:
+		PR1G GHIJIH 1 A_DoPBWeaponAction
+		Loop
+		
+	SelectAnimation:
+	TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1, "SelectAnimationDualWield")
+	TNT1 A 0 A_PlaySoundEx("PLSDRAW", "Auto")
+	M293 ABCDE 0
+	M230 ABCDE 1 {
+		if (CountInv("HasLightningGunUpgrade") >= 1 ) { A_SetWeaponSprite("M293");}
+	}
+	Goto ReallyReady3
+	
+	SelectAnimationDualWield:
+		TNT1 A 0 A_PlaySoundEx("PLSDRAW", "Auto")
+		M231 DEFG 1 
+		TNT1 A 0 A_PlaySoundEx("PLSDRAW", "Auto")
+	ReadyDualWield:
+		TNT1 A 0 A_JumpIfInventory("HasLightningGunUpgrade", 1,"SwitchFromDualWield")
+		TNT1 A 0 {
+			A_SetRoll(0);
+			PB_HandleCrosshair(46);
+			A_Setinventory("PB_LockScreenTilt",0);
+			A_SetFiringRightWeapon(False);
+			A_SetFiringLeftWeapon(False);
+			if(CountInv("LeftM2PlasmaAmmo") < CountInv("M2PlasmaAmmo")){
+				A_GiveInventory("DualFiring",1);
+			}
+// 			if(CountInv("PB_Cell")>0){
+// 				if(CountInv("LeftM2PlasmaAmmo")<=0){
+// 					A_GiveInventory("DualFireReload",1);
+// 				}
+// 				if(CountInv("M2PlasmaAmmo")<=0){
+// 					A_GiveInventory("DualFireReload",1);
+// 				}
+// 			}
+			A_Overlay(10, "IdleLeft_Overlay", false);
+			A_Overlay(11, "IdleRight_Overlay", false);
+			}
+		TNT1 A 0 A_PlaySound("PLSM2LP", 6,0.1,1)
+	ReadyToFireDualWield:
+		TNT1 A 1 {
+			if(CountInv("PB_Cell")>0){
+				if(CountInv("LeftM2PlasmaAmmo")<=0 || CountInv("M2PlasmaAmmo")<=0){
+					if(CountInv("LeftM2PlasmaAmmo")<=0 && CountInv("M2PlasmaAmmo")<=0){
+						A_SetInventory("DualFireReload",2);
+					}
+					else{
+						A_SetInventory("DualFireReload",1);
+					}
+				}
+			}
+			
+			if(!PB_CanDualWield())
+				{
+					A_ClearOverlays(10,11);
+					return state("StopDualWield");
+				}
+			
+			return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
+		}
+		Loop
+		
+	IdleLeft_Overlay:
+		M242 AABBCCDDEEFFGGHHIIHHGGFFEEDDCCBBAA 1 {
+			// Full-Auto
+			if(CountInv("LeftM2PlasmaAmmo")<=0 && CountInv("M2PlasmaAmmo")>0){
+				A_GiveInventory("DualFiring",1);
+			}
+			if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("M2PlasmaAmmo")<=0) || GetCvar("SingleDualFire")==1){
+				if((PressingFire() || JustPressed(BT_ATTACK)) && GetCvar("SingleDualFire") < 2){
+					if(CountInv("LeftM2PlasmaAmmo") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+			}
+			if((PressingAltFire() || JustPressed(BT_ALTATTACK)) && GetCvar("SingleDualFire") == 2){
+					if(CountInv("LeftM2PlasmaAmmo") > 0){
+						return state("FireLeft_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+			return state("");
+		}
+		Loop
+		
+	IdleRight_Overlay:
+		M232 AABBCCDDEEFFGGHHIIHHGGFFEEDDCCBBAA 1 {
+			// Full-Auto
+			if(CountInv("LeftM2PlasmaAmmo")>0 && CountInv("M2PlasmaAmmo")<=0){
+				A_TakeInventory("DualFiring",1);
+			}
+			if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1 && CountInv("LeftM2PlasmaAmmo")<=0)){
+			if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire")==0){
+					if(CountInv("M2PlasmaAmmo") > 0){
+						return state("FireRight_Overlay");
+					}
+					else {
+						A_PlaySoundEx("weapons/empty", "Auto");
+						return state("");
+					}
+				}
+			}
+			if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire")==1){
+				if(CountInv("M2PlasmaAmmo") > 0){
+					return state("FireRight_Overlay");
+				}
+				else {
+					A_PlaySoundEx("weapons/empty", "Auto");
+					return state("");
+				}
+			}
+			if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire") == 2){
+				if(CountInv("M2PlasmaAmmo") > 0){
+					return state("FireRight_Overlay");
+				}
+				else {
+					A_PlaySoundEx("weapons/empty", "Auto");
+					return state("");
+				}
+			}
+			return state("");
+		}
+		Loop
+		
+	FireLeft_Overlay:
+		M234 A 1 BRIGHT {
+			A_FireCustomMissile("HeavyPlasmaBall",0,0,-6,-2);
+			A_PlaySoundEx("m2plasma", "Weapon");
+			
+			A_AlertMonsters;
+			A_Zoomfactor(0.98);
+			PB_GunSmoke(6,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, -6, -1, 0, 0);
+			PB_LowAmmoSoundWarning("hdmr", "LeftM2PlasmaAmmo");
+			A_Takeinventory("LeftM2PlasmaAmmo",2);
+			A_GunFlash;
+			PB_WeaponRecoil(-1.44,-1.04);
+		}	
+		
+		M234 B 1 BRIGHT {
+			A_FireCustomMissile("AltHeavyPlasmaBall",0,0,-6, -2);
+			A_Zoomfactor(0.99);
+			PB_GunSmoke(6,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, -6, -1, 0, 0);
+			if(CountInv("LeftM2PlasmaAmmo")<=0 || CountInv("M2PlasmaAmmo")>0 ){
+				A_GiveInventory("DualFiring",1);
+			}
+			PB_WeaponRecoil(-1.44,-1.04);
+			}
+		M234 C 1 BRIGHT {
+			A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
+			A_Zoomfactor(1.0);
+			PB_WeaponRecoil(-1.44,-1.04);
+			}
+		M234 DE 1
+		TNT1 A 0 {
+			if(CountInv("LeftM2PlasmaAmmo")<=0){
+				A_GiveInventory("DualFireReload",1);
+			}
+		}
+		M242 AAA 1 
+		{
+			if(JustPressed(BT_ALTATTACK) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") == 2){
+				if(CountInv("LeftM2PlasmaAmmo") > 0){
+					return state("FireLeft_Overlay");
+				}
+				else {
+					A_PlaySoundEx("weapons/empty", "Auto");
+					return state("");
+				}
+			}
+			if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") == 1){
+				if(CountInv("LeftM2PlasmaAmmo") > 0){
+					return state("FireLeft_Overlay");
+				}
+				else {
+					A_PlaySoundEx("weapons/empty", "Auto");
+					return state("");
+				}
+			}
+			return state("");
+		}
+		Goto IdleLeft_Overlay
+		
+	
+	FireRight_Overlay:
+		M233 A 1 BRIGHT {
+			A_FireCustomMissile("HeavyPlasmaBall",0,0,6,-2);
+			A_PlaySoundEx("m2plasma", "Weapon");
+			
+			A_AlertMonsters;
+			A_Zoomfactor(0.98);
+			PB_GunSmoke(-6,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 6, -1, 0, 0);
+			A_Setinventory("PB_M2PlasmaFireAnimation1",1);
+			PB_LowAmmoSoundWarning("hdmr");
+			A_Takeinventory("M2PlasmaAmmo",2);
+			A_GunFlash;
+			PB_WeaponRecoil(-1.44,+1.04);
+		}	
+		
+		M233 B 1 BRIGHT {
+			A_FireCustomMissile("AltHeavyPlasmaBall",0,0,6, -2);
+			A_Zoomfactor(0.99);
+			PB_GunSmoke(-6,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 6, -1, 0, 0);
+			if(CountInv("LeftM2PlasmaAmmo")>0 || CountInv("M2PlasmaAmmo")<=0 ){
+				A_TakeInventory("DualFiring",1);
+			}
+			PB_WeaponRecoil(-1.44,+1.04);
+			}
+		M233 C 1 BRIGHT {
+			A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
+			A_Zoomfactor(1.0);
+			PB_WeaponRecoil(-1.44,+1.04);
+			}
+		M233 DE 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE)
+		TNT1 A 0 {
+			if(CountInv("M2PlasmaAmmo")<=0){
+				A_GiveInventory("DualFireReload",1);
+			}
+		}
+		M232 AAA 1 
+		{
+			if(JustPressed(BT_ATTACK) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire") == 2){
+				if(CountInv("M2PlasmaAmmo") > 0){
+					return state("FireRight_Overlay");
+				}
+				else {
+					A_PlaySoundEx("weapons/empty", "Auto");
+					return state("");
+				}
+			}
+			if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire") == 1){
+				if(CountInv("M2PlasmaAmmo") > 0){
+					return state("FireRight_Overlay");
+				}
+				else {
+					A_PlaySoundEx("weapons/empty", "Auto");
+					return state("");
+				}
+			}
+			return state("");
+		}
+		Goto IdleRight_Overlay
+		
+	WeaponSpecial:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+		TNT1 A 0 {
+			A_Setinventory("GoWeaponSpecialAbility",0);
+			A_Setinventory("PB_LockScreenTilt",1);
+			PB_HandleCrosshair(46);
+			A_ClearOverlays(10,11);
+			}
+		TNT1 A 0 A_JumpIfInventory("HasLightningGunUpgrade", 1,"SwitchToLightningMode")	
+	DualWield:
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1,"SwitchFromDualWield")
+		TNT1 A 0 A_JumpIfInventory("PB_M2Plasma", 2,"SwitchToDualWield")
+		TNT1 A 0 A_Print("You need two M2 Plasma rifles to dual wield!")
+		Goto Ready3
+	SwitchToDualWield:
+		TNT1 A 0 {
+			A_PlaySoundEx("Ironsights", "Auto");
+			A_Setinventory("DualWieldingM2Plasma",1);
+			}
+		M231 ABCD 1 A_Setroll(roll-0.2, SPF_INTERPOLATE)
+		M231 EG 1 A_Setroll(roll+0.4, SPF_INTERPOLATE)
+		Goto ReadyDualWield
+	StopDualWield:
+		TNT1 A 0 A_setakimbo(false)
+	SwitchFromDualWield:
+		TNT1 A 0 {
+			A_PlaySoundEx("Ironsights", "Auto");
+			A_Setinventory("DualWieldingM2Plasma",0);
+			}
+		M231 EGDC 1 A_Setroll(roll-0.2, SPF_INTERPOLATE)
+		M231 BA 1 A_Setroll(roll+0.4, SPF_INTERPOLATE)
+		Goto Ready3
+	SwitchToLightningMode:
+		TNT1 A 0 A_JumpIfInventory("LightningGunMode", 1,"SwitchToRegularMode")
+		TNT1 A 0 {
+			A_Setinventory("LightningGunMode",1);
+			A_PlaySoundEx("PLSMLG2", "Auto");
+			}
+		PR1G ABCDEF 1
+		PR1G GHIJ 1
+		TNT1 A 0 A_PlaySound("LGHUM1", 6,1,1)
+		Goto ReallyReady2
+	SwitchToRegularMode:
+		TNT1 A 0 {
+			A_Setinventory("LightningGunMode",0);
+			A_PlaySoundEx("PLSMLG1", "Auto");
+			}
+		PR1G GHIJ 1
+		PR1G FEDCBA 1
+		Goto Ready3
+		
+	Deselect:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+		TNT1 A 0 {
+			A_WeaponOffset(0,32);
+			A_SetRoll(0);
+			PB_HandleCrosshair(46);
+			A_Setinventory("PB_LockScreenTilt",0);
+			A_ClearOverlays(10,11);
+		}
+		TNT1 A 0 A_StopSound(6)
+		TNT1 A 0 {
+			A_Setinventory("M2PlasmaUnloaded",0);
+			A_Setinventory("Unloading",0);
+			A_SetInventory("M2Selected",0);
+			A_SetInventory("PlasmaGunSelected",0);
+			A_SetInventory("HasPlasmaWeapon",0);
+			}
+		
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma",1,"DeselectDualWield")
+		M230 EDCBA 1 {
+			if (CountInv("HasLightningGunUpgrade") >= 1 ) { A_SetWeaponSprite("M293");}
+		}
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+		Wait	
+	DeselectDualWield:
+		M231 GFED 1 
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
+		Wait
+		
+	Select:
+		TNT1 A 0 {
+			A_WeaponOffset(0,32);
+			A_SetRoll(0);
+			PB_HandleCrosshair(46);
+			A_Setinventory("PB_LockScreenTilt",0);
+		}
+		
+		TNT1 A 0 PB_ResetBarrelTokens
+		
+		Goto SelectFirstPersonLegs
+		SelectContinue:
+		TNT1 A 0 A_Setinventory("M2PlasmaUnloaded",0)
+		TNT1 A 0 PB_WeapTokenSwitch("M2Selected")
+		TNT1 A 0 A_SetInventory("HasPlasmaWeapon",1)
+		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Raise
+		TNT1 AAAAAAAA 1 A_Raise
+		Wait
+		
+	Fire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
+		TNT1 A 0 {
+			A_WeaponOffset(0,32);
+			A_SetRoll(0);
+			PB_HandleCrosshair(46);
+			A_Setinventory("PB_LockScreenTilt",0);
+		}
+		TNT1 A 0 {
+			A_StopSound(6);
+			A_WeaponOffset(0,32);
+			}
+		TNT1 A 0 A_JumpIfInventory("Reloading",1,"Reload")
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",2,1)
+		Goto Reload
+		TNT1 A 0 A_JumpIfInventory("LightningGunMode",1,"FireLightningGun1")
+		PR2F ABCDE 0
+		M211 A 1 BRIGHT {
+			if (CountInv("HasLightningGunUpgrade") >= 1 ) { A_SetWeaponSprite("PR2F");}
+			A_FireCustomMissile("HeavyPlasmaBall",0,1,0,-1);
+			A_PlaySoundEx("m2plasma", "Weapon");
+			
+			A_Zoomfactor(0.98);
+			PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			A_FireCustomMissile("BlueFlareSpawn",-5,0,0,0);
+			PB_LowAmmoSoundWarning("hdmr");
+			A_Takeinventory("M2PlasmaAmmo",2);
+			A_GunFlash;
+			PB_WeaponRecoil(-0.84,+0.26);
+		}	
+		
+		M211 B 1 BRIGHT {
+			if (CountInv("HasLightningGunUpgrade") >= 1 ) { A_SetWeaponSprite("PR2F");}
+			A_FireCustomMissile("AltHeavyPlasmaBall",0,1,0, -1);
+			A_Zoomfactor(0.99);
+			PB_GunSmoke(0,0,0);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+			A_FireCustomMissile("BlueFlareSpawn",-5,0,0,0);
+			PB_WeaponRecoil(-0.84,+0.26);
+			}
+		M211 C 1 BRIGHT {
+			if (CountInv("HasLightningGunUpgrade") >= 1 ) { A_SetWeaponSprite("PR2F");}
+			A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
+			A_Zoomfactor(1.0);
+			PB_WeaponRecoil(-0.84,+0.26);
+			}
+		M211 DE 1 {
+			if (CountInv("HasLightningGunUpgrade") >= 1 ) { A_SetWeaponSprite("PR2F");}
+			A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+			}
+		PR2G A 0 A_JumpIfInventory("HasLightningGunUpgrade",1,2)
+		M210 A 0
+		"####" AAA 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD)
+		"####" A 0 PB_ReFire
+		Goto Ready3
+		
+	FireLightningGun1:
+		TNT1 A 0 A_PlaySound("LGFire", 1, 1)
+		TNT1 A 0 A_PlaySound("LGLoop", 7, 1, 1)
+		TNT1 A 0 A_Zoomfactor(0.98)
+		LightningGunLoop:
+		PR1F A 1 BRIGHT {
+			A_SetAngle(frandom(0.3, -0.3) + angle);
+			A_TakeInventory("M2PlasmaAmmo", 4);
+			PB_FireM2Lightning();
+			//A_FireCustomMissile("LightningGunProjectile", 0, 0, 0, 0, 0, 0);
+			A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
+			A_GunFlash;
+			}
+		PR1F B 1 BRIGHT {
+			A_SetAngle(frandom(0.3, -0.3) + angle);
+			PB_FireM2Lightning();
+			//A_FireCustomMissile("LightningGunProjectile", 0, 0, 0, 0, 0, 0);
+			A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
+			A_GunFlash;
+			}
+		PR1F A 1 BRIGHT {
+			A_SetAngle(frandom(0.3, -0.3) + angle);
+			PB_FireM2Lightning();
+			//A_FireCustomMissile("LightningGunProjectile", 0, 0, 0, 0, 0, 0);
+			A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
+			A_GunFlash;
+			}
+		PR1F C 1 BRIGHT {
+			A_SetAngle(frandom(0.3, -0.3) + angle);
+			PB_FireM2Lightning();
+			//A_FireCustomMissile("LightningGunProjectile", 0, 0, 0, 0, 0, 0);
+			A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
+			A_GunFlash;
+			}
+		PR1F A 1 BRIGHT {
+			A_SetAngle(frandom(0.3, -0.3) + angle);
+			PB_FireM2Lightning();
+			//A_FireCustomMissile("LightningGunProjectile", 0, 0, 0, 0, 0, 0);
+			A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
+			A_GunFlash;
+			}
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",1,1)
+		Goto Reload
+		PR1F B 1 BRIGHT PB_ReFire("LightningGunLoop")
+		TNT1 A 0 {
+			A_StopSound(7);
+			A_PlaySound("LGEnd1", 9, 1);
+			A_Zoomfactor(1.0);
+			}
+		PR1F DEF 1 BRIGHT A_WeaponReady(WRF_ALLOWRELOAD)
+		TNT1 A 0 {
+			A_WeaponReady(WRF_ALLOWRELOAD);
+			A_PlaySound("LGEnd2", 8, 1);
+			}
+		Goto ReallyReady2
+		
+	AltFire:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
+		TNT1 A 0 {
+			A_WeaponOffset(0,32);
+			A_SetRoll(0);
+			PB_HandleCrosshair(46);
+			A_Setinventory("PB_LockScreenTilt",0);
+			A_ClearOverlays(10,11);
+		}
+		TNT1 A 0 A_StopSound(6)
+		TNT1 A 0 A_JumpIfInventory("LightningGunMode",1,"FireStunBomb")
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1, "FireDualWield")
+		TNT1 A 0 A_Jump(256, "LeftToRight", "RightToLeft")
+		goto LeftToRight
+	FireStunBomb:
+		TNT1 A 0 A_JumpIfInventory("StunBombCooldown",1,"NoFireStun")
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",25,1)
+		Goto Reload
+		TNT1 A 0 A_PlaysoundEx("PZPCHR2", "Auto")
+		PR1F XYZABACABACABAC 1 BRIGHT A_FireCustomMissile("ElectroBlastTrail2", 0, 0, 0, 0)
+		TNT1 A 0 {
+			A_PlaysoundEx("STNBOMB", "Weapon");
+			A_TakeInventory("M2PlasmaAmmo", 25);
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			A_FireCustomMissile("StunBomb", 0, 0, 0, 0, 0, 0);
+			A_Zoomfactor(0.98);
+			A_GunFlash;
+			}
+		
+		PR1F D 1 BRIGHT A_Zoomfactor(0.99)
+		PR1F D 1 BRIGHT A_Zoomfactor(1.0)
+		PR1F EEFF 1 BRIGHT
+		"####" A 0 PB_ReFire("FireStunBomb")
+		Goto ReallyReady2
+	
+	NoFireStun:
+		TNT1 A 0 A_Print("Stun bomb on cooldown",1)
+		Goto ReallyReady2
+	LeftToRight:
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",10,1)
+		Goto Reload
+		PR4L A 0 A_JumpIfInventory("HasLightningGunUpgrade", 1,2)
+		PR3L A 0
+		"####" A 0 A_Setinventory("PB_LockScreenTilt",1)
+		"####" A 1 {
+			A_Zoomfactor(.96);
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			}
+		"####" A 0 A_PlaySound("plamersh",1, 1, 1)
+		"####" A 0 A_PlaySound("PLSTHRW",3)
+		"####" B 1 BRIGHT {
+			A_FireCustomMissile("HotPlasmaGas",random(27,33),0,8);
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			A_Takeinventory("M2PlasmaAmmo",2);
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			A_GunFlash;
+		}
+		"####" C 1 BRIGHT A_FireCustomMissile("HotPlasmaGas",random(20,27),0,8)
+		"####" D 1 A_PlaySound("PLSTHRW",4)
+		"####" E 1 BRIGHT {
+			A_FireCustomMissile("HotPlasmaGas",random(12,18),0,4);
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			A_Takeinventory("M2PlasmaAmmo",2);
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			A_GunFlash;
+			}
+		"####" F 1 BRIGHT A_FireCustomMissile("HotPlasmaGas",random(5,10),0,4)
+		"####" G 1 A_PlaySound("PLSTHRW",5)
+		"####" H 1 BRIGHT {
+			A_FireCustomMissile("HotPlasmaGas",random(-3,3));
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			A_Takeinventory("M2PlasmaAmmo",2);
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			A_GunFlash;
+			}
+		"####" I 1 A_PlaySound("PLSTHRW",6)
+		"####" J 1 BRIGHT {
+			A_FireCustomMissile("HotPlasmaGas",random(-12,-18),0,-4);
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			A_Takeinventory("M2PlasmaAmmo",2);
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			A_GunFlash;
+			}
+		"####" K 1 BRIGHT A_FireCustomMissile("HotPlasmaGas",random(-20,-27),0,-4)
+		"####" L 1 A_PlaySound("PLSTHRW",7)
+		"####" M 1 BRIGHT {
+			A_FireCustomMissile("HotPlasmaGas",random(-27,-33),0,-8);
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			A_Takeinventory("M2PlasmaAmmo",2);
+			A_SetRoll(roll+0.2, SPF_INTERPOLATE);
+			A_GunFlash;
+			}
+		"####" N 1 BRIGHT	A_StopSound(1)
+		"####" A 0 A_PlaySound("plameren",2)
+		"####" L 1 {
+			A_Zoomfactor(.98);
+			A_SetRoll(roll-0.6, SPF_INTERPOLATE);
+			}
+		"####" I 1 {
+			A_Zoomfactor(1.0);
+			A_SetRoll(roll-0.6, SPF_INTERPOLATE);
+			}
+		"####" A 0 PB_ReFire("AltFire")
+		Goto ready3
+		
+////////////////////////////
+
+	RightToLeft:
+		TNT1 A 0 A_JumpIfInventory("Reloading",1,"Reload")
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",10,1)
+		Goto Reload
+		PR4L A 0 A_JumpIfInventory("HasLightningGunUpgrade", 1,2)
+		PR3L A 0
+		"####" A 0 A_Setinventory("PB_LockScreenTilt",1)
+		"####" O 1 {
+			A_Zoomfactor(.96);
+			A_SetRoll(roll-0.2, SPF_INTERPOLATE);
+			}
+		"####" A 0 A_PlaySound("plamersh",1, 1, 1)
+		"####" A 0 A_PlaySound("PLSTHRW",3)
+		"####" N 1 BRIGHT {
+			A_FireCustomMissile("HotPlasmaGas",random(-27,-33),0,8);
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			A_Takeinventory("M2PlasmaAmmo",2);
+			A_SetRoll(roll-0.2, SPF_INTERPOLATE);
+			A_GunFlash;
+		}
+		"####" M 1 BRIGHT A_FireCustomMissile("HotPlasmaGas",random(-20,-27),0,8)
+		"####" L 1 A_PlaySound("PLSTHRW",4)
+		"####" K 1 BRIGHT {
+			A_FireCustomMissile("HotPlasmaGas",random(-12,-18),0,4);
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			A_Takeinventory("M2PlasmaAmmo",2);
+			A_SetRoll(roll-0.2, SPF_INTERPOLATE);
+			A_GunFlash;
+			}
+		"####" J 1 BRIGHT A_FireCustomMissile("HotPlasmaGas",random(-5,-10),0,4)
+		"####" I 1 A_PlaySound("PLSTHRW",5)
+		"####" H 1 BRIGHT {
+			A_FireCustomMissile("HotPlasmaGas",random(-3,3));
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			A_Takeinventory("M2PlasmaAmmo",2);
+			A_SetRoll(roll-0.2, SPF_INTERPOLATE);
+			A_GunFlash;
+			}
+		"####" G 1 A_PlaySound("PLSTHRW",6)
+		"####" F 1 BRIGHT {
+			A_FireCustomMissile("HotPlasmaGas",random(12,18),0,-4);
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			A_Takeinventory("M2PlasmaAmmo",2);
+			A_SetRoll(roll-0.2, SPF_INTERPOLATE);
+			A_GunFlash;
+			}
+		"####" E 1 BRIGHT A_FireCustomMissile("HotPlasmaGas",random(20,27),0,-4)
+		"####" D 1 A_PlaySound("PLSTHRW",7)
+		"####" C 1 BRIGHT {
+			A_FireCustomMissile("HotPlasmaGas",random(27,33),0,-8);
+			A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+			A_Takeinventory("M2PlasmaAmmo",2);
+			A_SetRoll(roll-0.2, SPF_INTERPOLATE);
+			A_GunFlash;
+			}
+		"####" B 1 BRIGHT	A_StopSound(1)
+		"####" A 0 A_PlaySound("plameren",2)
+		"####" D 1 {
+			A_Zoomfactor(.98);
+			A_SetRoll(roll-0.6, SPF_INTERPOLATE);
+			}
+		"####" G 1 {
+			A_Zoomfactor(1.0);
+			A_SetRoll(roll-0.6, SPF_INTERPOLATE);
+			}
+		"####" A 0 PB_ReFire("AltFire")
+		Goto ready3
+		
+	CheckLightningReload:
+		TNT1 A 0 {
+			A_SetCrosshair(5);
+			A_Setinventory("PB_LockScreenTilt",1);
+			A_StopSound(CHAN_6);
+			A_PlaySoundEx("PLSMLG1","Auto");
+		}
+		PR1G FEDCBA 1
+		TNT1 A 0 A_PlaySound("PLSM2LP", 6,0.1,1)
+		Goto ResumeUpgradedReloading
+	UpgradedReloading:
+		TNT1 A 0 A_JumpIfInventory("LightningGunMode",1,"CheckLightningReload")
+		TNT1 A 0 {
+			A_SetCrosshair(5);
+			A_Setinventory("PB_LockScreenTilt",1);
+			A_PlaySoundEx("Ironsights", "Auto");
+		}
+		ResumeUpgradedReloading:
+		TNT1 A 0 A_PlaySoundEx("PLSM2RL","Auto")
+		M223 ABCDEFGHIJKLLLLL 1
+		TNT1 A 0 A_PlaysoundEx("Weapons/CellEject", "Auto")
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaUnloaded",1,3)
+		TNT1 A 0 A_FireCustomMissile("GunFireSmoke", -40, 0, -6, -9, 0, 0)
+		TNT1 A 0 PB_SpawnCasing("EmptyCell",38,29,12,Frandom(-2,2),Frandom(6,9),Frandom(3,6))
+		M223 MNOPQRSTUV 1
+		TNT1 A 0 A_PlaySoundEx("weapons/m2plasma/reload", "Auto")
+		M223 WXYZ 1
+		M224 ABCDEFGHI 1
+		Goto InsertBullets
+		
+	Reload:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
+		TNT1 A 0 A_StopSound(7)
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1, "ReloadDualWield")
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",50,"Ready3")
+ 		TNT1 A 0 A_JumpIfInventory("PB_Cell",1,1)
+		Goto Ready3
+		TNT1 A 0 A_JumpIfInventory("HasLightningGunUpgrade", 1,"UpgradedReloading")	
+	ResumeNormalReloading:
+		TNT1 A 0 {
+			A_SetCrosshair(5);
+			A_Setinventory("PB_LockScreenTilt",1);
+			A_PlaySoundEx("Ironsights", "Auto");
+			A_PlaySoundEx("PLSM2RL","Auto");
+			A_ClearOverlays(10,11);
+		}
+		M220 ABCDEFG 1 A_Setroll(roll-0.5)
+		TNT1 A 0 A_PlaySoundEx("weapons/m2plasma/screenup", "Auto")
+		M220 H 1 {
+			A_Setroll(roll-1.5);
+			A_FireCustomMissile("GunFireSmoke", -40, 0, -6, -9, 0, 0);
+			A_PlaysoundEx("Weapons/CellEject","Auto");
+			}
+		M203 I 0 A_JumpIfInventory("M2PlasmaUnloaded",1,2)
+		M220 I 0
+		"####" IJK 1
+		"####" A 0 A_JumpIfInventory("M2PlasmaUnloaded",1,2)
+		"####" A 0 PB_SpawnCasing("EmptyCell",38,22,38,Frandom(2,5),Frandom(10,15),Frandom(5,8))
+		M220 LLLLL 1 A_Setroll(roll+1.0)
+		M220 MNOPQ 1 A_Setroll(roll+1.0)
+		M220 RR 1
+		M220 RRRRRR 1 A_Setroll(roll-1.0)
+		TNT1 A 0 A_PlaySoundEx("weapons/m2plasma/reload", "Auto")
+		M220 STUV 1 A_Setroll(roll+0.5)
+		M220 WXYZ 1 A_Setroll(roll-0.5)
+		M220 ZZZ 1
+		M221 ABCD 1 A_Setroll(roll-1.0)
+		M221 EFGH 1 A_Setroll(roll+1.0)
+	InsertBullets:
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",50,"FinishReload")
+		TNT1 A 0 A_JumpIfInventory("PB_Cell",1,1)
+		Goto FinishReload
+		TNT1 A 0 {
+			A_Giveinventory("M2PlasmaAmmo",1);
+			A_Takeinventory("PB_Cell",1);
+			}
+		Goto InsertBullets
+	FinishReload:
+		TNT1 A 0 A_Setinventory("M2PlasmaUnloaded",0)
+		Goto ready3
+		
+	ReloadDualWield:
+		TNT1 A 0 {
+			if (CountInv("M2PlasmaAmmo") >= 50 && CountInv("LeftM2PlasmaAmmo") >= 50) {
+				return state("ReadyDualWield");
+			}
+			return state("");
+		}
+		TNT1 A 0 A_JumpIfInventory("PB_Cell",1,1)
+		Goto ReadyDualWield
+		TNT1 A 0 {
+			A_SetCrosshair(5);
+			A_Setinventory("PB_LockScreenTilt",1);
+			A_PlaySoundEx("Ironsights", "Auto");
+			A_PlaySoundEx("PLSM2RL","Auto");
+			A_ClearOverlays(10,11);
+		}
+		M231 GFED 1
+		TNT1 A 0 A_JumpIf(CountInv("M2PlasmaAmmo") >= 50,"ReloadLeft")
+		M220 FG 1 A_Setroll(roll-0.5)
+		TNT1 A 0 A_PlaySoundEx("weapons/m2plasma/screenup", "Auto")
+		M220 H 1 {
+			A_Setroll(roll-1.5);
+			A_FireCustomMissile("GunFireSmoke", -40, 0, -6, -9, 0, 0);
+			A_PlaysoundEx("Weapons/CellEject","Auto");
+			}
+		M203 I 0 A_JumpIfInventory("M2PlasmaUnloaded",1,2)
+		M220 I 0
+		"####" IJK 1
+		"####" A 0 A_JumpIfInventory("M2PlasmaUnloaded",1,2)
+		"####" A 0 PB_SpawnCasing("EmptyCell",38,22,38,Frandom(2,5),Frandom(10,15),Frandom(5,8))
+		M220 LLLLL 1 A_Setroll(roll+1.0)
+		M220 MNOPQ 1 A_Setroll(roll+1.0)
+		M220 RR 1
+		M220 RRRRRR 1 A_Setroll(roll-1.0)
+		TNT1 A 0 A_PlaySoundEx("weapons/m2plasma/reload", "Auto")
+		M220 STUV 1 A_Setroll(roll+0.5)
+		M220 WXYZ 1 A_Setroll(roll-0.5)
+		M220 ZZZ 1
+		M221 ABCD 1 A_Setroll(roll-1.0)
+		M221 E 1 A_Setroll(roll+1.0)
+		M230 BA 1 A_Setroll(roll+1.0)
+		TNT1 A 1 A_Setroll(roll+1.0)
+		TNT1 A 9
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaUnloaded",1,2)
+		TNT1 A 0 A_SetInventory("M2PlasmaUnloaded",0)
+		
+		TNT1 A 0 A_JumpIf(CountInv("LeftM2PlasmaAmmo") < 50,1)
+		Goto InsertBullets4
+	ReloadLeft:
+		TNT1 A 0 A_PlaySoundEx("weapons/m2plasma/reload", "Auto")
+		M222 AAABC 1
+		M204 D 0 A_JumpIfInventory("M2PlasmaUnloaded",1,2)
+		M222 D 0
+		"####" D 1 {
+			A_FireCustomMissile("GunFireSmoke", 40, 0, 6, -9, 0, 0);
+			A_PlaysoundEx("Weapons/CellEject","Auto");
+			}
+		"####" EF 1
+		"####" A 0 A_JumpIfInventory("M2PlasmaUnloaded",1,2)
+		"####" A 0 //PB_SpawnCasing("EmptyCell",38,-13,38,2,Frandom(-15,-10),Frandom(5,8))
+		"####" A 0 PB_SpawnCasing("EmptyCell",38,-22,38,Frandom(2,5),Frandom(-15,-10),Frandom(5,8))
+		M222 GGGGHIJKLMMMMNOPQRSTUUVWXYZ 1
+		M231 DEFG 1
+		TNT1 A 0 A_SetInventory("M2PlasmaUnloaded",0)
+	InsertBullets4:
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",50,"InsertBullets5")
+		TNT1 A 0 A_JumpIfInventory("PB_Cell",1,1)
+		Goto InsertBullets5
+		TNT1 A 0 {
+			A_Giveinventory("M2PlasmaAmmo",1);
+			A_Takeinventory("PB_Cell",1);
+		}
+		Goto InsertBullets4
+	InsertBullets5:
+		TNT1 A 0 A_JumpIfInventory("LeftM2PlasmaAmmo",50,"Ready3")
+		TNT1 A 0 A_JumpIfInventory("PB_Cell",1,1)
+		Goto Ready3
+		TNT1 A 0 {
+			A_Giveinventory("LeftM2PlasmaAmmo",1);
+			A_Takeinventory("PB_Cell",1);
+		}
+		Goto InsertBullets5
+		
+	AlreadyUnloaded:
+		TNT1 A 0 A_Setinventory("Unloading",0)
+		Goto ready3
+	CheckLightningUnload:
+		TNT1 A 0 A_PlaySound("PLSMLG1")
+		PR1G FEDCBA 1
+		Goto ResumeUpgradedUnloading
+	UpgradedUnloading:
+		TNT1 A 0 A_JumpIfInventory("LightningGunMode",1,"CheckLightningUnload")
+	ResumeUpgradedUnloading:
+		M224 IHGFEDCBA 1
+		M223 ZYXW 1
+		TNT1 A 0 A_PlaySound("Weapons/CellKickIn")
+		M223 VUTSRQPONMLKIHGFEDCB 1
+	RemoveBullets2:
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",1,1)
+		Goto FinishUnload2
+		TNT1 A 0 {
+			A_Takeinventory("M2PlasmaAmmo",1);
+			A_Giveinventory("PB_Cell",1);
+			}
+		Goto RemoveBullets2
+	FInishUnload2:
+		TNT1 A 0 A_SetInventory("M2PlasmaUnloaded", 1)
+		TNT1 A 0 A_Setinventory("Unloading",0)
+		Goto ready3
+	Unload:
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaUnloaded", 1, "Ready3")
+		TNT1 A 0 {
+			A_ClearOverlays(10,11);
+			A_StopSound(6);
+			A_Setinventory("Unloading",0);
+			}
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",1,1)
+		Goto ready3
+		TNT1 A 0 A_JumpIfInventory("HasLightningGunUpgrade", 1,"UpgradedUnloading")	
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma",1, "UnloadDualWield")
+		M221 HGFEDCBA 1
+		M220 ZYXWVU 1 
+		TNT1 A 0 A_PlaySound("Weapons/CellKickIn")
+		M220 TSRQPONM 1
+		M220 FED 1
+		M220 C 1 Offset(-2, 35)
+		M220 BA 1 Offset(-4, 37)
+		M210 A 2 A_WeaponOffset(0,32)
+	RemoveBullets:
+		TNT1 A 0 A_JumpIfInventory("M2PlasmaAmmo",1,1)
+		Goto FinishUnload
+		TNT1 A 0 {
+			A_Takeinventory("M2PlasmaAmmo",1);
+			A_Giveinventory("PB_Cell",1);
+			}
+		Goto RemoveBullets
+	FInishUnload:
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma",1,"UnloadLeft")
+		TNT1 A 0 {
+			A_SetInventory("M2PlasmaUnloaded", 1);
+			A_Setinventory("Unloading",0);
+			}
+		Goto ready3
+	
+	UnloadDualWield:
+		M231 GFED 1
+		M220 PQR 1
+		M220 ZYXWVU 1 
+		TNT1 A 0 A_PlaySound("Weapons/CellKickIn")
+		M220 TSRQPON 1
+		M220 N 1 Offset(-15, 39)
+		M220 N 1 Offset(-30, 46)
+		M220 N 1 Offset(-40, 53)
+		TNT1 A 9 A_WeaponOffset(0,32)
+		Goto RemoveBullets
+	
+	UnloadLeft:
+		M222 GHIJKLM 1
+		M222 TSRQP 1
+		TNT1 A 0 A_PlaySound("Weapons/CellKickIn")
+		M222 ONMLKJI 1
+		M222 I 1 Offset(15, 39)
+		M222 I 1 Offset(30, 46)
+		M222 I 1 Offset(40, 53)
+		TNT1 A 3 A_WeaponOffset(0,32)
+	RemoveBulletsLeft:
+		TNT1 A 0 A_JumpIfInventory("LeftM2PlasmaAmmo",1,1)
+		Goto FinishUnloadLeft
+		TNT1 A 0 {
+			A_Takeinventory("LeftM2PlasmaAmmo",1);
+			A_Giveinventory("PB_Cell",1);
+			}
+		Loop
+	FInishUnloadLeft:
+		TNT1 A 0 {
+			A_SetInventory("M2PlasmaUnloaded", 1);
+			A_Setinventory("Unloading",0);
+			}
+		Goto SelectAnimationDualWield
+	
+	Flash:
+		TNT1 A 4
+		Goto LightDone
+		
+	Spawn:
+		M2PR A -1
+		Stop
+	/*Spawn: //Model not implemented yet
+		VM2P A 0 NoDelay
+		M2PR A 10 A_PbvpFramework("VM2P")
+		"####" "#" 0 A_PbvpInterpolate()
+		LOOP*/
+	
+		
+		
+	FlashPunching:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
+		PR2K ABCDEFG 0
+		TNT1 A 0 A_ClearOverlays(10,11)
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1,"FlashPunchingDW")
+		M225 ABCDEFGGFEDCBA 1 {
+			if(CountInv("HasLightningGunUpgrade") == 1) {A_SetFlashWeaponSprite("PR2K");}
+			}
+		Stop
+	FlashPunchingDW:
+		TNT1 A 15
+		Stop
+	
+	FlashKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
+		PR2K ABCDEFG 0
+		TNT1 A 0 A_ClearOverlays(10,11)
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1,"FlashKickingDW")
+		M225 ABCDEFGGFEDCBA 1 {
+			if(CountInv("HasLightningGunUpgrade") == 1) {A_SetWeaponSprite("PR2K");}
+			}
+		Goto Ready3
+	FlashKickingDW:
+		P7SS EDCBAAAAAABCDE 1 
+		Goto Ready3
+		
+	FlashAirKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")	
+		TNT1 A 0 A_ClearOverlays(10,11)
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1,"FlashAirKickingDW")
+		M225 ABCDEFGGGGFEDCBA 1 {
+			if(CountInv("HasLightningGunUpgrade") == 1) {A_SetWeaponSprite("PR2K");}
+			}
+		Goto Ready3
+	FlashAirKickingDW:
+		P7SS EDCBAAAAAAAABCDE 1 
+		Goto Ready3
+		
+	FlashSlideKicking:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
+		TNT1 A 0 A_ClearOverlays(10,11)
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1,"FlashSlideKickingDW")	
+		M225 ABCDEFGGGGGGGGGGGGGFEDCBAA 1 {
+			if(CountInv("HasLightningGunUpgrade") == 1) {A_SetWeaponSprite("PR2K");}
+			}
+		Goto Ready3
+
+	FlashSlideKickingDW:
+		P7SS EDCBAAAAAAAAAAAAAAAAAABCDE 1 
+		Goto Ready3
+		
+		
+	FlashSlideKickingStop:
+		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
+		TNT1 A 0 A_JumpIfInventory("DualWieldingM2Plasma", 1,"FlashSlideKickingStopDW")	
+		M225 GFEDCBA 1 {
+			if(CountInv("HasLightningGunUpgrade") == 1) {A_SetWeaponSprite("PR2K");}
+			}
+		Goto Ready3
+		
+	FlashSlideKickingStopDW:
+		P7SS ABCDEEE 1 
+		Goto Ready3
+	}
+}
+
+ACTOR HeavyPlasmaBall: Plasma_ball
+{
+	Radius 10
+	Height 10
+	Speed 80
+	Damage 10
+	DamageType Plasma
+	Decal "Scorch"
+	Projectile
+	+RANDOMIZE
+renderstyle ADD
+Scale 0.2
+	//Translation "0:255=%[0,0,0]:[0,0,1]"
+	DeathSound "weapons/plasmax"
+	//SeeSound "PLSM8"
+	SeeSound "None"
+	Obituary "$OB_MPPLASMARIFLE"
+	States
+	{
+	Spawn:
+			DB20 ABCDEFGHIJLMNOPQRSTUVWXYZ 2 BRIGHT 
+			{	
+				A_SpawnItem("BluePlasmaFireSmall2",0,0);
+				A_SpawnItemEx("CryoRifleTrailSparksSmall", random(4,-4), random(4,-4), random(4,-4), 0, 0, 0, 0, 128, 0);
+			}
+		Loop
+
+Xdeath:
+	TNT1 A 0 A_SpawnItem ("Plasma_Puff", 0)
+	TNT1 AAAA 0 A_CustomMissile ("BluePlasmaFireSmall2", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 AAAAA 0 A_CustomMissile ("SuperPlasmaFire", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 AAAAAAA 0 A_CustomMissile ("BluePlasmaParticle", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 AAAAAAA 0 A_CustomMissile ("CryoRifleTrailSparksSmall", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 A 0 A_Explode(6,90,0)
+	TNT1 A 1 Light("LightningImpactLight")
+	TNT1 B 4
+		
+		Stop
+
+	Death:
+	TNT1 A 0 A_SpawnItem ("Plasma_Puff", 0)
+	//TNT1 A 0 A_SpawnItem ("RailPuff", 0)
+	TNT1 A 0 A_Explode(6,90,0)
+	TNT1 AAAA 0 A_CustomMissile ("BluePlasmaFireSmall2", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 AAAAA 0 A_CustomMissile ("SuperPlasmaFire", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 AAAAAAAAAAAAAAAAA 0 A_CustomMissile ("BluePlasmaParticle", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	TNT1 A 0 A_SpawnItemEx ("DetectCeilCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	TNT1 A 1 Light("LightningImpactLight")
+	TNT1 B 4	
+	TNT2 AAAA 4 A_CustomMissile ("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160))
+		Stop
+		
+		
+		
+	}
+}
+
+ACTOR AltHeavyPlasmaBall: Plasma_ball
+{
+	Radius 10
+	Height 10
+	Speed 80
+	Damage 12
+	DamageType SuperPlasma
+	Decal "Scorch"
+	Projectile
+	+RANDOMIZE
+renderstyle add
+Scale 0.2
+	//Translation "0:255=%[0,0,0]:[0,0,1]"
+	DeathSound "weapons/plasmax"
+	//SeeSound "PLSM8"
+	SeeSound "None"
+	Obituary "$OB_MPPLASMARIFLE"
+	States
+	{
+	Spawn:
+			DB20 ABCDEFGHIJLMNOPQRSTUVWXYZ 1 BRIGHT 
+			{	
+				A_SpawnItem("BluePlasmaFireSmall2",0,0);
+				A_SpawnItemEx("CryoRifleTrailSparksSmall", random(4,-4), random(4,-4), random(4,-4), 0, 0, 0, 0, 128, 0);
+			}
+		Loop
+
+
+Xdeath:
+	TNT1 A 0 A_SpawnItem ("Plasma_Puff", 0)
+	TNT1 AAAA 0 A_CustomMissile ("BluePlasmaFireSmall2", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 AAAAA 0 A_CustomMissile ("SuperPlasmaFire", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 AAAAAAA 0 A_CustomMissile ("BluePlasmaParticle", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 AAAAAAA 0 A_CustomMissile ("CryoRifleTrailSparksSmall", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 A 0 A_Explode(6,90,0)
+	TNT1 A 1 Light("LightningImpactLight")
+	TNT1 B 4
+	TNT2 AAAA 4 A_CustomMissile ("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160))
+		Stop
+
+	Death:
+	TNT1 A 0 A_SpawnItem ("Plasma_Puff", 0)
+	//TNT1 A 0 A_SpawnItem ("RailPuff", 0)
+	TNT1 A 0 A_Explode(6,90,0)
+	TNT1 AAAA 0 A_CustomMissile ("BluePlasmaFireSmall2", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 AAAAA 0 A_CustomMissile ("SuperPlasmaFire", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 AAAAAAAAAAAAAAAAA 0 A_CustomMissile ("BluePlasmaParticle", 0, 0, random (0, 360), 2, random (0, 360))
+	TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	TNT1 A 0 A_SpawnItemEx ("DetectCeilCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	TNT1 A 1 Light("LightningImpactLight")
+	TNT1 B 4	
+		Stop
+		
+		
+	}
+}
+
+
+
+Actor SuperPlasmaFire
+{
+  Height 0
+  Radius 0
+  Mass 0
+  +Missile
+  +NoBlockMap
+  -NoGravity
+  //+LowGravity
+  +DontSplash
+  +DoomBounce
+  +FORCEXYBILLBOARD
+  BounceFactor 0.2
+  Gravity 0.8
+  RenderStyle Add
+  Scale 0.035
+  //Speed 2
+  Speed 2
+	+NoGravity
+  -DOOMBOUNCE
+  RenderStyle Add
+  Scale 0.7
+  Alpha 0.9
+  States
+  {
+  Spawn:
+  Death:
+	FIR6 ABCDEFGHIJKLMNOP 1 Bright A_FadeOut(0.04)
+	Stop
+  }
+}
+
+Actor BluePlasmaFireSmall2
+{
+  Height 0
+  Radius 0
+  Mass 0
+  +Missile
+  +NoBlockMap
+  -NoGravity
+  //+LowGravity
+  +DontSplash
+  +DoomBounce
+  +FORCEXYBILLBOARD
+  BounceFactor 0.2
+  Gravity 0.8
+  RenderStyle Add
+  Scale 0.035
+  Speed 0
+	+NoGravity
+  -DOOMBOUNCE
+  RenderStyle Add
+  Scale 0.19
+  Alpha 0.85
+  States
+  {
+  Spawn:
+  Death:
+	FIR6 ABCDEFGHIJKLMNOP 1 Bright A_FadeOut(0.05)
+	Stop
+  }
+}
+
+Actor BluePlasmaFireSmall
+{
+  Height 0
+  Radius 0
+  Mass 0
+  +Missile
+  +NoBlockMap
+  -NoGravity
+  //+LowGravity
+  +DontSplash
+  +DoomBounce
+  +FORCEXYBILLBOARD
+  BounceFactor 0.2
+  Gravity 0.8
+  RenderStyle Add
+  Scale 0.035
+  Speed 0
+	+NoGravity
+  -DOOMBOUNCE
+  RenderStyle Add
+  Scale 0.25
+  Alpha 0.85
+  States
+  {
+  Spawn:
+  Death:
+	FIR5 ABCDEFGHIJKLMNOP 1 Bright A_FadeOut(0.05)
+	Stop
+  }
+}
+
+
+Actor LightningGunProjectile: FastProjectile
+{
+	+RANDOMIZE
+	+FORCEXYBILLBOARD
+	+DONTSPLASH
+	-BLOODSPLATTER
+	+FORCERADIUSDMG
+	damage 0
+	radius 1
+	height 1
+	speed 500
+  Mass 9999999
+	renderstyle ADD
+	//alpha 0.9
+	scale .15
+	decal "none"
+	damagetype "Plasma"
+	missiletype "ElectroBlastTrail"
+	states
+		{
+		Spawn:
+			TNT1 A 1 BRIGHT
+			Loop
+			
+		Death:
+			TNT1 A 0 BRIGHT A_SpawnItem("LightningGunPuff",0)
+			TNT1 A 0 BRIGHT A_SpawnItem("BlueFlare",0)
+			TNT1 AA 0 A_SpawnItemEx("CryoRifleTrailSparksSmall", random(4,-4), random(4,-4), random(4,-4), 0, 0, 0, 0, 128, 0)
+			TNT1 A 0 A_explode(random(12,15), 80)
+			TNT1 AAA 0 A_CustomMissile ("BluePlasmaParticle", 0, 0, random (0, 360), 2, random (0, 360))
+			TNT1 A 1 Light("LightningImpactLight")
+			Stop
+		}
+	}
+
+/*Actor LightningGunPuff
+{
+  -COUNTKILL
+  -SHOOTABLE
+  +CLIENTSIDEONLY
+  +BLOODLESSIMPACT 
+  +FORCEXYBILLBOARD
+  +THRUACTORS
+  +NOGRAVITY
+  +NODAMAGETHRUST
+  +DONTTHRUST
+  +DONTSPLASH
+  -SHOOTABLE
+  +RANDOMIZE
+  Mass 9999999
+  RenderStyle Add
+  Speed 0
+  Radius 1
+  Height 1
+	damagetype "Plasma"
+	Scale 1.12
+	States
+	{
+		Spawn:
+			TNT1 A 0
+			TNT1 A 0 A_CheckFloor("FloorCheck")
+			TNT1 A 1
+			Die:
+			DB08 ABCDEFGHIJKLM 1 bright A_SetScale(ScaleX+frandom(0.04,0.08), ScaleY+frandom(0.04,0.08))
+			DB08 NOPQRSTUVWXYZABCDEFGHIJKLM 1 bright
+				{
+					A_SetScale(ScaleX-0.08, ScaleY-0.08);
+					A_FadeOut(0.08);
+				}
+			Stop
+			
+		FloorCheck:
+			
+			TNT1 A 2			
+			TNT1 A 1
+			Goto Die	
+			
+		ConductiveDeath:
+			TNT1 A 0 BRIGHT A_SpawnItem("LightningGunPuff_Big",0)
+			TNT1 A 0 BRIGHT A_SpawnItem("ElectroBombFX",0)
+			TNT1 A 0 BRIGHT A_SpawnItem("BlueFlare",0)
+			TNT1 A 0 A_explode(random(30,35), 240,0,0,200)
+			TNT1 AA 0 A_CustomMissile("ElectroBlastTrail3",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(30,270))
+			TNT1 AAAAA 0 A_CustomMissile ("BluePlasmaParticle", 0, 0, random (0, 360), 2, random (0, 360))
+			TNT1 A 1 Light("LightningImpactLight")
+			Stop
+	}
+}*/
+
+Actor LightningGunPuff_Big
+{
+  -COUNTKILL
+  -SHOOTABLE
+  //+CLIENTSIDEONLY
+  +BLOODLESSIMPACT 
+  +FORCEXYBILLBOARD
+  +THRUACTORS
+  +NOGRAVITY
+  +NODAMAGETHRUST
+  +DONTSPLASH
+  +RANDOMIZE
+		RenderStyle Add
+		Scale 2.50
+		States 
+		{
+		
+			Spawn:
+				DB08 ABCDEFGHIJKLMNOPQRSTUVWXYZABCDEFGHIJKLMNOPQRSTUVWXYZ 1 bright 
+				{
+					A_SetScale(ScaleX-0.1, ScaleY-0.1);
+					A_FadeOut(0.03);
+				}
+				Stop
+		
+		}
+}
+
+Actor LightningGunPuff_Bigger : LightningGunPuff_Big
+{Scale 3.25}
+
+actor ElectroBlastTrail
+{
+	+VISIBILITYPULSE
+	Radius 0
+	Height 0
+	+NOGRAVITY
+	+NOINTERACTION
+	Speed 0
+	+RANDOMIZE
+	+DontSplash
+	+THRUACTORS
+	+NOBLOOD
+	RenderStyle Add
+	//Alpha 0.4
+	Scale 0.27
+	States
+	{
+	Spawn:
+			TNT1 A 0
+			TNT1 A 0 A_Jump (256, "Spawn2", "Spawn3", "Spawn4", "Spawn5", "Spawn6", "Spawn7", "Spawn8", "Spawn9", "Spawn10")
+			DLI6 ABCDEFGHIJK 1 bright
+			Stop
+		Spawn2:
+			TNT1 A 0
+			DLI7 ABCDEFGHIJK 1 bright
+			Stop
+		Spawn2:
+			TNT1 A 0
+			DLI8 ABCDEFGHIJK 1 bright
+			Stop
+		Spawn3:
+			TNT1 A 0
+			DLI9 ABCDEFGHIJK 1 bright
+			Stop
+		Spawn4:
+			TNT1 A 0
+			DLI0 ABCDEFGHIJK 1 bright
+			Stop
+		Spawn5:
+			TNT1 A 0
+			DLI6 ABCDEFGHIJK 1 bright
+			Stop
+		Spawn6:
+			TNT1 A 0
+			DLI7 LMNOPQRSTUV 1 bright
+			Stop
+		Spawn7:
+			TNT1 A 0
+			DLI8 LMNOPQRSTUV 1 bright
+			Stop
+		Spawn8:
+			TNT1 A 0
+			DLI9 LMNOPQRSTUV 1 bright
+			Stop
+		Spawn9:
+			TNT1 A 0
+			DLI0 LMNOPQRSTUV 1 bright
+			Stop
+		Spawn10:
+			TNT1 A 0
+			DLI0 ABCDEFGHIJK 1 bright
+			Stop
+	}
+}
+
+Actor ElectroBlastTrail2 : ElectroBlastTrail
+{
+	Speed 10
+}
+
+Actor ElectroBlastTrail3 : ElectroBlastTrail
+{
+	Speed 10
+	Scale 0.62
+}
+
+
+
+Actor StunElectrocute : ElectroBlastTrail
+{
+	Scale 0.32
+	States
+	{
+	Spawn:
+			TNT1 A 0
+			TNT1 A 0 A_Playsound("Sparks/Spawn")
+			TNT1 A 0 A_Jump (256, "Spawn2", "Spawn3", "Spawn4", "Spawn5", "Spawn6", "Spawn7", "Spawn8", "Spawn9", "Spawn10")
+			DLI6 ABCDEFGHIJK 1 bright Light("ElectrocutionLight")
+			Stop
+		Spawn2:
+			TNT1 A 0
+			DLI7 ABCDEFGHIJK 1 bright Light("ElectrocutionLight")
+			Stop
+		Spawn2:
+			TNT1 A 0
+			DLI8 ABCDEFGHIJK 1 bright Light("ElectrocutionLight")
+			Stop
+		Spawn3:
+			TNT1 A 0
+			DLI9 ABCDEFGHIJK 1 bright Light("ElectrocutionLight")
+			Stop
+		Spawn4:
+			TNT1 A 0
+			DLI0 ABCDEFGHIJK 1 bright Light("ElectrocutionLight")
+			Stop
+		Spawn5:
+			TNT1 A 0
+			DLI6 ABCDEFGHIJK 1 bright Light("ElectrocutionLight")
+			Stop
+		Spawn6:
+			TNT1 A 0
+			DLI7 LMNOPQRSTUV 1 bright Light("ElectrocutionLight")
+			Stop
+		Spawn7:
+			TNT1 A 0
+			DLI8 LMNOPQRSTUV 1 bright Light("ElectrocutionLight")
+			Stop
+		Spawn8:
+			TNT1 A 0
+			DLI9 LMNOPQRSTUV 1 bright Light("ElectrocutionLight")
+			Stop
+		Spawn9:
+			TNT1 A 0
+			DLI0 LMNOPQRSTUV 1 bright Light("ElectrocutionLight")
+			Stop
+		Spawn10:
+			TNT1 A 0
+			DLI0 ABCDEFGHIJK 1 bright Light("ElectrocutionLight")
+			Stop
+	}
+}
+
+Actor ElectroBombFX
+{
+	Speed 0
+	Damage 0
+	PROJECTILE
+	RENDERSTYLE ADD
+	Damagetype plasma
+	Scale 0.35
+	+THRUGHOST
+	+THRUACTORS
+	+FORCEXYBILLBOARD
+	+NoGravity
+	+DONTSPLASH
+	States
+	{
+	Spawn:
+		TNT1 A 0
+		TNT1 A 0 A_PlaySound("LGBOMB")
+		STFL ABCDEFGHIJKLMNOP 1 Bright A_SetScale(ScaleX+0.05,ScaleY+0.05)
+		STFL ABCDE 1 BRIGHT A_FadeOut(0.2)
+		Stop
+		}
+}
+
+/*Actor StunBomb
+{
+	Radius 2
+	Height 2
+	Speed 24
+	Damage 0
+  // PROJECTILE
+	RENDERSTYLE ADD
+	//Alpha 0.80
+	Damagetype Stun //New Damage type!
+	Scale 0.1
+	+MISSILE
+	+THRUGHOST
+	+FORCEXYBILLBOARD
+	Gravity .5
+	SeeSound ""
+	DeathSound "LGBOMB"
+	States
+	{
+	Spawn:
+		TNT1 A 0
+		TNT1 A 0 A_PlaySound("PZAPFLY", 6,1,1)
+		STFL ABCD 1 A_SetScale(ScaleX+0.02,ScaleY+0.02)
+		Fly:
+		STFL EFGH 1 Bright A_CustomMissile("ElectroBlastTrail",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(-40,40))
+		STFL IJKL 1 Bright Light("LightningImpactLight") A_CustomMissile("ElectroBlastTrail",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(-40,40))
+		STFL MNOP 1 Bright A_CustomMissile("ElectroBlastTrail",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(-40,40))
+		STFL ABCD 1 Bright Light("LightningImpactLight") A_CustomMissile("ElectroBlastTrail",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(-40,40))
+		Loop
+		
+	Death:
+		TNT1 A 0
+		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 1)
+		TNT1 A 0 A_StopSound(6)
+		STFL ABCDEFGHIJKL 1 BRIGHT Light("LightningImpactLight") A_SetScale(ScaleX+0.1,ScaleY+0.1)
+		TNT1 A 0 BRIGHT A_SpawnItem("LightningGunPuff_Bigger",0)
+		TNT1 A 0 BRIGHT A_SpawnItem("BlueFlare",0)
+		TNT1 A 0 A_explode(2, 300,0,0,300)
+		TNT1 A 0 A_PlaySound("STNBOEX", 3)
+		TNT1 AAAAAAAAAAA 0 A_CustomMissile("ElectroBlastTrail3",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(30,270))
+		XELC AABBCCDDEEFF 1 Bright Light("LightningImpactLight") A_CustomMissile("ElectroBlastTrail3",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(30,270))
+		Stop
+		}
+}*/

@@ -1,30 +1,29 @@
 Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 {
-		Default
-		{
-			//$Title Zombie Helmet Sergeant
-			//$Category Project Brutality - Monsters/Former Humans/Sergeants
-			//$Sprite SIV1A1
-			damagefactor "Head", 0.6;
-			PB_Monster.MonDMGMult 0.90, 1.1, 0.70, 1.0, 0.95, 0.80;
-		}
-		
-		
-		States
-		{
-		
-			Death.Execution:
-				TNT1 A 0 {
-					A_Stopsound();
-					A_FaceTarget();
-					A_NoBlocking(false);
-				}
-				SMV1 A 4 ;
-				SSV1 E 4 ;
-				TNT1 A 0 A_Pain;
-				SPV1 A 21;
-				TNT1 A 0 A_Recoil(4);
-				Goto Death.SSG;
+	Default
+	{
+		//$Title Zombie Helmet Sergeant
+		//$Category Project Brutality - Monsters/Former Humans/Sergeants
+		//$Sprite SIV1A1
+		damagefactor "Head", 0.6;
+		PB_Monster.MonDMGMult 1.25, 1.25, 0.8, 1.0, 0.95, 0.7;
+	}
+	States
+	{
+		Death.Execution:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
+			TNT1 A 0 {
+				A_Stopsound();
+				A_FaceTarget();
+				A_NoBlocking(false);
+			}
+			SMV1 A 4 ;
+			SSV1 E 4 ;
+			TNT1 A 0 A_Pain;
+			SPV1 A 21;
+			TNT1 A 0 A_Recoil(4);
+			Goto Death.SSG;
 		
 		//Emergency manuever in case the monster gets killed by an "alerter" actor
 		Death.KillMe:
@@ -45,6 +44,11 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 				A_GiveInventory("ShotgunSelected", 1);
 			}
 		Stand:
+			TNT1 A 0;
+			TNT1 A 0 {
+				bNoPain = false;
+				A_SetRoll(0);
+			}
 			SIV1 AABB 10 A_Look();
 			TNT1 A 0 A_Jump(32, "Stand2");
 			Loop;
@@ -55,17 +59,26 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			TNT1 A 0 {
 				A_TakeInventory("SKShotgunGuy", 1);
 				EnemyLastSighted = Level.MapTime;
+				
+				bNoPain = false;
+				A_SetRoll(0);
 			}
 		SeeContinue:
-			SMV1 AABB 2 A_SmartChase();
+			SMV1 AA 1 A_SmartChase("Missile", "Melee", 0);
+			SMV1 AA 1 A_SmartChase(null, null, CHF_DONTTURN);
+			SMV1 BB 1 A_SmartChase("Missile", "Melee", 0);
+			SMV1 BB 1 A_SmartChase(null, null, CHF_DONTTURN);
 			TNT1 A 0 A_StartSound("humans/step");
-			SMV1 CCDD 2 A_SmartChase();
+			SMV1 CC 1 A_SmartChase("Missile", "Melee", 0);
+			SMV1 CC 1 A_SmartChase(null, null, CHF_DONTTURN);
+			SMV1 DD 1 A_SmartChase("Missile", "Melee", 0);
+			SMV1 DD 1 A_SmartChase(null, null, CHF_DONTTURN);
 			TNT1 A 0 A_StartSound("humans/step");
-			TNT1 A 0 A_JumpIfInventory("Wandering",16,"LookAround");
+			TNT1 A 0 A_JumpIf(CountInv("Wandering") == 71 && !OnPatrol,"LookAround");
 			Loop;
 		LookAround:
 			TNT1 A 0 A_ClearTarget();
-			TNT1 A 0 A_TakeInventory("Wandering", 36);
+			TNT1 A 0 A_TakeInventory("Wandering", 71);
 			TNT1 A 0 A_Jump(200, 2);
 			TNT1 A 0 A_StartSound("monsters/zombie/searching", CHAN_AUTO);
 			5HID ABACAD 10 A_Look();
@@ -121,8 +134,11 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 		////////////////
 		Melee:
 			5HGM A 6 A_FaceTarget();
-			TNT1 A 0 A_StartSound("skeleton/swing");
-			TNT1 A 0 A_SpawnProjectile("ZombieBashAttack",10,0,0,0);
+			TNT1 A 0 {
+				A_StartSound("skeleton/swing");
+				A_CustomMeleeAttack(10, "monsters/nazi/bash", "", "Normal");
+			}
+			//TNT1 A 0 A_SpawnProjectile("ZombieBashAttack",10,0,0,0);
 			5HGM B 6 A_FaceTarget();
 			5HGM A 6;
 			Goto See;
@@ -145,7 +161,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 				A_FaceTarget();
 				int chance = (random(1,256));
 				
-				if((chance > 232) && (CountInv("ZombieManGrenadeCount") < 3)) {return A_Jump(256, "Grenade");}
+				if((chance > 232) && (CountInv("ZombieManGrenadeCount") < 2)) {return A_Jump(256, "Grenade");}
 				if(chance > 192) {return A_Jump(256, "Attack3");}
 				return A_Jump(256, "Attack1", "Attack2", "Attack4");
 			}
@@ -153,8 +169,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 		//Standard, 1 pump attack
 		Attack1:
 			SSV1 EE 5 A_FaceTarget();
-			SSV1 F 5 BRIGHT FireProjStanding;
-			TNT1 A 0 A_StartSound("ShotgunDistantGunshot", 3);
+			SSV1 F 5 BRIGHT PB_Sergeant_FireShotgun();
+			TNT1 A 0 PB_DynamicTailMonster("shotgun", "shotgun");
 			SSV1 E 1 {
 				A_FaceTarget();
 				A_GiveInventory("SergeantAmmo", 1);
@@ -163,7 +179,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			SSV1 C 5;
 			SSV1 A 5 A_FaceTarget();
 			SSV1 B 5 A_StartSound("weapons/sgmvpump", 2);
-			TNT1 A 0 A_SpawnItem ("ShotCaseSpawn", 0, 30,0);
+			TNT1 A 0 A_SpawnItemEX("ShotgunCasing",0,0,23,frandom(3,5),frandom(3,4),frandom(8,11));
 			SSV1 A 5 A_StartSound("weapons/sgpump", 3);
 			SSV1 C 5;
 			Goto See;
@@ -171,8 +187,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 		// Two Pump Combo Attack
 		Attack2:
 			SSV1 EE 5 A_FaceTarget();
-			SSV1 F 5 BRIGHT FireProjStanding;
-			TNT1 A 0 A_StartSound("ShotgunDistantGunshot", 3);
+			SSV1 F 5 BRIGHT PB_Sergeant_FireShotgun();
+			TNT1 A 0 PB_DynamicTailMonster("shotgun", "shotgun");
 			SSV1 E 1 {
 				A_FaceTarget();
 				A_GiveInventory("SergeantAmmo", 1);
@@ -181,12 +197,12 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			SSV1 C 4;
 			SSV1 A 5 A_FaceTarget();
 			SSV1 B 5 A_StartSound("weapons/sgmvpump", 2);
-			TNT1 A 0 A_SpawnItem ("ShotCaseSpawn", 0, 30,0);
+			TNT1 A 0 A_SpawnItemEX("ShotgunCasing",0,0,23,frandom(3,5),frandom(3,4),frandom(8,11));
 			SSV1 A 5 A_StartSound("weapons/sgpump", 3);
 			SSV1 C 4;
 			SSV1 E 5 A_FaceTarget();
-			SSV1 F 5 BRIGHT FireProjStanding;
-			TNT1 A 0 A_StartSound("ShotgunDistantGunshot", 3);
+			SSV1 F 5 BRIGHT PB_Sergeant_FireShotgun();
+			TNT1 A 0 PB_DynamicTailMonster("shotgun", "shotgun");
 			SSV1 E 1 {
 				A_FaceTarget();
 				A_GiveInventory("SergeantAmmo", 1);
@@ -195,7 +211,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			SSV1 C 4;
 			SSV1 A 5 A_FaceTarget();
 			SSV1 B 5 A_StartSound("weapons/sgmvpump", 2);
-			TNT1 A 0 A_SpawnItem ("ShotCaseSpawn", 0, 30,0);
+			TNT1 A 0 A_SpawnItemEX("ShotgunCasing",0,0,23,frandom(3,5),frandom(3,4),frandom(8,11));
 			SSV1 A 5 A_StartSound("weapons/sgpump", 3);
 			SSV1 C 5;
 			Goto See;
@@ -203,33 +219,33 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 		// Aimed, Three Pump Combo
 		Attack3:
 			SZL2 AA 5;
-			SZL2 C 4 BRIGHT FireProjAimed;
-			TNT1 A 0 A_StartSound("ShotgunDistantGunshot", 3);
+			SZL2 C 4 BRIGHT PB_Sergeant_FireShotgun (42, 40);
+			TNT1 A 0 PB_DynamicTailMonster("shotgun", "shotgun");
 			SZL2 A 4;
 			SZL2 B 5 A_StartSound("weapons/sgmvpump", 2);
-			TNT1 A 0 A_SpawnItem ("ShotCaseSpawn", 0, 35,0);
+			TNT1 A 0 A_SpawnItemEX("ShotgunCasing",0,0,28,frandom(3,5),frandom(3,4),frandom(8,11));
 			SZL2 A 5 A_StartSound("weapons/sgpump", 3);
 			SZL2 A 3 {
 				A_FaceTarget();
 				A_GiveInventory("SergeantAmmo", 1);
 				return A_JumpIfInventory("SergeantAmmo", 8, "Reload");
 			}
-			SZL2 C 4 BRIGHT FireProjAimed;
-			TNT1 A 0 A_StartSound("ShotgunDistantGunshot", 3);
+			SZL2 C 4 BRIGHT PB_Sergeant_FireShotgun (42, 40);
+			TNT1 A 0 PB_DynamicTailMonster("shotgun", "shotgun");
 			SZL2 A 4;
 			SZL2 B 5 A_StartSound("weapons/sgmvpump", 2);
-			TNT1 A 0 A_SpawnItem ("ShotCaseSpawn", 0, 35,0);
+			TNT1 A 0 A_SpawnItemEX("ShotgunCasing",0,0,28,frandom(3,5),frandom(3,4),frandom(8,11));
 			SZL2 A 5 A_StartSound("weapons/sgpump", 3);
 			SZL2 A 3 {
 				A_FaceTarget();
 				A_GiveInventory("SergeantAmmo", 1);
 				return A_JumpIfInventory("SergeantAmmo", 8, "Reload");
 			}
-			SZL2 C 4 BRIGHT FireProjAimed;
-			TNT1 A 0 A_StartSound("ShotgunDistantGunshot", 3);
+			SZL2 C 4 BRIGHT PB_Sergeant_FireShotgun (42, 40);
+			TNT1 A 0 PB_DynamicTailMonster("shotgun", "shotgun");
 			SZL2 A 4;
 			SZL2 B 5 A_StartSound("weapons/sgmvpump", 2);
-			TNT1 A 0 A_SpawnItem ("ShotCaseSpawn", 0, 35,0);
+			TNT1 A 0 A_SpawnItemEX("ShotgunCasing",0,0,28,frandom(3,5),frandom(3,4),frandom(8,11));
 			SZL2 A 5 A_StartSound("weapons/sgpump", 3);
 			SZL2 A 3 {
 				A_FaceTarget();
@@ -244,7 +260,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			Crouching:
 			SP1C AA 5 A_FaceTarget();
 			TNT1 A 0 A_Jump(90 * !pb_disable_sergeant_prone, "GoProne"); //has a 90 in 256 chance, but only if the pb_disable_sergeant_prone cvar is unset
-			SP1C B 5 BRIGHT FireProjCrouched;
+			SP1C B 5 BRIGHT PB_Sergeant_FireShotgun (26, 24);
 			SP1C A 5 A_FaceTarget();
 			DoneCrouching:
 			SSV1 E 5 {
@@ -256,7 +272,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			SSV1 C 4;
 			SSV1 A 5 A_FaceTarget();
 			SSV1 B 5 A_StartSound("weapons/sgmvpump", 2);
-			TNT1 A 0 A_SpawnItem ("ShotCaseSpawn", 0, 30,0);
+			TNT1 A 0 A_SpawnItemEX("ShotgunCasing",0,0,23,frandom(3,5),frandom(3,4),frandom(8,11));
 			SSV1 A 5 A_StartSound("weapons/sgpump", 3);
 			Goto See;
 			
@@ -266,8 +282,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 		Prone:
 			TNT1 A 0 A_GiveInventory("IsProning", 1);
 			ZDE7 EE 6 A_FaceTarget();
-			ZDE7 F 5 BRIGHT FireProjProne;
-			TNT1 A 0 A_StartSound("ShotgunDistantGunshot", 3);
+			ZDE7 F 5 BRIGHT PB_Sergeant_FireShotgun (26, 24);
+			TNT1 A 0 PB_DynamicTailMonster("shotgun", "shotgun");
 			ZDE7 E 5 {
 				A_FaceTarget();
 				A_GiveInventory("SergeantAmmo", 1);
@@ -277,13 +293,13 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 				A_FaceTarget();
 				A_StartSound("weapons/sgmvpump", 2);
 			}
-			TNT1 A 0 A_SpawnItem ("ShotCaseSpawn", 0, 5,0);
+			TNT1 A 0 A_SpawnItemEX("ShotgunCasing",0,0,-2,frandom(3,5),frandom(3,4),frandom(8,11));
 			ZDE7 E 5 {
 				A_FaceTarget();
 				A_StartSound("weapons/sgpump", 3);
 			}
-			ZDE7 F 5 BRIGHT FireProjProne;
-			TNT1 A 0 A_StartSound("ShotgunDistantGunshot", 3);
+			ZDE7 F 5 BRIGHT PB_Sergeant_FireShotgun (26, 24);
+			TNT1 A 0 PB_DynamicTailMonster("shotgun", "shotgun");
 			ZDE7 E 5 {
 				A_FaceTarget();
 				A_GiveInventory("SergeantAmmo", 1);
@@ -293,13 +309,13 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 				A_FaceTarget();
 				A_StartSound("weapons/sgmvpump", 2);
 			}
-			TNT1 A 0 A_SpawnItem ("ShotCaseSpawn", 0, 5,0);
+			TNT1 A 0 A_SpawnItemEX("ShotgunCasing",0,0,-2,frandom(3,5),frandom(3,4),frandom(8,11));
 			ZDE7 E 5 {
 				A_FaceTarget();
 				A_StartSound("weapons/sgpump", 3);
 			}
-			ZDE7 F 5 BRIGHT FireProjProne;
-			TNT1 A 0 A_StartSound("ShotgunDistantGunshot", 3);
+			ZDE7 F 5 BRIGHT PB_Sergeant_FireShotgun (26, 24);
+			TNT1 A 0 PB_DynamicTailMonster("shotgun", "shotgun");
 			ZDE7 E 5 {
 				A_FaceTarget();
 				A_GiveInventory("SergeantAmmo", 1);
@@ -309,7 +325,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 				A_FaceTarget();
 				A_StartSound("weapons/sgmvpump", 2);
 			}
-			TNT1 A 0 A_SpawnItem ("ShotCaseSpawn", 0, 5,0);
+			TNT1 A 0 A_SpawnItemEX("ShotgunCasing",0,0,-2,frandom(3,5),frandom(3,4),frandom(8,11));
 			ZDE7 E 5 {
 				A_FaceTarget();
 				A_StartSound("weapons/sgpump", 3);
@@ -377,13 +393,18 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			TNT1 A 0 A_Jump(180, "See");
 			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 			Goto See;
+		
 		Pain.Head:
 			TNT1 A 0 A_JumpIfInventory("IsProning",1, "PainProne");
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Downed");
-			SPV1 A 5 A_Pain();
-			SPV1 BA 5; 
+			TNT1 A 0 A_SpawnProjectile ("NashGoreBloodSpurt", 52, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			P4SH G 6 {
+				A_Pain();
+				A_Stop();
+			}
+			TNT1 AA 0 A_SpawnProjectile ("PB_Teeth", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 160));
+			P4SH HIJJJIH 4;
 			TNT1 A 0 A_JumpIfInTargetInventory("IsPlayer",1, "See");
-			
 			TNT1 A 0 A_Jump(180, "See");
 			TNT1 A 0 A_StartSound("monsters/zombie/infight",CHAN_AUTO);
 			Goto See;
@@ -395,7 +416,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			ZDE7 C 2;
 			Goto DoneProne;
 			
-        Downed:
+		Downed:
 			1D11 S 6 A_Pain();
 			Goto GetUp;
 		Pain.Kick:
@@ -494,8 +515,9 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			TNT1 A 0 A_JumpIfInventory("Enraged", 1, "Missile");
 			SMV1 B 1 {
 				A_Pain();
-				bMISSILEMORE = true;
-				bMISSILEEVENMORE = true;
+				//bMISSILEMORE = True;
+				//bMISSILEEVENMORE = True;
+				MissileChanceMult = 0.0625; // Same as the above flags.
 				A_StartSound("grunt/sight");
 				A_FaceTarget();
 				A_GiveInventory("Enraged", 1);
@@ -519,6 +541,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 		Possession:
 			TNT1 A 0 A_TakeInventory("IsProning", 1);
 			SPV1 A 3 {
+				A_SetRoll(0);
 				A_SetInvulnerable();
 				A_Pain();
 				}
@@ -605,12 +628,14 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 		RollL:
 			TNT1 A 0 A_WallCheck(2, "RollLNow", "See");
 		RollLNow:
-			ZP05 AA 1 A_FaceTarget;
+			TNT1 AAA 0 A_FaceTarget(0);
+			ZP05 A 1 A_FaceTarget(0);
 			TNT1 A 0
 			{
-				ThrustThing(angle * 256 / 360 + 192, 15, 0, 0);
+				ThrustThing(angle * 256 / 360 + 192, 13, 0, 0);
 				//Play the Roll sound
 				bNoPain = true;
+				bNODROPOFF = true;
 			}
 			ZP05 AAAAAAAAAAAAAAAA 1 A_SetRoll(roll+22, SPF_INTERPOLATE);
 			ZP05 A 1
@@ -618,18 +643,21 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 				//A_Stop();
 				A_SetRoll(0);
 				bNoPain = false;
+				bNODROPOFF = false;
 			}
 			ZP05 A 1;
 			goto See;
 		RollR:
 			TNT1 A 0 A_WallCheck(2, "RollLNow", "See");
 		RollRNow:
-			ZP06 AA 1 A_FaceTarget;
+			TNT1 AAA 0 A_FaceTarget(0);
+			ZP06 A 1 A_FaceTarget(0);
 			TNT1 A 0
 			{
-				ThrustThing(angle * 256 / 360 + 64, 15, 0, 0);
+				ThrustThing(angle * 256 / 360 + 64, 13, 0, 0);
 				//Play the Roll sound
 				bNoPain = true;
+				bNODROPOFF = true;
 			}
 			ZP06 AAAAAAAAAAAAAAAA 1 A_SetRoll(roll-22, SPF_INTERPOLATE);
 			ZP06 A 1
@@ -637,6 +665,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 				//A_Stop();
 				A_SetRoll(0);
 				bNoPain = false;
+				bNODROPOFF = false;
 			}
 			ZP06 A 1;
 			goto See;
@@ -673,13 +702,15 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			TNT1 A 0 A_Jump(256, "RollL", "See", "Missile");
 			Goto See;
 			
-	   //If the monster is hit by the "Killme" damage (which is "exploded" by the captured marine), automatically start firing at the target.
+		//If the monster is hit by the "Killme" damage (which is "exploded" by the captured marine), automatically start firing at the target.
 		Pain.KillMe:
 			TNT1 A 0 A_TakeInventory("IsProning", 1);
 			TNT1 A 0;
 			Goto Missile;
 		
 		Death:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_JumpIfInventory("IsProning",1, "DeathProne");
 			//TNT1 A 0 A_Jump(32, "Death.Arm");
 			TNT1 A 0 A_DeathWepCheck("ShotgunSelected", 400, "Death.Shotgun");
@@ -729,6 +760,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 		
 		Death.ArmHitbox:
 		Death.Arm:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 {
 				A_SpawnProjectile ("PB_XDeathArm1", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH  , random (0, 160));
 				A_SpawnProjectile ("PB_SmallGib", 35, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH  , random (0, 160));
@@ -741,8 +774,10 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			TNT1 A 0 A_SpawnItemEx ("DyingHelmetSergeant",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 			
-        Death.Saw:
+		Death.Saw:
 		Death.Cut:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_Jump(132, "DeathSaw2");
 			TNT1 O 0 A_NoBlocking();
 			SXD2 AAABBBCCCDDD 1  A_SpawnProjectile ("Brutal_LiquidBlood2", random(28, 34), 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH  , random (30, 60));
@@ -784,6 +819,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			Goto Death.Minigun;
 			
 		 Death.Minigun:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_FaceTarget();
 			TNT1 A 0 A_Scream();
 			TNT1 O 0 A_NoBlocking();
@@ -791,6 +828,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			Stop;
 			
 		 Death.LegMassacre:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood2", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH  , random (0, 160));
 			TNT1 A 0 A_Scream();
 			TNT1 A 0 A_NoBlocking();
@@ -798,6 +837,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			Stop;
 
 		Death.Tear:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_XScream();
 			TNT1 O 0 A_NoBlocking();
 			TNT1 A 0 A_SpawnProjectile ("PB_MuchBlood", 1, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH  , random (0, 160));
@@ -817,6 +858,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 		
 		Death.HeadHitbox:
 		Death.Head:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_FaceTarget();
 			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
 			TNT1 A 0 A_JumpIfInTargetInventory("HasPlasmaWeapon", 1, "Death.Plasma");
@@ -848,7 +891,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			Stop;
 		DeathMinorHead1_Long:
 			TNT1 A 0 A_NoBlocking();
-			TNT1 A 0 A_SpawnItem("DyingHelmetShotgunguyHitInEye");
+			TNT1 A 0 A_SpawnItemEx ("DyingHelmetShotgunguyHitInEye",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 		DeathMinorHead2:
 			TNT1 AAAA 0 A_SpawnProjectile ("PB_BloodMist", 50, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH  , random (0, 360));
@@ -867,7 +910,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			Stop;
 		DeathMinorHead2_Long:
 			TNT1 A 0 A_NoBlocking();
-			TNT1 A 0 A_SpawnItem("DyingHelmetShotgunguyHitInEye2");
+			TNT1 A 0 A_SpawnItemEx ("DyingHelmetShotgunguyHitInEye2",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
 				
 		DeathMinorhead3:
@@ -887,6 +930,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			Stop;
 		
 		Death.Decapitate:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 {
 				A_Stop();
 				A_FaceTarget();
@@ -911,6 +956,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 		
 		Death.LegHitbox:
 		Death.Leg:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_JumpIfHealthLower(-120,"DoubleLegRemove");
 			TNT1 A 0 {
 				A_SpawnProjectile ("PB_MuchBlood2", 15, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH  , random (0, 160));
@@ -926,8 +973,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			U6M5 C 6 ;
 			TNT1 A 0 {
 				A_StartSound("BODYF",6);
-				A_SpawnItem("DyingHelmetSergeantLegBlewedOff");
-				}
+				A_SpawnItemEx ("DyingHelmetSergeantLegBlewedOff",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			}
 			Stop;
 		DoubleLegRemove:
 			TNT1 A 0 {
@@ -952,6 +999,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			Stop;
 			
 		Death.Incinerate:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 {
 				A_Stop();
 				A_NoBlocking();
@@ -1002,7 +1051,9 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			
 		Death.Melee:
 			TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Death.Down");
-        Death.Kick:
+		Death.Kick:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 {
 				bNODROPOFF = False;
 				bSLIDESONWALLS = true;
@@ -1019,6 +1070,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 
 			
 		Death.Shotgun:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_Jump(42, "Death.Shotgunontheface");
 			TNT1 A 0 A_JumpIfCloser(80, "Death.Blast");
 			TNT1 A 0 A_JumpIfCloser(320, "Death.Shotgunontheface");
@@ -1112,6 +1165,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			Stop;
 	
 		Death.Nailgun:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_Jump(256,
 				"Naildeath1", "Naildeath1",
 				"Naildeath2", "Naildeath2",
@@ -1195,12 +1250,14 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			Stop;
 		
 	Death.Railgun:
-			TNT1 A 0 A_Jump(96, "Death.SSG");
-		Death.Blast:
+		TNT1 A 0 A_Jump(96, "Death.SSG");
+	Death.Blast:
+		TNT1 A 0;
+		TNT1 A 0 A_SetRoll(0);
 		TNT1 A 0 A_FaceTarget();
 		TNT1 A 0 A_Jump(12, "Death.Arm");
-		TNT1 A 0 A_NoBlocking();
 		TNT1 A 0 A_Jump(128, "Death.Blast2");
+		TNT1 A 0 A_NoBlocking();
 		TNT1 A 0 {
 			A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH  , random (0, 40));
 			A_SpawnProjectile ("PB_Intestine", 32, 0, random (150, 210), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH  , random (0, 40));
@@ -1232,11 +1289,13 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 		Z1Z7 DD 3 A_SpawnProjectile ("PB_SquirtingBloodTrail", 6, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH  , random (30, 60));
 		TNT1 A 0 A_StartSound("BODYF");
 		TNT1 A 0 A_SpawnItem("DeadShotgunguyZ1Z7E");
-	    Stop;
+		Stop;
 		
 	Death.Blast2:
-	TNT1 A 0 A_NoBlocking();
-	    TNT1 A 0 {
+		TNT1 A 0;
+		TNT1 A 0 A_SetRoll(0);
+		TNT1 A 0 A_NoBlocking();
+		TNT1 A 0 {
 			A_XScream();
 			NashGoreGibs.SpawnGibs(self);
 			A_SpawnProjectile ("PB_XDeathArm1", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH  , random (0, 40));
@@ -1274,10 +1333,12 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			A_StartSound("BODYF");
 			A_SpawnItem("DeadShotgunguyZXZ6E");
 			}
-	    Stop;
+		Stop;
 	
 	Death.SSG:
-	    ZZD1 E 1 {
+		TNT1 A 0;
+		TNT1 A 0 A_SetRoll(0);
+		ZZD1 E 1 {
 				ThrustThing(angle * 256 / 360 + 128, 22, 0, 0);
 				A_FaceTarget();
 				NashGoreGibs.SpawnGibs(self);
@@ -1296,7 +1357,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 				A_XScream();
 				A_NoBlocking();
 			}
-        SZD1 EEFFGH 6;
+		SZD1 EEFFGH 6;
 		SZD1 H 1 A_StartSound("BODYF");
 		SZD1 HHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHHH 2 {
 			A_SpawnItemEx("PB_SquirtingBloodTrail", 
@@ -1308,7 +1369,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			A_SpawnItem ("GrowingBloodPool");
 			A_SpawnItem("DeadShotgunguyJustLegsAreLeft");
 		}
-        Stop;
+		Stop;
 		
 	XDeath:
 		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
@@ -1323,7 +1384,7 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 			A_SpawnProjectile ("PB_XDeath4", 42, 0, random (0, 190), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH  , random (10, 60));
 			}
 		TNT1 AAAAAA 0 A_SpawnProjectile ("PB_BloodmistLarge", 40, 0, random (0, 360), 2, random (30, 90));
-        TNT1 A 1 {
+		TNT1 A 1 {
 			A_SpawnItemEx("sargexdeath",0,0,2,Vel.X,Vel.Y,Vel.Z,angle,SXF_ABSOLUTEVELOCITY|SXF_ABSOLUTEANGLE|SXF_NOCHECKPOSITION,0);
 			A_Recoil(2);
 			A_XScream();
@@ -1383,6 +1444,8 @@ Class PB_ShotgunGuyHelmet : PB_ShotgunGuy
 		 Crush:
 		 Death.Crush:
 		 Death.Crusher:
+			TNT1 A 0;
+			TNT1 A 0 A_SetRoll(0);
 			TNT1 A 0 A_NoBlocking();
 			SPOS IJK 2;
 			TNT1 A 1 A_XScream();
