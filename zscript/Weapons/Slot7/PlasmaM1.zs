@@ -162,6 +162,47 @@ Class PB_M1Plasma : PB_WeaponBase
 		// Main Attacks states
 		////////////////////////////////////////////////////////////////////////
 		
+		FireRecoil:
+			/*
+			TNT1 A 1 {
+				A_OverlayPivotAlign(PSP_WEAPON,PSPA_CENTER,PSPA_TOP);
+				A_OverlayScale(PSP_WEAPON,1.20,1.0,WOF_INTERPOLATE);
+				A_OverlayOffset(PSP_WEAPON,0,32);
+			}
+			TNT1 A 1 {
+				A_OverlayPivotAlign(PSP_WEAPON,PSPA_CENTER,PSPA_TOP);
+				A_OverlayScale(PSP_WEAPON,1.15,1.15,WOF_INTERPOLATE);
+				//A_OverlayScale(60,1.15,1.15,WOF_INTERPOLATE);
+				A_OverlayOffset(PSP_WEAPON,0,32);
+			}
+			TNT1 A 1 {
+				A_OverlayPivotAlign(PSP_WEAPON,PSPA_CENTER,PSPA_TOP);
+				A_OverlayPivotAlign(60,PSPA_CENTER,PSPA_TOP);
+				A_OverlayScale(PSP_WEAPON,1.10,1.10,WOF_INTERPOLATE);
+				A_OverlayScale(60,1.10,1.10,WOF_INTERPOLATE);
+				A_OverlayOffset(PSP_WEAPON,0,32);
+				A_OverlayOffset(60,0,32);
+			}
+			*/
+			TNT1 A 1 {
+				A_OverlayPivotAlign(PSP_WEAPON,PSPA_CENTER,PSPA_TOP);
+				A_OverlayPivotAlign(60,PSPA_CENTER,PSPA_TOP);
+				A_OverlayScale(PSP_WEAPON,1.05,1.05,WOF_INTERPOLATE);
+				A_OverlayScale(60,1.05,1.05,WOF_INTERPOLATE);
+				A_OverlayOffset(PSP_WEAPON,0,32);
+				A_OverlayOffset(60,0,2,WOF_KEEPX|WOF_ADD);
+			}
+			TNT1 A 1 {
+				A_OverlayScale(PSP_WEAPON,1.00,1.00,WOF_INTERPOLATE);
+				A_OverlayScale(60,1.00,1.00,WOF_INTERPOLATE);
+				A_OverlayOffset(PSP_WEAPON,0,32);
+				A_OverlayOffset(60,0,-1,WOF_KEEPX|WOF_ADD);
+			}
+			TNT1 A 0 {
+				A_OverlayOffset(60,0,-1,WOF_KEEPX|WOF_ADD);
+			}
+			stop;
+		
 		Fire:
 			TNT1 A 0 PB_jumpIfHasBarrel("ThrowBarrel","ThrowFlameBarrel","ThrowIceBarrel");
 			TNT1 A 0 {
@@ -173,6 +214,7 @@ Class PB_M1Plasma : PB_WeaponBase
 			TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma", 1, "FireDualWield");
 			TNT1 A 0 PB_jumpIfNoAmmo("Reload",1);
 			PLSF A 1 BRIGHT {	
+				A_Overlay(-5,"FireRecoil");
 				PB_FireOffset();
 				A_AlertMonsters();
 				A_StartSound("PLSM9", CHAN_WEAPON, CHANF_OVERLAP);
@@ -206,6 +248,29 @@ Class PB_M1Plasma : PB_WeaponBase
 			TNT1 A 0 A_Setinventory("PB_LockScreenTilt",0);
 			Goto Ready3;
 		
+		AltFireRecoil:
+			TNT1 A 1 {
+				A_OverlayPivotAlign(PSP_WEAPON,PSPA_CENTER,PSPA_TOP);
+				A_OverlayScale(PSP_WEAPON,1.30,1.0,WOF_INTERPOLATE);
+				A_OverlayOffset(PSP_WEAPON,0,32);
+			}
+			TNT1 A 1 {
+				A_OverlayScale(PSP_WEAPON,1.225,1.0,WOF_INTERPOLATE);
+				A_OverlayOffset(PSP_WEAPON,0,32);
+			}
+			TNT1 A 1 {
+				A_OverlayScale(PSP_WEAPON,1.15,1.0,WOF_INTERPOLATE);
+				A_OverlayOffset(PSP_WEAPON,0,32);
+			}
+			TNT1 A 1 {
+				A_OverlayScale(PSP_WEAPON,1.075,1.0,WOF_INTERPOLATE);
+				A_OverlayOffset(PSP_WEAPON,0,32);
+			}
+			TNT1 A 0 {
+				A_OverlayScale(PSP_WEAPON,1.00,1.0,WOF_INTERPOLATE);
+				A_OverlayOffset(PSP_WEAPON,0,32);
+			}
+			stop;
 		AltFire:
 			TNT1 A 0 PB_jumpIfHasBarrel("PlaceBarrel","PlaceFlameBarrel","PlaceIceBarrel");
 			PLHE A 1 A_ClearOverlays(60, 65);
@@ -249,6 +314,7 @@ Class PB_M1Plasma : PB_WeaponBase
 		AltHold:
 			TNT1 A 0 A_StartSound("PLSFULL",1,CHANF_LOOPING);
 			PLSA ABCD 1 BRIGHT {
+				if(JustReleased(BT_ALTATTACK)){return resolvestate("AltBlast");}
 				A_SpawnItem("PlasmaGauntlet", 0, 1, 0, 0);
 				A_SpawnItem("PlasmaGauntlet", 0, 1, 0, 0);
 				A_FireProjectile("ShakeYourAssMinor", 0, 0, 0, 0);
@@ -259,12 +325,14 @@ Class PB_M1Plasma : PB_WeaponBase
 					return resolvestate ("DeCharge");
 				return resolvestate (null);
 				}
+		AltBlast:
 			TNT1 A 0 A_ReFire();
 			PLSG I 1 BRIGHT {
+				A_Overlay(-5,"AltFireRecoil");
 				A_StopSound(CHAN_6);
 				A_StartSound("PLSULT", CHAN_WEAPON);
 				A_SetBlend("Blue", 0.6, 12);
-                EventHandler.SendInterfaceEvent(PlayerNumber(), "PB_HUDInterference", 20);
+				EventHandler.SendInterfaceEvent(PlayerNumber(), "PB_HUDInterference", 20);
 				A_ZoomFactor(0.85);
 				A_FireProjectile("M1_HeatWave", 0, 0, 0, 0);
 				A_SpawnItemEx ("HeatBlastEffect3",0,0,16,0,0,0,0,SXF_NOCHECKPOSITION,0);

@@ -289,6 +289,7 @@ class PB_Deagle : PB_WeaponBase
 			D1E0 FGHIJKLM 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/CatchF",19,CHANF_OVERLAP);
 			D1E0 NOPQ 1;
+			TNT1 A 0 A_JumpIfInventory("DeagleHasUnloaded",1,18);
 			TNT1 A 0 A_Startsound("weapons/deagle/MagRelease",0,CHANF_OVERLAP);
 			D1E0 R 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/magout",13,CHANF_OVERLAP);
