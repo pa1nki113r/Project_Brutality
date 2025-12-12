@@ -1,0 +1,457 @@
+//===========================================================================
+//
+// Pain Elemental
+//
+//===========================================================================
+ACTOR PB_PainElemental : PB_Elemental{//Replaces PainElemental
+	//$Title Pain Elemental
+	//$Category Project Brutality - Monsters/Flyers
+	//$Sprite PAINA1
+	Health 300
+	Radius 31
+	Height 56
+	Mass 400
+	Scale 1
+	Speed 9
+	PainChance 128
+	Monster
+	+FLOAT 
+	+NOGRAVITY
+	SeeSound "pain/sight"
+	damagefactor "Avoid", 0.0
+	damagefactor "GibRemoving", 0.0
+	PainSound "pain/pain"
+	DeathSound "pain/death"
+	ActiveSound "pain/active"
+	PB_Elemental.LSType "PB_LostSoul"
+	damagefactor "TeleportRemover", 0.0
+	DamageFactor "CauseObjectsToSplash", 0.0
+	PainChance "Kick", 255
+	PainChance "Stun", 255
+	PainChance "Siphon", 255
+	damagefactor "Avoid", 0.0
+	damagefactor "killme", 0.0
+	damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood", 0.0
+	damagetype "Flames"
+	DropItem "Demonpickup" 128
+	Species "FlyingBalls"
+	+DONTHARMSPECIES
+	States{
+	Death.Execution:
+		TNT1 A 0 {
+			A_Stopsound;
+			A_FaceTarget;
+			A_NoBlocking;
+		}
+		PAIN DE 4 
+		PAIN G 21 A_Pain
+		TNT1 A 0 A_Recoil(20)
+		Goto Death
+	
+	Death.Blackhole:
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_SpawnItem("BlackHoledPainElemental")
+		Stop
+	
+	ReplaceVanilla:
+		TNT1 A 0 A_ChangeFlag("THRUACTORS", 1)
+		TNT1 A 0 A_ChangeFlag("COUNTKILL", 0)
+		TNT1 A 0 A_SpawnItemEx ("Vanilla_PainElemental1",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION |SXF_TRANSFERSPECIAL| SXF_TRANSFERAMBUSHFLAG ,0)
+		Stop
+	
+	Spawn:
+		PAIN A 10 A_Look
+		Loop
+
+
+	SearchPlayer:
+		TNT1 A 0 A_ClearTarget
+		TNT1 A 0 A_TakeInventory("EnemyMemory", 30)
+		PAIN A 10 A_Look
+		TNT1 A 0 A_SetAngle(angle - 30)
+		PAIN A 10 A_Look
+		TNT1 A 0 A_SetAngle(angle + 30)
+		PAIN A 10 A_Look
+		TNT1 A 0 A_SetAngle(angle + 30)
+		PAIN A 10 A_Look
+		TNT1 A 0 A_SetAngle(angle - 30)
+		
+		PAIN AA 3 A_Wander
+		PAIN A 2 A_look
+		PAIN BB 3 A_Wander
+		PAIN B 2 A_look
+		PAIN CC 3 A_Wander
+		PAIN C 2 A_look
+		PAIN BB 3 A_Wander
+		PAIN B 2 A_look
+		PAIN AA 3 A_Wander
+		PAIN A 2 A_look
+		Loop
+		
+		
+	See:
+		PAIN AABBCC 3 A_Chase
+		Loop
+	
+	See2:
+		TNT1 A 0 A_JumpIfInventory("EnemyMemory", 18, "SearchPlayer")
+		TNT1 A 0 A_GiveInventory("EnemyMemory", 1)
+		PAIN AABBCC 3 A_Chase
+		Goto See
+	DeploySouls:
+		PAIN DE 7 A_Pain
+		PAIN F 14 PB_DeploySouls(1)
+		PAIN ED 7
+		goto See
+	PrepareSoul:
+		TNT1 A 0 A_StartSound(SeeSound)
+		PAIN DE 7
+		PAIN F 14 PB_PrepareSoul()
+		PAIN ED 7 A_Pain
+		goto See
+	Missile:
+		TNT1 A 0 A_TakeInventory("EnemyMemory", 30)
+		PAIN A 0 {
+			if(random(0,2) > 0 && GetCvar(pb_experimental) > 0){
+				if(GetDeployedSouls() < maxLSOrbiting){return ResolveState("DeploySouls");}
+				if(GetDeployedSouls() > 0 && PESoulStorage < 1){return ResolveState("PrepareSoul");}
+			}
+			return ResolveState("");
+		}
+		TNT1 A 0 A_JumpIf(PESoulStorage > 0,"Missile.Special")
+	Missile.Default:
+		PAIN DE 7 A_FaceTarget
+		PAIN F 5 BRIGHT A_FaceTarget
+		PAIN F 2 BRIGHT A_PainAttack("PB_LostSoul")
+		PAIN E 7
+		Goto See
+	Missile.Special:
+		PAIN DE 7 A_FaceTarget
+		PAIN F 7 BRIGHT A_FaceTarget
+		PAIN F 7 BRIGHT {
+			PB_ExpendSoul(1);
+			A_SpawnProjectile("LaunchedLostSoul",10);
+		}
+		PAIN ED 7
+		Goto See
+		Death.Fatality:
+		TNT1 A 0 A_Pain
+		TNT1 A 0 A_JumpIfIntargetInventory("FistsSelected", 1, 1)
+		Goto Death
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_GiveToTarget("GoFatality", 1)
+		TNT1 A 0 A_GiveToTarget("PEFatality", 1)
+		Stop
+		
+	Pain:
+		PAIN G 6
+		PAIN G 6 A_Pain
+		TNT1 A 0 A_Jump(128,"DeploySouls")
+		Goto See
+		
+	Possession:
+		TNT1 A 0 A_SetInvulnerable
+		PAIN G 3
+		PAIN G 3 A_Pain
+		"####" "#" 35 ACS_NamedExecuteAlways("Pos - Flicker effect")
+		TNT1 A 0 A_UnSetInvulnerable
+		Goto See
+	
+	Pain.Stun:
+		TNT1 A 0
+		TNT1 A 0 A_SpawnItemEx ("StunElectrocute", random (-4, 4), random (-4, 4),  random (16, 32), 0, 0)
+		PAIN G 1 A_Pain
+		PAIN GGGGGGGGGG 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		PAIN G 1 A_Pain
+		PAIN GGGGGGGGGG 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		PAIN G 1 A_Pain
+		PAIN GGGGGGGGGG 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		PAIN G 1 A_Pain
+		PAIN GGGGGGGGGG 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		PAIN G 1 A_Pain
+		PAIN GGGGGGGGGG 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		PAIN G 1 A_Pain
+		Goto See
+	
+	Pain.Siphon:
+		TNT1 AAA 0 A_SpawnItemEx ("RedLightning_Small", random (-12, 12), random (-12, 12), random (16, 52), 0, 0)
+		PAIN G 1 
+		{
+			A_FaceTarget;
+			A_GiveToTarget("HealthBonus",4);
+		}
+		PAIN G 5 A_FaceTarget 
+		TNT1 A 0 A_Pain
+		Goto See
+
+	Pain.Kick:
+		TNT1 A 0 A_FaceTarget
+		PAIN G 12
+		PAIN G 12 A_Pain
+		Goto See
+	Death:
+		PAIN H 8 BRIGHT
+		PAIN I 8 BRIGHT A_Scream
+	
+	TNT1 AAAAAA 0 bright A_CustomMissile("SuperGoreSpawner", 5, 0, random (0, 360), 2, random (30, 180))
+		TNT1 AAAAAAAAA 0 A_CustomMissile("CeilBloodLauncherLong", 0, 0, random (0, 360), 2, random (50, 130))
+		TNT1 A 0 A_CustomMissile("XDeathBrain1", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile("XDeathBrain2", 32, 0, random (0, 360), 2, random (0, 160))
+		//TNT1 AAAAAAAA 0 A_CustomMissile("PEPart1", 32, 0, random (0, 360), 2, random (0, 160))
+		//TNT1 AAAA 0 A_CustomMissile("PEPart2", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAA 0 {A_CustomMissile("XDeathPainElementalNew1", 32, 0, random (0, 360), 2, random (60, 90));A_CustomMissile("XDeathPainElementalNew2", 32, 0, random (0, 360), 2, random (60, 90));}
+		
+		TNT1 AAAAAAAA 0 A_CustomMissile("Brutal_FlyingBlood", 32, 0, random (0, 360), 2, random (0, 160))
+		EXPL A 0 A_SpawnItemEx("ExplosionParticleSpawner", 0, 0, 0, 0, 0, 0, 0, 128)
+		EXPL AAAAAAAAAAAAAAAAA 0 A_CustomMissile("FireBallExplosion", 6, 0, random (0, 360), 2, random (0, 360))
+		TNT1 A 0 BRIGHT {
+			if(GetCVar("pb_experimental") > 0){
+				PB_PainDie("PB_LostSoul");
+			}else{
+				A_PainDie("PB_LostSoul");
+			}
+		}
+		
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 6 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 6 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 6 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 6 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 6 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		Stop
+		
+	Death.Telefrag:
+		PAIN H 8 BRIGHT
+		PAIN I 8 BRIGHT A_Scream
+		TNT1 AAAAAA 0 bright A_CustomMissile("SuperGoreSpawner", 5, 0, random (0, 360), 2, random (30, 180))
+		TNT1 AAAAAAAAA 0 A_CustomMissile("CeilBloodLauncherLong", 0, 0, random (0, 360), 2, random (50, 130))
+		TNT1 A 0 A_CustomMissile("XDeathBrain1", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile("XDeathBrain2", 32, 0, random (0, 360), 2, random (0, 160))
+		//TNT1 AAAAAAAA 0 A_CustomMissile("PEPart1", 32, 0, random (0, 360), 2, random (0, 160))
+		//TNT1 AAAA 0 A_CustomMissile("PEPart2", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAA 0 {A_CustomMissile("XDeathPainElementalNew1", 32, 0, random (0, 360), 2, random (60, 90));A_CustomMissile("XDeathPainElementalNew2", 32, 0, random (0, 360), 2, random (60, 90));}
+		
+		TNT1 AAAAAAAA 0 A_CustomMissile("Brutal_FlyingBlood", 32, 0, random (0, 360), 2, random (0, 160))
+		EXPL A 0 A_SpawnItemEx("ExplosionParticleSpawner", 0, 0, 0, 0, 0, 0, 0, 128)
+		EXPL AAAAAAAAAAAAAAAAA 0 A_CustomMissile("FireBallExplosion", 6, 0, random (0, 360), 2, random (0, 360))
+		TNT1 A 0 {
+			if(GetCVar("pb_experimental") > 0){
+				PB_PainDie("PB_LostSoul");
+			}else{
+				A_PainDie("PB_LostSoul");
+			}
+		}
+		
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 4 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 6 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 6 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 6 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 6 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 A 0 A_CustomMissile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (70, 110))
+		TNT1 AAA 6 A_CustomMissile("RealFlameTrailsSmallLong", 1, 0, random (0, 360), 2, random (70, 110))
+		Stop
+	Raise:
+		PAIN MLKJIH 8
+		Goto See
+	Pain.KillMe:
+	Pain.Taunt:
+		TNT1 A 0
+		Goto Missile
+	Death.KillMe:
+	Death.Taunt:
+		TNT1 A 0 A_ChangeFlag("SOLID", 0)
+		TNT1 A 0 A_SpawnItem("PainElemental")
+		Stop
+	Death.Ice:
+	Death.IceExplosion:
+	Death.Freeze:
+	Death.Frost:
+		TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0)
+		TNT1 A 0 A_ChangeFlag("SOLID", 0)
+		TNT1 A 0 A_SpawnItem("FrozenPainElemental")
+		Stop
+	}
+}
+ACTOR PEPart : PB_XDeath1 {}
+ACTOR PEPart1 : PEPart {
+	Radius 8
+	Height 8
+	Speed 12
+	Scale 1.5
+	Mass 1
+	+NOBLOCKMAP
+	+MISSILE
+	+NOTELEPORT
+	+MOVEWITHSECTOR
+	+RIPPER
+	+BLOODLESSIMPACT
+	+DOOMBOUNCE
+	BounceFactor 0.5
+	damagetype "Blood"
+	SeeSound "misc/xdeath4"
+	DeathSound "misc/xdeath1"
+	Decal "BloodSuper"
+	States{
+	Spawn:
+		TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash")
+		ID22 ABCD 2 {A_CustomMissile("BloodTrails",0,0,180,2);A_CustomMissile("SmallFlameTrails", 2, 0, random (0, 360), 2, random (70, 110));}
+		Loop
+	Death:
+		ID22 F 1
+		ID22 F -1
+		Stop
+	Splash:
+		TNT1 A 0
+		Stop
+	}
+}
+
+ACTOR PEPart2 : PEPart1{
+	Speed 16
+	States{
+	Spawn:
+		TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash")
+		TNT1 A 0 A_SpawnItem("PlasmaSmoke")
+		ID22 AB 2 {
+			A_SpawnItem("YellowFlare",0,2);
+			A_CustomMissile("SmallFlameTrails", 2, 0, random (0, 360), 2, random (70, 110));
+			A_CustomMissile("BloodTrails",0,0,180,2);
+		}
+		TNT1 A 0 A_SpawnItem("PlasmaSmoke")
+		ID22 CD 2 {
+			A_SpawnItem("YellowFlare",0,2);
+			A_CustomMissile("SmallFlameTrails", 2, 0, random (0, 360), 2, random (70, 110));
+			A_CustomMissile("BloodTrails",0,0,180,2);
+		}
+		Loop
+	Death:
+		ID22 F 1 A_SpawnItem("Brutal_FlyingBlood",0,5,0,1)
+		ID22 F -1 A_SpawnItem("100SmallFireFocusSpawnerz")
+		Stop
+	}
+}
+
+Actor PEPart2SuperFast: PEPart2{
+	Speed 22
+	States{
+	Spawn:
+		TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash")
+		ID22 ABCD 1 {
+			A_SpawnItem("YellowFlare",0,2);
+			A_CustomMissile("SmallFlameTrails", 2, 0, random (0, 360), 2, random (70, 110));
+			A_CustomMissile("BloodTrails",0,0,180,2);
+		}
+		Loop
+	}	
+}
+
+Actor FatalizedPE{
+	Radius 12
+	Height 18
+	Scale 1.2
+	+SHOOTABLE
+	-SOLID
+	+NOTELEPORT
+	+MOVEWITHSECTOR
+	+CORPSE
+	Mass 1000
+	Health 200
+	damagefactor "Blood", 0.0
+	damagefactor "Trample", 0.0
+	States{
+	Spawn:
+		PA1F U -1
+		Stop
+	Death:
+		TNT1 AAA 0 {
+			A_CustomMissile("XDeath1", 5, 0, random (0, 360), 2, random (0, 160));
+			A_CustomMissile("XDeath2", 5, 0, random (0, 360), 2, random (0, 160));
+			A_CustomMissile("XDeath3", 5, 0, random (0, 360), 2, random (0, 160));
+			A_CustomMissile("XDeath4", 5, 0, random (0, 360), 2, random (0, 160));
+		}
+		Stop
+	}
+}
+///////////////////////////======VANILLA======//////////////////////////////////
+Actor Vanilla_PainElemental1 : PB_PainElemental{
+	States{
+		Spawn:
+		PAIN A 10 A_Look
+		Loop
+	}
+}

@@ -1,0 +1,323 @@
+// Revamped Proximity mines, courtesy from Brutal Hellfest!!
+Class PB_ThrownProxMine : Actor
+{
+    uint sinkTimer; // Submerged proximity mine will sink after the timer reaches a threshold.
+
+    override void PostBeginPlay()
+    {
+        super.PostBeginPlay();
+        sinkTimer = 0;
+    }
+
+    override void Tick()
+    {
+        super.Tick();
+        if (isFrozen() || bDESTROYED) 
+            return;
+
+        // If we're underwater, count up until a threshold is reached.
+        if (waterlevel > 1 && sinkTimer < 35)
+            sinkTimer++;
+
+        if (sinkTimer >= 35)
+        {
+            bBOUNCEONWALLS = false;
+            bBOUNCEONCEILINGS = false;
+            bBOUNCEONFLOORS = false;
+			Clamp(vel.z -= 0.5, -15, 15);
+        }
+    }
+
+    Default
+    {
+        Radius 10;
+        Height 10;
+        Speed 15;
+        Damage 0;
+        Scale 0.35;
+        SeeSound "MINE001";
+        DeathSound "MINE002";
+        
+        Projectile;
+        +BOUNCEONWALLS;
+        +BOUNCEONCEILINGS;
+        +BOUNCEONFLOORS;
+        +BOUNCEAUTOOFF;
+        BounceFactor 0.1;
+        BounceCount 2;
+        Gravity 0.97;
+        
+        Species "Marines";
+        +DONTHARMSPECIES;
+        +THRUSPECIES;
+
+        -NOGRAVITY;
+        +TELESTOMP;
+        +THRUGHOST;
+        +THRUACTORS;
+        -NOTELEPORT;
+        -BLOODSPLATTER;
+        +CANNOTPUSH;
+        +FORCERADIUSDMG;
+        +FORCEXYBILLBOARD;
+    }
+	States
+	{
+        Spawn:
+            XPFP A 1;
+            TNT1 A 0 
+			{
+				bTHRUACTORS = false;
+			}
+            Loop;
+        Death:
+        XDeath:
+            TNT1 A 0 A_SpawnItemEx("PB_GroundProxMine", 0, 0, 0, 0, 0, 0, 0,SXF_NOCHECKPOSITION,0);
+            Stop;
+	}
+}
+
+Class PB_GroundProxMine : SwitchableDecoration
+{
+	Mixin PB_CheckFunctions;
+
+	const ProxDist = 160; // The Trigger Distance for the Proximity Mine.
+	bool armed; // Toggle for the Mine's armed state which will start playing the tick sound.
+
+	override void PostBeginPlay()
+	{
+		super.PostBeginPlay();
+		armed = false;
+	}
+
+	void PB_ProxMineCheck()
+	{
+		BlockThingsIterator it = BlockThingsIterator.Create(self, ProxDist);
+		while (it.Next())
+		{
+			let trg = it.thing;
+			
+			// If the trg Actor is friendly to the mine or player that deployed it, skip it.
+			if (isFriend(trg))
+				continue;
+
+			// Check the target is either a monster or a player, isn't the same
+			// as the projectile's target (so that the shooter can't trigger it),
+			// then checks that it's alive and within distance and can be seen.
+			if ((trg.bISMONSTER || trg.player) && (!target || trg != target) && trg.health > 0 && Distance3D(trg) <= ProxDist && CheckSight(trg, SF_IGNOREWATERBOUNDARY))
+			{
+				A_Die();
+			}
+		}
+	}
+	
+	override void Tick()
+	{
+		super.Tick();
+
+		if (isFrozen() || IsDead(self) || !armed)
+			return;
+
+		if (GetAge() % 30 == 0 && !IsInState(self, "Active"))
+			A_StartSound("Weapons/StickyBombTick", CHAN_AUTO);
+	}
+
+	Default
+	{
+		//$Title Proximity Mine
+		//$Category Weapons
+		//$Sprite "XPFPA0"
+		Radius 10;
+		Height 6;
+		Damage 0;
+		+SHOOTABLE;
+		-SOLID;
+		+NORADIUSDMG;
+		+FLOORCLIP;
+		+FRIENDLY;
+		+FIXMAPTHINGPOS;
+		+MOVEWITHSECTOR;
+		+NOBLOOD;
+		+NOICEDEATH;
+		+DONTRIP;
+		+THRUACTORS;
+		+LOOKALLAROUND;
+		+QUICKTORETALIATE;
+		+FORCEXYBILLBOARD;
+		+USESPECIAL;
+		Activation THINGSPEC_Activate;
+		Species "Marines";
+		+MTHRUSPECIES;
+		+THRUSPECIES;
+		+DONTHARMCLASS;
+		+DontHarmSpecies
+		Mass 1000000;
+		Health 10;
+		Scale 0.35;
+		/*
+		PainChance "Kick", 255;
+		PainChance "ExtremePunches", 255;
+		damagefactor "Normal", 1.35;
+		damagefactor "Melee", 99;
+		damagefactor "Kick", 99;
+		damagefactor "Avoid", 0.0;
+		damagefactor "ExplosiveImpact", 0.0;
+		damagefactor "Explosive", 0.0;
+		damagefactor "Landmine", 0.0;
+		damagefactor "Trample", 0.0;
+		damagefactor "Blood", 0.0;	damagefactor "GreenBlood", 0.0;	damagefactor "BlueBlood", 0.0;	damagefactor "Taunt", 0.0;	damagefactor "KillMe", 0.0; damagefactor "Avoid", 0.0;  damagefactor "Taunt", 0.0;
+		Damagetype "ExplosiveImpact";*/
+	}
+	States
+	{
+		/*
+		Death.Kick:
+		Death.ExtremePunches:
+		Death.ExplosiveImpact:
+		Pain.Kick:
+		Pain.ExtremePunches:
+			TNT1 A 0; //A_Pain(;
+			TNT1 A 0 A_FaceTarget();
+			TNT1 A 0 A_SpawnProjectile("PB_ThrownProxMine", 5, 0, random (170, 190), 2, random (20, 40));
+			Stop;*/
+
+		Active:
+			TNT1 A 0
+			{
+				A_StartSound("Weapons/StickyBombTick");
+				A_SpawnItem("GreenFlareSpawn",0,6);
+			}
+			XPFP A 6 Bright;
+			TNT1 A 0
+			{
+				A_StartSound("Weapons/StickyBombTick");
+				A_SpawnItem("GreenFlareSpawn",0,6);
+			}
+			XPFP A 6 Bright;
+			TNT1 A 0
+			{
+				A_StartSound("Weapons/StickyBombTick");
+				A_SpawnItem("GreenFlareSpawn",0,6);
+			}
+			XPFP A 6 Bright;
+			XPFP A 4;
+			TNT1 A 0 
+			{
+				A_NoBlocking();
+				bSHOOTABLE = false;
+				A_SpawnItemEx ("PB_ProxMineAmmo",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			}
+			Stop;
+
+		/*DontTriggerOnFriendly:
+			TNT1 A 0;
+			TNT1 A 0 A_ClearTarget();*/
+		Spawn:
+			XPFP A 26;
+			XPFP A 8 {
+				armed = true;
+			}
+		Armed:
+			XPFP A 1 A_SpawnItem("RedFlareSpawn",0,6);
+			XPFP A 1 PB_ProxMineCheck();
+			loop;
+		Death:
+			TNT1 A 0
+			{
+				A_StartSound("Weapons/StickyBombTick");
+				A_SpawnItem("RedFlareSpawn",0,9);
+			}
+			XPFP A 4 Bright;
+			TNT1 A 0
+			{
+				A_StartSound("Weapons/StickyBombTick");
+				A_SpawnItem("RedFlareSpawn",0,9);
+			}
+			XPFP A 4 Bright;
+			TNT1 A 0
+			{
+				A_StartSound("Weapons/StickyBombTick");
+				A_SpawnItem("RedFlareSpawn",0,9);
+			}
+			XPFP A 4 Bright;
+			TNT1 A 0
+			{
+				A_StartSound("Weapons/StickyBombTick");
+				A_SpawnItem("RedFlareSpawn",0,9);
+			}
+			XPFP A 4 Bright;
+			EXPL A 0
+			{
+				// Shake the ground, unset the FLOORCLIP, then tell monsters something blew up.
+				Radius_Quake(2, 54, 0, 15, 0);
+				bFLOORCLIP = false;
+				A_AlertMonsters();
+
+				// First part of the sound and visuals for the Explosion
+				A_StartSound("Explosion",3);
+				A_SpawnItemEx("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx("MineExplosion",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx("NewGroundExplosionSmoke",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			}
+			
+			TNT1 AAA 0 
+			{
+				// Spawn the fiery effects.
+				A_SpawnProjectile("FireworkSFXType2", 0, 0, random (0, 360), 2, random (30, 60));
+				A_SpawnProjectile("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 360));
+				A_SpawnProjectile("ExplosionParticleVeryFast", 0, 0, random (0, 360), 2, random (0, 360));
+				A_SpawnProjectile("MediumExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360));
+				A_SpawnProjectile("ExplosionSmokeFast22", 0, 0, random (0, 360), 2, random (0, 360));
+			}
+			TNT1 A 0 
+			{
+				// Deal the actual big damage. There's two explosion calls here, but they happen together.
+				A_Explode(210,310, XF_HURTSOURCE);
+				A_Explode(190,170, XF_HURTSOURCE);
+
+				// Flames and crater effects
+				A_SpawnItemEx("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			}
+
+			TNT1 AAA 0 
+			{
+				// Consolodate flame spawns into one triple call.
+				A_SpawnProjectile("ExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360));
+				A_SpawnProjectile("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180));
+				A_SpawnProjectile("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180));
+			}
+			EXPL A 0 
+			{
+				Radius_Quake(2, 24, 0, 15, 0);
+				A_Scream();
+			}
+			TNT1 AAA 0 A_SpawnProjectile ("ShrapnelParticle2", 0, 0, random (0, 360), 2, random (5, 90));
+			TNT1 A 0 
+			{
+				// More explosion sounds and smoke
+				A_StartSound("FAREXPL", 3);
+				A_StartSound("Explosion", 1);
+				A_SpawnItem("BarrelExplosionSmokeColumn");
+			}
+			TNT1 A 0 
+			{
+				// Check whether mine shrapnel is enabled. If not, go to the End state. Otherwise, keep going.
+				if (!pb_mineshrapnel)
+					return ResolveState("EndExplosion");
+				return ResolveState(null);
+			}
+			TNT1 AAAAAAAAAA 0 
+			{
+				A_SpawnProjectile("PB_Shrapnel", 0, 0, random (0, 360), 2, random (-90, 90));
+				A_SpawnProjectile("PB_Shrapnel", 0, 0, random (0, 360), 2, random (-90, 90));
+			}
+		EndExplosion:
+			TNT1 AAA 1 A_SpawnProjectile("ExplosionSmoke", 1, 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 1 A_Stop();
+			Stop;
+	}
+}

@@ -1,0 +1,1977 @@
+class PB_Monster : Actor abstract
+{
+	bool suppress;
+	int suppressivePattern; 
+	int suppressCount;
+	int suppressLimit;
+	int suppressCount2;
+	int suppressLimit2;
+
+
+	double suppressiveOffZ;
+	double suppressiveOffXY;
+	class <Actor> suppressiveMissile;
+	double suppressiveMissileRadius;
+
+	mixin PB_RandomZombieNameHandler;
+	Mixin PB_CheckFunctions;
+	double lastTargetPosX;
+	double lastTargetPosY;
+	bool inSuppressiveFire;
+	vector3 lastPlayerPos;
+	const PI = 3.141592653589793;
+	
+
+	double lastSeenPosX;
+	double lastSeenPosY;
+	double lastSeenPosZ;
+	Actor lastSeenCorpse;
+	vector3 targetHistory[20];
+	int historyIndex;
+	array <String> frames;
+
+	
+	int	HitBoxTimerNew;
+	int HitBoxTimerOld;
+	int EnemyLastSighted;
+	bool HitBoxSpawned;
+	bool Wandering;
+	bool OnPatrol;
+	bool willBeLooking;
+	int heardOpponent;
+	int patrolTimer;
+	
+	int avoidCooldown;
+	
+	int enemyRange;
+	Property AttackRange : enemyRange;
+	//the enemies attack range, in case you wanted some enemies to be CQC mainly, or snipe
+	
+	bool canRoll;
+	property CanIRoll : canRoll;
+	bool canFallback;
+	property CanIFallback : canFallback;
+	//bools controlling whether an enemy can Dodge if the player is looking at them
+	bool canReload;
+	property CanIReload : canReload;
+	
+	double combatSpeed;
+	double chaseSpeed;
+	double searchSpeed;
+	double patrolSpeed;
+	property PBMonSpeed : combatSpeed, chaseSpeed, searchSpeed, patrolSpeed;
+	//These are used for dynamically changing a monsters movement speed on the fly
+	//because why would a zombieman still be running around full speed if its not actively
+	//in combat with you.
+	
+	double dmgHeadMult; //1.25
+	double dmgTorsoMult; //1.1
+	double dmgArmMult; //0.70
+	double dmgLowTorsoMult; //1.0
+	double dmgDickMult; //0.95
+	double dmgLegMult; //0.80
+	
+	property MonDMGMult : dmgHeadMult, dmgTorsoMult, dmgArmMult, dmgLowTorsoMult, dmgDickMult, dmgLegMult;
+	
+	double posHeadHB; //0.8
+	double posTorsoHB; //0.65
+	double posDickHB; //0.38
+	double posLegHB; //0.40
+	
+	property MonPosHB : posHeadHB, posTorsoHB, posDickHB, posLegHB;
+	
+	//The main custom A_Chase function
+	
+	int retargetSkips;
+
+	double tailPitch;
+	property TailPitch : tailPitch;
+	
+	//Finer grain control over PB monsters reacting to "hitbox" damage calculations
+	bool ignoreArmDamage;
+	bool ignoreHeadDamage;
+	bool ignoreDickDamage;
+	bool ignoreLegDamage;
+	property ignoreArmDamage : ignoreArmDamage;
+	property ignoreHeadDamage : ignoreHeadDamage;
+	property ignoreDickDamage : ignoreDickDamage;
+	property ignoreLegDamage : ignoreLegDamage;
+
+	action void PB_DynamicTailMonster(string tailInside, string tailOutside)
+	{	
+		double sndPitch = frandom(0.75, 1.25) * invoker.tailPitch;
+		double dist = Distance3D(players[consoleplayer].mo);
+
+		if(Ceilingpic == SkyFlatNum && tailOutside)
+			PB_PlayTailExt(tailOutside, sndPitch, dist);
+		else if(tailInside)
+			PB_PlayTailInt(tailInside, sndPitch, dist);
+		else 
+			return;
+	}
+
+	action void PB_PlayTailExt(string tmpTailSound, double sndPitch, double dist)
+	{
+		A_StartSound("weapons/atmo/ext/"..tmpTailSound, 19, volume: 0.5, pitch: sndPitch);
+		
+		if(dist >= 4500)
+			A_StartSound("weapons/atmo/dist/ext/"..tmpTailSound, 20, volume: 0.6, pitch: sndPitch);
+		if(dist >= 1250 && dist < 7500)
+			A_StartSound("weapons/atmo/far/ext/"..tmpTailSound, 21, pitch: sndPitch);
+		if(dist >= 200 && dist < 4500)
+			A_StartSound("weapons/atmo/med/ext/"..tmpTailSound, 22, pitch: sndPitch);
+	}
+
+	action void PB_PlayTailInt(string tmpTailSound, double sndPitch, double dist)
+	{
+		A_StartSound("weapons/atmo/int/"..tmpTailSound, 19, volume: 0.5, pitch: sndPitch);
+		
+		if(dist >= 2500)
+			A_StartSound("weapons/atmo/dist/int/"..tmpTailSound, 20, volume: 0.6, pitch: sndPitch);
+		if(dist >= 1250 && dist < 3500)
+			A_StartSound("weapons/atmo/far/int/"..tmpTailSound, 21, pitch: sndPitch);
+		if(dist >= 200 && dist < 2500)
+			A_StartSound("weapons/atmo/med/int/"..tmpTailSound, 22, pitch: sndPitch);
+	}
+
+	// seeAllAround - Set whether a monster can look all around. Might be needed in some cases.
+	void A_SmartChase(statelabel s1 = "_a_chase_default", statelabel s2 = "_a_chase_default", int flags = 0, bool seeAllaround = false)
+	{
+		
+		// Decrement the skips counter. When we reach 0 we Look for a new Target.
+		if (retargetSkips > 0) retargetSkips--;
+		//console.Printf("RetargetSkips: %i", retargetSkips);
+		
+		// Clear Target if it's a friend
+		if (Target && isFriend(Target))
+		{
+			A_ClearTarget();
+			//console.Printf("Clearing Friendly Target");
+		}
+		
+		// What to do when we're on Patrol.
+		if (!Target || OnPatrol)
+		{
+			A_GiveInventory("Wandering",1);
+			// If we're below the Patrol Timer Threshold, we're on high alert.
+			if(OnPatrol && patrolTimer <= 700)
+			{
+				//console.Printf("High Alert.");
+				if(self.patrolSpeed) self.Speed = self.patrolSpeed * 2;
+				//self.FastSpeed = self.patrolSpeed * 2;
+			}
+			else
+			{
+				//console.Printf("No longer on Alert.");
+				if(self.searchSpeed) self.Speed = self.searchSpeed;
+				//self.FastSpeed = self.searchSpeed * 2;
+				tics = 2;
+			}
+			//A_Wander();
+			A_Chase(s2, s1, flags);
+			//console.Printf("Wandered...");
+			if (retargetSkips <= 0) 
+			{
+				//console.Printf("Looking for Target.");
+				retargetSkips = 3;
+				//console.Printf("RetargetSkips Reset: %d", retargetSkips);
+				LookExParams Look;
+				look.fov = 150;
+				look.minDist = 0;
+				look.maxDist = 0;
+				look.maxHeardist = 0;
+				look.flags = LOF_NOJUMP;
+				LookForPlayers(seeAllaround, look);
+				if (Target)
+				{
+					OnPatrol = False;
+					Wandering = False; // I set and unset this, but no monster actually used it. I may use it later.
+					patrolTimer = 0;
+					A_TakeInventory("Wandering", 75);
+					//console.Printf("Success: %s", Target.GetClassName());
+				}
+			}
+			patrolTimer++;
+			//console.Printf("Increment Patrol Timer - %d", patrolTimer);
+			return;
+		}
+		
+		// [DarynS] We've got a Target, figure out what to do with it.
+		if (Target)
+		{
+			Double Dist = Distance3DSquared (Target);
+			
+			// No need for a sight check here. If the player is within 150mu, make note of the time.
+			if (Dist <= 150*150)
+			{
+				EnemyLastSighted = Level.MapTime;
+				Wandering = false;
+				OnPatrol = false;
+				A_TakeInventory("Wandering", 75);
+				patrolTimer = 0;
+				retargetSkips = 1;
+				//console.Printf("Update Last Sighted.");
+
+				// [DarynS] Close Range Attack
+				if (Dist >= 50*50 && CheckSight(target))
+				{
+					// Flip a Coin to see if we attack. If we do, exit here.
+					if (random(1,2) == 2)
+					{
+						A_Chase(s2, s1, flags);
+						//console.Printf("Coin Flip Won: Attacking");
+						return;
+					}
+					// Otherwise we check to see if we can Fall back.
+					if (canFallback && ResolveState("Fallback"))
+					{
+						//console.Printf("Falling Back");
+						SetStateLabel("Fallback");
+						return;
+					}
+				}
+			}
+			
+			// If we're underwater and the Target is above us, move up and forward.
+			if (waterlevel >= 1 && Target.Pos.Z > (self.Pos.Z + 10))
+			{
+				A_FaceTarget(30);
+				A_Recoil(-3);
+				ThrustThingZ(0, 5, 0, 1);
+				A_Chase(s2, s1, flags);
+				//console.Printf("Waterlevel Check and Motion");
+				return;
+			}
+			
+			// [DarynS] Too far to Attack, so let's try to close in.
+			if (Dist > 3000*3000 && !CheckSight(Target))
+			{
+				A_Chase(null, null, (random(1,3) == 2) ? flags|CHF_DONTTURN : flags);
+				//console.Printf("Too far, closing in.");
+				return;
+			}
+
+			// Long Range Attack Block. 
+			if (Dist <= 3000*3000 && CheckSight(target))
+			{
+				double dist = Distance3D(target);
+				let aimActor = AimTarget();
+				let fw = 33;
+				
+				if(self.combatSpeed) self.Speed = self.combatSpeed;
+				//self.FastSpeed = self.combatSpeed * 2;
+				
+				// If we're within 1500 mu, Do Roll Checks.
+				if(canRoll && ResolveState("Roll"))
+				{
+					//dodging system check
+					LookExParams lookToRoll;
+					lookToRoll.FOV = 2;
+					int chance = (random(1,30));
+					if(Dist <= 1500*1500 && Chance <= 2 && target.IsVisible(self, false, lookToRoll))
+					{
+						if(GetCVar("pb_disabledynamicavoid") == 0)
+						{
+							A_FaceTarget();
+							SetStateLabel("Roll");
+							//console.Printf("Rolling");
+							return;
+						}
+					}
+				}
+				// Otherwise, Attack.
+				A_Chase(s2, s1, flags);
+				//console.Printf("Long Range Attack");
+				return;
+			}
+			// If the Target is still fresh, but we can't see it, Chase after if.
+			else if (abs(Level.MapTime - EnemyLastSighted) < 360 && !CheckSight(target))
+			{
+				if(self.chaseSpeed) self.Speed = self.chaseSpeed;
+				//self.FastSpeed = self.chaseSpeed * 2;
+				A_Chase(s2, s1, flags);
+				//if (Target) console.Printf("Last saw %s %d tics ago", Target.GetClassName(), abs(Level.MapTime - EnemyLastSighted));
+				
+				int chanceR = (random(1,10));
+				
+				// Do our Reload checks while the player is out of sight.
+				if(bFRIGHTENED && canReload && chanceR <= 5 && ResolveState("Reload"))
+				{
+					SetStateLabel("Reload");
+					//console.Printf("Reloading");
+					return;
+				}
+			}
+			// We've lost sight of the player for too long. Go Patrolling.
+			else
+			{
+				OnPatrol = True;
+				Wandering = True;
+				patrolTimer = 0;
+				if(self.searchSpeed) self.Speed = self.searchSpeed;
+				//self.FastSpeed = self.searchSpeed * 2;
+				//target = NULL;
+				//console.Printf("Abandoning Chase");
+				return;
+			}
+		}
+	}
+	
+	//Extra functions for firing checks and pain checks
+	
+	void A_CheckLOFRanged(statelabel jumpstate, statelabel dodgestate)
+	{
+		double dist = Distance3D(target);
+		let aimActor = AimTarget();
+		int chance = (random(1,4));
+		
+		A_FaceTarget(0, 180, 0, 0, FAF_TOP);
+		
+		if(dist > self.enemyRange) // Too far away.
+		{
+			//Console.PrintF("Not Closer");
+			SetStateLabel("SeeContinue");
+		}
+		else if(CheckLOF() && dist <= self.enemyRange) /*(aimActor is "PlayerPawn" && dist <= self.enemyRange)*/ // Can aim at the player.
+		{
+			//Console.PrintF("Closer and LOF");
+			SetStateLabel(jumpstate);
+		}
+		else if(chance == 1)  //theyre zombie and feral demons, sometimes theyre just stupid yea?
+		{
+			//Console.PrintF("Attempting Anyways");
+			SetStateLabel(jumpstate);
+		}
+		else // Aim obstructed
+		{
+			//Console.PrintF("Else Failed, Dodging");
+			if(self.canRoll == true)
+			{
+				SetStateLabel(dodgestate);
+			}
+			else
+			{
+				SetStateLabel("SeeContinue");
+			}
+		}
+	}
+	
+	void A_DeathWepCheck(string tokenName, double unitDist, statelabel deathState)
+	{
+		if(target && Distance2D(target) < unitDist && CountInv(tokenName, AAPTR_TARGET) >= 1)
+		{
+			SetStateLabel(deathState);
+		}
+		return;
+	}
+	
+	void ExecutionHandler() {
+		if(CheckInventory("ExecutionToken",1)) {
+			SetState(FindState("Execution"));
+		}
+	}
+	
+	void HitboxerHandler() {
+		
+		if (HitBoxSpawned == True){
+			HitBoxTimerNew = Level.MapTime;
+			if(abs(HitBoxTimerNew - HitBoxTimerOld) > 350) {
+				A_TakeInventory("HeadshotToken",1);
+				HitBoxSpawned = False;
+				Wandering = False;
+			}
+		}
+		
+		if (CheckInventory("HeadshotToken",1) && HitBoxSpawned == False) {
+			//A_SpawnItem("PB_HeadshotHitbox");
+			if (!CheckInventory("IsProning", 1)){
+				//A_SpawnItem("PB_LegHitbox");
+			}
+			HitBoxSpawned = True;
+			HitBoxTimerOld = Level.MapTime;
+		}
+		
+	}
+
+
+	// Returns the shortest difference between two angles.
+	double deltaAngle(double a, double b)
+	{
+		double diff = b - a;
+		while (diff > 32768) diff -= 65536;
+		while (diff < -32768) diff += 65536;
+		return diff;
+	}
+
+
+	void A_CustomChase(bool UseASmartChase = false)
+	{
+		if (target)
+		{
+			double dx = target.pos.x - self.pos.x;
+			double dy = target.pos.y - self.pos.y;
+			double dz = target.pos.z - self.pos.z;
+			double targetDistance = sqrt(dx * dx + dy * dy + dz * dz);
+
+			double corpseDistance = 999999;
+
+			if (lastSeenCorpse)
+			{
+				double cx = lastSeenCorpse.pos.x - self.pos.x;
+				double cy = lastSeenCorpse.pos.y - self.pos.y;
+				double cz = lastSeenCorpse.pos.z - self.pos.z;
+				corpseDistance = sqrt(cx * cx + cy * cy + cz * cz);
+			}
+
+			if (CheckSight(target))
+			{
+				suppress = true;
+				suppressCount = 0;
+				suppressCount2 = 0;
+				if (UseASmartChase) A_SmartChase(); else A_Chase();
+//				A_Chase();
+
+				if (lastSeenCorpse)
+				{
+					lastSeenCorpse.Destroy();
+					lastSeenCorpse = null;
+				}
+			}
+			else
+			{
+				vector3 delayedPosition = targetHistory[(historyIndex + 1) % 20];
+
+				if (!lastSeenCorpse)
+				{
+					lastSeenCorpse = Spawn("EmptyTarget", (delayedPosition.x, delayedPosition.y, delayedPosition.z + 8), ALLOW_REPLACE);
+				}
+
+				if (corpseDistance < 300)
+				{
+					suppress = false;
+					if (UseASmartChase) A_SmartChase(); else A_Chase();
+			//		A_Chase();
+					return;
+				}
+
+				if (suppress)
+				{
+					
+					if (suppressCount < suppressLimit)
+					{
+						if (ShouldDoSuppressiveFire())
+							{
+								SetStateLabel("SuppressiveFire");
+								return;
+							}
+						else
+							if (UseASmartChase) A_SmartChase(); else A_Chase();
+					}
+					
+					else if (suppressCount >= suppressLimit && suppressCount2 < suppressLimit2)
+					{
+						if (ShouldDoSuppressiveFire())
+							{
+								SetStateLabel("SuppressiveFire2");
+								return;
+							}
+						else
+							if (UseASmartChase) A_SmartChase(); else A_Chase();
+					}
+					
+					else
+					{
+					//	Console.Printf("\cgSuppressiveFire limit reached!");
+						suppress = false;
+					}
+					
+					
+				}
+				
+				if (UseASmartChase) A_SmartChase(); else A_Chase();
+			//	A_Chase();
+			}
+		}
+		else
+		{
+			if (UseASmartChase) A_SmartChase(); else A_Chase();
+		//	A_Chase();
+		}
+	}
+
+
+	override void Tick()
+	{
+		Super.Tick();
+		//HitboxerHandler();
+		ExecutionHandler();
+		
+		if (target && CheckSight(target)) 
+		{
+			// Record the target's current position.
+			targetHistory[historyIndex] = target.pos;
+
+			self.lastSeenPosX = target.pos.x;
+			self.lastSeenPosY = target.pos.y;
+			self.lastSeenPosZ = target.pos.z;
+			historyIndex = (historyIndex + 1) % 20;
+			lastPlayerPos = target.pos;
+		}
+		
+		if (inSuppressiveFire)
+		{
+			// If the player can see any part of the monster, exit suppressive fire.
+			if (PlayerSeesMonster())
+			{
+//				Console.Printf("Player sees me! Exiting suppressive fire.");
+				inSuppressiveFire = false;
+				vector3 projected = ComputeProjectedPoint();
+				if (lastSeenCorpse)
+					lastSeenCorpse.Destroy();
+				lastSeenCorpse = Spawn("EmptyTarget", (projected.x, projected.y, projected.z + 8), ALLOW_REPLACE);
+			//	SetStateLabel("See");  // Switch back to normal behavior.
+			}
+		}
+		
+		if(avoidCooldown > 0)
+		{
+			avoidCooldown--;
+		}
+	}
+
+
+bool CanReachTarget(class<Actor> missileType, double offsetX = 1, double offsetY = 1, double offsetZ = 1, int tolerance = 0, bool debug = false, double customAngle = -999, double customPitch = -999)
+{
+	if (!self.target) 
+        return false;
+
+//	Console.PrintF("\cp RAW yaw: %.2f, \cp RAW pitch: %.2f , \cf self.angle: %.2f, \cp self.pitch: %.2f",customAngle, customPitch,self.angle,self.pitch);
+
+	double angle_to_target = AngleTo(self.target,false);
+	double pitch_to_target = PitchTo (self.target,offsetZ,self.target.height/2);
+	double yaw =   (customAngle >-999)   ? angle_to_target + customAngle : self.angle;
+    double cpitch = (customPitch > -999) ? pitch_to_target + customPitch : self.pitch;
+
+    Vector3 offset = (offsetX, offsetY, offsetZ); 
+    Vector3 relativeOfs = PB_Math.RelativeToGlobalOffset(self.pos, (self.angle, self.pitch, self.roll), offset, true);
+//	Console.PrintF("\cl angleToTarget: %.2f, \cn pitchToTarget: %.2f, \cs yaw: %.2f, \cv cpitch: %.2f",angle_to_target, pitch_to_target,yaw,cpitch);
+
+	double targetMidZ = self.target.pos.z + (self.target.height * 0.5);
+	double deltaZ = targetMidZ - relativeOfs.z;
+	double distance2D = Distance2D(self.target);
+	if (customPitch == -999)
+		cpitch = -atan2(deltaZ, distance2D);
+	
+    bool traceHit;
+	vector3 targetPos = self.target.pos;
+    int missileRadius = GetDefaultByType(missileType).Radius;
+    int missileHeight = GetDefaultByType(missileType).Height;
+    double dist = Distance3d(self.target);
+    double threshold = 64.0; 
+	bool overallSuccess = true;
+    FLineTraceData traceData;
+
+	float rad = yaw * (3.14159265 / 180.0);
+	float forwardX = cos(rad);
+	float forwardY = sin(rad);
+	
+    vector3 samplePoints[4];
+    double halfHeight = missileHeight / 2.0;
+    double sideOffset = missileRadius;
+																				// spawninbg Z height is BOTTOM of the actor, not middle!	
+	samplePoints[0] = (relativeOfs.x + missileRadius , relativeOfs.y + missileRadius, relativeOfs.z);
+	samplePoints[1] = (relativeOfs.x - missileRadius , relativeOfs.y - missileRadius, relativeOfs.z);
+	samplePoints[2] = (relativeOfs.x + missileRadius , relativeOfs.y + missileRadius, relativeOfs.z + missileHeight);
+	samplePoints[3] = (relativeOfs.x - missileRadius , relativeOfs.y - missileRadius, relativeOfs.z + missileHeight);
+
+    for (int i = 0; i < 4; i++)
+    {
+        vector3 sample = samplePoints[i];
+        double dx = sample.x - relativeOfs.x;
+        double dy = sample.y - relativeOfs.y;
+        double dz = sample.z - relativeOfs.z;
+
+		double vecX = self.target.pos.x - relativeOfs.x;
+		double vecY = self.target.pos.y - relativeOfs.y;
+		double vecZ = self.target.pos.z + (target.height * 0.5) - self.pos.z;
+
+		yaw = VectorAngle(vecX, vecY);
+		if (customAngle > -999)
+			yaw += customAngle;
+
+		float offsetForward = dx * forwardX + dy * forwardY;
+		float offsetSide = dy + offsetY; 
+		float offsetZ = offsetZ + dz;
+
+
+		if (debug)
+		{
+		 traceHit = Line3d.LineTraceVisual(
+				self,
+				yaw,        
+				dist,
+				cpitch,        
+				TRF_THRUACTORS, 
+				offsetZ,
+				offsetForward,
+				offsetSide,
+				data: traceData,
+				LineClassName: "Line3d",
+				TimeToLive: 10,
+				TimeToCycle: 0,
+				MarkerClassName: "Marker3d"
+			);
+		}
+		
+		else
+		{
+			 traceHit = self.LineTrace(
+				yaw,        
+				dist,
+				pitch,        
+				TRF_THRUACTORS, 
+				offsetZ,
+				offsetForward,
+				offsetSide,
+				data: traceData
+			);
+		}
+		
+        if (traceHit)
+        {
+            
+			if(traceData.TRACE_HitCeiling || traceData.TRACE_HitWall || traceData.TRACE_HitFloor)
+			{
+			
+				vector3 hitPos = traceData.HitLocation;
+				double diffX = hitPos.x - targetPos.x;
+				double diffY = hitPos.y - targetPos.y;
+				double diffZ = hitPos.z - targetPos.z;
+				double hitDistance = sqrt(diffX*diffX + diffY*diffY + diffZ*diffZ);
+
+				if (hitDistance > threshold)
+				{
+				//	Console.Printf("\caFailed hit %d Distance: %.2f", i, hitDistance);
+					overallSuccess = false;
+				}
+			}
+        }
+
+    }
+
+  //  Console.Printf(overallSuccess ? "\cdSuccess: All hit locations within threshold." : "\cjFailure: At least one hit outside threshold.");
+    return overallSuccess;
+}
+
+
+
+
+
+
+
+	// Returns true if the line trace from the projectile's spawn position hits near the dummy corpse.
+	bool ShouldDoSuppressiveFire()
+	{
+
+		// Make sure we have a valid dummy corpse.
+		if (!lastSeenCorpse)
+			return false;
+		
+		double offZ = self.suppressiveOffZ;
+		double offXY = self.suppressiveOffXY;
+		
+		// First, perform some standard checks.
+		double dx = lastSeenPosX - self.pos.x;
+		double dy = lastSeenPosY - self.pos.y;
+		double dist = sqrt(dx * dx + dy * dy);
+		if (dist > 1800)
+			return false; // Too far away.
+/* 		if (random(0, 100) > 50)
+			return false;  */
+			
+		else if (dist < 300)
+			return false;
+		
+		// --- Calculate the projectile's spawn position using your offsets ---
+		double angleRadians = self.angle * (3.14159265 / 32768.0);
+		// offXY is applied in the forward direction.
+		double spawnX = self.pos.x + cos(angleRadians) * offXY;
+		double spawnY = self.pos.y + sin(angleRadians) * offXY;
+		double spawnZ = self.pos.z + offZ;
+		
+		// --- Compute the vector from the spawn position to the dummy corpse ---
+		double vecX = lastSeenCorpse.pos.x - spawnX;
+		double vecY = lastSeenCorpse.pos.y - spawnY;
+		double vecZ = lastSeenCorpse.pos.z - spawnZ;
+		
+		// Compute horizontal distance.
+		double horiz = sqrt(vecX * vecX + vecY * vecY);
+		
+		// Compute the yaw angle from the spawn point to the corpse.
+		double fixedAngle = VectorAngle(vecX, vecY);
+		double yawDegrees = fixedAngle; //* 360 / 65536; // Convert to degrees.
+		
+		// Compute the pitch (in radians).
+		// If the dummy corpse is lower than the spawn point, dz is negative and -atan(dz/horiz) becomes positive (aiming downward).
+		double computedPitch = -atan(vecZ / horiz);
+		
+		// --- Perform the visual line trace using LineTraceVisual ---
+	/* 	FLineTraceData traceData;
+		bool traceResult = Line3d.LineTraceVisual(
+			self,                   // source actor (Cyberdemon)
+			yawDegrees,             // computed yaw in degrees
+			sqrt(vecX*vecX + vecY*vecY + vecZ*vecZ), // full distance from spawn to dummy
+			computedPitch,          // computed pitch (radians)
+			0,                      // flags (none)
+			offZ,                   // offsetz (same as used for spawn)
+			offXY,                  // offsetforward (same as used for spawn)
+			15,                      // offsetside (set to 0 here; adjust if needed)
+			data: traceData,        // output trace data
+			LineClassName: "Line3d",// name of the line tracer class
+			TimeToLive: 105,        // visual TTL
+			TimeToCycle: 0,         // cycle time
+			MarkerClassName: "Marker3d" // marker for the end
+		);
+			 */
+			FLineTraceData traceData;
+			bool traceResult = self.LineTrace(                 // source actor (Cyberdemon)
+			yawDegrees,             // computed yaw in degrees
+			sqrt(vecX*vecX + vecY*vecY + vecZ*vecZ), // full distance from spawn to dummy
+			computedPitch,          // computed pitch (radians)
+			TRF_THRUACTORS,                      // flags (none)
+			offZ,                   // offsetz (same as used for spawn)
+			offXY,                  // offsetforward (same as used for spawn)
+			15,                      // offsetside (set to 0 here; adjust if needed)
+			data: traceData
+		);
+		
+		// Debug output: print key trace fields.
+/* 		Console.Printf("ShouldDoSuppressiveFire: Trace hit type = %d", traceData.HitType);
+		if (traceData.HitActor != null)
+		{
+			Console.Printf("ShouldDoSuppressiveFire: Trace hit actor = %s", traceData.HitActor.GetClassName());
+		}
+		else
+		{
+			Console.Printf("ShouldDoSuppressiveFire: Trace hit actor = none");
+		} */
+		
+		// --- Check if the trace hit is near the dummy corpse ---
+		vector3 hitPos = traceData.HitLocation;
+		double diffX = hitPos.x - lastSeenCorpse.pos.x;
+		double diffY = hitPos.y - lastSeenCorpse.pos.y;
+		double diffZ = hitPos.z - lastSeenCorpse.pos.z;
+		double hitDistance = sqrt(diffX*diffX + diffY*diffY + diffZ*diffZ);
+		
+		// Define a threshold (in map units) for "near." Adjust this value as needed.
+		double threshold = 64.0;
+	//	Console.Printf("ShouldDoSuppressiveFire: HitDistance to corpse = %f", hitDistance);
+		
+		// If the trace hit location is within threshold of the dummy corpse, we consider the line of fire clear.
+		if (hitDistance <= threshold)
+		{
+			return true;
+		}
+		
+		//Console.PrintF("\ca Cannot do suppressiveFire!");
+		return false;
+	}
+
+
+
+	void A_SuppressiveFire(bool shootDownward = false, bool highRiders = false, double pitchOffset = 0)
+	{
+		double compensatingVerticalOffset = 0;
+		double compensatingHorizontalOffset = 0;
+
+		class <Actor> missiletype = self.suppressiveMissile;
+		double offZ = self.suppressiveOffZ;
+		double offXY = self.suppressiveOffXY;
+		
+		
+
+		double adjustedLastSeenX;
+		double adjustedLastSeenY;
+		double adjustedLastSeenZ;
+				
+		if (lastSeenCorpse != null)
+		{
+			adjustedLastSeenX = lastSeenCorpse.pos.x + compensatingHorizontalOffset;
+			adjustedLastSeenY = lastSeenCorpse.pos.y + compensatingHorizontalOffset;
+			adjustedLastSeenZ = lastSeenCorpse.pos.z + compensatingVerticalOffset;
+		}
+		else
+		{
+			// Fallback behavior when no corpse exists
+			adjustedLastSeenX = lastSeenPosX + compensatingHorizontalOffset;
+			adjustedLastSeenY = lastSeenPosY + compensatingHorizontalOffset;
+			adjustedLastSeenZ = lastSeenPosZ + compensatingVerticalOffset;
+		}
+
+		double angleRadians = self.angle * (3.14159265 / 32768.0);
+		double spawnX = self.pos.x + cos(angleRadians) * offXY; //self.pos.x + cos(angleRadians) * offXY;
+		double spawnY = self.pos.y + sin(angleRadians) * offXY; //self.pos.y + sin(angleRadians) * offXY;
+		double spawnZ = self.pos.z + offZ;
+
+		double dx = adjustedLastSeenX - spawnX;
+		double dy = adjustedLastSeenY - spawnY;
+		double dz = adjustedLastSeenZ - spawnZ;
+
+		double horiz = sqrt(dx * dx + dy * dy);
+		double fixedAngle = VectorAngle(dx, dy);
+		double yawDegrees = fixedAngle * 360 / 65536;
+		double computedPitch = -atan(dz / horiz);
+
+		Actor originalTarget = target;
+		target = lastSeenCorpse;
+		A_FaceTarget();
+
+		if (!highRiders) // Normal suppressive fire
+		{
+			if (shootDownward)
+			{
+				A_SpawnProjectile(missiletype, offZ, offXY, yawDegrees,
+					flags: CMF_AIMDIRECTION | CMF_OFFSETPITCH, pitch: computedPitch);
+			}
+			else
+			{
+				A_SpawnProjectile(missiletype, offZ, offXY, yawDegrees,
+					flags: CMF_AIMDIRECTION);
+			}
+		}
+		else // Arcing projectiles
+		{
+			let proj = self.A_SpawnProjectile(missiletype, offZ, offXY, yawDegrees,
+				flags: CMF_OFFSETPITCH, pitch: computedPitch);
+
+			if (proj != null)
+			{
+				double drop_rateZ = -5.0 / 4.0;
+				vector3 diff = (adjustedLastSeenX - proj.pos.x, adjustedLastSeenY - proj.pos.y, 0);
+				double diffMag = sqrt(diff.x * diff.x + diff.y * diff.y);
+				if (diffMag < 0.0001) diffMag = 0.0001;
+
+				vector3 horizDir = (diff.x / diffMag, diff.y / diffMag, 0);
+				let [t, Vx, Vz, dist] = AdjustProjectileForArc(proj, lastSeenCorpse, drop_rateZ, pitchOffset);
+
+				bool arcClear = CheckArcUnobstructed(proj, proj.pos, horizDir, dist, t, Vx, Vz, drop_rateZ, 30, 20, 0, 0, "Line3d", arcTarget: lastSeenCorpse);
+//				Console.Printf("Primary arc clear? %s", (arcClear ? "Yes" : "No"));
+
+				if (!arcClear)
+				{
+					int drop_rateZ_int = -3;
+					drop_rateZ = -3.0 / 4.0;
+					let proj_cast = PB_Monster_Projectile(proj);
+					proj_cast.drop_rate = drop_rateZ_int;
+					let [t, Vx, Vz, dist] = AdjustProjectileForArc(proj, lastSeenCorpse, drop_rateZ, pitchOffset);
+
+					bool arcClear2 = CheckArcUnobstructed(proj, proj.pos, horizDir, dist, t, Vx, Vz, drop_rateZ, 30, 20, 0, 0, "LaserBlast", arcTarget: lastSeenCorpse);
+//					Console.Printf("Secondary arc clear? %s", (arcClear2 ? "Yes" : "No"));
+
+					if (!arcClear2)
+					{
+						int drop_rateZ_int = -1;
+						drop_rateZ = -1.0 / 4.0;
+						proj_cast.drop_rate = drop_rateZ_int;
+						let [t, Vx, Vz, dist] = AdjustProjectileForArc(proj, lastSeenCorpse, drop_rateZ);
+
+					}
+				}
+			}
+		}
+
+		target = originalTarget;
+		self.pitch = 0;
+	}
+
+
+
+	bool PlayerSeesMonster()
+	{
+		// Make sure we have a valid player.
+		if (!target) return false;
+		
+		// Compute the player's eye position.
+		double eyeZ = target.pos.z;
+		if (target.player)
+		{
+			eyeZ += target.player.viewheight;
+		}
+		// For convenience, form a vector for the eye position.
+		vector3 eyePos = (target.pos.x, target.pos.y, eyeZ);
+		vector3 samplePoints[9];
+		
+		// Bottom corners:
+		samplePoints[0] = (self.pos.x - self.radius, self.pos.y - self.radius, self.pos.z);
+		samplePoints[1] = (self.pos.x + self.radius, self.pos.y - self.radius, self.pos.z);
+		samplePoints[2] = (self.pos.x - self.radius, self.pos.y + self.radius, self.pos.z);
+		samplePoints[3] = (self.pos.x + self.radius, self.pos.y + self.radius, self.pos.z);
+		
+		// Top corners:
+		samplePoints[4] = (self.pos.x - self.radius, self.pos.y - self.radius, self.pos.z + self.Height);
+		samplePoints[5] = (self.pos.x + self.radius, self.pos.y - self.radius, self.pos.z + self.Height);
+		samplePoints[6] = (self.pos.x - self.radius, self.pos.y + self.radius, self.pos.z + self.Height);
+		samplePoints[7] = (self.pos.x + self.radius, self.pos.y + self.radius, self.pos.z + self.Height);
+		
+		// Center of the bounding box:
+		samplePoints[8] = (self.pos.x, self.pos.y, self.pos.z + self.Height * 0.5);
+		FLineTraceData traceData;
+		for (int i = 0; i < 9; i++)
+		{
+			 vector3 sample = samplePoints[i];
+			 
+			 // Compute the difference vector from the player's eye to this sample.
+			 double dx = sample.x - eyePos.x;
+			 double dy = sample.y - eyePos.y;
+			 double dz = sample.z - eyePos.z;
+			 
+			 // Compute the horizontal (2D) distance.
+			 double horiz = sqrt(dx * dx + dy * dy);
+			 // Compute the total distance (if needed).
+			 double distance = sqrt(dx * dx + dy * dy + dz * dz);
+			 
+			 // Compute yaw (horizontal angle).
+			 // VectorAngle(dx,dy) returns a fixed-point angle (0..65535);
+			 // convert it to degrees.
+			 double fixedAngle = VectorAngle(dx, dy);
+			 double yawDegrees = fixedAngle;
+			 
+			 // Compute pitch (vertical angle in radians).
+			 // Using -atan(dz / horiz) because Doom's pitch is inverted.
+			 double computedPitch = -atan(dz / horiz);
+			 
+/* 			 bool traceResult = Line3d.LineTraceVisual(
+				 target,         // Source actor is the player.
+				 yawDegrees,     // Yaw angle in degrees.
+				 distance,       // Trace distance (from eye to sample).
+				 computedPitch,  // Pitch in radians.
+				 0,              // Flags (0 if none).
+				 target.player.viewheight,              // offsetz (no additional vertical offset)
+				 40,              // offsetforward (0 means no forward offset)
+				 0,              // offsetside (0 means no side offset)
+				 data: traceData,
+				 LineClassName: "Line3d",
+				 TimeToLive: 105,
+				 TimeToCycle: 0,
+				 MarkerClassName: "Marker3d"
+			  */
+			 
+			if (!target || !target.player) return false; 
+			//Line3d.LineTraceVisual
+			 bool traceResult = target.LineTrace(
+				 yawDegrees,     // Yaw angle in degrees.
+				 distance,       // Trace distance (from eye to sample).
+				 computedPitch,  // Pitch in radians.
+				 0,              // Flags (0 if none).
+				 target.player.viewheight,              // offsetz (no additional vertical offset)
+				 40,              // offsetforward (0 means no forward offset)
+				 0,              // offsetside (0 means no side offset)
+				 data: traceData
+			 );
+			 
+/* //			 Console.Printf("Trace result for sample %d: HitType = %d", i, traceData.HitType);
+			 if (traceData.HitActor != null)
+			 {
+				 Console.Printf("Trace hit actor: %s", traceData.HitActor.GetClassName());
+			 }
+			 else
+			 {
+				 Console.Printf("Trace hit actor: none");
+			 } */
+			 
+			 // If the trace hit the monster (self), consider that sample visible.
+			 if (traceResult && traceData.HitActor && (traceData.HitActor == self || traceData.HitActor.GetClassName() == "Shield"))  //if (traceResult && (traceData.HitActor == self))
+			 {
+				 return true;
+			 }
+		}
+		
+		// If none of the samples are visible, return false.
+		return false;
+	}
+
+	bool CheckInFront()
+	{
+		bool shotClear = true;
+		double distance = 200;
+		FLineTraceData traceData;
+/* 		bool traceResult = Line3d.LineTraceVisual(
+			self,            // Source actor is the monster (not the player!)
+			angle,      // Yaw angle in degrees.
+			distance,        // Trace distance (monster to predicted player position).
+			pitch,   // Pitch in radians.
+			0,               // Flags (0 if none).
+			self.Height * 0.5, // Offset Z (monster's eye level)
+			20,              // Offset forward
+			0,               // Offset side
+			data: traceData,
+			LineClassName: "LaserBlast",
+			TimeToLive: 105,
+			TimeToCycle: 0,
+			MarkerClassName: "Marker3d_R"
+		); */
+		
+		bool traceResult = self.LineTrace(
+			angle,      // Yaw angle in degrees.
+			distance,        // Trace distance (monster to predicted player position).
+			pitch,   // Pitch in radians.
+			0,               // Flags (0 if none).
+			self.Height * 0.5, // Offset Z (monster's eye level)
+			20,              // Offset forward
+			0,               // Offset side
+			data: traceData
+		);
+		
+		if (traceResult)
+		{
+			if(traceData.TRACE_HitCeiling || traceData.TRACE_HitWall)
+				{
+					shotClear = false;	
+				}
+		}
+		
+		if (traceResult && traceData.HitActor != null)
+			{
+				Actor hitActor = traceData.HitActor;
+
+
+				
+				if(hitActor != self.target)
+				{
+					shotClear = false;
+				}
+				
+				else
+					shotClear = true;
+				
+
+			}
+		else if (!traceResult)
+		{
+			
+			shotClear = true;
+			
+		}
+
+		return shotClear;
+	}
+
+	vector3 ComputeProjectedPoint()
+	{
+		// Get the monster's eye position.
+		double eyeZ = self.pos.z + self.Height * 0.5;
+		vector3 monsterEye = (self.pos.x, self.pos.y, eyeZ);
+
+		// Ensure lastPlayerPos is initialized
+		if (lastPlayerPos.x == 0 && lastPlayerPos.y == 0 && lastPlayerPos.z == 0)  
+		{
+			lastPlayerPos = target.pos;
+		}
+
+		// Compute player velocity (difference in position over time)
+		double dx = target.pos.x - lastPlayerPos.x;
+		double dy = target.pos.y - lastPlayerPos.y;
+		double dz = target.pos.z - lastPlayerPos.z;
+
+		// Estimate velocity length
+		double velocityMagnitude = sqrt(dx * dx + dy * dy + dz * dz);
+
+		// Prevent division by zero
+		if (velocityMagnitude < 0.01)
+		{
+			// If the player is stationary, assume they continue facing forward
+			dx = cos(target.angle);
+			dy = sin(target.angle);
+			dz = 0;
+			velocityMagnitude = sqrt(dx * dx + dy * dy + dz * dz);
+		}
+
+		// Normalize velocity to get direction
+		double velocityDirX = dx / velocityMagnitude;
+		double velocityDirY = dy / velocityMagnitude;
+		double velocityDirZ = dz / velocityMagnitude;
+
+		// Predict player's future position
+		double basePrediction = 32.0;   // Base prediction factor
+		double speedFactor = sqrt(dx*dx + dy*dy + dz*dz); // Magnitude of movement (from your lastPlayerPos difference)
+		double speedFactor2 = sqrt(dx*dx + dy*dy + dz*dz) / 2;
+		double predictionFactor = basePrediction + speedFactor * 1.0;  // Tweak the multiplier as needed
+//		Console.Printf("SpeedFactor1: %f,SpeedFactor2: %f)", speedFactor,speedFactor2);
+
+		
+		double predictedX = target.pos.x + (velocityDirX * predictionFactor);
+		double predictedY = target.pos.y + (velocityDirY * predictionFactor);
+		double predictedZ = target.pos.z + (velocityDirZ * predictionFactor);
+
+		// Compute aiming angles from monster to predicted future position
+		double deltaX = predictedX - self.pos.x;
+		double deltaY = predictedY - self.pos.y;
+		double deltaZ = predictedZ - monsterEye.z;
+
+		// Compute horizontal (2D) and total distance
+		double horiz = sqrt(deltaX * deltaX + deltaY * deltaY);
+		double distance = sqrt(deltaX * deltaX + deltaY * deltaY + deltaZ * deltaZ);
+
+		// Prevent division by zero
+		if (horiz < 0.0001) { horiz = 0.0001; }
+
+		// Compute yaw (horizontal angle)
+		double yawDegrees = VectorAngle(deltaX, deltaY);
+
+		// Compute pitch (vertical angle)
+		double computedPitch = -atan(deltaZ / horiz);
+
+		// Update last known player position for next frame
+		lastPlayerPos = target.pos;
+
+		// Perform the line trace using angles instead of coordinates
+		FLineTraceData traceData;
+/* 		bool traceResult = Line3d.LineTraceVisual(
+			self,            // Source actor is the monster (not the player!)
+			yawDegrees,      // Yaw angle in degrees.
+			distance,        // Trace distance (monster to predicted player position).
+			computedPitch,   // Pitch in radians.
+			0,               // Flags (0 if none).
+			self.Height * 0.5, // Offset Z (monster's eye level)
+			40,              // Offset forward
+			0,               // Offset side
+			data: traceData,
+			LineClassName: "LaserBlast",
+			TimeToLive: 105,
+			TimeToCycle: 0,
+			MarkerClassName: "Marker3d_R"
+		); */
+		
+		bool traceResult = self.LineTrace(
+			yawDegrees,      // Yaw angle in degrees.
+			distance,        // Trace distance (monster to predicted player position).
+			computedPitch,   // Pitch in radians.
+			0,               // Flags (0 if none).
+			self.Height * 0.5, // Offset Z (monster's eye level)
+			40,              // Offset forward
+			0,               // Offset side
+			data: traceData
+		);
+
+
+//		Console.Printf("Predicted shot at (%f, %f, %f)", predictedX, predictedY, predictedZ);
+
+		// If the trace confirms visibility, return predicted future position
+		if (traceResult)
+		{
+			return (predictedX, predictedY, predictedZ);
+		}
+
+		// If trace fails, fallback to shooting directly at the player's current position
+		return target.pos;
+	}
+
+
+
+	double ComputeFlightTime(double dist)
+	{
+		if(dist < 600)
+			return 13 + ((dist - 300) / 300.0) * (20 - 13);
+		else if(dist > 900)
+			return 27 + ((dist - 900) / 600.0) * (30 - 27);
+		else
+			return 20 + ((dist - 600) / 300.0) * (27 - 20);
+	}
+	
+	double ComputeFlightTime2(double dist)
+	{
+		if (dist <= 700)
+			return 15; // Fixed time for short ranges
+
+		double baseTime = 15;   // Minimum time for short ranges
+		double maxTime = 35;    // Max time for long ranges
+		double scaleFactor = 15 / 1100.0; // Smooth scaling beyond 700
+
+		// Linear interpolation for distances beyond 700
+		double time = baseTime + (dist - 400) * scaleFactor;
+
+		// Clamp time to avoid excessive values
+		time = min(time, maxTime);
+
+//		Console.Printf("\ccTime: %.2f , \cgDistance: %.2f", time, dist);
+		return time;
+	}
+
+
+	double,double,double,double AdjustProjectileForArc(Actor projectile, Actor target, double dropRate, double pitchOffset = 0)
+	{
+		double pitchOffset = random(-pitchOffset,pitchOffset);
+		double dist = (self.target ? distance3d(self.target) + pitchOffset : 4096);
+		double t = ComputeFlightTime(dist);
+		double heightDiff = (self.target ? self.target.pos.z - projectile.pos.z : 0);
+		
+		double Vx = dist / t;
+		double Vz = (heightDiff - 0.5 * dropRate * t * t) / t;
+			
+		vector3 currentXY = (projectile.vel.x, projectile.vel.y, 0);
+		double currentSpeed = sqrt(projectile.vel.x * projectile.vel.x + projectile.vel.y * projectile.vel.y);
+//		Console.Printf("Before Adjustment speed: %.2f,", currentSpeed);
+		currentSpeed = max(currentSpeed, 1);
+		double scaleFactor = Vx / currentSpeed;
+		
+		projectile.vel.x *= scaleFactor;
+		projectile.vel.y *= scaleFactor;
+		projectile.vel.z = Vz;
+		
+//		Console.Printf("\ccAdjusted: Vx=%.2f, Vz=%.2f, t=%.2f, scale=%.2f", Vx, Vz, t, scaleFactor);
+		return t, Vx , Vz , dist;
+	}
+
+	double, double, double, double AdjustProjectileForArc2(Actor projectile, Actor target, double dropRate)
+	{
+/* 		if (!target)
+			return 0, 0, 0, 0;  // Failsafe: No target, no adjustment. */
+
+		double dist = distance3d(target);
+		double t = ComputeFlightTime2(dist);
+
+		// Predict the target’s future position
+		vector3 targetFuturePos = target.pos + (target.vel * t);
+
+		// Manually compute distance instead of using distance3d()
+		double dx = targetFuturePos.x - projectile.pos.x;
+		double dy = targetFuturePos.y - projectile.pos.y;
+		double predictedDist = sqrt(dx * dx + dy * dy);
+
+		// Adjust height difference using the predicted position
+		double heightDiff = targetFuturePos.z - projectile.pos.z;
+
+		double Vx = predictedDist / t;
+		double Vz = (heightDiff - 0.5 * dropRate * t * t) / t;
+
+		double currentSpeed = sqrt(projectile.vel.x * projectile.vel.x + projectile.vel.y * projectile.vel.y);
+		currentSpeed = max(currentSpeed, 1);  // Avoid division by zero
+
+		double scaleFactor = Vx / currentSpeed;
+		projectile.vel.x *= scaleFactor;
+		projectile.vel.y *= scaleFactor;
+		projectile.vel.z = Vz;
+		
+	//	Console.Printf("\ccpredictedDist: %.2f, target.pos: x %.2f, y %.2f , z %.2f , \\cdtargetFuturePos: x %.2f, y %.2f , z %.2f ", predictedDist, target.pos.x, target.pos.y, target.pos.z, targetFuturePos.x, targetFuturePos.y, targetFuturePos.z);
+
+		return t, Vx, Vz, predictedDist;
+	}
+	
+
+
+
+
+
+
+
+	void A_DropAdjust2(class<Actor> missiletype,class<Actor> missiletype2, double offX, double offY, double offZ, double speedmult=1.0, int minRange=0, int maxRange=1000,bool shootDownward=false,bool highRiders = false,bool highRiders2 = false, statelabel stateFallback = "null", bool forceMinAngle = false)
+	{
+		Actor target = self.target;
+		if (!target) return;
+
+		double ceil = self.CeilingZ - self.pos.z;
+		double tarDist = (target ? self.distance2d(target) : 1);
+		
+
+		// Get the raw predicted angle from ACS (in Doom's fixed-point system)
+		double PredAngleACS = ACS_NamedExecuteWithResult("PredictAim", 1, getdefaultbytype(missiletype).speed, offZ);
+
+		// Compute the raw difference properly accounting for angle wrapping.
+		double rawDiff = deltaAngle(self.angle, PredAngleACS);
+
+
+		// Ensure previous target position is stored persistently (set in your actor class)
+		if (self.lastTargetPosX == 0 && self.lastTargetPosY == 0) {
+			self.lastTargetPosX = target.pos.x;
+			self.lastTargetPosY = target.pos.y;
+		}
+
+		// Compute displacement over time using the stored previous position
+		double displacementX = target.pos.x - self.lastTargetPosX;
+		double displacementY = target.pos.y - self.lastTargetPosY;
+
+		// Update stored position for next call
+		self.lastTargetPosX = target.pos.x;
+		self.lastTargetPosY = target.pos.y;
+
+		// Compute direction from Cyberdemon to target
+		double dx = target.pos.x - self.pos.x;
+		double dy = target.pos.y - self.pos.y;
+		double distc = max(sqrt(dx * dx + dy * dy), 0.01); // Avoid division by zero
+
+		double dirX = dx / distc;
+		double dirY = dy / distc;
+
+		// Compute lateral displacement (ignoring forward/backward movement)
+		double lateralDisplacement = abs(displacementX * dirY - displacementY * dirX);
+
+		// Compute lateral speed from velocity (as before)
+		double lateralSpeed = abs(target.vel.x * dirY - target.vel.y * dirX);
+		double playerSpeed = sqrt(target.vel.x * target.vel.x + target.vel.y * target.vel.y);
+
+		// Define scale factor based on tarDist (assumed defined elsewhere)
+		double scaleFactor = clamp(1.0 - (tarDist / 1500.0), 0.5, 1.0);
+
+		// Define angle change limits
+		double minAngle = 2200;
+		double maxAngle = 10500;
+		double maxAngleChange;
+
+		// Use lateral displacement (instead of total displacement) to decide if movement is low
+		double lowMovementThreshold = 70.0;  // Adjust this value as needed
+
+
+
+		if (lateralDisplacement < lowMovementThreshold) {  
+			maxAngleChange = minAngle;  
+		} else {
+			// Otherwise, scale aggressively based on lateral speed.
+			maxAngleChange = minAngle + clamp((abs(lateralSpeed) - 1.0) * 500, 0, maxAngle - minAngle);
+		}
+		
+		if(forceMinAngle == true)
+			maxAngleChange = minAngle;
+
+//		Console.Printf("\cfLateral Displacement: %f, \cgLateral Speed: %f, \cymaxAngleChange: %f", lateralDisplacement, lateralSpeed, maxAngleChange);			
+
+		// Apply the scaled angle adjustment
+		double scaledDiff = rawDiff * scaleFactor;
+		double finalDiff = clamp(scaledDiff, -maxAngleChange, maxAngleChange);
+
+
+/* 		double scaleFactor = clamp(1.0 - (tarDist / 1500.0), 0.5, 1.0);
+
+		double scaledDiff = rawDiff * scaleFactor;
+
+
+		double maxAngleChange = clamp(7500 - (tarDist * 2.0), 2000, 7500);
+		double finalDiff = clamp(scaledDiff, -maxAngleChange, maxAngleChange); */
+
+		// Combine with the current angle to get the final PredAngle.
+		double FinalPredAngle = self.angle + finalDiff;
+
+		// If ceiling is too low or the target is out-of-range, use the alternate projectile.
+		if (ceil < 80 || (tarDist > maxRange || tarDist < minRange))
+		{
+			if(stateFallback == "null")
+			{
+				CanReachTarget(missiletype2,offY,offX,offZ,tolerance:2,debug:false,customAngle : FinalPredAngle * 360 / 65536);
+				self.A_SpawnProjectile(missiletype2, offZ, offX, FinalPredAngle * 360 / 65536);
+				return;
+			}
+			
+			else
+				self.SetState(FindState(stateFallback));  return;
+				
+		}
+
+		// The rest of your function for spawning the main projectile...
+		double dist = (target ? self.distance2d(target) : 1);
+		if(dist < 1) dist = 1;
+		if(!gravity) gravity = getdefaultbytype(missiletype).gravity;
+		double spd = getdefaultbytype(missiletype).speed * speedmult;
+/* 		if(getdefaultbytype(missiletype).gravity && dist > spd)
+		{
+			int ticstotake = dist / spd;
+			int dropamt = 0;
+			for (int i = 1; i <= ticstotake; i++)
+			{
+				dropamt += i;
+			}
+			self.pitch -= min(atan(dropamt * gravity / dist), 30);
+		} */
+
+/* 		if (dist > 0 && gravity != 0)
+		{
+			double adjustment = self.pitch += atan(10 / dist);
+			Console.Printf("adjustment: %d", adjustment);
+			self.pitch += adjustment;
+		}
+		else
+		{
+			self.pitch = 0;
+		} */
+// ================================
+
+		if (shootDownward)
+		{
+			double minDist = 250.0;
+			double optimalDist = 450.0;
+			double farDist = 800.0;
+			double maxExtraPitch = 70.0;
+			double extraPitch;
+			
+			if (tarDist <= minDist)
+			{
+				extraPitch = 70;
+			}
+			else if (tarDist <= optimalDist)
+			{
+				extraPitch = (tarDist - minDist) / (optimalDist - minDist) * maxExtraPitch;
+			}
+			else if (tarDist <= farDist)
+			{
+				extraPitch = (farDist - tarDist) / (farDist - optimalDist) * maxExtraPitch;
+			}
+			else
+			{
+				extraPitch = 0;
+			}
+			
+			self.pitch += extraPitch;
+		}
+
+
+		
+	//	Console.Printf("Monster Pitch after vertical adjustment: %f", self.pitch);
+		
+		double final_pitch = sin(pitch) * 120;
+		
+
+	//	Console.Printf("Final pitch: %f, Pitch: %f,self.Pitch %f", final_pitch, pitch,self.pitch);
+
+		if (!highRiders && !highRiders2)
+		{
+			CanReachTarget(missiletype,offY,offX,offZ,tolerance:2,debug:false, customAngle : FinalPredAngle * 360 / 65536, customPitch : sin(pitch / 2) * abs(offY) ) ;
+			self.A_SpawnProjectile(missiletype, offZ, offX, FinalPredAngle * 360 / 65536, flags:CMF_OFFSETPITCH, sin(pitch / 2) * abs(offY));
+//		self.A_SpawnProjectile(missiletype, offZ, offX, FinalPredAngle * 360 / 65536);
+		}
+			
+		
+		else if(highRiders)
+		{
+			let proj = self.A_SpawnProjectile(missiletype, offZ, offX, FinalPredAngle * 360 / 65536, flags:CMF_OFFSETPITCH, final_pitch);
+			if(proj != null)
+			{
+				double drop_rateZ = -5.0/4.0;
+				vector3 diff = (self.target.pos.x - proj.pos.x, self.target.pos.y - proj.pos.y, 0);
+				double diffMag = sqrt(diff.x * diff.x + diff.y * diff.y); if(diffMag < 0.0001) diffMag = 0.0001;
+				vector3 horizDir = (diff.x / diffMag, diff.y / diffMag, 0);
+				let [t, Vx, Vz, dist] = AdjustProjectileForArc(proj, self.target, drop_rateZ);
+				bool arcClear = CheckArcUnobstructed(proj,proj.pos,horizDir,dist,t,Vx,Vz,drop_rateZ,30,20,0,0,"Line3d");
+//				Console.Printf("Primary arc clear? %s", (arcClear ? "Yes" : "No"));
+
+				if(!arcClear)
+				{
+
+					int drop_rateZ_int = -3;
+					drop_rateZ = -3.0/4.0;
+					let proj_cast = PB_Monster_Projectile(proj);
+					proj_cast.drop_rate = drop_rateZ_int;
+					let [t, Vx, Vz, dist] = AdjustProjectileForArc(proj, self.target, drop_rateZ);
+
+					
+					bool arcClear2 = CheckArcUnobstructed(proj,proj.pos,horizDir,dist,t,Vx,Vz,drop_rateZ,30,20,0,0,"LaserBlast");
+//					Console.Printf("Secondary arc clear? %s", (arcClear2 ? "Yes" : "No"));
+					
+					if(!arcClear2)
+					{
+						int drop_rateZ_int = -1;
+						drop_rateZ = -1.0/4.0;
+			//			let proj_cast = BaronMeteor(proj);
+						proj_cast.drop_rate = drop_rateZ_int;
+						let [t, Vx, Vz,dist] = AdjustProjectileForArc(proj, self.target, drop_rateZ);
+						
+				//		bool arcClear3 = CheckArcUnobstructed(proj,proj.pos,horizDir,dist,t,Vx,Vz,drop_rateZ,30,20,0,0,"YellowLaser");
+				//		Console.Printf("Ternary arc clear? %s", (arcClear3 ? "Yes" : "No"));
+					}
+				}
+			}
+		}
+		
+		if(highRiders2)
+		{
+			let proj = self.A_SpawnProjectile(missiletype, offZ, offX, FinalPredAngle * 360 / 65536, flags:CMF_OFFSETPITCH, final_pitch);
+			if(proj != null)
+			{
+				double drop_rateZ = -5.0/4.0;
+				vector3 diff = (self.target.pos.x - proj.pos.x, self.target.pos.y - proj.pos.y, 0);
+				double diffMag = sqrt(diff.x * diff.x + diff.y * diff.y); if(diffMag < 0.0001) diffMag = 0.0001;
+				vector3 horizDir = (diff.x / diffMag, diff.y / diffMag, 0);
+				let [t, Vx, Vz, dist] = AdjustProjectileForArc2(proj, self.target, drop_rateZ);
+				bool arcClear = CheckArcUnobstructed(proj,proj.pos,horizDir,dist,t,Vx,Vz,drop_rateZ,30,20,0,0,"Line3d");
+//				Console.Printf("Primary arc clear? %s", (arcClear ? "Yes" : "No"));
+
+				if(!arcClear)
+				{
+
+					int drop_rateZ_int = -3;
+					drop_rateZ = -3.0/4.0;
+					let proj_cast = PB_Monster_Projectile(proj);
+					proj_cast.drop_rate = drop_rateZ_int;
+					let [t, Vx, Vz, dist] = AdjustProjectileForArc2(proj, self.target, drop_rateZ);
+
+					
+					bool arcClear2 = CheckArcUnobstructed(proj,proj.pos,horizDir,dist,t,Vx,Vz,drop_rateZ,30,20,0,0,"LaserBlast");
+//					Console.Printf("Secondary arc clear? %s", (arcClear2 ? "Yes" : "No"));
+					
+					if(!arcClear2)
+					{
+						int drop_rateZ_int = -1;
+						drop_rateZ = -1.0/4.0;
+			//			let proj_cast = BaronMeteor(proj);
+						proj_cast.drop_rate = drop_rateZ_int;
+						let [t, Vx, Vz,dist] = AdjustProjectileForArc2(proj, self.target, drop_rateZ);
+						
+				//		bool arcClear3 = CheckArcUnobstructed(proj,proj.pos,horizDir,dist,t,Vx,Vz,drop_rateZ,30,20,0,0,"YellowLaser");
+				//		Console.Printf("Ternary arc clear? %s", (arcClear3 ? "Yes" : "No"));
+					}
+				}
+			}
+		}
+			
+			
+		self.pitch = 0;
+
+//		Console.Printf("\cstarDist: %f, scaleFactor: %f, maxAngleChange: %f", tarDist, scaleFactor, maxAngleChange);
+	}
+
+
+	bool CheckArcUnobstructed(
+		Actor projectil,       // Projectile actor
+		vector3 startPos,      // Spawn position
+		vector3 horizDir,      // Unit direction vector (XY)
+		double new_targdist,   // Target horizontal distance
+		double t,              // Estimated flight time (tics)
+		double Vx,             // Horizontal velocity
+		double Vz,             // Initial vertical velocity
+		double drop_rateZ,     // Gravity per tic
+		double segmentLength,  // Segment distance
+		double offZ,           // Offset for line tracer (vertical)
+		double offForward,     // Forward offset
+		double offSide,         // Side offset
+		string LineType,
+		Actor arcTarget = null
+	)
+	{
+		vector3 currentPos = startPos;  // Start at projectile position
+		double totalHoriz = 0;
+		double currentVz = Vz;  // Maintain vertical velocity
+
+	//	Console.Printf("Starting laser at (%.1f, %.1f, %.1f)", startPos.x, startPos.y, startPos.z);
+
+		
+	//	Console.Printf("HorizDir: (%.3f, %.3f)", horizDir.x, horizDir.y);
+
+		if (arcTarget == null)
+		{
+			arcTarget = self.target;
+		}
+		
+
+		while (totalHoriz < new_targdist)  // Keep going until reaching the target distance
+		{
+			double dt = segmentLength / Vx;  // Time step for this segment
+
+			// Compute displacement for this step
+			double dx = segmentLength * horizDir.x;
+			double dy = segmentLength * horizDir.y;
+			double dz = (currentVz * dt) + (0.5 * drop_rateZ * dt * dt);
+
+			vector3 nextPos = (
+				   currentPos.x + dx + offForward, 
+                   currentPos.y + dy + offSide, 
+                   currentPos.z + dz + offZ);
+
+			double segYaw = VectorAngle(dx, dy);
+			double segPitch = -atan2(dz, segmentLength); 
+			
+	//		if (dx < 0) segYaw += 180;
+
+
+			vector3 predictedEnd = (currentPos.x + dx, currentPos.y + dy, currentPos.z + dz);
+			// **Spawn laser at the correct position and angle**
+			FLineTraceData segTrace;
+/* 	bool segResult = Line3d.LineTraceVisual(
+				projectil,      // Source actor
+				segYaw,         // Yaw angle
+				segmentLength,  // Distance per segment
+				segPitch,       // Pitch angle
+				TRF_THRUACTORS,
+ 				offZ,              // Height offset
+				offForward,     // Forward offset
+				offSide,         // Side offset
+				data: segTrace,
+				LineClassName: LineType,
+				TimeToLive: 60,
+				TimeToCycle: 0,
+				MarkerClassName: "Marker3d"
+			); 
+ */
+	
+			
+ 	bool segResult = projectil.LineTrace(
+				segYaw,         // Yaw angle
+				segmentLength,  // Distance per segment
+				segPitch,       // Pitch angle
+				TRF_THRUACTORS,
+ 				offZ,              // Height offset
+				offForward,     // Forward offset
+				offSide,         // Side offset
+				data: segTrace
+			);
+ 
+ 
+
+
+
+			if (segResult && segTrace.HitActor != null)
+			{
+				Actor hitActor = segTrace.HitActor;
+
+				// **Ignore self-hit**
+				if (hitActor == projectil)
+				{
+					//Console.Printf("\cbSkipping self-hit.");
+					continue;  // Skip to the next iteration
+				}
+				
+				
+				if(segTrace.TRACE_HitCeiling || segTrace.TRACE_HitWall)
+				{
+				
+				//Console.Printf("Laser blocked at (%.1f, %.1f, %.1f)", currentPos.x, currentPos.y, currentPos.z);
+				return false;	
+				
+				}
+			}
+			
+			
+
+				vector3 targetPos = arcTarget.pos;
+				double dx_target = segTrace.HitLocation.x - targetPos.x;
+				double dy_target = segTrace.HitLocation.y - targetPos.y;
+				double distToTarget = sqrt(dx_target * dx_target + dy_target * dy_target);
+				double detection_tolerance = arcTarget.radius + 2* segmentLength;
+				
+			//	Console.Printf("\cdHitLocation is %.2f units from target (target radius = %.2f), tolerance: %.2f", distToTarget, self.target.radius, detection_tolerance);
+				
+				if (distToTarget <= arcTarget.radius + 2* segmentLength)
+				{
+			//		Console.Printf("\ch Target is HIT");
+					return true;
+			//		segResult = false;  // Override the hit; treat it as if nothing obstructed this segment.
+				}
+
+				
+				
+
+
+/* 			Console.Printf("Laser %d: Start=(%.1f,%.1f,%.1f) End=(%.1f,%.1f,%.1f) Yaw=%.2f Pitch=%.2f",
+					   int(totalHoriz / segmentLength),
+					   currentPos.x, currentPos.y, currentPos.z,
+					   nextPos.x, nextPos.y, nextPos.z,
+					   segYaw, segPitch); */
+
+/* 			Console.Printf("Step %d -> horizDir: (%.3f, %.3f), dx: %.3f, dy: %.3f, segYaw: %.2f",
+               int(totalHoriz / segmentLength),
+               horizDir.x, horizDir.y, dx, dy, segYaw); */
+
+			if (!segResult) // No hit, use predictedEnd
+			{
+				vector3 hitVector = predictedEnd;  
+				offZ = segTrace.HitLocation.z - currentPos.z;
+				offForward += (hitVector.x - currentPos.x) * horizDir.x;
+				offForward += (hitVector.y - currentPos.y) * horizDir.y;
+				double perpX = -horizDir.y;
+				double perpY = horizDir.x;
+				offSide += (hitVector.x - currentPos.x) * perpX;
+				offSide += (hitVector.y - currentPos.y) * perpY;
+				
+		//		Console.Printf("Offsets -> Forward: %.3f, Side: %.3f, Z: %.3f", offForward, offSide, offZ);
+
+			}
+
+
+			else
+			{
+
+			//	Console.Printf("\caArc blocked at segment starting at (%.1f, %.1f, %.1f)", currentPos.x, currentPos.y, currentPos.z);
+				return false;
+			}
+
+			totalHoriz += segmentLength;
+
+			// **Update vertical velocity for gravity**
+			currentVz += drop_rateZ * dt;
+			
+			
+
+		}
+
+		return true;  // If all lasers were fired successfully
+	}
+
+
+
+
+
+
+
+
+
+
+	
+	double A_PrepairDrop()
+	{
+		vector2 aimbak=(self.angle,self.pitch);
+		self.A_FaceTarget(0,0);
+		self.angle=aimbak.x;
+		self.pitch=aimbak.y;
+		
+		double targdist=(self.target?distance3d(self.target):4096);
+		vector2 leadoffset;
+		if(targdist>2000) leadoffset=(frandom(-2.,2),frandom(-1.,1.));
+		else leadoffset=(
+			deltaangle(aimbak.x,aimbak.x),
+			deltaangle(aimbak.y,aimbak.y)
+		)*targdist*frandom(0.055,0.067);
+
+		self.angle += leadoffset.x;
+		self.pitch += leadoffset.y;
+		return targdist;
+	}
+
+	void A_DropAdjust(class<actor> missiletype, class<actor> missiletype2,double offX, double offY, double offZ,double PredAngle=0,
+						double dist=0,double speedmult=1.,double gravity=0,actor target=null,double spawnOffsetY=0,bool flipped=0,int minRange=0,int maxRange=1000)
+	{
+		if (getdefaultbytype(missiletype).gravity != 0) { PredAngle = ACS_NamedExecuteWithResult("PredictAim", 1, 20, 32); }	//(int retAngle, int projectileSpeed, int projectileZ)
+		else {PredAngle = ACS_NamedExecuteWithResult("PredictAim", 1, getdefaultbytype(missiletype).speed, offZ);}	//(int retAngle, int projectileSpeed, int projectileZ)
+			
+		if(!target)target=self.target;
+		if(!target)return;
+		double ceil = self.CeilingZ - self.pos.z;
+		
+		double tarDist = self.A_PrepairDrop();
+		if(ceil < 80 || (tarDist > maxRange || tarDist < minRange))
+		{
+			self.A_SpawnProjectile(missiletype2,offZ);
+			return;
+		}
+		if(dist<1) dist=max(1,(target?self.distance2d(target):1));
+		if(!gravity)gravity=getdefaultbytype(missiletype).gravity;
+		double spd=getdefaultbytype(missiletype).speed*speedmult;
+		if(getdefaultbytype(missiletype).gravity&&dist>spd)
+		{
+			
+			int ticstotake=dist/spd;
+			int dropamt=0;
+			for(int i=1;i<=ticstotake;i++)
+			{
+				dropamt+=i;
+			}
+			self.pitch -= min(atan(dropamt*gravity/dist),30);
+		}
+
+		//because we don't shoot from height 32 but 42
+		if(dist>0 && gravity != 0) {self.pitch += atan(10/dist);}
+		else { self.pitch = 0;}
+		
+		double finalAngle = PredAngle+1024;
+		
+		if(flipped) {
+			finalAngle = PredAngle-1024;
+		}
+		else {
+			finalAngle = PredAngle+1024;
+		}
+		
+		self.A_DropProjectile(missiletype,offX,offY,offZ,tarDist,finalAngle, spawnOffsetY);
+	}
+	
+	void A_DropProjectile(class<actor> missiletype, double offX, double offY, double offZ, double targdist, double PredictAngle, double spawnOffsetY=0.0)
+	{
+			
+			if(!getdefaultbytype(missiletype).gravity) {
+				self.A_SpawnProjectile(missiletype,offZ, offX, PredictAngle*360/65536);
+			}
+			else {
+				self.A_SpawnItemEx(
+					missiletype,offX,offY,offZ,
+					cos(pitch)*abs(offY),0,-sin(pitch)*abs(offY),
+					PredictAngle*360/65536,												// atan(offY/targdist)
+					flags:SXF_NOCHECKPOSITION|SXF_SETTARGET|SXF_TRANSFERPITCH
+				);
+			}
+	}
+	
+	action void A_WallCheck(int side, statelabel Roll, statelabel NoCanDo)
+	{
+		FLineTraceData dt1;
+		
+		self.LineTrace(self.Angle + 90 * side, self.Radius * 6, self.Pitch, TRF_NOSKY | TRF_THRUACTORS, self.Height * 0.95, data: dt1);
+		
+		bool Wall = dt1.HitType == FLineTraceData.TRACE_HitWall;
+		
+		if(!Wall)
+		{
+			SetStateLabel(Roll);
+		}
+		else
+		{
+			SetStateLabel(NoCanDo);
+		}
+		return;
+	}
+	
+	//Tick and PostBeginPlay stuff
+
+
+	
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		suppressiveOffZ = 60;
+        suppressiveOffXY = -25;
+        suppressiveMissile = "CyberBalls";
+	}
+
+	override void PostBeginPlay()
+	{
+		Super.PostBeginPlay();
+		heardOpponent = 0;
+		HitBoxSpawned = False;
+		avoidCooldown = 0;
+		retargetSkips = 1;
+	}
+	
+
+	bool HasClearShotIgnoringShield(Actor source, Actor target)
+	{
+		ShieldIgnoringTracer tracer = new("ShieldIgnoringTracer");
+		tracer.traceOwner = source;
+		tracer.targetActor = target;
+		vector3 start;
+		vector3 targetpos;
+
+		if(source && target)
+		{
+			start = (source.pos.x, source.pos.y, source.pos.z + source.height * 0.5);
+			targetPos = (target.pos.x, target.pos.y, target.pos.z + target.height * 0.5);
+		}
+		else
+		{
+			start = (0,0,0);
+			targetPos = (0,0,0);
+		}
+		vector3 delta = targetPos - start;
+		double distance = delta.Length();
+		if (distance <= 0) return false;
+
+		vector3 direction = delta / distance;
+
+		// Run the trace
+		tracer.Trace(start, source.CurSector, direction, distance, 0, 0, false, null);
+
+		// **Direct return of the boolean value**
+		return tracer.HasClearShot();
+	}
+
+
+
+	
+	Default
+	{
+		Monster;
+		+FLOORCLIP;
+		+SLIDESONWALLS;
+	//	+DOHARMSPECIES;
+	//	+HARMFRIENDS;
+		+ROLLSPRITE;
+		+ROLLCENTER;
+		+FORCEPAIN;
+		+JUMPDOWN;
+		+SEEFRIENDLYMONSTERS;
+		//-MISSILEMORE;
+		//-MISSILEEVENMORE;
+		MissileChanceMult 1.0;
+		BloodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
+		PB_Monster.CanIRoll true;
+		PB_Monster.CanIFallback true;
+		PB_Monster.CanIReload true;
+		PB_Monster.MonDMGMult 2.0, 1.5, 0.70, 1.0, 1.25, 0.80;
+		PB_Monster.MonPosHB 0.8, 0.65, 0.38, 0.40;
+		PB_Monster.AttackRange 5000;
+		PB_Monster.PBMonSpeed 4, 3, 1.5, 2; //this should be the baseline, especially for zombies
+	}
+}
+
+class ShieldIgnoringTracer : LineTracer
+{
+    Actor traceOwner;  
+    Actor targetActor;
+    bool clearShot;
+
+    override ETraceStatus TraceCallback()
+    {
+        if (results.HitType == TRACE_HitActor)
+        {
+            Actor hitActor = results.HitActor;
+
+            if (hitActor == traceOwner)
+            {
+                return TRACE_Skip;
+            }
+
+            if (hitActor.GetClassName() == "Shield")
+            {
+                return TRACE_Skip;
+            }
+
+            if (hitActor == targetActor)
+            {
+           //     Console.PrintF("\cg Target hit: %s", hitActor.GetClassName());
+                clearShot = true;
+                return TRACE_Stop;
+            }
+
+        //    Console.PrintF("\cr Blocked by: %s", hitActor.GetClassName());
+            clearShot = false;
+            return TRACE_Stop; 
+        }
+
+		clearShot = false;
+        return TRACE_Stop;
+    }
+
+    bool HasClearShot()
+    {
+        return clearShot;
+    }
+}
+
+class EmptyTarget: Actor
+{   
+
+	Default{
+	Radius 10;
+    Height 6;
+    +NOTELEPORT;
+    +MOVEWITHSECTOR;
+	+FLOORCLIP;
+	+NOBLOCKMONST;
+	//+CANPASS;
+	-THRUACTORS;
+	+FORCEXYBILLBOARD;
+	+SHOOTABLE;
+	//+CLIENTSIDEONLY;
+	+CORPSE;
+	+NEVERTARGET;
+	damagefactor "Crush", 9999.00;
+	damagefactor "Crusher", 9999.00;
+	damagefactor "CrushedBodies", 9999.00;
+    Mass 5000;
+    Health 300;
+	PainChance 255;
+
+	}
+	
+	States
+	{
+		Spawn:
+			TNT1 A -1;
+			Stop;
+	}
+
+}
+

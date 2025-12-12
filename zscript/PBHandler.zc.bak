@@ -1,0 +1,608 @@
+class PB_EventHandler : EventHandler
+{
+	string NextMap;
+	PB_GlobalStats Stats;
+	
+	ui double dashAlpha, dashScale;
+
+	bool HatExists;
+	int HatMonth;
+	
+	int taunttimer[MAXPLAYERS];
+	const tauntcooldown = 40;
+	
+	bool WSuSinMap;	//check for WolfensteinSS	
+	
+	bool gz413detected;
+	
+	transient int pickuptic[MAXPLAYERS];
+	
+	///////////////////////////////////////////////////////////////////////////
+	
+	override void WorldTick()
+	{
+        for(int i = 0; i < taunttimer.Size(); i++)
+        {
+            if(taunttimer[i] > 0)
+                taunttimer[i]--;
+        }
+	}
+	
+	override void NetworkProcess(ConsoleEvent e)
+	{	
+		if (e.Name == "PB_MonthCheck")
+		{
+			HatMonth = e.Args[0];
+			return;
+		}
+		
+		let pm = players[e.Player].mo;
+		if(!pm)
+			return;
+		
+		if (e.Name ~== "RequestTaunt")
+		{	
+			if(taunttimer[e.Player] == 0)
+			{
+				let pbweap = PB_WeaponBase(pm.player.readyweapon);
+				/*if(pbweap)
+					console.printf("the prev weapon is "..pbweap.getclassname());*/
+				
+				//only if the weapon is in ready state or in pb_Ready state hehe
+				if((players[e.Player].weaponstate & WF_WEAPONREADY) || (pbweap && pbweap.PB_WeaponIsInReadyState() ))
+				{
+					//set the cooldown
+					taunttimer[e.Player] = tauntcooldown;
+					
+					//give the taunt weapon and cast it to pass the actual weapon
+					//so it can return to it later
+					pm.giveinventory("Pb_TauntWeapon",1);
+					let wp = PB_TauntWeapon(pm.findinventory("PB_TauntWeapon"));
+					
+					//only save the prev weapon if its not the taunt weapon (so it doesn't returns infinitelly to itself)
+					if(!(pm.player.readyweapon is "PB_TauntWeapon"))
+						wp.PrevWeapon = pm.player.readyweapon;
+					
+					//set the taunt weapon as the actual weapon
+					pm.player.readyweapon = wp;
+					pm.player.SetPSprite(PSP_WEAPON, wp.FindState("Ready"));
+				}
+			}
+		}
+		
+		if( e.name == "pb_flashlight_toggle" )
+		{
+			PlayerPawn plr = players[e.player].mo;
+			if(plr)
+            {
+				// [gng] Helmet animation item, don't turn on if it's present because that means the player doesn't have his helmet on
+				if( plr.FindInventory( "sae_extcam" ) ) 
+					return;
+					
+				PB_FPP_Holder holder = PB_FPP_Holder( plr.FindInventory( "PB_FPP_Holder" ) );
+				if( !holder )
+					holder=setupFlashlightHolder( plr );
+					
+				holder.ToggleFlashlight();
+			}
+		}
+	}
+	
+	override void OnRegister()
+	{
+		/*if(StringTable.Localize("$OPTVAL_MBF21STRICT") != "OPTVAL_MBF21STRICT")
+		{
+			gz413detected = true;
+			console.PrintfEx(PRINT_NONOTIFY , "PB_EventHandler: \cgGZDoom 4.13+ detected.");
+			static const String verWarning[] = {
+				"\n",
+				"\n",
+				"\c-Please use \cdGZDoom 4.11.3\c-.\n",
+				"\c-\cyGZDoom 4.13+ \c-creates scaling issues with enemies that may make aiming for headshots harder.\n",
+				"\c-This is also \cgnot\c- the way our sprites were intended to be displayed.\n",
+				"\c-Its developers have stated that they \cgdo not plan\c- on reverting this change.\n",
+				"\c-The GitHub issue in question: \cnhttps://github.com/ZDoom/gzdoom/issues/2759\c-.\n",
+				"\n",
+				"\c-\cd4.12.x\c- also has issues:\n",
+				"\c--Partial invisibility does not work;\n", 
+				"\c--Monsters can detect you even if you are not in their line of sight.\n",
+				"\n",
+				"\c-Therefore the recommended version of GZDoom for Project Brutality is 4.11.3:\n",
+				"\c-4.11.3 for Windows: \cnhttps://zdoom.org/files/gzdoom/bin/gzdoom-4-11-3.a.-Windows-64bit.zip\n",
+				"\c-4.11.3 for macOS: \cnhttps://zdoom.org/files/gzdoom/bin/gzdoom-4-11-3-macOS.zip\n",
+				"\c-4.11.3 for Linux: \cnhttps://zdoom.org/files/gzdoom/bin/gzdoom-g4.11.3-linux-portable.tar.xz\n\c-",
+				"\n",
+				"\cgYou may not be able to quit the game using the menu, type \ckexit \cgor \ckquit \cgto close GZDoom.\n\c-",
+				"\n",
+				"\n"
+			};
+			
+			string megaString;
+			for(int i = 0; i < verWarning.Size(); i++)
+			{
+				megaString.AppendFormat("%s", verWarning[i]);
+			}
+			ThrowAbortException("READ ME:\n %s", megaString);
+			//\nThis will enable actor scaling workarounds.");
+		}
+		else
+		{
+			gz413detected = false;
+			//console.PrintfEx(PRINT_NONOTIFY , "PB_EventHandler: Player is NOT using GZDoom 4.13+.");
+		}*/
+	}
+
+    override void InterfaceProcess(ConsoleEvent e)
+    {
+        if(e.name == "PB_DashWhatchamacallit")
+		{
+			dashAlpha = 1.0;
+            dashScale = 1.0;
+		}
+    }
+	
+	override void RenderOverlay(RenderEvent e)
+	{
+		if(gamestate == GS_TITLELEVEL)
+            return;
+            
+    	let pmo = players[consoleplayer].mo;
+        if (!pmo)
+            return;
+        
+        if(dashAlpha > 0 && cvar.GetCvar("pb_dasheffect", players[consoleplayer]).GetBool()) {
+            Screen.DrawTexture(TexMan.CheckForTexture("Graphics/HUD/FULLSCRN/PB_DashOverlay.png"), false, 
+                Screen.GetWidth() / 2.f, Screen.GetHeight() / 2.f,
+                DTA_DestWidth, Screen.GetWidth(), DTA_DestHeight, Screen.GetHeight(), 
+                DTA_Alpha, dashAlpha,
+                DTA_CenterOffset, true, 
+                DTA_ScaleX, dashScale, DTA_ScaleY, dashScale
+            );
+        }
+	}
+	
+	///////////////////////////////////////////////////////////////////////////
+	
+	override void NewGame()
+	{
+		if (!Stats)
+		{
+			Stats = PB_GlobalStats.Get();
+		}
+		
+		Stats.Counters[PB_GlobalStats.Counter_LevelsCompleted]++;
+	}
+	
+	override void PlayerEntered(PlayerEvent e)
+	{
+		let plr = PlayerPawnBase(players[e.PlayerNumber].mo);
+		if (plr)
+		{
+			plr.SetInventory("ResetKick",1);
+			plr.SetInventory("ResetZoom",1);
+			plr.SetInventory("KnifeHasHit",0);
+			plr.SetInventory("PB_NoEffectInvul",0);
+			plr.SetInventory("HasCutingWeapon", 0);
+			plr.SetInventory("PB_LockScreenTilt",0);
+			
+			plr.SetInventory("HasBarrel",0);
+			plr.SetInventory("HasIceBarrel",0);
+			plr.SetInventory("HasFlameBarrel",0);
+			plr.SetInventory("GrabbedBarrel",0);
+			plr.SetInventory("GrabbedIceBarrel",0);
+			plr.SetInventory("GrabbedFlameBarrel",0);
+			plr.SetInventory("BarrelIsFrozen",0);
+			plr.SetInventory("BarrelIsFlaming",0);
+			for(int i=8;i>0;i--)
+			{
+				plr.SetInventory("Grab"..i,0);
+				plr.SetInventory("IGrab"..i,0);
+				plr.SetInventory("FGrab"..i,0);
+			}
+			
+			plr.A_SetRoll(0);
+			plr.A_SetPitch(0);
+			plr.A_OverlayFlags(-9,PSPF_PLAYERTRANSLATED, false);
+			plr.A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, false);
+			plr.A_SetBlend("black",1.0,70);
+			plr.SetInventory("ExecutionToken",0);
+			plr.Setinventory("KeepWeapManager",1);
+			players[e.PlayerNumber].cheats &= ~CF_TOTALLYFROZEN;
+			plr.bNODAMAGE = false;
+		}
+		
+		//Foostep handled here
+		
+		let steps = PB_Footsteps(Actor.Spawn("PB_Footsteps"));
+		if (steps)
+		{
+			steps.Init(players[e.playerNumber].mo);
+			steps.fplayer = players[e.playerNumber];
+		}
+		
+		/////////////////////
+	}
+	
+	//BUG: This somehow does not stop the death fader from fading the view to black even after resurrecting.
+	//[J1H0] Discovered this acs function very useful for that :D
+	//Sounds hacky, but i think its actually really clean (and its the only way i found that really works)
+	override void PlayerRespawned (PlayerEvent e)
+	{
+		let plr = PlayerPawnBase(players[e.PlayerNumber].mo);
+		let plinf = plr.player;
+		if (plr)
+		{
+			Plr.SetInventory ("PlayerIsDead",0); //this was causing resurrection without kicks
+			Plr.SetInventory ("DeathFader",0);
+			Plr.ACS_NamedExecuteAlways("UnFadder");
+			
+			plr.SetInventory("HasBarrel",0);
+			plr.SetInventory("HasIceBarrel",0);
+			plr.SetInventory("HasFlameBarrel",0);
+			plr.SetInventory("GrabbedBarrel",0);
+			plr.SetInventory("GrabbedIceBarrel",0);
+			plr.SetInventory("GrabbedFlameBarrel",0);
+			plr.SetInventory("BarrelIsFrozen",0);
+			plr.SetInventory("BarrelIsFlaming",0);
+			plr.Setinventory("KeepWeapManager",1);
+			for(int i=8;i>0;i--)
+			{
+				plr.SetInventory("Grab"..i,0);
+				plr.SetInventory("IGrab"..i,0);
+				plr.SetInventory("FGrab"..i,0);
+			}
+			
+			//clean the first person deaths from here when resurrected, if -for some reason- resurrecting skips the spawn state from the player, the overlay is already cleaned here
+			if(plinf)
+			{
+				Psprite ps = plinf.FindPSprite(66);
+				if(ps)
+					ps.Destroy(); //i guess A_clearoverlays(66,66) would suffice also, but its cooler to destroy it directly
+			}
+		}
+	}
+	
+	override void WorldLoaded(WorldEvent e)
+	{
+		if (!Stats)
+		{
+			Stats = PB_GlobalStats.Get();
+		}
+		
+		if(e.IsReopen)
+		{
+			PB_FPP_Light hl=null;
+			for(let it=ThinkerIterator.Create("PB_FPP_Light");hl=PB_FPP_Light(it.next());)
+			{
+				hl.destroy();
+				//prevents duplicate flashlights for hub-world maps
+			}
+		}
+		for(int i=0;i<MAXPLAYERS;i++)
+		{
+			if(playeringame[i])
+			{
+				PlayerPawn p=players[i].mo;
+				PB_FPP_Holder holder=PB_FPP_Holder(p.FindInventory("PB_FPP_Holder"));
+				if(holder)
+				{
+					holder.FixState();
+				}
+			}
+		}
+		PB_FPP_Holder holder=null;
+		for(let it=ThinkerIterator.Create("PB_FPP_Holder");holder=PB_FPP_Holder(it.next());)
+		{
+			holder.FixState();
+		}
+	}
+	override void WorldUnloaded(WorldEvent e)
+	{
+		// [Ace] Hack to work around death exits.
+		// This used to be in Deathstriders Player Class, but it did not
+		// function correctly in multiplayer because the players had already been revived by that point.
+		foreach (p : players)
+		{
+			if (p.mo && p.mo.Health <= 0)
+			{
+				p.Resurrect();
+			}
+		}
+
+		if (Stats.ProgressedMaps.Find(Level.MapName) == Stats.ProgressedMaps.Size())
+		{
+			Stats.ProgressedMaps.Push(Level.MapName);
+			if (Level.total_monsters > 0&&level.mapname!="HUBMAP")
+			{
+				Stats.Counters[PB_GlobalStats.Counter_LevelsCompleted]++;
+			}
+		}
+	}
+	
+	override void PlayerDisconnected(PlayerEvent e)
+	{ 
+	//reset state on player disconnect
+		PB_FPP_Light hl=null;
+		for(let it=ThinkerIterator.Create("PB_FPP_Light");hl=PB_FPP_Light(it.next());)
+		{
+			hl.destroy();
+		}
+		PB_FPP_Holder holder=null;
+		for(let it=ThinkerIterator.Create("PB_FPP_Holder");holder=PB_FPP_Holder(it.next());)
+		{
+			if(holder.owner&&!playeringame[holder.owner.PlayerNumber()])continue;
+			holder.FixState();
+		}
+	}
+
+    Override Void WorldThingDied(WorldEvent e)
+	{
+        if(!e.thing || !e.Inflictor) return;
+
+        if(e.thing.bismonster && e.Inflictor is 'UnmakerBeamPuff')
+        {
+            if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 4, CVar.GetCvar("pb_helpflags", players[consoleplayer])))
+            {
+                Array<String> pbTipsBuf;
+                pbTipsBuf.Push("By killing enemies with the Unmaker, you will earn souls.");
+                pbTipsBuf.Push("When your soul bar is full, you can use the Weapon Special button to switch to overcharge mode.");
+                pbTipsBuf.Push("Overcharge mode will deplete your soul bar and a bit of ammo until it your soul bar is empty.");
+                PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 4);
+            }
+        }
+    }
+	
+	//Festive Hats handling
+	
+	Override Void WorldThingSpawned(WorldEvent e)
+	{
+		if(!e.Thing.bCORPSE && !e.Thing.bFRIENDLY && e.thing is 'PB_Monster')
+		{
+			CVar HatsEnabled = Cvar.FindCvar("PB_HatExtravaganza");
+			if(HatsEnabled)
+			{
+				if(HatsEnabled.GetInt() == 1)
+				{
+					vector3 spawnPos = (0,0,0);
+					Actor LeFunnyHat = Actor.Spawn("FunnyHat",SpawnPos);
+					if(LeFunnyHat)
+					{
+						LeFunnyHat.master = e.Thing;
+					}
+				}
+			}
+		}
+		if (e.Thing is 'FunnyHat')
+		{
+			HatExists = true;
+		}
+		
+		if(e.Thing.bROLLSPRITE)
+			e.Thing.bSTRETCHPIXELS = true;
+	}
+	
+	 /* [Pop] Keeping this here so its backed up, in may become useful
+	 switch(e.Thing.bloodcolor)
+        {
+            case Color("Blue"): // this is blue blood
+                console.printf("set blue blood enemy translation");
+                e.Thing.bloodtranslation = Translation.GetID("PB_TRNSLATE_BloodBlue");
+                break;
+            case Color("Green"): // this is green blood
+                console.printf("set green blood enemy translation");
+                e.Thing.bloodtranslation = Translation.GetID("PB_TRNSLATE_BloodGreen");
+                break;
+                
+            default:
+                break;
+        }
+	*/
+	
+	//////////////////////
+	
+	override void UiTick()
+	{
+		if (HatExists && level.time % 35 == 0)
+		{
+			string HatMonthString = SystemTime.Format("%m", SystemTime.Now());
+			//Console.Printf("Current month is %s", HatMonthString);
+			int HatMonthInt = HatMonthString.ToInt();
+			HatMonthInt = HatMonthString.ToInt(10);
+			EventHandler.SendNetworkEvent("PB_MonthCheck", HatMonthInt);
+		}
+
+        if(dashAlpha > 0)
+        {
+			dashAlpha -= 0.2;
+            dashScale += 0.05;
+        }
+	}
+	
+	
+	override void CheckReplacement (ReplaceEvent e)
+	{
+		switch(e.replacee.getclassname())
+		{
+			//
+			//	Weapons
+			//
+			case 'Pistol':				e.replacement = 'PBPistolSpawner';				break;
+			case 'Shotgun':				e.replacement = 'PBShotgunSpawner';				break;
+			case 'SuperShotgun':		e.replacement = 'PBSSGSpawner';					break;
+			case 'Chaingun':			e.replacement = 'PBChaingunSpawner';			break;
+			case 'RocketLauncher':		e.replacement = 'PBRocketLauncherSpawner';		break;
+			case 'PlasmaRifle':			e.replacement = 'PBPlasmaRifleSpawner';			break;
+			case 'BFG9000':				e.replacement = 'PBBFGSpawner';					break;
+			case 'Chainsaw':			e.replacement = 'PBChainSawSpawner';			break;
+			
+			//
+			//	Ammo
+			//
+			case 'Clip':				e.replacement = 'PBClipSpawner';				break;
+			case 'ClipBox':				e.replacement = 'PBClipBoxSpawner';				break;
+			case 'Shell':				e.replacement = 'PBShellSpawner';				break;
+			case 'Shellbox':			e.replacement = 'PBShellboxSpawner';			break;
+			case 'RocketAmmo':			e.replacement = 'PBRocketSpawner';				break;
+			case 'RocketBox':			e.replacement = 'PBRocketBoxSpawner';			break;
+			case 'Cell':				e.replacement = 'PBCellSpawner';				break;
+			case 'CellPack':			e.replacement = 'PBCellPackSpawner';			break;
+			
+			case 'Backpack':			e.replacement = 'PBBackpackSpawner';			break;
+			
+			//
+			//	Health & Armor
+			//
+			case 'HealthBonus':			e.replacement = 'PBHPBonusSpawner';				break;
+			case 'Stimpack':			e.replacement = 'PBStimSpawner';				break;
+			case 'Medikit':				e.replacement = 'PBMedikitSpawner';				break;
+			
+			case 'ArmorBonus':			e.replacement = 'PBAPBonusSpawner';				break;
+			case 'GreenArmor':			e.replacement = 'PBGreenSpawner';				break;
+			case 'BlueArmor':			e.replacement = 'PBBlueSpawner';				break;
+			
+			//
+			//	Powerups
+			//
+			case 'invulnerabilitysphere':		e.replacement = 'PB_InvulSpawner';			break;
+			case 'radsuit':						e.replacement = 'PB_RadSuitSpawner';		break;
+			case 'blursphere':					e.replacement = 'PB_BlurSpawner';			break;
+			case 'infrared':					e.replacement = 'PB_InfraRedSpawner';		break;
+			case 'soulsphere':					e.replacement = 'PB_SoulSphereSpawner';		break;
+			case 'megasphere':					e.replacement = 'PB_MegaSpawner';			break;
+			case 'Berserk':						e.replacement = 'PB_BerserkSpawner';		break;
+			case 'AllMap':						e.replacement = 'PB_AllMapSpawner';			break;
+			
+			//
+			//	Monsters
+			//
+			case 'ZombieMan':				e.replacement = pb_vanillamonster_override ? 'Zombieman' : 'PBZombieManSpawner';						break;
+			case 'ShotgunGuy':				e.replacement = pb_vanillamonster_override ? 'ShotgunGuy' : 'PBShotgunGuySpawner';						break;
+			case 'DoomImp':					e.replacement = pb_vanillamonster_override ? 'DoomImp' : 'PBImpSpawner';								break;
+			case 'Demon':					e.replacement = pb_vanillamonster_override ? 'Demon' : 'PBPinkySpawner';								break;
+			case 'Spectre':					e.replacement = pb_vanillamonster_override ? 'Spectre' : 'PBSpectreSpawner';							break;
+			case 'ChaingunGuy':				e.replacement = pb_vanillamonster_override ? 'ChaingunGuy' : 'PBChainGunGuySpawner';					break;
+			case 'Cacodemon':				e.replacement = pb_vanillamonster_override ? 'Cacodemon' : 'PBCacoDemonSpawner';						break;
+			case 'HellKnight':				e.replacement = pb_vanillamonster_override ? 'HellKnight' : 'PBHKSpawner';								break;
+			case 'Arachnotron':				e.replacement = pb_vanillamonster_override ? 'Arachnotron' : 'PBArachnotronSpawner';					break;
+			case 'BaronOfHell':				e.replacement = pb_vanillamonster_override ? 'BaronOfHell' : 'PBBOHSpawner';							break;
+			case 'Revenant':				e.replacement = pb_vanillamonster_override ? 'Revenant' : 'PBRevSpawner';								break;
+			case 'LostSoul':				e.replacement = pb_vanillamonster_override ? 'LostSoul' : 'PBLSSpawner';								break;
+			case 'PainElemental':			e.replacement = pb_vanillamonster_override ? 'PainElemental' : 'PBPESpawner';							break;
+			case 'ArchVile':				e.replacement = pb_vanillamonster_override ? 'ArchVile' : 'PBArchVileSpawner';							break;
+			case 'Fatso':					e.replacement = pb_vanillamonster_override ? 'Fatso' : 'PBMancubusSpawner';								break;
+			case 'Cyberdemon':				e.replacement = pb_vanillamonster_override ? 'Cyberdemon' : 'PBCyberDemonSpawner';						break;
+			case 'SpiderMastermind':		e.replacement = pb_vanillamonster_override ? 'SpiderMastermind' : 'PBSpiderMasterMindSpawner';			break;
+			case 'WolfensteinSS':			e.replacement = pb_vanillamonster_override ? 'WolfensteinSS' : 'EvilNaziSpawner';	WSuSinMap = true;	break;
+
+			//
+			//	Stealth Monsters
+			//
+			case 'StealthArachnotron':		e.replacement = 'PBStealthArachnotronSpawner';	break;
+			case 'StealthArchvile':			e.replacement = 'PBStealthArchVileSpawner';	break;
+			case 'StealthBaron':			e.replacement = 'PBStealthBOHSpawner';	break;
+			case 'StealthCacodemon':		e.replacement = 'PBStealthCacoDemonSpawner';	break;
+			case 'StealthChaingunGuy':		e.replacement = 'PBStealthChainGunGuySpawner';	break;
+			case 'StealthDemon':			e.replacement = 'PBStealthPinkySpawner';	break;
+			case 'StealthDoomImp':			e.replacement = 'PBStealthImpSpawner';	break;
+			case 'StealthFatso':			e.replacement = 'PBStealthMancubusSpawner';	break;
+			case 'StealthHellKnight':		e.replacement = 'PBStealthHKSpawner';	break;
+			case 'StealthRevenant':			e.replacement = 'PBStealthRevSpawner';	break;
+			case 'StealthShotgunGuy':		e.replacement = 'PBStealthShotgunGuySpawner';	break;
+			case 'StealthZombieMan':		e.replacement = 'PBStealthZombieManSpawner';	break;
+			
+		}
+	}
+	
+	//
+	// for correct special level monster handling
+	//
+	// [J1H0] This is basically telling "x is a replacement for y" so if a level special (like Doom II map07) requires all 'y' to die to activate a platform it'll also count for 'x'
+	//	*this doesnt include all current pb monsters, just the ones that usually cause errors for replacing the og monster (and impeding you finish the level correctly)
+	override void CheckReplacee(ReplacedEvent e)
+	{
+		switch(e.replacement.getclassname())
+		{
+			//cyberdemon
+			case 'PB_Annihilator': case 'PB_Cyberdemon1':
+				e.replacee = 'Cyberdemon'; Break;
+			
+			//mastermind
+			case 'PB_Demolisher': case 'PB_Juggernaut': case 'PB_Mastermind':
+				e.replacee = 'SpiderMastermind'; Break;
+			
+			//barons
+			case 'PB_Infernus': case 'PB_CyberBaron':
+			case 'PB_Belphegor': case 'PB_Baron1': e.replacee = 'BaronofHell'; Break;
+			
+			//spiders
+			case 'PB_Arachnophyte': case 'Aracnorb': case 'PB_EliteArachnotron':
+			case 'PB_InfernalArachnotron': case 'PB_Arachnotron1':
+				e.replacee = 'Arachnotron'; Break;
+			
+			//mancubi
+			case 'PB_Daedabus': case 'PB_Volcabus': case 'PB_Mancubus1':
+				e.replacee = 'Fatso'; Break;
+		}
+	}
+	
+}
+
+class PB_MPNameHandler : EventHandler
+{
+    Font mNameFont;
+    pb_ProjScreen _projection;
+
+    override void OnRegister()
+    {
+        mNameFont = Font.FindFont("PBBOLD");
+        _projection = new("pb_ProjScreen");
+    }
+    
+    override void RenderUnderlay(RenderEvent e)
+    {
+        vector2 namePos;
+        vector2 drawOffsets;
+
+        vector2 boxStart;
+        vector2 boxEnd;
+        for(int i = 0; i < players.Size(); i++)
+        {
+            if(i == consoleplayer) continue;
+
+            PlayerInfo buddy = players[i];
+            if(!buddy || !buddy.mo) continue;
+
+            double buddyDist = buddy.mo.Distance3D(e.camera);
+            double clampedScalar = 1.0 - clamp(buddyDist / 1000.f, 0, 0.5);
+
+            double relAng = Actor.DeltaAngle(e.Camera.angle, e.Camera.AngleTo(buddy.mo));
+            if(relAng > 90 || relAng < -90) continue;
+
+            namePos = MakeDrawPos(e, buddy.mo.pos, buddy.mo.Height + 2);
+
+            Color colbuf = buddy.GetDisplayColor();
+            colbuf = Color(255, colbuf.r, colbuf.g, colbuf.b);
+            drawOffsets = (mNameFont.StringWidth(buddy.GetUserName()) / 2, mNameFont.GetHeight()) * clampedScalar;
+            Screen.DrawText(mNameFont, Font.CR_UNTRANSLATED, namePos.x - drawOffsets.x, namePos.y - drawOffsets.y, buddy.GetUserName(), DTA_Alpha, clampedScalar, DTA_ScaleX, clampedScalar, DTA_ScaleY, clampedScalar);
+        }
+    }
+    
+    ui vector2 MakeDrawPos(RenderEvent event, vector3 pos, double offset)
+    {
+        PlayerInfo player = players[consolePlayer];
+
+        _projection.cacheResolution();
+        _projection.cacheFov(player.fov);
+        _projection.orientForRenderOverlay(event);
+        _projection.beginProjection();
+
+        _projection.projectWorldPos(pos + (0, 0, offset));
+
+        pb_Viewport viewport;
+        viewport.fromHud();
+
+        Vector2 drawPos = viewport.sceneToWindow(_projection.projectToNormal());
+
+        return drawPos;
+    }
+}

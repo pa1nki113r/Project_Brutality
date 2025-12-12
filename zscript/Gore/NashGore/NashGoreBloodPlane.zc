@@ -29,14 +29,14 @@
 //
 //===========================================================================
 
-class NashGoreBloodPlane : Actor
+class NashGoreBloodPlane : PB_LightActor
 {
 	Default
 	{
-		Height 2;
+		Height 0;
 		FloatBobPhase 0;
 		+NOGRAVITY
-		DistanceCheck "pb_floorwallblooddrawdist";
+		// DistanceCheck "pb_floorwallblooddrawdist";
 	}
 
 	bool bSloped;
@@ -57,9 +57,10 @@ class NashGoreBloodPlane : Actor
 	{
 		ChangeStatNum(STAT_NashGore_Gore);
 		NashGoreStatics.QueueGore();
-		rndzoffset = frandom(0.0001, 0.0100);
-		A_SetScale(frandom(0.9, 1.0));
+		rndzoffset = frandom(0.0001, 0.0500);;
 		Super.BeginPlay();
+
+        SetOrigin((pos.xy, bOnCeiling ? ceilingz : floorz), false);
 
 		if (!level.IsPointInLevel(Pos))
 		{
@@ -72,9 +73,70 @@ class NashGoreBloodPlane : Actor
 	{
 		if (!bOnCeiling && Pos.Z > FloorZ) { Destroy(); return; }
 		if (bOnCeiling) rndzoffset *= -1;
-		if (!(self is "NashGoreFootPrint")) Angle = NashGoreStatics.RandomAngle4();
 		zOld = zNew = Pos.Z;
+
 		Super.PostBeginPlay();
+
+        if (NashGoreStatics.CheckSky(self) || NashGoreStatics.CheckLiquid(self))
+		{
+			if (!bOnCeiling && NashGoreStatics.CheckLiquid(self))
+			{
+				NashGoreLiquidBlood.SpawnLiquidBlood(self);
+			}
+			Destroy();
+			return;
+		}
+
+        FindFloorCeiling();
+        // don't float beyond ledges
+        if (!bOnCeiling)
+        {
+            SetZ(floorz);
+            if (NashGoreStatics.CheckFloating(self, bOnCeiling))
+            {
+                Destroy();
+                return;
+            }
+        }
+        else
+        {
+            SetZ(ceilingz);
+            if (NashGoreStatics.CheckFloating(self, bOnCeiling))
+            {
+                Destroy();
+                return;
+            }
+        }
+
+        if(master && master is 'NashGoreBloodBase')
+            self.Translation = master.Translation;
+        else if(int(self.Translation) == 0)
+        {
+            if(target) CopyBloodColor(target);
+            else if(master) CopyBloodColor(master);
+            else if(tracer) CopyBloodColor(tracer);
+
+            // this means you found a new translation so set it
+            if(int(bloodtranslation) != 0) 
+                self.Translation = bloodtranslation;
+        }
+
+        // align to slope
+		NashGoreStatics.AlignToPlane(self, ceiling: bOnCeiling);
+	}
+
+    void SpawnFloaterDebugPart(vector2 pos)
+	{
+		FSpawnParticleParams PUFSPRK;
+        PUFSPRK.Texture = TexMan.CheckForTexture("glstuff/glpart.png");
+		PUFSPRK.Color1 = "00ff00";	
+        PUFSPRK.StartAlpha = 1.0;	
+		PUFSPRK.Style = STYLE_TRANSLUCENT;
+		PUFSPRK.Flags = SPF_ROLL | SPF_REPLACE;
+		PUFSPRK.Size = 4;
+		PUFSPRK.Lifetime = 60 * 35; 
+		PUFSPRK.Pos = (pos, self.pos.z);
+		Level.SpawnParticle(PUFSPRK);
 	}
 
 	override void Tick()
@@ -88,23 +150,10 @@ class NashGoreBloodPlane : Actor
 		}
 		else
 		{
-			zNew = Pos.Z;
-			if (zOld != zNew && tryCheckFloating == 0)
-			{
-				if (bOnCeiling && NashGoreStatics.CheckFloating(self, true))
-				{
-					Destroy();
-					return;
-				}
-				else if (!bOnCeiling && NashGoreStatics.CheckFloating(self, false))
-				{
-					Destroy();
-					return;
-				}
-
-				zOld = zNew;
-				tryCheckFloating = 1;
-			}
+			if(!bOnCeiling)
+                SetZ(floorz + rndzoffset);
+            else
+                SetZ(ceilingz + rndzoffset);
 
 			// advance states
 			if (tics != -1)
@@ -117,51 +166,6 @@ class NashGoreBloodPlane : Actor
 
 			return;
 		}
-
-		if (NashGoreStatics.CheckSky(self) || NashGoreStatics.CheckLiquid(self))
-		{
-			if (NashGoreStatics.CheckLiquid(self))
-			{
-				NashGoreLiquidBlood.SpawnLiquidBlood(self);
-			}
-			Destroy();
-			return;
-		}
-
-		// don't float beyond ledges
-		if (!bCheckedFloating)
-		{
-			if (!bOnCeiling)
-			{
-				// floor
-				if (Pos.Z <= FloorZ && NashGoreStatics.CheckFloating(self, false))
-				{
-					Destroy();
-					return;
-				}
-			}
-			else
-			{
-				// ceiling
-				if (Pos.Z <= CeilingZ && NashGoreStatics.CheckFloating(self, true))
-				{
-					Destroy();
-					return;
-				}
-			}
-
-			bCheckedFloating = true;
-		}
-
-		// align to slope
-		if (!bSloped)
-		{
-			NashGoreStatics.AlignToPlane(self, ceiling: bOnCeiling);
-			bSloped = true;
-		}
-
-		// corpse blood needs collision for footprint effects
-		if (!(self is "NashGoreCorpseBlood")) bNoInteraction = true;
 	}
 }
 
@@ -191,8 +195,6 @@ class NashGoreBloodSpot : NashGoreBloodPlane
 
 	override void PostBeginPlay(void)
 	{
-		if (random() < (255 - nashgore_bloodamount)) { Destroy(); return; }
-
 		/*
 		if (target && !nashgore_spriteblood)
 		{
@@ -215,8 +217,8 @@ class NashGoreBloodSpot : NashGoreBloodPlane
 
 	override void Tick(void)
 	{
-		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
+        Super.Tick();
+        if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
 
 		if (bOnCeiling)
 		{
@@ -247,22 +249,17 @@ class NashGoreBloodSpot : NashGoreBloodPlane
 		TNT1 A 1 NoDelay
 		{
 			A_StartSound("nashgore/bloodsplash");
-			if (nashgore_spriteblood) return A_Jump(256, "BloodSpotSprite1", "BloodSpotSprite2", "BloodSpotSprite3", "BloodSpotSprite4");
-			return A_Jump(256, "BloodSpot1", "BloodSpot2", "BloodSpot3", "BloodSpot4");
+			if (nashgore_spriteblood) 
+                return A_Jump(256, "BloodSpotSprite1", "BloodSpotSprite2", "BloodSpotSprite3", "BloodSpotSprite4");
+
+			return A_Jump(256, "BloodSpot");
 		}
 		Stop;
-	BloodSpot1:
-		NGMV A -1;
-		Stop;
-	BloodSpot2:
-		NGMV B -1;
-		Stop;
-	BloodSpot3:
-		NGMV C -1;
-		Stop;
-	BloodSpot4:
-		NGMV D -1;
-		Stop;
+	BloodSpot:
+        TNT1 A 0 { invoker.frame = random(0, 25); }
+        NGMV "#" -1;
+        Stop;
+
 	BloodSpotSprite1:
 		NSPT A -1;
 		Stop;

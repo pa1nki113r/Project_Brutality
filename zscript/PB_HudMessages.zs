@@ -2,6 +2,9 @@ extend class PB_Hud_ZS
 {
 	array<MsgLine> MainQueue;
     double fractic, curtime, msgalpha;
+	int midtic, midtype;
+	string midstr;
+	transient BrokenLines midl;
 	
 	const MAXSHOWN = 5;
 	const MAXPICKUP = 5;
@@ -14,6 +17,8 @@ extend class PB_Hud_ZS
 		if(level.maptime <= 1) 
 		{ 
 			MainQueue.Clear(); 
+			midstr = "";
+			midtic = 0;
 			return; 
 		}
 		
@@ -25,6 +30,32 @@ extend class PB_Hud_ZS
 			MainQueue.Delete(i); 
 			i--;
 		}
+	}
+	
+	override bool ProcessMidPrint(font fnt,string msg,bool bold)
+	{
+		string lastmidstr = midstr;
+		if(!fnt || (fnt == smallfont))
+		{
+			midstr = msg;
+			midtic = level.totaltime;
+			midtype = bold?2:0;
+			if(midl) midl.Destroy();
+			if((msg == lastmidstr) || (msg == "")) return true;
+			Console.PrintfEx(PRINT_HIGH|PRINT_NONOTIFY,msg);
+			return true;
+		}
+		if((fnt == bigfont)||(fnt == originalbigfont))
+		{
+			midstr = msg;
+			midtic = level.totaltime;
+			midtype = bold?3:1;
+			if(midl) midl.Destroy();
+			if((msg == lastmidstr) || (msg == "")) return true;
+			Console.PrintfEx(PRINT_HIGH|PRINT_NONOTIFY,msg);
+			return true;
+		}
+		return false;
 	}
 	
 	override bool ProcessNotify(EPrintLevel printlevel, string outline)
@@ -67,10 +98,36 @@ extend class PB_Hud_ZS
 			MainQueue.Delete(i); 
 			i--;
 		}
+		if((midstr != "")&&((midtic+int(GameTicRate*con_midtime)) < level.totaltime))
+		{
+			midstr = "";
+			midtic = 0;
+			if(midl) midl.Destroy();
+		}
 	}
 	
 	void PBHUD_DrawMessages()
 	{
+		if(midstr!="")
+		{
+			int midy = -50;
+			int col = (midtype&2)?msgmidcolor2:msgmidcolor;
+			double curtime = (midtic+int(GameTicRate*con_midtime))-(level.totaltime+fractic);
+			double alph = clamp(curtime/20.,0.,1.);
+			if(!midl)
+			{
+				if(midl) midl.Destroy();
+				midl = Font.GetFont("SmallFont").BreakLines(midstr,284);
+			}
+			int maxlen = 0;
+			for(int i=0;i<midl.Count();i++)
+			{
+				maxlen = max(maxlen,Font.GetFont("SmallFont").StringWidth(midl.StringAt(i)));
+				PBHud_DrawString(mBoldFont,midl.StringAt(i),(0,midy),DI_SCREEN_CENTER|DI_TEXT_ALIGN_CENTER,col,alph);
+				midy+=10;
+			}
+		}
+		
 		if(MainQueue.Size() <= 0) 
 			return;
 			

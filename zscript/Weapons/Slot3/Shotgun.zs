@@ -11,10 +11,11 @@ Class PB_Shotgun : PB_WeaponBase
 		weapon.ammotype1 "PB_Shell";
 		weapon.ammogive1 4;		
 		weapon.ammotype2 "ShotgunAmmo";
+		weapon.slotpriority 0.5;
 		PB_WeaponBase.unloadertoken "PBPumpShotgunHasUnloaded";
 		PB_WeaponBase.respectItem "RespectShotgun";
 		inventory.pickupsound "SHOTPICK";
-		inventory.pickupmessage "UAC GS-10 Pump Shotgun (Slot 3)";
+		inventory.pickupmessage "UAC GS-10 Shotgun (Slot 3)";
 		Tag "UAC GS-10 Shotgun";
 		Scale 0.45;
 		FloatBobStrength 0.5;
@@ -24,7 +25,7 @@ Class PB_Shotgun : PB_WeaponBase
 		+WEAPON.NOAUTOFIRE
 		PB_WeaponBase.UsesWheel true;					
 		PB_WeaponBase.WheelInfo "PB_PumpShotgunWheel";
-		
+		PB_WeaponBase.TailPitch 1.5;
 	}
 	
 	int ShellsMode;
@@ -53,7 +54,7 @@ Class PB_Shotgun : PB_WeaponBase
 		
 		WeaponRespect:
 			TNT1 A 0 {
-				A_SetCrosshair(5);
+				A_SetCrosshair(-1);
 				A_SetInventory("PB_LockScreenTilt",1);
 				A_StartSound("weapons/shotgun/equip", 10,CHANF_OVERLAP);
 			}
@@ -130,6 +131,9 @@ Class PB_Shotgun : PB_WeaponBase
 				A_SetInventory("PumpshotgunMagNotInserted",0);
 				A_GiveInventory("ShotgunAmmo",11);
 				A_SetInventory("PumpShotgunMagazine",1);
+				A_ZoomFactor(1.0);
+				A_SetInventory("Zoomed",0);
+				A_SetInventory("ADSmode",0);
 			}
 			SHTG BCDEFGH 1 A_DoPBWeaponAction(WRF_NOBOB);
 			SHTM A 1 A_DoPBWeaponAction(WRF_NOBOB);
@@ -243,11 +247,11 @@ Class PB_Shotgun : PB_WeaponBase
 				A_AlertMonsters();
 				A_fireprojectile("YellowFlareSpawn", 0, 0, 0, 0);
 				A_fireprojectile("ShakeYourAssDouble", 0, 0, 0, 0);
-				A_fireprojectile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17));
-				A_fireprojectile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17));
-				A_fireprojectile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17));
-				PB_GunSmoke(-1,0,-4);
-				PB_GunSmoke(1,0,-4);
+				_SpawnMuzzleSparksSG(0,0,-4);
+				PB_GunSmoke_Sniper(1,0,-4);
+                PB_MuzzleFlashEffects(0,0,-4);
+                A_QuakeEx(-3, 0, 0, 15, 0, 2, "", QF_RELATIVE | QF_WAVE | QF_SCALEDOWN | QF_SCALEUP | QF_FULLINTENSITY, 2, 0, 0, 0, 2, frandom(-0.5, 0.5), 2);
+                //A_QuakeEx(2, 2, 2, 10, 0, 2, "", QF_RELATIVE | QF_SCALEDOWN);
 				A_Overlay(-6, "ShotFlash",true);
 				//A_GunFlash();
 				PB_DynamicTail("shotgun", "shotgun");
@@ -255,7 +259,7 @@ Class PB_Shotgun : PB_WeaponBase
 				{
 					case Shell_Buck:	
 						A_StartSound("weapons/sg", CHAN_Weapon, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(0.95, 1.05));
-						PB_FireBullets("PB_12GAPellet",9,3.5,0,0,3.5);
+						PB_FireBullets("PB_12GAPellet",9,1.5,0,0,1.5);
 						break;
 					case Shell_Slug:
 						A_StartSound("SlugShot", CHAN_WEAPON);
@@ -272,8 +276,8 @@ Class PB_Shotgun : PB_WeaponBase
 				A_FireProjectile("ShotgunWad",random(-2,2),0,random(-2,2),-4,FPF_NOAUTOAIM,random(-2,2));
 				PB_WeaponRecoil(-1.24,+0.44);
 			}
-			SHTF D 1 PB_WeaponRecoil(-1.24,+0.44);
-			SHTF EFG 1;
+			SHTF G 1 PB_WeaponRecoil(-1.24,+0.44);
+			SHTF FED 1;
 			
 		Pump:
 		Pump1:
@@ -315,7 +319,9 @@ Class PB_Shotgun : PB_WeaponBase
 				A_SetRoll(roll+0.4,SPF_INTERPOLATE);
 				A_SetPitch(pitch-0.1,SPF_INTERPOLATE);
 			}
-			TNT1 A 0 A_StartSound("weapons/sgpump",11,CHANF_OVERLAP); 
+			TNT1 A 0 {
+                A_StartSound("weapons/sgpump",11,CHANF_OVERLAP); 
+            }
 			TNT1 A 0 A_JumpIfInventory("PB_Shell", 1,"noChamberEmpty"); //Skip this frame if the chamber isn't empty
 			SSHR H 1 
 			{
@@ -436,7 +442,7 @@ Class PB_Shotgun : PB_WeaponBase
 				 A_StartSound("IronSights", 10,CHANF_OVERLAP);
 				 A_SetInventory("Zoomed",1);
 				 A_ZoomFactor(1.2);
-				 A_SetCrosshair(5);
+				 A_SetCrosshair(-1);
 			}
 			SHT8 EEDK 1 PB_SetShellSprite("SHT8","SHT6","SHT4");
 			Goto Ready2;
@@ -444,9 +450,9 @@ Class PB_Shotgun : PB_WeaponBase
 			TNT1 A 0 {
 				A_SetInventory("Zoomed",0);
 				A_ZoomFactor(1.0);
-				PB_HandleCrosshair(69);
 			}
 			SHT8 KDEE 1 PB_SetShellSprite("SHT8","SHT6","SHT4");
+			TNT1 A 0 PB_HandleCrosshair(69);
 			Goto Ready3;
 		
 		ReloadWithNoAmmoLeft:
@@ -546,7 +552,6 @@ Class PB_Shotgun : PB_WeaponBase
 			
 		EmptyMagReload:
 			SHTN GHIJKL 1;
-			TNT1 A 0 A_JumpIf(countinv("ShotgunAmmo") > 0,"InsertMag");
 			TNT1 A 0 PB_SpawnCasing("EmptyClipMP40", 45.6, 9, 18.75,frandom(-1,1),frandom(-1.2, -0.6), frandom(1,-1));
 			//TNT1 A 0 A_FireCustomMissile("EmptyClipMP40",-5,0,8,-4);
 		InsertMag:
@@ -724,7 +729,7 @@ Class PB_Shotgun : PB_WeaponBase
 		Ready2:
 			TNT1 A 0 {
 				A_SetRoll(0);
-				A_SetCrosshair(5);
+				A_SetCrosshair(-1);
 				A_SetInventory("PB_LockScreenTilt",0);
 			}
 		ReadyToFire2:
@@ -760,7 +765,7 @@ Class PB_Shotgun : PB_WeaponBase
 		Fire2:
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
-				A_SetCrosshair(5);
+				A_SetCrosshair(-1);
 				}
 			TNT1 A 0 PB_jumpIfNoAmmo("Reload",1);
 			TNT1 A 0 
@@ -770,12 +775,12 @@ Class PB_Shotgun : PB_WeaponBase
 				 A_Fireprojectile("YellowFlareSpawn", 0, 0, 0, 0);
 				 PB_LowAmmoSoundWarning("shotgun");
 				 A_TakeInventory("ShotgunAmmo", 1);
-				 A_Fireprojectile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17));
-				 A_Fireprojectile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17));
-				 A_Fireprojectile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17));
-				 A_Fireprojectile("ShotgunParticles", random(-17,17), 0, -1, random(-17,17));
-				 PB_GunSmoke(-1,0,0);
-				 PB_GunSmoke(1,0,0);
+				 _SpawnMuzzleSparksSG(0,0,-4);
+				 _SpawnMuzzleSparksSG(0,0,-4);
+				 PB_GunSmoke_Sniper(1,0,0);
+                 PB_MuzzleFlashEffects(0,0,0);
+                 A_QuakeEx(-3, 0, 0, 15, 0, 2, "", QF_RELATIVE | QF_WAVE | QF_SCALEDOWN | QF_SCALEUP | QF_FULLINTENSITY, 2, 0, 0, 0, 2, frandom(-0.5, 0.5), 2);
+                //A_QuakeEx(2, 2, 2, 10, 0, 2, "", QF_RELATIVE | QF_SCALEDOWN);
 				 PB_DynamicTail("shotgun", "shotgun");
 				 A_SetInventory("CantDoAction",1);
 				 
@@ -783,7 +788,7 @@ Class PB_Shotgun : PB_WeaponBase
 				{
 					case Shell_Buck:	
 						A_StartSound("weapons/sg", CHAN_Weapon, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(0.95, 1.05));
-						PB_FireBullets("PB_12GAPellet",9,3,0,0,3);
+						PB_FireBullets("PB_12GAPellet",9,1.5,0,0,1.5);
 						break;
 					case Shell_Slug:
 						A_StartSound("SlugShot", CHAN_WEAPON);
@@ -1132,30 +1137,26 @@ Class PB_Shotgun : PB_WeaponBase
 			goto InsertMagAmmoSwap;
 		EmptyMagReloadSwap:
 			SHTN GHIJKL 1;
-			TNT1 A 0 A_JumpIfInventory("ShotgunAmmo",1,2);
 			TNT1 A 0 A_FireProjectile("EmptyClipMP40",-5,0,8,-4);
 		InsertMagAmmoSwap:
 			SHMS BCDEFG 0;
 			SHMD BCDEFG 0;
 			SHTM A 4;
-			TNT1 A 0 {
-				if (CountInv("SelectShotgun_Buckshot") >= 1)
+			SHTM BCDEFG 1
+			{
+				if (CountInv("SelectShotgun_Buckshot") >= 1) //i hate this
 				{
-					setShellsMode(Shell_Buck);
-					//A_Print("$PB_SGBUCKLD");
+					PB_SetShellSprite("SHTM","SHTM","SHTM");
 				}
 				if (CountInv("SelectShotgun_Slugshot") >= 1)
 				{
-					setShellsMode(Shell_Slug);
-					//A_Print("$PB_SGSLUGLD");
+					PB_SetShellSprite("SHMS","SHMS","SHMS");
 				}
 				if (CountInv("SelectShotgun_Dragonsbreath") >= 1)
 				{
-					setShellsMode(Shell_Drag);
-					//A_Print("$PB_SGDBLD");
-				}	
+					PB_SetShellSprite("SHMD","SHMD","SHMD");
+				}
 			}
-			SHTM BCDEFG 1 PB_SetShellSprite("SHTM","SHMS","SHMD");
 			SHTM H 1 A_Startsound("weapons/shotgunmag/magin", 19,CHANF_OVERLAP);
 			SHTM I 1 A_Startsound("insertshell", 19,CHANF_OVERLAP);
 			SHTM JKLMN 1;
@@ -1165,13 +1166,25 @@ Class PB_Shotgun : PB_WeaponBase
 			SHMF K 0;
 			SHMG K 1
 			{
-				PB_SetShellSprite("SHMG","SHMA","SHMF");
 				switch(getshellsmode())
 				{
 					case Shell_Buck: PB_SpawnCasing("ShotgunCasingRedLive",28,-5,30,3,3,3);		break;
 					case Shell_Slug: PB_SpawnCasing("ShotgunCasingGreenLive",28,-5,30,3,3,3);	break;
 					case Shell_Drag: PB_SpawnCasing("ShotgunCasingOrangeLive",28,-5,30,3,3,3);	break;
 				}
+				if (CountInv("SelectShotgun_Buckshot") >= 1)
+				{
+					setShellsMode(Shell_Buck);
+				}
+				if (CountInv("SelectShotgun_Slugshot") >= 1)
+				{
+					setShellsMode(Shell_Slug);
+				}
+				if (CountInv("SelectShotgun_Dragonsbreath") >= 1)
+				{
+					setShellsMode(Shell_Drag);
+				}
+				PB_SetShellSprite("SHMG","SHMA","SHMF");
 				A_TakeInventory("ShotgunAmmo",1);
 				A_SetRoll(roll-0.1,SPF_INTERPOLATE);
 				A_Startsound("weapons/sgmvpump",19,CHANF_OVERLAP); 
@@ -1223,7 +1236,7 @@ Class PB_Shotgun : PB_WeaponBase
 		bool docancel = false;
 		if(countinv("SelectShotgun_No") > 0)
 		{
-			A_Log("Ammo type not available");
+			A_Print("$PB_NOTAVAILABLE");
 			docancel = true;
 		}
 		int actmode = getshellsmode();
@@ -1231,7 +1244,7 @@ Class PB_Shotgun : PB_WeaponBase
 		(actmode == Shell_Drag		&& CountInv("SelectShotgun_Dragonsbreath") >= 1) 	||
 		(actmode == Shell_Buck		&& CountInv("SelectShotgun_Buckshot") >= 1))
 		{
-			A_Log("Ammo type already selected");
+			A_Print("$PB_ALREADYSELECTED");
 			docancel = true;
 		}
 		
@@ -1461,7 +1474,7 @@ Class PB_SGMagazine: PB_UpgradeItem
 		-INVENTORY.ALWAYSPICKUP
 		-COUNTITEM
 		Inventory.Pickupsound "SHOTPICK";
-		Inventory.PickupMessage "Pump Shotgun Upgrade! (Mag + Dragon's Breath shells)";
+		Inventory.PickupMessage "UAC GS-10 Shotgun Magazine and Dragon's Breath Shells (Slot 3, Upgrade)";
 		Tag "Pump Shotgun Magazine";
 		Scale 0.45;
 		FloatBobStrength 0.5;

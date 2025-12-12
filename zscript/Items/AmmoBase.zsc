@@ -1,6 +1,6 @@
 class PB_Ammo : Ammo
 {
-	int cap,ca,res; name ammotype; string p;
+	int cap,ca,res; name ammotype,s; string p;
 	property ammotype : ammotype;
 	
 	mixin PB_BetterPickupSound;
@@ -15,25 +15,7 @@ class PB_Ammo : Ammo
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
-		switch(ammotype)
-		{
-			case 'lowcal': sprite = GetSpriteIndex("MBLK"); break;
-			case 'lowcalbox': sprite = GetSpriteIndex("AMOK"); break;
-			case 'highcal': sprite = GetSpriteIndex("CLIP"); break;
-			case 'highcalbox': sprite = GetSpriteIndex("AMMO"); break;
-			case 'shell': sprite = GetSpriteIndex("SHEL"); break;
-			case 'shellbox': sprite = GetSpriteIndex("SBOX"); break;
-			case 'exp': sprite = GetSpriteIndex("R0CK"); break;
-			case 'expbox': sprite = GetSpriteIndex("BROK"); break;
-			case 'cell' : SetStateLabel("SpawnCell"); break;
-			case 'cellpack' : SetStateLabel("SpawnCellPack"); break;
-			case 'fuel': sprite = GetSpriteIndex("GSLN"); break;
-			case 'dtech': SetStateLabel("SpawnDTech"); break;
-			case 'nade': SetStateLabel("SpawnNade"); break;
-			case 'nadestun': sprite = GetSpriteIndex("STNG"); break;
-			case 'proxmine': sprite = GetSpriteIndex("XPFP"); break;
-			case 'ql': SetStateLabel("SpawnQL"); break;
-		}
+		PB_SetAmmoSprite();
 	}
 
 	override class<Ammo> GetParentAmmo()
@@ -64,14 +46,40 @@ class PB_Ammo : Ammo
 		return Super.TryPickup(toucher);
 	}
 
-	void AmmoCheck() { if(res==1 || ammotype == "fuel" || ammotype == "dtech" ) p = "+%d %s"; else p = "+%d %ss"; }
+	void AmmoCheck() { if(res==1 || ammotype == "fuel" || ammotype == "dtech" || ammotype == "permadtech" ) p = "+%d %s"; else p = "+%d %ss"; }
 	
 	override string PickupMessage() { return string.format(p,res,GetTag()); }
+	
+	void PB_SetAmmoSprite()
+	{
+		switch(ammotype)
+		{
+			case 'lowcal': s = "MBLK"; break;
+			case 'lowcalbox': s = "AMOK"; break;
+			case 'highcal': s = "CLIP"; break;
+			case 'highcalbox': s = "AMMO"; break;
+			case 'shell': s = "SHEL"; break;
+			case 'shellbox': s = "SBOX"; break;
+			case 'exp': s = "R0CK"; break;
+			case 'expbox': s = "BROK"; break;
+			case 'cell' : s = "CELL"; SetStateLabel("SpawnCell"); break;
+			case 'cellpack' : s = "YELP"; SetStateLabel("SpawnCellPack"); break;
+			case 'fuel': s = "GSLN"; break;
+			case 'dtech': s = "DB61"; SetStateLabel("SpawnDTech"); break;
+			case 'permadtech': s = "DB61"; SetStateLabel("SpawnPermaDTech"); break;
+			case 'leechnade': s = "FLSP"; SetStateLabel("SpawnLeechNade"); break;
+			case 'nade': s = "PGRN"; SetStateLabel("SpawnNade"); break;
+			case 'nadestun': s = "STNG"; break;
+			case 'proxmine': s = "XPFP"; break;
+			case 'ql': s = "FATB"; SetStateLabel("SpawnQL"); break;
+		}
+		sprite = GetSpriteIndex(s);
+	}
 
 	States
 	{
 	Spawn:
-		TNT1 A 0;
+		TNT1 A 1 PB_SetAmmoSprite;
 		#### A -1;
 		stop;
 	SpawnCell:
@@ -81,7 +89,11 @@ class PB_Ammo : Ammo
 		YELP ABCDEFGHIJ 2;
 		loop;
 	SpawnDTech:
-		DB61 ABCDEFGH 2 bright A_FadeOut(.01 * (0.15 / Scale.X), FTF_REMOVE | FTF_CLAMP );
+	SpawnLeechNade:
+		DB61 ABCDEFGH 2 bright A_FadeOut(.01 * (0.085 / Scale.X), FTF_REMOVE | FTF_CLAMP );
+		loop;
+	SpawnPermaDTech:
+		DB61 ABCDEFGH 2 bright;
 		loop;
 	SpawnNade:
 		PGRN D -1;
@@ -91,5 +103,6 @@ class PB_Ammo : Ammo
 		stop;
 	LoadSprites:
 		MBLK A 0; AMOK A 0; CLIP A 0; AMMO A 0; SHEL A 0; SBOX A 0; ROCK A 0; BROK A 0; GSLN A 0; STNG A 0; XPFP A 0;
+		CELL ABCDEFGH 0; YELP ABCDEFGHIJ 0; DB61 ABCDEFGH 0; PGRN D 0; FATB D 0; 
 	}
 }

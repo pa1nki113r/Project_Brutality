@@ -1,0 +1,370 @@
+//Watcher
+ACTOR PB_Watcher 
+{
+	//$Title Watcher
+	//$Category Project Brutality - Monsters/Flyers
+	//$Sprite WATCA1
+Health 100
+Radius 24 
+Height 40 
+Mass 150 
+Speed 10 
+MONSTER 
+DamageFactor "Crush", 10.0
+DamageFactor "SSG", 10.0
+DamageFactor "Saw", 0.9
+	damagefactor "killme", 0.0
+	damagefactor "TeleportRemover", 0.0
+PainChance 160
+PainChance "Kick", 255
+PainChance "Avoid", 190
+PainChance "Saw", 255
+	PainChance "Stun", 255
+	PainChance "Siphon", 255
+SeeSound "monster/watsit" 
+PainSound "monster/watpai" 
+DeathSound "monster/watdth" 
+ActiveSound "monster/watact" 
+AttackSound "caco/melee"
+Obituary "%o was fried by a watcher."
+HitObituary "Looks like a watcher thought %o was tasty."
+
+DamageFactor "Blood", 0.0 DamageFactor "BlueBlood", 0.0 DamageFactor "GreenBlood", 0.0
++NOGRAVITY 
++FLOAT
+States 
+   { 
+   Pain.Avoid: 
+	  TNT1 A 0
+	  TNT1 A 0 A_Jump(255, "AvoidLeft", "AvoidRight")
+	  Goto AvoidLeft
+
+	  AvoidLeft:
+	    WATC A 1 A_FaceTarget
+	    TNT1 A 0 ThrustThing(angle*256/360+192, 15, 0, 0)
+        WATC A 5 A_FaceTarget
+        Goto Missile
+	AvoidRight:
+	    WATC A 1 A_FaceTarget
+	    TNT1 A 0 ThrustThing(angle*256/360+64, 15, 0, 0)
+        WATC A 5 A_FaceTarget
+        Goto Missile
+   Spawn: 
+       TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "FatalityMarine")
+       WATC A 10 A_Look 
+	   TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "FatalityMarine")
+	   WATC A 10 A_Look
+	   Loop 
+   See: 
+       WATC A 3 A_Chase
+       TNT1 A 0 A_JumpIfCloser(99, "Melee")
+	   Loop 
+   Missile: 
+       TNT1 A 0 A_JumpIfCloser(140, "Melee")
+       TNT1 A 0 A_Jump (198, 3)
+       Goto Avoid
+	   WATC E 5 A_FaceTarget 
+       WATC F 5 A_FaceTarget 
+       WATC G 5 BRIGHT A_CustomMissile("WatcherShot",12,0,0) 
+	   WATC E 12 A_FaceTarget
+       Goto See
+   Melee:
+	   TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "FatalityMarine")
+       WATC A 4 A_Recoil(-5)
+	   TNT1 A 0 A_CustomMeleeAttack(10, "imp/melee", "", "HKFT") //A_CustomMissile("WatcherBite", 34, 0, 0, 0)
+	   TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "FatalityMarine")
+	   WATC BCD 5 A_FaceTarget 
+	   TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "FatalityMarine")
+       WATC A 5 A_MeleeAttack
+	   TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "FatalityMarine")
+       Goto See
+   Pain: 
+       WATC H 3 
+       WATC H 3 A_Pain 
+       Goto Avoid
+       TNT1 AAA 0
+	   WATC A 6
+       Goto See 
+	   
+	Possession:
+		TNT1 A 0 A_SetInvulnerable
+		WATC H 3
+		WATC H 3 A_Pain
+		"####" "#" 35 ACS_NamedExecuteAlways("Pos - Flicker effect")
+		TNT1 A 0 A_UnSetInvulnerable
+		Goto See
+		
+	Pain.Stun:
+		TNT1 A 0
+		TNT1 A 0 A_SpawnItemEx ("StunElectrocute", random (-4, 4), random (-4, 4),  random (16, 32), 0, 0)
+		WATC H 1 A_Pain
+		WATC HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		WATC H 1 A_Pain
+		WATC HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		WATC H 1 A_Pain
+		WATC HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		WATC H 1 A_Pain
+		WATC HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		WATC H 1 A_Pain
+		WATC HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		WATC H 1 A_Pain
+		Goto See
+	
+	Pain.Siphon:
+		TNT1 AAA 0 A_SpawnItemEx ("RedLightning_Small", random (-12, 12), random (-12, 12), random (16, 52), 0, 0)
+		WATC H 1 
+		{
+			A_FaceTarget;
+			A_GiveToTarget("HealthBonus",4);
+		}
+		WATC H 5 A_FaceTarget 
+		TNT1 A 0 A_Pain
+		Goto See
+   
+   FatalityMarine:
+    W4FT A 1 A_SetInvulnerable
+	TNT1 AA 0 A_CustomMissile ("XDeath2", 32, 0, random (170, 190), 2, random (0, 40))
+	TNT1 AAA 0 A_CustomMissile ("Brutal_FlyingBlood", 32, 0, random (170, 190), 2, random (0, 40))
+	TNT1 A 0 A_CustomMissile ("XDeath1", 32, 0, random (150, 210), 2, random (0, 40))
+	W4FT A 8 
+	TNT1 A 0 A_Playsound("caco/melee", 2)
+	W4FT B 9 
+	W4FT C 8
+	TNT1 A 0 A_CustomMissile ("XDeath2", 32, 0, random (170, 190), 2, random (0, 40))
+	TNT1 AAAAA 0 A_CustomMissile ("Brutal_FlyingBlood", 32, 0, random (170, 190), 2, random (0, 40))
+	TNT1 AA 0 A_CustomMissile ("XDeath3", 32, 0, random (150, 210), 2, random (0, 40))
+	W4FT D 9
+	W4FT EF 7
+    TNT1 AAA 0 A_CustomMissile ("XDeath2", 32, 0, random (170, 190), 2, random (0, 40))
+	TNT1 AAAAAA 0 A_CustomMissile ("Brutal_FlyingBlood", 32, 0, random (170, 190), 2, random (0, 40))
+	TNT1 AA 0 A_CustomMissile ("XDeath1", 32, 0, random (150, 210), 2, random (0, 40))
+    TNT1 A 0 A_TakeInventory("Curbstomp_Marine",1)
+    TNT1 A 0 A_UnSetInvulnerable
+    TNT1 A 0 A_SpawnItem ("MarineEattenByWatcher", 1)
+	Goto See
+	   
+   Death.Shotgun:
+		TNT1 A 0 A_JumpIfCloser(300, "Death.Strong")
+		Goto Death+4
+		
+   Death:
+	   TNT1 A 0 A_Jump(127, "AltDeath")
+       WATC I 6 A_scream
+       WATC JKLM 6 A_CustomMissile ("Blood", 0, 0, random (0, 360), 2, random (0, 160))
+       WATC N 6 A_noblocking
+	   TNT1 AAA 0 A_CustomMissile ("XDeathGuts", 0, 0, random (0, 360), 2, random (0, 160))
+       WATC N 0 A_SetFloorClip
+       WATC O -1 
+       stop
+	   
+	  AltDeath:
+	   WAT5 A 6 A_scream
+       WAT5 BCDE 6 A_CustomMissile ("Blood", 0, 0, random (0, 360), 2, random (0, 160))
+       WAT5 F 6 A_noblocking
+	   TNT1 AAA 0 A_CustomMissile ("XDeathGuts", 0, 0, random (0, 360), 2, random (0, 160))
+       WAT5 F 0 A_SetFloorClip
+       WAT5 G -1 
+	  stop
+		
+   Death.Massacre:
+   Death.Saw:
+   Death.Cut:
+   Death.Tear:
+   Death.Strong:
+	TNT1 AA 0 A_CustomMissile ("MuchBlood", 0, 0, random (0, 360), 2, random (0, 160))
+	TNT1 A 0 A_CustomMissile ("XDeathBrain1", 60, 0, random (0, 360), 2, random (0, 160))
+	TNT1 AA 0 A_CustomMissile ("XDeathBrain2", 60, 0, random (0, 360), 2, random (0, 160))
+	WAT4 B 3 A_noblocking 
+	TNT1 AA 0 A_CustomMissile ("WatcherGib1", 0, 0, random (0, 360), 2, random (0, 160))
+	TNT1 AAA 0 A_CustomMissile ("WatcherGib2", 0, 0, random (0, 360), 2, random (0, 160))
+	TNT1 AAA 0 A_CustomMissile ("SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40))
+	WAT4 C 2 A_SetFloorClip
+	WAT4 DEF 6 A_CustomMissile ("Brutal_FlyingBloodFaster", 32, 0, random (170, 190), 2, random (0, 40))
+	TNT1 AA 0 A_CustomMissile ("XDeath2b", 45, 0, random (0, 360), 2, random (0, 160))
+	WAT4 G -1
+	stop
+	
+	Death.Greenfire:
+    Death.Plasma: Death.Plasma2:
+        TNT1 A 0
+        TNT1 A 0 A_Scream
+        TNT1 A 0 A_NoBlocking
+		EXPL AAAAA 0 A_CustomMissile ("ExplosionSmoke", 32, 0, random (0, 360), 2, random (0, 360))
+        EXPL AAA 0 A_CustomMissile ("PlasmaSmoke", 24, 0, random (0, 180), 2, random (0, 180))
+		TNT1 AAAAAAAAA 0 A_CustomMissile ("Ashes2", 32, 0, random (0, 360), 2, random (0, 160))
+        TNT1 AA 0 A_CustomMissile ("XDeathBurnedBlueMeat1", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AA 0 A_CustomMissile ("XDeathBurnedMeat3", 32, 0, random (0, 360), 2, random (0, 160))
+        TNT1 AAAA 0 A_CustomMissile ("XDeathBurnedBlueMeat2", 0, 0, random (0, 360), 2, random (0, 160))
+        Stop
+		
+		
+	Death.SuperPlasma:
+        TNT1 A 0
+        TNT1 A 0 A_XScream
+        TNT1 A 0 A_NoBlocking
+        TNT1 AAAA 0 A_CustomMissile ("Brutal_Blood", 30, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAA 0 A_CustomMissile ("Ashes1", 32, 0, random (0, 360), 2, random (0, 160))
+	    TNT1 AAA 0 A_CustomMissile ("XDeathBurnedMeat2", 32, 0, random (0, 360), 2, random (0, 160))
+	    TNT1 AAAAA 0 A_CustomMissile ("XDeathBurnedMeat3", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAAA 0 A_CustomMissile ("Brutal_Blood", 30, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AA 0 A_CustomMissile ("XDeathBurnedMeat", 32, 0, random (0, 360), 2, random (0, 160))
+	    TNT1 A 0 A_CustomMissile ("XDeathBurnedMeat2", 32, 0, random (0, 360), 2, random (0, 160))
+	    TNT1 AA 0 A_CustomMissile ("XDeathBurnedMeat3", 32, 0, random (0, 360), 2, random (0, 160))
+        TNT1 A 0 A_CustomMissile ("Brutal_Blood", 30, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAAAA 0 A_CustomMissile ("PlasmaParticleX", 48, 0, random (0, 360), 2, random (0, 360))
+		TNT1 AAA 0 A_CustomMissile ("BigPlasmaParticleX", 42, 0, random (0, 360), 2, random (0, 360))
+        Stop
+	
+	Death.SuperPunch:
+	Death.Blast:
+	Death.BlackHole:
+	Death.ExplosiveImpact:
+	Death.Railgun:
+	Death.Disintegrate:
+	XDeath:
+	    WAT4 B 1 A_XScream
+		WAT4 C 1 A_NoBlocking
+		TNT1 AAA 0 A_CustomMissile ("XDeath1", 32, 0, random (0, 360), 2, random (0, 40))
+		TNT1 AAAAAA 0 A_CustomMissile ("WatcherGib2", 32, 0, random(0, 360), 2, random (0, 40))
+		TNT1 A 0 A_CustomMissile ("XDeath3", 32, 0, random (0, 360), 2, random (0, 40))
+		TNT1 AAA 0 A_CustomMissile ("Brutal_FlyingBlood", 32, 0, random(0, 360), 2, random (0, 40))
+		TNT1 A 0 A_CustomMissile ("Instestin", 32, 0, random (150, 210), 2, random (0, 40))
+		TNT1 AAAAA 0 A_CustomMissile ("Brutal_FlyingBloodFaster", 32, 0, random (0, 360), 2, random (0, 40))
+		TNT1 AAAA 0 A_CustomMissile ("Brutal_FlyingBloodMuchFaster", 32, 0, random (0, 360), 2, random (0, 40))
+		TNT1 AA 0 A_CustomMissile ("SuperWallRedBlood", 32, 0, random (0, 360), 2, random (0, 40))
+		TNT1 AAA 0 A_CustomMissile ("SuperWallRedBlood", 46, 0, random (0, 360), 2, random (0, 40))
+		TNT1 AAAAAA 0 A_CustomMissile ("WatcherGib1", 32, 0, random (0, 360), 2, random (0, 40))
+		TNT1 A 0 A_SpawnItem ("BigBloodSpot")
+        Stop
+		
+	
+	Death.SSG:
+	    WAT4 B 1 A_XScream
+		WAT4 C 1 A_NoBlocking
+		TNT1 AAA 0 A_CustomMissile ("XDeath1", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAA 0 A_CustomMissile ("WatcherGib2", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 A 0 A_CustomMissile ("XDeath3", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAA 0 A_CustomMissile ("Brutal_FlyingBlood", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 A 0 A_CustomMissile ("Instestin", 32, 0, random (150, 210), 2, random (0, 40))
+		TNT1 AAAAA 0 A_CustomMissile ("Brutal_FlyingBloodFaster", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAAA 0 A_CustomMissile ("Brutal_FlyingBloodMuchFaster", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AA 0 A_CustomMissile ("SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAA 0 A_CustomMissile ("SuperWallRedBlood", 46, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AA 0 A_CustomMissile ("WatcherGib1", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 A 0 A_SpawnItem ("BigBloodSpot")
+        Stop
+
+	Death.Ice:
+	Death.IceExplosion:
+	Death.Freeze:
+	Death.Frost:
+	TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0)
+	TNT1 A 0 A_ChangeFlag("SOLID", 0)
+	TNT1 A 0 A_SpawnItem("FrozenWatcher")
+	Stop
+	
+   Avoid:
+       NULL A 0 A_FaceTarget
+       WATC A 6 A_FastChase
+       NULL A 0 A_FaceTarget
+       WATC A 6 A_FastChase
+       NULL A 0 A_FaceTarget
+       WATC A 6 A_FastChase
+       NULL A 0 A_FaceTarget
+       WATC A 6 A_FastChase
+       WATC B 5 A_FaceTarget
+	   WATC C 5 A_FaceTarget
+	   WATC D 5 BRIGHT A_HeadAttack
+	   Goto See
+   Raise: 
+       WATC ONMLKJI 8 
+       Goto See 
+   } 
+}
+
+ACTOR WatcherShot
+{
+   Radius 4
+   Height 8
+   Speed 18
+   Fastspeed 19
+   Damage 2
+   RENDERSTYLE ADD
+   DamageType Plasma
+   ALPHA 0.67
+   PROJECTILE
+   +THRUGHOST
+   +FORCEXYBILLBOARD
+   SeeSound "monster/watatk"
+   DeathSound "monster/wathit"
+   States
+   {
+   Spawn:
+      FWAT AB 3 Bright A_SpawnItem("PinkIonFlare",0,0)
+      loop
+   Death:
+    TNT1 A 0 A_SpawnItem ("IonPuff", 0)
+	TNT1 A 0 A_SpawnItemEx("PurpleTrailSparksSmall", 0, 0, 0, 0, 0, 0, 0, 128)
+    TNT1 AA 15 A_CustomMissile ("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160))
+    FWAT CDE 3 Bright
+    stop
+   }
+}
+
+// ACTOR WatcherBite: ImpAttack
+// {
+//     +THRUGHOST
+// 	DamageType HKFT
+//     Damage 5
+// }
+//End of Watcher
+
+actor WatcherGib1: TinyGib
+{
+    Scale 0.95
+    States
+    {
+Spawn:
+TNT1 AA 0 A_CustomMissile ("Brutal_FlyingBloodTrail", 0, 0, random (0, 360), 2, random (0, 360))
+XWAT ABCDEFG 2
+       Loop
+    Death:
+TNT1 A 0 A_SpawnItem("Brutal_BloodSpot",0,0,0,1)
+XWAT H -1
+       Loop
+}}
+
+actor WatcherGib2: TinyGib
+{
+    Scale 0.95
+    States
+    {
+Spawn:
+TNT1 AA 0 A_CustomMissile ("Brutal_FlyingBloodTrail", 0, 0, random (0, 360), 2, random (0, 360))
+XWBT ABCD 2
+       Loop
+    Death:
+TNT1 A 0 A_SpawnItem("Brutal_BloodSpot",0,0,0,1)
+XWBT E -1
+       Loop
+}}
+   
+actor MarineEattenByWatcher: CurbstompedMarine
+{
+Health 100
+Height 16
+Radius 8
+MONSTER
+-GHOST
++THRUACTORS
++FRIENDLY
+    States
+	
+    {
+    Spawn:
+TNT1 A 0
+TNT1 A 0 A_CHangeFlag("THRUACTORS", 0)
+TNT1 A 0 A_GiveInventory("ComeEatMeDemon")
+TNT1 A 0 A_SpawnItem ("MediumBloodSpot")	
+XPL4 G -1
+       Loop    }}

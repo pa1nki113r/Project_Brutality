@@ -16,7 +16,7 @@ class PB_Health : Health abstract
 	}
 	override string PickupMessage(){
 		msg = Super.PickupMessage();
-		if( msg.IndexOf("(+%a HP)") != -1 ){
+		if( msg.IndexOf("(+%a HP)") != -1 || msg.IndexOf("(+%a much needed HP)") != -1 ){
 			msg.Replace("%a", String.Format("%d", res));
 		}else{
 			string.format("%s (+%d HP)",msg,res);
@@ -34,6 +34,42 @@ class PB_Armor : BasicArmorPickup abstract
 		+INVENTORY.AUTOACTIVATE;
 		Inventory.MaxAmount 0;
 	}
+
+    // compare the "functional percentage" (how much damage the armor can actually take) to the one of the new armor
+    // prevents wasting a perfectly good armor pickup
+    override bool TryPickup(in out actor toucher)
+    {
+        if(!toucher || !toucher.Player) return Super.TryPickup(toucher);
+
+        let curArmor = BasicArmor(toucher.FindInventory("BasicArmor"));
+        if(curArmor)
+        {
+            int newDefense = SaveAmount * (self.SavePercent / 100.f);
+            int curDefense = toucher.CountInv("BasicArmor") * curArmor.SavePercent;
+
+            int defenseDelta = newDefense - curDefense;
+            int amountDelta = SaveAmount - toucher.CountInv("BasicArmor");
+            
+            if((defenseDelta < 0) || (amountDelta < (SaveAmount * 0.2))) // armor is less defensive or 80% over it's full capacity
+            {
+                if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 5, CVar.GetCvar("pb_helpflags", toucher.Player)))
+                {
+                    Array<String> pbTipsBuf;
+                    pbTipsBuf.Push("You have attempted to pick up armor you don't need.");
+                    pbTipsBuf.Push("When your armor\'s effectiveness is lower than that of the new armor, it will be picked up automatically.");
+                    pbTipsBuf.Push("Else, you can press the USE key to pick it up manually.");
+                    PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 5);
+                }
+
+                if(toucher.Player.cmd.buttons & BT_USE) 
+                    return Super.TryPickup(toucher);
+
+                return false;
+            }
+        }
+
+        return Super.TryPickup(toucher);
+    }
 }
 
 class PB_Armor2 : BasicArmorBonus abstract

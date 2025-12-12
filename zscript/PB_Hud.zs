@@ -60,10 +60,15 @@ class PB_Hud_ZS : BaseStatusBar
 	double mOldPitch;
 	double mFallOfs;
 
+    vector2 interpolatedSway;
+    vector2 swayOldFrame, swayCurrentFrame;
+    double interpolatedOfs;
+    double ofsOldFrame, ofsCurrentFrame;
+
 	int m32to0, m64to0;
 	double m0to1Float;
 	bool hasPutOnHelmet, hasCompletedHelmetSequence;
-	bool deathFadeDone, playerWasDead;
+	bool deathFadeDone, playerWasDead, visorOff;
     uint8 helmetKernelPanic;
     bool muteinterference;
 	
@@ -75,14 +80,21 @@ class PB_Hud_ZS : BaseStatusBar
 	double dashIndAlpha, flashlightBatteryAlpha;
 	int healthFontCol, keyamount, hudState, oldDashCharge, weaponBarAccent;
 	double dashScale1, dashScale2;
+    float magnificationIndScale;
+    float screenWiperPrg;
+    float wipePrgOldFrame, wiperWarningIndScale;
+    int16 dirtyScreenTimer; 
+    int16 screenFXCount;
 	DEDashJump Dasher;
 	
 	Weapon oldWeapon;
 
+    int tickRandSeed;
+
 	//CVars
 	int16 hudXMargin, hudYMargin, playerMsgPrint;
-	bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks;
-	float playerAlpha, playerBoxAlpha, messageSize, bloodDropsAlpha, glassCracksAlpha;
+	bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks, bottomMiddlePart, showtutorials;
+	float playerAlpha, playerBoxAlpha, messageSize, bloodDropsAlpha, glassCracksAlpha, visorScale, visorOffsets;
 
 	bool centerNotify;
   
@@ -106,9 +118,9 @@ class PB_Hud_ZS : BaseStatusBar
 		mAmmo2Interpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
 		mAmmoLeftInterpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
 		
-		mSwayInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.30, 0, 32);
-		mPitchInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.30, 0, 32);
-		mFOffsetInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.5, 0, 64);
+		mSwayInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.3, 0, 32);
+		mPitchInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.3, 0, 32);
+		mFOffsetInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.3, 0, 64);
 
 		InvBar = InventoryBarState.Create();
 	}
@@ -148,6 +160,13 @@ class PB_Hud_ZS : BaseStatusBar
 
 		bloodDropsAlpha = CVar.GetCVar("pb_blooddropsalpha", CPlayer).GetFloat();
 		glassCracksAlpha = CVar.GetCVar("pb_glasscracksalpha", CPlayer).GetFloat();
+
+        visorScale = CVar.GetCVar("pb_visorscale", CPlayer).GetFloat();
+        visorOffsets = CVar.GetCVar("pb_visorofsx", CPlayer).GetFloat();
+
+        bottomMiddlePart = CVar.GetCVar("pb_visormiddlepartbottom", CPlayer).GetFloat();
+
+        showtutorials = CVar.GetCVar("pb_showtutorials", CPlayer).GetBool();
 	}
 
 	override void Draw(int state, double TicFrac)
@@ -160,21 +179,34 @@ class PB_Hud_ZS : BaseStatusBar
 		hudState = state;
 		
 		fractic = TicFrac;
-		
-		if(HudDynamics)
-		{
-			IntMSway = mSwayInterpolator.GetValue();
-			IntMPitch = mPitchInterpolator.GetValue();
-			IntMOfs = mFOffsetInterpolator.GetValue();
-		}
 
-		DrawBloodDrops();
-		DrawGlassCracks();
+        float interpolatedWipe = wipePrgOldFrame * (1. - ticfrac) + screenWiperPrg * ticfrac;
+        float wiperScale = (1 - interpolatedWipe * 0.25) ** 5;
+
+        TextureID wiperTexture = TexMan.CheckForTexture("GRAPHICS/HUD/ScreenFX/Screenwiper.png");
+        vector2 wiperTextureSize = TexMan.GetScaledSize(wiperTexture);
+        wiperTextureSize.x *= wiperScale;
+
+        if(dirtyScreenTimer == -1) // engage the screen wiper
+            Screen.SetClipRect(0, 0, Screen.GetWidth() - (Screen.GetWidth() * interpolatedWipe) + (wiperTextureSize.x * (0.5 - interpolatedWipe)) + (wiperTextureSize.x * 0.5), Screen.GetHeight());
+
+        DrawBloodDrops();
+        DrawGlassCracks();
+        
+        if(dirtyScreenTimer == -1)
+        {
+            Screen.ClearClipRect();
+            Screen.DrawTexture(wiperTexture, false, (Screen.GetWidth() - (Screen.GetWidth() * interpolatedWipe)), 0, DTA_DestHeight, Screen.GetHeight(), DTA_LegacyRenderStyle, STYLE_Add, DTA_LeftOffsetF, (-300 * (0.5 - interpolatedWipe)), DTA_ScaleX, wiperScale);
+        }
+
+        interpolatedOfs = ofsOldFrame * (1. - ticfrac) + ofsCurrentFrame * ticfrac;
+        interpolatedSway = swayOldFrame * (1. - ticfrac) + swayCurrentFrame * ticfrac;
 		
 		if(hudState != HUD_None)
 		{
 			BeginHUD();
 			DrawFullScreenStuff();
+            if(showtutorials) DrawTooltip();
 		}
 	}
 
@@ -206,6 +238,8 @@ class PB_Hud_ZS : BaseStatusBar
 	{
 		Super.Tick();
 
+        if(interference > 0 && gametic % 2) tickRandSeed = crandom(0, 2147483648);
+
         if(CPlayer.Health <= 0) 
         {
             DeathSequence(true);
@@ -218,7 +252,65 @@ class PB_Hud_ZS : BaseStatusBar
             PlayerWasDead = false;
         }
 
-        if(interference > 0 && random() < 100)
+        screenFXCount = bloodDrops.Size() + bloodSplatters.Size() * 2 + glassCracks.Size();
+
+        if(dirtyScreenTimer == -1)
+        {
+            if(screenWiperPrg ~== 1.0)
+            {
+                screenWiperPrg = 0;
+                wipePrgOldFrame = 0;
+                for(int i = 0; i < bloodDrops.size(); i++)
+                {
+                    PB_BloodFXStorage bld = bloodDrops[i];
+                    bld.Destroy();
+                } bloodDrops.Clear();
+
+                for(int i = 0; i < bloodSplatters.size(); i++)
+                {
+                    PB_BloodSplatterFXStorage bld = bloodSplatters[i];
+                    bld.Destroy();
+                } bloodSplatters.Clear();
+
+                for(int i = 0; i < glassCracks.size(); i++)
+                {
+                    PB_CrackFXStorage crck = glassCracks[i];
+                    crck.Destroy();
+                } glassCracks.Clear();
+
+                dirtyScreenTimer = 0;
+                return;
+            }
+            wipePrgOldFrame = screenWiperPrg;
+            screenWiperPrg += 0.025;
+
+        }
+        else if(dirtyScreenTimer < PB_SCREENWIPER_DELAY && screenFXCount >= PB_SCREENWIPER_THRESHOLD)
+            dirtyScreenTimer++;
+        else if(dirtyScreenTimer == PB_SCREENWIPER_DELAY)
+        {
+            dirtyScreenTimer = -1;
+            S_StartSound("visor/screenwipe", CHAN_6, CHANF_OVERLAP);
+        }
+
+        /*if((cplayer.DesiredFov / cplayer.fov) >= 1.2 && oldFOV >= cplayer.fov && magnificationIndScale < 1.0)
+            magnificationIndScale += 0.25;
+        else if((((cplayer.DesiredFov / cplayer.fov) < 1.2) || ((cplayer.fov - oldFOV) > 10)) && magnificationIndScale > 0)
+            magnificationIndScale -= 0.25;
+        if(cplayer.DesiredFov != cplayer.fov) 
+            oldFOV = cplayer.fov;*/
+
+        if(cplayer.DesiredFov > cplayer.fov && magnificationIndScale < 1.0)
+            magnificationIndScale += 0.25;
+        else if(cplayer.DesiredFov == cplayer.fov && magnificationIndScale > 0)
+            magnificationIndScale -= 0.25;
+
+        if(dirtyScreenTimer == -1 && wiperWarningIndScale < 1.0)
+            wiperWarningIndScale += 0.25;
+        else if(dirtyScreenTimer != -1 && wiperWarningIndScale > 0)
+            wiperWarningIndScale -= 0.25;
+
+        if(interference > 0 && crandom() < 100)
         {
             if(!muteinterference)
                 S_StartSound("visor/interference", CHAN_AUTO, CHANF_OVERLAP, 0.5);
@@ -307,6 +399,18 @@ class PB_Hud_ZS : BaseStatusBar
 				oldLeftAmmoAmount = leftAmmoAmount;
 			}
 		}
+
+        if(HudDynamics)
+		{
+			IntMSway = mSwayInterpolator.GetValue();
+			IntMPitch = mPitchInterpolator.GetValue();
+			IntMOfs = mFOffsetInterpolator.GetValue();
+
+            ofsOldFrame = ofsCurrentFrame;
+            swayOldFrame = swayCurrentFrame;
+            ofsCurrentFrame = IntMOfs;
+            swayCurrentFrame = (IntMSway, IntMPitch);
+		}
 		
 		oldWeapon = CPlayer.ReadyWeapon;
 	}
@@ -355,7 +459,7 @@ class PB_Hud_ZS : BaseStatusBar
         "LOME - System lost power at 00:00:00, Jan 1st, 1970",
         "LOME - Please replace CMOS battery!",
         "LOME - Automatic restart attempt...",
-        "LOME - Automatic restart failed: could not establish uplink to MB_MAIN",
+        "LOME - Automatic restart failed: could not establish uplink to MB_MAIN(MarsBase_Server1)",
         "LOME - Initiating diagno$$##@@GaaE",
         "\cfMNGMT ENGINE DIES HERE -->\c- [ FAIL ] WATCHDOG VIOLATION",
         "-----END LOME LOGFILE-----",
@@ -363,28 +467,45 @@ class PB_Hud_ZS : BaseStatusBar
         "\cgTotal system failure: please contact UAC Microsystems for support.\c-"
     };
 	
+    int diedTic;
 	void DeathSequence(bool Death) {
 		if(death) {
 			if(HasPutOnHelmet)
 			{
                 SetMusicVolume(0);
+                if(diedTic == 0)
+                    diedTic = level.MapTime;
+
                 muteinterference = true;
-                if(m0to1Float > 0.0 && !DeathFadeDone)
+                if(m0to1Float > 0.0 && !DeathFadeDone && helmetKernelPanic >= KernelPanicMessages.Size() - 7)
                 {
-                    m0to1Float *= (randompick(50, 100, 150) * 0.01);
+                    m0to1Float *= (crandompick(50, 100, 150) * 0.01);
+                    m0to1Float = clamp(m0to1Float, 0, 1);
                     
-                    if(m0to1Float <= 0.0) 
+                    if(m0to1Float ~== 0.0)
+                        DeathFadeDone = true;
+                }
+
+                if(!visorOff && helmetKernelPanic >= (KernelPanicMessages.Size()) && (level.MapTime >= (diedTic + (7.5 * TICRATE))))
+                {
+                    if(level.MapTime < (diedTic + (8 * TICRATE)))
                     {
-                        DeathFadeDone = True;
+                        interference += 2;
+                        S_StartSound("visor/visorgarbled", CHAN_AUTO, CHANF_OVERLAP, 0.75);
+                    }
+                    else
+                    {
+                        S_StartSound("visor/dyingvisor", CHAN_AUTO, CHANF_OVERLAP);
+                        visorOff = true;
                     }
                 }
 
-                if(helmetKernelPanic < KernelPanicMessages.Size())
+                if(helmetKernelPanic < KernelPanicMessages.Size() && (level.MapTime >= diedTic + 35))
                 {
-                    if(random() < 25)
+                    if(crandom() < 50)
                     {
                         helmetKernelPanic++;
-						S_StartSound("visor/interference", CHAN_AUTO, CHANF_OVERLAP, 0.5);
+						S_StartSound("visor/interference", CHAN_AUTO, CHANF_OVERLAP, 0.25);
                     }
                 }
 			}
@@ -395,7 +516,8 @@ class PB_Hud_ZS : BaseStatusBar
             muteinterference = false;
             helmetKernelPanic = 0;
 			m0to1Float = 1.0;
-			DeathFadeDone = False;
+			visorOff = DeathFadeDone = False;
+            interference = diedTic = 0;
 		}
 	}
 	
@@ -436,7 +558,7 @@ class PB_Hud_ZS : BaseStatusBar
 
 		//Calculate forward velocity.
 		mForwardOffset = clamp((Actor.Normalize180(forwardOffset) * 0.35), -8, 8);
-		mForwardOffset += (CPlayer.mo.player.fov - CPlayer.mo.player.DesiredFov) * 0.25;
+		mForwardOffset += (CPlayer.mo.player.fov - CPlayer.mo.player.DesiredFov) * 0.5;
 		
 		//Return the falling animation slowly.
 		if(mFallOfs < 0.0) {
@@ -470,25 +592,25 @@ class PB_Hud_ZS : BaseStatusBar
 		}
 		
 		if(HudDynamics) {
-			posX += IntMSway * Parallax;
-			posY -= IntMPitch * Parallax;
+			posX += interpolatedSway.x * Parallax;
+			posY -= interpolatedSway.y * Parallax;
 
 			if(!applySpeedShift)
 				return;
 
 			switch(flags & DI_SCREEN_HMASK) {
 				case DI_SCREEN_LEFT:
-					posX += (IntMOfs * Parallax2); break;
+					posX += (interpolatedOfs * Parallax2); break;
 				case DI_SCREEN_RIGHT:
-					posX -= (IntMOfs * Parallax2); break;
+					posX -= (interpolatedOfs * Parallax2); break;
 				default: break;
 			}
 
 			switch(flags & DI_SCREEN_VMASK) {
 				case DI_SCREEN_TOP:
-					posY += (IntMOfs * Parallax2); break;
+					posY += (interpolatedOfs * Parallax2); break;
 				case DI_SCREEN_BOTTOM:
-					posY -= (IntMOfs * Parallax2); break;
+					posY -= (interpolatedOfs * Parallax2); break;
 				default: break;
 			}
 		}
@@ -548,8 +670,8 @@ class PB_Hud_ZS : BaseStatusBar
                 int chr, next;
                 [chr, next] = string.GetNextCodePoint(i);
 
-                if(interference > random[interference](0, 50))
-                    stringBuffer.AppendCharacter(random("!", "~"));
+                if(interference > PB_Math.PB_RandInt(0, 50, tickRandSeed * (chr * (1 + i))))
+                    stringBuffer.AppendCharacter(PB_Math.PB_RandInt("!", "~", tickRandSeed * (chr * (1 + i))));
                 else
                     stringBuffer.AppendCharacter(chr);
 
@@ -615,8 +737,14 @@ class PB_Hud_ZS : BaseStatusBar
 			mugflags = MugShot.STANDARD; 
 			mug = "STF"; 
 		}
-			
-		PBHud_DrawTexture(GetMugShot(5, mugflags, mug), (25, -65), DI_ITEM_OFFSETS | DI_SCREEN_LEFT_BOTTOM, scale: (1.25, 1.25));
+		if(CVar.GetCVar("hud_oldscale",cplayer).GetBool() && CVar.GetCVar("hud_scale",cplayer).GetInt() > -1 || customPBMugshot)
+		{
+			PBHud_DrawTexture(GetMugShot(5, mugflags, mug), (25.5, -65), DI_ITEM_OFFSETS | DI_SCREEN_LEFT_BOTTOM, scale: (1.25, 1.25));
+		}
+		else
+		{
+			PBHud_DrawTexture(GetMugShot(5, mugflags, mug), (24.5, -70), DI_ITEM_OFFSETS | DI_SCREEN_LEFT_BOTTOM, scale: (1.25, 1.5));
+		}
 	}
 	
 	////////////////////////////////////
@@ -861,9 +989,6 @@ class PB_Hud_ZS : BaseStatusBar
 			
 			//Get player stats (health, armor)
 			int Health = CPlayer.Health;
-			double IntMSway = mSwayInterpolator.GetValue();
-			double IntMPitch = mPitchInterpolator.GetValue();
-			double IntMOfs = mFOffsetInterpolator.GetValue();
 			int IntHealth = mHealthInterpolator.GetValue();
 			int MaxHealth = CPlayer.mo.GetMaxHealth();
 
@@ -873,77 +998,141 @@ class PB_Hud_ZS : BaseStatusBar
 
 			//WARNING: vile
 			if(!CheckInventory("sae_extcam") && !automapactive) {
-				if(showVisorGlass) {
-					if(m0to1Float < 1.0) {
-						PBHud_DrawImageManualAlpha("HUDTPOF2", (-35 - m32to0, -9 - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (0.7, 0.7), 0.6, 0.15);  
-						PBHud_DrawImageManualAlpha("HUDBTOF2", (-35 - m32to0, 9 + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (0.7, 0.7), 0.6, 0.15);   
-						PBHud_DrawImageManualAlpha("HUDTP2O2", (35 + m32to0, -9 - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (0.7, 0.7), 0.6, 0.15); 
-						PBHud_DrawImageManualAlpha("HUDBTO22", (35 + m32to0, 9 + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (0.7, 0.7), 0.6, 0.15); 
-					}
-				
-					PBHud_DrawImageManualAlpha("HUDTOP2", (-35 - m32to0, -9 - m32to0), DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, clamp(m0to1Float * playerAlpha, 0.0, playerAlpha), scale: (0.7, 0.7), 0.6, 0.15);
-					PBHud_DrawImageManualAlpha("HUDBOTO2", (-35 - m32to0, 9 + m32to0), DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, clamp(m0to1Float * playerAlpha, 0.0, playerAlpha), scale: (0.7, 0.7), 0.6, 0.15);   
-					PBHud_DrawImageManualAlpha("HUDT2P2", (35 + m32to0, -9 - m32to0), DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, clamp(m0to1Float * playerAlpha, 0.0, playerAlpha), scale: (0.7, 0.7), 0.6, 0.15); 
-					PBHud_DrawImageManualAlpha("HUDBOT22", (35 + m32to0, 9 + m32to0), DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, clamp(m0to1Float * playerAlpha, 0.0, playerAlpha), scale: (0.7, 0.7), 0.6, 0.15);
-				}
-			   
-				if(showVisor) {
-					double sectorlightlevel = cplayer.mo.cursector.lightlevel / 255.0;
-					
-					color slcol = cplayer.mo.cursector.colormap.lightcolor;
-					
-					// [gng] i have heard that the color function is expensive, so i avoid running it if there's no need to.
-					color flsectorlightcolor;
-					if(slcol != 16777215)
-						flsectorlightcolor = Color(255, slcol.r, slcol.g, slcol.b);
-					else
-						flsectorlightcolor = 0xffffffff;
+                double sectorlightlevel = cplayer.mo.cursector.lightlevel / 255.0;
+                color slcol = cplayer.mo.cursector.colormap.lightcolor;
+                
+                // [gng] i have heard that the color function is expensive, so i avoid running it if there's no need to.
+                color flsectorlightcolor;
+                if(slcol != 16777215)
+                    flsectorlightcolor = Color(255, slcol.r, slcol.g, slcol.b);
+                else
+                    flsectorlightcolor = 0xffffffff;
 
-                    vector2 posbuffer = (Screen.GetWidth() / 2.f, Screen.GetHeight() / 2.f);
-                    vector2 hudscale = GetHUDScale();
-                    posbuffer.x /= hudscale.x;
-                    posbuffer.y /= hudscale.y;
-                    SetSway(posbuffer.x, posbuffer.y, 0, 0.6, 0.15, false, false);
-                    posbuffer.x *= hudscale.x;
-                    posbuffer.y *= hudscale.y;
+                /*vector2 posbuffer = (Screen.GetWidth() / 2.f, Screen.GetHeight() / 2.f);
+                vector2 hudscale = GetHUDScale();
+                posbuffer.x /= hudscale.x;
+                posbuffer.y /= hudscale.y;
+                SetSway(posbuffer.x, posbuffer.y, 0, 0.6, 0.15, false, false);
+                posbuffer.x *= hudscale.x;
+                posbuffer.y *= hudscale.y;
 
-                    // dirt and scratches
-                    Screen.DrawTexture(TexMan.CheckForTexture("GRAPHICS/LensDirt.png"), false, 
-                        posbuffer.x, posbuffer.y, 
-                        DTA_DestWidth, Screen.GetWidth(), DTA_DestHeight, Screen.GetHeight(), 
-                        DTA_Alpha, 0.5 + (sectorlightlevel * 0.5), 
-                        DTA_Color, flsectorlightcolor, 
-                        DTA_CenterOffset, true, 
-                        DTA_ScaleX, 1.25, DTA_ScaleY, 1.25
-                    );
-						
-					// darkness underlays
-				  	PBHud_DrawImageManualAlpha("HUDTDARK", (-35 - m32to0, -9 - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, 1, scale: (0.7, 0.7), col: flsectorlightcolor);  
-					PBHud_DrawImageManualAlpha("HUDBDARK", (-35 - m32to0, 9 + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, 1, scale: (0.7, 0.7), col: flsectorlightcolor);   
-					PBHud_DrawImageManualAlpha("HUDTDAR2", (35 + m32to0, -9 - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, 1, scale: (0.7, 0.7), col: flsectorlightcolor);  
-				   	PBHud_DrawImageManualAlpha("HUDBDAR2", (35 + m32to0, 9 + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, 1, scale: (0.7, 0.7), col: flsectorlightcolor);
-				  		
-				  	// visor corners
-				  	PBHud_DrawImageManualAlpha("HUDTOPOF", (-35 - m32to0, -9 - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, sectorlightlevel, scale: (0.7, 0.7), col: flsectorlightcolor);  
-					PBHud_DrawImageManualAlpha("HUDBOTOF", (-35 - m32to0, 9 + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, sectorlightlevel, scale: (0.7, 0.7), col: flsectorlightcolor);   
-					PBHud_DrawImageManualAlpha("HUDT2POF", (35 + m32to0, -9 - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, sectorlightlevel, scale: (0.7, 0.7), col: flsectorlightcolor);  
-				   	PBHud_DrawImageManualAlpha("HUDBOT2F", (35 + m32to0, 9 + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, sectorlightlevel, scale: (0.7, 0.7), col: flsectorlightcolor);
-					
-					// lens flares
-					PBHud_DrawImageManualAlpha("HUDTFLAR", (-35 - m32to0, -9 - m32to0) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1float * ( 1.0 - (sectorlightlevel)), scale: (0.7, 0.7), style: STYLE_Add);  
-					PBHud_DrawImageManualAlpha("HUDBFLAR", (-35 - m32to0, 9 + m32to0) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1float * ( 1.0 - (sectorlightlevel)), scale: (0.7, 0.7), style: STYLE_Add);
-					PBHud_DrawImageManualAlpha("HUDTFLA2", (35 + m32to0, -9 - m32to0) , DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1float * ( 1.0 - (sectorlightlevel)), scale: (0.7, 0.7), style: STYLE_Add);  
-				   	PBHud_DrawImageManualAlpha("HUDBFLA2", (35 + m32to0, 9 + m32to0) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1float * ( 1.0 - (sectorlightlevel)), scale: (0.7, 0.7), style: STYLE_Add);
-					
-					// hologram beam
-					PBHud_DrawImageManualAlpha("HUDTOP", (-35, -9) , DI_SCREEN_LEFT_TOP|DI_ITEM_LEFT_TOP, m0to1Float, scale: (0.7, 0.7), style: STYLE_Add);  
-					PBHud_DrawImageManualAlpha("HUDBOTOM", (-35, 9) , DI_SCREEN_LEFT_BOTTOM|DI_ITEM_LEFT_BOTTOM, m0to1Float, scale: (0.7, 0.7), style: STYLE_Add);   
-					PBHud_DrawImageManualAlpha("HUDT2P", (35, -9), DI_SCREEN_RIGHT_TOP|DI_ITEM_RIGHT_TOP, m0to1Float, scale: (0.7, 0.7), style: STYLE_Add);  
-					PBHud_DrawImageManualAlpha("HUDBOT2M", (35, 9) , DI_SCREEN_RIGHT_BOTTOM|DI_ITEM_RIGHT_BOTTOM, m0to1Float, scale: (0.7, 0.7), style: STYLE_Add);
-				}
+                // dirt and scratches
+                Screen.DrawTexture(TexMan.CheckForTexture("GRAPHICS/LensDirt.png"), false, 
+                    posbuffer.x, posbuffer.y, 
+                    DTA_DestWidth, Screen.GetWidth(), DTA_DestHeight, Screen.GetHeight(), 
+                    DTA_Alpha, 0.5 + (sectorlightlevel * 0.5), 
+                    DTA_Color, flsectorlightcolor, 
+                    DTA_CenterOffset, true, 
+                    DTA_ScaleX, 1.25, DTA_ScaleY, 1.25
+                );*/
+
+                int visorFlags;
+                for(int i = 0; i < 2; i++)
+                {
+                    bool left = i == 0;
+                    if(left)
+                        visorFlags = DI_ITEM_LEFT | DI_SCREEN_LEFT;
+                    else
+                        visorFlags = DI_ITEM_RIGHT | DI_SCREEN_RIGHT | DI_MIRROR;
+
+                    vector2 topOffsets = ((left ? -24 - visorOffsets : 24 + visorOffsets) + (left ? -m32to0 : m32to0), -24 - visorOffsets - m32to0);
+                    vector2 bottomOffsets = ((left ? -24 - visorOffsets : 24 + visorOffsets) + (left ? -m32to0 : m32to0), 24 + visorOffsets + m32to0);
+
+                    vector2 topOffsetsGlass = topOffsets + ((left ? -6 : 6), -6);
+                    vector2 bottomOffsetsGlass = bottomOffsets + ((left ? -6 : 6), 6);
+
+                    if(showVisorGlass) {
+                        if(m0to1Float < 1.0) {
+                            PBHud_DrawImageManualAlpha("HUDTPOF2", topOffsetsGlass, visorFlags | DI_ITEM_TOP | DI_SCREEN_TOP, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);  
+                            PBHud_DrawImageManualAlpha("HUDBTOF2", bottomOffsetsGlass, visorFlags | DI_ITEM_BOTTOM | DI_SCREEN_BOTTOM, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);   
+                        }
+                    
+                        PBHud_DrawImageManualAlpha("HUDTOP2", topOffsetsGlass, visorFlags | DI_ITEM_TOP | DI_SCREEN_TOP, clamp(m0to1Float * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);
+                        PBHud_DrawImageManualAlpha("HUDBOTO2", bottomOffsetsGlass, visorFlags | DI_ITEM_BOTTOM | DI_SCREEN_BOTTOM, clamp(m0to1Float * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);   
+                    }
+                
+                    if(showVisor) {
+                        // darkness underlays
+                        PBHud_DrawImageManualAlpha("HUDTDARK", topOffsets, visorFlags | DI_ITEM_TOP | DI_SCREEN_TOP, 1, scale: (visorScale, visorScale), col: flsectorlightcolor);  
+                        PBHud_DrawImageManualAlpha("HUDBDARK", bottomOffsets, visorFlags | DI_ITEM_BOTTOM | DI_SCREEN_BOTTOM, 1, scale: (visorScale, visorScale), col: flsectorlightcolor);   
+                            
+                        // visor corners
+                        PBHud_DrawImageManualAlpha("HUDTOPOF", topOffsets, visorFlags | DI_ITEM_TOP | DI_SCREEN_TOP, sectorlightlevel, scale: (visorScale, visorScale), col: flsectorlightcolor);  
+                        PBHud_DrawImageManualAlpha("HUDBOTOF", bottomOffsets, visorFlags | DI_ITEM_BOTTOM | DI_SCREEN_BOTTOM, sectorlightlevel, scale: (visorScale, visorScale), col: flsectorlightcolor);   
+                        
+                        // lens flares
+                        PBHud_DrawImageManualAlpha("HUDTFLAR", topOffsets, visorFlags | DI_ITEM_TOP | DI_SCREEN_TOP, m0to1float * ( 1.0 - (sectorlightlevel)), scale: (visorScale, visorScale), style: STYLE_Add);  
+                        PBHud_DrawImageManualAlpha("HUDBFLAR", bottomOffsets, visorFlags | DI_ITEM_BOTTOM | DI_SCREEN_BOTTOM, m0to1float * ( 1.0 - (sectorlightlevel)), scale: (visorScale, visorScale), style: STYLE_Add);
+                        
+                        // hologram beam
+                        PBHud_DrawImageManualAlpha("HUDTOP", topOffsets, visorFlags | DI_ITEM_TOP | DI_SCREEN_TOP, m0to1Float, scale: (visorScale, visorScale), style: STYLE_Add);  
+                        PBHud_DrawImageManualAlpha("HUDBOTOM", bottomOffsets, visorFlags | DI_ITEM_BOTTOM | DI_SCREEN_BOTTOM, m0to1Float, scale: (visorScale, visorScale), style: STYLE_Add);   
+                    }
+                }
+
+                if(showVisorGlass)
+                {
+                    if(bottomMiddlePart) 
+                    {    
+                        if(m0to1Float < 1.0)
+                            PBHud_DrawImageManualAlpha("HUDMIOF2", (0, 50 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);  
+                        PBHud_DrawImageManualAlpha("HUDMIDD2", (0, 50 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, clamp(m0to1Float * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);
+                    }
+                    else
+                    {
+                        if(m0to1Float < 1.0)
+                            PBHud_DrawImageManualAlpha("HUDMIOF2", (0, -50 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);  
+                        PBHud_DrawImageManualAlpha("HUDMIDD2", (0, -50 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, clamp(m0to1Float * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);
+                    }
+                }
+
+                if(showVisor) {     
+                    if(bottomMiddlePart) 
+                    {
+                        PBHud_DrawImageManualAlpha("HUDMDARK", (0, 44 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, 1, scale: (visorScale, visorScale), col: flsectorlightcolor); 
+                        PBHud_DrawImageManualAlpha("HUDMIDOF", (0, 44 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, sectorlightlevel, scale: (visorScale, visorScale), col: flsectorlightcolor);   
+                    }
+                    else
+                    {
+                        PBHud_DrawImageManualAlpha("HUDMDARK", (0, -44 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, 1, scale: (visorScale, visorScale), col: flsectorlightcolor); 
+                        PBHud_DrawImageManualAlpha("HUDMIDOF", (0, -44 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, sectorlightlevel, scale: (visorScale, visorScale), col: flsectorlightcolor);   
+                    }
+                }
 			}
 
+            if(diedTic > 0 && level.MapTime >= diedTic + 17)
+            {
+                if(visorOff) 
+                    return;
+
+                int onDeathTic = level.MapTime - (diedTic + 18);
+                Vector2 hudscale = GetHUDScale();
+                PBHud_DrawImageManualAlpha("GRAPHICS/HUD/FULLSCRN/UAC-BIOSLogo.png", (16, 37), DI_ITEM_LEFT_TOP | DI_SCREEN_LEFT_TOP);
+                if(onDeathTic >= 1) PBHud_DrawString(mTerminalFont, "OpenBIOS (C) 1989-2054 UAC Microsystems, INC.", (277, 81), DI_TEXT_ALIGN_LEFT | DI_SCREEN_LEFT_TOP, FONT.CR_UNTRANSLATED, fuckFading: true);
+                if(onDeathTic >= 3) PBHud_DrawString(mTerminalFont, "UAC Defense Embedded B1050E-A1 Revision 0", (277, 59), DI_TEXT_ALIGN_LEFT | DI_SCREEN_LEFT_TOP, FONT.CR_UNTRANSLATED, fuckFading: true);
+                if(onDeathTic >= 4) PBHud_DrawString(mTerminalFont, "SAD(r) Praetorian(tm) E10025U @ 20.50GHz", (277, 37), DI_TEXT_ALIGN_LEFT | DI_SCREEN_LEFT_TOP, FONT.CR_UNTRANSLATED, fuckFading: true);
+                SetClipRect(0, 130, Screen.GetWidth() / hudscale.x, Screen.GetHeight() / hudscale.y, DI_SCREEN_LEFT_TOP);
+                if(helmetKernelPanic > 0) {
+                    int spacing;
+                    for(int i = helmetKernelPanic; i > 0; i--)
+                    {
+                        PBHud_DrawString(mTerminalFont, KernelPanicMessages[i - 1], (16, -37 + spacing), DI_TEXT_ALIGN_LEFT | DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, FONT.CR_UNTRANSLATED, (i - 1 == KernelPanicMessages.Size() - 1) ? round(0.5*(1+sin(2 * M_PI * 1 * gameTic))) : 1.0, fuckFading: true);
+                        spacing -= 16;
+                    }
+                }
+                ClearClipRect();
+            }
+
+            if(diedTic > 0)
+                return;
+            
 			PBHUD_DrawMessages();
+
+            if(magnificationIndScale > 0)
+                PBHud_DrawString(mBoldFont, String.Format("%.2fx", cplayer.DesiredFov / cplayer.fov), (0, -32), DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_CENTER | DI_ITEM_CENTER, alpha: 0.5, scale: (1.25 + (1 - magnificationIndScale), clamp(magnificationIndScale, 0, 1)));
+
+            if(wiperWarningIndScale > 0) 
+                PBHud_DrawString(mBoldFont, String.Format("AUTOMATIC WIPER ENGAGED", screenWiperPrg * 100), (0, -64), DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_CENTER | DI_ITEM_CENTER, alpha: 0.5, scale: ((1.25 + (1 - wiperWarningIndScale)) * 0.75, clamp(wiperWarningIndScale, 0, 1) * 0.75));
 
 			//Healthbar
 			if(GetAirTime() < 700)
@@ -1019,9 +1208,40 @@ class PB_Hud_ZS : BaseStatusBar
 			}
 			
 			//Mugshot
-			PBHud_DrawImage("EQUPBO", (16, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
+            if(!multiplayer)
+			    PBHud_DrawImage("EQUPBO", (16, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
+            else
+            {
+                Color pcol = PB_Math.PB_DesaturateColor(CPlayer.GetDisplayColor());
+                PBHud_DrawImage("EQUPBOMP", (16, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha, col: pcol);
+            }
 			
 			PBHud_DrawSpecialMugshot();
+            
+            if(multiplayer) {
+                int plrNum = PlayerPawn(CPlayer.mo).PlayerNumber();
+                PBHud_DrawString(mBoldFont, String.Format("P%i %s %s", plrnum + 1, CPlayer.GetUserName(), (net_arbitrator == plrnum) ? "(Arbitrator)" : "(Client)"), (16, -13), DI_SCREEN_LEFT_BOTTOM, Font.CR_UNTRANSLATED, alpha: 0.25);
+
+                int ofs;
+                for(int i = 0; i < players.Size(); i++)
+                {
+                    if(i == plrnum) continue;
+
+                    PlayerInfo buddy = players[i];
+                    if(!buddy || !buddy.mo) continue;
+
+                    if(deathmatch || (teamplay && buddy.GetTeam() != players[consolePlayer].GetTeam()))
+                        continue;
+
+                    Color bcol = PB_Math.PB_DesaturateColor(buddy.GetDisplayColor());
+                    string nameString = String.Format("%s\c- - \c%s%iHP\c- / \cd%iAP\c-", buddy.GetUserName(), (buddy.mo.Health < 25) ? "g" : "v", buddy.mo.Health, buddy.mo.CountInv("BasicArmor"));
+                    double nameStringLength = mBoldFont.mFont.StringWidth(nameString);
+                    PBHud_DrawString(mBoldFont, nameString, (-15, 50 + ofs), DI_SCREEN_RIGHT_TOP | DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED);
+                    PBHud_DrawImage("GRAPHICS/MPColorDot.png", (-17 - namestringlength, 54 + ofs + (mBoldFont.mFont.GetHeight() / 2.f)), DI_SCREEN_RIGHT_TOP | DI_ITEM_RIGHT, scale: (0.15, 0.15), col: bcol);
+                    // PBHud_DrawString(mBoldFont, FormatNumber(i + 1), (-24.8 - namestringlength, 51.5 + ofs), DI_SCREEN_RIGHT_TOP | DI_TEXT_ALIGN_CENTER, Font.CR_UNTRANSLATED, scale: (0.8, 0.8));
+                    ofs += 14;
+                }
+            }
 			
 			//Powerups
 			PB_DrawPowerups((16, -76));
@@ -1422,17 +1642,16 @@ class PB_Hud_ZS : BaseStatusBar
 						}
 						break;
 				}
-
-                if(helmetKernelPanic > 0)
-                {
-                    int spacing;
-                    for(int i = helmetKernelPanic; i > 0; i--)
-                    {
-                        PBHud_DrawString(mTerminalFont, KernelPanicMessages[i - 1], (16, -37 + spacing), DI_TEXT_ALIGN_LEFT | DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, FONT.CR_UNTRANSLATED, (i - 1 == KernelPanicMessages.Size() - 1) ? round(0.5*(1+sin(2 * M_PI * 1 * gameTic))) : 1.0, fuckFading: true);
-                        spacing -= 20;
-                    }
-                }
 			}
+
+			if (health > 0 && isInventoryBarVisible()) //Placeholder for now, at least it works(?)
+			{
+				Vector2 invBarPos = (0, 0);
+				SetSway(invBarPos.x, invBarPos.y, 0, 0.75, 0.25);
+				invBarPos = (invBarPos.X, min(invBarPos.Y, 0));
+				DrawInventoryBar(InvBar, invBarPos, 7, DI_SCREEN_CENTER_BOTTOM, HX_SHADOW);
+			}
+
 		}
 	}
 	bool WeaponUsesPBAmmoType(){return WeaponUsesPBAmmoType1() || WeaponUsesPBAmmoType2();}
@@ -1493,3 +1712,5 @@ class PB_DynamicDoubleInterpolator : Object
 		return mCurrentValue;
 	}
 }
+
+#include "zscript/PB_HelpNotifications.zs"

@@ -1,4 +1,4 @@
-class PB_PlayerPawn : PlayerPawnBase
+class PB_PlayerPrawn : PlayerPawnBase
 {
 	bool lfoot;
 	
@@ -113,6 +113,7 @@ class PB_PlayerPawn : PlayerPawnBase
 		Player.StartItem "PB_GrenadeAmmo",3;
 		Player.StartItem "PB_QuickLauncherAmmo",4;
 		Player.StartItem "FlamerAmmo",90;
+        Player.StartItem "CryoRifleAmmo",60;
 
 		+ROLLSPRITE
 		+THRUSPECIES
@@ -134,6 +135,8 @@ class PB_PlayerPawn : PlayerPawnBase
 
 	override int DamageMobj(actor inflictor,actor source,int damage,name mod,int flags,double angle)
 	{
+		if(!inflictor&&!source&&(FloorSector.flags&Sector.SECF_ENDLEVEL))
+		{ level.ExitLevel(0,false); return 0; }
 		switch(mod)
 		{ case 'Blast': case 'ExplosiveImpact': case 'Explosive': ThrustThingZ(0,20,1,0); break; }
 		if(source&&source.FindInventory("EnemyIsArchvile"))
@@ -148,8 +151,31 @@ class PB_PlayerPawn : PlayerPawnBase
 	{
 		if(name ~== "PB_ALL" || name ~== "PB_Upgrades")
 		{
+            console.printf("Gave all upgrades");
 			for(int i = 0; i <= self.PB_ActUpgrades.size() -1; i++)
 				giveinventory(self.PB_ActUpgrades[i],2);
+			return;
+		}
+        else if(name ~== "currentammo")
+		{
+            Weapon gun = player.readyweapon;
+            if(gun)
+            {
+                console.printf("Gave ammo for current weapon");
+			    if(gun.ammo1) 
+                {
+                    gun.ammo1.Amount = player.readyweapon.ammo1.maxamount;
+                    // S_StartSound(gun.ammo1.PickupSound, 0);
+                }
+                if(gun.ammo2) 
+                {
+                    gun.ammo2.Amount = player.readyweapon.ammo2.maxamount;
+                    // S_StartSound(gun.ammo1.PickupSound, 0);
+                }
+
+                S_StartSound("misc/givecurrentammo", 0);
+            }
+
 			return;
 		}
 		super.cheatgive(name,amount);
@@ -233,6 +259,7 @@ class PB_PlayerPawn : PlayerPawnBase
 		PLAY G 4 A_Pain;
 		goto See;
 	Death:
+		TNT1 A 0 A_JumpIf(hasSkin, "AltDeath");
 		TNT1 A 0
 		{
 			A_ClearOverlays(-999,-999);
@@ -259,6 +286,7 @@ class PB_PlayerPawn : PlayerPawnBase
 		PLAY N -1;
 		stop;
 	Death.Ice: Death.Frost: Death.Freeze:
+		TNT1 A 0 A_JumpIf(hasSkin, "AltFreezeDeath");
 		FZD1 C 0
 		{
 			A_ClearOverlays(-999,-999);
@@ -299,6 +327,7 @@ class PB_PlayerPawn : PlayerPawnBase
 		XPL5 E -1;
 		stop;
 	Death.ExtremePunches: Death.ExplosiveImpact:
+		TNT1 A 0 A_JumpIf(hasSkin, "AltXDeath");
 		XPL6 A 5
 		{
 			A_ClearOverlays(-999,-999);
@@ -335,6 +364,7 @@ class PB_PlayerPawn : PlayerPawnBase
 		XPL6 F -1;
 		stop;
 	Death.Disintegrate: Death.Slime:
+		TNT1 A 0 A_JumpIf(hasSkin, "AltSlimeDeath");
 		PMET A 0
 		{
 			A_ClearOverlays(-999,-999);
@@ -498,10 +528,120 @@ class PB_PlayerPawn : PlayerPawnBase
 		}
 		TNT1 A -1;
 		stop;
+		
+	//Skin deaths:
+	AltDeath:
+		"####" O 0 {sprite = skinSprite;}
+		"####" A 0
+		{
+			sprite = skinSprite;
+			A_ClearOverlays(-999,-999);
+			A_StopSound(7);
+			A_StopSound(1);
+			A_Giveinventory("PB_LockScreenTilt",1);
+			A_GiveInventory("PlayerIsDead",1);
+			if(target&&target.FindInventory("TypeSergeant")){
+				A_ClearOverlays(2,10);
+				A_Overlay(66,"FirstPersonDeath2");
+			} else {
+				A_ClearOverlays(2,11);
+				A_Overlay(66,"FirstPersonDeath1");
+			}
+			A_ClearOverlays(-779,-777);
+		}
+		"####" HHHHHH 1; //A_SetRoll(roll+5.0,SPF_INTERPOLATE);
+		"####" IIIIII 1 A_SpawnProjectile("Brutal_LiquidBlood3",40,0,random(0,360),2,random(60,120));
+		"####" A 0 A_PlayerScream;
+		"####" JJJJJJ 1 A_SpawnProjectile("Brutal_LiquidBlood2",30,0,random(0,360),2,random(60,120));
+		"####" KKKKKK 1 A_SpawnProjectile("Brutal_LiquidBlood2",10,0,random (0,360),2,random(60,120));
+		"####" LM 10;
+		"####" A 0 A_SpawnItemEx("GrowingBloodPool");
+		"####" NNNNNN 1 A_SpawnProjectile("Brutal_LiquidBlood2",10,0,random(0,360),2,random(60,120));
+		"####" N -1;
+		stop;
+	AltSlimeDeath:
+		"####" A 0 {sprite = skinSprite;}
+		"####" A 0
+		{
+			A_ClearOverlays(-999,-999);
+			A_StopSound(7);
+			A_StopSound(1);
+			A_Giveinventory("PB_LockScreenTilt",1);
+			A_GiveInventory("PlayerIsDead",1);
+			A_ClearOverlays(2,10);
+			A_Overlay(66,"FirstPersonDeath4");
+			A_ClearOverlays(-779,-777);
+			A_PlayerScream();
+			A_Takeinventory("Kicking",1);
+			for(int i=2;i>0;i--) A_SpawnProjectile("MuchBlood",30,0,random (0,360),2,random (0,160));
+			for(int i=3;i>0;i--) A_SpawnProjectile("Brutal_FlyingBloodLevel3",30,0,random (0,360),2,random (10,50));
+			for(int i=4;i>0;i--)
+			{
+				A_SpawnProjectile("Brutal_FlyingBloodLevel3",25,0,random (0,360),2,random (40,60));
+				A_SpawnProjectile("BrainBlood",40,0,random (0,360),2,random (0,160));
+			}
+		}
+		"####" H 5 A_SpriteOffset(0, 2);
+		"####" I 5 A_SpriteOffset(0, 3);
+		"####" J 5 A_SpriteOffset(0, 4);
+		"####" K 5 A_SpriteOffset(0, 4);
+		"####" L 5 A_SpriteOffset(0, 5);
+		"####" M 5 A_SpriteOffset(0, 6);
+		"####" N 2
+		{
+			A_SpriteOffset(0.0, 8);
+			for(int i=3;i>0;i--) A_SpawnProjectile("Brutal_FlyingBloodLevel3",30,0,random (0,360),2,random (10,50));
+			for(int i=2;i>0;i--) A_SpawnProjectile("Brutal_FlyingBloodLevel3",25,0,random (0,360),2,random (40,60));
+			A_NoBlocking();
+		}
+		TNT1 A -1;
+		stop;
+	AltXDeath:
+		"####" O 0 {sprite = skinSprite;}
+		"####" O 5
+		{
+			A_ClearOverlays(-999,-999);
+			A_StopSound(7);
+			A_StopSound(1);
+			A_Giveinventory("PB_LockScreenTilt",1);
+			A_GiveInventory("PlayerIsDead",1);
+			A_ClearOverlays(2,10);
+			A_Overlay(66,"FirstPersonDeath3");
+			A_ClearOverlays(-779,-777);
+			A_Takeinventory("Kicking",1);
+			ThrustThingZ(0,50,0,1);
+			A_Recoil(25);
+			A_XScream();
+			A_NoBlocking();
+			for(int i=2;i>0;i--) A_SpawnProjectile("SuperWallRedBlood",46,0,random (170,190),2,random (0,40));
+		}
+		"####" QRSTUV 5;
+		"####" W -1;
+		stop;
+	AltFreezeDeath:
+		"####" G 0 {sprite = skinSprite;}
+		"####" G 0
+		{
+			A_ClearOverlays(-999,-999);
+			A_StopSound(7);
+			A_StopSound(1);
+			A_GiveInventory("PlayerIsDead",1);
+			A_GiveInventory("CantDoAction",1);
+			A_NoBlocking();
+			A_StartSound("DSBOTTLE");
+			for(int i=4;i>0;i--)
+			{
+				A_SpawnProjectile("IceDust",48,0,random(0,360),2,random(0,160));
+				A_SpawnProjectile("IceBlood",48,0,random(0,360),2,random(0,160));
+			}
+		}
+		"####" G 0 A_SetTranslation("FreezeDeath");
+		"####" G -1;
+		stop;
 	}
 }
 
-class PB_VoodooDoll : PB_PlayerPawn
+class PB_VoodooDoll : PB_PlayerPrawn
 {
 	override void PostBeginPlay() {}
 	

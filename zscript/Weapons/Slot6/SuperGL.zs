@@ -25,8 +25,8 @@ Class PB_SuperGL : PB_Weapon
 		+WEAPON.NOALERT;
 		+WEAPON.NOAUTOFIRE;
 		+FLOORCLIP;
-		Inventory.PickupMessage "UAC-MGL Automatic Grenade Launcher (Slot 6)";
-		Tag "UAC-M7 Super Grenade Launcher";
+		Inventory.PickupMessage "UAC-M7 Automatic Grenade Launcher (Slot 6)";
+		Tag "UAC-M7 Automatic Grenade Launcher";
 		Inventory.AltHUDIcon "SGL0Z0";
 		PB_WeaponBase.respectItem "RespectSGL";
 		PB_WeaponBase.UsesWheel true;
@@ -56,6 +56,7 @@ Class PB_SuperGL : PB_Weapon
 				A_SetInventory("PB_LockScreenTilt",1);
 				A_StartSound("weapons/sgl/inspect1", CHAN_AUTO);
 				A_SetCurrentGrenadeType("Impact");
+                A_SetCrosshair(-1);
 			}
 			SL00 ABCDEFGHIJKLMNOP 1 { 
 				A_SetRoll(roll+0.8,SPF_INTERPOLATE);
@@ -234,7 +235,7 @@ Class PB_SuperGL : PB_Weapon
 			TNT1 A 0 PB_checkReload(null,"Ready","NoAmmo",8,1);
 			TNT1 A 0 {
 				A_ZoomFactor(1.0);
-				A_SetCrosshair(5);
+				A_SetCrosshair(-1);
 				A_SetInventory("PB_LockScreenTilt",1);
 			}
 			TNT1 A 0 A_JumpIfInventory("SGLUnloaded",1,"ReloadUnloaded");
@@ -328,7 +329,7 @@ Class PB_SuperGL : PB_Weapon
 		UnloadNormal:
 			TNT1 A 0 {
 				A_ZoomFactor(1.0);
-				A_SetCrosshair(5);
+				A_SetCrosshair(-1);
 				A_SetInventory("PB_LockScreenTilt",1);
 			}
 			TNT1 A 0 A_StartSound("Weapons/GrenadeLoad", 9);
@@ -348,7 +349,7 @@ Class PB_SuperGL : PB_Weapon
 		UnloadChamber:
 			TNT1 A 0 {
 				A_ZoomFactor(1.0);
-				A_SetCrosshair(5);
+				A_SetCrosshair(-1);
 				A_SetInventory("PB_LockScreenTilt",1);
 			}
 			TNT1 A 0 A_StartSound("Weapons/GrenadeLoad", 9);
@@ -369,6 +370,41 @@ Class PB_SuperGL : PB_Weapon
 		//	weapon special
 		//
 		
+		SpecialFromUnloaded:
+			TNT1 A 0 A_StartSound("Ironsights",15);
+			S003 ABCD 1;
+			TNT1 A 0 PB_HandleWheel();
+			Goto LoadNewAmmoType;
+		SpecialFromEmptyChamber:
+			TNT1 A 0 A_StartSound("Ironsights",15);
+			SL03 ABCDEFGHIJ 1 {
+				A_SetRoll(roll-0.5,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
+			}
+			TNT1 A 0 A_StartSound("weapons/sgl/detach", 14);
+			SL03 KLMNO 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
+			}
+			
+			SL03 PQRSTU 1 {
+				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
+			}
+			TNT1 A 0 PB_SpawnSGLDrum();	//
+			SL03 VWXYZ 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
+			}
+			SL04 ABC 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
+			}
+			SL04 DEFG 1 {
+				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
+			}
+			TNT1 A 0 PB_HandleWheel();
+			Goto LoadNewAmmoType;
 		WeaponSpecial:
 			TNT1 A 0 A_setinventory("GoWeaponSpecialAbility",0);
 			TNT1 A 0 PB_jumpIfHasBarrel("IdleBarrel","IdleFlameBarrel","IdleIceBarrel");
@@ -379,71 +415,63 @@ Class PB_SuperGL : PB_Weapon
 			}
 			TNT1 A 0 PB_PreHandleSGLWheel();
 			//Unload Previous Ammo Type
-			TNT1 A 0 A_JumpIf(findinventory("SGLUnloaded"), "LoadNewAmmoType");
-			TNT1 A 0 A_StartSound("Ironsights",15);
 			TNT1 A 0 PrintSGLMode();
-			SL03 ABCDEF 1 {
-				A_SetRoll(roll-0.6,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
+			TNT1 A 0 {
+				A_ZoomFactor(1.0);
+				A_SetCrosshair(-1);
+				A_SetInventory("PB_LockScreenTilt",1);
 			}
-			SL03 GHIJKL 1 {
-				A_SetRoll(roll+0.6,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
-			}
-			TNT1 A 0 A_StartSound("weapons/sgl/detach", 14);
-			SL03 MNOPQRST 1 SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
-			SL03 WXYZ 1 
-			{
-				A_SetRoll(roll+0.8,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
-			}
-			
-		LoadNewAmmoType:
-			TNT1 A 0 A_JumpIf(CountInv("SGLUnloaded") <= 0, 5);	//why
-			S003 ABCD 1;
-			SL04 ABCDEF 1 SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
-			TNT1 A 0 A_StartSound("weapons/nailgun/up", 10);
+			TNT1 A 0 A_JumpIf(findinventory("SGLUnloaded"), "SpecialFromUnloaded");
+			TNT1 A 0 A_JumpIf(CountInv("GrenadeRounds") == 0, "SpecialFromEmptyChamber");
+			TNT1 A 0 A_StartSound("Weapons/GrenadeLoad", 9);
+			S400 ABCDEFGHIJKL 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
+			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 10);
+			S400 MNOPQRST 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
+			TNT1 A 0 A_StartSound("weapons/nailgun/up", 11);
+			S400 UVWXY 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
+			SL03 Z 1 SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
+			TNT1 A 0 PB_SpawnSGLDrum();
 			TNT1 A 0 PB_HandleWheel();	//do the mode change here, so the next animations plays the new ammo type 
-			SL04 GHIJKLMN 1 {
-				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
-			}
-			TNT1 A 0 A_StartSound("weapons/sgl/inspect1", 16);
-			SL04 OPQRST 1 {
-				A_SetRoll(roll-0.5,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
-			}
-			//TNT1 A 0 A_StartSound("RLCYCLE2", 13)
-			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 15);
-			SL04 UVWXY 1 {
+			SL04 ABC 1 {
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
 				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
 			}
-			TNT1 A 0 A_StartSound("RLCYCLE2", 13);
-			SL04 Z 1 {
+			SL04 DEFG 1 {
 				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
-				A_StartSound("weapons/nailgun/inspect4", 9, CHANF_OVERLAP );
 				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
 			}
-			SL72 BCDEFGHIJK 1 {
-				A_SetRoll(roll-0.5,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
+		LoadNewAmmoType:
+			TNT1 A 0 A_StartSound("weapons/nailgun/up", 10);
+			SL04 HIJKLM 1 {
+				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
 			}
-			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 18);
-			SL72 LMNO 1 {
-				A_SetRoll(roll+2.0,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
-			}
-			TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE);
-			SL72 PQRSTUVWXYZ 1 SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
-			SL73 ABCD 1 {
-				A_SetRoll(roll+0.5,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL73","S073","S273","S173","S373");
-			}
-			SL73 EF 1 {
+			TNT1 A 0 A_StartSound("weapons/sgl/inspect1", 16);
+			SL04 NOPQRST 1 {
 				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL73","S073","S273","S173","S373");
+				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
 			}
+			
+			SL04 UVW 1 {
+				A_SetRoll(roll+0.8,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
+			}
+			
+			SL04 XYZ 1 {
+				A_SetRoll(roll-1.2,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
+			}
+			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 9, CHANF_OVERLAP);
+		//Rechamber Animation
+			TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE);
+			TNT1 A 0 A_StartSound("RLCYCLE2", 13);
+			SL72 BCDEFGHIJK 1 SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
+			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 18);
+			SL72 LMNO 1 SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
+			TNT1 A 0 PB_AmmoIntoMag("GrenadeRounds","PB_RocketAmmo",6,1);
+			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 12);
+			TNT1 A 0 A_setinventory(invoker.unloadertoken,0);
+			SL72 PQRSTUVWXYZ 1 SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
+			SL73 ABCDEF 1 SGL_ChangeModeSprite("SL73","S073","S273","S173","S373");
 			TNT1 A 0 {
 				A_SetInventory("CantWeaponSpecial" ,0 );
 				A_SetInventory("GrenadeTypeImpact", 0);
@@ -451,10 +479,7 @@ Class PB_SuperGL : PB_Weapon
 				A_SetInventory("GrenadeTypeIncendiary", 0);
 				A_SetInventory("GrenadeTypeCryo", 0);
 				A_SetInventory("GrenadeTypeAcid", 0);
-				
-				if(invoker.ammo1.amount > 0 && invoker.ammo2.amount < 7)
-					PB_AmmoIntoMag("GrenadeRounds","PB_RocketAmmo",7,1);
-				
+				A_SetInventory("SGLUnloaded", 0);
 			}  
 			goto ready;
 		
@@ -657,7 +682,7 @@ Class PB_SuperGL : PB_Weapon
 	
 	action void PB_SpawnSGLDrum()
 	{
-		if(invoker.ammo2.amount < 1)
+		if(invoker.ammo2.amount < 2)
 		{
 			string csng = "SGL_Drum";
 			switch(getSGLMode())
@@ -681,6 +706,7 @@ Class PB_SuperGL : PB_Weapon
 		findinventory("GrenadeTypeIncendiary") && getSGLMode() == 		SGL_Fire ||
 		findinventory("GrenadeTypeCryo") && getSGLMode() == 			SGL_Cryo)
 		{
+			A_Print("$PB_ALREADYSELECTED");
 			A_SetInventory("CantWeaponSpecial" ,0 );
 			A_SetInventory("GrenadeTypeImpact", 0);
 			A_SetInventory("GrenadeTypeSticky", 0);

@@ -207,7 +207,7 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 
 	override void drawEL()
 	{
-		PB_DrawText(502,pbcv_inter?300:0,"Next stop",Font.CR_CYAN);
+		PB_DrawText(493,pbcv_inter?285:0,"Next stop",Font.CR_CYAN);
 		PB_DrawName(pbcv_inter?70:13,wbs.LName1,lnametexts[1]);
 	}
 
@@ -228,7 +228,7 @@ Class PB_DoomStatusScreen : DoomStatusScreen
 		if(st>=8) PB_DrawText(x2,yy,CountStats(ci,ti),AllStats(ci,ti)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=2*lh;
 		if(st>=10) PB_DrawText(x1,yy,"Secrets",Font.CR_CYAN);
 		if(st>=12) PB_DrawText(x2,yy,CountStats(cs,ts),AllStats(cs,ts)?Font.CR_GOLD:Font.CR_UNTRANSLATED); yy+=3*lh;
-		if(st>=14&&Perfect()) PB_DrawText(xx*10,yy,"\cfPERFECT!"); yy+=3*lh;
+		if(st>=14&&Perfect()) PB_DrawText(xx*8-9,yy,"\cfPERFECT CLEAR!"); yy+=3*lh;
 		if(st>=16) //Time row
 		{
 			PB_DrawText(x1,yy,"Time",Font.CR_CYAN); yy+=2*lh;

@@ -1,0 +1,2253 @@
+// MancubusSwitchModeEffect.zs
+class MancubusSwitchModeEffect : Actor 
+{
+    Default 
+    {
+        Speed 5;
+    }
+    States 
+    {
+    Spawn:
+        TNT1 AA 0 NoDelay { A_SpawnItemEx("FireballExplosionFlamesSmall", Random(5,6), Random(-1,1), Random(-12,-6), 8, 0, 0, 0, SXF_NOCHECKPOSITION); }
+      //  TNT1 AAAA 0 { A_SpawnItemEx("BurningEmberParticlesFloating_Bigger", Random(5,6), Random(-1,1), Random(-12,-6), 8, 0, 0, 0, SXF_NOCHECKPOSITION); }
+        Stop;
+    }
+}
+
+
+class PB_Mancubus1 : PB_Monster 
+{
+   int flameCounter;
+   bool playedFlamethrowerSound;
+   Default
+	{
+		Speed 8;
+		PainChance 80;
+		Monster;
+		+FLOORCLIP
+		+BOSSDEATH
+		SeeSound "fatso/sight";
+		PainSound "fatso/pain";
+		DeathSound "fatso/death";
+		ActiveSound "fatso/active";
+		Obituary "$OB_FATSO";
+		Tag "$FN_MANCU";
+	
+//		SpawnID 1700;
+		Scale 1.0;
+		MaxStepHeight 16;
+		MaxDropOffHeight 24;
+		DamageFactor "Crush", 10.0;
+		DamageFactor "Head", 0.65;
+		DamageFactor "Avoid", 0.0;
+		DamageFactor "killme", 0.0;
+		DamageFactor "TeleportRemover", 0.0;
+		DamageFactor "GibRemoving", 0.0;
+		DamageFactor "CauseObjectsToSplash", 0.0;
+		DamageFactor "Blood", 0.0;
+		DamageFactor "BlueBlood", 0.0;
+		DamageFactor "GreenBlood", 0.0;
+		
+		PainChance "Kick", 255;
+		PainChance "ExtremePunches", 255;
+		PainChance "Taunt", 255;
+		PainChance "Explosive", 96;
+		PainChance "SSG", 96;
+		PainChance "Stun", 255;
+		PainChance "Siphon", 255;
+
+		Radius 48;
+		Height 64;
+		GibHealth 30;
+		Health 900;
+		Mass 2500;
+
+		Obituary "%o was incinerated by a Mancubus.";
+
+		Species "BigFatAss";
+
+		+DONTHARMSPECIES;
+		+THRUGHOST;
+		+BOSSDEATH;
+
+		DropItem "Demonpickup2", 60;
+		DropItem "Demonpickup2", 250;
+
+        PB_Monster.CanIFallback false;
+        PB_Monster.CanIReload false;
+        PB_Monster.CanIRoll false;
+        PB_Monster.CanISuppress true;
+	}
+
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		self.playedFlamethrowerSound = false;
+		flameCounter = 0;
+		suppressiveOffZ = 36;
+        suppressiveOffXY = 15;
+        suppressiveMissile = "MancubusFlame";
+		suppressLimit = 4;
+		suppressLimit2 = 2;
+        if (pb_NoBuffFatso)
+            canSuppress = false;
+	}
+
+    States 
+    {
+    Death.Execution:
+        TNT1 A 0 { A_Stopsound(); A_FaceTarget(); A_NoBlocking(false); }
+        FATT AG 4;
+        TNT1 A 0 A_Pain();
+        FATT J 21;
+        TNT1 A 0 A_Recoil(4);
+        Goto XDeath;
+
+    Pain_Stun:
+        TNT1 A 0;
+        TNT1 A 0 { A_SpawnItemEx("StunElectrocute", Random(-4,4), Random(-4,4), Random(16,32), 0, 0); }
+        FATT J 1 A_Pain();
+        FATT JJJJJJJJJJ 3 { A_SpawnItemEx("StunElectrocute", Random(-12,12), Random(-12,12), Random(16,52), 0, 0); }
+        FATT J 1 A_Pain();
+        FATT JJJJJJJJJJ 3 { A_SpawnItemEx("StunElectrocute", Random(-12,12), Random(-12,12), Random(16,52), 0, 0); }
+        FATT J 1 A_Pain();
+        FATT JJJJJJJJJJ 3 { A_SpawnItemEx("StunElectrocute", Random(-12,12), Random(-12,12), Random(16,52), 0, 0); }
+        FATT J 1 A_Pain();
+        FATT JJJJJJJJJJ 3 { A_SpawnItemEx("StunElectrocute", Random(-12,12), Random(-12,12), Random(16,52), 0, 0); }
+        FATT J 1 A_Pain();
+        Goto See;
+
+    Pain_Siphon:
+        TNT1 A 0;
+        TNT1 AAA 0 A_SpawnItemEx("RedLightning_Small", Random(-12,12), Random(-12,12), Random(16,52), 0, 0);
+        FATT J 1 { A_FaceTarget(); A_GiveToTarget("HealthBonus", 4); }
+        FATT J 5 A_FaceTarget();
+        TNT1 A 0 A_Pain();
+        Goto See;
+
+    Death.Blackhole:
+        TNT1 A 0 A_BossDeath();
+        TNT1 A 0 A_NoBlocking();
+        TNT1 A 0 A_SpawnItem("BlackHoledFatso");
+        Stop;
+
+    Death.Shrink:
+        TNT1 A 0 A_BossDeath();
+        TNT1 A 1 A_StartSound("Shrink", 3);
+        TNT1 A 0 A_SpawnItemEx("MancubusShrinkFX1", 0, 0, 5, 0, 0);
+        TNT1 A 1 A_SpawnItemEx("MancubusShrinkFX2", 0, 0, 5, 0, 0);
+        TNT1 A 1 A_SpawnItemEx("MancubusShrinkFX3", 0, 0, 5, 0, 0);
+        TNT1 A 1 A_SpawnItemEx("MancubusShrinkFX4", 0, 0, 5, 0, 0);
+        TNT1 A 1 A_SpawnItemEx("MancubusShrinkFX5", 0, 0, 5, 0, 0);
+        TNT1 A 1 A_SpawnItemEx("MancubusShrinkFX6", 0, 0, 5, 0, 0);
+        TNT1 A 1 A_SpawnItemEx("MancubusShrinkFX7", 0, 0, 5, 0, 0);
+        TNT1 A 1 A_SpawnItemEx("LilMancubus", 1);
+        Stop;
+
+	Raise:
+		FATT R 5;
+		FATT QPONMLK 5;
+		Goto See;
+
+    ReplaceVanilla:
+        TNT1 A 0 {bTHRUACTORS = true ;}
+        TNT1 A 0 {bCOUNTKILL = false ;}
+  //      TNT1 A 0 A_SpawnItemEx("Vanilla_Mancubus", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION | SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG, 0);
+        Stop;
+
+    Spawn:
+        FATT B 1;
+        TNT1 A 0 ACS_NamedExecuteAlways("MancubusFlamethrower", 0);
+    Stand:
+        TNT1 A 0 A_CheckSight("Stand2");
+        FATT BBBBBBBBBB 10 A_Look();
+        Loop;
+
+    Stand2:
+        TNT1 A 0;
+        FATT BB 10 A_Look();
+        TNT1 A 0 A_CheckSight("Stand2");
+        Loop;
+
+    See:
+        TNT1 A 0;
+        TNT1 A 0 A_StartSound("knight/step", 5);
+        FATT AA 4 A_SmartChase();
+        TNT1 A 0 A_StartSound("knight/step", 5);
+        FATT BB 4 A_SmartChase();
+        FATT CC 4 A_SmartChase();
+        TNT1 A 0 A_StartSound("knight/step", 5);
+        FATT DD 4 A_SmartChase();
+        FATT EE 4 A_SmartChase();
+        FATT FF 4 A_SmartChase();
+        Goto See;
+
+	SuppressiveFire:
+		TNT1 A 0 { self.inSuppressiveFire = true;  }
+		TNT1 A 0 { int attackRoll = random(0, 99); if (attackRoll > 50 && suppressCount2 < suppressLimit2) { SetStateLabel("SuppressiveFire2");}}
+
+		FATT IG 5;
+		
+		FATT H 5 BRIGHT { self.suppressiveOffZ = 30; self.suppressiveOffXY =  25; self.suppressiveMissile = "BigFireBallGravity";  A_SuppressiveFire(highRiders : true, pitchOffset:30);}
+		FATT H 5 BRIGHT { self.suppressiveOffZ = 30; self.suppressiveOffXY =  -25; self.suppressiveMissile = "BigFireBallGravity";  A_SuppressiveFire(highRiders : true,pitchOffset:30);
+						 if (CheckSight(target)) SetStateLabel("See");}
+	    FATT IG 5;
+		FATT H 5 BRIGHT { self.suppressiveOffZ = 30; self.suppressiveOffXY =  25; self.suppressiveMissile = "BigFireBallGravity";  A_SuppressiveFire(highRiders : true,pitchOffset:100);}
+		FATT H 5 BRIGHT { self.suppressiveOffZ = 30; self.suppressiveOffXY =  -25; self.suppressiveMissile = "BigFireBallGravity";  A_SuppressiveFire(highRiders : true,pitchOffset:100);
+						  if (CheckSight(target)) SetStateLabel("See");}
+		FATT IG 5;
+		FATT H 5 BRIGHT { self.suppressiveOffZ = 30; self.suppressiveOffXY =  25; self.suppressiveMissile = "BigFireBallGravity";  A_SuppressiveFire(highRiders : true,pitchOffset:50);}
+		FATT H 5 BRIGHT { self.suppressiveOffZ = 30; self.suppressiveOffXY =  -25; self.suppressiveMissile = "BigFireBallGravity";  A_SuppressiveFire(highRiders : true,pitchOffset:50);
+						  if (CheckSight(target)) SetStateLabel("See");}
+
+		TNT1 A 0 { self.inSuppressiveFire = false; suppressCount += 1;  }
+	GoTo FrontMove;
+
+	SuppressiveFire2:
+		TNT1 A 0 { self.inSuppressiveFire = true; }
+		FATT IG 2 { if(CheckInFront() == 0 ) {SetStateLabel("SuppressiveFire");} if (!self.playedFlamethrowerSound) { A_StartSound("Flamethrower", 9);self.playedFlamethrowerSound = true; }}
+		FATT H 1 BRIGHT { self.suppressiveOffZ = 34; self.suppressiveOffXY = 25; self.suppressiveMissile = "MancubusFlame";  A_SuppressiveFire(highRiders : true,pitchOffset:50); A_SpawnProjectile("MancubusSwitchModeEffect", 34, 30, 0, 2, 0);
+						  self.suppressiveOffZ = 34; self.suppressiveOffXY =  -25; self.suppressiveMissile = "MancubusFlame";  A_SuppressiveFire(highRiders : true,pitchOffset:50); A_SpawnProjectile("MancubusSwitchModeEffect", 34, -30, 0, 2, 0);
+						  if (CheckSight(target)) SetStateLabel("See");}
+		FATT IG 2 BRIGHT { self.suppressiveOffZ = 34; self.suppressiveOffXY =  25; self.suppressiveMissile = "MancubusFlame";  A_SuppressiveFire(highRiders : true,pitchOffset:200); A_SpawnProjectile("MancubusSwitchModeEffect", 34, 30, 0, 2, 0);
+						  self.suppressiveOffZ = 34; self.suppressiveOffXY =   -25; self.suppressiveMissile = "MancubusFlame";  A_SuppressiveFire(highRiders : true,pitchOffset:200); A_SpawnProjectile("MancubusSwitchModeEffect", 34, -30, 0, 2, 0);
+						  if (CheckSight(target)) SetStateLabel("See");}
+		FATT H 1 BRIGHT { self.suppressiveOffZ = 34; self.suppressiveOffXY =  25; self.suppressiveMissile = "MancubusFlame";  A_SuppressiveFire(highRiders : true, pitchOffset:100); A_SpawnProjectile("MancubusSwitchModeEffect", 34, 30, 0, 2, 0);
+						  self.suppressiveOffZ = 34; self.suppressiveOffXY =  -25; self.suppressiveMissile = "MancubusFlame";  A_SuppressiveFire(highRiders : true, pitchOffset:100); A_SpawnProjectile("MancubusSwitchModeEffect", 34, -30, 0, 2, 0);
+						  if (CheckSight(target)) SetStateLabel("See");}		 
+				 		
+		FATT IG 2 {flameCounter += 1; if (flameCounter <= 2) {SetState(FindState("SuppressiveFire2")); } else {flameCounter = 0; suppressCount2 += 1; SetState(FindState("See")); self.playedFlamethrowerSound = false; }  }
+		TNT1 A 0 { self.inSuppressiveFire = false;   }
+		GoTo FrontMove;
+		
+	FrontMove:
+		FATT AA 2 {Thrust(1); }
+		FATT BB 2 {Thrust(1); }
+		FATT CC 2 ;
+		FATT DD 2 {Thrust(1); A_SmartChase();}
+		FATT EE 2 A_SmartChase();
+		FATT FF 2 A_SmartChase();
+		Goto See;
+
+    Missile:
+		//TNT1 A 0 A_JumpIf(!pb_NoBuffFatso && random(0, 99) < 60, "Flamethrower");
+        TNT1 A 0
+        {
+            // Handling the CVAR check and jump logic for the Buff Fatso. CVAR = 0 means Buff variant is enabled.
+            // If it isn't, it'll fall-through to a more classic Attack type.
+            if (!pb_NoBuffFatso)
+            {
+                if (random(0, 90) < 60)
+                    return ResolveState("Flamethrower");
+                else
+                    return ResolveState("BigFireBallAttack");
+            }
+            return ResolveState(null);
+        }
+
+    ClassicFatFire:
+        FATT G 10 A_FatRaise();
+        FATT H 5 bright A_FatAttack1("BigFireBall");
+        FATT IG 2 A_FaceTarget();
+        FATT H 5 bright A_FatAttack2("BigFireBall");
+        FATT IG 2 A_FaceTarget();
+        FATT H 5 bright A_FatAttack3("BigFireBall");
+        FATT IG 2 A_FaceTarget();
+        Goto See;
+
+	BigFireBallAttack:
+        FATT G 2 {A_FatRaise(); A_FaceTarget(); }
+        
+		FATT H 5 BRIGHT {	A_DropAdjust2("BigFireBallGravity","BigFireBall", -25, 10, 30, minRange: 0, maxRange: 1800, shootDownward: false,highRiders2:true); }
+		FATT H 5 BRIGHT {	A_DropAdjust2("BigFireBallGravity","BigFireBall", 25, 10, 30,  minRange: 0, maxRange: 1800, shootDownward: false,highRiders2:true); }
+
+        FATT IG 5 A_FaceTarget();
+		FATT H 5 BRIGHT {	A_DropAdjust2("BigFireBallGravity","BigFireBall", -25, 10, 30, minRange: 0, maxRange: 1800, shootDownward: false,highRiders2:true); }
+		FATT H 5 BRIGHT {	A_DropAdjust2("BigFireBallGravity","BigFireBall", 25, 10, 30,  minRange: 0, maxRange: 1800, shootDownward: false,highRiders2:true); }
+
+        FATT IG 5 A_FaceTarget();
+
+		FATT H 5 BRIGHT {	A_DropAdjust2("BigFireBallGravity","BigFireBall", -25, 10, 30, minRange: 0, maxRange: 1800, shootDownward: false,highRiders2:true); }
+		FATT H 5 BRIGHT {	A_DropAdjust2("BigFireBallGravity","BigFireBall", 25, 10, 30,  minRange: 0, maxRange: 1800, shootDownward: false,highRiders2:true); }
+        TNT1 A 0;
+        FATT IG 5;
+        Goto See;
+
+    Flamethrower:
+            TNT1 A 0;
+            TNT1 A 0 A_JumpIfInventory("Enraged", 1, "Torch");
+            FATT G 1 A_FatRaise;
+            TNT1 A 0 A_StartSound("FLMDRAW",3);
+            
+            FATT GGGGGGGG 2 {A_FaceTarget(); A_SpawnProjectile("MancubusSwitchModeEffect", 34, 30, 0, 2, 0); A_SpawnProjectile("MancubusSwitchModeEffect", 34, -30, 0, 2, 0);}
+            Goto Torch;
+
+	Torch:
+		TNT1 A 0;
+//           FATT G 1 {A_FaceTarget(); A_StartSound("flamersh", 2);} old sound
+		FATT G 1 {A_FaceTarget(); if (!self.playedFlamethrowerSound) { A_StartSound("Flamethrower", 9);self.playedFlamethrowerSound = true; }}
+		
+		FATT H 1 Bright { if(CheckInFront() == 0 ) {SetStateLabel("BigFireBallAttack");} }
+		FATT IG 2 A_FaceTarget;
+		FATT H 1 Bright {
+			 A_SpawnProjectile("MancubusSwitchModeEffect", 34, 30, 0, 2, 0);
+			 A_SpawnProjectile("MancubusSwitchModeEffect", 34, -30, 0, 2, 0);
+			 A_DropAdjust2("MancubusFlame","MancubusFlame",  25, 10, 34,  minRange: 0, maxRange: 1200, shootDownward: false,highRiders2:true , stateFallback: "BigFireBallAttack");
+			 A_DropAdjust2("MancubusFlame","MancubusFlame", -25, 10, 34,  minRange: 0, maxRange: 1200, shootDownward: false,highRiders2:true , stateFallback: "BigFireBallAttack"); }
+
+		FATT IG 2  { A_FaceTarget();
+			 A_SpawnProjectile("MancubusSwitchModeEffect", 34, 30, 0, 2, 0);
+			 A_SpawnProjectile("MancubusSwitchModeEffect", 34, -30, 0, 2, 0);
+			 A_DropAdjust2("MancubusFlame","MancubusFlame",  25, 10, 34,  minRange: 0, maxRange: 1200, shootDownward: false,highRiders2:true , stateFallback: "BigFireBallAttack");
+			 A_DropAdjust2("MancubusFlame","MancubusFlame", -25, 10, 34,  minRange: 0, maxRange: 1200, shootDownward: false,highRiders2:true , stateFallback: "BigFireBallAttack"); }
+
+		FATT H 1 Bright
+		{	 A_FaceTarget();
+			 A_SpawnProjectile("MancubusSwitchModeEffect", 34, 30, 0, 2, 0);
+			 A_SpawnProjectile("MancubusSwitchModeEffect", 34, -30, 0, 2, 0);
+			 A_DropAdjust2("MancubusFlame","MancubusFlame",  25, 10, 34,  minRange: 0, maxRange: 1200, shootDownward: false,highRiders2:true , stateFallback: "BigFireBallAttack");
+			 A_DropAdjust2("MancubusFlame","MancubusFlame", -25, 10, 34,  minRange: 0, maxRange: 1200, shootDownward: false,highRiders2:true , stateFallback: "BigFireBallAttack"); }
+	   
+	   FATT IG 2 {A_FaceTarget(); flameCounter += 1; if (flameCounter <= 2) {SetState(FindState("Torch")); } else {flameCounter = 0; SetState(FindState("See")); self.playedFlamethrowerSound = false; }  }
+
+//            TNT1 A 0 A_JumpIfCloser(320, "Torch");
+//            TNT1 A 0 A_JumpIfCloser(500, "See");
+//            TNT1 A 0 A_CheckSightOrRange(500, "See");
+//            TNT1 A 0 A_ClearTarget;
+//            TNT1 A 0 A_MonsterRefire(16, "See");
+
+            FATT IG 5;
+            Goto See;
+
+    Pain:
+        TNT1 A 0;
+        FATT J 3;
+        FATT J 3 A_Pain();
+        Goto See;
+
+  Pain_Kick:
+            TNT1 A 0 { A_FaceTarget(); }
+            TNT1 A 0 { A_Recoil(0.50); }
+            TNT1 A 0;
+            FATT J 9 { A_Pain(); }
+            TNT1 A 0;
+            FATT J 8;
+            Goto See;
+
+        // Combined Pain states (Explosive, ExtremePunches, SSG, Blackhole, QuadShot)
+        Pain_Explosive:
+        Pain_ExtremePunches:
+        Pain_SSG:
+        Pain_Blackhole:
+        Pain_QuadShot:
+            TNT1 A 0;
+            TNT1 A 0 { A_FaceTarget(); }
+            TNT1 A 0 {bNOPAIN = true ;}
+            FAT4 A 4 { ThrustThingZ(0, 30, 0, 1); }
+            FAT4 B 4 { A_Pain(); }
+            FAT4 CDDDD 4;
+            FAT4 C 4 { A_Stop(); }
+            FAT4 BA 4;
+            TNT1 A 0 {bNOPAIN = false ;}
+            Goto See;
+
+        // Death Fatality states
+        Death.Fatality:
+            TNT1 A 0 { A_Jump(256, "Fatality1", "Fatality2"); }
+            TNT1 A 0;
+            Stop;
+
+        Fatality1:
+            TNT1 A 0 { A_GiveToTarget("GoFatality", 1); }
+            TNT1 A 0 { A_GiveToTarget("FatsoFatality", 1); }
+            TNT1 A 1 { A_BossDeath(); }
+            TNT1 A 0;
+            Stop;
+
+        Fatality2:
+            TNT1 A 0 { A_GiveToTarget("GoFatality", 1); }
+            TNT1 A 0 { A_GiveToTarget("FatsoFatality2", 1); }
+            TNT1 A 1 { A_BossDeath(); }
+            TNT1 A 0;
+            Stop;
+
+        //////////////////////////////////
+
+        // Death with head damage (minorhead / head)
+        Death.minorhead:
+        Death.head:
+            TNT1 A 0 { A_JumpIfInTargetInventory("HasPlasmaWeapon", 1, "Death.Plasma"); }
+            TNT1 A 0 { A_SpawnItem("BloodSplasher2"); }
+            TNT1 A 0 { A_SpawnItem("MancubusHeadExplode", 0, 50); }
+            TNT1 A 0 { A_Jump(32, "DeathHead2"); }
+            FATT KKK 2 { A_SpawnProjectile("Brutal_LiquidBlood2", 50, 0, Random(0,360), 2, Random(30,50)); }
+            FATT LLL 2 { A_SpawnProjectile("Brutal_LiquidBlood2", 40, 0, Random(0,360), 2, Random(30,50)); }
+            FATT MMM 2 { A_SpawnProjectile("Brutal_LiquidBlood2", 30, 0, Random(0,360), 2, Random(20,50)); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 A 0 { A_BossDeath(); }
+            FATT NNOOPPQQRRSS 2 { A_SpawnProjectile("Brutal_LiquidBlood2", 20, 0, Random(0,360), 2, Random(20,50)); }
+            FATT TTTTTTTTTTTTTTTTTTTTTTT 2 { A_SpawnProjectile("Brutal_LiquidBlood2", 20, 0, Random(0,360), 2, Random(20,50)); }
+            TNT1 A 0 { A_SpawnItem("DeadFatNoHead", 1); }
+            TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
+            Stop;
+
+        DeathHead2:
+            TNT1 A 0 { A_BossDeath(); }
+            FATR L 6;
+            FATR M 6;
+            FATR NOPQR 6;
+            FATR S 6 { A_NoBlocking(); }
+            FATR T 6; // A_BossDeath call commented out in original
+            TNT1 A 0 { A_SpawnItem("Deadfat3", 1); }
+            Stop;
+
+        // Decapitation death
+        Death.decaptate:
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 AAAAAA 0 { A_SpawnProjectile("Xdeath1", 62, 0, Random(50,130), 2, Random(50,130)); }
+            TNT1 A 0 { A_SpawnProjectile("XdeathMancubusHead", 62, 0, Random(50,130), 2, Random(50,130)); }
+            FATT O 6 { A_Scream(); }
+            FATT P 6 { A_NoBlocking(); }
+            FATT QRS 6;
+            FATT T 1; // A_BossDeath call commented out
+            TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
+            TNT1 A 0 { A_SpawnItem("DeadFatNoHead", 1); }
+            Stop;
+
+        // Green Fire death state
+        Death.GreenFire:
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 A 0 { A_XScream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAAA 0 { A_SpawnProjectile("Brutal_Blood", 30, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAAA 0 { A_SpawnProjectile("XDeathBurnedMeat", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAAA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("Brutal_Blood", 30, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("XDeathBurnedMeat", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAAAAAAAAAAAAAAAAAAAA 0 { A_SpawnProjectile("GreenFlameTrails", 50, 0, Random(0,360), 2, Random(0,360)); }
+            XBRN AAAA 2 BRIGHT { A_SpawnItem("GreenFlare", 0, 43); }
+            Stop;
+
+        // Super Plasma death state
+        Death.SuperPlasma:
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 A 0 { A_XScream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAAAAAAA 0 { A_SpawnProjectile("Brutal_Blood", 30, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAAAA 0 { A_SpawnProjectile("XDeathBurnedMeat", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAAAA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("Brutal_Blood", 30, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("XDeathBurnedMeat", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            XBRN BB 2 BRIGHT { A_SpawnItem("BlueFlare", 0, 43); }
+            TNT1 A 0 { A_SpawnProjectile("Brutal_Blood", 30, 0, Random(0,360), 2, Random(0,160)); }
+            XBRN CC 2 BRIGHT { A_SpawnItem("BlueFlare", 0, 43); }
+            TNT1 AAAAA 0 { A_SpawnProjectile("PlasmaParticleX", 48, 0, Random(0,360), 2, Random(0,360)); }
+            TNT1 AAA 0 { A_SpawnProjectile("BigPlasmaParticleX", 42, 0, Random(0,360), 2, Random(0,360)); }
+            Stop;
+
+        // Standard death state with multiple jump choices
+        Death:
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 A 0 { A_Jump(32, "Death.Arm"); }
+            TNT1 A 0 { A_Jump(112, "Death2"); }
+            TNT1 A 0 { A_Jump(128, "Death3"); }
+            FATK A 6;
+            FATK B 6 { A_Scream(); }
+            FATK C 6 { A_NoBlocking(); }
+            FATK DEF 6 { A_SpawnProjectile("MuchBlood", 15, 0, Random(0,360), 2, Random(0,160)); }
+            FATK F 1; // (A_BossDeath call commented out)
+            TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
+            TNT1 A 0 { A_SpawnItem("DeadFat", 1); }
+            Stop;
+
+        // Frozen/death by ice variants
+        Death.Ice:
+        Death.IceExplosion:
+        Death.Freeze:
+        Death.Frost:
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 A 0 {bSHOOTABLE = false ;}
+            TNT1 A 0 {bSOLID = false ;}
+            TNT1 A 0 { A_SpawnItem("FrozenMancubus"); }
+            Stop;
+
+        // Alternate death state (Death2)
+        Death2:
+            TNT1 A 0 { A_BossDeath(); }
+            FAT3 K 6;
+            FAT3 L 6 { A_Scream(); }
+            FAT3 M 6 { A_NoBlocking(); }
+            FAT3 NOP 6 { A_SpawnProjectile("MuchBlood", 15, 0, Random(0,360), 2, Random(0,160)); }
+            FAT3 Q 6;
+            FAT3 R 6; // (A_BossDeath call commented out)
+            TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
+            TNT1 A 0 { A_SpawnItem("DeadFat2", 1); }
+            Stop;
+
+        // Alternate death state (Death3)
+        Death3:
+            TNT1 A 0 { A_BossDeath(); }
+            FAT3 A 1;
+            FAT3 B 6 { A_Scream(); }
+            FAT3 C 6 { A_NoBlocking(); }
+            FAT3 DEF 6;
+            FAT3 F 1; // (A_BossDeath call commented out)
+            FAT3 F 1 { A_SpawnItem("DeadFattyHoles", 1); }
+            Stop;
+
+        //////////////////////////////////
+
+        // Tear/gutting death state
+        Death.Tear:
+            TNT1 O 0 { A_Jump(128, "DeathGutted"); }
+            TNT1 AAA 0 { A_SpawnProjectile("MuchBlood", 35, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 O 0 { A_NoBlocking(); }
+            FAT2 KL 5 { A_SpawnProjectile("MuchBlood", 75, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("RipGuts", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeath1", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A 0 { A_BossDeath(); }
+            FAT2 MNOP 5 { A_SpawnProjectile("MuchBlood", 15, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
+            TNT1 A 0 { A_SpawnItem("NoGutsFatso", 1); }
+            Stop;
+
+        // Cut/saw death state
+        Death.Cut:
+        Death.Saw:
+            TNT1 O 0 { A_Jump(24, "DeathGutted"); }
+            TNT1 A 0;
+            TNT1 A 0 { A_Stop(); }
+            XFAT AB 4;
+            TNT1 O 0 { A_NoBlocking(); }
+            TNT1 AA 0 { A_SpawnProjectile("MuchBlood", 35, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("RipGuts", 40, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 40, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeath2b", 40, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeath3b", 40, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A 0 { A_BossDeath(); }
+            XFAT CDEF 5;
+            XFAT GH 5;
+            TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
+            TNT1 A 0 { A_SpawnItem("NoGutsFatso2", 1); }
+            TNT1 AAAAAAAAAAAAAAAAAA 4 { A_SpawnProjectile("Brutal_LiquidBlood2", 40, 0, Random(0,360), 2, Random(30,50)); }
+            TNT1 A -1;
+            Stop;
+
+		Death.cutless:
+		Death.Massacre:
+            TNT1 A 0 { A_Jump(32, "Death3"); }
+            TNT1 A 0 { A_Jump(20, "DeathGutted"); }
+
+        // Death.Arm
+        Death.Arm:
+            TNT1 A 0;
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 30, 0, Random(0,360), 2, Random(50,130)); }
+            TNT1 AA 0 { A_SpawnProjectile("MuchBlood", 55, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAAA 0 { A_SpawnProjectile("XDeath1", 40, 0, Random(0,360), 2, Random(0,160)); }
+            XFT1 AAAAAAAA 1 { A_SpawnProjectile("Brutal_LiquidBlood2", 50, 0, Random(0,360), 2, Random(30,50)); }
+            TNT1 A 0 { A_SpawnItem("DyingFatso01"); }
+            TNT1 A -1;
+            Stop;
+
+        // DeathGutted
+        DeathGutted:
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 AAA 0 { A_SpawnProjectile("MuchBlood", 35, 0, Random(0,360), 2, Random(0,160)); }
+            MXD1 AA 1 { A_SpawnProjectile("Brutal_LiquidBlood2", 40, 0, Random(0,360), 2, Random(30,60)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("XDeath1", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("xdeath2", 0, 0, Random(0,360), 2, Random(0,160)); }
+            MXD1 BBBBBB 1 { A_SpawnProjectile("Brutal_LiquidBlood2", 30, 0, Random(0,360), 2, Random(30,60)); }
+            TNT1 AAA 0 { A_SpawnProjectile("RipGuts", 25, 0, Random(0,360), 2, Random(0,160)); }
+            MXD1 CCCCCCC 1 { A_SpawnProjectile("Brutal_LiquidBlood2", 27, 0, Random(0,360), 2, Random(30,60)); }
+            TNT1 AAA 0 { A_SpawnProjectile("MuchBlood", 25, 0, Random(0,360), 2, Random(0,160)); }
+            MXD1 DDDDDDD 1 { A_SpawnProjectile("Brutal_LiquidBlood2", 24, 0, Random(0,360), 2, Random(30,60)); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 20, 0, Random(0,360), 2, Random(0,160)); }
+            MXD1 EEEEEEE 1 { A_SpawnProjectile("Brutal_LiquidBlood2", 21, 0, Random(0,360), 2, Random(30,60)); }
+            MXD1 FFFFFFGGGGGGG 1 { A_SpawnProjectile("Brutal_LiquidBlood2", 18, 0, Random(0,360), 2, Random(30,60)); }
+            MXD1 HHHHHHH 1 { A_SpawnProjectile("Brutal_LiquidBlood2", 15, 0, Random(0,360), 2, Random(30,60)); }
+            TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
+            MXD1 IIIIIIIIIIIIIIIIIIIIIIIIIIIIII 1 { A_SpawnProjectile("Brutal_LiquidBlood2", 12, 0, Random(0,360), 2, Random(30,60)); }
+            TNT1 A 0 { A_SpawnItem("DeadFatSlump", 1); }
+            Stop;
+
+        // Death.Shotgun
+        Death.Shotgun:
+            TNT1 A 0 { A_JumpIfCloser(250, 1); }
+            Goto Death;
+            TNT1 A 0 { A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG"); }
+            Goto Death;
+
+        // Death.Railgun
+        Death.Railgun:
+            TNT1 A 0 { A_Jump(100, "Death.SSG"); }
+
+        // Death.Blast
+        Death.Blast:
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeath1", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("xdeath2", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("RipGuts", 25, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 32, 0, Random(170,190), 2, Random(0,40)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("Brutal_FlyingBloodFaster", 32, 0, Random(170,190), 2, Random(0,40)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("Brutal_FlyingBloodMuchFaster", 32, 0, Random(170,190), 2, Random(0,40)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("SuperWallRedBlood", 32, 0, Random(170,190), 2, Random(0,40)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("SuperWallRedBlood", 46, 0, Random(170,190), 2, Random(0,40)); }
+            FAT5 AAAA 2 { A_SpawnProjectile("Brutal_LiquidBlood2", 40, 0, Random(0,360), 2, Random(30,60)); }
+            FAT5 B 6 { A_Scream(); }
+            TNT1 A 0 { A_SpawnProjectile("MuchBlood", 25, 0, Random(0,360), 2, Random(0,160)); }
+            FAT5 C 6 { A_NoBlocking(); }
+            FAT5 D 6 { A_SpawnProjectile("MuchBlood", 15, 0, Random(0,360), 2, Random(0,160)); }
+            FAT5 E 6; // BossDeath flag commented out
+            FAT5 EEEEEEEEE 2 { A_SpawnProjectile("Brutal_LiquidBlood2", 8, 0, Random(0,360), 2, Random(30,60)); }
+            TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
+            TNT1 A 0 { A_SpawnItem("DeadFat4", 1); }
+            Stop;
+
+        // Death.SSG
+        Death.SSG:
+            TNT1 A 0;
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 A 0 { A_Jump(96, "Death.Blast"); }
+            TNT1 A 0 { A_Stop(); }
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_noBlocking(); }
+            TNT1 A 0; // A_BossDeath commented out
+            TNT1 A 0 { A_Jump(255, "DeathSSG1", "DeathSSG2"); }
+
+        DeathSSG1:
+            TNT1 A 0;
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 40, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("MuchBlood", 55, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathMancubusArm", 30, 0, Random(0,360), 2, Random(50,130)); }
+            XFT2 AAAAAAAAAAAA 2 { A_SpawnProjectile("Brutal_LiquidBlood2", 50, 0, Random(0,360), 2, Random(30,50)); }
+            XFT2 BC 5;
+            TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
+            TNT1 A 0 { A_SpawnItem("DestroyedFatso1", 1); }
+            TNT1 A -1;
+            Stop;
+
+        DeathSSG2:
+            TNT1 A 0;
+            TNT1 A 0 { A_SpawnItem("MancubusHeadExplode", 0, 50); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathMancubusArm", 30, 0, Random(0,360), 2, Random(50,130)); }
+            TNT1 AAA 0 { A_SpawnProjectile("MuchBlood", 55, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAAA 0 { A_SpawnProjectile("XDeath1", 40, 0, Random(0,360), 2, Random(0,160)); }
+            XFT3 AAAAAAAAAAAAAAAAAAAAAAAA 2 { A_SpawnProjectile("Brutal_LiquidBlood2", 50, 0, Random(0,360), 2, Random(30,50)); }
+            XFT3 BC 6;
+            TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
+            TNT1 A 0 { A_SpawnItem("DestroyedFatso2", 1); }
+            TNT1 A -1;
+            Stop;
+
+        // Death.Disintegrate / Death.Plasma / Death.Plasma2 share the same behavior:
+        Death.Disintegrate:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            CRB7 G 5 BRIGHT;
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            CRB7 H 5 BRIGHT;
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            CRB7 IJ 5 BRIGHT;
+            CARB LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL 10 { A_SpawnProjectile("SmallSmoke", 1, 0, Random(0,360), 2, Random(0,160)); }
+            CARB L -1;
+            Stop;
+
+        // Death.Fire and Death.FireExplosion
+        Death.Fire:
+        Death.FireExplosion:
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 A 0 { A_Jump(162, "DeathFireLong"); }
+            FATK A 4;
+            FATK B 4 { A_Scream(); }
+            FATK C 4 { A_NoBlocking(); }
+            FATK D 4;
+            BF4T EF 4;
+            BF4T F 1; // BossDeath flag commented out
+            TNT1 A 0 { A_StartSound("props/redfire"); }
+            BF4T FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF 2 { A_SpawnProjectile("FlameTrails", 32, 0, Random(0,360), 2, Random(70,130)); }
+            BF4T FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF 10 { A_SpawnProjectile("PLasmaSmoke", 32, 0, Random(0,360), 2, Random(70,130)); }
+            BF4T F -1;
+            Stop;
+
+        DeathFireLong:
+            TNT1 A 0;
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 A 0 { A_SpawnItem("BurningFatso", 0, 10); }
+            Stop;
+
+        // XDeath and associated aliases
+        XDeath:
+        Death.QuadBlast:
+        Death.Explosives:
+        Death.ExplosiveImpact:
+        Death.Landmine:
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 A 0 { A_SpawnProjectile("MeatDeath", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAAAAAAAAAAAA 0 { A_SpawnProjectile("BloodMistExtraBig", 30, 0, Random(0,360), 2, Random(60,90)); }
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 20, 0, Random(0,360), 2, Random(50,130)); }
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusTorso", 20, 0, Random(0,360), 2, Random(50,130)); }
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusLeg", 20, 0, Random(0,360), 2, Random(50,130)); }
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusHead", 20, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAAA 0 { A_SpawnProjectile("XDeath2b", 20, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAAA 0 { A_SpawnProjectile("XDeath3b", 20, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("MuchBlood2", 50, 0, Random(0,360), 2, Random(0,160)); }
+            XFBT A 6 { A_Scream(); }
+            XFBT B 6 { A_NoBlocking(); }
+            XFBT CDEF 6; // BossDeath flag commented out
+            XFBT F 1;
+            TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
+            TNT1 A 0 { A_SpawnItem("XDeadFat", 1); }
+            Stop;
+
+        // Crush state
+        Crush:
+            TNT1 A 0 { A_BossDeath(); }
+            TNT1 A 0 { A_StartSound("misc/xdeath4"); }
+            CRS3 A 5; // BossDeath flag commented out
+            CRS3 A -1;
+            Stop;
+
+        // Pain.Taunt
+        Pain_Taunt:
+            TNT1 A 0;
+            SPOS B 0 { A_Pain(); }
+            TNT1 A 0 {bNOPAIN = true ;}
+            //TNT1 A 0 {bMISSILEMORE = true ;}
+            //TNT1 A 0 {bMISSILEEVENMORE = true ;}
+            TNT1 A 0 {MissileChanceMult = 0.0625;}
+            TNT1 A 0 { A_StartSound("demon/pain"); }
+            FATR A 1 { A_FaceTarget(); }
+            FATR A 10;
+            TNT1 A 0 { A_Pain(); }
+            FATR BAC 8;
+            TNT1 A 0 { A_Pain(); }
+            FATR ABAC 8;
+            TNT1 A 0 { A_Pain(); }
+            FATR ABAC 8;
+            TNT1 A 0 { A_GiveInventory("Enraged", 1); }
+            Goto Missile;
+
+        // Pain.KillMe
+        Pain_KillMe:
+            TNT1 A 0;
+            Goto Missile;
+
+        // Death.KillMe and Death.Taunt (alias)
+        Death.KillMe:
+        Death.Taunt:
+            TNT1 A 0 {bSOLID = false ;}
+            TNT1 A 0 { A_SpawnItem("Fatso"); }
+            Stop;
+    }
+}
+
+Class Mancubus_GroundFireSpawner : FT_GroundFireSpawner
+{
+	default
+	{
+		damagetype "Fire";
+		+NODAMAGETHRUST;
+		alpha 0.9;
+		renderstyle "add";
+		scale 1.0;
+		speed 10;
+		-NOBLOCKMAP;
+	}
+	
+	int LimitSpawners(double radius)
+	{
+		int LIMIT = 16; // 16 decent value
+		Array<Actor> spawnerList;
+		BlockThingsIterator it = BlockThingsIterator.Create(self, radius);
+		Actor potentialSpawner;
+		
+		// Collect all Mancubus_GroundFireSpawner actors in the radius.
+		while (it.Next())
+		{
+			 potentialSpawner = it.thing;
+			 // Check using the class name; adjust if needed.
+			 if (potentialSpawner != null && potentialSpawner.GetClassName() == "Mancubus_GroundFireSpawner")
+			 {
+				  spawnerList.Push(potentialSpawner);
+			 }
+		}
+		
+		int spawnerCount = spawnerList.Size();
+		if (spawnerCount > LIMIT)
+		{
+			 int toRemove = spawnerCount - LIMIT;
+			 // Remove extra spawners (optionally, skip self so you don't destroy the one doing the cleanup)
+			 for (int i = 0; i < spawnerList.Size() && toRemove > 0; i++)
+			 {
+				  if (spawnerList[i] == self)
+				  {
+					  continue;
+				  }
+				  spawnerList[i].Destroy();
+				  toRemove--;
+			 }
+		}
+		return spawnerCount;
+	}
+
+	
+	void ExplodeNoPain(double damage, double radius, Name damagetype)
+	{
+		
+		int spawnerCount = 0;
+		BlockThingsIterator spawnerIt = BlockThingsIterator.Create(self, radius);
+		Actor potentialSpawner;
+		while (spawnerIt.Next())
+		{
+			 potentialSpawner = spawnerIt.thing;
+			 // Count only if the actor is a Mancubus_GroundFireSpawner.
+			if (potentialSpawner != null && potentialSpawner.GetClassName() == "Mancubus_GroundFireSpawner")
+			{
+				spawnerCount++;
+			}
+
+		}
+		
+		int effectiveDamage = int(damage);
+		LimitSpawners(radius);
+		
+		if (spawnerCount > 16)
+		{
+			 // Calculate the chance that this instance will apply damage.
+			 // We want, on average, 2 instances out of spawnerCount to hit.
+			 int allowedChance = 35 ;
+			 // Simulate a random float between 0.0 and 0.9999.
+			 double chance = random(0, 100);
+			 if (chance > allowedChance)
+			 {
+				  return;
+			 }
+			 else
+			 {
+				  effectiveDamage = int(damage/2);
+			 }
+		}
+		
+
+		BlockThingsIterator it = BlockThingsIterator.Create(self, radius);
+		Actor Thing;
+		
+		while (it.Next())
+		{
+			 Thing = it.thing;
+			 // Make sure the thing exists and is really within radius.
+			 if (!Thing || Distance3D(Thing) > radius)
+			 {
+				 continue;
+			 }
+
+			if(Thing)
+			{
+				 if (Thing == target)
+				 {
+					 continue;
+				 }
+				 // Skip actors of the same species as the source.
+				 // Note: This assumes that the 'species' property is defined.
+				 if (target && Thing.species == target.species)
+				 {
+					 continue;
+				 }
+
+				 if (!Thing.bShootable || !Thing.bSolid)
+				 {
+					 continue;
+				 }
+				 if (Thing && Thing.health <= 0)
+				 {
+					 continue;
+				 }
+				 
+				 double angle = AngleTo(Thing);
+				 Thing.DamageMobj(self, self, damage, damagetype, DMG_NO_PAIN, angle);
+//				 Console.Printf("\ckClass: %s .", Thing.GetClassName() );
+				 
+				 if (Thing.player)
+				 {
+					Thing.A_SetBlend("Orange", 0.4, 24, "Orange");
+				 }
+			}
+		}
+	}
+
+	
+	
+	states
+	{
+		Spawn:
+			TNT1 A 0 A_jumpif(waterlevel > 0,"StopBurning");
+	//		TNT1 A 0 A_StartSound("props/torchfire", CHAN_BODY, CHANF_NOSTOP); old sound
+			TNT1 A 0 A_StartSound("fireBurning", CHAN_BODY, CHANF_NOSTOP);
+			TNT1 A 2 { ExplodeNoPain(2,42,"Fire"); }
+			TNT1 A 0 A_SpawnItemEx("FT_GroundFire", random(-24,24), random(-8,8), random(1,4));
+			TNT1 A 2 { ExplodeNoPain(2,42,"Fire");} 
+			TNT1 A 0 A_SpawnItemEx("FT_GroundFire2", random(-42,42), random(-28,28), random(0,6));
+/* 			TNT1 A 0 { A_Explode(2, 36, 0 | XF_EXPLICITDAMAGETYPE | XF_CIRCULAR | XF_NOTMISSILE  , 0, 36, damagetype: "Fire"); 
+						CountPotentialBlockers(60); } */			
+        TNT1 A 0 
+        { 
+            // Only execute the particle functions if there are 8 or fewer spawners.
+            if (LimitSpawners(60) <= 8)
+            {
+                SpawnParticleFast();
+                if (!pb_performance_fire && waterlevel < 1 && random(0,1) == 1)
+                {
+                    SpawnSmokeMed();
+                }
+            }
+        }
+			TNT1 A 0 A_Jump(7, "StopBurning");
+			Loop;
+		
+		StopBurning:
+			TNT1 A 0 A_StopSound(CHAN_BODY);
+			TNT1 AAAAAAAA 2;
+			Stop;
+	}
+}
+
+class MancubusFireTrail : Actor
+{
+    Default
+    {
+        Radius 1;
+        Height 1;
+        Speed 2; // Using 2 instead of 3 from FlameTrails to match the original SmallFireTrail
+        Damage 0;
+		Scale 1.0;
+        
+        +NOBLOCKMAP;
+        +NOTELEPORT;
+        +DONTSPLASH;
+        +MISSILE;
+        +FORCEXYBILLBOARD;
+        +NOINTERACTION;
+        +NOCLIP;
+        
+        RenderStyle "Add";
+        DamageType "Flames";
+        Scale 0.7;  // Uses SmallFireTrail's scale (0.7) instead of FlameTrails' (0.5)
+        Alpha 0.7;  // Uses SmallFireTrail's alpha (0.7) instead of FlameTrails' (1)
+        Gravity 0;
+    }
+
+    States
+    {
+    Spawn:
+        TNT1 A 0 nodelay;
+        FR3A ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 Bright;
+		FR3B ABCDEFG 1 Bright;
+        Stop;
+    }
+}
+
+
+Class MancubusFlame : PB_Monster_Projectile
+{
+    Default
+    {
+
+        Radius 7;
+        Height 7;
+        Speed 15;
+        DamageFunction 2;
+        Scale 0.5;
+        Alpha 1.0;
+        DamageType "Fire";
+        RenderStyle "Add";
+        +GETOWNER
+        +NOTELEPORT
+
+//        +FORCEXYBILLBOARD
+        +NOBLOOD
+        +NOBLOODDECALS
+        +BLOODLESSIMPACT
+        -BLOODSPLATTER
+
+    }
+
+    States
+    {
+
+		Spawn:
+			TNT1 A 0 { ThrustThingZ(0, drop_rate, 0, 1);  }
+/* 			FIR3 A 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 10)); }
+			FIR3 B 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FIR3 D 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 30)); }
+			FIR3 E 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FIR3 F 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 50)); }
+			FIR3 G 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FIR3 H 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(-10, 60)); }
+			FIR3 I 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); } */
+			FR3A A 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 10)); }
+			FR3A B 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FR3A D 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 30)); }
+			FR3A E 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FR3A F 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 50)); }
+			FR3A G 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FR3A H 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(-10, 60)); }
+			FR3A I 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FR3A J 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 10)); }
+			FR3A K 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FR3A L 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 30)); }
+			FR3A M 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FR3A N 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 50)); }
+			FR3A O 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FR3A P 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(-10, 60)); }
+			FR3A Q 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FR3A R 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 10)); }
+			FR3A S 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FR3A T 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 30)); }
+			FR3A U 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FR3A V 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 50)); }
+			FR3A W 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FR3A X 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(-10, 60)); }
+			FR3A Y 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); }
+			FR3A Z 1 Bright { ThrustThingZ(0, drop_rate, 0, 1); A_SpawnProjectile("MancubusFireTrail", 6, 0, 0, 2|SXF_TRANSFERSCALE, random(0, 10)); }
+
+
+			Loop;
+
+
+        Death:
+            FIR3 MNOP 1 ;
+            EXPL AA 0 { A_SpawnProjectile("FlamethrowerFireParticles", 6, 0, random(0, 360), 2, random(10, 90));
+					    A_SpawnItemEx("Mancubus_GroundFireSpawner", random (-25, 25), random (-15, 15),0,0 );
+					  }
+            Stop;
+    }
+}
+
+
+
+class BigFireBallGravity: PB_Monster_Projectile
+
+{
+	Default
+	{
+//		SpawnID 153;
+		Radius 6;
+		Height 8;
+		Speed 30;
+		Fastspeed 30;
+		DamageFunction random(20, 34);
+		Projectile;
+		Scale 0.71;
+		+FORCEXYBILLBOARD;
+		+THRUGHOST;
+		RenderStyle "Translucent";
+		DamageType "Fire";
+		ExplosionRadius 150;
+		ExplosionDamage 8;
+		Alpha 1;
+		Decal "Scorch";
+/* 		SeeSound "BREATHOF";
+		DeathSound "fatso/shotx"; */
+		SeeSound "FlameCannonFire";
+//		DeathSound "FireballExp";
+		
+	}
+
+	override void BeginPlay()
+    {
+   //     drop_rate = -5;  // Set your drop_rate here
+        Super.BeginPlay();
+    }
+	
+    States 
+    {
+        Spawn:
+            TNT1 A 0;
+            TNT1 A 0; // (Optional jump for low graphics mode commented out)
+            TNT1 A 0 { A_StartSound("FlameCannonFire", 6); }
+        Spawn1:
+            TNT1 A 0;
+            BLHD CD 1 BRIGHT {ThrustThingZ(0,drop_rate,0,1); }
+            TNT1 A 0 { A_SpawnItem("FireballExplosionFlamesSmall"); }
+            TNT1 A 0 { A_SpawnProjectile("RocketSmokeTrail52", 2, 0, Random(70,110), 2, Random(0,360)); }
+            Loop;
+        SpawnCheap:
+            TNT1 A 0 { A_SpawnItem("FireballExplosionFlamesSmall"); }
+            BLHD CD 1 BRIGHT { A_SpawnItem("RedFlare22"); }
+            Loop;
+        Death:
+            TNT1 A 0 { bNOGRAVITY = false ; A_StartSound("FireballExp",1);} //A_StartSound("FireballExp",1);
+            TNT1 A 0 { A_Explode(10,60,0); }
+       //     Goto ExplosionEffect;
+			Goto NewExplosion;
+        NewExplosion:
+			TNT1 A 0 Light("BIGREDTORCH");
+			FR1A ABCDEFGHIJKLMOPQR 2 BRIGHT;
+			Stop;
+		
+		ExplosionEffect:
+            TNT1 A 0;
+   //         TNT1 A 0 { A_StopSound(6); }
+            TNT1 A 0 { A_JumpIfInventory("lowgraphicsmode", 1, "DeathCheap"); }
+            TNT1 AAAA 0 { A_SpawnItemEx("ExplosionFlareSpawner", 0,0,0,0,0,0,0, SXF_NOCHECKPOSITION, 0); }
+            EXPL A 0 { A_SpawnItem("ExplosionParticleSpawner"); }
+            TNT1 AAA 0 { A_SpawnItemEx("BurningEmberParticlesFloating_Bigger_Faster", Random(12,-12), Random(12,-12), Random(2,12), 0,0,0,0,128,0); }
+            EXPL AAA 0 { A_SpawnProjectile("FlamethrowerFireParticles", 6, 0, Random(0,360), 2, Random(0,90)); }
+            TNT1 AA 0 { A_SpawnProjectile("FireworkSFXType2", 0, 0, Random(0,360), 2, Random(30,60)); }
+            TNT1 A 1 Light("BIGREDTORCH");
+            TNT1 AAAAAA 20 { A_SpawnProjectile("BigBlackSmoke", 0, 0, Random(0,360), 2, Random(40,160)); }
+            Stop;
+        DeathCheap:
+            TNT1 A 0 { A_StopSound(6); }
+            TNT1 AAAA 0 { A_SpawnItemEx("ExplosionFlareSpawner", 0,0,0,0,0,0,0, SXF_NOCHECKPOSITION, 0); }
+            EXPL A 0 { A_SpawnItem("ExplosionParticleSpawner"); }
+            EXPL AAA 0 { A_SpawnProjectile("FlamethrowerFireParticles", 6, 0, Random(0,360), 2, Random(0,90)); }
+            TNT1 AAA 20 { A_SpawnProjectile("BigBlackSmoke", 0, 0, Random(0,360), 2, Random(40,160)); }
+            Stop;
+    }
+
+
+}
+
+
+class BigFireBall : Actor 
+{
+	Default
+	{
+//		SpawnID 153;
+		Radius 6;
+		Height 8;
+		Speed 34;
+		Fastspeed 34;
+		DamageFunction random(20, 34);
+		Projectile;
+		Scale 0.71;
+		+FORCEXYBILLBOARD;
+		+THRUGHOST;
+		RenderStyle "Translucent";
+		DamageType "Fire";
+		ExplosionRadius 150;
+		ExplosionDamage 8;
+		Alpha 1;
+		Decal "Scorch";
+/* 		SeeSound "BREATHOF";
+		DeathSound "fatso/shotx"; */
+		SeeSound "FlameCannonFire";
+		DeathSound "FireballExp";
+	}
+
+	
+    States 
+    {
+        Spawn:
+            TNT1 A 0;
+            TNT1 A 0; // (Optional jump for low graphics mode commented out)
+            TNT1 A 0 { A_StartSound("BGFLMBL", 6, 1, 1); }
+        Spawn1:
+            TNT1 A 0;
+            BLHD CD 1 BRIGHT;
+            TNT1 A 0 { A_SpawnItem("FireballExplosionFlamesSmall"); }
+            TNT1 A 0 { A_SpawnProjectile("RocketSmokeTrail52", 2, 0, Random(70,110), 2, Random(0,360)); }
+            Loop;
+        SpawnCheap:
+            TNT1 A 0 { A_SpawnItem("FireballExplosionFlamesSmall"); }
+            BLHD CD 1 BRIGHT { A_SpawnItem("RedFlare22"); }
+            Loop;
+        Death:
+            TNT1 A 0 { bNOGRAVITY = false ; } //A_StartSound("FireballExp",1);
+            TNT1 A 0 { A_Explode(10,50,0); }
+       //     Goto ExplosionEffect;
+			Goto NewExplosion;
+        NewExplosion:
+			TNT1 A 0 Light("BIGREDTORCH");
+			FR1A ABCDEFGHIJKLMOPQR 2 BRIGHT;
+			Stop;
+        
+		ExplosionEffect:
+            TNT1 A 0;
+     //       TNT1 A 0 { A_StopSound(6); }
+            TNT1 A 0 { A_JumpIfInventory("lowgraphicsmode", 1, "DeathCheap"); }
+            TNT1 AAAA 0 { A_SpawnItemEx("ExplosionFlareSpawner", 0,0,0,0,0,0,0, SXF_NOCHECKPOSITION, 0); }
+            EXPL A 0 { A_SpawnItem("ExplosionParticleSpawner"); }
+            TNT1 AAA 0 { A_SpawnItemEx("BurningEmberParticlesFloating_Bigger_Faster", Random(12,-12), Random(12,-12), Random(2,12), 0,0,0,0,128,0); }
+            EXPL AAA 0 { A_SpawnProjectile("FlamethrowerFireParticles", 6, 0, Random(0,360), 2, Random(0,90)); }
+            TNT1 AA 0 { A_SpawnProjectile("FireworkSFXType2", 0, 0, Random(0,360), 2, Random(30,60)); }
+            TNT1 A 1 Light("BIGREDTORCH");
+            TNT1 AAAAAA 20 { A_SpawnProjectile("BigBlackSmoke", 0, 0, Random(0,360), 2, Random(40,160)); }
+            Stop;
+        DeathCheap:
+            TNT1 A 0 { A_StopSound(6); }
+            TNT1 AAAA 0 { A_SpawnItemEx("ExplosionFlareSpawner", 0,0,0,0,0,0,0, SXF_NOCHECKPOSITION, 0); }
+            EXPL A 0 { A_SpawnItem("ExplosionParticleSpawner"); }
+            EXPL AAA 0 { A_SpawnProjectile("FlamethrowerFireParticles", 6, 0, Random(0,360), 2, Random(0,90)); }
+            TNT1 AAA 20 { A_SpawnProjectile("BigBlackSmoke", 0, 0, Random(0,360), 2, Random(40,160)); }
+            Stop;
+    }
+}
+class NoGutsFatso : CurbstompedMarine 
+{
+    Default 
+    {
+        Radius 24;
+        Mass 10000;
+        Health 500;
+        Scale 1.1;
+    }
+    States 
+    {
+        Spawn:
+            FAT2 PPPP 9;
+            FAT2 PPP 1 { A_SpawnItemEx("SwarmFly", frandom(-16,16), frandom(-16,16), frandom(-16,16)); }
+            FAT2 P -1;
+            Stop;
+        Death:
+            TNT1 A 0 { A_SpawnProjectile("MuchMeatDeath", 2, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A 0 { A_SpawnItem("NoGutsFatso_RemovedWeapon", 1); }
+            Stop;
+        Death.flames:
+        Death.burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            CARB LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL 10 { A_SpawnProjectile("SmallSmoke", 1, 0, Random(0,360), 2, Random(0,160)); }
+            CARB L -1;
+            Stop;
+        Death.Cut:
+        Death.Saw:
+            TNT1 A 0;
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("xdeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("xdeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A 0 { A_SpawnItem("NoGutsFatso_RemovedWeapon", 1); }
+            Stop;
+    }
+}
+
+class NoGutsFatso_RemovedWeapon : NoGutsFatso 
+{
+    Default 
+    {
+        Health 500;
+    }
+    States 
+    {
+        Spawn:
+            FAT2 Q 1;
+            Loop;
+        Death.flames:
+        Death.burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            CARB OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO 10 { A_SpawnProjectile("SmallSmoke", 1, 0, Random(0,360), 2, Random(0,160)); }
+            CARB O -1;
+            Stop;
+        Death:
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            FAT2 Z -1;
+            Stop;
+    }
+}
+
+class DeadFat : Actor 
+{
+	Default
+	{
+		Radius 39;
+		Height 23;
+		Scale 1.2;
+		+SHOOTABLE;
+		-SOLID;
+		+NOTELEPORT;
+		+MOVEWITHSECTOR;
+		-CORPSE;
+		-DONTGIB; // Adjust as needed
+		-TELESTOMP;
+		Mass 1000;
+		Health 500;
+		Species "Marine";
+
+		DamageFactor "Blood", 0.0;
+		DamageFactor "Trample", 0.0;
+		DamageFactor "Cut", 4.0;
+		DamageFactor "Saw", 4.0;
+		DamageFactor "Tear", 4.0;
+	}
+    States 
+    {
+        Spawn:
+            FATK F -1;
+            Stop;
+        Death:
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A 0 { A_SpawnItem("DeadFatNoArm", 1); }
+            Stop;
+        Death.flames:
+        Death.burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            CARB LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL 10 { A_SpawnProjectile("SmallSmoke", 1, 0, Random(0,360), 2, Random(0,160)); }
+            CARB L -1;
+            Stop;
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A 0 { A_SpawnItem("DeadFatNoArm", 1); }
+            Stop;
+    }
+}
+
+class Deadfat2 : Deadfat 
+{
+    States
+    {
+        Spawn:
+            FAT3 RRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRRR 10;
+            FAT3 RRRRR 1 { A_SpawnItemEx("SwarmFly", Random(-16,16), Random(-16,16), Random(-16,16)); }
+            FAT3 R -1;
+            Stop;
+
+        Death.flames:
+        Death.burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            CARB OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO 10 { A_SpawnProjectile("SmallSmoke", 1, 0, Random(0,360), 2, Random(0,160)); }
+            CARB O -1;
+            Stop;
+
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0;
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            FAT2 U 1 { A_SpawnItem("Deadfat2NoArm", 1); }
+            Stop;
+    }
+}
+
+class DeadFat2NoArm : Actor
+{
+	Default
+	{
+		Radius 39;
+		Height 28;
+		Scale 1.2;
+		+SHOOTABLE;
+		-SOLID;
+		+NOTELEPORT;
+		+MOVEWITHSECTOR;
+		-CORPSE;
+		-DONTGIB; // Adjust as needed
+		-TELESTOMP;
+		Mass 1000;
+		Health 500;
+		Species "Marine";
+
+		DamageFactor "Blood", 0.0;
+		DamageFactor "Trample", 0.0;
+		DamageFactor "Cut", 4.0;
+		DamageFactor "Saw", 4.0;
+		DamageFactor "Tear", 4.0;
+	}
+    States
+    {
+        Spawn:
+            FAT2 UUUUUUUUUUUUUU 12;
+            FAT2 UU 1 { A_SpawnItemEx("SwarmFly", Random(-16,16), Random(-16,16), Random(-16,16)); }
+            FAT2 U -1;
+            Stop;
+
+        Death.flames:
+        Death.burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            CARB OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO 10 { A_SpawnProjectile("SmallSmoke", 1, 0, Random(0,360), 2, Random(0,160)); }
+            CARB O -1;
+            Stop;
+
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0;
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            FAT2 T -1;
+            Stop;
+    }
+}
+
+class Deadfat3 : DeadFat 
+{
+    States
+    {
+        Spawn:
+            FATR TTTTTTTTTTTTTTTTTTTTTTTTTTTT 10;
+            FATR TTTT 1 { A_SpawnItemEx("SwarmFly", Random(-16,16), Random(-16,16), Random(-16,16)); }
+            FATR T -1;
+            Stop;
+
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0;
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            FAT2 W 1 { A_SpawnItem("Deadfat3_RemovedWeapon", 1); }
+            Stop;
+    }
+}
+
+class Deadfat3_RemovedWeapon : DeadFat 
+{
+    States
+    {
+        Spawn:
+            FAT2 W -1;
+            Stop;
+
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0;
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            FAT2 V -1;
+            Stop;
+    }
+}
+
+class Deadfat4 : DeadFat 
+{
+    States
+    {
+        Spawn:
+            FAT5 EEEEEEEEEEEEEEEEEEEEEEEEEEEEEEEE 10;
+            FAT5 EEEE 1 { A_SpawnItemEx("SwarmFly", Random(-16,16), Random(-16,16), Random(-16,16)); }
+            FAT5 E -1;
+            Stop;
+
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0;
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            FAT2 W 1 { A_SpawnItem("Deadfat4_RemovedWeapon", 1); }
+            Stop;
+    }
+}
+
+//--------------------------------------------------------------
+// Actor: Deadfat4_RemovedWeapon (inherits from DeadFat)
+class Deadfat4_RemovedWeapon : DeadFat
+{
+    States
+    {
+        Spawn:
+            FAT5 F -1;
+            Stop;
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0;
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            FAT5 G -1;
+            Stop;
+    }
+}
+
+//--------------------------------------------------------------
+// Actor: DeadFatNoArm (base: Actor)
+class DeadFatNoArm : Actor
+{
+   	Default
+	{
+		Radius 39;
+		Height 25;
+		Scale 1.2;
+		+SHOOTABLE;
+		-SOLID;
+		+NOTELEPORT;
+		+MOVEWITHSECTOR;
+		-CORPSE;
+		-DONTGIB; // Adjust as needed
+		-TELESTOMP;
+		Mass 1000;
+		Health 500;
+		Species "Marine";
+
+		DamageFactor "Blood", 0.0;
+		DamageFactor "Trample", 0.0;
+		DamageFactor "Cut", 4.0;
+		DamageFactor "Saw", 4.0;
+		DamageFactor "Tear", 4.0;
+	}
+    States
+    {
+        Spawn:
+            FATK GGGGGGGGGGGGGGGGGGG 12;
+            FATK GGGG 1 { A_SpawnItemEx("SwarmFly", frandom(-16,16), frandom(-16,16), frandom(-16,16)); }
+            FATK G -1;
+            Stop;
+        Death.flames:
+        Death.burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            CARB OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO 10 { A_SpawnProjectile("SmallSmoke", 1, 0, Random(0,360), 2, Random(0,160)); }
+            CARB O -1;
+            Stop;
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0;
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            FAT2 Y -1;
+            Stop;
+    }
+}
+
+//--------------------------------------------------------------
+// Actor: DeadFatNoHead (inherits from DeadFat)
+class DeadFatNoHead : DeadFat
+{
+    Default
+    {
+        Health 500;
+    }
+    States
+    {
+        Spawn:
+            FATT TTTTTTTTTTTTTTTTTT 10;
+            FATT TT 1 { A_SpawnItemEx("SwarmFly", frandom(-16,16), frandom(-16,16), frandom(-16,16)); }
+            FATT T -1;
+            Stop;
+        Death:
+            TNT1 AA 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A -1;
+            Stop;
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+            TNT1 A 0;
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A 0 { A_SpawnItem("DeadFatNoHead_RemovedWeapon", 1); }
+            TNT1 A -1;
+            Stop;
+    }
+}
+
+//--------------------------------------------------------------
+// Actor: DeadFatNoHead_RemovedWeapon (inherits from DeadFat)
+class DeadFatNoHead_RemovedWeapon : DeadFat
+{
+    Default 
+	{ 
+		Health 500; 
+	}
+    States
+    {
+        Spawn:
+            FAT2 RRRRRRRRRRRRRRRRRRRRRRRRRRRRR 16;
+            FAT2 RRR 1 { A_SpawnItemEx("SwarmFly", frandom(-16,16), frandom(-16,16), frandom(-16,16)); }
+            FAT2 R -1;
+            Stop;
+        Death.flames:
+        Death.burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            CARB OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO 10 { A_SpawnProjectile("SmallSmoke", 1, 0, Random(0,360), 2, Random(0,160)); }
+            CARB O -1;
+            Stop;
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            FAT2 X -1;
+            Stop;
+    }
+}
+
+//--------------------------------------------------------------
+// Actor: XDeadFat (inherits from DeadFat)
+class XDeadFat : DeadFat
+{
+        Default 
+	{ 
+		Health 500; 
+	}
+    States
+    {
+        Spawn:
+            XFBT FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF 10;
+            XFBT FFFFF 1 { A_SpawnItemEx("SwarmFly", frandom(-16,16), frandom(-16,16), frandom(-16,16)); }
+            XFBT F -1;
+            Stop;
+        Death.flames:
+        Death.burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            CARB OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO 10 { A_SpawnProjectile("SmallSmoke", 1, 0, Random(0,360), 2, Random(0,160)); }
+            CARB O -1;
+            Stop;
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A -1;
+            Stop;
+    }
+}
+
+//--------------------------------------------------------------
+// Actor: FatalizedFatso (inherits from DeadFat)
+class FatalizedFatso : DeadFat
+{
+    Default
+    {
+        Scale 1.0;
+        Health 500;
+    }
+    States
+    {
+        Spawn:
+            FATF F 1 { A_StartSound("fatso/pain"); }
+            FATF FFEE 10 { A_SpawnProjectile("Blood", 35, 0, Random(0,360), 2, Random(0,160)); }
+            FATF F 1 { A_StartSound("fatso/pain"); }
+            FATF FFEE 10 { A_SpawnProjectile("Blood", 35, 0, Random(0,360), 2, Random(0,160)); }
+            FATF F 1 { A_StartSound("fatso/pain"); }
+            FATF FFEE 10 { A_SpawnProjectile("Blood", 35, 0, Random(0,360), 2, Random(0,160)); }
+            FATF F 1 { A_StartSound("fatso/pain"); }
+            FATF FF 10 { A_SpawnProjectile("Blood", 35, 0, Random(0,360), 2, Random(0,160)); }
+            FATF E 1 { A_StartSound("fatso/death"); }
+            FATF EEEEEEEEE 4 { A_SpawnProjectile("Blood", 35, 0, Random(0,360), 2, Random(0,160)); }
+            FATF E -1;
+            Stop;
+        Death.flames:
+        Death.burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            CARB LLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLLL 10 { A_SpawnProjectile("SmallSmoke", 1, 0, Random(0,360), 2, Random(0,160)); }
+            CARB L -1;
+            Stop;
+        Death:
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A 0 { A_SpawnItem("NoGutsFatso_RemovedWeapon", 1); }
+            TNT1 A -1;
+            Stop;
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 A 0 { A_SpawnItem("NoGutsFatso_RemovedWeapon", 1); }
+            TNT1 A -1;
+            Stop;
+    }
+}
+
+//--------------------------------------------------------------
+// Actor: FatalizedFatso2 (inherits from DeadFat)
+class FatalizedFatso2 : DeadFat
+{
+        Default 
+	{ 
+		Health 500; 
+	}
+    States
+    {
+        Spawn:
+            FAFT R -1;
+            Stop;
+        Death.Cutless:
+        Death:
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            Stop;
+    }
+}
+
+//--------------------------------------------------------------
+// Actor: DeadFattyHoles (inherits from Deadfat)
+class DeadFattyHoles : Deadfat
+{
+    States
+    {
+        Spawn:
+            FAT3 FFFFFFFFFFFFFFFFF 10;
+            FAT3 FFFFF 1 { A_SpawnItemEx("SwarmFly", frandom(-16,16), frandom(-16,16), frandom(-16,16)); }
+            FAT3 F -1;
+            Stop;
+        Death.flames:
+        Death.burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            CARB OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO 10 { A_SpawnProjectile("SmallSmoke", 1, 0, Random(0,360), 2, Random(0,160)); }
+            CARB O -1;
+            Stop;
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            FAT3 G 1 { A_SpawnItem("DeadFattyHolesNoArm", 1); }
+            Stop;
+    }
+}
+
+//--------------------------------------------------------------
+// Actor: DeadFattyHolesNoArm (inherits from Deadfat)
+class DeadFattyHolesNoArm : Deadfat
+{
+    States
+    {
+        Spawn:
+            FAT3 G -1;
+            Stop;
+        Death.flames:
+        Death.burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            CARB OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO 10 { A_SpawnProjectile("SmallSmoke", 1, 0, Random(0,360), 2, Random(0,160)); }
+            CARB O -1;
+            Stop;
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath2", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath3", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAA 0 { A_SpawnProjectile("XDeath4", 5, 0, Random(0,360), 2, Random(0,160)); }
+            FAT3 X -1;
+            Stop;
+    }
+}
+
+//--------------------------------------------------------------
+// Actor: DeadFatsoNoArm (inherits from DeadFat)
+class DeadFatsoNoArm : DeadFat
+{
+        Default 
+	{ 
+		Health 500; 
+	}
+    States
+    {
+        Spawn:
+            XFT1 D -1;
+            Stop;
+        Death.flames:
+        Death.burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AA 0 { A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, Random(0,360), 2, Random(0,160)); }
+            EXPL AAAAAA 0 { A_SpawnProjectile("ExplosionSmoke", 32, 0, Random(0,360), 2, Random(0,360)); }
+            Stop;
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+		Death:
+            TNT1 A 0 { A_SpawnItem("GutsPile"); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { A_SpawnProjectile("UltraGoreSpawner", 5, 0, Random(0,360), 2, Random(30,60)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("XDeath1", 5, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("XDeath2b", 25, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("XDeath3b", 25, 0, Random(0,360), 2, Random(0,160)); }
+            TNT1 AAAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 30, 0, Random(0,360), 2, Random(40,90)); }
+            TNT1 AAAAAAA 0 { A_SpawnProjectile("XDeathSkinPiece2", 25, 0, Random(0,360), 2, Random(0,160)); }
+			TNT1 A 0 { A_SpawnProjectile("XDeathMancubusArm", 0, 0, Random(0,360), 2, Random(0,160)); }
+            Stop;
+   }
+}
+
+class DeadFatSlump : Deadfat
+{
+    Default
+    {
+        +NOINTERACTION
+    }
+
+    States
+    {
+        Spawn:
+            MXD1 IIIIIIIIIIIIIIII 10;
+            MXD1 IIII 1 {
+                A_SpawnItemEx("SwarmFly", frandom(-16, 16), frandom(-16, 16), frandom(-16, 16));
+            }
+            MXD1 I -1;
+            Stop;
+
+        Death.Flames:
+        Death.Burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 A_Scream;
+            TNT1 A 0 A_NoBlocking;
+            TNT1 AAA 0 {
+                A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, random(0, 360), 2, random(0, 160));
+            }
+            EXPL AAAAAA 0 A_SpawnProjectile("ExplosionSmoke", 32, 0, random(0, 360), 2, random(0, 360));
+            CARB OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO 10 
+                A_SpawnProjectile("SmallSmoke", 1, 0, random(0, 360), 2, random(0, 160));
+            CARB O -1;
+            Stop;
+
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0;
+            TNT1 A 0 A_SpawnProjectile("XDeathMancubusArm", 0, 0, random(0, 360), 2, random(0, 160));
+            TNT1 AAA 0 {
+                A_SpawnProjectile("XDeath1", 5, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("XDeath2", 5, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("XDeath3", 5, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("XDeath4", 5, 0, random(0, 360), 2, random(0, 160));
+            }
+            FAT3 Z 1 A_SpawnItem("DeadFatSlumpNoArm", 1);
+            Stop;
+    }
+}
+
+class DeadFatSlumpNoArm : Deadfat
+{
+    Default
+    {
+        +NOINTERACTION
+    }
+
+    States
+    {
+        Spawn:
+            FAT3 Z -1;
+            Stop;
+
+        Death.Flames:
+        Death.Burn:
+        Death.Plasma:
+        Death.Plasma2:
+            TNT1 A 0;
+            TNT1 A 0 A_Scream;
+            TNT1 A 0 A_NoBlocking;
+            TNT1 AAA 0 {
+                A_SpawnProjectile("Brutal_FlyingBlood", 50, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("XDeathBurnedMeat3", 32, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("XDeathBurnedMeat2", 32, 0, random(0, 360), 2, random(0, 160));
+            }
+            EXPL AAAAAA 0 A_SpawnProjectile("ExplosionSmoke", 32, 0, random(0, 360), 2, random(0, 360));
+            CARB OOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOOO 10 
+                A_SpawnProjectile("SmallSmoke", 1, 0, random(0, 360), 2, random(0, 160));
+            CARB O -1;
+            Stop;
+
+        Death.Cutless:
+        Death.Cut:
+        Death.Saw:
+        Death:
+            TNT1 A 0;
+            TNT1 A 0 A_SpawnProjectile("XDeathMancubusArm", 0, 0, random(0, 360), 2, random(0, 160));
+            TNT1 AAA 0 {
+                A_SpawnProjectile("XDeath1", 5, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("XDeath2", 5, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("XDeath3", 5, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("XDeath4", 5, 0, random(0, 360), 2, random(0, 160));
+            }
+            FAT3 Y -1;
+            Stop;
+    }
+}
+
+// Shorter classes with simple state definitions
+class NoGutsFatso2 : NoGutsFatso
+{
+    Default
+    {
+        Health 500;
+    }
+
+    States
+    {
+        Spawn:
+            XFAT I -1;
+            Stop;
+    }
+}
+
+class DestroyedFatso1 : DeadFat
+{
+    Default
+    {
+        Health 500;
+    }
+
+    States
+    {
+        Spawn:
+            XFT2 D -1;
+            Stop;
+
+        Death:
+            TNT1 A 0 A_SpawnItem("GutsPile");
+            TNT1 A 0 A_NoBlocking;
+            TNT1 AAA 0 {
+                A_SpawnProjectile("UltraGoreSpawner", 5, 0, random(0, 360), 2, random(30, 60));
+                A_SpawnProjectile("XDeath1", 5, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("XDeath2b", 25, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("XDeath3b", 25, 0, random(0, 360), 2, random(0, 160));
+                A_SpawnProjectile("Brutal_FlyingBlood", 30, 0, random(0, 360), 2, random(40, 90));
+            }
+            TNT1 AAAAAAA 0 A_SpawnProjectile("XDeathSkinPiece2", 25, 0, random(0, 360), 2, random(0, 160));
+            TNT1 AAAA 0 A_SpawnProjectile("XDeathSkinPiece1", 25, 0, random(0, 360), 2, random(0, 160));
+            TNT1 AAAAAAAA 0 A_SpawnProjectile("SmallSuperGore", 30, 0, random(0, 360), 2, random(10, 170));
+            TNT1 AA 0 A_SpawnProjectile("XDeathMancubusLeg", 20, 0, random(0, 360), 2, random(40, 160));
+            Stop;
+    }
+}
+
+
+class DestroyedFatso2 : DeadFat
+{
+    Default
+    {
+        Health 500;
+    }
+
+    States
+    {
+    Spawn:
+        XFT3 D -1;
+        Stop;
+
+    Death:
+        TNT1 A 0 A_SpawnItem("GutsPile");
+        TNT1 A 0 A_NoBlocking;
+        TNT1 AAA 0 A_SpawnProjectile("UltraGoreSpawner", 5, 0, random(0, 360), 2, random(30, 60));
+        TNT1 AAAA 0 A_SpawnProjectile("XDeath1", 5, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AAAA 0 A_SpawnProjectile("XDeath2b", 25, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AAAA 0 A_SpawnProjectile("XDeath3b", 25, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AAAA 0 A_SpawnProjectile("Brutal_FlyingBlood", 30, 0, random(0, 360), 2, random(40, 90));
+        TNT1 AAAAAAA 0 A_SpawnProjectile("XDeathSkinPiece2", 25, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AAAA 0 A_SpawnProjectile("XDeathSkinPiece1", 25, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AAAAAAAA 0 A_SpawnProjectile("SmallSuperGore", 30, 0, random(0, 360), 2, random(10, 170));
+        TNT1 AA 0 A_SpawnProjectile("XDeathMancubusLeg", 20, 0, random(0, 360), 2, random(40, 160));
+        Stop;
+    }
+}
+
+class DeadFatLegStumps : DeadFat
+{
+    Default
+    {
+        Health 200;
+    }
+
+    States
+    {
+    Spawn:
+        XFT4 C -1;
+        Stop;
+
+    Death:
+        TNT1 A 0 A_NoBlocking;
+        TNT1 AA 0 A_SpawnProjectile("MuchBlood2", 35, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AAAA 0 A_SpawnProjectile("XDeath2b", 25, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AAAA 0 A_SpawnProjectile("XDeath3b", 25, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AAAA 0 A_SpawnProjectile("Instestin", 30, 0, random(0, 360), 2, random(40, 90));
+        TNT1 AAA 0 A_SpawnProjectile("XDeathSkinPiece2", 25, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AA 0 A_SpawnProjectile("XDeathSkinPiece1", 25, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AA 0 A_SpawnProjectile("XDeathMancubusLeg", 20, 0, random(0, 360), 2, random(40, 160));
+        Stop;
+    }
+}
+
+class DyingFatso01 : NoGutsFatso
+{
+    Default
+    {
+        Scale 1.0;
+        Health 130;
+        Radius 28;
+        Height 56;
+        -THRUACTORS;
+    }
+
+    States
+    {
+    Spawn:
+        XFT1 A 1 A_StartSound("fatso/pain");
+        XFT1 EEEEEEEEEEEEEEEE 3 A_SpawnProjectile("Brutal_LiquidBlood2", 40, 0, random(0, 360), 2, random(30, 50));
+        XFT1 A 3 A_StartSound("fatso/pain");
+        XFT1 EEEEEEEEEEEEEEEE 3 A_SpawnProjectile("Brutal_LiquidBlood2", 40, 0, random(0, 360), 2, random(30, 50));
+        XFT1 A 3 A_StartSound("fatso/pain");
+        XFT1 EEEEEEEEEEEEEEEE 3 A_SpawnProjectile("Brutal_LiquidBlood2", 40, 0, random(0, 360), 2, random(30, 50));
+        XFT1 A 3 A_StartSound("fatso/pain");
+        XFT1 EEEEEEEEEEEEEEEE 3 A_SpawnProjectile("Brutal_LiquidBlood2", 40, 0, random(0, 360), 2, random(30, 50));
+        TNT1 A 0;
+        TNT1 A 0 A_NoBlocking(false);
+        TNT1 A 0 A_Scream;
+        XFT1 BC 4;
+        TNT1 A 0 A_SpawnItem("DeadFatsoNoArm");
+        Stop;
+
+	Death.Cut:
+	Death.Saw:
+    Death:
+        TNT1 A 0 { A_NoBlocking(); }
+        TNT1 A 0 A_NoBlocking;
+        TNT1 A 0 A_StartSound("fatso/pain");
+        TNT1 AAA 0 A_SpawnProjectile("XDeath1", 40, 0, random(0, 360), 2, random(0, 160));
+        TNT1 A 0 A_SpawnProjectile("MuchBlood2", 55, 0, random(0, 360), 2, random(0, 160));
+        TNT1 A 0 A_SpawnProjectile("XDeathMancubusArm", 30, 0, random(0, 360), 2, random(50, 130));
+        XFT2 AAAAAAA 2 A_SpawnProjectile("Brutal_LiquidBlood2", 50, 0, random(0, 360), 2, random(30, 50));
+        TNT1 A 0 A_SpawnItem("DyingFatso02");
+        Stop;
+    }
+}
+
+class DyingFatso02 : DyingFatso01
+{
+    States
+    {
+    Spawn:
+        XFT2 AAAAAAAAAAAAAAAAAAAAAAAAAAAA 2 A_SpawnProjectile("Brutal_LiquidBlood2", 50, 0, random(0, 360), 2, random(30, 50));
+        TNT1 A 0 A_NoBlocking(false);
+        TNT1 A 0 A_Scream;
+        XFT2 BC 4;
+        TNT1 A 0 A_SpawnItem("DestroyedFatso1");
+        Stop;
+
+	Death.Cut:
+	Death.Saw:
+    Death:
+        TNT1 A 0 { A_NoBlocking(); }
+        TNT1 A 0 A_SpawnItem("MancubusHeadExplode", 0, 50);
+        TNT1 A 0 A_SpawnProjectile("MuchBlood2", 55, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AAAAA 0 A_SpawnProjectile("XDeath1", 40, 0, random(0, 360), 2, random(0, 160));
+        XFT3 AAA 2 A_SpawnProjectile("Brutal_LiquidBlood2", 50, 0, random(0, 360), 2, random(30, 50));
+        TNT1 A 0 A_SpawnItem("DyingFatso03");
+        Stop;
+    }
+}
+
+class DyingFatso03 : DyingFatso02
+{
+    States
+    {
+    Spawn:
+        XFT3 AAAAAAAAAAAAAAAAAAAAAAAAAAAA 2 A_SpawnProjectile("Brutal_LiquidBlood2", 50, 0, random(0, 360), 2, random(30, 50));
+        TNT1 A 0 A_NoBlocking(false);
+        TNT1 A 0 A_Scream;
+        XFT3 B 4;
+        TNT1 A 0 A_SpawnItem("DestroyedFatso2");
+        Stop;
+		
+	Death.Cut:
+	Death.Saw:
+    Death:
+        TNT1 A 0 { A_NoBlocking(); }
+        TNT1 A 0 { A_SpawnProjectile("MuchBlood", 75, 0, Random(0,360), 2, Random(0,160)); }
+        TNT1 AA 0 { A_SpawnProjectile("RipGuts", 0, 0, Random(0,360), 2, Random(0,160)); }
+        TNT1 A 0 A_SpawnProjectile("MuchBlood2", 55, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AAAAA 0 A_SpawnProjectile("XDeath1", 40, 0, random(0, 360), 2, random(0, 160));
+        TNT1 AAA 0 A_SpawnProjectile("Brutal_LiquidBlood2", 50, 0, random(0, 360), 2, random(30, 50));
+		TNT1 A 0 { A_SpawnProjectile("XDeathMancubusTorso", 20, 0, Random(0,360), 2, Random(50,130)); }
+		XFT4 AAAAAA 5 A_SpawnProjectile("PB_SquirtingBloodTrail", 15, 0, random(0, 360), 2, random(0, 160));
+		XFT4 AB 6;
+		XFT4 C 0 A_SpawnItem("DeadFatLegStumps");
+        Stop;
+    }
+}
+
+/* class Vanilla_Mancubus : PB_Mancubus
+{
+    States
+    {
+    Spawn:
+        FATT B 1;
+        TNT1 A 0 ACS_NamedExecuteAlways("MancubusFlamethrower", 0);
+        Goto Stand;
+
+    Stand:
+        TNT1 A 0 A_CheckSight("Stand2");
+        TNT1 A 0;
+        FATT B 10 A_Look;
+        Loop;
+    }
+} */

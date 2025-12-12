@@ -31,6 +31,7 @@
 //===========================================================================
 
 const STAT_PB_SMOKE = Thinker.STAT_USER_MAX - 2;
+const STAT_PB_DROPLETS = Thinker.STAT_USER_MAX - 3;
 const SLAUGHTERMAP_DIST = 1000.0;
 const MAP_EPSILON = 1 / 65536.;
 
@@ -178,6 +179,37 @@ class NashGoreStatics play
 			}
 		}
 	}
+
+    static void QueueDroplet(void)
+	{
+		let eh = NashGoreHandler(NashGoreHandler.Find("NashGoreHandler"));
+		if (eh)
+		{
+			// get max gore count
+			int countmax = ceil(eh.maxgore * 0.1);
+
+			// count current amount of gore objects
+			ThinkerIterator it = ThinkerIterator.Create("PB_BloodSpotTiny", STAT_PB_DROPLETS);
+			Actor mo;
+			int count;
+			while (mo = Actor(it.Next()))
+			{
+				count++;
+			}
+
+			// clean up excessive gore
+			while (count > countmax)
+			{
+				// destroy the first one it can find
+				it.Reinit();
+				if (mo = Actor(it.Next()))
+				{		
+                    mo.Destroy();
+					count--;
+				}
+			}
+		}
+	}
 	
 	static void QueueCasings(void)
 	{
@@ -188,7 +220,7 @@ class NashGoreStatics play
 			int countmax = eh.maxcasings;
 
 			// count current amount of casings objects
-			ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_PB_BULLETS);
+			ThinkerIterator it = ThinkerIterator.Create("PB_CasingBase", STAT_PB_BULLETS);
 			Actor mo;
 			int count;
 			while (mo = Actor(it.Next()))
@@ -202,14 +234,10 @@ class NashGoreStatics play
 				// destroy the first one it can find
 				it.Reinit();
 				if (mo = Actor(it.Next()))
-				{		
-					bool valid = mo is "PB_CasingBase" || mo is "EmptyMagBase";
-
-					if (valid) {
-						// console.printf("cleaned up casing %p", mo);
+				{
+					//if (valid) {
 						mo.Destroy();
-						//Console.Printf("Cleaning Gibs");
-					}
+					//}
 					count--;
 				}
 			}
@@ -228,7 +256,7 @@ class NashGoreStatics play
 		}
 
 		// clean up excessive smoke
-		while (count > 24)
+		while (count > 50)
 		{
 			// destroy the first one it can find
 			it.Reinit();
@@ -252,7 +280,7 @@ class NashGoreStatics play
 	{
 		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_NashGore_Gore);
 		ThinkerIterator pb = ThinkerIterator.Create("Actor", STAT_PB_BULLETS);
-		ThinkerIterator sm = ThinkerIterator.Create("Actor", STAT_PB_SMOKE);
+		ThinkerIterator sm = ThinkerIterator.Create("Actor", STAT_PB_DROPLETS);
 		Actor mo;
 		while (mo = Actor(it.Next()))
 		{
@@ -431,6 +459,7 @@ class NashGoreStatics play
 		{
 			self.Pitch = norm.Z < 0.0 ? 180.0 : 0.0;
 			self.Roll = 0.0;
+            self.Angle += 90 * random(0, 2);
 			return;
 		}
 
@@ -453,12 +482,12 @@ class NashGoreStatics play
 		// This check will never work, therefore just skip it entirely
 		if (self.Pitch != 0 || self.Roll != 0) return false;
 
-		for (int x = 0; x < self.Radius * 2; x++)
+		for (int x = 0; x < self.RenderRadius * 2; x++)
 		{
-			for (int y = 0; y < self.Radius * 2; y++)
+			for (int y = 0; y < self.RenderRadius * 2; y++)
 			{
-				double zatx = (self.Pos.X - self.Radius) + x;
-				double zaty = (self.Pos.Y - self.Radius) + y;
+				double zatx = (self.Pos.X - self.RenderRadius) + x;
+				double zaty = (self.Pos.Y - self.RenderRadius) + y;
 
 				// the sample points must actually be a different sector
 				Sector curSec = self.CurSector;
@@ -468,16 +497,12 @@ class NashGoreStatics play
 				if (!ceiling)
 				{
 					if (self.GetZAt(zatx, zaty, flags: GZF_ABSOLUTEPOS) < self.Pos.Z && curSec != testSec)
-					{
 						return true;
-					}
 				}
 				else
 				{
-					if (self.GetZAt(zatx, zaty, flags: GZF_ABSOLUTEPOS | GZF_CEILING) > (self.Pos.Z + 2) && curSec != testSec)
-					{
+					if (self.GetZAt(zatx, zaty, flags: GZF_ABSOLUTEPOS | GZF_CEILING) > (self.Pos.Z) && curSec != testSec)
 						return true;
-					}
 				}
 			}
 		}
@@ -488,7 +513,7 @@ class NashGoreStatics play
 	static int, int GetAmountMult(double cv, int chance = 0)
 	{
 		int amt = int(cv);
-		if (amt < 1)
+		if (amt <= 1)
 			amt = 1;
 
 		int cmul = int(chance + (256 - chance) * (1.0 - cv));

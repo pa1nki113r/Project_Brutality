@@ -4,12 +4,11 @@ class PB_EventHandler : EventHandler
 	PB_GlobalStats Stats;
 	
 	ui double dashAlpha, dashScale;
-	int tick;
-	
+
 	bool HatExists;
 	int HatMonth;
 	
-	int taunttimer;
+	int taunttimer[MAXPLAYERS];
 	const tauntcooldown = 40;
 	
 	bool WSuSinMap;	//check for WolfensteinSS	
@@ -22,14 +21,11 @@ class PB_EventHandler : EventHandler
 	
 	override void WorldTick()
 	{
-		tick++;
-		
-		playerinfo plr = players[consoleplayer];
-        if (!plr)
-            return;
-			
-		if(taunttimer > 0)
-			taunttimer--;
+        for(int i = 0; i < taunttimer.Size(); i++)
+        {
+            if(taunttimer[i] > 0)
+                taunttimer[i]--;
+        }
 	}
 	
 	override void NetworkProcess(ConsoleEvent e)
@@ -46,7 +42,7 @@ class PB_EventHandler : EventHandler
 		
 		if (e.Name ~== "RequestTaunt")
 		{	
-			if(taunttimer == 0)
+			if(taunttimer[e.Player] == 0)
 			{
 				let pbweap = PB_WeaponBase(pm.player.readyweapon);
 				/*if(pbweap)
@@ -56,7 +52,7 @@ class PB_EventHandler : EventHandler
 				if((players[e.Player].weaponstate & WF_WEAPONREADY) || (pbweap && pbweap.PB_WeaponIsInReadyState() ))
 				{
 					//set the cooldown
-					taunttimer = tauntcooldown;
+					taunttimer[e.Player] = tauntcooldown;
 					
 					//give the taunt weapon and cast it to pass the actual weapon
 					//so it can return to it later
@@ -338,6 +334,35 @@ class PB_EventHandler : EventHandler
 			holder.FixState();
 		}
 	}
+
+    Override Void WorldThingDied(WorldEvent e)
+	{
+        if(!e.thing || !e.Inflictor) return;
+
+        if(e.thing.bismonster && e.Inflictor is 'UnmakerBeamPuff')
+        {
+            if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 4, CVar.GetCvar("pb_helpflags", players[consoleplayer])))
+            {
+                Array<String> pbTipsBuf;
+                pbTipsBuf.Push("By killing enemies with the Unmaker, you will earn souls.");
+                pbTipsBuf.Push("When your soul bar is full, you can use the Weapon Special button to switch to overcharge mode.");
+                pbTipsBuf.Push("Overcharge mode will deplete your soul bar and a bit of ammo until it your soul bar is empty.");
+                PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 4);
+            }
+        }
+    }
+
+    override void PlayerDied(PlayerEvent e)
+    {
+        PlayerInfo plr = players[e.PlayerNumber];
+        if(plr)
+        {
+            PlayerPawn p = plr.mo;
+            PB_FPP_Holder holder = PB_FPP_Holder(p.FindInventory("PB_FPP_Holder"));
+            if(holder && holder.on)
+                holder.Disable();
+        }
+    }
 	
 	//Festive Hats handling
 	
@@ -364,9 +389,26 @@ class PB_EventHandler : EventHandler
 			HatExists = true;
 		}
 		
-		if(e.Thing.bROLLSPRITE)
+		if(e.Thing.bROLLSPRITE && !e.thing.bSQUAREPIXELS)
 			e.Thing.bSTRETCHPIXELS = true;
 	}
+	
+	 /* [Pop] Keeping this here so its backed up, in may become useful
+	 switch(e.Thing.bloodcolor)
+        {
+            case Color("Blue"): // this is blue blood
+                console.printf("set blue blood enemy translation");
+                e.Thing.bloodtranslation = Translation.GetID("PB_TRNSLATE_BloodBlue");
+                break;
+            case Color("Green"): // this is green blood
+                console.printf("set green blood enemy translation");
+                e.Thing.bloodtranslation = Translation.GetID("PB_TRNSLATE_BloodGreen");
+                break;
+                
+            default:
+                break;
+        }
+	*/
 	
 	//////////////////////
 	
@@ -445,24 +487,24 @@ class PB_EventHandler : EventHandler
 			//
 			//	Monsters
 			//
-			case 'ZombieMan':				e.replacement = 'PBZombieManSpawner';			break;
-			case 'ShotgunGuy':				e.replacement = 'PBShotgunGuySpawner';			break;
-			case 'DoomImp':					e.replacement = 'PBImpSpawner';					break;
-			case 'Demon':					e.replacement = 'PBPinkySpawner';				break;
-			case 'Spectre':					e.replacement = 'PBSpectreSpawner';				break;
-			case 'ChaingunGuy':				e.replacement = 'PBChainGunGuySpawner';			break;
-			case 'Cacodemon':				e.replacement = 'PBCacoDemonSpawner';			break;
-			case 'HellKnight':				e.replacement = 'PBHKSpawner';					break;
-			case 'Arachnotron':				e.replacement = 'PBArachnotronSpawner';			break;
-			case 'BaronOfHell':				e.replacement = 'PBBOHSpawner';					break;
-			case 'Revenant':				e.replacement = 'PBRevSpawner';					break;
-			case 'LostSoul':				e.replacement = 'PBLSSpawner';					break;
-			case 'PainElemental':			e.replacement = 'PBPESpawner';					break;
-			case 'ArchVile':				e.replacement = 'PBArchVileSpawner';			break;
-			case 'Fatso':					e.replacement = 'PBMancubusSpawner';			break;
-			case 'Cyberdemon':				e.replacement = 'PBCyberDemonSpawner';			break;
-			case 'SpiderMastermind':		e.replacement = 'PBSpiderMasterMindSpawner';	break;
-			case 'WolfensteinSS':			e.replacement = 'EvilNaziSpawner';	WSuSinMap = true;	break;
+			case 'ZombieMan':				e.replacement = pb_vanillamonster_override ? 'Zombieman' : 'PBZombieManSpawner';						break;
+			case 'ShotgunGuy':				e.replacement = pb_vanillamonster_override ? 'ShotgunGuy' : 'PBShotgunGuySpawner';						break;
+			case 'DoomImp':					e.replacement = pb_vanillamonster_override ? 'DoomImp' : 'PBImpSpawner';								break;
+			case 'Demon':					e.replacement = pb_vanillamonster_override ? 'Demon' : 'PBPinkySpawner';								break;
+			case 'Spectre':					e.replacement = pb_vanillamonster_override ? 'Spectre' : 'PBSpectreSpawner';							break;
+			case 'ChaingunGuy':				e.replacement = pb_vanillamonster_override ? 'ChaingunGuy' : 'PBChainGunGuySpawner';					break;
+			case 'Cacodemon':				e.replacement = pb_vanillamonster_override ? 'Cacodemon' : 'PBCacoDemonSpawner';						break;
+			case 'HellKnight':				e.replacement = pb_vanillamonster_override ? 'HellKnight' : 'PBHKSpawner';								break;
+			case 'Arachnotron':				e.replacement = pb_vanillamonster_override ? 'Arachnotron' : 'PBArachnotronSpawner';					break;
+			case 'BaronOfHell':				e.replacement = pb_vanillamonster_override ? 'BaronOfHell' : 'PBBOHSpawner';							break;
+			case 'Revenant':				e.replacement = pb_vanillamonster_override ? 'Revenant' : 'PBRevSpawner';								break;
+			case 'LostSoul':				e.replacement = pb_vanillamonster_override ? 'LostSoul' : 'PBLSSpawner';								break;
+			case 'PainElemental':			e.replacement = pb_vanillamonster_override ? 'PainElemental' : 'PBPESpawner';							break;
+			case 'ArchVile':				e.replacement = pb_vanillamonster_override ? 'ArchVile' : 'PBArchVileSpawner';							break;
+			case 'Fatso':					e.replacement = pb_vanillamonster_override ? 'Fatso' : 'PBMancubusSpawner';								break;
+			case 'Cyberdemon':				e.replacement = pb_vanillamonster_override ? 'Cyberdemon' : 'PBCyberDemonSpawner';						break;
+			case 'SpiderMastermind':		e.replacement = pb_vanillamonster_override ? 'SpiderMastermind' : 'PBSpiderMasterMindSpawner';			break;
+			case 'WolfensteinSS':			e.replacement = pb_vanillamonster_override ? 'WolfensteinSS' : 'EvilNaziSpawner';	WSuSinMap = true;	break;
 
 			//
 			//	Stealth Monsters
@@ -493,32 +535,141 @@ class PB_EventHandler : EventHandler
 		switch(e.replacement.getclassname())
 		{
 			//cyberdemon
-			case 'PB_Annihilator': e.replacee = 'Cyberdemon'; Break;
-			case 'PB_Cyberdemon': e.replacee = 'Cyberdemon'; Break;
+			case 'PB_Annihilator': case 'PB_Cyberdemon1':
+				e.replacee = 'Cyberdemon'; Break;
 			
 			//mastermind
-			case 'PB_Demolisher': e.replacee = 'SpiderMastermind'; Break;
-			case 'PB_Juggernaut': e.replacee = 'SpiderMastermind'; Break;
-			case 'PB_Mastermind': e.replacee = 'SpiderMastermind'; Break;
+			case 'PB_Demolisher': case 'PB_Juggernaut': case 'PB_Mastermind':
+				e.replacee = 'SpiderMastermind'; Break;
 			
 			//barons
-			case 'PB_Infernus': e.replacee = 'BaronOfHell'; Break;
-			case 'PB_CyberBaron': e.replacee = 'BaronofHell'; Break;
-			case 'PB_Belphegor': e.replacee = 'BaronofHell'; Break;
-			case 'PB_Baron': e.replacee = 'BaronofHell'; Break;
+			case 'PB_Infernus': case 'PB_CyberBaron':
+			case 'PB_Belphegor': case 'PB_Baron1': e.replacee = 'BaronofHell'; Break;
 			
 			//spiders
-			case 'PB_Arachnophyte': e.replacee = 'Arachnotron'; Break;
-			case 'PB_Arachnotron': e.replacee = 'Arachnotron'; Break;
-			case 'Aracnorb': e.replacee = 'Arachnotron'; Break;
-			case 'PB_EliteArachnotron': e.replacee = 'Arachnotron'; Break;
-			case 'PB_InfernalArachnotron': e.replacee = 'Arachnotron'; Break;
+			case 'PB_Arachnophyte': case 'Aracnorb': case 'PB_EliteArachnotron':
+			case 'PB_InfernalArachnotron': case 'PB_Arachnotron1': case 'PB_Arachnotron1Buffed':
+				e.replacee = 'Arachnotron'; Break;
 			
 			//mancubi
-			case 'PB_Daedabus': e.replacee = 'Fatso'; Break;
-			case 'PB_Mancubus': e.replacee = 'Fatso'; Break;
-			case 'PB_Volcabus': e.replacee = 'Fatso'; Break;
+			case 'PB_Daedabus': case 'PB_Volcabus': case 'PB_Mancubus1':
+				e.replacee = 'Fatso'; Break;
 		}
 	}
 	
+}
+
+class PB_CallSignHandler : CustomStringCVar {
+	override String ModifyValue(Name CVarName, String val) {
+		String newval = val.Left(3);
+        newval = newval.MakeUpper();
+        return newval;
+	}
+}
+
+class PB_MPNameHandler : EventHandler
+{
+    Font mNameFont;
+    pb_ProjScreen _projection;
+    FLineTraceData camTrace;
+    TextureID dotTexture, nameArrowTexture;
+
+    override void OnRegister()
+    {
+        mNameFont = Font.FindFont("PBBOLD");
+        _projection = new("pb_ProjScreen");
+        dotTexture = TexMan.CheckForTexture("GRAPHICS/MPColorDot.png");
+        nameArrowTexture = TexMan.CheckForTexture("GRAPHICS/MPNameArrow.png");
+    }
+
+    override void WorldTick()
+    {
+        PlayerInfo plr = players[consoleplayer];
+        if(!plr) return;
+        Actor act = plr.Camera;
+        if(!act) return;        
+        act.LineTrace(act.angle, 2048, act.pitch, offsetz: plr.viewz - act.pos.z, data: camTrace);
+    }
+    
+    override void RenderUnderlay(RenderEvent e)
+    {
+        if(automapactive)
+            return;
+            
+        vector2 namePos, drawOffsets;
+        bool lookingAtBuddy;
+		
+        for(int i = 0; i < players.Size(); i++)
+        {
+            PlayerInfo buddy = players[i];
+            if(!buddy || !buddy.mo) continue;
+            if(e.camera == buddy.mo) continue;
+
+            double buddyDist = buddy.mo.Distance3D(e.camera);
+            double clampedScalar = 1.0 - clamp(buddyDist / 1000.f, 0, 0.5);
+            double clampedAlph = clampedScalar;
+
+            double relAng = Actor.DeltaAngle(e.Camera.angle, e.Camera.AngleTo(buddy.mo));
+            if(relAng > 90 || relAng < -90) continue;
+            
+            lookingAtBuddy = (camTrace.HitActor == buddy.mo);
+            string nickname = lookingAtBuddy ? buddy.GetUserName() : CVar.GetCVar("pb_mpcallsign", buddy).GetString();
+            if(!lookingAtBuddy)
+            {
+                if(deathmatch || (teamplay && buddy.GetTeam() != players[consolePlayer].GetTeam()))
+                    continue;
+
+                nickname = nickname.Left(3);
+                nickname = nickname.MakeUpper();
+            }
+
+            nickname = String.Format("%s", nickname);
+
+            namePos = MakeDrawPos(e, buddy.mo.pos, buddy.mo.Height + 3);
+
+            color buddyCol = PB_Math.PB_DesaturateColor(buddy.GetDisplayColor(), 0, 1.0);
+
+            double resScaled = 1.35 * (Screen.GetHeight() / 1080.f);
+            clampedScalar *= resScaled;
+            drawOffsets = (mNameFont.StringWidth(nickname) / 2.f, mNameFont.GetHeight()) * (lookingAtBuddy ? resScaled : clampedScalar);
+
+            Screen.DrawTexture(nameArrowTexture, false, namePos.x, namePos.y, DTA_ScaleX, (lookingAtBuddy ? resScaled : clampedScalar) * 0.35, DTA_ScaleY, (lookingAtBuddy ? resScaled : clampedScalar) * 0.35, DTA_CenterBottomOffset, true, DTA_Alpha, lookingAtBuddy ? 1.0 : clampedAlph + 0.25);
+
+            drawOffsets.y += 5 * (lookingAtBuddy ? resScaled : clampedScalar);
+
+            Screen.DrawText(mNameFont, teamplay ? Teams[buddy.GetTeam()].GetTextColor() : Font.CR_UNTRANSLATED, namePos.x - drawOffsets.x, namePos.y - drawOffsets.y, nickname, DTA_Alpha, lookingAtBuddy ? 1.0 : clampedAlph + 0.25, DTA_ScaleX, lookingAtBuddy ? resScaled : clampedScalar, DTA_ScaleY, lookingAtBuddy ? resScaled : clampedScalar);
+
+            vector2 dotPos;
+            if(lookingAtBuddy)
+            {
+                dotPos = (namePos.x - drawOffsets.x - 5 * resScaled, namePos.y - drawOffsets.y / 1.5);
+            }
+            else
+            {
+                clampedScalar *= 1.4;
+                dotPos = (namePos.x, namePos.y - drawOffsets.y - 3 * clampedScalar);
+            }
+
+            Screen.DrawTexture(dotTexture, false, dotPos.x, dotPos.y, DTA_Color, buddyCol, DTA_ScaleX, (lookingAtBuddy ? resScaled : clampedScalar) * 0.12, DTA_ScaleY, (lookingAtBuddy ? resScaled : clampedScalar) * 0.12, DTA_CenterOffset, true);
+        }
+    }
+    
+    ui vector2 MakeDrawPos(RenderEvent event, vector3 pos, double offset)
+    {
+        PlayerInfo player = players[consolePlayer];
+
+        _projection.cacheResolution();
+        _projection.cacheFov(player.fov);
+        _projection.orientForRenderOverlay(event);
+        _projection.beginProjection();
+
+        _projection.projectWorldPos(pos + (0, 0, offset));
+
+        pb_Viewport viewport;
+        viewport.fromHud();
+
+        Vector2 drawPos = viewport.sceneToWindow(_projection.projectToNormal());
+
+        return drawPos;
+    }
 }

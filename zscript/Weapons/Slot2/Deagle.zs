@@ -2,19 +2,21 @@ class PB_Deagle : PB_WeaponBase
 {
 	default
 	{
-		weapon.slotnumber 2;							
-		weapon.ammotype1 "PB_LowCalMag";								
-		weapon.ammogive1 8;		
+		weapon.slotnumber 2;
+		weapon.ammotype1 "PB_LowCalMag";
+		weapon.ammogive1 8;	
 		weapon.ammotype2 "DeagleAmmo";
+		weapon.slotpriority 1;
+		PB_WeaponBase.ReserveToMagAmmoFactor 2;
 		PB_WeaponBase.AmmoTypeLeft "LeftDeagleAmmo";
 		Inventory.MaxAmount 2;
-		PB_WeaponBase.unloadertoken "DeagleHasUnloaded";	
-		PB_WeaponBase.respectItem "RespectDeagle";		
+		PB_WeaponBase.unloadertoken "DeagleHasUnloaded";
+		PB_WeaponBase.respectItem "RespectDeagle";
 		PB_WeaponBase.DualWieldToken "DualWieldingDeagles";	
 		Inventory.PickupSound "weapons/deagle/equip";
 		inventory.pickupmessage "UAC-H54 Martian Raptor .50 (Slot 2, Upgrade)";
 		Obituary "%o was popped by %k's .50 Caliber Hand Cannon.";
-		Inventory.AltHUDIcon "D4E0Z0";					
+		Inventory.AltHUDIcon "D4E0Z0";
 		PB_WeaponBase.TailPitch 0.6;
 		+weapon.CHEATNOTWEAPON;
 		+weapon.noalert;
@@ -36,7 +38,7 @@ class PB_Deagle : PB_WeaponBase
 		WeaponRespect:
 			TNT1 A 0 {
 				A_SetInventory("PB_LockScreenTilt",1);
-				A_SetCrosshair(5);
+				A_SetCrosshair(-1);
 				}
 			D4E1 ABCDEEE 1 A_DoPBWeaponAction();
 			D4E1 FGHIJK 1 A_DoPBWeaponAction();
@@ -130,6 +132,7 @@ class PB_Deagle : PB_WeaponBase
 					A_AlertMonsters();
 					PB_IncrementHeat(2);
 					PB_GunSmoke_Deagle(0,5,5);
+                    PB_MuzzleFlashEffects(0,5,5);
 					A_FireProjectile("YellowFlareSpawn",0,0,0,0);
 					PB_SpawnCasing("EmptyBrassDeagle",30,0,31,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
 					A_Takeinventory("DeagleAmmo",1);
@@ -242,7 +245,7 @@ class PB_Deagle : PB_WeaponBase
 				A_SetInventory("Zoomed",0);
 				A_ZoomFactor(1.0);
 				A_WeaponOffset(0,32);
-				PB_HandleCrosshair(5);
+				A_SetCrosshair(-1);
 			}
 			TNT1 A 0 PB_jumpIfHasBarrel("IdleBarrel","IdleFlameBarrel","IdleIceBarrel");
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReloadDualWield");
@@ -250,7 +253,7 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 {
 				A_setinventory(invoker.UnloaderToken,0);
 				A_ZoomFactor(1.0);
-				PB_HandleCrosshair(5);
+				A_SetCrosshair(-1);
 				A_SetInventory("ADSmode",0);
 				A_SetInventory("Zoomed",0);
 				A_SetInventory("PB_LockScreenTilt",1);
@@ -351,6 +354,12 @@ class PB_Deagle : PB_WeaponBase
 			
 		//partial but both
 			DR34 ABCDE 1;
+			TNT1 A 0 {
+				if(CountInv("DeagleAmmo") < 2)
+					PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,-2,-2,false);
+				if(CountInv("LeftDeagleAmmo") < 2)
+					PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
+			}
 			TNT1 A 0 A_Startsound("weapons/deagle/magout",22,CHANF_OVERLAP);
 			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
 			DR34 F 1;
@@ -388,6 +397,10 @@ class PB_Deagle : PB_WeaponBase
 		OnlyReloadLeft:
 			TNT1 A 0 A_Startsound("Ironsights", 23,CHANF_OVERLAP);
 			DR33 ABCDE 1;
+			TNT1 A 0 {
+				if(CountInv("LeftDeagleAmmo") < 2)
+					PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
+			}
 			TNT1 A 0 A_Startsound("weapons/deagle/magout",25,CHANF_OVERLAP);
 			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
 			DR33 F 1;
@@ -508,7 +521,8 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 {
 				if(!findinventory(invoker.UnloaderToken))
 					PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
-					//A_fireprojectile("EmptyDeagleMag",5,0,-12,-4);
+				if(CountInv("DeagleAmmo") < 2)
+					PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,2,-2,false);
 			}
 			DR10 MNOP 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
@@ -547,7 +561,8 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 {
 				if(!findinventory(invoker.UnloaderToken))
 					PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,-2,-2,false);
-					//A_fireprojectile("EmptyDeagleMag",5,0,12,-4);
+				if(CountInv("LeftDeagleAmmo") < 2)
+					PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
 			}
 			DR20 MNOP 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
@@ -632,7 +647,7 @@ class PB_Deagle : PB_WeaponBase
 				 A_StartSound("IronSights", 13,CHANF_OVERLAP);
 				 A_SetInventory("Zoomed",1);
 				 A_ZoomFactor(1.3);
-				 PB_HandleCrosshair(5);
+				 A_SetCrosshair(-1);
 			}
 			D3E1 ABCDE 1;
 			Goto Ready2;
@@ -640,9 +655,9 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 {
 				A_SetInventory("Zoomed",0);
 				A_ZoomFactor(1.0);
-				PB_HandleCrosshair(42);
 			}
 			D3E1 EDCBA 1;
+			TNT1 A 0 PB_HandleCrosshair(42);
 			Goto Ready3;
 		
 		Ready2:
@@ -689,6 +704,7 @@ class PB_Deagle : PB_WeaponBase
 					A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 					A_AlertMonsters();
 					PB_GunSmoke_Deagle(0,5,5);
+                    PB_MuzzleFlashEffects(0,5,5);
 					PB_IncrementHeat(2);
 					A_FireProjectile("YellowFlareSpawn",0,0,0,0);
 					PB_SpawnCasing("EmptyBrassDeagle",26,0,38,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
@@ -874,6 +890,7 @@ class PB_Deagle : PB_WeaponBase
 				A_SetFiringLeftWeapon(True);
 				A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,-6,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 				PB_GunSmoke_Deagle(15,0,6);
+                PB_MuzzleFlashEffects(15,0,6);
 				PB_SpawnCasing("EmptyBrassDeagle",26,-12,38,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
 				A_StartSound("weapons/deagle/fire", 0, CHANF_OVERLAP, 1.0);
 				A_StartSound("weapons/deagle/afire", 0, CHANF_OVERLAP, 0.70);
@@ -968,6 +985,7 @@ class PB_Deagle : PB_WeaponBase
 					A_SetFiringRightWeapon(True);
 					A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,6,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 					PB_GunSmoke_Deagle(-15,0,6);
+                    PB_MuzzleFlashEffects(-15,0,6);
 					PB_SpawnCasing("EmptyBrassDeagle",26,25,38,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
 					A_StartSound("weapons/deagle/fire", 0, CHANF_OVERLAP, 1.0);
 					A_StartSound("weapons/deagle/afire", 0, CHANF_OVERLAP, 0.70);

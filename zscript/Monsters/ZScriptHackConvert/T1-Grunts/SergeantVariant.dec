@@ -1,0 +1,1540 @@
+ACTOR MonsterRiotTracer: Tracer
+{
++BLOODSPLATTER 
++THRUGHOST
+-DONTSPLASH
++THRUACTORS
+speed 90
+damage (random(2,4))
+seesound "SmallerDistantGunshot"
+damagetype Bullet
+Decal "BulletChip"
+States
+{
+Spawn:
+	TRAC A 1 BRIGHT
+	TNT1 A 0 A_ChangeFlag("THRUACTORS", 0)
+Fly:
+	TRAC A 1 BRIGHT
+	Loop
+Death:
+    TNT1 A 1 A_SpawnItem("HitPuff")
+    Stop
+}
+}
+
+ACTOR RiotShieldDestroyed : Inventory
+{Inventory.MaxAmount 1}
+
+ACTOR RiotShieldStop : Inventory
+{Inventory.MaxAmount 1}
+
+ACTOR RiotShieldDrop
+{
+	Health 1000000000000
+	Mass 5
+	Radius 4
+	Height 2
+	+NoTarget
+	//+NeverTarget
+	+CantSeek
+	-CountKill
+	+NonShootable
+	+NoRadiusDmg
+	+DropOff
+	+NoTeleport
+	+Corpse
+	+NotAutoaimed
+	+NoBlood
+	+Notarget
+	+Friendly
+	States
+	{
+	Spawn:
+		
+	Fly:
+		5L1D ABCDEFGH 3 A_CheckFloor("Ground")
+		Loop
+	Ground:
+		TNT1 A 0 A_PlaySound ("barrel/pain")
+		5L1D I 2100 A_SetFloorClip
+	Death:
+		5L1D I -1
+		Stop
+	}
+}
+
+ACTOR RiotShieldGuy : PB_RiotShieldGuy //Replaces ShotgunGuy
+{
+	SpawnID 1220
+}
+
+ACTOR PB_HelmetSergeant : PB_ShotgunGuyHelmet //Replaces ShotgunGuy
+{
+	SpawnID 1210
+}
+
+ACTOR NewFuelTankPhysics: HeadshotTargetBase
+{
+	Speed 9
+	+NOTARGET
+	damagefactor "Taunt", 0.00
+	damagefactor "Blood", 0.00
+	damagefactor "BlueBlood", 0.00
+	damagefactor "Head", 0.0
+	damagefactor "MinorHead", 0.0
+	damagefactor "KillMe", 0.0
+	damagefactor "DestroyShield", 0.0
+	damagefactor "ExtremePunches", 0.0
+	damagefactor "Kick", 0.00
+	damagefactor "Melee", 0.00
+	damagefactor "Burn", 0.00
+	damagefactor "Flames", 0.00
+	damagefactor "Fire", 0.00
+	Health 20
+	Radius 18
+	Height 24
+	BloodType "HitPuff"
+	PainChance 255
+	DamageType "Extreme"
+	Deathsound "FAREXPL"
+	+NOGRAVITY
+	+SHOOTABLE
+	+NOTELEPORT
+	+SOLID
+	+NODAMAGETHRUST
+	-THRUGHOST
+	+NORADIUSDMG
+	+NOCLIP
+	-GHOST
+	States
+	{
+	Spawn:
+		XXXX A 0
+		XXXX A 0 A_JumpIf(!AAPTR_MASTER, "Null")
+		XXXX A 0 A_JumpIfHealthLower(1, "Null", AAPTR_MASTER)
+		XXXX A 0 A_JumpIfInventory("IsDown", 1, 2, AAPTR_MASTER)
+		XXXX A 1 A_WARP(AAPTR_Master, -20, 0, 34, 0, WARPF_NOCHECKPOSITION)
+		Loop
+		XXXX A 1 A_WARP(AAPTR_Master, -20, 0, 0, 0, WARPF_NOCHECKPOSITION)
+		Goto Spawn
+
+	Pain:
+	Pain.Cutless:
+		TNT1 A 0 A_PlaySound ("barrel/pain")
+		Goto Spawn
+
+	Pain.Bullet:
+		TNT1 A 0 A_PlaySound ("barrel/pain")
+
+	Pain.SSG:
+	Pain.Cut:
+	Pain.Flames:
+	Pain.Fire:
+	Pain.Burn:
+	Pain.Plasma:
+	Pain.Eat:
+	Pain.Blast:
+	Pain.Rip:
+	Pain.ImpFatalityMarine:
+	Pain.HKF:
+	Pain.Melee:
+		TNT1 A 0 A_PlaySound ("barrel/pain")
+		Goto Spawn
+
+	Death:
+		TNT1 A 0 A_NoBlocking
+		XDT3 A 0 A_Explode(500,10,0)//hsTNT1 A 0 A_NoBlocking
+		TNT1 A 1 
+		NULL A 0  A_PlaySound("FAREXPL",9)
+		TNT1 A 0 A_SpawnItemEx ("DetectFloorCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 A 0 A_SpawnItemEx ("DetectCeilCrater",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 AA 0 A_CustomMissile ("ExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 AA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180))
+		TNT1 AA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180))
+		TNT1 AAA 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		EXPL A 0 A_SpawnItem("ExplosionParticleSpawner")
+		EXPL AAA 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (0, 90))
+
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15))
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35))
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35))
+		TNT1 AAA 20 A_CustomMissile ("BigBlackSmoke", 0, 0, random (0, 360), 2, random (40, 160))
+		Stop
+	}
+}
+
+Actor EnemyFlamethrowerMissileNew: FlamethrowerMissileNew
+{
+	States
+	{
+	Death:
+		TNT1 A 0 A_Explode(5, 150, 0)
+		Goto Super::Death+1
+	XDeath:
+		TNT1 A 0 A_Explode(5, 150, 0)
+		Goto Super::XDeath+1
+	}
+}
+
+Actor PB_PyroSergeant: PB_HelmetSergeant //Replaces ShotgunGuy
+{
+	SpawnID 1250
+	Scale 1.04
+	DropItem "PB_PyroGuyDrop"
+// 	PainChance "Fire", 12
+// 	PainChance "Flames", 12
+// 	PainChance "Burn", 12
+	Obituary "%o was incinerated by a Pyro Sergeant"
+	Tag "Pyro Sergeant"
+	+SLIDESONWALLS
+	+AVOIDMELEE
+	States
+	{
+	
+	Death.Execution:
+		TNT1 A 0
+		TNT1 A 0 {
+			A_StopSound;
+			A_FaceTarget;
+			A_NoBlocking(false);
+		}
+		SFV1 A 8
+		TNT1 A 0 A_Pain
+		SFV1 G 21
+		TNT1 A 0 A_Recoil(4)
+		Goto Death.SSG
+		
+	Death.Shrink:
+		TNT1 A 1 A_PlaySound("Shrink", 3)
+		TNT1 A 0 A_SpawnItemEx ("PyroSergeantShrinkFX1", 0, 0,  5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("PyroSergeantShrinkFX2", 0, 0, 5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("PyroSergeantShrinkFX3", 0, 0, 5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("PyroSergeantShrinkFX4", 0, 0, 5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("PyroSergeantShrinkFX5", 0, 0, 5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("PyroSergeantShrinkFX6", 0, 0, 5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("PyroSergeantShrinkFX7", 0, 0, 5, 0, 0)
+		TNT1 A 1 A_SpawnItemEx ("LilPyroSergeant", 1)
+		stop
+		
+	Possession:
+		TNT1 A 0 A_SetInvulnerable
+		SFV1 G 3
+		SFV1 G 3 A_Pain
+		"####" "#" 35 ACS_NamedExecuteAlways("Pos - Flicker effect")
+		TNT1 A 0 A_UnSetInvulnerable
+		Goto See
+		
+	Pain.Stun:
+		TNT1 A 0
+		TNT1 A 0 A_SpawnItemEx ("StunElectrocute", random (-4, 4), random (-4, 4),  random (16, 32), 0, 0)
+        TNT1 A 0 
+		SFV1 G 1 A_Pain
+		SFV1 GGGGGGGGGG 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+        TNT1 A 0 
+		SFV1 G 1 A_Pain
+		SFV1 GGGGGGGGGG 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+        TNT1 A 0 
+		SFV1 G 1 A_Pain
+		SFV1 GGGGGGGGGG 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+        TNT1 A 0 
+		SFV1 G 1 A_Pain
+		SFV1 GGGGGGGGGG 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+        TNT1 A 0 
+		SFV1 G 1 A_Pain
+		SFV1 GGGGGGGGGG 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+        TNT1 A 0 
+		SFV1 G 1 A_Pain
+		Goto See
+		
+	Pain.Siphon:
+        TNT1 A 0 
+		
+		TNT1 AAA 0 A_SpawnItemEx ("RedLightning_Small", random (-12, 12), random (-12, 12), random (16, 52), 0, 0)
+		SFV1 G 1 
+		{
+			A_FaceTarget;
+			A_GiveToTarget("HealthBonus",4);
+		}
+		SFV1 G 5 A_FaceTarget 
+		TNT1 A 0 A_Pain
+		Goto See
+	
+	//////////////////////////////////////
+	Pain.Avoid: 
+		TNT1 A 0
+		TNT1 A 0 //A_Jump(255, "AvoidLeft", "AvoidRight")
+		Goto BackOff //FallBack
+	  
+	AvoidLeft:
+	    SSV1 E 1 A_FaceTarget
+	    TNT1 A 0 ThrustThing(angle*256/360+192, 15, 0, 0)
+        ZP05 HGFEDCBA 2 A_FaceTarget
+        Goto Missile
+	AvoidRight:
+	    SSV1 E 1 A_FaceTarget
+	    TNT1 A 0 ThrustThing(angle*256/360+64, 15, 0, 0)
+        ZP05 ABCDEFGH 2 A_FaceTarget
+        Goto Missile
+		
+		ReplaceVanilla:
+		TNT1 A 0 A_ChangeFlag("THRUACTORS", 1)
+		TNT1 A 0 A_ChangeFlag("COUNTKILL", 0)
+		TNT1 A 0 A_SpawnItemEx ("Vanilla_PyroSergeant",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION |SXF_TRANSFERSPECIAL| SXF_TRANSFERAMBUSHFLAG ,0)
+		Stop
+		
+	Spawn:
+		TNT1 A 0
+		TNT1 A 0 A_SpawnItemEx("NewFuelTankPhysics",0,0,0,0,0,0,0,SXF_SETMASTER)
+		TNT1 A 0 A_GiveInventory("TypeSergeant", 1)
+		TNT1 A 0 A_TakeInventory("SergeantAmmo", 6)
+		TNT1 A 0 A_GiveInventory("SergeantAmmo", random(0,5))
+		SFV1 A 1
+		Goto Stand
+
+	Stand:
+		//TNT1 A 0 A_SpawnItem ("LegTarget100", 10)
+		TNT1 A 0 A_CheckSight("Stand2")
+		TNT1 A 0 
+	    //
+		SFV1 E 5
+		SFV1 E 5 A_Look
+	    //
+		Loop
+		
+	Stand2:
+		SFV1 E 7
+		SFV1 E 7 A_Look
+		Goto Stand
+		
+		
+	FallBack:
+		TNT1 A 0 A_CheckSight("Advance")
+		TNT1 A 0 A_ChangeFLag("NODROPOFF", 1)
+		//
+		SFV1 D 2 A_FaceTarget
+		SFV1 D 2 A_Recoil(2)
+		TNT1 A 0 A_PlaySound("humans/step",3)
+		//
+		SFV1 C 2 A_FaceTarget
+		SFV1 C 2 A_Recoil(2)
+		//
+		SFV1 B 2 A_FaceTarget
+		SFV1 B 2 A_Recoil(2)
+		TNT1 A 0 A_PlaySound("humans/step",3)
+		//
+		SFV1 A 2 A_FaceTarget
+		SFV1 A 2 A_Recoil(2)
+		//
+		SFV1 D 2 A_FaceTarget
+		SFV1 D 2 A_Recoil(2)
+		TNT1 A 0 A_PlaySound("humans/step",3)
+		TNT1 A 0 A_jump(64, "Missile")
+		//
+		SFV1 C 2 A_FaceTarget
+		SFV1 C 2 A_Recoil(2)
+		//
+		SFV1 B 2 A_FaceTarget
+		SFV1 B 2 A_Recoil(2)
+		TNT1 A 0 A_PlaySound("humans/step",3)
+		//
+		SFV1 A 2 A_FaceTarget
+		SFV1 A 2 A_Recoil(2)
+		TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
+		GOto Missile
+	
+	
+	SearchForPlayer:
+	Idle:
+		TNT1 A 0 A_ClearTarget
+	    TNT1 A 0 A_TakeInventory("EnemyMemory", 30)
+		
+		SFV1 EEEEE 10 A_Look
+		
+		SFV1 A 4 A_Look
+		
+		TNT1 A 0 A_Wander
+		TNT1 A 0 A_Recoil(-1)
+		SFV1 B 4 A_Look
+		
+		TNT1 A 0 A_Wander
+		TNT1 A 0 A_Recoil(-1)
+		SFV1 C 4 A_Look
+		
+		TNT1 A 0 A_Wander
+		TNT1 A 0 A_Recoil(-1)
+		SFV1 D 4 A_Look
+		
+		TNT1 A 0 A_Wander
+		TNT1 A 0 A_Recoil(-1)
+		
+		TNT1 A 0 A_Jump(128, "Idle")
+		SFV1 A 4 A_Look
+		
+		TNT1 A 0 A_Wander
+		TNT1 A 0 A_Recoil(-1)
+		SFV1 B 4 A_Look
+		
+		TNT1 A 0 A_Wander
+		TNT1 A 0 A_Recoil(-1)
+		SFV1 C 4 A_Look
+		
+		TNT1 A 0 A_Wander
+		TNT1 A 0 A_Recoil(-1)
+		SFV1 D 4 A_Look
+		
+		TNT1 A 0 A_Wander
+		TNT1 A 0 A_Recoil(-1)
+		Loop
+		
+	See:
+		TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
+		TNT1 A 0 A_TakeInventory("EnemyMemory", 1)
+		TNT1 A 0 A_CheckSight("SeeNeverSeen")
+		Goto SeeContinue
+	
+		SeeContinue:
+		TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
+	    //Advance:
+		TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
+		TNT1 A 0 A_JumpIfInventory("EnemyMemory", 30, "SearchForPlayer")
+		TNT1 A 0 A_GiveInventory("EnemyMemory", 1)
+        
+		SFV1 A 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 AA 2 A_SmartChase("", "", CHF_DONTTURN)
+		SFV1 B 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 BB 2 A_SmartChase("", "", CHF_DONTTURN)
+		TNT1 A 0 A_PlaySound("humans/step",3)
+		SFV1 C 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 CC 2 A_SmartChase("", "", CHF_DONTTURN)
+		SFV1 D 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 DD 2 A_SmartChase("", "", CHF_DONTTURN)
+		TNT1 A 0 A_PlaySound("humans/step",3)
+		Loop
+		
+	SeeNeverSeen:
+		TNT1 A 0 A_JumpIfCloser(200, "Missile")
+	Advance:
+		TNT1 A 0 A_ChangeFLag("NODROPOFF", 0)
+        
+		TNT1 A 0 
+		
+		SFV1 A 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 AA 2 A_SmartChase("", "", CHF_DONTTURN)
+		TNT1 A 0 
+		
+		SFV1 B 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 BB 2 A_SmartChase("", "", CHF_DONTTURN)
+		TNT1 A 0 A_PlaySound("humans/step",3)
+		TNT1 A 0 
+		
+		SFV1 C 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 CC 2 A_SmartChase("", "", CHF_DONTTURN)
+		TNT1 A 0 
+		
+		SFV1 D 2 A_SmartChase("Missile", "Melee", 0)
+		SFV1 DD 2 A_SmartChase("", "", CHF_DONTTURN)
+		TNT1 A 0 A_PlaySound("humans/step",3)
+		Loop
+		
+	///////////////////////////////////////	
+	Reload:
+	Roll:
+	BackOff:
+		TNT1 A 0
+		TNT1 A 0 A_Jump(255, "FallBack", "JumpLeft", "JumpRight", "JumpBack")
+		Goto Missile+3
+	JumpLeft:
+		SFV1 A 3 A_FaceTarget
+		TNT1 A 0 ThrustThing(angle*256/360+64, 8, 0, 0)
+		TNT1 A 0 ThrustThingZ(0, 20, 0, 0)
+		SFV1 F 15
+		TNT1 A 0 A_CheckSight("See")
+		Goto Missile+3
+	JumpRight:
+		SFV1 A 3 A_FaceTarget
+		TNT1 A 0 ThrustThingZ(0, 20, 0, 0)
+		TNT1 A 0 ThrustThing(angle*256/360+192, 8, 0, 0)
+		SFV1 F 15
+		TNT1 A 0 A_CheckSight("See")
+		Goto Missile+3
+	JumpBack:
+		SFV1 A 3 A_FaceTarget
+		TNT1 A 0 ThrustThingZ(0, 20, 0, 0)
+		TNT1 A 0 ThrustThing(angle*256/360+128, 8, 0, 0)
+		SFV1 F 15
+		TNT1 A 0 A_CheckSight("See")
+		Goto Missile+3
+		
+	///////////////////////////////////////	
+	Melee:
+	Missile:
+		TNT1 AAA 0
+		TNT1 A 0 A_TakeInventory("EnemyMemory", 30)
+		TNT1 A 0 A_Jump(150, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
+		TNT1 A 0 A_Jump(100, "Missile2")
+		
+		TNT1 A 0 A_PlaySound("FLMDRAW",2)
+		SFV1 E 2 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
+		SFV1 E 2 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
+		SFV1 E 2 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
+		SFV1 E 2 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
+		
+		SFV1 E 2 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
+		TNT1 A 0 A_JumpIfCloser(380, "Flamethrower")
+		
+		TNT1 A 0 
+		TNT1 A 0 
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
+		
+		SFV1 E 4 BRIGHT A_CustomMissile("PyroSargeFireBall", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		SFV1 E 6 A_FaceTarget
+		Goto SeeContinue
+		
+	Flamethrower:
+		TNT1 A 0 A_PlaySound("flamersh")
+		TNT1 A 0 
+		TNT1 A 0
+		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 1 A_FaceTarget
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 1 A_FaceTarget
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		TNT1 A 0 A_Jump(126, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
+		TNT1 A 0 A_SetAngle(angle - 40)
+		TNT1 A 0 
+		TNT1 A 0 
+		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 1 A_FaceTarget
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 1 A_FaceTarget
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		TNT1 A 0 A_Jump(126, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
+		TNT1 A 0 A_SetAngle(angle + 40)
+		TNT1 A 0 
+		TNT1 A 0 
+		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 1 A_FaceTarget
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 1 A_FaceTarget
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		TNT1 A 0 A_Jump(126, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
+		TNT1 A 0 A_SetAngle(angle + 40)
+		TNT1 A 0 
+		TNT1 A 0 
+		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 1 A_FaceTarget
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 E 1 A_FaceTarget
+		SFV1 E 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		
+		TNT1 A 0 
+		TNT1 A 0 
+		
+		SFV1 E 2 BRIGHT A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
+		SFV1 E 2 
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
+		SFV1 E 2 BRIGHT
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
+		SFV1 E 2 
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 33, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 34, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 36, 20, 15, 0)
+		
+		SFV1 E 2 
+		SFV1 E 2 
+		Goto SeeContinue
+		
+		
+	Missile2:
+		TNT1 A 0 
+		
+		TNT1 A 0 A_PlaySound("FLMDRAW",2)
+		SFV1 E 5 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
+		SFV1 F 2 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
+		SFV1 F 2 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
+		SFV1 F 2 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
+		
+		SFV1 F 2 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
+		TNT1 A 0 A_JumpIfCloser(380, "Flamethrower2")
+		
+		TNT1 A 0 
+		TNT1 A 0 
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
+		
+		SFV1 F 4 BRIGHT A_CustomMissile("PyroSargeFireBall", 32, 0, random(-8, 8), 1, random(-3, 3))
+		
+		SFV1 F 6 A_FaceTarget
+		Goto SeeContinue
+		
+	Flamethrower2:
+		TNT1 A 0 A_PlaySound("flamersh")
+		TNT1 A 0 
+		TNT1 A 0 
+		
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 1 A_FaceTarget
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		
+		
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 1 A_FaceTarget
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		
+		
+		TNT1 A 0 A_Jump(126, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
+		TNT1 A 0 A_SetAngle(angle - 40)
+		TNT1 A 0 
+		TNT1 A 0 
+		
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 1 A_FaceTarget
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 1 A_FaceTarget
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		
+		TNT1 A 0 A_Jump(126, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
+		TNT1 A 0 A_SetAngle(angle + 40)
+		TNT1 A 0 
+		TNT1 A 0 
+		
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 1 A_FaceTarget
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 1 A_FaceTarget
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		
+		TNT1 A 0 A_Jump(126, 2)
+		TNT1 A 0 A_JumpIfCloser(200, "BackOff")
+		TNT1 A 0 A_SetAngle(angle + 40)
+		TNT1 A 0 
+		TNT1 A 0 
+		
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 1 A_FaceTarget
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		SFV1 F 1 A_FaceTarget
+		SFV1 F 3 BRIGHT A_CustomMissile("EnemyFlamethrowerMissileNew", 25, 0, random(-8, 8), 1, random(-3, 3))
+		
+		
+		TNT1 A 0 
+		TNT1 A 0 
+		
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
+		SFV1 F 2 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
+		SFV1 F 2 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
+		SFV1 F 2 A_FaceTarget
+		TNT1 A 0 A_CustomMissile ("RealFlameTrailsSmall", 26, 15, random (0, 360), 1, random (70, 110))
+		TNT1 A 0 A_CustomMissile ("SmallFlameTrails", 26, 15, random (0, 140), 1, random (0, 160))
+        TNT1 A 0 A_CustomMissile("OrangeLensFlareAlt", 26, 20, 15, 0)
+		
+		SFV1 E 6 
+		Goto SeeContinue
+	
+	Pain.Head:
+		TNT1 A 0
+        TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "FallingAfterImpact")
+		TNT1 A 0 
+		TNT1 A 0 
+		SFV1 G 6 A_Pain
+		Goto SeeContinue
+	
+	Pain:
+		TNT1 A 0
+        TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "FallingAfterImpact")
+		TNT1 A 0 
+		TNT1 A 0 
+		SFV1 G 3 A_Pain
+		Goto SeeContinue
+		
+	Pain.Melee:
+		TNT1 A 0
+        TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "FallingAfterImpact")
+		TNT1 A 0 
+		SFV1 G 3
+		TNT1 A 0 
+		SFV1 G 3 A_Pain
+		Goto SeeContinue
+		
+	
+	Pain.Shotgun:
+		TNT1 A 0 A_Jump(200, "Pain")
+	Pain.Kick:
+	Pain.ExplosiveImpact:
+	Pain.ExtremePunches:
+	Pain.Explosive:
+		TNT1 A 0
+		TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "FallingAfterImpact")
+		TNT1 A 0 A_Pain
+		TNT1 A 0 A_GiveInventory("IsDown", 1)
+		TNT1 A 0 ThrustThingZ(0,30,0,1)
+		TNT1 A 0 A_ChangeFlag("NOPAIN", 1)
+		SP14 U 4 A_FaceTarget
+		SP14 V 6 ThrustThing(angle*256/360+128, 10, 0, 0)
+		SP14 W 8
+		TNT1 A 0 A_ChangeFlag("NOPAIN", 0)
+		Goto FallingAfterImpact
+
+	FallingAfterImpact:
+		SP14 X 1 A_GiveInventory ("FallingHeight", 1)
+		SP14 X 1 A_CheckFloor ("GetUp")
+		TNT1 A 0 A_JumpIf (momz == 0, "GetUp")
+		Loop
+
+	GetUp:
+		TNT1 A 0
+		TNT1 A 0 A_JumpIfInventory ("FallingHeight", 5, "FallingDie")
+		TNT1 A 0 A_PlaySound("BODYF",6)
+		TNT1 A 0 A_TakeInventory("FallingHeight", 100)
+		1F11 SSSSSSS 5 A_JumpIf(momz < 0, "FallingAfterImpact")
+
+		TNT1 A 0 A_TakeInventory("IsDown", 1)
+		1F11 T 10
+		Goto SeeContinue
+	   
+	FallingDie:
+		TNT1 A 0
+		TNT1 A 0 A_ChangeFlag("COUNTKILL", 0)
+		TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0)
+		TNT1 A 0 A_SpawnItem("SplatteredSmall")
+		TNT1 A 0 A_JumpIfInventory ("FallingHeight", 15, "Death.Stomp")
+		TNT1 A 0 A_JumpIfInventory ("FallingHeight", 10, "FallingSuperDeath")
+		TNT1 A 0 A_JumpIfInventory ("FallingHeight", 5, "FallingDeath")
+	FallingDeath:
+		TNT1 A 0
+		TNT1 A 0 A_Scream
+		TNT1 A 0 //A_NoBLocking
+		TNT1 AAAA 0 A_CustomMissile("PB_XDeath1", 32, 0, random (0, 360), 2, random (50, 130))
+		ID11 EF 2
+		TNT1 A 0 A_PlaySound("BODYF",7)
+		TNT1 A 0 A_SpawnItem ("GrowingBloodPool")
+		TNT1 A 0 A_SpawnItem ("DeadShotgunguy1")
+		Stop
+	
+	FallingSuperDeath:
+		TNT1 A 0
+		TNT1 A 0 A_XScream
+		TNT1 A 0 //A_NoBLocking
+		TNT1 A 0 A_SpawnItem ("GrowingBloodPool")
+		Goto Death.ExplosiveImpact+1
+
+	Death.Freeze:
+	Death.Ice:
+		TNT1 A 0
+		Goto Super::Death
+
+	Death:
+		TNT1 A 0
+		TNT1 A 0 A_Jump(126, 1)
+		Goto Super::Death
+		
+		BMBE M 0 bright A_Explode (36, 128)
+		EXPL A 0 Radius_Quake (2, 40, 0, 8, 0)
+		TNT1 A 0 A_SpawnItem ("GrowingBloodPool")
+		TNT1 A 0 A_SpawnItemEx ("BarrelKaboom",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		
+		TNT1 AA 0 A_CustomMissile ("XDeathSargeLeg1", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AA 0 A_CustomMissile ("XDeathArm1", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile ("XDeathHFQSZHead", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAAA 0 A_CustomMissile("PB_XDeath1", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAAA 0 A_CustomMissile("PB_XDeath2", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAAA 0 A_CustomMissile("PB_XDeath3", 0, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAA 0 A_CustomMissile ("PB_Intestine", 0, 0, random (0, 360), 2, random (0, 160))
+		
+		TNT1 A 0 A_CustomMissile ("MetalShard1", 5, 0, random (0, 360), 2, random (30, 160))
+		TNT1 A 0 A_CustomMissile ("MetalShard2", 5, 0, random (0, 360), 2, random (30, 160))
+		TNT1 A 0 A_CustomMissile ("MetalShard3", 5, 0, random (0, 360), 2, random (30, 160))
+		
+		TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 A 0 A_SpawnItemEx ("KamikazeeExplosion",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 AAA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 180))
+		TNT1 AAAAAAAAA 0 A_CustomMissile ("ExplosionParticleHeavy", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 AAAAAAAAA 0 A_CustomMissile ("ExplosionParticleVeryFast", 0, 0, random (0, 360), 2, random (0, 360))
+		//XXXX A 0 A_CustomMissile ("ExplosionQuake", 1, 0, random (0, 360), 2, random (0, 160))
+
+		EXPL AAA 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (0, 90))
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15))
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35))
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35))
+		
+		TNT1 AAAAAAA 0 A_CustomMissile ("MediumExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360))
+		EXPL AAA 0 A_CustomMissile ("BigNeoSmoke", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 AAAAA 1 A_CustomMissile ("ExplosionSmoke", 2, 0, random (0, 360), 2, random (0, 360))
+		TNT1 A 0
+		TNT1 A 0 A_PlaySound("FAREXPL", 3)
+		TNT1 AAAAAAAAA 2 A_CustomMissile ("BigNeoSmoke", 2, 0, random (0, 360), 2, random (0, 360))
+		BMBE M 0 bright A_PlaySound ("weapons/rocklx")
+		BMBE O 0 A_NoBlocking
+		stop
+	}
+}
+
+Actor DeadHelmetShotgunGuy_NoArm: DeadShotgunGuy1
+{Health 200 States{Spawn:
+        U6M6 E -1
+        Stop
+    Death.CutLess:
+    Death.Saw:    
+	Death:
+        TNT1 A 0 A_PlaySound("misc/xdeath4")
+		TNT1 AAAA 0 A_CustomMissile("PB_Brains1", 6, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile("PB_Brains2", 6, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile("PB_Brains3", 6, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile("PB_Brains4", 6, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile("PB_Brains5", 6, 0, random (0, 360), 2, random (0, 160))
+        TNT1 A 0 A_SpawnItem ("DeadShotgunguy_NoHeadNoArm", 1)
+		Stop
+    Death.Fatality:
+    Death.Melee:
+    Death.Kick:
+	Death.ExplosiveImpact:
+         TNT1 A 0
+         TNT1 A 0
+        TNT1 A 0 ThrustThingZ(0,8,0,1)
+        TNT1 A 0 A_FaceTarget
+        TNT1 A 0 A_Recoil (2)
+         U6M6 EE 8
+         TNT1 A 1 A_SpawnItem ("DeadHelmetShotgunGuy_NoArm", 5)
+         Stop}}
+		 
+
+Actor DeadHelmetShotgunGuy_NoLeg: CurbstompedMarine
+{Health 200 States{Spawn:
+        U6M5 F -1
+        Stop	Death:
+   Death.CutLess:
+    Death.Saw:
+  	    TNT1 A 0 A_SpawnItem("GibsZ")
+		 TNT1 AAA 0 A_CustomMissile("PB_XDeath1", 50, 0, random (0, 360), 2, random (0, 160))
+		 TNT1 A 0 A_CustomMissile("PB_XDeath2", 50, 0, random (0, 360), 2, random (0, 160))
+		 TNT1 AA 0 A_CustomMissile("PB_XDeath2", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAAA 0 A_CustomMissile("PB_XDeath2", 32, 0, random (0, 360), 2, random (0, 160))
+		 TNT1 A 0 A_CustomMissile("PB_XDeath3", 50, 0, random (0, 360), 2, random (0, 160))
+		 TNT1 A 0 A_CustomMissile("PB_XDeath4", 50, 0, random (0, 360), 2, random (0, 160))
+		Stop
+    Death.Fatality:
+    Death.Melee:
+    Death.Kick:
+         TNT1 A 0
+         TNT1 A 0
+        TNT1 A 0 ThrustThingZ(0,15,0,1)
+        TNT1 A 0 A_FaceTarget
+        TNT1 A 0 A_Recoil (2)
+         ID11 MN 8
+         TNT1 A 1 A_SpawnItem ("DeadHelmetShotgunGuy_NoLeg", 5)
+         Stop}}
+
+Actor DeadHelmetShotgunGuy1 : CurbstompedMarine
+{
+States
+    {
+    Death.Fatality:
+    Death.Melee:
+    Death.Kick:
+	Death.ExplosiveImpact:
+         TNT1 A 0
+         TNT1 A 0
+        TNT1 A 0 ThrustThingZ(0,15,0,1)
+        TNT1 A 0 A_FaceTarget
+        TNT1 A 0 A_Recoil (1)
+         S1V1 VW 8
+         TNT1 A 1 A_SpawnItem ("DeadHelmetShotgunGuy1", 5)
+         Stop
+    Spawn:
+        S1V1 X -1
+        Stop
+	Raise:
+		S1V1 X 1
+		S1V1 WVUTSRQ 1
+        TNT1 A 0 A_SpawnItem ("PB_HelmetSergeant", 3)
+		Stop
+    Death:
+		TNT1 A 0 A_Jump(126, "Death2")
+		TNT1 A 0 A_CustomMissile ("XDeathSargeLeg1", 5, 0, random (0, 360), 2, random (0, 160))
+		SPOS A 0 A_CustomMissile("PB_XDeath1", 5, 0, random (0, 360), 2, random (0, 160))
+        TNT1 A 1 A_SpawnItem ("DeadHelmetShotgunGuy_NoLeg", 5)
+        Stop
+	Death2:
+		TNT1 A 0
+		TNT1 A 0 A_CustomMissile ("XDeathArm1", 5, 0, random (0, 360), 2, random (0, 160))
+		SPOS A 0 A_CustomMissile("PB_XDeath1", 5, 0, random (0, 360), 2, random (0, 160))
+        TNT1 A 1 A_SpawnItem ("DeadHelmetShotgunGuy_NoArm", 5)
+		Stop
+
+    Death.Plasma: Death.Plasma2:
+        TNT1 A 0
+        TNT1 A 0 A_XScream
+        TNT1 A 0 A_NoBlocking
+        TNT1 AAA 0 A_CustomMissile("NashGoreBloodParticle1", 50, 0, random (0, 360), 2, random (0, 160))
+	    TNT1 A 0 A_CustomMissile ("XDeathBurnedMeat", 32, 0, random (0, 360), 2, random (0, 160))
+	    TNT1 A 0 A_CustomMissile ("XDeathBurnedMeat2", 32, 0, random (0, 360), 2, random (0, 160))
+	    TNT1 A 0 A_CustomMissile ("XDeathBurnedMeat3", 32, 0, random (0, 360), 2, random (0, 160))
+		EXPL AAA 0 A_CustomMissile ("ExplosionSmoke", 32, 0, random (0, 360), 2, random (0, 360))
+        TNT1 A 0
+        Stop
+
+    }
+}
+
+
+
+Actor DeadHelmetShotgunguy_Slumped: ZombiemanTorso
+{
++NOPAIN
+Health 200
+DamageFactor "Head", 15.0
+Height 22
+Radius 6
+States{Spawn:
+		TNT1 A 0
+		TNT1 A 0 A_Recoil(6)
+		BR98 A 6
+		TNT1 A 0 A_JumpIf(momx != 0 || momy != 0, "LayDown")
+		TNT1 A 0 
+		BR98 A 16
+        Loop  
+	LayDown:
+	TNT1 A 0 A_NoBlocking
+	TNT1 A 0 A_SpawnItem("DeadShotgunguy1")
+	Stop
+	XDeath:
+	Death.Explosives:
+	Death.ExplosiveImpact:
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_SpawnItem("Sarge2XDeath")
+		Stop	
+	
+	Death.Head:
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_SpawnItemEx("ShotgunguyHeadExplode", 0, 0, 22)
+		TNT1 A 0 A_SpawnItem("DeadShotgunguy_Slumped_NoHead")
+		Stop
+		
+	Death:
+	    TNT1 A 0 A_NoBlocking
+		TNT1 AAA 0 A_CustomMissile ("Instestin", 32, 0, random (150, 210), 2, random (0, 40))
+		TNT1 AAA 0 A_CustomMissile("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40))
+		TNT1 AAA 0 A_CustomMissile("PB_XDeath3", 16, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAAA 0 A_CustomMissile("NashGoreBloodParticle1", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAAA 0 A_CustomMissile("NashGoreBloodParticle2", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAAA 0 A_CustomMissile("NashGoreBloodParticle3", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAAA 0 A_CustomMissile ("SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAA 0 A_CustomMissile ("BloodMistBig", 40, 0, random (0, 360), 2, random (30, 90))
+		TNT1 AA 0 A_CustomMissile ("XDeathArm1", 40, 0, random (0, 360), 2, random (30, 90))
+		TNT1 A 0 A_SpawnItemEx("ShotgunguyHeadExplode", 0, 0, 22)
+		TNT1 A 0 A_SpawnItem("DeadShotgunguyJustLegsAreLeft")
+		Stop
+		}}
+		
+		
+ACTOR PyroSargeFireBall: FastProjectile
+{
+	Radius 3
+	Height 5
+	Speed 18
+    Fastspeed 20
+	Damage (random(15,20))
+	Projectile 
+    Scale 0.5
+	+GETOWNER
+	+THRUSPECIES
+	+FORCEXYBILLBOARD
+	+THRUGHOST
+	RenderStyle Translucent
+    DamageType Fire
+	ExplosionRadius 80
+	ExplosionDamage 8
+	Alpha 1
+	Decal "Scorch"
+	SeeSound "BREATHOF"
+	DeathSound "fatso/shotx"
+	States
+	{
+	Spawn:
+	    TNT1 A 0
+		
+	
+	Spawn1:
+		TNT1 A 0 A_JumpIfInventory("lowgraphicsmode", 1, "SpawnCheap")
+		TNT1 A 0 A_SpawnItem ("FireballExplosionFlamesSmall")
+		MANF A 1 BRIGHT A_SpawnItem("RedFlare22")
+		TNT1 A 0 A_SpawnItem ("RocketSmokeTrail52")
+		
+		TNT1 A 0 A_SpawnItem ("FireballExplosionFlamesSmall")
+		MANF B 1 BRIGHT A_SpawnItem("RedFlare22")
+		TNT1 A 0 A_CustomMissile ("RocketSmokeTrail52", 2, 0, random (70, 110), 2, random (0, 360))
+		
+		TNT1 A 0 A_SpawnItem ("FireballExplosionFlamesSmall")
+		MANF A 1 BRIGHT A_SpawnItem("RedFlare22")
+		TNT1 A 0 A_SpawnItem ("RocketSmokeTrail52")
+		
+		TNT1 A 0 A_CustomMissile ("FireballExplosionFlamesSmall", 0, 0, random (0, 360), 2, random (00, 360))
+		MANF B 1 BRIGHT A_SpawnItem("RedFlare22")
+		TNT1 A 0 A_CustomMissile ("RocketSmokeTrail52", 2, 0, random (70, 110), 2, random (0, 360))
+		Loop
+		
+	SpawnCheap:
+		TNT1 A 0 A_SpawnItem ("FireballExplosionFlamesSmall")
+		MANF AB 1 BRIGHT A_SpawnItem("RedFlare22")
+		Loop	
+		
+	Death:
+	
+	TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
+	TNT1 A 0 A_Explode(10, 50, 0)
+	Goto ExplosionEffect
+	
+	ExplosionEffect:
+	TNT1 A 0
+	TNT1 A 0 A_JumpIfInventory("lowgraphicsmode", 1, "DeathCheap")
+	TNT1 AAA 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	EXPL A 0 A_SpawnItem("ExplosionParticleSpawner")
+	EXPL AAA 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (0, 90))
+	//TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15))
+	//TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35))
+	//TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35))
+	TNT1 AA 20 A_CustomMissile ("BigBlackSmoke", 0, 0, random (0, 360), 2, random (40, 160))
+	Stop
+		
+	DeathCheap:
+	TNT1 AAAA 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
+	EXPL A 0 A_SpawnItem("ExplosionParticleSpawner")
+	EXPL AAA 0 A_CustomMissile ("FlamethrowerFireParticles", 6, 0, random (0, 360), 2, random (0, 90))
+	TNT1 AAA 20 A_CustomMissile ("BigBlackSmoke", 0, 0, random (0, 360), 2, random (40, 160))
+    Stop
+	}
+}
+
+Actor DeadShotgunguySPV4J: DeadShotgunGuy1
+{
+States{Spawn:
+		SPV4 J -1
+        Stop 
+		
+		Death:
+		TNT1 A 0 A_SpawnItem("MeatDeathSmall")
+		TNT1 A 0 A_SpawnItem("RipHelmetSergeant")
+		TNT1 A 0 A_SpawnItem("DeadShotgunguy_Half")
+        Stop
+}}
+
+Actor DeadShotgunguySPV4T: DeadShotgunGuy1
+{
+States{Spawn:
+		SPV4 T -1
+        Stop 
+		
+		Death:
+		TNT1 A 0 A_SpawnItem("MeatDeathSmall")
+		TNT1 A 0 A_SpawnItem("RipHelmetSergeant")
+		TNT1 A 0 A_SpawnItem("DeadShotgunguy_Half")
+        Stop
+}}
+
+Actor DeadShotgunguyS2V1E: DeadShotgunGuy_NoBrain
+{
+States{Spawn:
+		S2V1 E -1
+        Stop 
+}}	
+
+Actor DeadShotgunguyZ1Z7E: DeadShotgunGuy1
+{
+States{Spawn:
+		Z1Z7 E -1
+        Stop 
+		
+		Death:
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_SpawnItem("MeatDeathSmall")
+		TNT1 A 0 A_SpawnItem("DeadShotgunguySZD3C")
+		TNT1 AA 0 A_CustomMissile ("XDeathArm1", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_SpawnItem("ShotgunguyHeadExplode")
+		Stop
+}}	
+
+Actor DeadShotgunguy14DGN: DeadShotgunGuy1
+{
+States{Spawn:
+		14DG N -1
+        Stop 
+		
+		Death:
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_SpawnItem("MeatDeathSmall")
+		TNT1 A 0 A_SpawnItem("DeadShotgunguySZD3C")
+		TNT1 AA 0 A_CustomMissile ("XDeathArm1", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_SpawnItem("ShotgunguyHeadExplode")
+		Stop
+}}
+
+Actor DeadHelmetShotgunguy14DGZ: DeadShotgunGuy1
+{
+States{Spawn:
+		14DG Z -1
+        Stop 
+		
+		Death:
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_SpawnItem("MeatDeathSmall")
+		TNT1 A 0 A_SpawnItem("DeadShotgunguySZD3C")
+		TNT1 AA 0 A_CustomMissile ("XDeathArm1", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_SpawnItem("ShotgunguyHeadExplode")
+		Stop
+}}
+
+Actor ExecutedRiotSergeant: DeadShotgunGuy1
+{
+States{Spawn:
+		FSP6 L -1
+        Stop 
+		
+		Death:
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_SpawnItem("MeatDeathSmall")
+		TNT1 A 0 A_SpawnItem("DeadShotgunguySZD3C")
+		TNT1 AA 0 A_CustomMissile ("XDeathArm1", 32, 0, random (0, 360), 2, random (0, 160))
+		Stop
+}}
+
+Actor PinnedHelmetShotgunguy: ZombiemanTorso
+{
++NOPAIN
++NOGRAVITY
+Health 250
+DamageFactor "Head", 15.0
+Height 40
+Radius 6
+States{Spawn:
+		TNT1 A 0
+		TNT1 A 0 A_Recoil(15)
+		TNT1 A 0 A_Jump(112, "Suffer")
+		PIN8 KJIH 4 A_Recoil(2)
+		PIN8 AA 4 A_CustomMissile ("Brutal_LiquidBlood3", 25, random(-2,2), random (0, 360), 2, random (0, 40))
+		TNT1 A 0 A_Recoil(10)
+		PIN8 A 4 A_CustomMissile ("Brutal_LiquidBlood3", 25, random(-2,2), random (0, 360), 2, random (0, 40))
+		TNT1 A 0 A_JumpIf(momx != 0 || momy != 0, "LayDown")
+		PIN8 A 4 A_CustomMissile ("Brutal_LiquidBlood3", 25, random(-2,2), random (0, 360), 2, random (0, 40))
+		TNT1 A 0 A_Recoil(10)
+		PIN8 A 4 A_CustomMissile ("Brutal_LiquidBlood3", 25, random(-2,2), random (0, 360), 2, random (0, 40))
+		TNT1 A 0 A_JumpIf(momx != 0 || momy != 0, "LayDown")
+		PIN8 A 4 A_CustomMissile ("Brutal_LiquidBlood3", 25, random(-2,2), random (0, 360), 2, random (0, 40))
+		TNT1 A 0 A_Recoil(10)
+		PIN8 A 4 A_CustomMissile ("Brutal_LiquidBlood3", 25, random(-2,2), random (0, 360), 2, random (0, 40))
+		TNT1 A 0 A_JumpIf(momx != 0 || momy != 0, "LayDown")
+		PIN8 A 4 A_CustomMissile ("Brutal_LiquidBlood3", 25, random(-2,2), random (0, 360), 2, random (0, 40))
+		TNT1 A 0 A_Recoil(10)
+		PIN8 A 4 A_CustomMissile ("Brutal_LiquidBlood3", 25, random(-2,2), random (0, 360), 2, random (0, 40))
+		TNT1 A 0 A_JumpIf(momx != 0 || momy != 0, "LayDown")
+		PIN8 A 4 A_CustomMissile ("Brutal_LiquidBlood3", 25, random(-2,2), random (0, 360), 2, random (0, 40))
+		TNT1 A 0 A_Recoil(10)
+		PIN8 A 4 A_CustomMissile ("Brutal_LiquidBlood3", 25, random(-2,2), random (0, 360), 2, random (0, 40))
+		TNT1 A 0 A_JumpIf(momx != 0 || momy != 0, "LayDown")
+		TNT1 A 0 A_Jump(36, "SlideDown")
+	JustHangThere:
+		TNT1 A 0 A_Recoil(6)
+		PIN8 A 6
+		TNT1 A 0 A_JumpIf(momx != 0 || momy != 0, "LayDown")
+		PIN8 A 16
+        Loop
+		
+	
+	Suffer:
+		TNT1 A 0 A_PlaySound ("monsters/zombie/suffer", 6, 1, 1)
+		PIN8 HIIJJKKJJIIHHIIJJKKJJIIHHIIJJKKJJIIHHIIJJKKJJIIHHIIJJKKJJIIH 2 {
+			A_CustomMissile ("PB_BloodMistSmall", 25, 0, random (0, 360), 2, random (10, 40));
+			A_CustomMissile ("PB_SquirtingBloodTrail", 28, 0, random (0, 360), 2, random (0, 40));
+			return state("");
+		}
+		PIN8 HIIJJKKJJIIHHIIJJKKJJIIHHIIJJKKJJIIH 2 {
+			A_CustomMissile ("PB_BloodMistSmall", 25, 0, random (0, 360), 2, random (10, 40));
+			A_CustomMissile ("PB_SquirtingBloodTrail", 28, 0, random (0, 360), 2, random (0, 40));
+			if(momx < 0 || momx > 0 || momy < 0 || momy > 0) {return state("HitTheFloor2");}
+			return state("");
+		}
+		TNT1 A 0 A_StopSound(6)
+		TNT1 A 0 A_Playsound("monsters/zombie/death", 6)
+		Goto JustHangThere
+	
+	SlideDown:
+		TNT1 A 0 A_StopSound(6)
+		TNT1 A 0 A_Recoil(6)
+		TNT1 A 0 ThrustThingZ(0, 6, 1, 0)
+		PIN8 A 6
+		TNT1 A 0 A_JumpIf(momz < 2, "SlumpSittingDown")
+		TNT1 A 0 A_JumpIf(momx != 0 || momy != 0, "LayDown")
+		PIN8 A 12
+        Loop
+		
+	SlumpSittingDown:
+		TNT1 A 0 A_SpawnItemEx("DeadHelmetShotgunguy_Slumped", 10)
+		Stop
+		
+	LayDown:
+		TNT1 A 0 A_StopSound(6)
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_SpawnItem("DeadShotgunguy1")
+		Stop
+	
+	XDeath:
+	Death.Explosives:
+	Death.ExplosiveImpact:
+		TNT1 A 0 A_StopSound(6)
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_SpawnItem("SargeHelmetXDeath")
+		Stop	
+	
+	Death:
+		TNT1 A 0 A_StopSound(6)
+	    TNT1 A 0 A_NoBlocking
+		TNT1 AAA 0 A_CustomMissile ("Instestin", 32, 0, random (150, 210), 2, random (0, 40))
+		TNT1 AAA 0 A_CustomMissile("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40))
+		TNT1 AAA 0 A_CustomMissile("PB_XDeath3", 16, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAAA 0 A_CustomMissile("NashGoreBloodParticle1", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAAA 0 A_CustomMissile("NashGoreBloodParticle2", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAAA 0 A_CustomMissile("NashGoreBloodParticle3", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAAA 0 A_CustomMissile ("SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40))
+		TNT1 AAA 0 A_CustomMissile ("BloodMistBig", 40, 0, random (0, 360), 2, random (30, 90))
+		TNT1 AA 0 A_CustomMissile ("XDeathArm1", 40, 0, random (0, 360), 2, random (30, 90))
+		TNT1 A 0 A_SpawnItemEx("shotgunguyheadexplode", 0, 0, 22)
+		TNT1 A 0 A_SpawnItem("DeadShotgunguyJustLegsAreLeft")
+		Stop
+
+
+}
+}
+
+
+ACTOR PinnedHelmetShotgunGuyTorso
+{
+    Radius 8
+    Height 8
+    Speed 20
+    Scale 1.0
+	Mass 15
+    +NOBLOCKMAP
+	+MISSILE
+    +NOTELEPORT
+    +MOVEWITHSECTOR
+    //+CLIENTSIDEONLY
+    +RIPPER
+    +BLOODLESSIMPACT 
+	-DONTSPLASH
+	+THRUGHOST
+	+THRUACTORS
+	+FLOORCLIP
+	+NOGRAVITY
+	damagetype Blood
+    SeeSound "misc/xdeath4"
+    DeathSound "misc/xdeath1"
+	Decal BrutalBloodSuper
+	Mass 1
+    States
+    {
+    Spawn:
+        SP4X F 4 A_CustomMissile ("PB_SquirtingBloodTrail", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 A 0 A_JumpIf((MomY == 0), "PinToWall")
+		TNT1 A 0 A_CheckFloor("HitTheFloor")
+        Loop
+		
+	PinToWall:
+	Death:
+		TNT1 A 0 A_CustomMissile ("PB_MuchBlood2", 35, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AA 0 A_CustomMissile ("PB_XDeath1", 35, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAAA 0 A_CustomMissile ("PB_SuperWallRedBlood", 6, 0, random (170, 190), 2, random (0, 40))
+		TNT1 A 0 A_PlaySound("Weapons/NailHitBleed")
+	Pinned:
+		TNT1 A 0 A_SpawnItemEx("PinnedHelmetShotgunGuyTorso_Hanging", 0, -1)
+		TNT1 A 2
+        Stop
+	HitTheFloor:
+		TNT1 A 0 A_SetFloorClip
+		TNT1 A 0 A_SpawnItem("RipHelmetSergeant",0,0,0,1)
+		Stop
+		
+    }
+}
+
+
+Actor PinnedHelmetShotgunGuyTorso_Hanging: ZombiemanTorso
+{
+	+NOPAIN
+	+NOGRAVITY
+	Health 200
+	Height 40
+	Radius 6
+	States
+	{
+		
+		Spawn:
+			TNT1 A 0
+			TNT1 A 0 A_FaceMaster
+			TNT1 A 0 A_Jump(98, "Suffer")
+		Hang:
+			TNT1 A 0 A_Recoil(-6)
+			PIN8 BBBBB 2 {
+				A_CustomMissile ("PB_SquirtingBloodTrail", 12, 0, random (0, 360), 2, random (0, 90));
+				//if(momx < 0 || momx > 0 || momy < 0 || momy > 0) {return state("HitTheFloor");}
+				return state("");
+			}
+			PIN8 BBBBB 2 {
+				A_CustomMissile ("PB_SquirtingBloodTrail", 12, 0, random (0, 360), 2, random (0, 90));
+				if(momx < 0 || momx > 0 || momy < 0 || momy > 0) {return state("HitTheFloor");}
+				return state("");
+			}
+			TNT1 A 0 A_Recoil(-6)
+			PIN8 BBBBB 2 {
+				A_CustomMissile ("PB_SquirtingBloodTrail", 12, 0, random (0, 360), 2, random (0, 90));
+				//if(momx < 0 || momx > 0 || momy < 0 || momy > 0) {return state("HitTheFloor");}
+				return state("");
+			}
+			PIN8 BBBBB 2 {
+				A_CustomMissile ("PB_SquirtingBloodTrail", 12, 0, random (0, 360), 2, random (0, 90));
+				if(momx < 0 || momx > 0 || momy < 0 || momy > 0) {return state("HitTheFloor");}
+				return state("");
+			}
+			TNT1 A 0 A_Recoil(-6)
+			PIN8 BBBBB 2 {
+				A_CustomMissile ("PB_SquirtingBloodTrail", 12, 0, random (0, 360), 2, random (0, 90));
+				//if(momx < 0 || momx > 0 || momy < 0 || momy > 0) {return state("HitTheFloor");}
+				return state("");
+			}
+		Dead:
+			PIN8 B 4 {
+				A_CheckFloor("HitTheFloor");
+				if(momx < 0 || momx > 0 || momy < 0 || momy > 0) {return state("HitTheFloor");}
+				return state("");
+			}
+			TNT1 A 0 A_Recoil(-6)
+			PIN8 B 8
+			Loop
+			
+		Suffer:
+			TNT1 A 0 A_PlaySound ("monsters/zombie/suffer", 6, 1, 1)
+			PIN8 DEEFFGGFFEEDDEEFFGGFFEEDDEEFFGGFFEEDDEEFFGGFFEEDDEEFFGGFFEED 2 {
+				A_CustomMissile ("PB_BloodMistSmall", 10, 0, random (0, 360), 2, random (10, 40));
+				A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
+				return state("");
+			}
+			PIN8 DEEFFGGFFEEDDEEFFGGFFEEDD 2 {
+				A_CustomMissile ("PB_BloodMistSmall", 10, 0, random (0, 360), 2, random (10, 40));
+				A_CustomMissile ("PB_SquirtingBloodTrail", 15, 0, random (0, 360), 2, random (0, 40));
+				if(momx < 0 || momx > 0 || momy < 0 || momy > 0) {return state("HitTheFloor2");}
+				return state("");
+			}
+			TNT1 A 0 A_StopSound(6)
+			TNT1 A 0 A_Playsound("monsters/zombie/death", 6)
+			TNT1 AAA 0 A_SpawnItemEx("PB_Intestine", random(-2,2), 3, 5)
+			PIN8 BBBB 8 A_SpawnItemEx("PB_Intestine", random(-2,2), 3, 5)
+			Goto Hang
+			
+		Death:
+			TNT1 A 0 A_StopSound(6)
+			TNT1 AAA 0 A_CustomMissile ("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40))
+			TNT1 AAAAAA 0 A_CustomMissile ("PB_SmallGib", 32, 0, random (150, 210), 2, random (0, 40))
+			TNT1 AAA 0 A_CustomMissile ("PB_Xdeath3", 16, 0, random (170, 190), 2, random (0, 40))
+			TNT1 AA 0 A_CustomMissile ("PB_Xdeath2", 16, 0, random (130, 210), 2, random (0, 40))
+			TNT1 AAAA 0 A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40))
+			TNT1 AAAA 0 A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40))
+			TNT1 AAAA 0 A_CustomMissile ("PB_BloodMistBig", 40, 0, random (0, 360), 2, random (30, 90))
+			TNT1 AA 0 A_CustomMissile ("XDeathArm1", 15, 0, random (0, 360), 2, random (0, 160))
+			TNT1 A 0 A_CustomMissile ("XDeathSergeantHeadBeheaded", 35, 0, random (0, 360), 2, random (0, 160))
+			Stop
+			
+		HitTheFloor2:
+			TNT1 A 0 A_StopSound(6)
+			TNT1 A 0 A_Playsound("monsters/zombieman/death", 6)
+		HitTheFloor:
+			TNT1 A 0 A_SetFloorClip
+			TNT1 A 0 A_SpawnItem("RipHelmetSergeant",0,0,0,1)
+			Stop
+	}
+}
+
+
+ACTOR PinnedHelmetShotgunGuyTorso2 : PinnedShotgunGuyTorso
+{
+    States
+    {
+    Spawn:
+        SP4X F 4 A_CustomMissile ("PB_SquirtingBloodTrail", 0, 0, random (0, 360), 2, random (0, 360))
+		TNT1 A 0 A_JumpIf((MomY == 0), "PinToWall")
+		TNT1 A 0 A_CheckFloor("HitTheFloor")
+        Loop
+		
+	Death:
+	PinToWall:
+		TNT1 A 0 A_CustomMissile ("PB_MuchBlood2", 35, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AA 0 A_CustomMissile ("PB_SuperWallRedBlood", 6, 0, random (170, 190), 2, random (0, 40))
+		TNT1 A 0 A_PlaySound("Weapons/NailHitBleed")
+		PIN8 CCCCCCCCCCCCCCCCCCCCCCCCC 2 A_CustomMissile ("PB_SquirtingBloodTrail", 12, 0, random (0, 360), 2, random (0, 90))
+	Pin:
+		PIN8 C 2 A_SpawnItem("PinnedHelmetShotgunGuyTorso2_Hanging")
+        Stop
+	HitTheFloor:
+		TNT1 A 0 A_SetFloorClip
+		TNT1 A 0 A_SpawnItem("RipSergeant",0,0,0,1)
+		Stop
+    }
+}
+
+Actor PinnedHelmetShotgunGuyTorso2_Hanging: ZombiemanTorso
+{
+	+NOPAIN
+	+NOGRAVITY
+	Health 200
+	Height 40
+	Radius 6
+	States
+	{
+		
+		Spawn:
+			TNT1 A 0 A_Recoil(-10)
+			PIN8 C 4
+			TNT1 A 0 A_CheckFloor("HitTheFloor")
+			TNT1 A 0 A_JumpIf(momx != 0 || momy != 0, "HitTheFloor")
+			Loop
+			
+		Death:
+			TNT1 AAA 0 A_CustomMissile ("PB_XDeath1", 32, 0, random (150, 210), 2, random (0, 40))
+			TNT1 AAAAAA 0 A_CustomMissile ("PB_SmallGib", 32, 0, random (150, 210), 2, random (0, 40))
+			TNT1 AAA 0 A_CustomMissile ("PB_Xdeath3", 16, 0, random (170, 190), 2, random (0, 40))
+			TNT1 AA 0 A_CustomMissile ("PB_Xdeath2", 16, 0, random (130, 210), 2, random (0, 40))
+			TNT1 AAAA 0 A_CustomMissile ("NashGoreBloodSpurt", 32, 0, random (170, 190), 2, random (0, 40))
+			TNT1 AAAA 0 A_CustomMissile ("PB_SuperWallRedBlood", 32, 0, random (170, 190), 2, random (0, 40))
+			TNT1 AAAA 0 A_CustomMissile ("PB_BloodMistBig", 40, 0, random (0, 360), 2, random (30, 90))
+			TNT1 A 0 A_CustomMissile ("XDeathArm1", 15, 0, random (0, 360), 2, random (0, 160))
+			TNT1 A 0 A_CustomMissile ("XDeathSergeantHeadBeheaded", 35, 0, random (0, 360), 2, random (0, 160))
+			Stop
+		HitTheFloor:
+			TNT1 A 0 A_SetFloorClip
+			TNT1 A 0 A_SpawnItem("RipHelmetSergeant",0,0,0,1)
+			Stop
+	}
+}
+	
+
+
+Actor DeadShotgunguySP1SZ: DeadShotgunGuy_NoHead
+{
+States{Spawn:
+		SP1S Z -1
+        Stop 
+}}	
+
+Actor DeadShotgunguySP2SF: DeadShotgunGuy_NoHead
+{
+States{Spawn:
+		SP2S F -1
+        Stop 
+}}	
+
+
+///////////////////////////======VANILLA======//////////////////////////////////
+
+Actor Vanilla_PyroSergeant : PB_PyroSergeant
+{
+	DropItem "DropedShotgun"
+	DropItem "PB_GrenadeAmmo" 6
+	
+	States
+	{
+	Spawn:
+	  TNT1 A 0
+	  TNT1 A 0 A_GiveInventory("SKShotgunGuy", 1)
+	  TNT1 A 0 A_GiveInventory("TypeSergeant", 1)
+	  TNT1 A 0 A_TakeInventory("SergeantAmmo", 6)
+	  TNT1 A 0 A_GiveInventory("SergeantAmmo", random(0,5))
+	  SFV1 B 1
+	  Goto Stand
+	}
+}
+
+Actor Vanilla_Shotgunguy2 : PB_HelmetSergeant
+{
+	DropItem "DropedShotgun"
+	DropItem "PB_GrenadeAmmo" 6
+	States
+	{
+		Spawn:
+	  TNT1 A 0
+	  TNT1 A 0 A_GiveInventory("SKShotgunGuy", 1)
+	  TNT1 A 0 A_GiveInventory("TypeSergeant", 1)
+	  TNT1 A 0 A_TakeInventory("SergeantAmmo", 6)
+	  TNT1 A 0 A_GiveInventory("SergeantAmmo", random(0,5))
+	  SIV1 B 1
+	  Goto Stand
+	}
+}

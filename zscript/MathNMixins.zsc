@@ -1,5 +1,72 @@
 class PB_Math abstract
 {
+    clearscope static Color PB_MultiplyColors(Color baseColor, Color mixColor)
+    {
+        int desat_r = baseColor.r * (mixColor.r / 255.f);
+        int desat_g = baseColor.g * (mixColor.g / 255.f);
+        int desat_b = baseColor.b * (mixColor.b / 255.f);
+        
+        // return le color
+        return Color(255, desat_r, desat_g, desat_b);
+    }
+    
+    clearscope static Color PB_BlendColors(Color baseColor, Color mixColor)
+    {
+        int desat_r = (baseColor.r + mixColor.r) / 2;
+        int desat_g = (baseColor.g + mixColor.g) / 2;
+        int desat_b = (baseColor.b + mixColor.b) / 2;
+        
+        // return le color
+        return Color(255, desat_r, desat_g, desat_b);
+    }
+    
+    clearscope static Color PB_DesaturateColor(Color baseColor, double desaturate = 0.0, double brightness = 1.0)
+    {
+        // [gng] convert the color to luma
+        double luma = (0.2126 * baseColor.r) + (0.7152 * baseColor.g) + (0.0722 * baseColor.b);
+
+        // now interpolate between baseColor and the luminance
+        int desat_r = baseColor.r + (desaturate * (luma - baseColor.r));
+        int desat_g = baseColor.g + (desaturate * (luma - baseColor.g));
+        int desat_b = baseColor.b + (desaturate * (luma - baseColor.b));
+        
+        // return le color
+        return Color(255, int(desat_r * brightness), int(desat_g * brightness), int(desat_b * brightness));
+    }
+
+    clearscope static Color PB_MixWhiteWithColor(Color baseColor, double percent = 0.0, double brightness = 1.0)
+    {
+        // now interpolate between baseColor and white
+        int desat_r = baseColor.r + (percent * (255));
+        int desat_g = baseColor.g + (percent * (255));
+        int desat_b = baseColor.b + (percent * (255));
+        
+        // return le color
+        return Color(255, int(desat_r * brightness), int(desat_g * brightness), int(desat_b * brightness));
+    }
+
+    static double Lerp(double a, double b, double lerpFactor)
+	{
+		double result = ((1.f - lerpFactor) * a) + (lerpFactor * b);
+		return result;
+	}
+
+    clearscope static int PB_GetRandomNumber(uint seed)
+    {
+        uint state = seed * 1664525u + 1013904223u;
+        return state;
+    }
+
+    clearscope static int PB_RandInt(int min, int max, uint seed)
+    {
+        return min + (abs(PB_GetRandomNumber(seed)) / 2147483648.f) * (max - min);
+    }
+
+    /*clearscope static int PB_RandInt(int min, int max, uint seed)
+    {
+        return min + (int(PB_GetRandomNumber(seed) - 2147483648) / 2147483648.f) * (max - min);
+    }*/
+
 	// [gng] thank you agent ash as usual for the math functions
 	clearscope static vector2 GetLineNormal(int iSide, Line vLine)
 	{
@@ -27,6 +94,17 @@ class PB_Math abstract
 		}
 		return ofs;
 	}
+	
+	static clearscope Vector3 RelativeToGlobalOffset(Vector3 startpos, Vector3 viewAngles, Vector3 offset, bool isPosition = true)
+    {
+        Quat dir = Quat.FromAngles(viewAngles.x, viewAngles.y, viewAngles.z);
+        vector3 ofs = dir * (offset.x, -offset.y, offset.z);
+        if (isPosition)
+        {
+            return Level.Vec3offset(startpos, ofs);
+        }
+        return ofs;
+    }
 	
 	//[inkoalawetrust] Written by Agent_Ash, makes the Val ranging from O_Min to O_Man be crushed down to the range of N_Min and N_Max.
 	//Useful for example for compressing distances to a range of 0 to 1.0.

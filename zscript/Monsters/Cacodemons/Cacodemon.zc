@@ -1,4 +1,4 @@
-Class PB_Cacodemon : PB_Monster// Replaces DoomImp
+Class PB_Cacodemon : PB_Monster
 {
 	bool jawDetached;
 	bool monsterActivated;
@@ -51,22 +51,23 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 		DeathSound "caco/death";
 		ActiveSound "caco/active";
 		
-		BloodColor "Blue";
-		Bloodtype "NashGoreBlood_Blue";
+		////BloodColor "Blue";
+		//BLoodType "NashGoreBlood";
 		Species "Cacodemon";
+
 		PB_Monster.PBMonSpeed 6, 4, 2, 2.5;
 		PB_Monster.MonPosHB 0.7, 0.5, 0.38, 0.40;
-		
 		PB_Monster.ignoreDickDamage true;
 		PB_Monster.CanIFallback false;
 		PB_Monster.CanIRoll true;
 		PB_Monster.CanIReload false;
-		
-		//+FLOATBOB;
-		FloatBobStrength 0.25;
+		PB_Monster.CanISuppress false;
 		
 		+FLOAT;
 		FloatSpeed 4;
+
+		//+FLOATBOB;
+		FloatBobStrength 0.25;
 		
 		+NOGRAVITY;
 		Gravity 0;
@@ -80,16 +81,23 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 	
 	States
 	{	
-		// TODO: convert
 		Execution:
-			TNT1 A 1 A_Die("Execution");
-			Stop;
+			//TNT1 A 1 A_Die("Execution");
+			//Stop;
 		Death.Execution:
-			TNT1 A 0 A_Stopsound();
-			Stop;
+			TNT1 A 0 {
+				A_Stopsound();
+				A_FaceTarget();
+				A_NoBlocking(false);
+			}
+			HEAD BC 4;
+			TNT1 A 0 A_Pain();
+			HEAD E 21;
+			TNT1 A 0 A_Recoil(4);
+			Goto Death.SSG;
 		
 		Spawn:
-			HEAD A 10 A_Look;
+			HEAD A 10 A_Look();
 			Loop;
 		See:
 			//Wakeup animation (plays only once)
@@ -105,12 +113,13 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 					int bleedChance = random(0,100);
 					if (bleedChance < 2)
 					{
-						A_SpawnProjectile ("BlueBloodmist", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
-						A_SpawnProjectile ("Blue_FlyingBlood", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
+						A_SpawnProjectile ("PB_BloodMist", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
+						A_SpawnProjectile ("PB_FlyingBlood", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
 						A_SpawnProjectile ("CacoXDeath4", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
 						A_StartSound("caco/minorpain");
 						A_DamageSelf(1);
 					}
+					A_LogInt(health);
 				}
 				
 				int stopchance = random(0,100);
@@ -123,14 +132,30 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 				A_SmartChase();
 			}
 			Loop;
+			
 		Missile:
-			TNT1 A 0 A_JumpIf(health < 1, "Death_NoJaw");
-			TNT1 A 0 A_JumpIf(jawDetached, "Missile_NoJaw");
-			TNT1 A 0 A_Jump(32, "Missile_Special");
+			TNT1 A 0 {
+				// [DarynS] Using ZS if/else if instead of A_JumpIf/A_Jump for readability.
+				IF (jawDetached && health < 1)
+					return ResolveState("Death_NoJaw");
+				else if (jawDetached)
+					return ResolveState("Missile_NoJaw");
+				// Using the canSuppress variable to temporarily turn off Special attack Cacocola Classic.
+				else if (GetClassName() == "PB_CacodemonBuffed" && random(0,100) > 50)
+					return ResolveState("Missile_Special");
+				return ResolveState(null);
+			}
 			TNT1 A 0 A_StartSound("caco/growl", CHAN_BODY);
 			HEAD EAB 2 A_FaceTarget();
 			HEAD C 5 BRIGHT A_FaceTarget();
-			HEAD D 5 BRIGHT A_HeadAttack(); 
+		//	HEAD D 5 BRIGHT A_HeadAttack(); 
+			HEAD D 5 {
+				// Different attack based on the canSuppress variable. Base Caco will act more vanilla.
+				if (GetClassName() == "PB_CacodemonBuffed")
+					A_DropAdjust2("PB_CacodemonBall","PB_CacodemonBall", 0, 0, 32, minRange: 0, maxRange: 1000, shootDownward: false);
+				else
+					A_SpawnProjectile("PB_CacodemonBall");
+			}
 			HEAD CCBBAE 1;
 			Goto See;
 		Missile_Special:
@@ -138,10 +163,9 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 			HEAD EABAB 2 A_FaceTarget();
 			HEAD C 5 BRIGHT A_FaceTarget();
 			HEAD D 7 BRIGHT {
-			
-				A_SpawnProjectile("PB_CacodemonBall");
+ 				A_SpawnProjectile("PB_CacodemonBall");
 				A_SpawnProjectile("PB_SpecialCacoDemonBall1");
-				A_SpawnProjectile("PB_SpecialCacoDemonBall2");
+				A_SpawnProjectile("PB_SpecialCacoDemonBall2"); 
 			}
 			HEAD CCBBAEABABAA 2;
 			Goto See;
@@ -153,8 +177,13 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 			HEBD CA 3;
 			Goto See;
 		Melee:
-			TNT1 A 0 A_JumpIf(health < 1, "Death_NoJaw");
-			TNT1 A 0 A_JumpIf(jawDetached, "Melee_NoJaw");
+			TNT1 A 0 {
+				if (jawDetached && health < 1)
+					return ResolveState("Death_NoJaw");
+				else if (jawDetached)
+					return ResolveState("Melee_NoJaw");
+				return ResolveState(null);
+			}
 			HEAD B 4 {
 				A_Facetarget();
 				A_StartSound("caco/melee");
@@ -170,9 +199,14 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 		
 		Roll:
 		Pain.Avoid:
-			TNT1 A 0 A_JumpIf(health < 1, "Death_NoJaw");
-			TNT1 A 0 A_JumpIf(jawDetached, "Melee_NoJaw");
-			TNT1 A 0 A_Jump(255, "AvoidLeft", "AvoidRight");
+			TNT1 A 0 {
+				if (jawDetached && health < 1)
+					return ResolveState("Death_NoJaw");
+				else if (jawDetached)
+					return ResolveState("Melee_NoJaw");
+				return ResolveState(null);
+			}
+			TNT1 A 0 A_Jump(256, "AvoidLeft", "AvoidRight");
 			Goto AvoidLeft;
 		  
 		AvoidLeft:
@@ -219,16 +253,16 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 				//bMISSILEMORE = true;
 				MissileChanceMult = 0.5; // Same as MISSILEMORE
 				
-				A_SpawnItem ("BlueBloodPool");
+				A_SpawnItem ("GrowingBloodPool");
 				//Spawn gore
 				for (int i = 0; i < 12; i++) {	
-// 					A_SpawnProjectile ("BlueBloodmistBig", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
-					A_SpawnItemEx("BlueBloodmistBig", random(0,360), random(0,360), random(-60,60));
+// 					A_SpawnProjectile ("PB_BloodMistBig", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
+					A_SpawnItemEx("PB_BloodMistBig", random(0,360), random(0,360), random(-60,60));
 				}
 				for (int i = 0; i < 3; i++) {	
-					A_SpawnProjectile ("XDeath2Blue", 8, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
-					A_SpawnProjectile ("XDeath3Blue", 8, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
-					A_SpawnProjectile ("XDeath4Blue", 8, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
+					A_SpawnProjectile ("PB_XDeath2", 8, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
+					A_SpawnProjectile ("PB_XDeath3", 8, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
+					A_SpawnProjectile ("PB_XDeath4", 8, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
 				}
 					A_SpawnProjectile ("PB_CacoDemonGib1", 8, 0, random (60, 120), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
 					A_SpawnProjectile ("PB_CacoDemonGib4", 8, 0, random (-60, 60), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
@@ -240,7 +274,7 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 			HEBD D 1 A_Recoil(12);
 			HEBD DDDDAAAADDDDAAAADDDAAADDDAAA 2 {
 					A_FaceTarget();
-					A_SpawnProjectile ("Blue_FlyingBlood", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
+					A_SpawnProjectile ("PB_FlyingBlood", 12, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, -40));
 			}
 			HEBD A 1 {
 				A_StartSound("caco/heavypain");
@@ -255,16 +289,20 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 			"####" A 1 A_FaceTarget();
 			"####" A 1 A_Recoil(12);
 		Pain:
-			TNT1 A 0 {monsterActivated = true;}
-			TNT1 A 0 A_JumpIf(jawDetached, "Pain_NoJaw");
-			HEAD B 3 A_Pain;
-			HEAD E 3;
-			HEAD FB 3;
+			TNT1 A 0 {
+				monsterActivated = true;
+				if (jawDetached)
+				{
+					return ResolveState("Pain_NoJaw");
+				}
+				return ResolveState(null);
+			}
+			HEAD B 3 A_Pain();
+			HEAD EFB 3;
 			Goto See;
 		Pain_NoJaw:
 			HEBD C 3 A_StartSound("caco/heavypain");
-			HEBD D 3;
-			HEBD A 3;
+			HEBD DA 3;
 			Goto See;
 		
 		Death:
@@ -298,10 +336,10 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 				A_SetFloorClip();
 				A_NoBlocking();
 				A_SpawnProjectile("PB_CacoDemonGib14", 48, 0, random (160, 220), 2, random (-30, -150));
-				A_SpawnProjectile("Blue_FlyingBlood", 48, 0, random (160, 220), 2, random (-30, -150));
-				A_SpawnProjectile("BlueBloodmistBig", 48, 0, random (160, 220), 2, random (-30, -150));
-				A_SpawnProjectile("BlueBloodmistBig", 48, 0, random (160, 220), 2, random (-30, -150));
-				A_SpawnProjectile("BlueBloodmistBig", 48, 0, random (160, 220), 2, random (-30, -150));
+				A_SpawnProjectile("PB_FlyingBlood", 48, 0, random (160, 220), 2, random (-30, -150));
+				A_SpawnProjectile("PB_BloodMistBig", 48, 0, random (160, 220), 2, random (-30, -150));
+				A_SpawnProjectile("PB_BloodMistBig", 48, 0, random (160, 220), 2, random (-30, -150));
+				A_SpawnProjectile("PB_BloodMistBig", 48, 0, random (160, 220), 2, random (-30, -150));
 			}
 			CCD4 CDEF 6;
 			TNT1 A 0 A_SpawnItem("PB_DeadCacodemon14");
@@ -310,14 +348,14 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 		Death.Cut:
 			HEBD E 6 {
 				A_FaceTarget();
-				A_SpawnProjectile("Blue_FlyingBlood", 32, 0, random (160, 220), 2, random (-30, -150));
-				A_SpawnProjectile("Blue_FlyingBlood", 36, 0, random (160, 220), 2, random (-30, -150));
-				A_SpawnProjectile("BlueBloodmistBig", 24, 0, random (160, 220), 2, random (-30, -150));
-				A_SpawnProjectile("BlueBloodmistBig", 32, 0, random (160, 220), 2, random (-30, -150));
-				A_SpawnProjectile("BlueBloodmistBig", 32, 0, random (160, 220), 2, random (-30, -150));
-				A_SpawnProjectile("XDeath2Blue", 32, -6, random (0, 360), 2, random (-30, -150));
-				A_SpawnProjectile("XDeath1Blue", 28, -8, random (0, 360), 2, random (-30, -150));
-				A_SpawnProjectile("XDeath1Blue", 36, -8, random (0, 360), 2, random (-30, -140));
+				A_SpawnProjectile("PB_FlyingBlood", 32, 0, random (160, 220), 2, random (-30, -150));
+				A_SpawnProjectile("PB_FlyingBlood", 36, 0, random (160, 220), 2, random (-30, -150));
+				A_SpawnProjectile("PB_BloodMistBig", 24, 0, random (160, 220), 2, random (-30, -150));
+				A_SpawnProjectile("PB_BloodMistBig", 32, 0, random (160, 220), 2, random (-30, -150));
+				A_SpawnProjectile("PB_BloodMistBig", 32, 0, random (160, 220), 2, random (-30, -150));
+				A_SpawnProjectile("PB_XDeath2", 32, -6, random (0, 360), 2, random (-30, -150));
+				A_SpawnProjectile("PB_XDeath1", 28, -8, random (0, 360), 2, random (-30, -150));
+				A_SpawnProjectile("PB_XDeath1", 36, -8, random (0, 360), 2, random (-30, -140));
 				NashGoreGibs.SpawnGibs(self);
 			}
 			HEBD F 4 {
@@ -340,8 +378,8 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 				A_StartSound("gore/minimum", CHAN_AUTO);
 			}
 			CCD5 AABBCCDD 2 {
-				A_SpawnProjectile("Blue_FlyingBlood", 36, 0, random (160, 220), 2, random (-30, -150));
-				A_SpawnProjectile("BlueBloodmistBig", 28, 0, random (160, 220), 2, random (-30, -150));
+				A_SpawnProjectile("PB_FlyingBlood", 36, 0, random (160, 220), 2, random (-30, -150));
+				A_SpawnProjectile("PB_BloodMistBig", 28, 0, random (160, 220), 2, random (-30, -150));
 			}
 			CCD5 D 1 {NashGoreGibs.SpawnGibs(self);}
 			CCD5 E 6 A_StartSound("EYEPULL", CHAN_AUTO);
@@ -384,14 +422,14 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 			TNT1 A 0 {
 				A_FaceTarget();
 				for(int i = 0; i < 5; i++) {
-					A_SpawnProjectile ("Blue_FlyingBlood", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));
-					A_SpawnProjectile ("BlueBloodmistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));	
+					A_SpawnProjectile ("PB_FlyingBlood", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));
+					A_SpawnProjectile ("PB_BloodMistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));	
 				}
-				A_SpawnProjectile ("XDeath2bBlue", 32, 0, random (0, 360), 2, random (-30, -150));
-				A_SpawnProjectile ("XDeath3bBlue", 26, 0, random (0, 360), 2, random (-30, -150));
-				A_SpawnProjectile ("XDeath2Blue", 32, 0, random (160, 210), 2, random (-30, -60));
-				A_SpawnProjectile ("XDeath3Blue", 26, 0, random (160, 210), 2, random (-30, -60));
-				A_SpawnProjectile ("XDeath3Blue", 26, 0, random (160, 210), 2, random (-30, -60));
+				A_SpawnProjectile ("PB_XDeath2b", 32, 0, random (0, 360), 2, random (-30, -150));
+				A_SpawnProjectile ("PB_XDeath3b", 26, 0, random (0, 360), 2, random (-30, -150));
+				A_SpawnProjectile ("PB_XDeath2", 32, 0, random (160, 210), 2, random (-30, -60));
+				A_SpawnProjectile ("PB_XDeath3", 26, 0, random (160, 210), 2, random (-30, -60));
+				A_SpawnProjectile ("PB_XDeath3", 26, 0, random (160, 210), 2, random (-30, -60));
 				A_SpawnProjectile ("PB_CacodemonGib5", 42, 0, random (160, 220), 2, random (-60, -60));
 				A_SpawnProjectile ("PB_CacodemonGib6", 42, 0, random (160, 220), 2, random (-80, -60));
 				A_SpawnProjectile ("PB_CacodemonGib9", 34, 0, random (160, 220), 2, random (-70, -150));
@@ -419,17 +457,17 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 				A_SetFloorClip();
 				A_NoBlocking();
 				for(int i = 0; i < 6; i++) {
-					A_SpawnProjectile("Blue_FlyingBlood", 47, 0, random (0, 360), 2, random (-30, -150));
-					A_SpawnProjectile ("BlueBloodmistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));
+					A_SpawnProjectile("PB_FlyingBlood", 47, 0, random (0, 360), 2, random (-30, -150));
+					A_SpawnProjectile ("PB_BloodMistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));
 				}
 				A_SpawnProjectile("PB_CacoDemonGib2", 34, 0, random (160, 220), 2, random (-80, -150));
 				A_SpawnProjectile("PB_CacoDemonGib5", 46, 0, random (160, 220), 2, random (-30, -150));
 				A_SpawnProjectile("PB_CacoDemonGib6", 48, 0, random (160, 220), 2, random (-30, -150));
 				A_SpawnProjectile("PB_CacoDemonGib7", 44, 0, random (160, 220), 2, random (-30, -150));
 				A_SpawnProjectile("PB_CacoDemonGib14", 48, 0, random (160, 220), 2, random (-30, -150));
-				A_SpawnProjectile("XDeath2Blue", 42, -6, random (0, 360), 2, random (-30, -150));
-				A_SpawnProjectile("XDeath1Blue", 48, -8, random (0, 360), 2, random (-30, -150));
-				A_SpawnProjectile("XDeath1Blue", 32, -8, random (0, 360), 2, random (-30, -140));
+				A_SpawnProjectile("PB_XDeath2", 42, -6, random (0, 360), 2, random (-30, -150));
+				A_SpawnProjectile("PB_XDeath1", 48, -8, random (0, 360), 2, random (-30, -150));
+				A_SpawnProjectile("PB_XDeath1", 32, -8, random (0, 360), 2, random (-30, -140));
 			}
 			CCD2 A 10;
 			TNT1 A 0 A_Jump(192, 2);
@@ -447,8 +485,8 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 				A_SetFloorClip();
 				A_NoBlocking();
 				for(int i = 0; i < 8; i++) {
-					A_SpawnProjectile("Blue_FlyingBlood", 47, 0, random (0, 360), 2, random (65, 150));
-					A_SpawnProjectile ("BlueBloodmistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -170));
+					A_SpawnProjectile("PB_FlyingBlood", 47, 0, random (0, 360), 2, random (65, 150));
+					A_SpawnProjectile ("PB_BloodMistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -170));
 				}
 				A_SpawnProjectile("PB_CacodemonGib3", 30, 0, random (0, 360), 2, random (-30, -150));
 				A_SpawnProjectile ("PB_CacodemonGib11", 35, 0, random (0, 360), 2, random (-30, -150));
@@ -468,7 +506,7 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 			Stop;
 			CCD3 C 0 { 
 				for(int i = 0; i < 12; i++) {
-					A_SpawnProjectile ("BlueBloodmistBig", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-170, 30));
+					A_SpawnProjectile ("PB_BloodMistBig", 42, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-170, 30));
 				}
 			}
 			Stop;
@@ -543,7 +581,7 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 				}
 				
 				for(int i = 0; i < 3; i++) {
-					A_SpawnProjectile ("BlueBloodmistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (25, 170));
+					A_SpawnProjectile ("PB_BloodMistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (25, 170));
 				}
 				
 				
@@ -557,7 +595,7 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 // 					A_SpawnItemEx ("ElectroBlastTrail3",0,random(-1,1),32,0,0,0,0,SXF_NOCHECKPOSITION);
 // 				}
 				
-				A_SpawnProjectile ("BlueBloodmistBig", 33, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (25, 170));
+				A_SpawnProjectile ("PB_BloodMistBig", 33, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (25, 170));
 				
 			}
 			
@@ -586,7 +624,7 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 				}
 				
 				for(int i = 0; i < 3; i++) {
-					A_SpawnProjectile ("BlueBloodmistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (25, 170));
+					A_SpawnProjectile ("PB_BloodMistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (25, 170));
 				}
 			}
 			TNT1 A 0 {
@@ -607,7 +645,7 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 				}
 				
 				for(int i = 0; i < 3; i++) {
-					A_SpawnProjectile ("BlueBloodmistBig", 33, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (25, 170));
+					A_SpawnProjectile ("PB_BloodMistBig", 33, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (25, 170));
 				}
 			}
 			TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1Blue",-1,0,6,0,0,0,0,SXF_NOCHECKPOSITION);
@@ -643,11 +681,11 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 				A_SpawnProjectile("PB_CacodemonGib8", 30, 0, random (0, 360), 2, random (-30, -150));
 				
 				for(int i = 0; i < 16; i++) {
-					A_SpawnProjectile("Blue_FlyingBlood", 47, 0, random (0, 360), 2, random (65, 150));
-					A_SpawnProjectile ("BlueBloodmistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
+					A_SpawnProjectile("PB_FlyingBlood", 47, 0, random (0, 360), 2, random (65, 150));
+					A_SpawnProjectile ("PB_BloodMistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 360));
 				}
 			}
-			TNT1 AAAAAAAAAA 0 A_SpawnProjectile("BlueSuperGoreSpawner", 28, 0, random (0, 360), 2, random (0, 360));
+//			TNT1 AAAAAAAAAA 0 A_SpawnProjectile("SuperGoreSpawner", 28, 0, random (0, 360), 2, random (0, 360));
 			Stop;
 			
 		Death.Incinerate:
@@ -706,6 +744,71 @@ Class PB_Cacodemon : PB_Monster// Replaces DoomImp
 	}
 }
 
+// This tougher variant is a subclass of the main PB_Cacodemon. 
+// Not a lot will change between them, so why duplicate hundreds of lines of code?
+Class PB_CacodemonBuffed : PB_Cacodemon
+{
+	// Suppressive Fire will be for this tougher variant.
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		suppressiveOffZ = self.height * 0.5;
+		suppressiveOffXY = 0;
+		suppressiveMissile = "PB_Cacodemonball2";
+		suppressiveMissileRadius = 8;
+		suppressLimit = 6;
+	}
+	
+	Default
+	{
+		Monster;
+		Radius 31;
+		Height 56;
+		Speed 10;
+		Mass 400;
+		Health 500;
+		GibHealth 25;
+		MeleeRange 60;
+		MeleeThreshold 120;
+		
+		PB_Monster.PBMonSpeed 6, 4, 2, 2.5;
+		PB_Monster.MonPosHB 0.7, 0.5, 0.38, 0.40;
+		PB_Monster.ignoreDickDamage true;
+		PB_Monster.CanIFallback false;
+		PB_Monster.CanIRoll false;
+		PB_Monster.CanIReload false;
+		PB_Monster.CanISuppress true;
+	}
+	
+	States
+	{	
+		// Forward rush as part of Suppressive Routine			
+		FrontMove:
+			HEAD AA 2 {Thrust(2);}
+			HEAD EE 2 ;
+			HEAD AA 2;
+			HEAD EE 2;
+			Goto See;
+		// Suppressive Fire. Spam Fireballs!
+		SuppressiveFire:
+			TNT1 A 0 { self.inSuppressiveFire = true; }
+			HEAD EAB 2 A_FaceTarget();
+			HEAD C 5 BRIGHT A_FaceTarget();
+			HEAD D 7 BRIGHT A_SuppressiveFire(); // Offsets and Missile set in BeginPlay. No need to set them again here.
+			HEAD C 2 {if (target && CheckSight(target)) SetStateLabel("See");}
+			HEAD CCBBAE 1;
+			TNT1 A 0 { self.inSuppressiveFire = false; suppressCount += 1; }
+			GoTo FrontMove;
+		
+		Missile_Special:
+			TNT1 A 0 A_StartSound("caco/heavyattack", CHAN_BODY);
+			HEAD EABAB 2 A_FaceTarget();
+			HEAD C 5 BRIGHT A_FaceTarget();
+			HEAD D 7 BRIGHT A_SpawnProjectile("PB_CacodemonBall2");
+			HEAD CCBBAEABABAA 2;
+			Goto See;
+	}
+}
 
 /*
 ************************
@@ -722,8 +825,8 @@ class PB_Cacodemon_Execution_1 : Actor
 		+FORCEXYBILLBOARD;
 		Radius 1;
 		Height 1;
-		BloodColor "Blue";
-		Bloodtype "NashGoreBlood_Blue";
+		////BloodColor "Blue";
+		Bloodtype "NashGoreBlood";
 	}
 	
 	States {
@@ -733,9 +836,9 @@ class PB_Cacodemon_Execution_1 : Actor
 			
 			HEAD AABBFF 1 {
 					A_FaceTarget();
-					A_SpawnProjectile("Blue_FlyingBlood", 38, 0, random (0, 360), 2, random (65, 150));
-					A_SpawnProjectile ("BlueBloodmistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));	
-					A_SpawnProjectile ("BlueBloodmist", 34, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -170));
+					A_SpawnProjectile("PB_FlyingBlood", 38, 0, random (0, 360), 2, random (65, 150));
+					A_SpawnProjectile ("PB_BloodMistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));	
+					A_SpawnProjectile ("PB_BloodMist", 34, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -170));
 			}
 			
 			HEAD BBBAA 1;
@@ -745,13 +848,13 @@ class PB_Cacodemon_Execution_1 : Actor
 			TNT1 A 0 {
 				A_StartSound("caco/heavypain", CHAN_BODY );
 				for(int i = 0; i < 3; i++) {
-					A_SpawnProjectile ("Blue_FlyingBlood", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));
-					A_SpawnProjectile ("BlueBloodmistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));	
+					A_SpawnProjectile ("PB_FlyingBlood", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));
+					A_SpawnProjectile ("PB_BloodMistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));	
 				}
-				A_SpawnProjectile ("XDeath2bBlue", 32, 0, random (0, 360), 2, random (-30, -150));
-				A_SpawnProjectile ("XDeath3bBlue", 26, 0, random (0, 360), 2, random (-30, -150));
-				A_SpawnProjectile ("XDeath2Blue", 32, 0, random (160, 210), 2, random (-30, -60));
-				A_SpawnProjectile ("XDeath3Blue", 26, 0, random (160, 210), 2, random (-30, -60));
+				A_SpawnProjectile ("PB_XDeath2b", 32, 0, random (0, 360), 2, random (-30, -150));
+				A_SpawnProjectile ("PB_XDeath3b", 26, 0, random (0, 360), 2, random (-30, -150));
+				A_SpawnProjectile ("PB_XDeath2", 32, 0, random (160, 210), 2, random (-30, -60));
+				A_SpawnProjectile ("PB_XDeath3", 26, 0, random (160, 210), 2, random (-30, -60));
 			}
 			CCD5 BBBCCCDDDCCDDEEE 1;
 			//F005 DDEEFFEEFFGGHHGH 1 A_SpawnProjectile ("PB_SquirtingBloodTrail", 43, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (0, 40))
@@ -778,8 +881,9 @@ class PB_CacodemonGib1 : PB_LimbBase
 		Speed 11;
 		Mass 10;
 		gravity 0.48;
-		Decal "BlueBloodSplat";
-		BloodType "NashGoreBlood_Blue", "NashGoreBlood_Blue", "NashGoreBlood_Blue";
+		Decal "BloodSplat";
+		BloodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
+        ////BloodColor "Blue";
 		BounceFactor 0.4;
 		BounceCount 3;
 		+BOUNCEONWALLS; +BOUNCEONFLOORS; +ALLOWBOUNCEONACTORS; +BOUNCEAUTOOFF;
@@ -797,27 +901,6 @@ class PB_CacodemonGib1 : PB_LimbBase
 		DeathSound "misc/xdeath2";
 	}
 	
-	override void BeginPlay(void)
-	{
-		ChangeStatNum(STAT_NashGore_Gore);
-		NashGoreStatics.QueueGore();
-		NashGoreStatics.RandomXFlip(self);
-		Super.BeginPlay();
-	}
-
-	override void PostBeginPlay(void)
-	{
-		if (random() < (255 - nashgore_gibamount)) { Destroy(); return; }
-		Super.PostBeginPlay();
-	}
-
-	override void Tick(void)
-	{
-		Super.Tick();
-		if (!bNoTimeFreeze && (isFrozen() || Level.isFrozen())) return;
-		if (NashGoreStatics.CheckSky(self)) { Destroy(); return; }
-	}
-	
 	States {
 		Spawn:
 			CDG1 A 3 {
@@ -832,19 +915,19 @@ class PB_CacodemonGib1 : PB_LimbBase
 		Fly1:
 			CDG1 A 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 A 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 A 1 {
 				A_setroll(random(-30,30));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 A -1;
 			Stop;	
@@ -868,19 +951,19 @@ class PB_CacodemonGib2 : PB_CacodemonGib1
 		Fly1:
 			CDG1 B 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 B 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 B 1 {
 				A_setroll(random(-30,30));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 B -1;
 			Stop;	
@@ -904,19 +987,19 @@ class PB_CacodemonGib3 : PB_CacodemonGib1
 		Fly1:
 			CDG1 C 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 C 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 C 1 {
 				A_setroll(random(-30,30));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 C -1;
 			Stop;	
@@ -940,19 +1023,19 @@ class PB_CacodemonGib4 : PB_CacodemonGib3
 		Fly1:
 			CDG1 D 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 D 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 D 1 {
 				A_setroll(random(-10,10));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 D -1;
 			Stop;	
@@ -976,19 +1059,19 @@ class PB_CacodemonGib5 : PB_CacodemonGib3
 		Fly1:
 			CDG1 E 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 E 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 E 1 {
 				A_setroll(random(-10,10));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 E -1;
 			Stop;	
@@ -1012,19 +1095,19 @@ class PB_CacodemonGib6 : PB_CacodemonGib3
 		Fly1:
 			CDG1 F 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 F 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 F 1 {
 				A_setroll(random(-10,10));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 F -1;
 			Stop;	
@@ -1048,19 +1131,19 @@ class PB_CacodemonGib7 : PB_CacodemonGib3
 		Fly1:
 			CDG1 G 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 G 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 G 1 {
 				A_setroll(random(-10,10));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 G -1;
 			Stop;	
@@ -1084,19 +1167,19 @@ class PB_CacodemonGib8 : PB_CacodemonGib3
 		Fly1:
 			CDG1 H 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 H 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 H 1 {
 				A_setroll(random(-10,10));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 H -1;
 			Stop;	
@@ -1120,19 +1203,19 @@ class PB_CacodemonGib9 : PB_CacodemonGib3
 		Fly1:
 			CDG1 I 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 I 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 I 1 {
 				A_setroll(random(-175,-185));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 I -1;
 			Stop;	
@@ -1156,19 +1239,19 @@ class PB_CacodemonGib10 : PB_CacodemonGib3
 		Fly1:
 			CDG1 J 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 J 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 J 1 {
 				A_setroll(random(-40,40));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 J -1;
 			Stop;	
@@ -1192,19 +1275,19 @@ class PB_CacodemonGib11 : PB_CacodemonGib3
 		Fly1:
 			CDG1 K 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 K 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 K 1 {
 				A_setroll(random(-40,40));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 K -1;
 			Stop;	
@@ -1228,19 +1311,19 @@ class PB_CacodemonGib12 : PB_CacodemonGib3
 		Fly1:
 			CDG1 L 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 L 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 L 1 {
 				A_setroll(random(-40,40));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 L -1;
 			Stop;	
@@ -1264,19 +1347,19 @@ class PB_CacodemonGib13 : PB_CacodemonGib3
 		Fly1:
 			CDG1 M 1 {
 				A_Setroll(roll+4);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 M 1 {
 				A_Setroll(roll-5);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 M 1 {
 				A_setroll(random(-40,40));
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 M -1;
 			Stop;	
@@ -1303,19 +1386,19 @@ class PB_CacodemonGib14 : PB_CacodemonGib3
 		Fly1:
 			CDG1 N 1 {
 				A_Setroll(roll+15);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Fly2:
 			CDG1 N 1 {
 				A_Setroll(roll-15);
-				A_SpawnProjectile("Blue_FlyingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
+				A_SpawnProjectile("PB_SquirtingBloodTrail", 0, 0, random (0, 180), 2, random (0, 180));
 			}
 			Loop;
 		Death:
 			CDG1 O 1 {
 				A_setroll(0);
-				A_SpawnItemEx ("Blue_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+				A_SpawnItemEx ("PB_BloodSpot",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			}
 			CDG1 O -1;
 			Stop;	
@@ -1343,11 +1426,11 @@ class PB_BrutalizedCacodemon1 : Actor
 		damagefactor "KillMe", 0.0;
 		damagefactor "Cutless", 0.6;
 		damageFactor "SSG", 10;
-		bloodtype "Blue_Blood";
-		bloodcolor "blue";
+		bloodtype "NashGoreBlood";
+		////BloodColor "Blue";
 		Mass 999999;
 		-SOLID;
-		+NOBLOODDECALS;
+		//+NOBLOODDECALS;
 		+SHOOTABLE;
 		+FLOORCLIP;
 		+DONTSPLASH;
@@ -1362,19 +1445,19 @@ class PB_BrutalizedCacodemon1 : Actor
 					bXFLIP = true;
 				}
 			} 
-			CCD1 A 5 A_SpawnItemEx ("BlueBloodPool",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			CCD1 A 5 A_SpawnItemEx ("GrowingBloodPool",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			CCD1 B 7;
-			CCD1 CCDDDCCCCDDCCCCDDCC 2 A_SpawnProjectile("BlueBloodTrails", 42, 10, random (0, 360), 2, random (0, -160));
+			CCD1 CCDDDCCCCDDCCCCDDCC 2 A_SpawnProjectile("PB_FlyingBloodTrail", 42, 10, random (0, 360), 2, random (0, -160));
 			TNT1 A 0 A_StartSound("caco/minorpain");
 			CCD1 E 5;
-			CCD1 CCCCCDDDCCCCDDCCCCDDCC 2 A_SpawnProjectile("BlueBloodTrails", 42, 10, random (0, 360), 2, random (0, -160));
-			CCD1 CCDDDCCCCDDCCCCDDCC 2 A_SpawnProjectile("BlueBloodTrails", 42, 10, random (0, 360), 2, random (0, -160));
+			CCD1 CCCCCDDDCCCCDDCCCCDDCC 2 A_SpawnProjectile("PB_FlyingBloodTrail", 42, 10, random (0, 360), 2, random (0, -160));
+			CCD1 CCDDDCCCCDDCCCCDDCC 2 A_SpawnProjectile("PB_FlyingBloodTrail", 42, 10, random (0, 360), 2, random (0, -160));
 			TNT1 A 0 A_StartSound("caco/minorpain");
 			CCD1 E 5;
-			CCD1 CCCCDDDCCCCDDCCCCDDCC 2 A_SpawnProjectile("BlueBloodTrails", 42, 10, random (0, 360), 2, random (0, -160));
+			CCD1 CCCCDDDCCCCDDCCCCDDCC 2 A_SpawnProjectile("PB_FlyingBloodTrail", 42, 10, random (0, 360), 2, random (0, -160));
 			TNT1 A 0 A_StartSound("caco/minorpain");
 			CCD1 E 5;
-			CCD1 CCCCDDDCCCCDDCCCCDDCC 2 A_SpawnProjectile("BlueBloodTrails", 42, 10, random (0, 360), 2, random (0, -160));
+			CCD1 CCCCDDDCCCCDDCCCCDDCC 2 A_SpawnProjectile("PB_FlyingBloodTrail", 42, 10, random (0, 360), 2, random (0, -160));
 		Die:
 			CCD1 D 1 {
 				bSHOOTABLE = false;
@@ -1382,7 +1465,7 @@ class PB_BrutalizedCacodemon1 : Actor
 				A_Fall();
 				A_NoBlocking();
 				A_StartSound("caco/death");
-				A_SpawnProjectile("XDeath1Blue", 24, 0, random (30, 60), 2, random (-30, 30));
+				A_SpawnProjectile("PB_XDeath1", 24, 0, random (30, 60), 2, random (-30, 30));
 			}
 			CCD1 D 4;
 			TNT1 A 0 A_SpawnItem("PB_DeadCacodemon5");
@@ -1392,15 +1475,15 @@ class PB_BrutalizedCacodemon1 : Actor
 				A_StartSound("caco/whine", CHAN_AUTO);
 				A_StartSound("misc/xdeath4", CHAN_AUTO);
 				for(int i = 0; i < 6; i++) {
-					A_SpawnProjectile("Blue_FlyingBlood", 47, 0, random (0, 360), 2, random (-30, -150));
-					A_SpawnProjectile ("BlueBloodmistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));
+					A_SpawnProjectile("PB_FlyingBlood", 47, 0, random (0, 360), 2, random (-30, -150));
+					A_SpawnProjectile ("PB_BloodMistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -130));
 				}
 				A_SpawnProjectile("PB_CacoDemonGib5", 46, -7, random (160, 220), 2, random (-30, -150));
 				A_SpawnProjectile("PB_CacoDemonGib6", 48, -8, random (160, 220), 2, random (-30, -150));
 				A_SpawnProjectile("PB_CacoDemonGib7", 44, -9, random (160, 220), 2, random (-30, -150));
 				A_SpawnProjectile("PB_CacoDemonGib14", 46, 0, random (160, 220), 2, random (-80, -150));
-				A_SpawnProjectile("XDeath2Blue", 42, -6, random (0, 360), 2, random (-30, -150));
-				A_SpawnProjectile("XDeath1Blue", 48, -8, random (0, 360), 2, random (-30, -150));
+				A_SpawnProjectile("PB_XDeath2", 42, -6, random (0, 360), 2, random (-30, -150));
+				A_SpawnProjectile("PB_XDeath1", 48, -8, random (0, 360), 2, random (-30, -150));
 			}
 			CCD2 A 10;
 			CCD2 A 0 A_SpawnItem("PB_BrutalizedCacodemon2");
@@ -1411,8 +1494,8 @@ class PB_BrutalizedCacodemon1 : Actor
 				A_Fall();
 				A_NoBlocking();
 				for(int i = 0; i < 8; i++) {
-					A_SpawnProjectile("Blue_FlyingBlood", 44, 0, random (0, 360), 2, random (-65, -150));
-					A_SpawnProjectile ("BlueBloodmistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -170));
+					A_SpawnProjectile("PB_FlyingBlood", 44, 0, random (0, 360), 2, random (-65, -150));
+					A_SpawnProjectile ("PB_BloodMistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-55, -170));
 				}
 				A_SpawnProjectile("PB_CacodemonGib3", 30, 0, random (0, 360), 2, random (-30, -150));
 				A_SpawnProjectile ("PB_CacodemonGib11", 35, 0, random (0, 360), 2, random (-30, -150));
@@ -1435,13 +1518,13 @@ class PB_BrutalizedCacodemon2 : PB_BrutalizedCacodemon1
 	}
 	States {
 		Spawn:
-			CCD2 ABABAABABA 3 A_SpawnProjectile ("BlueBloodmistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (55, 130));
+			CCD2 ABABAABABA 3 A_SpawnProjectile ("PB_BloodMistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (55, 130));
 			CCD2 B 32;
 			CCD2 A 1 {
 				A_StartSound("caco/whine");
-				A_SpawnProjectile("XDeath2Blue", 24, 0, random (30, 60), 2, random (-30, 30));
+				A_SpawnProjectile("PB_XDeath2", 24, 0, random (30, 60), 2, random (-30, 30));
 			}
-			CCD2 ABABAABABA 2 A_SpawnProjectile ("BlueBloodmistBig", 33, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (55, 130)); 
+			CCD2 ABABAABABA 2 A_SpawnProjectile ("PB_BloodMistBig", 33, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (55, 130)); 
 			CCD2 B 30;
 		Die:
 			CCD2 C 1 {
@@ -1450,8 +1533,8 @@ class PB_BrutalizedCacodemon2 : PB_BrutalizedCacodemon1
 				A_Fall();
 				A_NoBlocking();
 				A_StartSound("caco/death");
-				A_SpawnProjectile("XDeath1Blue", 20, 0, random (30, 60), 2, random (-30, 30));
-				A_SpawnProjectile("XDeath2Blue", 20, 0, random (30, 60), 2, random (-30, 30));
+				A_SpawnProjectile("PB_XDeath1", 20, 0, random (30, 60), 2, random (-30, 30));
+				A_SpawnProjectile("PB_XDeath2", 20, 0, random (30, 60), 2, random (-30, 30));
 			}
 			CCD3 C 0 A_SpawnItemEx ("PB_DeadCacodemon6",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			Stop;
@@ -1461,8 +1544,8 @@ class PB_BrutalizedCacodemon2 : PB_BrutalizedCacodemon1
 				A_Fall();
 				A_NoBlocking();
 				for(int i = 0; i < 12; i++) {
-					A_SpawnProjectile("Blue_FlyingBlood", 47, 0, random (0, 360), 2, random (-65, -150));
-					A_SpawnProjectile ("BlueBloodmistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-30, -170));
+					A_SpawnProjectile("PB_FlyingBlood", 47, 0, random (0, 360), 2, random (-65, -150));
+					A_SpawnProjectile ("PB_BloodMistBig", 36, 0, random (0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (-30, -170));
 				}
 				A_SpawnProjectile("PB_CacodemonGib3", 30, 0, random (0, 360), 2, random (-30, -150));
 				A_SpawnProjectile ("PB_CacodemonGib11", 35, 0, random (0, 360), 2, random (-30, -150));
@@ -1483,6 +1566,269 @@ class PB_BrutalizedCacodemon2 : PB_BrutalizedCacodemon1
 *** PROJECTILE ACTORS ***
 *************************
 */
+class LightningBolt : Actor
+{
+	Default
+	{
+		Radius 6;
+		Height 16;
+		Speed 15;
+		+RANDOMIZE
+		+ZDOOMTRANS
+		RenderStyle "Normal";
+		Alpha 1.0;
+		//Scale 2.2;
+		Scale 1.5;
+		SeeSound "baron/attack";
+		DeathSound "baron/shotx";
+		Decal "BaronScorch";
+	}
+	
+	
+	States
+	{
+	Spawn:
+		//LTNG B 4 BRIGHT;
+		LTNA BDFH 1 BRIGHT Light("PB_Lightning_Bolt");
+		TNT1 A 0 A_Explode(random(12,24),90, XF_CIRCULAR | XF_NOTMISSILE ,fulldamagedistance:60,damagetype:"Plasma");
+		LTNA JLNPRTVXZ 1 BRIGHT;
+		Stop;
+	}
+}
+
+
+
+class PB_CacodemonBall2 : PB_Monster_Projectile
+{
+       const PI = 3.14159265;
+    bool isAlive;
+    int startTime;
+    
+    // Set full orbit duration in tics.
+    const orbitDurationTics = 35;  // A full orbit will take 35 tics.
+    
+    // An offset to adjust the center of rotation.
+    // If the projectile's visual center is not exactly at self.pos, tweak this value.
+    const centerOffsetY = 0;  // For example, shift the center 6 units upward.
+    
+    // Hardcoded initial offsets for each orbiter relative to the projectile's center.
+    double orbInitX[3];
+    double orbInitY[3];
+    
+	Actor lastKnownTarget;
+    Actor orbiters[3];
+	double initialVelocity;
+	int CascadeTimer;
+	int OrbTimer;
+	double dist;
+	int checkDistanceTimer;
+	int distanceTimerInterval;
+	int launchStartTime;
+
+
+    Default {
+        DamageType "Plasma";
+        SeeSound "caco/spit";
+        DeathSound "CacoBallImpact";
+        Radius 8;
+        Height 8;
+        Speed 12;
+        FastSpeed 20;
+        DamageFunction random(22,40);
+        RenderStyle "Add";
+        Alpha 0.99;
+        +THRUGHOST;
+        +RANDOMIZE;
+        Projectile;
+        Scale 0.58;
+    }
+
+
+    override void PostBeginPlay()
+    {
+        Super.PostBeginPlay();
+        
+		if (self.target && self.target.target)
+		{
+			lastKnownTarget = self.target.target;
+		}
+		
+		
+		isAlive = true;
+        startTime = level.time;
+		initialVelocity = vel.Length() > 0 ? vel.Length() : 12; // Default to Speed if vel is zero (edit by leviathan)
+		CascadeTimer = 35;
+		OrbTimer = 22;
+		checkDistanceTimer = 5;
+		launchStartTime = -1;
+
+        double centerX = self.pos.x;
+        double centerY = self.pos.y;
+        for (int i = 0; i < 3; i++)
+        {
+			double angleDeg = i * 120.0; // Spread 3 orbiters evenly (360° / 3 = 120°) (edit by leviathan)
+			double offsetX = 30.0 * Cos(angleDeg); 
+			double offsetY = 30.0 * Sin(angleDeg); 
+
+			orbInitX[i] = offsetX; 
+			orbInitY[i] = offsetY;
+		
+            Actor orb = Spawn("PB_CacodemonBall", (centerX + orbInitX[i], centerY + orbInitY[i], self.pos.z), ALLOW_REPLACE);
+
+            if (orb)
+            {
+                orb.master = self;
+                if (self.target)
+                    orb.target = self.target;  // Prevent the orbiter from colliding with the shooter. (edit by leviathan)
+                orbiters[i] = orb;
+            }
+            else
+            {
+                //Console.Printf("Failed to spawn orbiter %d", i);
+            }
+        }
+    }
+
+	override void Tick()  //(edit by leviathan)
+	{
+		Super.Tick();
+		if (!isAlive)
+			return;
+
+		int ticDiff = level.time - startTime;
+		int distanceTimer = level.time - distanceTimerInterval;
+
+		if (distanceTimer >= checkDistanceTimer)
+		{
+			distanceTimerInterval = level.time;
+			if (self.target && self.target.target)
+			{
+				lastKnownTarget = self.target.target;
+				dist = distance3d(self.target.target);
+			}
+			else if (lastKnownTarget)
+			{
+				dist = distance3d(lastKnownTarget);
+			}
+			else
+			{
+				dist = 4096;
+				Console.Printf("\ckUnable to lock target");
+			}
+
+			FLineTraceData traceData;
+			bool traceResult = self.LineTrace(angle, 75, 25, TRF_THRUACTORS, 0, 0, 0, data: traceData);
+			if (traceResult && (traceData.HitType == TRACE_HitFloor || traceData.HitType == TRACE_HitWall))
+			{
+				if (vel.z != 0) vel.z += 0.3; // Avoid adding to NaN 
+			}
+		}
+
+		// Start the launch timer only when dist <= 700 for the first time
+		if (launchStartTime == -1 && dist <= 800)
+		{
+			launchStartTime = level.time;
+		}
+
+		if (dist <= 700)
+		{
+			double timePassed = (double)(ticDiff - CascadeTimer);
+			double decelerationRate = (initialVelocity * 0.5) / 40.0;
+			double velocityFactor = Max(initialVelocity * 0.5, initialVelocity - (timePassed * decelerationRate));
+			if (vel.Length() > 0) vel = vel.Unit() * velocityFactor; // Ensure vel is valid
+		}
+
+		double angleStepDeg = 360.0 / double(orbitDurationTics);
+		double rotationAngleDeg = ticDiff * angleStepDeg;
+
+		for (int i = 0; i < 3; i++)
+		{
+			if (orbiters[i])
+			{
+				if (launchStartTime != -1)
+				{
+					int launchTime = launchStartTime + (i * OrbTimer);
+					if (level.time >= launchTime)
+					{
+						LaunchOrbiter(i);
+						continue;
+					}
+				}
+
+				double rotatedX = orbInitX[i] * Cos(rotationAngleDeg) - orbInitY[i] * Sin(rotationAngleDeg);
+				double rotatedY = orbInitX[i] * Sin(rotationAngleDeg) + orbInitY[i] * Cos(rotationAngleDeg);
+				orbiters[i].SetOrigin((self.pos.x + rotatedX, self.pos.y + rotatedY, self.pos.z), false);
+			}
+		}
+	}
+
+	void LaunchOrbiter(int i)
+	{
+		Actor orb = orbiters[i];
+		if (!orb)
+			return;
+
+		if (self.target && self.target.target)
+		{
+			Vector3 direction = (self.target.target.pos - orb.pos).Unit();
+			if (direction.Length() > 0) orb.vel = direction * 16.0; // Guard against zero vector
+			else orb.vel = (16.0, 0.0, 0.0); // Fallback direction
+		}
+		else if (lastKnownTarget)
+		{
+			Vector3 direction = (lastKnownTarget.pos - orb.pos).Unit();
+			if (direction.Length() > 0) orb.vel = direction * 16.0; // Guard against zero vector
+			else orb.vel = (16.0, 0.0, 0.0); // Fallback direction
+		}
+		else
+		{
+			orb.vel = (16.0, 0.0, 0.0);
+		}
+
+		// 💥 Remove from orbiting system
+		orbiters[i] = null;
+	}
+
+	override void OnDestroy()
+	{
+		Super.OnDestroy();
+		isAlive = false;
+
+		for (int i = 0; i < 3; i++)
+		{
+			if (orbiters[i])
+			{
+
+				orbiters[i].Destroy();
+				orbiters[i] = null;
+			}
+		}
+	}
+
+    States
+    {
+        Spawn:
+            0DB0 A 1 BRIGHT {
+                A_StartSound("CacoBallLoop", CHAN_BODY , CHANF_LOOP, 1);
+            }
+        Fly:
+            0DB0 BCDEFA 2 BRIGHT A_SpawnProjectile("RailGunTrailSpark", 0, 0, random(0, 360), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random(0, 360));
+            Loop;
+        Death:
+            TNT1 A 0 {
+                A_StopSound(CHAN_BODY);
+                A_StartSound("CacoBallImpact", CHAN_AUTO);
+                A_SpawnItem("Plasma_Puff", 0);
+                isAlive = false;
+            }
+            TNT1 A 4;
+            Stop;
+    }
+}
+
+
+
+
 class PB_CacodemonBall : Actor Replaces CacodemonBall
 {
 	Default {
@@ -1491,7 +1837,7 @@ class PB_CacodemonBall : Actor Replaces CacodemonBall
 		DeathSound "CacoBallImpact";
 		Radius 6;
 		Height 8;
-		Speed 16;
+		Speed 12;
 		FastSpeed 20;
 		DamageFunction cacodemonDamage();
 		RenderStyle "Add";
@@ -1503,8 +1849,8 @@ class PB_CacodemonBall : Actor Replaces CacodemonBall
 	}
 	
 	int cacodemonDamage() {
-		return Random(26, 33);
-	}
+        return Random(20, 25);
+    }
 	
 	States
 	{
@@ -1592,8 +1938,8 @@ class PB_SpecialCacoDemonBall2 : PB_SpecialCacoDemonBall1
 class PB_DeadCacodemon1: PB_CurbstompedMarine Replaces DeadCacodemon
 {
 	Default {
-		bloodtype "Blue_Blood";
-		BloodColor "Blue";
+		bloodtype "NashGore";
+		////BloodColor "Blue";
 		Mass 1000;
 		Health 200;
 		Radius 8;

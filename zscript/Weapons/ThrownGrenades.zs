@@ -1,6 +1,6 @@
-class PB_ThrownGrenade : Actor
+mixin class PB_GrenadeTimer 
 {
-	const FUSE_LENGTH = 70.0;
+    const FUSE_LENGTH = 70.0;
 	
 	int grenadeTicks;
 	int nextBeepTime;
@@ -14,6 +14,42 @@ class PB_ThrownGrenade : Actor
 	string flareActorName;
 	Property FlareActorName : flareActorName;
 
+    override void Tick()
+	{   
+		Super.Tick();
+
+		if(wentKaput || IsFrozen())
+			return;
+		
+		if(flareActor)
+			flareActor.SetOrigin(self.pos, true);
+
+		GrenadeTicks++;
+			
+		if(grenadeTicks >= nextBeepTime)
+		{
+			A_StartSound("grenade/beep", CHAN_AUTO);
+			//A_SpawnItemEx("RedFlareSpawn");
+			
+			double delay = max(0.1 + 0.9 * ((FUSE_LENGTH - grenadeTicks) / FUSE_LENGTH), 0.15);
+			nextBeepTime = grenadeTicks + delay * 15;
+			// console.printf("%i %i %i %f", grenadeTicks, nextBeepTime, grenadeTime, delay);
+			
+			if(flareActor)
+				flareActor.alpha = flareActor.default.alpha;
+		}
+		else if(flareActor)
+			flareActor.alpha *= 0.7;
+
+		if(grenadeTicks >= FUSE_LENGTH)
+			SetStateLabel("Explode");
+	}
+}
+
+class PB_ThrownGrenade : Actor
+{
+    mixin PB_GrenadeTimer;
+    
 	Default {
 		Radius 2;
 		Height 3;
@@ -48,37 +84,6 @@ class PB_ThrownGrenade : Actor
 
 		PB_ThrownGrenade.GrenadeExplosionParams 120, 150;
 		PB_ThrownGrenade.FlareActorName 'PB_GrenadeWarningFlare_Green';
-	}
-
-	override void Tick()
-	{   
-		Super.Tick();
-
-		if(wentKaput || IsFrozen())
-			return;
-		
-		if(flareActor)
-			flareActor.SetOrigin(self.pos, true);
-
-		GrenadeTicks++;
-			
-		if(grenadeTicks >= nextBeepTime)
-		{
-			A_StartSound("grenade/beep", CHAN_AUTO);
-			//A_SpawnItemEx("RedFlareSpawn");
-			
-			double delay = max(0.1 + 0.9 * ((FUSE_LENGTH - grenadeTicks) / FUSE_LENGTH), 0.15);
-			nextBeepTime = grenadeTicks + delay * 15;
-			// console.printf("%i %i %i %f", grenadeTicks, nextBeepTime, grenadeTime, delay);
-			
-			if(flareActor)
-				flareActor.alpha = flareActor.default.alpha;
-		}
-		else if(flareActor)
-			flareActor.alpha *= 0.7;
-
-		if(grenadeTicks >= FUSE_LENGTH)
-			SetStateLabel("Explode");
 	}
 	
 	override int SpecialBounceHit(Actor bounceMobj, Line bounceLine, readonly<SecPlane> bouncePlane)
@@ -145,7 +150,11 @@ class PB_ThrownGrenade : Actor
 				A_StartSound("FAREXPL", CHAN_AUTO, CHANF_OVERLAP);
 					
 				if(pos.z == floorz)
+                {
 					A_SpawnItemEx("BarrelExplosionSmokeColumn");
+                    A_SpawnItemEx ("NewGroundExplosionSmoke");
+                    RadialExplosionSmoke();
+                }
 
 				//A_SpawnItemEx("FragGrenadeExplosionSmoke");
 				A_AlertMonsters();
@@ -161,8 +170,6 @@ class PB_ThrownGrenade : Actor
 						A_SpawnProjectile("PB_Shrapnel", 0, 0, random (0, 360), 2, random (-90, 90));
 					}
 				}
-
-				RadialExplosionSmoke();
 			}
 			TNT1 AAA 0
 			{	
@@ -226,7 +233,8 @@ class PB_ThrownGrenade : Actor
 	{
 		FSpawnParticleParams PUFSPRK;
 		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[grenade](0, 25)).."0");
-		PUFSPRK.Color1 = "7a7a7a";
+        name material = (floorz != pos.z) ? 'default' : PB_Materialsys.GetMaterialFromTexName(name(Texman.GetName(floorpic)));
+		PUFSPRK.Color1 = material == 'dirt' ? "533f2f" : "7a7a7a";
 		PUFSPRK.Style = STYLE_TRANSLUCENT;
 		PUFSPRK.Flags = SPF_ROLL;
 		PUFSPRK.Vel = (0, 0, (6-smokephase) * 0.25);
@@ -256,7 +264,8 @@ class PB_ThrownGrenade : Actor
 		{
 			FSpawnParticleParams PUFSPRK;
 			PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[grenade](0, 25)).."0");
-			PUFSPRK.Color1 = "787878";
+            name material = (floorz != pos.z) ? 'default' : PB_Materialsys.GetMaterialFromTexName(name(Texman.GetName(floorpic)));
+			PUFSPRK.Color1 = material == 'dirt' ? "7b634f" : "787878";
 			PUFSPRK.Style = STYLE_TRANSLUCENT;
 			PUFSPRK.Flags = SPF_ROLL;
 			PUFSPRK.Vel = (RotateVector((5, frandom[grenade](-2, 2)), steps * i), 0);

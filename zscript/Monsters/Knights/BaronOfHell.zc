@@ -1,0 +1,2018 @@
+class PB_Baron1 : PB_Monster 
+{
+    Default
+    {
+        Health 1100;
+        Radius 24;
+        Height 64;
+        Speed 8;
+        Scale 1.0;
+		Mass 1000;
+        GibHealth 25;
+        PainChance "Stun", 255;
+        PainChance "Siphon", 255;
+        PainChance "Saw", 100;
+        PainChance "Cut", 100;
+        PainChance "Kick", 100;
+        PainChance "ExtremePunches", 224;
+        PainChance "BaronBarrelCall", 255;
+        PainChance "Explosive", 255;
+        PainChance "Head", 120;
+        PainChance 25;
+
+        DamageFactor "Crush", 10.0;
+        DamageFactor "GibRemoving", 0.0;
+        DamageFactor "TeleportRemover", 0.0;
+        DamageFactor "Avoid", 0.0;
+        DamageFactor "killme", 0.0;
+        DamageFactor "SSG", 0.75;
+        DamageFactor "Head", 0.6;
+        DamageFactor "DontCallTheBaron", 0.0;
+        DamageFactor "CauseObjectsToSplash", 0.0;
+        DamageFactor "Shrapnel", 0.4;
+        DamageFactor "Blood", 0.0;
+        DamageFactor "BlueBlood", 0.0;
+        DamageFactor "GreenBlood", 0.0;
+
+        //BLoodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
+        //BloodColor "Green";
+
+        Obituary "%o was brutalized by a Baron of Hell.";
+        Species "Noble";
+
+        MaxStepHeight 24;
+        MaxDropOffHeight 32;
+
+        +DONTHARMSPECIES;
+        +NOBLOODDECALS;
+        +QUICKTORETALIATE;
+        +FLOORCLIP;
+        +BOSSDEATH;
+        Monster;
+
+        SeeSound "baron/sight";
+        PainSound "baron/pain";
+        DeathSound "baron/death";
+        ActiveSound "baron/active";
+        PainSound "PSXDPN";
+
+        DropItem "Demonpickup2", 76;
+        DropItem "Demonpickup2", 76;
+
+        PB_Monster.CanIFallback false;
+        PB_Monster.CanIReload false;
+        PB_Monster.CanIRoll false;
+        PB_Monster.CanISuppress true;
+    }
+
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		suppressiveOffZ = 36;
+        suppressiveOffXY = 15;
+        suppressiveMissile = "Baron_Slash";
+		suppressiveMissileRadius = 15;
+		suppressLimit = 8;
+		suppressLimit2 = 6;
+        if (pb_NoBuffBaron)
+            canSuppress = false;
+	}
+
+	 void SpawnEffect(string effect, int count, int heightMin, int heightMax)
+    {
+        for (int i = 0; i < count; i++)
+        {
+            A_SpawnItemEx(effect, random(-12, 12), random(-12, 12), random(heightMin, heightMax), 0, 0);
+        }
+    }
+
+
+    void GoreEffects(int repetitions, string missileType, double spawnHeight, double spawnOffsetXY = 0, double angle = 0, int flags = 0, double pitch = 0, int ptr = AAPTR_TARGET)
+    {
+        for (int i = 0; i < repetitions; i++)
+        {
+            A_SpawnProjectile(missileType, spawnHeight, spawnOffsetXY, angle , flags, pitch, ptr);
+        }
+    }
+
+    States
+    {
+        Spawn:
+            BOSS B 1;
+            TNT1 A 0 A_GiveInventory("TargetIsABaronOfHell");
+        Stand:
+            TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "CurbstompMarine");
+            TNT1 A 0 A_JumpIfInventory("ZombiemanFatality", 1, "FatalityZombieman");
+            TNT1 A 0 A_JumpIfInventory("SergeantFatality", 1, "FatalitySergeant");
+            TNT1 A 0 A_JumpIfInventory("ImpFatality3", 1, "FatalityImp");
+            TNT1 A 0 A_JumpIfInventory("DemonFatality", 1, "FatalityDemon");
+            BOSS BB 10 A_Look();
+            Loop;
+
+        See:
+            TNT1 A 0 A_JumpIfInventory("HasExplosiveBarrel", 1, "MissileBarrel");
+            BTS3 ABC 1;
+            TNT1 A 0 A_FaceTarget();
+            BTS3 D 4;
+            BTS3 EDFD 4;
+            BTS3 CBA 1;
+            TNT1 A 0 HealThing(200);
+            Goto See2;
+
+        See2:
+            TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "CurbstompMarine");
+            TNT1 A 0 A_JumpIfInventory("ZombiemanFatality", 1, "FatalityZombieman");
+            TNT1 A 0 A_JumpIfInventory("SergeantFatality", 1, "FatalitySergeant");
+            TNT1 A 0 A_JumpIfInventory("DemonFatality", 1, "FatalityDemon");
+            TNT1 A 0 A_JumpIfInventory("ImpFatality3", 1, "FatalityImp");
+            TNT1 A 0 A_JumpIfInventory("HasExplosiveBarrel", 1, "MissileBarrel");
+            Goto See4;
+
+        See3:
+            BOSS AA 3 A_SmartChase();
+            TNT1 A 0 A_StartSound("baron/step", 5);
+            BOSS BBCC 3 A_SmartChase();
+            TNT1 A 0 A_StartSound("baron/step", 5);
+            BOSS DD 3 A_SmartChase();
+            Goto See4;
+
+        Idle:
+        LookingForPlayer:
+            TNT1 A 0 A_GiveInventory("SKImp", 1);
+            TNT1 A 0;
+            BOSS B 10 A_Look();
+            TNT1 A 0;
+            BOSS B 10 A_Look();
+            TNT1 A 0;
+            BOSS B 10 A_Look();
+            TNT1 A 0 A_SetAngle(angle - 40);
+            TNT1 A 0;
+            BOSS B 10 A_Look();
+            TNT1 A 0;
+            BOSS B 10 A_Look();
+            TNT1 A 0;
+            BOSS B 10 A_Look();
+            TNT1 A 0 A_SetAngle(angle + 40);
+            TNT1 A 0;
+            BOSS B 10 A_Look();
+            TNT1 A 0;
+            BOSS B 10 A_Look();
+            TNT1 A 0;
+            BOSS B 10 A_Look();
+
+            BOSS A 0 A_Wander();
+            BOSS AA 2 A_Look();
+            TNT1 A 0 A_Recoil(-2);
+            TNT1 A 0;
+            TNT1 A 0 A_StartSound("baron/step", 5);
+            BOSS B 0 A_Wander();
+            BOSS BB 2 A_Look();
+            TNT1 A 0 A_Recoil(-2);
+            TNT1 A 0;
+            BOSS C 0 A_Wander();
+            BOSS CC 2 A_Look();
+            TNT1 A 0 A_Recoil(-2);
+            TNT1 A 0;
+            TNT1 A 0 A_StartSound("baron/step", 5);
+            BOSS D 0 A_Wander();
+            BOSS DD 2 A_Look();
+            TNT1 A 0 A_Recoil(-2);
+            TNT1 A 0;
+            TNT1 A 0 A_jump(128, "LookingForPlayer");
+            BOSS A 0 A_Wander();
+            BOSS AA 2 A_Look();
+            TNT1 A 0 A_Recoil(-2);
+            TNT1 A 0;
+            TNT1 A 0 A_StartSound("baron/step", 5);
+            BOSS B 0 A_Wander();
+            BOSS BB 2 A_Look();
+            TNT1 A 0 A_Recoil(-2);
+            TNT1 A 0;
+            BOSS C 0 A_Wander();
+            BOSS CC 2 A_Look();
+            TNT1 A 0 A_Recoil(-2);
+            TNT1 A 0;
+            BOSS D 0 A_Wander();
+            BOSS DD 2 A_Look();
+            TNT1 A 0 A_StartSound("baron/step", 5);
+            TNT1 A 0 A_Recoil(-2);
+            TNT1 A 0;
+            Goto LookingForPlayer;
+
+        See4:
+//            TNT1 A 0 A_GiveInventory("EnemyMemory", 1);
+//            TNT1 A 0 A_JumpIfInventory("EnemyMemory", 20, "ForgetTarget");
+            BOSS A 0 A_CheckSight("SEE3");
+            BOSS AA 2 A_SmartChase();
+            TNT1 A 0;
+            BOSS AA 2 A_SmartChase();
+            TNT1 A 0;
+            BOSS AA 2 A_SmartChase();
+            TNT1 A 0 A_StartSound("baron/step", 5);
+            TNT1 A 0;
+            BOSS B 4 A_SmartChase();
+            TNT1 A 0;
+            BOSS BB 2 A_SmartChase();
+            TNT1 A 0;
+            BOSS CC 2 A_SmartChase();
+            TNT1 A 0;
+            BOSS CC 2 A_SmartChase();
+            TNT1 A 0 A_StartSound("baron/step", 5);
+            TNT1 A 0;
+            BOSS DD 2 A_SmartChase();
+            TNT1 A 0;
+            BOSS DD 2 A_SmartChase();
+            TNT1 A 0 A_JumpIfInTargetInventory("TargetIsACyberdemon", 1, "CheckRetreat");
+            TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMastermind", 1, "CheckRetreat");
+            Loop;
+
+        // Won't go into this state sequence unless canSuppress is true. This is set True by default, but set False on spawn if
+        // the pb_NoBuffBaron CVAR is True.
+		SuppressiveFire:
+			TNT1 A 0 { self.inSuppressiveFire = true; }
+			TNT1 A 0 { int attackRoll = random(0, 99); if (attackRoll > 50 && suppressCount2 < suppressLimit2) { SetStateLabel("SuppressiveFire2");}}
+			BOSS P 6;
+			BOSS Q 3 BRIGHT { self.suppressiveOffZ = 36; self.suppressiveOffXY = 15; self.suppressiveMissile = "Baron_Slash";  A_SuppressiveFire();}
+			BOSS P 3 {if (target && CheckSight(target)) SetStateLabel("See2");}
+			BOSS Q 3 BRIGHT { self.suppressiveOffZ = 36; self.suppressiveOffXY = 15; self.suppressiveMissile = "Baron_Slash";  A_SuppressiveFire();}
+			BOSS P 0 {if (target && CheckSight(target)) SetStateLabel("See2");}
+			TNT1 A 0 { self.inSuppressiveFire = false; suppressCount += 1; }
+			GoTo FrontMove;
+		
+        // Same as above
+		SuppressiveFire2:
+			TNT1 A 0 { self.inSuppressiveFire = true; }
+			BOSS P 16;
+			BOSS Q 3 BRIGHT { self.suppressiveOffZ = 78; self.suppressiveOffXY = 0; self.suppressiveMissile = "BaronMeteor";  A_SuppressiveFire(highRiders : true);}
+			BOSS P 0 {if (target && CheckSight(target)) SetStateLabel("See2");}
+			TNT1 A 0 { self.inSuppressiveFire = false;  suppressCount += 1;  }
+			GoTo FrontMove;
+
+        // Ditto, this is part of the Suppres behavior we want to turn off with the CVAR
+		FrontMove:
+			 BOSS AA 2 {Thrust(3);}
+			 BOSS BB 2 {Thrust(2);}
+			 BOSS CC 2 { Thrust(1);}
+			 BOSS DD 2 { Thrust(1);}
+
+        SeeNeverSeen:
+            TNT1 A 0;
+            BOSS A 0 A_CheckSight("SEE3");
+            BOSS AA 2 A_SmartChase();
+            TNT1 A 0;
+            BOSS AA 2 A_SmartChase();
+            TNT1 A 0;
+            BOSS AA 2 A_SmartChase();
+            TNT1 A 0 A_StartSound("baron/step", 5);
+            TNT1 A 0;
+            BOSS B 4 A_SmartChase();
+            TNT1 A 0;
+            BOSS BB 2 A_SmartChase();
+            TNT1 A 0;
+            BOSS CC 2 A_SmartChase();
+            TNT1 A 0;
+            BOSS CC 2 A_SmartChase();
+            TNT1 A 0 A_StartSound("baron/step", 5);
+            TNT1 A 0;
+            BOSS DD 2 A_SmartChase();
+            TNT1 A 0;
+            BOSS DD 2 A_SmartChase();
+            TNT1 A 0 A_JumpIfInTargetInventory("TargetIsACyberdemon", 1, "CheckRetreat");
+            TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMastermind", 1, "CheckRetreat");
+            Loop;
+
+        ForgetTarget:
+  //          TNT1 A 0 A_ClearTarget;
+            TNT1 A 0 A_TakeInventory("EnemyMemory", 25);
+            TNT1 A 0 A_GiveInventory("LookingForPlayer", 1);
+            Goto LookingForPlayer;
+
+        RAGE:
+            TNT1 A 0;
+            TNT1 A 0 A_CheckSight("See");
+            BTS3 ABC 2;
+            BTS3 DEDF 3;
+            BTS3 DEDF 3;
+            BTS3 CBA 2;
+            TNT1 A 0 HealThing(200);
+            TNT1 A 0 A_Jump(96, "SpecialAttack");
+            Goto See2;
+
+        Melee:
+            TNT1 A 0;
+            TNT1 A 0 A_JumpIfInTargetInventory("TargetIsACyberdemon", 1, "CheckRetreat");
+            TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMastermind", 1, "CheckRetreat");
+            TNT1 A 0 A_FaceTarget;
+            TNT1 A 0 A_CustomMeleeAttack(1, "", "", "BHFTOnBarrel");
+            TNT1 A 0;
+            BOSS E 1;
+            TNT1 A 0 A_JumpIfInventory("HasExplosiveBarrel", 1, "MissileBarrel");
+            BOSS E 6;
+            TNT1 A 0 A_StartSound("weapons/gswing");
+            TNT1 A 0;
+            BOSS F 6 A_FaceTarget;
+            TNT1 A 0;
+            BOSS G 6 A_CustomMeleeAttack(28, "", "", "BHFT");
+            TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "CurbstompMarine");
+            TNT1 A 0 A_JumpIfInventory("ZombiemanFatality", 1, "FatalityZombieman");
+            Goto See2;
+
+        // ? This state is never entered.
+        Melee2:
+            TNT1 A 0;
+            BOSS E 6 A_FaceTarget();
+            TNT1 A 0;
+            BOSS F 6 A_FaceTarget();
+            TNT1 A 0;
+            BOSS G 6 A_CustomMeleeAttack(28, "", "", "BHFT");
+            TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "CurbstompMarine");
+            TNT1 A 0 A_JumpIfInventory("ZombiemanFatality", 1, "FatalityZombieman");
+            TNT1 A 0 A_JumpIfInventory("SergeantFatality", 1, "FatalitySergeant");
+            TNT1 A 0 A_JumpIfInventory("DemonFatality", 1, "FatalityDemon");
+            TNT1 A 0 A_JumpIfInventory("ImpFatality3", 1, "FatalityImp");
+            Goto See2;
+
+		Missile:
+            BOSS A 1;
+            TNT1 A 0 A_JumpIfInTargetInventory("TargetIsACyberdemon", 1, "CheckRetreat");
+	        TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAMastermind", 1, "CheckRetreat");
+            TNT1 A 0 A_JumpIfInTargetInventory("TargetIsAnExplosiveBarrel", 1, "See2");
+            TNT1 A 0 A_TakeInventory("StopKickingMyBalls", 1);
+            TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "CurbstompMarine");
+            TNT1 A 0 A_JumpIfInventory("ZombiemanFatality", 1, "FatalityZombieman");
+            TNT1 A 0 A_JumpIfInTargetInventory("TypeZombieman", 1, "See2");
+            TNT1 A 0 A_JumpIfInTargetInventory("TypeSergeant", 1, "See2");
+            //TNT1 A 0 A_Jump(64, "SpecialAttack");
+			//TNT1 A 0 A_Jump(256, "BaronSlashAttack");
+/* 			TNT1 A 0 A_Jump(128, "BaronMeteorAttack");
+			TNT1 A 0 A_Jump(128, "BaronSlashAttack"); */
+			TNT1 A 0 A_JumpIf(random(0, 99) < 50, "BaronMeteorAttack"); 
+			TNT1 A 0 A_JumpIf(!pb_NoBuffBaron && random(0, 99) < 75, "BaronSlashAttack");
+            TNT1 A 0 A_TakeInventory("CantFire", 1);
+            TNT1 A 0 A_JumpIfCloser(900, 3);
+            TNT1 A 0 A_SpawnProjectile("MonsterTargetCheck", 34, 0, 0, 0);
+            TNT1 A 0 A_SpawnProjectile("MonsterTargetCheckFaster", 34, 0, 0, 0);
+            BOSS F 3 A_FaceTarget();
+            TNT1 A 0 A_JumpIfInventory("CantFire", 1, "See4");
+            BOSS E 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS E 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS E 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS E 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS E 2 A_FaceTarget();
+            BOSS F 3 A_FaceTarget();
+            //BOSS G 8 A_SpawnProjectile("PB_GreenPlasmaBall", 36, 0, 0, 1);
+			BOSS G 6 {
+                // If the CVAR is true, always fires projectile without target prediction.
+                if(!pb_NoBuffBaron && random(0, 100) < 70)
+                    A_DropAdjust2("PB_GreenPlasmaBall","Baron_Slash", 0, 0, 36, speedmult: 1.0, minRange: 0, maxRange: 1000, shootDownward: false);
+                else
+                    A_SpawnProjectile("PB_GreenPlasmaBall", 36, 0, 0, 1);
+            }
+            TNT1 A 0 A_TakeInventory("ComingToGetTheBarrel", 1);
+            Goto See2;
+
+        SpecialAttack:
+            BOSS P 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS P 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS P 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS P 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS P 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS P 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS P 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS Q 3 {A_FaceTarget();
+                    GoreEffects(1, "SmallGreenFlameTrails", 58, 30, random(0, 360), 2, random(70, 110));
+                    GoreEffects(1, "SmallGreenFlameTrails", 58, -30, random(0, 360), 2, random(70, 110));
+            }
+            BOSS Q 3 {A_FaceTarget(); 
+                    GoreEffects(1, "SmallGreenFlameTrails", 48, 30, random(0, 360), 2, random(70, 110));
+                    GoreEffects(1, "SmallGreenFlameTrails", 48, -30, random(0, 360), 2, random(70, 110));
+            }
+            TNT1 A 0 A_SpawnProjectile("PB_GreenPlasmaBall", 36, 15, 9, 11);
+            TNT1 A 0 A_SpawnProjectile("PB_GreenPlasmaBall", 36, 15, -9, 11);
+            TNT1 A 0 A_SpawnProjectile("PB_GreenPlasmaBall", 36, 15, 22, 11);
+            TNT1 A 0 A_SpawnProjectile("PB_GreenPlasmaBall", 36, 15, -22, 11);
+            BOSS R 6 A_SpawnProjectile("PB_GreenPlasmaBall", 36, 15, 0, 11);
+            TNT1 A 0 A_TakeInventory("ComingToGetTheBarrel", 1);
+            Goto See2;
+			
+        BaronSlashAttack:
+            BOSS P 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS P 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS P 2 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS P 1 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 40, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 40, random (0, 140), 2, random (0, 160));
+            BOSS Q 3 {A_FaceTarget();
+                    GoreEffects(1, "SmallGreenFlameTrails", 58, 30, random(0, 360), 2, random(70, 110));
+                    GoreEffects(1, "SmallGreenFlameTrails", 58, -30, random(0, 360), 2, random(70, 110));
+					A_DropAdjust2("Baron_Slash","Baron_Slash", 15, 10, 36, speedmult: 1.0, minRange: 0, maxRange: 1000, shootDownward: false);
+			}
+            BOSS Q 3 {A_FaceTarget(); 
+                    GoreEffects(1, "SmallGreenFlameTrails", 48, 30, random(0, 360), 2, random(70, 110));
+                    GoreEffects(1, "SmallGreenFlameTrails", 48, -30, random(0, 360), 2, random(70, 110));
+            }
+            BOSS R 3 A_DropAdjust2("Baron_Slash","Baron_Slash", 15, 10, 36, speedmult: 1.0, minRange: 0, maxRange: 1000, shootDownward: true);
+            Goto See2;
+
+//			Goto See;
+			
+        BaronMeteorAttack:
+            BOSS P 4 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 0, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 0, random (0, 140), 2, random (0, 160));
+            BOSS P 4 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 0, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 0, random (0, 140), 2, random (0, 160));
+            BOSS P 4 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 0, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 0, random (0, 140), 2, random (0, 160));
+            BOSS P 4 A_FaceTarget();
+            TNT1 A 0 bright GoreEffects(1,"SmallGreenFlameTrails", 78, 0, random (0, 360), 2, random (70, 110));
+            TNT1 A 0 GoreEffects(1,"BallGettingReadyGreen", 79, 0, random (0, 140), 2, random (0, 160));
+            BOSS Q 3 {A_FaceTarget();
+                    GoreEffects(1, "SmallGreenFlameTrails", 58, 30, random(0, 360), 2, random(70, 110));
+                    GoreEffects(1, "SmallGreenFlameTrails", 58, -30, random(0, 360), 2, random(70, 110));
+					A_DropAdjust2("BaronMeteor","BaronMeteorStraight", 15, 10, 76, speedmult: 1.0, minRange: 400, maxRange: 1800, shootDownward: false,highRiders2:true);}
+            BOSS R 3 ;
+            Goto See2;
+
+        CheckRetreat:
+            TNT1 A 0 A_JumpIfCloser(600, "Retreat");
+            Goto Missile+5;
+
+        Retreat:
+            TNT1 A 0 A_FaceTarget();
+            TNT1 A 0 ;
+            BOSS DD 2 A_Recoil(2);
+            TNT1 A 0 ;
+            BOSS DD 2 A_Recoil(2);
+            TNT1 A 0 A_FaceTarget;
+            
+            TNT1 A 0 ;
+            BOSS CC 2 A_Recoil(1);
+            TNT1 A 0 ;
+            BOSS CC 2 A_Recoil(1);
+            TNT1 A 0 ;
+            BOSS BB 2 A_Recoil(1);
+            TNT1 A 0 ;
+            BOSS BB 2 A_Recoil(1);
+            TNT1 A 0 ;
+            BOSS AA 2 A_Recoil(1);
+            TNT1 A 0 ;
+            BOSS AA 2 A_Recoil(1);
+            Goto Missile+5;
+
+        Pain.BaronBarrelCall:
+            TNT1 A 0 A_GiveInventory("ComingToGetTheBarrel", 1);
+            Goto See2;
+
+        MissileBarrel:
+            BOBA A 0;
+            BOBA A 1 A_Chase();
+            BOBA A 0 {bNOPAIN = true ;}
+            BOBA ABC 4;
+            BOBA D 1;
+            TNT1 A 0 A_StartSound("baron/sight");
+            TNT1 A 0 A_SpawnItem("BaronHoldingBarrel", 0, 76, 0);
+            BOBA D 8;
+            BOBA E 16;
+            BOBA D 8;
+            Goto ThrowBarrel;
+
+        ThrowBarrel:
+            TNT1 A 0;
+            BOSS P 2 A_FaceTarget;
+            TNT1 A 0 A_SpawnProjectile("ThrownBarrel", 46, 15, 0, 11);
+            BOSS Q 4 A_FaceTarget;
+            BOSS R 8;
+            TNT1 A 0 A_TakeInventory("ComingToGetTheBarrel", 1);
+            TNT1 A 0 A_TakeInventory("HasExplosiveBarrel", 1);
+            BOBA A 0 {bNOPAIN = false ;}
+            Goto See2;
+
+        WithBarrelLookForPlayer:
+            TNT1 A 0 A_ClearTarget;
+            BOSS P 2 A_Chase;
+            Goto See2;
+
+        Pain:
+            TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "CurbstompMarine");
+            BOSS H 3;
+            BOSS H 3 A_Pain;
+            Goto See2;
+
+		 Possession:
+            TNT1 A 0 A_SetInvulnerable;
+            BOSS H 3;
+            BOSS H 3 A_Pain;
+            TNT1 A 0 ACS_NamedExecuteAlways("Pos - Flicker effect");
+            TNT1 A 0 A_UnSetInvulnerable;
+            Goto See;
+
+        Pain.Stun:
+            TNT1 A 0;
+            TNT1 A 0 A_SpawnItemEx ("StunElectrocute", random (-4, 4), random (-4, 4),  random (16, 32), 0, 0);
+            BOSS H 1 A_Pain;
+            BOSS HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0);
+            BOSS H 1 A_Pain;
+            BOSS HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0);
+            BOSS H 1 A_Pain;
+            BOSS HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0);
+            BOSS H 1 A_Pain;
+            BOSS HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0);
+            BOSS H 1 A_Pain;
+            BOSS HHHHHHHHHH 3 A_SpawnItemEx ("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0);
+            BOSS H 1 A_Pain;
+            Goto See;
+
+        Pain.Siphon:
+            TNT1 AAA 0 A_SpawnItemEx ("RedLightning_Small", random (-12, 12), random (-12, 12), random (16, 52), 0, 0);
+            BOSS H 1 { A_FaceTarget(); A_GiveToTarget("HealthBonus", 4); }
+            BOSS H 5 A_FaceTarget;
+            TNT1 A 0 A_Pain;
+            Goto See;
+
+        Pain.Kick:
+        Pain.ExtremePunches:
+            TNT1 A 0 ;
+            //TNT1 A 0 {bMISSILEMORE = true ;}
+            //TNT1 A 0 {bMISSILEEVENMORE = true ;}
+            TNT1 A 0 {MissileChanceMult = 0.0625;}
+            TNT1 A 0 A_JumpIfInventory("Curbstomp_Marine", 1, "CurbstompMarine");
+            TNT1 A 0 A_JumpIfInventory("StopKickingMyBalls", 1, "Missile");
+            TNT1 A 0 A_GiveInventory("StopKickingMyBalls", 1);
+            TNT1 A 0 ThrustThingZ(0,15,0,1);
+            TNT1 A 0 {bNOPAIN = true ;}
+            BNRJ ABCD 4 ;
+            TNT1 A 0 A_Pain;
+            BNRJ ABCD 4 ;
+            TNT1 A 0 A_Pain;
+            BNRJ ABCD 4 ;
+            TNT1 A 0 A_Pain;
+            BNRJ ABCD 4 ;
+            TNT1 A 0 {bNOPAIN = false ;}
+            Goto Missile;
+
+		Death.Execution:
+            TNT1 A 0 { A_Stopsound(); A_FaceTarget(); A_NoBlocking(false); }
+            BTS3 AB 4;
+            TNT1 A 0 A_Pain;
+            BOSS H 21;
+            TNT1 A 0 A_Recoil(4);
+            Goto Death.SSG;
+
+        Death.Blackhole:
+            TNT1 A 0 A_NoBlocking;
+            TNT1 A 0 A_BossDeath;
+            TNT1 A 0 A_SpawnItem("BlackHoledBaron");
+            Stop;
+
+        Death.Shrink:
+            TNT1 A 0 A_BossDeath;
+            TNT1 A 0 A_NoBlocking;
+            TNT1 A 1 A_StartSound("Shrink", 3);
+            TNT1 A 0 A_SpawnItemEx ("BaronShrinkFX1", 0, 0,  5, 0, 0);
+            TNT1 A 1 A_SpawnItemEx ("BaronShrinkFX2", 0, 0, 5, 0, 0);
+            TNT1 A 1 A_SpawnItemEx ("BaronShrinkFX3", 0, 0, 5, 0, 0);
+            TNT1 A 1 A_SpawnItemEx ("BaronShrinkFX4", 0, 0, 5, 0, 0);
+            TNT1 A 1 A_SpawnItemEx ("BaronShrinkFX5", 0, 0, 5, 0, 0);
+            TNT1 A 1 A_SpawnItemEx ("BaronShrinkFX6", 0, 0, 5, 0, 0);
+            TNT1 A 1 A_SpawnItemEx ("BaronShrinkFX7", 0, 0, 5, 0, 0);
+            TNT1 A 1 A_SpawnItemEx("LilBaron", 1);
+            Stop;
+
+        Death:
+            TNT1 A 0;
+            TNT1 A 0 A_BossDeath;
+            TNT1 A 0 A_Jump(30, "Death.Arm");
+            TNT1 A 0 A_Jump(152, "Death2", "Death3", "Death4");
+            BADD A 6 A_Scream;
+            BADD BC 6;
+            BADD D 6;
+            BADD EF 6 A_NoBlocking;
+            TNT1 A 0 A_SpawnItem("DeadBaron", 1);
+            TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+            Stop;
+
+        Death.Arm:
+            TNT1 A 0 GoreEffects(2, "XDeathBaronOfHellArm", 55, 0, random(0, 360), 2, random(0, 160));
+            TNT1 A 0 GoreEffects(2, "PB_MuchBlood", 55, 0, random(0, 360), 2, random(0, 160));
+            TNT1 A 0 A_Fall;
+            TNT1 A 0 A_NoBlocking;
+            TNT1 A 0 A_BossDeath;
+            TNT1 A 0 A_SpawnItem("DyingBaronNoArm1");
+            Stop;
+
+        Death2:
+            TNT1 A 0 A_BossDeath;
+            BADD H 6 A_Scream;
+            BADD IJ 6;
+            BADD K 6;
+            BADD LM 6 A_NoBlocking;
+            TNT1 A 0 A_SpawnItem("DeadBaronBADDN", 1);
+            TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+            Stop;
+
+        Death3:
+            TNT1 A 0 A_BossDeath;
+            TNT1 A 0 A_Jump(16, "DeathGutless2");
+            TNT1 A 0 A_NoBlocking;
+            BSA1 F 3 A_Scream;
+            BSA1 G 3;
+            BSA1 HIJ 6;
+            TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+            BSA1 K 6;
+            TNT1 A 0 A_SpawnItem("DeadBaronBSA1K", 1);
+            Stop;
+
+        Death4:
+            TNT1 A 0 {A_BossDeath();
+            GoreEffects(1, "PB_Intestine", 32, 0, random(150, 210), 2, random(0, 40));
+            GoreEffects(1, "PB_XDeath1", 42, 0, random(150, 210), 2, random(0, 40));}
+            BADD U 10 A_Scream;
+            BADD V 10;
+            BADD W 10;
+            BADD X 9 A_NoBlocking;
+            TNT1 A 0 A_SpawnItem("DeadBaronBADDX", 1);
+            TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+            Stop;
+
+        XDeath:TNT1 A 0{
+            GoreEffects(1, "BaronXDeath", 0, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(1, "XDeathBaronHead5", 62, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(1, "XDeathBaronOfHellArm", 62, 0, random(0, 360), 2, random(0, 160));}
+            BXDE B 0 A_xScream;
+            BXDE C 0 A_BossDeath;
+            BXDE D 0 A_NoBlocking;
+            Stop;
+
+        Death.ExplosiveImpact:
+        Death.ExtremePunches:
+            TNT1 A 0 A_BossDeath;
+            TNT1 A 0 A_NoBlocking;
+            TNT1 A 0 {ThrustThingZ(0, 35, 0, 1);
+            GoreEffects(3, "PB_XDeath3", 62, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(2, "XDeathHellKnightLeg", 32, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(3, "PB_XDeath1", 62, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(3, "PB_MuchBlood", 62, 0, random(0, 360), 2, random(0, 160));}
+            TNT1 A 0 A_Jump(255, "Death.ExplosiveImpact1", "Death.ExplosiveImpact2");
+
+        Death.ExplosiveImpact1:
+            BOH3 B 8 A_NoBlocking;
+            BOH3 CCCCCC 8 A_CheckFloor("Land1");
+            Goto Land1;
+
+        Land1:
+            TNT1 A 0 A_SpawnItem("DeadBaronExplosiveImpact1", 1);
+            Stop;
+
+        Death.ExplosiveImpact2:
+            BOH3 F 8 A_NoBlocking;
+            BOH3 GGGGGG 8 A_CheckFloor("Land2");
+            Goto Land2;
+
+        Land2:
+            TNT1 A 0 A_SpawnItem("DeadBaronExplosiveImpact2", 1);
+            Stop;
+
+        Death.SSG:
+        Death.Railgun:
+            TNT1 A 0 {A_BossDeath();
+            GoreEffects(4, "PB_SuperWallRedBlood", 32, 0, random(170, 190), 2, random(0, 40));
+            GoreEffects(4, "PB_BloodMistBig", 40, 0, random(0, 360), 2, random(30, 90));
+            GoreEffects(1, "XDeathStomachGreen", 60, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(3, "PB_XDeath3", 45, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(3, "PB_XDeath2", 45, 0, random(0, 360), 2, random(0, 160));}
+            TNT1 A 0 {A_NoBlocking();
+            GoreEffects(6, "PB_XDeath1", 40, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(5, "PB_FlyingBlood", 15, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(4, "PB_Intestine", 32, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(2, "XDeathBaronOfHellTorso", 48, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(2, "XDeathBaronOfHellArm", 55, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(2, "XDeathBaronHead5", 62, 0, random(0, 360), 2, random(50, 130));}
+            BBO2 AABCD 10;
+            TNT1 A 0 A_SpawnItem("DeadBaronHalfDown", 1);
+            TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+            Stop;
+
+        Death.Shotgun:
+            TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG");
+            TNT1 A 0 A_JumpIfCloser(160, "Death.Blast");
+            TNT1 A 0 A_Jump(16, "DeathGutless2");
+            Goto Death;
+
+        Death.CutLess:
+            TNT1 A 0 A_Jump(24, "Death.Cut");
+            TNT1 A 0 A_Jump(36, "DeathGutless", "DeathGutless2");
+            TNT1 A 0 A_Jump(210, "DeathBrutalized");
+            Goto Death;
+
+        DeathBrutalized:
+            TNT1 A 0 A_NoBlocking;
+            TNT1 A 0 {A_BossDeath();
+            GoreEffects(2, "XDeathBaronOfHellArm", 55, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(2, "PB_MuchBlood", 55, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(3, "PB_XDeath1", 42, 0, random(150, 210), 2, random(0, 40));}
+            BSA0 A 1 A_SpawnItem("BrutalizedBaron1");
+            Stop;
+
+        DeathGutless:
+            TNT1 A 0 A_NoBlocking;
+            TNT1 A 0 {A_BossDeath();
+            GoreEffects(3, "PB_Intestine", 32, 0, random(150, 210), 2, random(0, 40));
+            GoreEffects(3, "PB_XDeath1", 32, 0, random(150, 210), 2, random(0, 40));}
+            KSA8 A 6 A_SpawnItem("DyingBaron1");
+            Stop;
+		DeathGutless2:
+            TNT1 A 0 A_NoBlocking;
+            TNT1 A 0 {A_BossDeath();
+            GoreEffects(3, "PB_Intestine", 32, 0, random(150, 210), 2, random(0, 40));
+            GoreEffects(3, "PB_XDeath1", 32, 0, random(150, 210), 2, random(0, 40));}
+            BSA1 F 6 A_SpawnItem("DyingBaron2");
+            Stop;
+
+        Death.Blast:
+        Death.Nailgun:
+            TNT1 A 0;
+            TNT1 A 0 A_Jump(129, "DeathBlast2");
+            TNT1 A 0 A_XScream;
+            TNT1 A 0 A_NoBlocking;
+            TNT1 A 0 {A_BossDeath();
+            GoreEffects(2, "XDeathBaronOfHellArm", 32, 0, random(0, 360), 2, random(0, 160));
+            GoreEffects(2, "XDeathBaronHead5", 62, 0, random(0, 360), 2, random(50, 130));
+            GoreEffects(3, "PB_Intestine", 32, 0, random(150, 210), 2, random(0, 40));
+            GoreEffects(3, "PB_XDeath1", 32, 0, random(150, 210), 2, random(0, 40));
+            GoreEffects(3, "PB_XDeath3", 46, 0, random(170, 190), 2, random(0, 40));
+            GoreEffects(2, "PB_XDeath2", 46, 0, random(130, 210), 2, random(0, 40));
+            GoreEffects(5, "PB_FlyingBlood", 42, 0, random(170, 190), 2, random(0, 40));
+            GoreEffects(3, "PB_SuperWallRedBlood", 52, 0, random(170, 190), 2, random(0, 40));
+            GoreEffects(3, "PB_BloodMistBig", 44, 0, random(0, 360), 2, random(30, 90));}
+            TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+            Stop;
+
+        DeathBlast2:
+            TNT1 A 0 A_Scream;
+            TNT1 A 0 A_NoBlocking;
+            TNT1 A 0 {A_BossDeath();
+            GoreEffects(5, "PB_Intestine", 32, 0, random(150, 210), 2, random(0, 40));
+            GoreEffects(5, "PB_XDeath1", 32, 0, random(150, 210), 2, random(0, 40));
+            GoreEffects(3, "PB_XDeath3", 46, 0, random(170, 190), 2, random(0, 40));
+            GoreEffects(3, "PB_XDeath2", 46, 0, random(130, 210), 2, random(0, 40));
+            GoreEffects(5, "PB_FlyingBlood", 42, 0, random(170, 190), 2, random(0, 40));
+            GoreEffects(3, "PB_SuperWallRedBlood", 52, 0, random(170, 190), 2, random(0, 40));
+            GoreEffects(3, "PB_BloodMistBig", 44, 0, random(0, 360), 2, random(30, 90));}
+            TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+            Stop;
+
+        Death.Plasma:
+            TNT1 A 0 A_BossDeath;
+            TNT1 A 0 A_Scream;
+            TNT1 A 0 {A_NoBlocking();
+            GoreEffects(6, "PlasmaParticleX", 48, 0, random(0, 360), 2, random(0, 360));
+            GoreEffects(5, "BigPlasmaParticleX", 42, 0, random(0, 360), 2, random(0, 360));
+            GoreEffects(4, "PlasmaSmoke", 28, 0, random(0, 180), 2, random(0, 180));
+            GoreEffects(4, "PlasmaSmoke", 14, 0, random(0, 180), 2, random(0, 180));}
+            TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+            Stop;
+
+        Death.Incinerate:
+            TNT1 A 0 A_BossDeath;
+            TNT1 A 0 A_Scream;
+            TNT1 A 0 {A_NoBlocking();
+            GoreEffects(5, "ExplosionParticleHeavy", 32, 0, random(0, 360), 2, random(0, 360));
+            GoreEffects(5, "ExplosionParticleVeryFast", 32, 0, random(0, 360), 2, random(0, 360));}
+            TNT1 A 0 A_SpawnItemEx("ExplosionFlareSpawner", 0, 0, 32, 0, 0, 0, 0, SXF_NOCHECKPOSITION, 0);
+            TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random(-15, 15), random(-15, 15));
+            TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random(-35, 35), random(-35, 35));
+            TNT1 A 0 {A_SpawnItemEx("TinyBurningPiece3", random(-45, 45), random(-45, 35));
+            GoreEffects(6, "Ashes1", 28, 0, random(0, 360), 2, random(0, 180));
+            GoreEffects(6, "Ashes2", 40, 0, random(0, 360), 2, random(0, 180));}
+            TNT1 A 0 A_SpawnItem("BarrelExplosionSmokeColumn");
+            Stop;
+		Death.Fire:
+		Death.FireExplosion:
+		Death.Flames:
+		Death.Burn:
+			TNT1 A 0;
+			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon", 1, "Death.Incinerate");
+			TNT1 A 0 A_Jump(189, "Fire2");
+			TNT1 A 0 A_BossDeath;
+			TNT1 A 0 A_Scream;
+			TNT1 A 0 {A_NoBlocking();
+			GoreEffects(4, "FlameTrails", 45, 0, random(0, 360), 2, random(50, 130));
+			GoreEffects(3, "FlameTrails", 30, 0, random(0, 360), 2, random(50, 130));
+			GoreEffects(2, "FlameTrails", 25, 0, random(0, 360), 2, random(50, 130));}
+			TNT1 A 0 {A_StartSound("props/redfire");
+			GoreEffects(12, "FlameTrails", 25, 0, random(0, 360), 2, random(50, 130));
+			GoreEffects(10, "SmallSmoke", 25, 0, random(0, 360), 2, random(70, 110));}
+			Stop;
+
+		Fire2:
+			TNT1 A 0;
+			TNT1 A 0 A_Scream;
+			TNT1 A 0 A_BossDeath;
+			TNT1 A 0 A_NoBlocking;
+			TNT1 A 0 A_SpawnItem("BurningBaron", 0, 10);
+			Stop;
+
+		Raise:
+			BOSS O 8;
+			BOSS NMLKJI 8;
+			Goto See2;
+
+		CurbstompMarine:
+			KNTF A 1 {
+				A_StopSound(5);
+				A_StopSound(6);
+				A_StopSound(1);
+				A_StopSound(7);
+			}
+			KNTF A 10;
+			TNT1 A 0 {A_StartSound("NECK_BRK", 3);
+			GoreEffects(4, "XDeath2b", 25, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(4, "XDeath3b", 25, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(3, "MuchBlood", 50, 0, random(0, 360), 2, random(0, 160));}
+			TNT1 A 0 {Radius_Quake(2, 24, 0, 15, 0);
+			GoreEffects(3, "MuchBlood", 50, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(3, "XDeath1", 1, 0, random(0, 360), 2, random(0, 160));}
+			TNT1 A 0 {A_StartSound("misc/gibbed", 8);
+			GoreEffects(8, "PlayerFlyingBlood", 50, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(10, "MuchBlood", 25, 0, random(0, 360), 2, random(0, 160));}
+			TNT1 A 0 {A_StartSound("NECK_BRK", 9);
+			GoreEffects(3, "RipGuts", 20, 0, random(0, 360), 2, random(0, 160));}
+			TNT1 A 0 A_TakeInventory("Curbstomp_Marine", 1);
+			TNT1 A 0 A_SpawnItem("RappedMarine", 1);
+			Goto See2;
+
+		FatalityZombieman:
+			3HF1 A 20;
+			TNT1 A 0 A_StartSound("grunt/death");
+			3HF1 BC 5{
+			GoreEffects(2, "XDeath1", 55, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(2, "MuchBlood", 55, 0, random(0, 360), 2, random(0, 160));}
+			3HF1 D 10;
+			3HF1 E 5{
+			GoreEffects(1, "XDeathZombieManHead", 65, 0, random(0, 360), 2, random(70, 120));}
+			3HF1 F 30;
+			3HF1 G 10;
+			TNT1 A 0 A_TakeInventory("ZombieManFatality", 1);
+			Goto See2;
+
+		FatalitySergeant:
+			3HF1 I 15;
+			TNT1 A 0 {A_StartSound("grunt/death");
+			GoreEffects(4, "Instestin2", 30, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(4, "XDeath1", 45, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(4, "XDeath2", 45, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(5, "XDeath3", 55, 0, random(0, 360), 2, random(0, 160));}
+			TNT1 A 0 A_SpawnItem("SergeantFatalizedByBaron");
+			3HF1 J 10;
+			3HF1 KLM 15;
+			TNT1 A 0 A_TakeInventory("SergeantFatality", 1);
+			Goto See2;
+
+		FatalityDemon:
+			TNT1 A 0 A_StartSound("demon/pain");
+			3HF1 N 20 {
+			GoreEffects(5, "XDeathStomach", 60, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(4, "XDeath1", 45, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(4, "XDeath2", 45, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(5, "XDeath3", 55, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(3, "BloodMistBig", 25, 0, random(0, 360), 2, random(0, 160));}
+			TNT1 A 0 A_SpawnItem("DeadDemonHalf", 1);
+			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+			TNT1 A 0 A_TakeInventory("DemonFatality", 1);
+			Goto See2;
+		FatalityImp:
+			TNT1 A 0 A_StartSound("imp/pain");
+			3HF2 ABABAB 4;
+			TNT1 AAAAAA 0 {A_SpawnItem("BloodMistBig", 40);
+			GoreEffects(3, "XDeath1", 45, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(3, "XDeath2", 45, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(3, "XDeath3", 55, 0, random(0, 360), 2, random(0, 160));
+			GoreEffects(2, "Instestin", 42, 0, random(0, 360), 2, random(0, 160));}
+			3HF2 CDE 6;
+			3HF2 F 1 A_Chase();
+			3HF2 FFF 15;
+			3HF2 GGHHIJ 3;
+			TNT1 A 0 A_SpawnItem("DeadImp_BaronFatality");
+			TNT1 A 0 A_TakeInventory("ImpFatality3", 1);
+			Goto See2;
+
+		Pain.KillMe:
+		Pain.Taunt:
+			TNT1 A 0;
+			Goto Missile;
+
+		Death.KillMe:
+		Death.Taunt:
+			TNT1 A 0 {bSOLID = false ;}
+			TNT1 A 0 A_SpawnItem("BaronOfHell");
+			Stop;
+
+		Death.Ice:
+		Death.IceExplosion:
+		Death.Freeze:
+		Death.Frost:
+			TNT1 A 0 A_BossDeath;
+			TNT1 A 0 A_NoBlocking;
+			TNT1 A 0 {bSHOOTABLE = false ;}
+			TNT1 A 0 {bSOLID = false ;}
+			TNT1 A 0 A_SpawnItem("FrozenBaronOfHell");
+			Stop;
+
+		Death.Massacre:
+			Goto Death;
+
+		Crush:
+		Death.Stomp:
+            TNT1 A 0 {
+                GoreEffects(12, "PB_SquirtingBloodTrail", 0, 0, random(0, 360), 2, random(0, 360));
+                GoreEffects(4, "SuperGoreSpawner", 5, 0, random(0, 360), 2, random(30, 180));
+                GoreEffects(3, "PB_XDeath1", 5, 0, random(0, 360), 2, random(30, 180));
+                GoreEffects(3, "PB_XDeath2", 55, 0, random(0, 360), 2, random(30, 180));
+                GoreEffects(3, "PB_XDeath3", 55, 0, random(0, 360), 2, random(30, 180));
+            }
+			TNT1 A 0 A_SpawnItem("GrowingBloodPool");
+			TNT1 A 0 A_SpawnItem("CrushedRemains");
+			TNT1 A 1;
+			TNT1 A 1 A_XScream;
+			TNT1 A 0 A_BossDeath;
+			TNT1 A 0 A_NoBlocking;
+			Stop;
+    }
+}
+
+class PB_GreenPlasmaBall : PB_Monster_Projectile 
+{
+	Default
+    {
+        Radius 10;
+        Height 16;
+        Speed 32;
+        FastSpeed 35;
+        DamageType "GreenFire";
+        Projectile;
+        +RANDOMIZE;
+        +FORCEXYBILLBOARD;
+        +THRUGHOST;
+        DamageFunction (random(28,34));
+        RenderStyle "Add";
+        Scale 0.29;
+        SeeSound "BaronFire";
+        DeathSound "BaronFireImpact";
+        Decal "Scorch";
+    }
+
+    States
+    {
+        Spawn:
+            TNT1 A 0 A_StartSound("DarkImpFireLoop", 1, 1);
+            TNT1 A 0; // ACS_ExecuteAlways(798, 0, 0, 0, 0); // Check Effects
+            TNT1 A 0; // A_JumpIfInventory("lowgraphicsmode", 1, "SpawnCheap");
+
+        Spawn1:
+            DB58 AB 1 BRIGHT; // A_SpawnItem("GreenFlareSmall",0,0);
+            TNT1 A 0 A_SpawnItemEx("SmallGreenFlameTrails", 0, 0, 0, 0, 0, 0, 0, 128);
+            DB58 C 1 BRIGHT; // A_SpawnItem("GreenFlareSmall",0,0);
+            Loop;
+
+        SpawnCheap:
+            TNT1 A 0 A_SpawnItemEx("SmallGreenFlameTrails", 0, 0, 0, 0, 0, 0, 0, 128);
+            DB58 ABC 1 BRIGHT;
+            Loop;
+
+        Death:
+            TNT1 A 0 {A_StopSound(1);}
+            TNT1 A 0 A_SpawnItemEx("PlasmaParticleSpawner", 0, 0, 0, 0, 0, 0, 0, 128);
+            TNT1 A 0 A_SpawnItemEx("DetectFloorCraterSmall", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION, 0);
+            TNT1 A 0 A_SpawnItemEx("GreenPlasma_Puff", 0, 0, 0);
+            TNT1 A 0 A_SpawnItemEx("DetectCeilCraterSmall", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION, 0);
+            FRPG ABCDEFGH 1 BRIGHT A_SpawnItem("GreenFlare", 0, 0);
+            TNT1 AAAAA 19 A_SpawnProjectile("PlasmaSmoke", 1, 0, random(0, 360), 2, random(0, 160));
+            Stop;
+
+        XDeath:
+            TNT1 A 0 A_StopSound(1);
+            TNT1 A 0 A_SpawnItemEx("PlasmaParticleSpawner", 0, 0, 0, 0, 0, 0, 0, 128);
+            FRPG ABCDEFGH 2 A_SpawnItem("GreenFlare", 0, 0);
+            Stop;
+    }
+}
+
+class Baron_Slash: PB_GreenPlasmaBall
+{
+	Default
+	{
+        DamageType "GreenFire";
+        Projectile;
+        +RANDOMIZE;
+        +FORCEXYBILLBOARD;
+        +THRUGHOST;
+		+RIPPER;
+        DamageFunction (random(22,29));
+        RenderStyle "Add";
+        DeathSound "BaronBurn";
+        Decal "Scorch";
+	
+	
+		Radius 15;
+        Height 6;
+        Speed 26;
+        FastSpeed 28;
+		Alpha 1.5;
+		SeeSound "BaronSlash";
+	}
+	
+	    // --- New property for side-damage bookkeeping ---
+    array <Actor> sideHitActors;
+    private int ripdepth;        // How much health it can pierce through.
+    private Actor hitvictim;     // For the main ripping mechanic.
+    int Projectile_damage;
+    const PI = 3.14;
+	private bool bExploded;
+	int sideDamage;
+	int ProjectileDamage;
+    
+    
+    override void PostBeginPlay() 
+    {
+        super.PostBeginPlay();
+        ripdepth = 900;
+		bExploded = false;
+		sideDamage = random(17,26);
+		Projectile_damage = random(17, 26);
+    }
+    
+	
+    override int SpecialMissileHit(Actor victim) 
+    {
+		
+        if (victim && target && (victim != target)) 
+        {
+			
+            if (victim != hitvictim)  // Deal damage only once per pass-through.
+            {
+				
+				if (victim.GetClassName() == target.GetClassName())
+				{
+
+					return 1;
+				}
+				
+				if (victim.species == target.species)
+				{
+
+					return 1;
+				}
+                int penalty = (victim.health > 150) ? 150 : victim.health;
+                ripdepth -= penalty; // Reduce ripping ability.
+                hitvictim = victim;
+                
+                victim.DamageMobj(self, target, Projectile_damage, "GreenFire");
+				A_StartSound("OrganThrough", 0,0, 1.0);
+                // Record that this actor has been hit already.
+                if (!IsSideHit(victim))
+                {
+                    AddSideHit(victim);
+                }
+            }
+        }
+        if (ripdepth <= 0)
+            return 0;
+        else
+            return 1;
+    }
+    
+    override void Tick() 
+    {
+		super.Tick();
+		if (bExploded)
+			return;  // Skip side damage logic once exploded.
+		CheckSideObstruction();
+    }
+    
+    //
+    // Returns true if the given actor is already in our side-hit list.
+    //
+    bool IsSideHit(Actor a)
+    {
+        for (int i = 0; i < sideHitActors.Size(); i++)
+        {
+            if (sideHitActors[i] == a)
+                return true;
+        }
+        return false;
+    }
+    
+    //
+    // Adds the given actor to the side-hit list.
+    //
+    void AddSideHit(Actor a)
+    {
+        sideHitActors.Push(a);
+    }
+    
+    //
+    // CheckSideObstruction:
+    // Builds eight sample points for the projectile’s bounding box.
+    // From the forward (Y+ side) points, fires line tracers:
+    //   - Sample points 2 and 6 (left-front) use a trace yaw of (angle - 90).
+    //   - Sample points 3 and 7 (right-front) use a trace yaw of (angle + 90).
+    // If a trace hits an actor that hasn’t yet been side-damaged, that actor is damaged
+    // using a fresh random damage value.
+    //
+    void CheckSideObstruction()
+    {
+        // Build 8 sample points (bottom and top corners of the bounding box).
+        vector3 samplePoints[8];
+		double halfHeight = Height / 2;
+
+		// Now define the eight corners using halfHeight for vertical offsets.
+		samplePoints[0] = (pos.x - radius, pos.y - radius, pos.z - halfHeight);
+		samplePoints[1] = (pos.x + radius, pos.y - radius, pos.z - halfHeight);
+		samplePoints[2] = (pos.x - radius, pos.y + radius, pos.z - halfHeight);
+		samplePoints[3] = (pos.x + radius, pos.y + radius, pos.z - halfHeight);
+
+		samplePoints[4] = (pos.x - radius, pos.y - radius, pos.z + halfHeight);
+		samplePoints[5] = (pos.x + radius, pos.y - radius, pos.z + halfHeight);
+		samplePoints[6] = (pos.x - radius, pos.y + radius, pos.z + halfHeight);
+		samplePoints[7] = (pos.x + radius, pos.y + radius, pos.z + halfHeight);
+        
+        // For the left side, we use sample points 2 and 6.
+        int leftIndices[2] = {5, 1};
+        // For the right side, we use sample points 3 and 7.
+        int rightIndices[2] = {3, 7};
+        
+        float traceDistance = 38.0;
+        float pitch = 0;  // horizontal trace.
+        
+        FLineTraceData traceData;
+        
+        // Calculate common values from the projectile's angle.
+        float rad = angle * (PI / 180.0);
+        float forwardX = cos(rad);
+        float forwardY = sin(rad);
+        float sideX = -sin(rad);
+        float sideY = cos(rad);
+        
+        // Left trace yaw is (angle - 90).
+        float leftYaw = angle - 90;
+        for (int i = 0; i < 2; i++)
+        {
+            vector3 sample = samplePoints[leftIndices[i]];
+            float dx = sample.x - pos.x;
+            float dy = sample.y - pos.y;
+            float dz = sample.z - pos.z;
+            // Project the difference onto the forward and side axes.
+            float offsetForward = dx * forwardX + dy * forwardY;
+            float offsetSide = dx * sideX + dy * sideY;
+            float offsetZ = dz;
+            
+/*         bool traceHit = Line3d.LineTraceVisual(
+                self,          // Source actor.
+                leftYaw,       // Yaw angle in degrees.
+                traceDistance, // Trace distance.
+                pitch,         // Pitch (0 for horizontal).
+                0,             // Flags.
+                offsetZ,       // offsetz.
+                offsetForward, // offsetforward.
+                offsetSide,    // offsetside.
+                data: traceData,
+                LineClassName: "Line3d",
+                TimeToLive: 6,
+                TimeToCycle: 0,
+                MarkerClassName: "Marker3d"
+            );
+   */
+   
+			bool traceHit = self.LineTrace(
+                leftYaw,       // Yaw angle in degrees.
+                traceDistance, // Trace distance.
+                pitch,         // Pitch (0 for horizontal).
+                0,             // Flags.
+                offsetZ,       // offsetz.
+                offsetForward, // offsetforward.
+                offsetSide,    // offsetside.
+                data: traceData
+            );
+   
+            
+            if (traceHit && traceData.HitActor != null)
+            {
+                Actor hitActor = traceData.HitActor;
+				
+				
+				if (!IsSideHit(hitActor))
+				{
+				
+					if (hitActor == self)
+					{
+					//	Console.Printf("\cbSkipping self hit (left).");
+						continue;
+					}
+
+					if (target != null && hitActor.GetClassName() == target.GetClassName())
+					{
+
+						continue;
+					}
+					
+					if (target != null && hitActor.species == target.species)
+					{
+
+						continue;
+					}
+				
+
+					hitActor.DamageMobj(self, target, sideDamage, DamageType);
+					AddSideHit(hitActor);
+				//	Console.Printf("\ctSide trace (left) hit actor: %s, Damage: %d", hitActor.GetClassName(), sideDamage);
+					A_StartSound("OrganThrough", 0,0, 1.0);
+				}
+            }
+        }
+        
+        // Right trace: yaw is (angle + 90).
+        float rightYaw = angle + 90;
+        for (int i = 0; i < 2; i++)
+        {
+            vector3 sample = samplePoints[rightIndices[i]];
+            float dx = sample.x - pos.x;
+            float dy = sample.y - pos.y;
+            float dz = sample.z - pos.z;
+            float offsetForward = dx * forwardX + dy * forwardY;
+            float offsetSide = dx * sideX + dy * sideY;
+            float offsetZ = dz;
+            
+/*         bool traceHit = Line3d.LineTraceVisual(
+                self,
+                rightYaw,
+                traceDistance,
+                pitch,
+                0,
+                offsetZ,
+                offsetForward,
+                offsetSide,
+                data: traceData,
+                LineClassName: "Line3d",
+                TimeToLive: 6,
+                TimeToCycle: 0,
+                MarkerClassName: "Marker3d"
+            );
+			
+		 */
+			bool traceHit = self.LineTrace(
+                rightYaw,       // Yaw angle in degrees.
+                traceDistance, // Trace distance.
+                pitch,         // Pitch (0 for horizontal).
+                0,             // Flags.
+                offsetZ,       // offsetz.
+                offsetForward, // offsetforward.
+                offsetSide,    // offsetside.
+                data: traceData
+			);
+            
+			
+			if (traceHit && traceData.HitActor != null)
+			{
+				Actor hitActor = traceData.HitActor;
+				
+
+				
+
+				
+				
+				if (!IsSideHit(hitActor))
+				{
+				
+					if (hitActor == self)
+					{
+					//	Console.Printf("\cbSkipping self hit (right).");
+						continue;
+					}
+
+					if (target != null && hitActor.GetClassName() == target.GetClassName())
+					{
+
+						continue;
+					}
+				
+					if (target != null && hitActor.species == target.species)
+					{
+
+						continue;
+					}
+				
+
+					hitActor.DamageMobj(self, target, sideDamage, DamageType);
+					AddSideHit(hitActor);
+					//Console.Printf("\ctSide trace (right) hit actor: %s, Damage: %d", hitActor.GetClassName(), sideDamage);
+					A_StartSound("OrganThrough", 0,0, 1.0);
+				}
+			}
+        }
+    }
+	
+	
+	States
+	{
+		Spawn: 	TNT1 A 0;
+				SLSH A 1;
+				Loop;
+		/*		
+		Death:
+            TNT1 A 0 {A_StopSound(1); bExploded = true;}
+            TNT1 A 0 A_SpawnItemEx("PlasmaParticleSpawner", 0, 0, 0, 0, 0, 0, 0, 128);
+            TNT1 A 0 A_SpawnItemEx("DetectFloorCraterSmall", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION, 0);
+            TNT1 A 0 A_SpawnItemEx("GreenPlasma_Puff", 0, 0, 0);
+            TNT1 A 0 A_SpawnItemEx("DetectCeilCraterSmall", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION, 0);
+            FRPG ABCDEFGH 1 BRIGHT A_SpawnItem("GreenFlare", 0, 0);
+            TNT1 AAAAA 19 A_SpawnProjectile("PlasmaSmoke", 1, 0, random(0, 360), 2, random(0, 160));
+            Stop;
+		*/
+		Death:
+            TNT1 A 0 {A_StopSound(1); bExploded = true;}
+            TNT1 A 0 A_SpawnItemEx("BaronSlash_DeathFX", 0, 0, 0);
+            Stop;
+
+        XDeath:
+            TNT1 A 0 A_StopSound(1);
+			GBBA ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 ;
+			GBBB ABCDEFGHI 1 ;
+            Stop;
+	}
+}
+
+class BaronSlash_DeathFX : Actor
+{
+    Default
+    {
+        Scale 1.0;
+//        RenderStyle "Add";
+        +NOBLOCKMAP
+        +NOGRAVITY
+        +NOINTERACTION
+    }
+
+    States
+    {
+    Spawn:
+        GBBA ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 BRIGHT;
+        GBBB ABCDEFGHI 1 BRIGHT;
+        Stop;
+    }
+}
+
+
+class BaronMeteor: PB_Monster_Projectile
+{
+//	int drop_rate;
+	Default
+	{
+		Radius 10;
+		Height 16;
+		Speed 35;
+		FastSpeed 35;
+		Gravity 0.5;
+		Projectile ;
+		+RANDOMIZE;
+		+FORCEXYBILLBOARD;
+		+THRUGHOST;
+		DamageFunction 7;
+		RenderStyle "Add";
+		Alpha 0.9;
+		Scale 1.45;
+		SeeSound "baron/attack";
+		DeathSound "belphegor/missile";
+		Decal "Scorch";
+		//DamageType "Disintegrate";
+	}
+
+	    override void BeginPlay()
+    {
+   //     drop_rate = -5;  // Set your drop_rate here
+        Super.BeginPlay();
+    }
+	
+	override int SpecialMissileHit(Actor victim) 
+    {
+        if (victim && target && (victim != target)) 
+        {
+            
+
+			if (victim.GetClassName() == target.GetClassName())
+			{
+				return 0;
+			}
+			
+			if (victim.species == target.species)
+			{
+				return 0;
+			}
+
+			victim.DamageMobj(self, target, damage,"GreenFire");
+   
+        }
+		return 0;
+    }
+
+	States
+	{
+	Spawn:
+	    TNT1 A 0 A_SpawnItem("GreenFlare22",0,0);
+		FRPG KKKKKKKKKKKKKKK 1 BRIGHT {A_SpawnItemEx("GreenExplosionFlameTrail", 0, 0, 0, 0, 0, 0, 0, 128);
+				ThrustThingZ(0,drop_rate,0,1);
+				}
+		
+		Loop;
+
+	Death:
+		//BFE1 A 0 A_StartSound("FAREXPL", 3);
+		BFE1 A 0 A_StartSound("HeavyExplosion", 0);
+		EXPL A 0 Radius_Quake (1, 24, 0, 13, 0);
+ 		BFE1 A 0 Bright A_Explode(32, 76, 1 || XF_CIRCULAR , fulldamagedistance:30);
+		TNT1 A 0 A_SpawnItem ("GreenExplosionMushroom", 0);
+        TNT1 AAAAAAAAA 0 A_SpawnProjectile ("GreenExplosionFire", 2, 0, random (0, 360), 2, random (0, 360));
+        EXPL AA 0 A_SpawnProjectile ("BigNeoSmoke", 0, 0, random (0, 360), 2, random (0, 360));
+		TNT1 BCDEF 2 Bright;
+		TNT1 AAAAAAA 2 A_SpawnProjectile ("BigNeoSmoke", 2, 0, random (0, 360), 2, random (0, 360));
+		Stop;
+	}
+}
+
+class BaronMeteorStraight: BaronMeteor
+{
+	Default
+	{
+		Radius 10;
+		Height 16;
+		Speed 35;
+		FastSpeed 35;
+		Gravity 0.5;
+		Projectile ;
+		+RANDOMIZE;
+		+FORCEXYBILLBOARD;
+		+THRUGHOST;
+		DamageFunction 7;
+		RenderStyle "Add";
+		Alpha 0.9;
+		Scale 1.45;
+		SeeSound "baron/attack";
+		DeathSound "belphegor/missile";
+		Decal "Scorch";
+		//DamageType "Disintegrate";
+	}
+
+	States
+	{
+	Spawn:
+	    TNT1 A 0 A_SpawnItem("GreenFlare22",0,0);
+		FRPG KKKKKKKKKKKKKKK 1 BRIGHT A_SpawnItemEx("GreenExplosionFlameTrail", 0, 0, 0, 0, 0, 0, 0, 128);
+		Loop;
+	}
+}
+
+
+class DeadBaron : CurbstompedMarine
+{
+    Default
+    {
+        Radius 8;
+        Height 12;
+        Scale 1.1;
+        Mass 1000;
+        Health 200;
+        
+        DamageFactor "Crusher", 50.0;
+        DamageFactor "Blood", 0.0;
+        DamageFactor "Trample", 0.0;
+        BloodType "NashGoreBlood";
+        //BloodColor "DarkGreen";
+        
+        +SHOOTABLE;
+        +NOTELEPORT;
+        +MOVEWITHSECTOR;
+        +CORPSE;
+        -SOLID;
+        +THRUACTORS;
+    }
+
+    void GoreEffects(int repetitions, string missileType, double spawnHeight = 32, double spawnOffsetXY = 0, double angle = 0, int flags = 0, double pitch = 0, int ptr = AAPTR_TARGET)
+    {
+        for (int i = 0; i < repetitions; i++)
+        {
+            A_SpawnProjectile(missileType, spawnOffsetXY, spawnHeight, angle + random(-10, 10), flags, pitch, ptr);
+        }
+    }
+    
+    States
+    {
+        Spawn:
+            BADD G -1;
+            Stop;
+
+        Raise:
+            TNT1 A 2 A_SpawnProjectile("RealFlameTrailsSmall", 6, 0, random(0,360), 2, random(70,110));
+            TNT1 A 0 A_SpawnItem("PentagramSpawner", 0, 60);
+            TNT1 A 2 A_SpawnProjectile("RealFlameTrailsSmall", 6, 0, random(0,360), 2, random(70,110));
+            TNT1 A 0 A_SpawnItem("PentagramSpawner", 0, 60);
+            TNT1 A 0 A_SpawnItem("TeleportFog");
+            TNT1 A 0 A_NoBlocking;
+            TNT1 A 0 A_SpawnItem("PB_Baron", 3);
+            Stop;
+
+        Death:
+            TNT1 A 0 {A_SpawnItemEx("DeadBaronBSA1U", -3, -3);
+            GoreEffects(3, "PB_BloodMistBig", 9, 0, random(0,360), 2, random(30,90));
+            GoreEffects(3, "PB_XDeath1", 5, 0, random(0,360), 2, random(0,160));
+            GoreEffects(3, "PB_XDeath2", 5, 0, random(0,360), 2, random(0,160));
+            GoreEffects(3, "PB_XDeath3", 5, 0, random(0,360), 2, random(0,160));
+            GoreEffects(3, "PB_XDeath4", 5, 0, random(0,360), 2, random(0,160));}
+            Stop;
+
+        XDeath:
+            GIBS Y 0;  // GIBS commands are left unchanged.
+            TNT1 A 0 A_BossDeath;
+            TNT1 A 0 {A_NoBlocking();
+            GoreEffects(2, "PB_XDeath1", 25, 0, random(0,360), 2, random(0,160));
+            GoreEffects(2, "PB_XDeath2b", 25, 0, random(0,360), 2, random(0,160));
+            GoreEffects(2, "PB_XDeath3b", 25, 0, random(0,360), 2, random(0,160));}
+            TNT1 A 0 {A_SpawnItem("PB_MuchBlood", 0, 25);
+            GoreEffects(2, "PB_BloodMistBig", 16, 0, random(0,360), 2, random(30,90));}
+            TNT1 A 0 A_SpawnItem("PB_MuchBlood", 0, 25);
+            GIBS Y 1;
+            GIBS Y -1;
+            Stop;
+
+        Death.CrushedBodies:
+            TNT1 A 0 {A_SetAngle(0);
+            GoreEffects(2, "SuperGoreSpawner", 1, -40, random(0,360), 2, random(25,45));
+            GoreEffects(2, "SuperGoreSpawner", 1, 40, random(0,360), 2, random(25,45));
+            GoreEffects(2, "PB_XDeath1", 1, random(-30,30), random(0,360), 2, random(0,160));
+            GoreEffects(2, "PB_XDeath2b", 1, random(-30,30), random(0,360), 2, random(0,160));
+            GoreEffects(2, "PB_XDeath3b", 1, random(-30,30), random(0,360), 2, random(0,160));
+            GoreEffects(2, "PB_BloodMistBig", 1, -40, random(0,360), 2, random(30,90));
+            GoreEffects(2, "PB_BloodMistBig", 1, 40, random(0,360), 2, random(30,90));}
+            TNT1 A 0 {A_SetAngle(90);
+            GoreEffects(2, "SuperGoreSpawner", 1, -40, random(0,360), 2, random(25,45));
+            GoreEffects(2, "SuperGoreSpawner", 1, 40, random(0,360), 2, random(25,45));
+            GoreEffects(2, "PB_XDeath1", 1, random(-30,30), random(0,360), 2, random(0,160));
+            GoreEffects(2, "PB_XDeath2b", 1, random(-30,30), random(0,360), 2, random(0,160));
+            GoreEffects(2, "PB_XDeath3b", 1, random(-30,30), random(0,360), 2, random(0,160));
+            GoreEffects(2, "PB_BloodMistBig", 1, -40, random(0,360), 2, random(30,90));
+            GoreEffects(2, "PB_BloodMistBig", 1, 40, random(0,360), 2, random(30,90));}
+            TNT1 A 0 A_NoBlocking;
+            GIBS Y 1;
+            GIBS Y -1;
+            Stop;
+
+        Death.Plasma:
+        Death.Plasma2:
+        Death.Flames:
+        Death.Burn:
+            TNT1 A 0;
+            TNT1 A 0 A_Scream;
+            TNT1 A 0 {A_NoBlocking();
+            GoreEffects(5,"ExplosionSmoke", 32, 0, random(0,360), 2, random(0,360));
+            }
+            BOSB ABCDE 0 GoreEffects(5,"PlasmaSmoke", 24, 0, random(0,180), 2, random(0,180));
+            BOSC FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF 6 A_SpawnProjectile("PlasmaSmoke", 16, 0, random(0,180), 2, random(0,180));
+            BOSB E -1;
+            Stop;
+    }
+}
+
+class DeadBaronBSA1U : DeadBaron
+{
+    States
+    {
+        Spawn:        
+            BSA1 U -1;
+            Stop;
+
+        Death:
+            TNT1 A 0 
+            {
+                GoreEffects(4, "PB_BloodMistBig", 9, 0, random(0, 360), 2, random(30, 90));
+                GoreEffects(3, "PB_XDeath1", 5, 0, random(0, 360), 2, random(0, 160));
+            }
+            TNT1 A 0 A_SpawnItem("GibsZ_Green");
+            Stop;
+    }
+}
+
+
+
+class DeadBaronBSA1K : DeadBaron { States { Spawn: BSA1 K -1; Stop; } }
+class DeadBaronBSA1O : DeadBaron { States { Spawn: BSA1 O -1; Stop; } }
+class DeadBaronBSA2E : DeadBaron { States { Spawn: BSA2 E -1; Stop; } }
+class DeadBaronBSA0Y : DeadBaron { States { Spawn: BSA0 Y -1; Stop; } }
+class DeadBaronBSA0T : DeadBaron { States { Spawn: BSA0 T -1; Stop; } }
+class DeadBaronBSA1Z : DeadBaron { States { Spawn: BSA1 Z -1; Stop; } }
+class DeadBaronBSA1E : DeadBaron { States { Spawn: BSA1 E -1; Stop; } }
+class DeadBaronBSA0M : DeadBaron { States { Spawn: BSA0 M -1; Stop; } }
+class DeadBaronBSA0H : DeadBaron { States { Spawn: BSA0 H -1; Stop; } }
+class DeadBaronBADDN : DeadBaron { States { Spawn: BADD N -1; Stop; } }
+class DeadBaronBADDX : DeadBaron { States { Spawn: BADD X -1; Stop; } }
+class DeadBaron2 : DeadBaron { States { Spawn: BTN8 E -1; Stop; } }
+
+class BaronDeath2 : DeadBaron
+{
+    Default
+    {
+        Translation "48:63=16:31", "96:111=32:47", "128:143=32:46", "144:151=32:47", "13:15=0:0";
+    }
+
+    States
+    {
+        Spawn:
+            TNT1 A 0 
+            {
+                GoreEffects(1, "PB_FlyingBlood", 28, 0, random(0,360), 2, random(0,160));
+                GoreEffects(2, "PB_XDeath1", 40, 0, random(0,360), 2, random(0,160));
+            }
+            BTN6 AAA 2 { GoreEffects(1, "PB_SquirtingBloodTrail", 37, 0, random(0,360), 2, random(30,60)); }
+            BTN6 B 6;
+            BTN6 CCC 2 { GoreEffects(1, "PB_SquirtingBloodTrail", 19, 0, random(0,360), 2, random(30,60)); }
+            BTN6 D 6;
+            TNT1 A 0 A_StartSound("BIG_BODYF", 9); 
+            TNT1 A 0 A_SpawnItem("GrowingBloodPool"); 
+            TNT1 A 0 A_SpawnItem("DeadBaron2"); 
+            Stop;
+    }
+}
+
+class DeadBaron3 : DeadBaron
+{
+    States
+    {
+        Spawn:
+            BTN8 FFFFFFFFFFFFFFFFFFFFFFFFF 2 
+            {
+                GoreEffects(1, "PB_SquirtingBloodTrail", 10, 0, random(0, 360), 2, random(30, 110));
+            }
+            BTN8 F -1;
+            Stop;
+    }
+}
+
+
+class BaronDeath2_Big : DeadBaron
+{
+    Default
+    {
+        Radius 0;
+        Height 12;
+        Translation "48:63=16:31", "96:111=32:47", "128:143=32:46", "144:151=32:47", "13:15=0:0";
+    }
+
+    States
+    {
+        Spawn:
+            TNT1 AA 0
+            {
+                GoreEffects(1, "PB_BloodMistBig", 45, 0, random(0,360), 2, random(0,160));
+                GoreEffects(1, "PB_XDeath1", 32, 0, random(150,210), 2, random(0,40));
+                GoreEffects(1, "PB_XDeath3", 26, 0, random(170,190), 2, random(0,40));
+                GoreEffects(1, "PB_XDeath2", 31, 0, random(130,210), 2, random(0,40));
+                GoreEffects(1, "PB_Intestine", 32, 0, random(0,360), 2, random(0,160));
+                GoreEffects(1, "PB_MuchBlood", 55, 0, random(0,360), 2, random(0,160));
+                GoreEffects(1, "NashGoreBloodParticle1", 30, 0, random(0,360), 2, random(0,160));
+                GoreEffects(1, "PB_FlyingBlood", 28, 0, random(0,360), 2, random(0,160));
+                GoreEffects(1, "PB_XDeath1", 40, 0, random(0,360), 2, random(0,160));
+            }
+            BTN7 AAAA 2 { GoreEffects(1, "PB_SquirtingBloodTrail", 37, 0, random(0,360), 2, random(30,60)); }
+            BTN7 B 6;
+            BTN7 CCCC 2 { GoreEffects(1, "PB_SquirtingBloodTrail", 19, 0, random(0,360), 2, random(30,60)); }
+            BTN7 D 6;
+            TNT1 A 0  A_StartSound("BIG_BODYF", 9); 
+            TNT1 A 0  A_SpawnItem("GrowingBloodPool"); 
+            TNT1 A 0  A_SpawnItem("DeadBaron3"); 
+            Stop;
+    }
+}
+
+
+
+
+
+
+class XDeathHalfBOH : Actor
+{
+    Default
+    {
+        Radius 1;
+        Height 8;
+        Speed 10;
+        Mass 8;
+        BounceFactor 0.3;
+        +BOUNCEONWALLS; +BOUNCEONFLOORS; +ALLOWBOUNCEONACTORS; +BOUNCEAUTOOFF;
+        +NOBLOCKMAP;
+        +MISSILE;
+        +NOTELEPORT;
+        +DONTSPLASH;
+        +MOVEWITHSECTOR;
+        //BloodColor "DarkGreen";
+        DeathSound "misc/XDeath1";
+    }
+
+    States
+    {
+        Spawn:
+            Goto Death;
+
+        Death:
+            BTO2 AABBCC 4 A_SpawnProjectile("PB_SquirtingBloodTrail",0,0,180,2);
+            HPLA A 0 A_SpawnItem("DeadBaronHalfUp",0,0,0,1); 
+            Stop;
+    }
+}
+
+class DeadBaronExplosiveImpact2 : DeadKnight { States { Spawn: BOH3 H -1; Stop; } }
+class DeadBaronExplosiveImpact1 : DeadKnight { States { Spawn: BOH3 D -1; Stop; } }
+class DeadBaronHalfDown : DeadBaron { States { Spawn: BBO2 D -1; Stop; } }
+class DeadBaronHalfUp : DeadBaron { States { Spawn: BTO2 D -1; Stop; } }
+class DeadBaronNoHead : DeadBaron { States { Spawn: BADH D -1; Stop; } }
+class DeadBaronClassic : DeadBaron { States { Spawn: KSA8 G -1; Stop; } }
+
+
+class BaronBarrelCall : BaronBall
+{
+    Default
+    {
+        Radius 4;
+        Height 4;
+        Speed 32;
+        Alpha 0.6;
+        DamageFunction (random(2,3));
+        RenderStyle "Add";
+        DamageType "BaronBarrelCall";
+
+        +RANDOMIZE;
+        +FORCEXYBILLBOARD;
+        +THRUGHOST;
+    }
+
+    States
+    {
+        Spawn:
+            TNT1 A 6;
+            Goto Death;
+        
+        Death:
+            TNT1 A 0 BRIGHT;
+            Stop;
+    }
+}
+
+class FatalizedBaron2 : DeadBaron
+{
+    States
+    {
+        Spawn:
+            BHF2 W -1;
+            Stop;
+    }
+}
+
+class DyingBaronNoArm1 : Actor
+{
+    Default
+    {
+        Radius 18;
+        Height 60;
+        Health 150;
+        Scale 1.15;
+        Mass 999999;
+        BloodType "NashGoreBlood";
+        //BloodColor "DarkGreen";
+
+        DamageFactor "Blood", 0.0;
+        DamageFactor "BlueBlood", 0.0;
+        DamageFactor "GreenBlood", 0.0;
+        DamageFactor "Avoid", 0.0;
+        DamageFactor "KillMe", 0.0;
+        DamageFactor "Shrapnel", 0.0;
+        DamageFactor "Cutless", 0.6;
+
+        -SOLID;
+        +SHOOTABLE;
+        +FLOORCLIP;
+        +NOPAIN;
+        +DONTSPLASH;
+    }
+
+    void GoreEffects(int repetitions, string missileType, double spawnHeight = 32, double spawnOffsetXY = 0, double angle = 0, int flags = 0, double pitch = 0, int ptr = AAPTR_TARGET)
+    {
+        for (int i = 0; i < repetitions; i++)
+        {
+            A_SpawnProjectile(missileType, spawnOffsetXY, spawnHeight, angle + random(-10, 10), flags, pitch, ptr);
+        }
+    }
+
+    States
+    {
+        Spawn:
+            BSA0 ABCB 6;
+            TNT1 A 0 { A_SpawnItem("PB_SquirtingBloodTrail", 0, 30); A_StartSound("PSXDPN"); }
+            Loop;
+        
+        Death:
+            TNT1 A 0 { A_NoBlocking(); A_Fall(); }
+            TNT1 A 0 A_StartSound("baron/death");
+            BSA0 DEFGH 6;
+            TNT1 A 0 { A_StartSound("BIG_BODYF", 9); A_SpawnItem("DeadBaronBSA0H"); }
+            Stop;
+
+        Death.Head:
+            TNT1 A 0 { A_NoBlocking(); A_Fall(); A_SpawnItem("BaronOfHellHeadExplode", 0, 56); }
+            BSA0 IIII 2 A_SpawnItem("PB_SquirtingBloodTrail", 0, 50);
+            BSA0 JKLM 7;
+            TNT1 A 0 { A_SpawnItem("CrueltyBonus5Health"); A_StartSound("BIG_BODYF", 9); A_SpawnItem("DeadBaronBSA0M"); }
+            Stop;
+
+        Death.Decapitate:
+            TNT1 A 0 { A_NoBlocking(); A_Fall(); }
+            TNT1 AAAAA 0
+            {
+                GoreEffects(3, "SmallSuperGore", 50, 0, random(0,360), 2, random(10,170));
+                GoreEffects(3, "PB_XDeath1", 62, 0, random(0,360), 2, random(50,130));
+                GoreEffects(3, "XDeathBaronHead5", 62, 0, random(0,360), 2, random(50,130));
+            }
+            BSA0 IIII 2 A_SpawnItem("PB_SquirtingBloodTrail", 0, 50);
+            BSA0 JKLM 7;
+            TNT1 A 0 { A_SpawnItem("CrueltyBonus5Health"); A_StartSound("BIG_BODYF", 9); A_SpawnItem("DeadBaronBSA0M"); }
+            Stop;
+    }
+}
+
+class BrutalizedBaron1 : Actor
+{
+    Default
+    {
+        Radius 18;
+        Height 60;
+        Health 120;
+        Scale 1.15;
+        Mass 999999;
+        
+        DamageFactor "Blood", 0.0;
+        DamageFactor "BlueBlood", 0.0;
+        DamageFactor "GreenBlood", 0.0;
+        DamageFactor "Shrapnel", 0.0;
+        DamageFactor "KillMe", 0.0;
+        DamageFactor "Cutless", 0.6;
+        
+        BloodType "NashGoreBlood";
+        //BloodColor "DarkGreen";
+        
+        -SOLID;
+        +SHOOTABLE;
+        +VULNERABLE; // maybe this will help with deaths getting stuck
+        +FLOORCLIP;
+        +NOPAIN;
+        +DONTSPLASH;
+    }
+
+    States
+    {
+        Spawn:
+			BSA0 ABCBABCB 8 {
+				A_SpawnItem("PB_SquirtingBloodTrail", 0, 30);
+				A_StartSound("PSXDPN");
+			}
+			TNT1 A 0 A_Die("Collapse");
+            Stop;
+			
+		Death.Collapse:
+			TNT1 A 0 {A_NoBlocking(false);}
+			BSA0 DEFG 5;
+			BSA0 H -1;
+			Stop;
+
+        Death:
+            TNT1 A 0 {A_NoBlocking();}
+			TNT1 AAAAAA 0 A_SpawnProjectile("PB_XDeath1", 40, 0, random(0, 360), 2, random(0, 160));
+            TNT1 AAAAA 0 A_SpawnProjectile("PB_FlyingBlood", 15, 0, random(0, 360), 2, random(0, 160));
+            TNT1 A 0 A_Jump(128, "DeathAlt");
+            TNT1 A 0 A_SpawnProjectile("XDeathBaronOfHellArm", 32, 0, random(0, 360), 2, random(0, 160));
+            TNT1 A 0 A_SpawnProjectile("XDeathBaronHead5", 57, 0, random(0, 360), 2, random(50, 130));
+            BSA0 N 0 A_SpawnItem("BrutalizedBaron2");
+            Stop;
+		DeathAlt:
+			TNT1 A 0 A_SpawnProjectile("XDeathBaronHead5", 57, 0, random(0, 360), 2, random(50, 130));
+            BSA0 N 0 A_SpawnItem("BrutalizedBaron2alt");
+            Stop;
+    }
+}
+
+class BrutalizedBaron2 : BrutalizedBaron1
+{
+    States
+    {
+        Spawn:
+            BSA0 NONPNOPN 8 A_SpawnItem("PB_SquirtingBloodTrail", 0, 30);
+   			TNT1 A 0 A_Die("Collapse");
+            Stop;
+			
+		Death.Collapse:
+			TNT1 A 0 {A_NoBlocking(false);}
+			BSA0 QRS 6;
+			BSA0 T -1;
+			Stop;
+
+        Death:
+            TNT1 A 0 {A_NoBlocking();}
+            TNT1 AAA 0 A_SpawnProjectile("PB_XDeath1", 40, 0, random(0, 360), 2, random(0, 160));
+            TNT1 A 0 A_SpawnProjectile("PB_XDeath2", 40, 0, random(0, 360), 2, random(0, 160));
+            TNT1 AA 0 A_SpawnProjectile("PB_XDeath3", 40, 0, random(0, 360), 2, random(0, 160));
+            TNT1 AAA 0 A_SpawnProjectile("PB_FlyingBlood", 15, 0, random(0, 360), 2, random(0, 160));
+            TNT1 A 0 A_SpawnProjectile("XDeathBaronOfHellArm", 32, 0, random(0, 360), 2, random(0, 160));
+            BSA0 U 0 A_SpawnItem("BrutalizedBaron3");
+            Stop;
+    }
+}
+
+class BrutalizedBaron2alt : BrutalizedBaron1
+{
+    States
+    {
+        Spawn:
+            BSA0 IIIIIIII 8 A_SpawnItem("PB_SquirtingBloodTrail", 0, 30);
+   			TNT1 A 0 A_Die("Collapse");
+            Stop;
+			
+		Death.Collapse:
+			TNT1 A 0 {A_NoBlocking(false);}
+			BSA0 JKL 6;
+			BSA0 M -1;
+			Stop;
+
+        Death:
+            TNT1 A 0 {A_NoBlocking();}
+            TNT1 AAA 0 A_SpawnProjectile("PB_XDeath1", 40, 0, random(0, 360), 2, random(0, 160));
+            TNT1 A 0 A_SpawnProjectile("PB_XDeath2", 40, 0, random(0, 360), 2, random(0, 160));
+            TNT1 AA 0 A_SpawnProjectile("PB_XDeath3", 40, 0, random(0, 360), 2, random(0, 160));
+            TNT1 AAA 0 A_SpawnProjectile("PB_FlyingBlood", 15, 0, random(0, 360), 2, random(0, 160));
+            BSA0 U 0 A_SpawnItem("BrutalizedBaron3");
+            Stop;
+    }
+}
+
+class BrutalizedBaron3 : BrutalizedBaron2
+{
+    States
+    {
+        Spawn:
+            BSA0 UUUUUUUU 8 A_SpawnProjectile("PB_SquirtingBloodTrail", 15, 0, random(0, 360), 2, random(0, 160));
+			TNT1 A 0 A_Die("Collapse");
+            Stop;
+			
+		Death.Collapse:
+			TNT1 A 0 {A_NoBlocking(false);}
+			BSA0 VWX 6;
+			BSA0 Y -1;
+			Stop;
+			
+		Death:
+            TNT1 A 0 {A_NoBlocking();}
+            TNT1 AAA 0 A_SpawnProjectile("PB_XDeath1", 40, 0, random(0, 360), 2, random(0, 160));
+            TNT1 A 0 A_SpawnProjectile("PB_XDeath2", 40, 0, random(0, 360), 2, random(0, 160));
+            TNT1 AA 0 A_SpawnProjectile("PB_XDeath3", 40, 0, random(0, 360), 2, random(0, 160));
+            TNT1 AAA 0 A_SpawnProjectile("PB_FlyingBlood", 15, 0, random(0, 360), 2, random(0, 160));
+            TNT1 AAA 0 A_SpawnProjectile("PB_Intestine", 32, 0, random(0, 360), 2, random(0, 160));
+			BSA1 QQQQ 5 A_SpawnProjectile("PB_SquirtingBloodTrail", 15, 0, random(0, 360), 2, random(0, 160));
+			BSA1 RST 6;
+			BSA1 U -1;
+            Stop;
+    }
+}

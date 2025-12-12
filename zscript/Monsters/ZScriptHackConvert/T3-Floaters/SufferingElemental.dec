@@ -1,0 +1,258 @@
+ACTOR PB_SufferingElemental : PB_Elemental //Replaces PainElemental
+{
+	//$Title Suffering Elemental
+	//$Category Project Brutality - Monsters/Flyers
+	//$Sprite PL3MA1
+	Health 525
+	Radius 31
+	Height 56
+	Mass 400
+	Scale 1
+	Speed 11
+	PainChance 128
+	PainChance "Stun", 255
+	PainChance "Siphon", 255
+	Monster
+	+FLOAT 
+	+NOGRAVITY
+	+MissileMore
+	SeeSound "pain/sight"
+	damagefactor "Avoid", 0.0
+	damagefactor "killme", 0.0
+	damagefactor "GibRemoving", 0.0
+	PainSound "pain/pain"
+	DeathSound "pain/death"
+	ActiveSound "pain/active"
+	bloodtype "GreenBloodTrails"
+	PB_Elemental.LSType "PB_Phantasm"
+	//BloodColor "Green"
+	damagefactor "TeleportRemover", 0.0
+	DamageFactor "CauseObjectsToSplash", 0.0
+	PainChance "Kick", 255
+	damagefactor "Avoid", 0.0
+	damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood", 0.0
+	damagefactor "killme", 0.0
+	damagetype Flames
+	Obituary "%o was killed by a Suffering Elemental."
+	bloodtype "NashGoreBlood"
+	DropItem "Demonpickup" 168
+	
+	Species "FlyingBalls"
+	+DONTHARMSPECIES
+	
+	States{
+	Death.Execution:
+		TNT1 A 0 {
+ 			A_Stopsound;
+			A_FaceTarget;
+			A_NoBlocking;
+		}
+		PL3M DE 4 
+		PL3M G 21 A_Pain
+		TNT1 A 0 A_Recoil(20)
+		Goto Death
+	
+	Death.Blackhole:
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_SpawnItem("BlackHoledPainElemental")
+		Stop
+	
+	ReplaceVanilla:
+		TNT1 A 0 A_ChangeFlag("THRUACTORS", 1)
+		TNT1 A 0 A_ChangeFlag("COUNTKILL", 0)
+		TNT1 A 0 A_SpawnItemEx("Vanilla_SufferingElemental",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION |SXF_TRANSFERSPECIAL| SXF_TRANSFERAMBUSHFLAG ,0)
+		Stop
+	
+	Spawn:
+		PL3M A 10 A_Look
+		Loop
+	See:
+		PL3M AABBCC 3 A_Chase
+		Loop
+	DeploySouls:
+		PL3M DE 7 A_Pain
+		PL3M F 14 PB_DeploySouls(1)
+		PL3M ED 7
+		goto See
+	PrepareSoul:
+		TNT1 A 0 A_StartSound(SeeSound)
+		PL3M DE 7
+		PL3M F 14 PB_PrepareSoul()
+		PL3M ED 7 A_Pain
+		goto See
+	Missile:Missile:
+		PL3M A 0 {
+			if(random(0,2) > 0){
+				if(GetDeployedSouls() < maxLSOrbiting){return ResolveState("DeploySouls");}
+				if(GetDeployedSouls() > 0 && PESoulStorage < 1){return ResolveState("PrepareSoul");}
+			}
+			return ResolveState("");
+		}
+		TNT1 A 0 A_JumpIf(PESoulStorage > 0,"Missile.Special")
+	Missile.Default:
+		PL3M DE 7 A_FaceTarget
+		PL3M F 5 BRIGHT A_FaceTarget
+		PL3M F 2 BRIGHT A_PainAttack("PB_Phantasm")
+		PL3M E 7
+		Goto See
+	Missile.Special:
+		PL3M DE 7 A_FaceTarget
+		PL3M F 7 BRIGHT A_FaceTarget
+		PL3M F 7 BRIGHT {
+			PB_ExpendSoul(1);
+			A_SpawnProjectile("LaunchedPhantasm",10);
+		}
+		PL3M ED 7
+		Goto See
+		PL3M A 0 {
+			if(random(0,2) > 0 && GetCvar(pb_experimental) > 0){
+				if(GetDeployedSouls() < maxLSOrbiting){return ResolveState("DeploySouls");}
+				if(GetDeployedSouls() > 0 && PESoulStorage < 1){return ResolveState("PrepareSoul");}
+			}
+			return ResolveState("");
+		}
+		TNT1 A 0 A_JumpIf(PESoulStorage > 0,"Missile.Special")
+	Missile.Default:
+		PL3M DE 7 A_FaceTarget
+		PL3M F 5 BRIGHT A_FaceTarget
+		PL3M F 2 BRIGHT A_PainAttack("PB_Phantasm")
+		PL3M E 7
+		Goto See
+	Missile.Special:
+		PL3M DE 7 A_FaceTarget
+		PL3M F 7 BRIGHT A_FaceTarget
+		PL3M F 7 BRIGHT {
+			PB_ExpendSoul(1);
+			A_SpawnProjectile("LaunchedPhantasm",10);
+		}
+		PL3M ED 7
+		Goto See
+		
+	Pain:
+		PL3M G 3
+		PL3M G 6 A_Pain
+		TNT1 A 0 A_Jump(128,"DeploySouls")
+		Goto See
+	
+	Possession:
+		TNT1 A 0 A_SetInvulnerable
+		PL3M G 3
+		PL3M G 3 A_Pain
+		"####" "#" 35 ACS_NamedExecuteAlways("Pos - Flicker effect")
+		TNT1 A 0 A_UnSetInvulnerable
+		Goto See
+		
+	Pain.Stun:
+		TNT1 A 0
+		TNT1 A 0 A_SpawnItemEx("StunElectrocute", random (-4, 4), random (-4, 4),  random (16, 32), 0, 0)
+		PL3M G 1 A_Pain
+		PL3M GGGGGGGGGG 3 A_SpawnItemEx("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		PL3M G 1 A_Pain
+		PL3M GGGGGGGGGG 3 A_SpawnItemEx("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		PL3M G 1 A_Pain
+		PL3M GGGGGGGGGG 3 A_SpawnItemEx("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		PL3M G 1 A_Pain
+		PL3M GGGGGGGGGG 3 A_SpawnItemEx("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		PL3M G 1 A_Pain
+		PL3M GGGGGGGGGG 3 A_SpawnItemEx("StunElectrocute", random (-12, 12), random (-12, 12),  random (16, 52), 0, 0)
+		PL3M G 1 A_Pain
+		Goto See
+	
+	Pain.Siphon:
+		TNT1 AAA 0 A_SpawnItemEx("RedLightning_Small", random (-12, 12), random (-12, 12), random (16, 52), 0, 0)
+		PL3M G 1 
+		{
+			A_FaceTarget;
+			A_GiveToTarget("HealthBonus",4);
+		}
+		PL3M G 5 A_FaceTarget 
+		TNT1 A 0 A_Pain
+		Goto See
+		
+	Death: 
+		PL3M H 4 A_Scream
+		PL3M I 3  
+		TNT1 A 0 A_Playsound("9KEXPL" ,6)
+		PL3M JK 2 BRIGHT A_SpawnItem("GreenFlareSmall",0,0)
+		PL3M L 2 BRIGHT A_NoBlocking  
+		TNT1 A 0 A_SpawnItemEx("SmallGreenFlameTrails", 0, 0, 0, 0, 0, 0, 0, 128)
+		TNT1 AAA 0 {
+			A_SpawnItemEx("PlasmaParticleSpawner", 0, 0, 0, 6, 6, 6, 0, 128);
+			A_CustomMissile("RealFlameTrailsGreen", 12, 0, random (0, 360), 2, random (0, 160));
+		}
+		TNT1 A 0 A_CustomMissile("GreenExplosionFire", 12, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_SpawnItemEx("PlasmaParticleSpawner", 0, 0, 0, 0, 0, 0, 0, 128)
+		TNT1 AA 0 {
+			A_SpawnItemEx("PlasmaParticleSpawner", 0, 0, 0, 0, 0, 0, 0, 128);
+			A_SpawnItem("ExplosionParticleSpawner");
+			A_CustomMissile("PB_XDeath1", 32, 0, random (0, 360), 2, random (0, 160));
+		}
+		TNT1 A 0 A_SpawnItemEx("ExplosionFlareSpawner",0,0,32,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		EXPL AAAAA 0 A_CustomMissile("SmallGreenFlameTrails", 32, 0, random (0, 360), 2, random (0, 360))
+		TNT1 A 0 A_PlaySound("BFGALPP")
+		TNT1 A 0 A_SpawnItem("BFGAltShockWave",0,0)
+		TNT1 A 0 BRIGHT {
+			if(GetCVar("pb_experimental") > 0){
+				PB_PainDie("PB_Phantasm");
+			}else{
+				A_PainDie("PB_Phantasm");
+			}
+		}
+		TNT1 AAAAAAAAAAAAAA 0 A_CustomMissile("GreenBloodmist", 30, 0, random (0, 360), 2, random (20, 90))
+		TNT1 AAAAAAAAAAAA 0 A_CustomMissile("GreenBloodTrails", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile("XDeathBrain1", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile("XDeathOrgan1Green", 24, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile("XDeathOrgan2Green", 24, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile("PB_XDeath2", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile("PB_XDeath3", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 A 0 A_CustomMissile("PB_XDeath4", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAAA 0 {
+			A_CustomMissile("PlasmaSmoke", 32, 0, random (0, 360), 2, random (0, 360));
+			A_SpawnItem("GreenFlare",0,0);
+			A_CustomMissile("PB_XDeath2b", 15, 0, random (0, 360), 2, random (0, 160));
+			A_CustomMissile("PB_XDeath3b", 15, 0, random (0, 360), 2, random (0, 160));
+			A_CustomMissile("GreenBloodTrails", 32, 0, random (170, 190), 2, random (0, 40));
+			A_CustomMissile("XDeathPainElementalGreen2", 32, 0, random (0, 360), 2, random (0, 160));
+		}
+		TNT1 A 0 A_CustomMissile("XDeathBrain2", 32, 0, random (0, 360), 2, random (0, 160))
+		TNT1 AAAAAAAA 0 {
+			A_CustomMissile("XDeathPainElementalGreen1", 32, 0, random (0, 360), 2, random (0, 160));
+			A_CustomMissile("GreenBloodTrails", 32, 0, random (0, 360), 2, random (0, 160));
+			A_CustomMissile("GreenBloodTrails", 32, 0, random (0, 360), 2, random (0, 160));
+		}
+		PL3M M 1 
+		Stop 
+		
+	Death.Fatality:
+		TNT1 A 0 A_Pain
+		TNT1 A 0 A_JumpIfIntargetInventory("FistsSelected", 1, 1)
+		Goto Death
+		TNT1 A 0 A_NoBlocking
+		TNT1 A 0 A_GiveToTarget("GoFatality", 1)
+		TNT1 A 0 A_GiveToTarget("PEFatality", 1)
+		Stop
+
+	Death.Ice:
+	Death.IceExplosion:
+	Death.Freeze:
+	Death.Frost:
+		TNT1 A 0 A_BossDeath
+		TNT1 A 0 A_ChangeFlag("SHOOTABLE", 0)
+		TNT1 A 0 A_ChangeFlag("SOLID", 0)
+		TNT1 A 0 A_SpawnItemEx("FrozenSufferingElemental", 0, 0, 0, 0, 0, 0, random(1,360), SXF_NOCHECKPOSITION)
+		Stop 
+	}
+}
+
+///////////////////////////======VANILLA======//////////////////////////////////
+
+Actor Vanilla_SufferingElemental : PB_SufferingElemental
+{
+	
+	States
+	{
+		Spawn:
+		PL3M A 10 A_Look
+		Loop
+	}
+}

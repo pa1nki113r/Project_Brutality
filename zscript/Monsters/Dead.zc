@@ -1,0 +1,138 @@
+class CurbstompedMarine : Actor
+{
+    Default
+    {
+        Radius 10;
+        Height 6;
+        Mass 6000;
+        Health 300;
+        PainChance 255;
+        
+        +NOTELEPORT
+        +MOVEWITHSECTOR
+        +FLOORCLIP
+        +NOBLOCKMONST
+        +FORCEXYBILLBOARD
+        +SHOOTABLE
+        +CORPSE
+        +NEVERTARGET
+
+        -THRUACTORS
+
+        DamageFactor "Blood", 0.0;
+        DamageFactor "GreenBlood", 0.0;
+        DamageFactor "BlueBlood", 0.0;
+        DamageFactor "Taunt", 0.0;
+        DamageFactor "KillMe", 0.0;
+        DamageFactor "Crush", 9999.0;
+        DamageFactor "Crusher", 9999.0;
+        DamageFactor "CrushedBodies", 9999.0;
+        DamageFactor "TeleportRemover", 1000.0;
+        DamageFactor "GibRemoving", 0.5;
+        DamageFactor "Normal", 2.0;
+        DamageFactor "Disintegrate", 990.0;
+        DamageFactor "BFG", 990.0;
+        DamageFactor "Kick", 3.0;
+        DamageFactor "SuperKick", 3.0;
+        DamageFactor "ExtremePunches", 2.0;
+        DamageFactor "SuperPunch", 2.0;
+    }
+	
+	void GoreEffects(int repetitions, string missileType, double spawnHeight = 32, double spawnOffsetXY = 0, double angle = 0, int flags = 0, double pitch = 0, int ptr = AAPTR_TARGET)
+    {
+        for (int i = 0; i < repetitions; i++)
+        {
+            A_SpawnProjectile(missileType, spawnOffsetXY, spawnHeight, angle + random(-10, 10), flags, pitch, ptr);
+        }
+    }
+
+    States
+    {
+        Spawn:
+            PLDH A 3000;
+            Loop;
+
+        Death:
+        Death.Stomp:
+            TNT1 A 0 { A_SpawnItem("GibsZ"); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 AAA 0 { GoreEffects(1, "XDeath1", 5, 0, random(0,360), 2, random(0,160)); }
+            TNT1 AA 0 { GoreEffects(1, "XDeath2b", 5, 0, random(0,360), 2, random(0,160)); }
+            TNT1 AA 0 { GoreEffects(1, "XDeath3b", 5, 0, random(0,360), 2, random(0,160)); }
+            TNT1 AAA 0 { GoreEffects(1, "Brutal_FlyingBlood", 5, 0, random(0,360), 2, random(0,160)); }
+            TNT1 AAAAAAA 0 { GoreEffects(1, "XDeathSkinPiece2", 5, 0, random(0,360), 2, random(0,160)); }
+            TNT1 AAAA 0 { GoreEffects(1, "XDeathSkinPiece1", 5, 0, random(0,360), 2, random(0,160)); }
+            TNT1 AAAAAAAA 0 { GoreEffects(1, "SmallSuperGore", 10, 0, random(0,360), 2, random(10,170)); }
+            TNT1 AAAAA 0 { GoreEffects(1, "BloodMistSmall", 15, 0, random(0,360), 2, random(40,90)); }
+            Stop;
+
+        Death.Plasma:
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 A 0 { A_XScream(); }
+            TNT1 A 0 { GoreEffects(1, "Brutal_FlyingBlood", 50, 0, random(0,360), 2, random(0,160)); }
+            TNT1 A 0 { GoreEffects(1, "XDeathBurnedMeat", 32, 0, random(0,360), 2, random(0,160)); }
+            TNT1 A 0 { GoreEffects(1, "XDeathBurnedMeat3", 32, 0, random(0,360), 2, random(0,160)); }
+            EXPL AAA 0 { GoreEffects(1, "ExplosionSmoke", 32, 0, random(0,360), 2, random(0,360)); }
+            TNT1 A 0;
+            Stop;
+
+        Death.TeleportRemover:
+        Death.GibRemoving:
+            TNT1 A 0;
+            TNT1 A 0 { A_Scream(); }
+            TNT1 A 0 { A_NoBlocking(); }
+            TNT1 A 0 { A_ChangeFlag("NOCLIP", 1); }
+            TNT1 A 0 { A_ChangeFlag("SHOOTABLE", 0); }
+            TNT1 A 0 { A_ChangeFlag("NOBLOCKMAP", 1); }
+            Stop;
+    }
+}
+
+class DeadKnight : CurbstompedMarine
+{
+    Default
+    {
+        Radius 24;
+        Height 12;
+        Scale 1.0;
+        Mass 1000;
+        Health 200;
+
+        DamageFactor "Crusher", 50.0;
+        DamageFactor "Blood", 0.0;
+        DamageFactor "Trample", 0.0;
+        BloodType "NashGoreBlood";
+        //BloodColor "DarkGreen";
+
+        +SHOOTABLE;
+        +NOTELEPORT;
+        +MOVEWITHSECTOR;
+        +CORPSE;
+        +FLOORCLIP;
+        -SOLID;
+        +THRUACTORS;
+    }
+
+    States
+    {
+        Spawn:
+            HKDD D -1;
+            Stop;
+
+        Raise:
+            TNT1 A 2 A_CustomMissile("RealFlameTrailsSmall", 6, 0, random(0,360), 2, random(70,110));
+            TNT1 A 0 A_SpawnItem("PentagramSpawner", 0, 60);
+            TNT1 A 2 A_CustomMissile("RealFlameTrailsSmall", 6, 0, random(0,360), 2, random(70,110));
+            TNT1 A 0 A_SpawnItem("PentagramSpawner", 0, 60);
+            TNT1 A 0 A_SpawnItem("TeleportFog");
+            TNT1 A 0 A_NoBlocking;
+            TNT1 A 0 A_SpawnItem("PB_Knight", 3);
+            Stop;
+
+        Death:
+            TNT1 A 0 A_SpawnItemEx("DeadHellKnightKSA6O", -3, -3);
+            TNT1 A 0 { GoreEffects(4, "PB_BloodMistBig", 9, 0, random(0,360), 2, random(30,90)); }
+            TNT1 A 0 { GoreEffects(3, "PB_XDeath1", 5, 0, random(0,360), 2, random(0,160)); }
+            Stop;
+    }
+}

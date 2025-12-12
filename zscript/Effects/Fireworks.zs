@@ -14,7 +14,7 @@ Class FireworkSFXType1 : Actor
 	states
 	{
 		Spawn:
-			TNT1 A 0 nodelay SpawnFlareFx();
+			TNT1 A 0 NODELAY SpawnFlareFx();
 			TNT1 A 0 SpawnFlameFx(1);
 			TNT1 A 0 A_jumpif(waterlevel > 0,"null");
 			TNT1 A 1 SpawnFlameFx();
@@ -111,7 +111,7 @@ Class FireworkSFXUnmaker : FireworkSFXType1
 	states
 	{
 		Spawn:
-			//TNT1 A 0 nodelay SpawnFlareFx();
+			//TNT1 A 0 NODELAY SpawnFlareFx();
 			TNT1 A 0 SpawnDtechFlameFx(1);
 			TNT1 A 0 A_jumpif(waterlevel > 0,"null");
 			//TNT1 A 0 A_Spawnitem("ObeliskTrailSpark");
@@ -182,20 +182,20 @@ Class TinyBurningPiece : Actor
 		renderstyle "add";
 		scale 0.45;
 		+noblockmap;
+		+BRIGHT
 	}
 	states
 	{
 		spawn:
 			TNT1 A 0 A_JumpIf(waterlevel > 1, "StopBurning");
 			TNT1 A 0 SpawnParticleSlow();
-			CFCF ABCD 1 BRIGHT;
+			CFCF ABCD 1;
 			TNT1 A 0 A_Explode(2, 60);
-			CFCF EFGH 1 BRIGHT;
-			CFCF IJKL 1 BRIGHT;
+			CFCF EFGHIJKL 1;
 			TNT1 A 0 A_Jump(24, "StopBurning");
 			loop;
 		StopBurning:
-			CFCF NOP 1 BRIGHT;
+			CFCF NOP 1;
 			stop;
 	}
 	
@@ -231,16 +231,14 @@ Class TinyBurningPiece2: TinyBurningPiece
 		Spawn:
 			TNT1 A 0 A_JumpIf(waterlevel > 1, "StopBurning");
 			TNT1 AAA 0 SpawnParticleSlow();
-			CFCF ABCD 1 BRIGHT;
-			CFCF EFGH 1 BRIGHT;
-			CFCF IJKL 1 BRIGHT;
+			CFCF ABCDEFGHIJKL 1;
 			TNT1 A 0 A_Jump(24, "StopBurning");
 			Loop;
 		
 		StopBurning:
-			CFCF NOP 1 BRIGHT;
+			CFCF NOP 1;
 			Stop;
-    }
+	}
 }
 
 Class TinyBurningPiece3: TinyBurningPiece2
@@ -258,6 +256,7 @@ Class DTechBurningPiece : TinyBurningPiece
 	{
 		renderstyle "translucent";
 		scale 0.4;
+		+BRIGHT
 	}
 	states
 	{
@@ -265,13 +264,13 @@ Class DTechBurningPiece : TinyBurningPiece
 			TNT1 A 0 A_JumpIf(waterlevel > 1, "StopBurning");
 			TNT1 A 0 A_Explode(5, 35);
 			TNT1 A 0 SpawnParticleSlow("YAE4A0");
-			DFIR ABCDEFGHIJKLMNOP 2 BRIGHT;
+			DFIR ABCDEFGHIJKLMNOP 2;
 			TNT1 A 0 A_Jump(50, "StopBurning");
 			Loop;
 		StopBurning:
-			DFIR A 2 BRIGHT A_SetScale(0.06);
-			DFIR B 2 BRIGHT A_SetScale(0.04);
-			DFIR C 2 BRIGHT A_SetScale(0.02);
+			DFIR A 2 A_SetScale(0.06);
+			DFIR B 2 A_SetScale(0.04);
+			DFIR C 2 A_SetScale(0.02);
 			Stop;
 	}
 }
@@ -294,18 +293,18 @@ class DTechBurningPiece3 : DTechBurningPiece
 	{
 		Spawn:
 			TNT1 A 0 A_JumpIf(waterlevel > 1, "StopBurning");
-			DFIR ABCDEFGH 2 BRIGHT;
+			DFIR ABCDEFGH 2;
 			TNT1 A 0 SpawnParticleSlow("YAE4A0");
-			DFIR IJKLMNOP 2 BRIGHT;
+			DFIR IJKLMNOP 2;
 			TNT1 A 0 SpawnParticleSlow("YAE4A0");
 			TNT1 A 0 A_Jump(50, "StopBurning");
 			Loop;
 		StopBurning:
-			DFIR A 2 BRIGHT A_SetScale(0.010);
-			DFIR B 2 BRIGHT A_SetScale(0.04);
-			DFIR C 2 BRIGHT A_SetScale(0.02);
+			DFIR A 2 A_SetScale(0.010);
+			DFIR B 2 A_SetScale(0.04);
+			DFIR C 2 A_SetScale(0.02);
 			Stop;
-    }
+	}
 	override void Beginplay()
 	{
 		if(!pb_performance_fire)
@@ -326,6 +325,7 @@ Class DragonsBreathPiece1: TinyBurningPiece2
 		+THRUSPECIES;
 		+MTHRUSPECIES;
 		+DONTHARMSPECIES;
+		+BRIGHT;
 		Species "Marines";	//why?
 	}
 	int distnc;
@@ -334,20 +334,18 @@ Class DragonsBreathPiece1: TinyBurningPiece2
 		Spawn:
 			TNT1 A 0 A_JumpIf(waterlevel > 1, "StopBurning");
 			TNT1 AAA 0 SpawnParticleSlow();
-			CFCF ABC 1 BRIGHT;
-			CFCF D 1 BRIGHT A_Explode(3, distnc, 0);
-			CFCF EFGH 1 BRIGHT;
-			CFCF IJK 1 BRIGHT;
-			CFCF L 1 BRIGHT A_Explode(3, distnc, 0);
+			CFCF ABC 1 ;
+			CFCF D 1 A_Explode(3, distnc, 0);
+			CFCF EFGHIJK 1 ;
+			CFCF L 1 A_Explode(3, distnc, 0);
 			TNT1 A 0 A_Jump(24, "StopBurning");
 			Loop;
 		StopBurning:
-			CFCF NOP 1 BRIGHT;
+			CFCF NOP 1 ;
 			Stop;
-    }
+	}
 	
-	override void beginplay()
-	{
+	override void beginplay(){
 		distnc = random(35,40);
 		A_setscale(0.33,0.40);
 		super.beginplay();
@@ -365,10 +363,8 @@ Class DragonsBreathPiece3 : DragonsBreathPiece1
 //	flamethrower
 //
 
-Class FT_GroundFireSpawner : TinyBurningPiece2
-{
-	default
-	{
+Class FT_GroundFireSpawner : TinyBurningPiece2{
+	default{
 		damagetype "Fire";
 		+NODAMAGETHRUST;
 		alpha 0.9;
@@ -376,17 +372,14 @@ Class FT_GroundFireSpawner : TinyBurningPiece2
 		scale 1.0;
 		speed 10;
 	}
-	states
-	{
+	states{
 		Spawn:
-			TNT1 A 0 A_jumpif(waterlevel > 0,"StopBurning");
-			TNT1 A 0 A_StartSound("props/torchfire", CHAN_BODY, CHANF_NOSTOP);
-			TNT1 A 2;
-			TNT1 A 0 A_SpawnItemEx("FT_GroundFire", random(-24,24), random(-8,8), random(1,4));
-			TNT1 A 2;
-			TNT1 A 0 A_SpawnItemEx("FT_GroundFire2", random(-42,42), random(-28,28), random(0,6));
-			TNT1 A 0 A_Explode(12, 36, 0, 0, 36);
+			TNT1 A 0 NODELAY A_jumpif(waterlevel > 0,"StopBurning");
+			TNT1 A 2 A_StartSound("props/torchfire", CHAN_BODY, CHANF_NOSTOP);
+			TNT1 A 2 A_SpawnItemEx("FT_GroundFire", random(-24,24), random(-8,8), random(1,4));
 			TNT1 A 0 {
+				A_SpawnItemEx("FT_GroundFire2", random(-42,42), random(-28,28), random(0,6));
+				A_Explode(12, 36, 0, 0, 36);
 				SpawnParticleFast();
 				if(!pb_performance_fire && waterlevel < 1 && random(0,1) == 1)
 					SpawnSmokeMed();
@@ -394,15 +387,13 @@ Class FT_GroundFireSpawner : TinyBurningPiece2
 			}
 			TNT1 A 0 A_Jump(7, "StopBurning");
 			Loop;
-		
 		StopBurning:
 			TNT1 A 0 A_StopSound(CHAN_BODY);
 			TNT1 AAAAAAAA 2;
 			Stop;
 	}
 	
-	override void beginplay()
-	{
+	override void beginplay(){
 		if(!pb_performance_fire)
 			A_AttachLightDef('FlamethrowerLight', 'HUEHUESMALL');
 			//A_AttachLightDef('FlamethrowerLight', 'FT_GroundFire');
@@ -458,37 +449,29 @@ Class FT_GroundFireSpawner : TinyBurningPiece2
 }
 
 
-Class FT_GroundFireSpawnerPerf : FT_GroundFireSpawner
-{
-	States
-	{
+Class FT_GroundFireSpawnerPerf : FT_GroundFireSpawner{
+	States{
 		Spawn:
-			TNT1 A 0 A_StartSound("props/torchfire", CHAN_BODY, CHANF_NOSTOP);
-			TNT1 A 1;
-			TNT1 A 0 A_SpawnItemEx("FT_GroundFire", random(-24,24), random(-7,7), random(1,2));
-			TNT1 A 1;
-			TNT1 A 0 A_SpawnItemEx("FT_GroundFire2", random(-24,24), random(-7,7), random(1,2));
-			TNT1 A 1;
+			TNT1 A 1 NODELAY A_StartSound("props/torchfire", CHAN_BODY, CHANF_NOSTOP);
+			TNT1 A 1 A_SpawnItemEx("FT_GroundFire", random(-24,24), random(-7,7), random(1,2));
+			TNT1 A 1 A_SpawnItemEx("FT_GroundFire2", random(-24,24), random(-7,7), random(1,2));
 			TNT1 A 0 A_Explode(10, 36, 0, 0, 36);
 			TNT1 A 0 A_Jump(7, "StopBurning");
 			Loop;
-    }
+	}
 }
 
-Class FT_GroundFire : Actor
-{
-	default
-	{
+Class FT_GroundFire : Actor{
+	default{
 		+NOINTERACTION;
 		-SOLID;
 		+FORCEXYBILLBOARD;
 		RenderStyle "Add";
 		Scale 0.21;
 	}
-	States
-	{
+	States{
 		Spawn:
-			TNT1 A 0 nodelay A_jump(256,"Var1","Var2");
+			TNT1 A 0 NODELAY A_jump(256,"Var1","Var2");
 		Var1:
 			CFCF ABCDEFGHIJKLMABCDEFGHIJKLM 1 BRIGHT;
 			CFCF ABC 1 {A_setscale(scale.x * 0.9); A_Fadeout(0.15);}
@@ -500,9 +483,8 @@ Class FT_GroundFire : Actor
 			X123 ABC 1 {A_setscale(scale.x * 0.9); A_Fadeout(0.15);}
 			Stop;
 		
-    }
-	override void beginplay()
-	{
+	}
+	override void beginplay(){
 		//if(!pb_performance_fire)
 		//	A_AttachLightDef('FlamethrowerLight', 'FT_GroundFire');
 		bxflip = random(0,1);
@@ -510,17 +492,13 @@ Class FT_GroundFire : Actor
 	}	
 }
 
-Class FT_GroundFire2 : FT_GroundFire
-{
-	default
-	{
+Class FT_GroundFire2 : FT_GroundFire{
+	default{
 		Scale 0.42;
 	}
-	
-	States
-	{
+	States{
 		Spawn:
-			TNT1 A 0 nodelay A_jump(256,"Var2","Var3");
+			TNT1 A 0 NODELAY A_jump(256,"Var2","Var3");
 		Var2:
 			TNT1 A 0 A_SetScale(0.28);
 		Var2Loop:
@@ -531,5 +509,32 @@ Class FT_GroundFire2 : FT_GroundFire
 			FLME ABCDEFGHIJKLMNABCDEFGHIJKLMN 1 BRIGHT;
 			FLME ABC 1 {A_setscale(scale.x * 0.9); A_Fadeout(0.15);}
 			Stop;
-    }
+	}
+}
+Class PBArchvileFire : Actor Replaces ArchvileFire{
+	Default{
+		Scale 0.7;
+		RenderStyle "Add";
+		Alpha 0.6;
+		+NOBLOCKMAP
+		+NOGRAVITY
+		+BRIGHT
+	}
+	Override Void Tick(){
+		if(!(target && target.health > 0)){Scale -= GetDefaultByType(self.GetClass()).Scale/10;}
+		if(Scale.x <= 0 || Scale.y <= 0){self.Destroy();}
+		Super.Tick();
+	}
+	States{
+	Spawn:
+		TNT1 A 1 A_StartFire;
+		INFE ABCDEF 1 A_Fire;
+		INFE G 1 A_FireCrackle;
+		INFE HIJKLM 1 A_Fire;
+		INFE N 1 A_FireCrackle;
+		INFE OPQRS 1 A_Fire;
+		INFE T 1 A_FireCrackle;
+		TNT1 A 2;
+		Stop;
+	}
 }

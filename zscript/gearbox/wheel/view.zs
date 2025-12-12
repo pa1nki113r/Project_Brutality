@@ -611,7 +611,6 @@ class gb_WheelView
                       , DTA_DestWidth    , int(size.x)
                       , DTA_DestHeight   , int(size.y)
 					  //,DTA_LegacyRenderStyle, STYLE_ADD
-					  , DTA_TranslationIndex, Translation.GetID('reddenwep') 
                       );
   }
   

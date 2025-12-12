@@ -31,6 +31,18 @@ class PlayerPawnBase : PlayerPawn
 	array<int> oldPTics;
   	array<int> oldPUTics;
 	
+	SpriteID skinSprite;
+	int skinInd;
+	bool hasSkin;
+	void checkSkin(){
+		let plr = self.player;
+		if(plr){
+			skinInd = plr.GetSkin();
+			hasSkin = skinInd != 0;
+			skinSprite = sprite;
+		}
+	}
+	
 	///////////////////////////////////
 	//Common
 	
@@ -156,6 +168,9 @@ class PlayerPawnBase : PlayerPawn
 	
 	//Jumping
 	int		BuildJumpDelay;
+
+    //Muzzle Flash
+    int8 m_MuzzleFlashTimer;
 	
 	Default
     {
@@ -167,7 +182,7 @@ class PlayerPawnBase : PlayerPawn
 	{
 		int result = super.DamageMobj(inflictor, source, damage, mod, flags, angle);
 		// Reset damagecount after damage processing to avoid the red flash.
-		player.damagecount = 0;
+		if(player) player.damagecount = clamp(player.damagecount, 0, 10);
 		return result;
 	}
 
@@ -203,7 +218,7 @@ class PlayerPawnBase : PlayerPawn
 			ActualSpeed = Speed * GetPowerSpeed();
 			bNOFRICTION = True;
 			GetFloorInfo();
-			MaxGroundSpeed = (multiplayer || PB_MP_MovementTesting) ? 10.1 * ActualSpeed : pb_maxgroundspeed * ActualSpeed;
+			MaxGroundSpeed = (multiplayer && !pb_forcespmovement) ? 10.1 * ActualSpeed : pb_maxgroundspeed * ActualSpeed;
 			Pain = InStateSequence(CurState, FindState("Pain"));
 			StrafeRunning = cmd.forwardmove && cmd.sidemove;
 			ZMoveFactor = ZMScale();
@@ -211,9 +226,6 @@ class PlayerPawnBase : PlayerPawn
 		
 		//Execute Player tic cycle
 		Super.PlayerThink();
-		
-		if(!CheckNotPredicting())
-			return;
 
 		bool wasOnGround = player.onGround;
 		Player.OnGround = (Pos.Z <= FloorZ) || bONMOBJ || bMBFBOUNCER || (Player.Cheats & CF_NOCLIP2); // Moved after super call, otherwise it doesn't register.
@@ -481,7 +493,7 @@ class PlayerPawnBase : PlayerPawn
 
 	bool CheckNotPredicting()
 	{
-		return !(player.cheats & CF_PREDICTING);
+		return self && player && !(player.cheats & CF_PREDICTING);
 	}
 	
 	////////////////////////////////////////////////////////////////////////////////////////////////
@@ -823,10 +835,10 @@ class PlayerPawnBase : PlayerPawn
 	
 	float ZMScale()
 	{
-		Let Player = self.Player;
+        // Let Player = self.Player;
 		UserCmd cmd = player.cmd;
 		
-		Bool 	IsWalking = (CVar.GetCVar("cl_run", Player).GetBool() && (cmd.buttons & BT_SPEED)) || (!CVar.GetCVar("cl_run", Player).GetBool() && !(cmd.buttons & BT_SPEED));
+		Bool 	IsWalking = !CheckRunning();
 		Float 	MoveMulti;
 		
 		if(cmd.sidemove || cmd.forwardmove)
@@ -857,7 +869,7 @@ class PlayerPawnBase : PlayerPawn
 		UserCmd cmd = Player.cmd;
 		
 		Bool GuardRail = ((!cmd.sidemove && !cmd.forwardmove && Vel.XY.Length()) ||
-						 (CVar.GetCVar("cl_run", Player).GetBool() && (cmd.buttons & BT_SPEED)) || (!CVar.GetCVar("cl_run", Player).GetBool() && !(cmd.buttons & BT_SPEED))) 
+						 !CheckRunning())
 						 && Player.OnGround && !Pain;
 		
 		if(GuardRail)
@@ -869,6 +881,10 @@ class PlayerPawnBase : PlayerPawn
 			if(FallDanger) { Vel.XY *= 0.5f; }
 		}
 	}
+
+    bool CheckRunning() {
+        return (player.cmd.buttons & BT_RUN);
+    }
 	
 	void GroundSpriteAnimation()
 	{
@@ -2250,8 +2266,8 @@ class PlayerPawnBase : PlayerPawn
 			{
 				if(HoppingBob)
 				{
-					XBob *= abs(XBob) > 0.1f ? 0.988 : 0;
-					YBob *= abs(YBob) > 0.1f ? 0.988 : 0;
+					XBob *= abs(XBob) > 0.1f ? 0.5 : 0;
+					YBob *= abs(YBob) > 0.1f ? 0.5 : 0;
 					if(!XBob && !YBob) { HoppingBob = False; }
 				}
 				else
@@ -2493,7 +2509,9 @@ class PlayerPawnBase : PlayerPawn
 	}
 	override void Tick()
 	{
+		checkSkin();
 		Super.Tick();
+		if(health <= 0){ A_OverlayOffset(1, 0, 1000); }
 		
 		//Just to make sure NO TRACES of this softlocking motherfucker is left -generic name guy
 		if(player && self && CheckNotPredicting())
@@ -2502,7 +2520,19 @@ class PlayerPawnBase : PlayerPawn
 			// CheckTargetHitRegistration();
 		}
 		//CatchUpOnTiers();
-		
+
+        if(CheckNotPredicting())
+        {
+            if(m_MuzzleFlashTimer > 0)
+            {        
+                m_MuzzleFlashTimer--;
+            }
+            else if (m_MuzzleFlashTimer == 0)
+            {
+                A_RemoveLight('MuzzleFlashLight');
+                m_MuzzleFlashTimer = -1;
+            }
+        }
 
 		//Screen Overlay Handlers
 		//Disabled until we can convert the screen splatters to ZScript
@@ -2741,14 +2771,10 @@ class DEDashJumpHandler : EventHandler
 {
 	override void PlayerEntered(PlayerEvent e)
 	{
-		if(!multiplayer || !pb_mp_movementtesting)
-		{
-			players[e.PlayerNumber].mo.A_GiveInventory("DEDashJump", 1);
-		}
-		if(multiplayer || pb_mp_movementtesting)
-		{
-			players[e.PlayerNumber].mo.A_TakeInventory("DEDashJump", 1);
-		}
+		if(!multiplayer || pb_forcespmovement)
+			players[e.PlayerNumber].mo.A_SetInventory("DEDashJump", 1);
+		else
+			players[e.PlayerNumber].mo.A_SetInventory("DEDashJump", 0);
 	}
 }
 
@@ -2773,6 +2799,11 @@ class DEDashJump : Inventory
 		
 		if( !waiting && ( plrCmd & BT_USER3 ) && dashCharge >= DASHMAXCHARGE / 2 && !dashTics && !owner.CheckInventory( "IsSlideKicking", 1 ) )
 		{
+			sector sss=owner.floorsector;
+			if(owner.A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
+				owner.A_StartSound("Daedabus/impact", CHAN_BODY);
+				return;
+			}
 			// [gng] thanks to kodi and lewisk3, analog compatible dash direction
 			dashDir = DeltaAngle( atan2( plr.cmd.sidemove, plr.cmd.forwardmove ), owner.angle );
 			
@@ -2789,6 +2820,16 @@ class DEDashJump : Inventory
 			
 			EventHandler.SendInterfaceEvent(owner.PlayerNumber(), "PB_DashWhatchamacallit");
 			owner.A_StartSound( "player/dash", 69, CHANF_OVERLAP );		
+
+            if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 1, CVar.GetCvar("pb_helpflags", owner.Player)))
+            {
+                Array<String> pbDashTips;
+                pbDashTips.Push("When dashing, you can kick to activate a dropkick.");
+                pbDashTips.Push("A dropkick will deal massive damage, and instantly kill lesser enemies.");
+                pbDashTips.Push("They are also very useful to kick away or stun bigger enemies.");
+                PB_HelpNotificationsHandler.PB_SendTipArray(pbDashTips, "pb_helpflags", 1 << 1);
+            }
+
 			owner.A_GiveInventory("PlayerDashed",1);
 			owner.A_QuakeEx( 2, 2, 2, dashTics, 0, 1, "", QF_SCALEDOWN, rollintensity: 0.2 );	
 			
@@ -2811,6 +2852,7 @@ class DEDashJump : Inventory
 		{
 			owner.vel.xy *= 0;
 			dashTics = 0;
+			owner.TakeInventory("PlayerDashed",1);
 			TakeInventory( "EvadeCheck", 2 );
 			TakeInventory( "EvadeHold", 2 );
 		}
