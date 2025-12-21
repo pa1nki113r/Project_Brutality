@@ -354,6 +354,12 @@ class PB_Deagle : PB_WeaponBase
 			
 		//partial but both
 			DR34 ABCDE 1;
+			TNT1 A 0 {
+				if(CountInv("DeagleAmmo") < 2)
+					PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,-2,-2,false);
+				if(CountInv("LeftDeagleAmmo") < 2)
+					PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
+			}
 			TNT1 A 0 A_Startsound("weapons/deagle/magout",22,CHANF_OVERLAP);
 			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
 			DR34 F 1;
@@ -391,6 +397,10 @@ class PB_Deagle : PB_WeaponBase
 		OnlyReloadLeft:
 			TNT1 A 0 A_Startsound("Ironsights", 23,CHANF_OVERLAP);
 			DR33 ABCDE 1;
+			TNT1 A 0 {
+				if(CountInv("LeftDeagleAmmo") < 2)
+					PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
+			}
 			TNT1 A 0 A_Startsound("weapons/deagle/magout",25,CHANF_OVERLAP);
 			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
 			DR33 F 1;
@@ -511,7 +521,8 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 {
 				if(!findinventory(invoker.UnloaderToken))
 					PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
-					//A_fireprojectile("EmptyDeagleMag",5,0,-12,-4);
+				if(CountInv("DeagleAmmo") < 2)
+					PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,2,-2,false);
 			}
 			DR10 MNOP 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
@@ -550,7 +561,8 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 {
 				if(!findinventory(invoker.UnloaderToken))
 					PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,-2,-2,false);
-					//A_fireprojectile("EmptyDeagleMag",5,0,12,-4);
+				if(CountInv("LeftDeagleAmmo") < 2)
+					PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
 			}
 			DR20 MNOP 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
@@ -643,9 +655,9 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 {
 				A_SetInventory("Zoomed",0);
 				A_ZoomFactor(1.0);
-				PB_HandleCrosshair(42);
 			}
 			D3E1 EDCBA 1;
+			TNT1 A 0 PB_HandleCrosshair(42);
 			Goto Ready3;
 		
 		Ready2:

@@ -13,7 +13,7 @@ Class PB_M1Plasma : PB_WeaponBase
 		PB_WeaponBase.unloadertoken "PlasmaRifleHasUnloaded";
 		PB_WeaponBase.respectItem "RespectPlasmaGun";	
 		PB_WeaponBase.DualWieldToken "DualWieldingPlasma";	
-		inventory.pickupmessage "UAC-M1 Plasma Rifle(Slot 7)";
+		inventory.pickupmessage "UAC-M1 Plasma Rifle (Slot 7)";
 		Inventory.PickupSound "7LSPICK";
 		Inventory.AltHUDIcon "PLASA0";
 		Tag "UAC-M1 Plasma Rifle";
@@ -478,6 +478,7 @@ Class PB_M1Plasma : PB_WeaponBase
 			TNT1 A 0 A_StartSound("weapons/plasma/cellout",18,CHANF_OVERLAP);
 			P1R0 PO 1 A_SetRoll(roll-0.4);
 			P1R0 NMLK 1 A_SetRoll(roll-0.4);
+			TNT1 A 0 A_JumpIfInventory("PlasmaAmmo",1,2);
 			TNT1 A 0 PB_SpawnCasing("EmptyCell",29,random(10,12),20,0,random(-4,-2),2);
 			P1R0 K 10;
 			P1R0 LLLL 1 A_SetRoll(roll+0.4);
@@ -534,6 +535,7 @@ Class PB_M1Plasma : PB_WeaponBase
 			TNT1 A 0 A_StartSound("weapons/plasma/cellout",17,CHANF_OVERLAP);
 			P1R0 PO 1 A_SetRoll(roll-0.4);
 			P1R0 NMLK 1 A_SetRoll(roll-0.4);
+			TNT1 A 0 A_JumpIfInventory("PlasmaAmmo",1,2);
 			TNT1 A 0 PB_SpawnCasing("EmptyCell",29,random(10,12),20,0,random(-4,-2),2);
 			P1R0 K 10;
 			P1R0 LLLL 1 A_SetRoll(roll+0.4);
@@ -548,6 +550,7 @@ Class PB_M1Plasma : PB_WeaponBase
 			Goto ReloadLeft;
 			
 		ReloadLeftOnly:
+			TNT1 A 0 A_StartSound("PLSM2RL",26,CHANF_OVERLAP);
 			P2R1 A 1 A_Setroll(roll-0.4, SPF_INTERPOLATE);
 			P2R2 AB 1 A_Setroll(roll-0.4, SPF_INTERPOLATE);
 			P2R2 CDE 1 A_Setroll(roll+0.3, SPF_INTERPOLATE);
@@ -563,7 +566,9 @@ Class PB_M1Plasma : PB_WeaponBase
 			Goto Ready3;
 		
 		ReloadLeft:
-			P1R3 WXYZ 1;
+			P1R3 W 1;
+			TNT1 A 0 A_StartSound("PLSM2RL",26,CHANF_OVERLAP);
+			P1R3 XYZ 1;
 			P1R3 ABCDE 1;
 		ReloadLeftContinue:	
 			P1R3 E 1 Offset(-1,32);
@@ -580,6 +585,7 @@ Class PB_M1Plasma : PB_WeaponBase
 			TNT1 A 0 A_StartSound("weapons/plasma/cellout",18,CHANF_OVERLAP);
 			P1R3 KJ 1 A_SetRoll(roll-0.4);
 			P1R3 IHGF 1 A_SetRoll(roll-0.4);
+			TNT1 A 0 A_JumpIfInventory("LeftPlasmaAmmo",1,2);
 			TNT1 A 0 PB_SpawnCasing("EmptyCell",29,random(-12,-10),20,0,random(2,4),2);
 			P1R3 F 10;
 			P1R3 GGGG 1 A_SetRoll(roll+0.4);
@@ -1280,6 +1286,8 @@ Class M1_HeatWave : Actor
 		-NODAMAGETHRUST;
 		//+DontHurtSpecies;
 		+RollSprite;
+		+FORCEXYBILLBOARD;
+		+SQUAREPIXELS;
 		+NOGRAVITY;
 		//Species "Marine";
 		ReactionTime 7;
@@ -1330,6 +1338,8 @@ Class HeatBlastEffect1 : Actor
 		 scale 0.03;
 		 alpha 0.9;
 		 +rollsprite;
+		 +forcexybillboard;
+		 +squarepixels;
 		 +nointeraction;
 		 Translation "0:255=%[0,0,0]:[0,0.6,1]";
 	}
@@ -1369,6 +1379,8 @@ Class HeatBlastEffect3 : HeatBlastEffect1
 { 
 	default
 	{
+		XScale 0.025;
+		YScale 0.03;
 		alpha 0.99;
 		+FLATSPRITE;
 	}
@@ -1378,7 +1390,7 @@ Class HeatBlastEffect3 : HeatBlastEffect1
 			 X060 A 1 BRIGHT {
 				A_FadeOut(0.05);
 				A_SetRoll(roll-2);
-				A_SetScale(self.Scale.X+0.3);
+				A_SetScale(self.Scale.X+0.25,self.Scale.y+0.3);
 			 }
 			 loop;
 	}

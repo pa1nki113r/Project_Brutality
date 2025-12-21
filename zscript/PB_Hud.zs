@@ -737,8 +737,14 @@ class PB_Hud_ZS : BaseStatusBar
 			mugflags = MugShot.STANDARD; 
 			mug = "STF"; 
 		}
-			
-		PBHud_DrawTexture(GetMugShot(5, mugflags, mug), (25, -65), DI_ITEM_OFFSETS | DI_SCREEN_LEFT_BOTTOM, scale: (1.25, 1.25));
+		if(CVar.GetCVar("hud_oldscale",cplayer).GetBool() && CVar.GetCVar("hud_scale",cplayer).GetInt() > -1 || customPBMugshot)
+		{
+			PBHud_DrawTexture(GetMugShot(5, mugflags, mug), (25.5, -65), DI_ITEM_OFFSETS | DI_SCREEN_LEFT_BOTTOM, scale: (1.25, 1.25));
+		}
+		else
+		{
+			PBHud_DrawTexture(GetMugShot(5, mugflags, mug), (24.5, -70), DI_ITEM_OFFSETS | DI_SCREEN_LEFT_BOTTOM, scale: (1.25, 1.5));
+		}
 	}
 	
 	////////////////////////////////////

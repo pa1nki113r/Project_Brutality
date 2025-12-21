@@ -324,7 +324,7 @@ extend class PB_WeaponBase
 		double pz = height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor;
 		FLineTraceData ltd;
 		LineTrace(angle, range, pitch, offsetz: pz, data: ltd);
-		if (ltd.HitLine)
+		if (ltd.HitLine && ltd.LineSide == line.front)
 		{
 			ltd.HitLine.Activate(player.mo, ltd.LineSide, SPAC_Use);
 		}
@@ -350,10 +350,10 @@ extend class PB_WeaponBase
 	Action void PB_TakeIfUpgrade(string oldweap = "")
 	{
 		//console.printf("cvar val: \ca"..Cvar.GetCVar("pb_keepweapons", invoker.owner.player).GetBool().."\c-, weapon is: \cd"..invoker.getclassname().."\c-, oldweapon is: \ca"..oldweap.."\c-");
-		if(!Cvar.GetCVar("pb_keepweapons", invoker.owner.player).GetBool() && invoker.WeaponUpgradeKeepCvar && Cvar.GetCVar(invoker.WeaponUpgradeKeepCvar, invoker.owner.player).GetBool() == false)
+		let pbw = PB_WeaponBase(findinventory(oldweap));
+		if(pbw && !Cvar.GetCVar("pb_keepweapons", invoker.owner.player).GetBool() || pbw && pbw.WeaponUpgradeKeepCvar && !Cvar.GetCVar(pbw.WeaponUpgradeKeepCvar, pbw.owner.player).GetBool())
 		{
-			let pbw = PB_WeaponBase(findinventory(oldweap));
-			if(pbw && pbw.DualWieldToken)
+			if(pbw.DualWieldToken)
 			{
 				A_takeinventory(pbw.DualWieldToken,1);	//this function takes weapons that may be in akimbo mode, so you also need to take this token
 				pbw.A_SetAkimbo(false);
@@ -368,7 +368,7 @@ extend class PB_WeaponBase
 	{
 		//console.printf("cvar val: \ca"..Cvar.GetCVar("pb_keepweapons", invoker.owner.player).GetBool().."\c-, weapon is: \cd"..invoker.getclassname().."\c-, oldweapon is: \ca"..upgrade.."\c-");
 		if(!CountInv(upgrade)) return;
-		if(!Cvar.GetCVar("pb_keepweapons", invoker.owner.player).GetBool() && invoker.WeaponUpgradeKeepCvar && Cvar.GetCVar(invoker.WeaponUpgradeKeepCvar, invoker.owner.player).GetBool() == false)
+		if(!Cvar.GetCVar("pb_keepweapons", invoker.owner.player).GetBool() || invoker.WeaponUpgradeKeepCvar && !Cvar.GetCVar(invoker.WeaponUpgradeKeepCvar, invoker.owner.player).GetBool())
 		{
 			//console.printf("switching to: \cg"..upgrade.."\c-");
 			A_SetAkimbo(false);
@@ -1695,6 +1695,7 @@ extend class PB_WeaponBase
 		}
 		
 		pitch += (pitchDelta * pb_weapon_recoil_mod_vertical * fac);
+		pitch = clamp(pitch,-90,90);
 		angle += (angleDelta * pb_weapon_recoil_mod_horizontal * fac);
 	}
 	
@@ -1778,7 +1779,7 @@ extend class PB_WeaponBase
 		CasingCount = 6 - CountInv(AmmoSide);
 		for(CasingCount > 0; CasingCount--;)
 		{
-			A_FireProjectile("EmptyBrassMagnum",-5,0,0,-30);
+			A_FireProjectile("EmptyBrassMagnum",frandom(-5,5),0,0,-30);
 		}
 	}
 	

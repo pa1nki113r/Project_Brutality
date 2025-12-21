@@ -91,6 +91,7 @@ Class PB_Revolver : PB_WeaponBase
 			Goto Ready3;
 		
 		Select:
+			R1V1 E 0 PB_SelectIfUpgrade("PB_Deagle");
 			TNT1 A 0 PB_WeaponRaise("REVOUP");
 			//goto SelectFirstPersonLegs;	//pb_Weaponraise already handles this
 		SelectContinue:
@@ -277,7 +278,7 @@ Class PB_Revolver : PB_WeaponBase
 			TNT1 A 0 PB_SpawnCasing("RevolverSpeedLoader", 45.6, 9, 18.75,frandom(-1,1),frandom(-1.2, -0.6), frandom(1,-1));
 			R6V2 GHI 1 A_SetRoll(roll+0.5, SPF_INTERPOLATE);
 			TNT1 A 0 A_StartSound("Weapons/Revolver/Close",10,CHANF_OVERLAP);
-			R6V2 JKLMNOPQQ 1 A_SetRoll(roll-0.5, SPF_INTERPOLATE);
+			R6V2 JKL 1 A_SetRoll(roll-0.5, SPF_INTERPOLATE);
 			TNT1 A 0 A_SetRoll(0);
 			Goto Ready3;
 		
@@ -342,8 +343,8 @@ Class PB_Revolver : PB_WeaponBase
 					A_SetInventory("DualWieldingRevolver",1); // and this
 					return resolvestate(null);
 				}
-			R3V1 ABCDE 1 A_SetRoll(roll+0.8, SPF_INTERPOLATE);
-			R3V1 E 1;
+			R3V1 ABCDJ 1 A_SetRoll(roll+0.8, SPF_INTERPOLATE);
+			R3V1 J 1;
 			R3V1 EFGHI 1 A_SetRoll(roll-0.8, SPF_INTERPOLATE);
 			Goto ReadyDualWield;
 		StopDualWield:
@@ -386,9 +387,9 @@ Class PB_Revolver : PB_WeaponBase
 			TNT1 A 0 {
 				A_SetInventory("Zoomed",0);
 				A_ZoomFactor(1.0);
-				PB_HandleCrosshair(42);
 			}
 			R4V2 EDCBA 1;
+			TNT1 A 0 PB_HandleCrosshair(42);
 			Goto Ready3;
 		
 		Ready2:
@@ -753,9 +754,9 @@ Class PB_Revolver : PB_WeaponBase
 			TNT1 A 0 A_Startsound("Weapons/Revolver/Close", 10,CHANF_OVERLAP);
 			TNT1 A 0 A_JumpIfInventory("LeftRevolverAmmo", 6, "ReloadEnd");
 			42V2 DEF 1 A_SetRoll(roll-0.6, SPF_INTERPOLATE);
+			TNT1 A 2;
 		ReloadingLeft:
 			42V2 G 1 A_SetRoll(roll-0.6, SPF_INTERPOLATE);
-			TNT1 A 2;
 			TNT1 A 0 A_Startsound("Weapons/Revolver/Open", 10,CHANF_OVERLAP);
 			TNT1 A 0 A_JumpIfInventory("RevolverHasUnloaded",1,"ReloadEmpty2");
 			42V2 HIJ 1 A_SetRoll(roll-0.3, SPF_INTERPOLATE);
@@ -777,8 +778,8 @@ Class PB_Revolver : PB_WeaponBase
 		ReloadEnd:
 			42V3 IJKL 1;
 			TNT1 A 0 A_Startsound("Ironsights", 10,CHANF_OVERLAP);
-			42V3 MNOPQRSTUV 1;
 			TNT1 A 0 A_SetInventory("RevolverHasUnloaded", 0);
+			42V3 MN 1;
 			Goto Ready3;
 		
 		AlreadyUnloaded:
