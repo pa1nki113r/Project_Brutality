@@ -203,6 +203,11 @@ Class PB_M1Plasma : PB_WeaponBase
 			}
 			stop;
 		
+		MuzzleFlashCenter:
+			PLSF D 1 BRIGHT A_SetWeaponFrame(3 + random(0, 2));
+			PLSF G 1 BRIGHT A_SetWeaponFrame(6 + random(0, 2));
+			stop;
+		
 		Fire:
 			TNT1 A 0 PB_jumpIfHasBarrel("ThrowBarrel","ThrowFlameBarrel","ThrowIceBarrel");
 			TNT1 A 0 {
@@ -219,7 +224,7 @@ Class PB_M1Plasma : PB_WeaponBase
 				A_AlertMonsters();
 				A_StartSound("PLSM9", CHAN_WEAPON, CHANF_OVERLAP);
 				A_FireProjectile("Plasma_Ball", 0, 1, 0, 0);
-				A_FireProjectile("ShakeYourAssMinor", 0, 0, 0, 0);
+				//A_FireProjectile("ShakeYourAssMinor", 0, 0, 0, 0);
 				PB_GunSmoke(0,0,0);
                 PB_MuzzleFlashEffects(0, 0, 0, "1265ff");
 				PB_LowAmmoSoundWarning("hdmr");
@@ -228,6 +233,7 @@ Class PB_M1Plasma : PB_WeaponBase
 				A_GunFlash();
 				PB_WeaponRecoil(-0.24,+0.06);
 				A_Overlay(60, "AmmoCounterTens.Firing");
+				A_Overlay(-3,"MuzzleFlashCenter");
 				}
 			PLSF B 1 bright {
 				A_ZoomFactor(.99);
@@ -287,24 +293,31 @@ Class PB_M1Plasma : PB_WeaponBase
 				A_AlertMonsters();
 				A_StartSound("ULTCHAR", CHAN_AUTO, CHANF_OVERLAP);
 			}
+			
 			PLHE ABCD 1;
 			PLHE E 1 BRIGHT {
 				A_FireProjectile("RailGunTrailSpark_Fast", random(-2,2), 0, random(-2,2), -15, 0, random(-2,2));
 				A_StartSound("PLSC_1",CHAN_AUTO, CHANF_OVERLAP);
 			}
+			//TNT1 A 0 A_Takeinventory("PlasmaAmmo",5);
+			TNT1 A 0 A_Overlay(60, "AmmoCounter");
 			PLHE F 2 BRIGHT {
 				A_FireProjectile("RailGunTrailSpark_Fast", random(-2,2), 0, random(-2,2), -15, 0, random(-2,2));
 				A_StartSound("PLSC_2",CHAN_AUTO, CHANF_OVERLAP);
 			}
+			//TNT1 A 0 A_Takeinventory("PlasmaAmmo",5);
 			PLHE G 3 BRIGHT {
 				A_FireProjectile("RailGunTrailSpark_Fast", random(-2,2), 0, random(-2,2), -15, 0, random(-2,2));
 				A_StartSound("PLSC_3",CHAN_AUTO, CHANF_OVERLAP);
 			}
+			//TNT1 A 0 A_Takeinventory("PlasmaAmmo",5);
 			PLHE H 3 BRIGHT {
 				A_FireProjectile("RailGunTrailSpark_Fast", random(-2,2), 0, random(-2,2), -15, 0, random(-2,2));
 				A_StartSound("PLSC_4",CHAN_AUTO, CHANF_OVERLAP);
 			}
+			//TNT1 A 0 A_Takeinventory("PlasmaAmmo",5);
 			PLHE IJK 1 BRIGHT A_FireProjectile("RailGunTrailSpark_Fast", random(-2,2), 0, random(-2,2), -15, 0, random(-2,2));
+			TNT1 A 0 A_ClearOverlays(60, 65);
 			PLSA ABCD 1 BRIGHT {
 				A_FireProjectile("BlueFlareSpawn",0,0,0,0);
 				A_FireProjectile("RailGunTrailSpark_Fast", random(-2,2), 0, random(-2,2), -15, 0, random(-2,2));
@@ -866,6 +879,10 @@ Class PB_M1Plasma : PB_WeaponBase
 			}
 			Loop;
 		
+		MuzzleFlashDual:
+			DPR1 D 1 BRIGHT A_SetWeaponFrame(3 + random(0, 2));
+			DPR1 G 1 BRIGHT A_SetWeaponFrame(6 + random(0, 2));
+			stop;
 		
 		FireLeft_Overlay:
 			DPR2 A 1 BRIGHT {
@@ -880,6 +897,8 @@ Class PB_M1Plasma : PB_WeaponBase
 					A_GunFlash();
 					PB_WeaponRecoil(-1.4,+0.8);
 					A_Overlay(60,"AmmoCounterLeftDW.Firing");
+					A_Overlay(-4,"MuzzleFlashDual");
+					A_OverlayFlags(-4,PSPF_FLIP|PSPF_MIRROR,1);
 				}
 			DPR2 B 1 BRIGHT {
 					A_ZoomFactor(0.99);
@@ -909,6 +928,7 @@ Class PB_M1Plasma : PB_WeaponBase
 					A_GunFlash();
 					PB_WeaponRecoil(-1.4,-0.8);
 					A_Overlay(63,"AmmoCounterRightDW.Firing");
+					A_Overlay(-5,"MuzzleFlashDual");
 				}
 			DPR1 B 1 BRIGHT {
 					A_ZoomFactor(0.99);
@@ -1070,28 +1090,28 @@ Class PB_M1Plasma : PB_WeaponBase
 			
 		AmmoCounterRightDW: //Dual plasma right tens
 			"####" "#" 0 A_Overlay(64,"AmmoCounterRightDWOnes");
-			TNT1 "#" 0 A_OverlayOffset(63,76,-2);
+			TNT1 "#" 0 A_OverlayOffset(63,74,-2);
 			TNT1 "#" 1 BRIGHT PB_SetPRCounter(63, "PlasmaAmmo", "PNUM");
 			Loop;
 			
 		AmmoCounterRightDWOnes: //Dual plasma right ones
-			TNT1 "#" 0 A_OverlayOffset(64,81,-2);
+			TNT1 "#" 0 A_OverlayOffset(64,79,-2);
 			TNT1 "#" 1 BRIGHT PB_SetPRCounter(64, "PlasmaAmmo", "PNUM", true);
 			Loop;
 	
 		AmmoCounterRightDW.Firing: //Dual plasma right tens
 			"####" "#" 0 A_Overlay(64,"AmmoCounterRightDW.Firing2");
-			TNT1 "#" 0 A_OverlayOffset(63,76,-2);
+			TNT1 "#" 0 A_OverlayOffset(63,74,-2);
 			TNT1 "#" 1 BRIGHT PB_SetPRCounter(63, "PlasmaAmmo", "PNUM");
-			"####" "#" 1 BRIGHT A_OverlayOffset(63,81,3);
-			"####" "#" 1 BRIGHT A_OverlayOffset(63,79,2);
+			"####" "#" 1 BRIGHT A_OverlayOffset(63,79,3);
+			"####" "#" 1 BRIGHT A_OverlayOffset(63,77,2);
 			Stop;
 			
 		AmmoCounterRightDW.Firing2: //Dual plasma right ones
-			TNT1 "#" 0 A_OverlayOffset(64,81,-2);
+			TNT1 "#" 0 A_OverlayOffset(64,79,-2);
 			TNT1 "#" 1 BRIGHT PB_SetPRCounter(64, "PlasmaAmmo", "PNUM", true);
-			"####" "#" 1 BRIGHT A_OverlayOffset(64,86,3);
-			"####" "#" 1 BRIGHT A_OverlayOffset(64,84,2);
+			"####" "#" 1 BRIGHT A_OverlayOffset(64,84,3);
+			"####" "#" 1 BRIGHT A_OverlayOffset(64,82,2);
 			Stop;
 	}
 	
