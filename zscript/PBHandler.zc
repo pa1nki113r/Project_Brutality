@@ -370,6 +370,16 @@ class PB_EventHandler : EventHandler
 	
 	Override Void WorldThingSpawned(WorldEvent e)
 	{
+		// Guard against projectiles spawned at NaN positions (e.g. RevenantMissile
+		// fired by an incompatible enemy via third-party mods like Corruption Cards).
+		// A NaN position causes 3D audio of GZDoom to hang forever on the looping sound.
+		let mo = e.Thing;
+		if (mo && (mo.pos.x != mo.pos.x || mo.pos.y != mo.pos.y || mo.pos.z != mo.pos.z))
+		{
+			mo.Destroy();
+			return;
+		}
+
 		if(!e.Thing.bCORPSE && !e.Thing.bFRIENDLY && e.thing is 'PB_Monster')
 		{
 			CVar HatsEnabled = Cvar.FindCvar("PB_HatExtravaganza");
