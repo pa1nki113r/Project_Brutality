@@ -1918,6 +1918,10 @@ extend class PB_WeaponBase
 			return invoker.overheat;
 	}
 	
+	action void PB_SetOverheatCoolingRate(int rate) {
+		invoker.overheatCoolingRate = rate;
+	}
+	
 	//[Pop] This is a hack, ideally we shouldnt have to do this and once weapons are fully ZScript each one
 	//will have its own function for firing that gets called. Even after it may be good to keep this for 
 	//weapon addons that stay in DECORATE. Thanks to ADMERAL for throwing this together.
@@ -2681,6 +2685,11 @@ action int getReadyFlags(int weapflags, bool noReload)
 			owner.SetInventory("GrabbedIceBarrel",1);
 			owner.player.SetPSprite(1,resolvestate("ReadyIceBarrel"));
 		}
+		
+		if((overheat > 0 || leftOverheat > 0) && overheatCoolingRate > 0 && owner.player.ReadyWeapon != self && level.time % overheatCoolingRate == 0) {
+			overheat = clamp(overheat - 5, 0, maxOverheat);
+			leftOverheat = clamp(leftOverheat - 5, 0, maxOverheat);
+		}
 	}
 	
 	action void A_LegOverlay(int layer, statelabel st)
@@ -2840,7 +2849,7 @@ action int getReadyFlags(int weapflags, bool noReload)
 	
 	//Nailgun altfire, move when it gets zscripted
 	action void PB_NailgunAltFire() {
-		bool overheated = PB_GetOverheat() >= 450;
+		bool overheated = PB_GetOverheat() >= 225;
 		for(int i = -10; i <= 10; i++) {
 			A_FireProjectile(overheated ? "PB_MGNailHot" : "PB_MGNail",i);
 		}
