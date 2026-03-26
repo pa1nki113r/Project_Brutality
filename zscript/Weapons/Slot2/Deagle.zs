@@ -573,7 +573,7 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
 			TNT1 A 0 {
 				PB_UnloadMag("DeagleAmmo","PB_LowCalMag",2,goal:1);
-				PB_UnloadMag("DeagleAmmo","PB_LowCalMag",2,1,2,0,"PB_MagnumRound");
+				PB_UnloadMag("DeagleAmmo","PB_LowCalMag",2,1,2,0,"PB_DeagleRound");
 				PB_SetMagEmpty(true); PB_SetMagUnloaded(true); PB_SetChamberEmpty(true);
 			}
 			D2E1 E 1;
@@ -618,7 +618,7 @@ class PB_Deagle : PB_WeaponBase
 					if(PB_GetMagEmpty(true))
 						PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
 					PB_UnloadMag("LeftDeagleAmmo","PB_LowCalMag",2,goal:1);
-					PB_UnloadMag("LeftDeagleAmmo","PB_LowCalMag",2,1,2,0,"PB_MagnumRound");
+					PB_UnloadMag("LeftDeagleAmmo","PB_LowCalMag",2,1,2,0,"PB_DeagleRound");
 					PB_SetMagEmpty(true,true); PB_SetMagUnloaded(true,true); PB_SetChamberEmpty(true,true);
 					A_Overlay(10,"EndUnloadLeft_Overlay");
 				}
@@ -626,7 +626,7 @@ class PB_Deagle : PB_WeaponBase
 					if(PB_GetMagEmpty())
 						PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,-2,-2,false);
 					PB_UnloadMag("DeagleAmmo","PB_LowCalMag",2,goal:1);
-					PB_UnloadMag("DeagleAmmo","PB_LowCalMag",2,1,2,0,"PB_MagnumRound");
+					PB_UnloadMag("DeagleAmmo","PB_LowCalMag",2,1,2,0,"PB_DeagleRound");
 					PB_SetMagEmpty(true); PB_SetMagUnloaded(true); PB_SetChamberEmpty(true);
 					A_Overlay(11,"EndUnloadRight_Overlay");
 				}
