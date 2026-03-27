@@ -14,15 +14,11 @@ Actor PBAutoShotgunWasEmpty: Inventory{Inventory.maxamount 1}
 
 Actor LeftPBAutoShotgunWasEmpty : PBAutoShotgunWasEmpty{}
 
-Actor RespectAutoShotgun: Inventory{Inventory.maxamount 1}
-
 actor DrumMagNotInserted : Inventory{Inventory.MaxAmount 1}
 
 Actor ASGSpent: Inventory{Inventory.maxamount 1}
 
 Actor JustFiredAutoshotgun: Inventory{Inventory.maxamount 200}
-
-Actor DualWieldingAutoshotguns: Inventory{Inventory.maxamount 1}
 
 Actor PB_ASGFireAnimation1: Inventory{Inventory.maxamount 1}
 
@@ -97,12 +93,10 @@ ACTOR PB_Autoshotgun : PB_Weapon{
 	+WEAPON.NOAUTOAIM
 	+WEAPON.NOAUTOFIRE
 	Inventory.AltHUDIcon "AUSCA0"
-	PB_WeaponBase.respectItem "RespectAutoShotgun"
 	FloatBobStrength 0.5
 	PB_WeaponBase.OffsetRecoilX 2.5
 	PB_WeaponBase.OffsetRecoilY 2.5
 	PB_WeaponBase.TailPitch 0.75
-	PB_WeaponBase.DualWieldToken "DualWieldingAutoshotguns"
 	States{
 		Steady:
 			TNT1 A 1
@@ -186,7 +180,7 @@ ACTOR PB_Autoshotgun : PB_Weapon{
 		DrumMagInspectCheck:
 			TNT1 A 0 A_ClearOverlays(10,11)
 			TNT1 A 0 A_SetInventory("DrumMagNotInserted",0)
-			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DrumMagInspectGoBackToSingle")
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo, "DrumMagInspectGoBackToSingle")
 			goto BeginNormalDrumReload
 		DrumMagInspectGoBackToSingle:
 			AG60 NMLKJI 1 A_Setroll(roll-1.0, SPF_INTERPOLATE)
@@ -202,7 +196,7 @@ ACTOR PB_Autoshotgun : PB_Weapon{
 			AU10 ABCD 1 //{if (CountInv("AutoshotgunDrumMag") == 1 ) { A_SetWeaponSprite("AU10");}}
 			goto ReadyToFireDrum
 		SelectAnimation:
-			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "SelectAnimationDualWield")	
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo, "SelectAnimationDualWield")	
 			TNT1 A 0 A_PlaySoundEx("weapons/autoshotgun/respect1", "Auto")
 
 			TNT1 A 0 A_JumpIf(CountInv("DrumMagNotInserted") >= 1 && CountInv("PBAutoShotgunHasUnloaded") == 0, "DrumMagInspectCheck")
@@ -531,12 +525,10 @@ ACTOR PB_Autoshotgun : PB_Weapon{
 			TNT1 A 0 {
 				A_PlaySoundEx("weapons/autoshotgun/respect1", "Auto");
 				if (A_CheckAkimbo()) {
-					A_SetInventory("DualWieldingAutoshotguns", 0);
 					A_SetAkimbo(False);
 					return state("SwitchFromDualWield");
 				}
 				else {
-					A_SetInventory("DualWieldingAutoshotguns", 1);
 					A_SetAkimbo(True);
 					return state("");
 				}
@@ -628,7 +620,7 @@ ACTOR PB_Autoshotgun : PB_Weapon{
 			}
 			TNT1 A 0 PB_JumpIfNoAmmo
 			TNT1 A 0 PB_FireOffset
-			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "FireDualWield")	
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo, "FireDualWield")	
 			TNT1 A 0 A_JumpIf(CountInv("AutoshotgunDrumMag") == 1 && !PB_GetMagUnloaded, "DrumFire")
 			TNT1 A 0 A_JumpIf(PB_GetChamberEmpty && !PB_GetMagUnloaded, "Pump")
 			TNT1 A 0 PB_FireBullets("PB_12GAPellet",4,frandom(5.84,6.45),0,0,frandom(5.2,6.75))
@@ -767,7 +759,7 @@ ACTOR PB_Autoshotgun : PB_Weapon{
 				A_ClearOverlays(10,11);
 			}
 			TNT1 A 0 PB_JumpIfNoAmmo("Reload",2,false)
-			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "FireDualWield")	
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo, "FireDualWield")	
 			TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumAltFire")
 			AG20 A 1 BRIGHT {
 				PB_IncrementHeat(4);
@@ -1412,7 +1404,7 @@ ACTOR PB_Autoshotgun : PB_Weapon{
 		// End of Dual Wield
 			
 		Reload:
-			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "ReloadDualWieldStart")	
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo, "ReloadDualWieldStart")	
 			TNT1 A 0 A_JumpIfInventory("AutoshotgunDrumMag", 1, "DrumReload")
 			TNT1 A 0 PB_CheckReload("","EmptyReload","Pump","Ready3","Ready3",12)
 			Goto BeginNormalReload
@@ -1878,7 +1870,7 @@ ACTOR PB_Autoshotgun : PB_Weapon{
 			
 		FlashPunching:
 			TNT1 A 0 A_ClearOverlays(10,11)
-			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualFlashPunching")
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo, "DualFlashPunching")
 			TNT1 A 0 A_JumpIf(CountInv("AutoshotgunDrumMag") >=1 && CountInv("PBAutoShotgunHasUnloaded") != 1, "FlashPunchingDrumMag")
 			AG51 ABCDEFG 1
 			AG51 GFEDCBA 1
@@ -1892,7 +1884,7 @@ ACTOR PB_Autoshotgun : PB_Weapon{
 			Goto Ready3
 		FlashKicking:
 			TNT1 A 0 A_ClearOverlays(10,11)
-			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualFlashKicking")
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo, "DualFlashKicking")
 			TNT1 A 0 A_JumpIf(CountInv("AutoshotgunDrumMag") >=1 && CountInv("PBAutoShotgunHasUnloaded") != 1, "FlashKickingDrumMag")
 			AG50 ABCDEF 1
 			AG50 G 2
@@ -1931,7 +1923,7 @@ ACTOR PB_Autoshotgun : PB_Weapon{
 			Goto Ready3	
 		FlashAirKicking:
 			TNT1 A 0 A_ClearOverlays(10,11)
-			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualAirFlashKicking")
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo, "DualAirFlashKicking")
 			TNT1 A 0 A_JumpIf(CountInv("AutoshotgunDrumMag") >=1 && CountInv("PBAutoShotgunHasUnloaded") != 1, "FlashAirKickingDrumMag")
 			AG50 ABCDEF 1
 			AG50 G 3
@@ -1971,7 +1963,7 @@ ACTOR PB_Autoshotgun : PB_Weapon{
 			
 		FlashSlideKicking:
 			TNT1 A 0 A_ClearOverlays(10,11)
-			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualFlashSlideKicking")
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo, "DualFlashSlideKicking")
 			TNT1 A 0 A_JumpIf(CountInv("AutoshotgunDrumMag") >=1 && CountInv("PBAutoShotgunHasUnloaded") != 1, "FlashSlideKickingDrumMag")
 			AG50 ABCDEF 1
 			AG50 G 14
@@ -2010,7 +2002,7 @@ ACTOR PB_Autoshotgun : PB_Weapon{
 			
 		FlashSlideKickingStop:
 			TNT1 A 0 A_ClearOverlays(10,11)
-			TNT1 A 0 A_JumpIfInventory("DualWieldingAutoshotguns", 1, "DualFlashSlideKickingStop")
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo, "DualFlashSlideKickingStop")
 			TNT1 A 0 A_JumpIf(CountInv("AutoshotgunDrumMag") >=1 && CountInv("PBAutoShotgunHasUnloaded") != 1, "FlashSlideKickingStopDrumMag")
 			AG50 FEDCBA 1
 			AG10 G 1

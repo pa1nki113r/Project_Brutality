@@ -389,11 +389,7 @@ extend class PB_WeaponBase
 		let pbw = PB_WeaponBase(findinventory(oldweap));
 		if(pbw)
 		{
-			if(pbw.DualWieldToken)
-			{
-				A_takeinventory(pbw.DualWieldToken,1);	//this function takes weapons that may be in akimbo mode, so you also need to take this token
-				pbw.A_SetAkimbo(false);
-			}
+			pbw.A_SetAkimbo(false);
 			
 			//console.printf("taking: \cg"..oldweap.."\c-");
 			A_setinventory(oldweap,0);
@@ -406,15 +402,8 @@ extend class PB_WeaponBase
 		if(!CountInv(upgrade)) return;
 		//console.printf("switching to: \cg"..upgrade.."\c-");
 		A_SetAkimbo(false);
-		if(invoker.DualWieldToken)
-			A_takeinventory(invoker.DualWieldToken,1);
 			
 		A_selectweapon(upgrade);
-	}
-	
-	
-	action bool PB_ChainsawHealthRestore(){
-		return invoker.chainsawMode;
 	}
 	
 	action void PB_SetChainsawHealthRestore(bool type){
@@ -2129,29 +2118,6 @@ extend class PB_WeaponBase
 	{
 		invoker.akimboMode = type;
 	}
-		
-	
-	action string A_GetCurrentFireMode()
-	{
-		return invoker.fireMode;
-	}
-	
-	action void A_SetCurrentFireMode(string type)
-	{
-		invoker.fireMode = type;
-	}
-		
-	
-	action string A_GetCurrentRifleMode()
-	{
-		return invoker.upgradedRifleMode;
-	}
-	
-	action void A_SetCurrentRifleMode(string type)
-	{
-		invoker.upgradedRifleMode = type;
-	}
-	
 	
 	action string A_GetCurrentGrenadeType()
 	{
@@ -2761,8 +2727,8 @@ action int getReadyFlags(int weapflags, bool noReload)
 	{
 		//A_Log("PB_RespectIfNeeded");
 		Actor own = invoker.owner;
-		bool shouldHelmet = !Cvar.GetCvar("PB_NoHelmetAnimation",player).GetBool() && !FindInventory("IntroductionSequence"); //ACS_NamedExecuteWithResult("ToggleHelmetAnimation",0,0,0) == 0
-		bool shouldRespect = invoker.respectInventoryItem != "" && !FindInventory(invoker.respectInventoryItem);
+		bool shouldHelmet = !Cvar.GetCvar("PB_NoHelmetAnimation",player).GetBool() && !own.FindInventory("IntroductionSequence"); //ACS_NamedExecuteWithResult("ToggleHelmetAnimation",0,0,0) == 0
+		bool shouldRespect = !invoker.respected || level.time == 0;
 		if (shouldHelmet)
 		{
 			own.GiveInventory("CantDoAction",1);
@@ -2772,7 +2738,7 @@ action int getReadyFlags(int weapflags, bool noReload)
 		else if (shouldRespect)
 		{
 			//Console.printf("Setting State: WeaponRespect");
-			own.GiveInventory(invoker.respectInventoryItem,1);
+			invoker.respected = true;
 			return invoker.resolveState("WeaponRespect");
 		}
 		else

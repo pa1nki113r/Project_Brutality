@@ -7,23 +7,11 @@ Actor PB_PistolWasEmpty: Inventory
 Actor PB_PistolHasUnloaded: Inventory
 {Inventory.maxamount 1}
 
-ACTOR SwitchingFromDualWieldPistols : Inventory
-{Inventory.MaxAmount 1}
-
-ACTOR SwitchingToDualWieldPistols: Inventory
-{Inventory.MaxAmount 1}
-
-ACTOR DualWieldingPistols: Inventory
-{Inventory.MaxAmount 1}
-
 Actor PB_PistolFireAnimation1: Inventory
 {Inventory.maxamount 1}
 
 Actor PB_PistolFireAnimation2: Inventory
 {Inventory.maxamount 1}
-
-ACTOR RespectPistol : Inventory
-{Inventory.MaxAmount 1}
 
 ACTOR ToggledPistolBurstFire : Inventory
 {Inventory.MaxAmount 1}
@@ -75,14 +63,12 @@ ACTOR PB_Pistol : PB_Weapon
 	+WEAPON.NO_AUTO_SWITCH
 	Scale 0.44
 	Inventory.AltHUDIcon "DEGTA0"
-	PB_WeaponBase.respectItem "RespectPistol"
 	FloatBobStrength 0.5
 	PB_WeaponBase.OffsetRecoilX 3.5
 	PB_WeaponBase.OffsetRecoilY 2.5
 	PB_WeaponBase.UsesWheel 1
 	PB_WeaponBase.WheelInfo "PB_pistolWheel"
 	PB_WeaponBase.TailPitch 0.8
-	PB_WeaponBase.DualWieldToken "DualWieldingPistols"
 	PB_WeaponBase.Upgrade "PB_SMG"
 	States
 	{
@@ -104,7 +90,6 @@ ACTOR PB_Pistol : PB_Weapon
 		TNT1 A 0 PB_RespectIfNeeded
 	WeaponRespect:
 		TNT1 A 0 {
-			A_SetInventory("RespectPistol",1);
 			A_SetInventory("PB_LockScreenTilt",1);
 			A_PlaySoundEx("weapons/smg_magfly1", "Auto");
 			A_SetCrosshair(-1);
@@ -125,8 +110,7 @@ ACTOR PB_Pistol : PB_Weapon
 		Goto Ready3
 	SelectAnimation:
 		TNT1 A 0 A_SetInventory("Zoomed",0)
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols", 1, "SelectAnimationDualWield")
-		TNT1 A 0 A_JumpIfInventory("SwitchingFromDualWieldPistols", 1, "FastSwitchFromDualWield2")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo, "SelectAnimationDualWield")
 		DEGG E 1 { 
 			A_PlaySound("weapons/pistolup");
 			if (CountInv("SilencerEquipped") == 1 ) {
@@ -143,7 +127,7 @@ ACTOR PB_Pistol : PB_Weapon
 			A_SetInventory("PB_LockScreenTilt",0);
 			PB_HandleCrosshair(43);
 			}
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols", 1,"ReadyDualWield")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo,"ReadyDualWield")
 		TNT1 A 0 A_JumpIfInventory("Zoomed",1,"Ready2")
 	ReadyToFire:
 		
@@ -968,7 +952,7 @@ ACTOR PB_Pistol : PB_Weapon
 			A_SetInventory("SelectPistolBurstFire",0);
 			A_SetInventory("SelectPistolSemiFire",0);
 		}
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols", 1,"StopDualWield")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo,"StopDualWield")
 		TNT1 A 0 A_JumpIfINventory("PB_Pistol", 2, "SwitchToDualWield")
 		TNT1 A 0 A_Print ("You need two pistols to dual wield!")
 		Goto Ready3
@@ -977,7 +961,6 @@ ACTOR PB_Pistol : PB_Weapon
 		D2GS F 0
 		"####" FG 1 A_SetRoll(roll+.5, SPF_INTERPOLATE)
 		"####" HI 1 A_SetRoll(roll-.5, SPF_INTERPOLATE)
-		TNT1 A 0 A_SetInventory("DualWieldingPistols",1)
 		TNT1 A 0 A_SetAkimbo(True)
 		Goto ReadyDualWield
 	StopDualWield:
@@ -985,7 +968,6 @@ ACTOR PB_Pistol : PB_Weapon
 		D2GS J 0
 		"####" JK 1 A_SetRoll(roll-0.2,SPF_INTERPOLATE)
 		"####" LM 1 A_SetRoll(roll+0.2,SPF_INTERPOLATE)
-		TNT1 A 0 A_SetInventory("DualWieldingPistols", 0)
 		TNT1 A 0 A_SetAkimbo(False)
 		Goto Ready3
 		
@@ -1011,7 +993,7 @@ ACTOR PB_Pistol : PB_Weapon
 		TNT1 A 0 A_PlaySoundEx("weapons/pistolup", "Auto")
 		D5GA TUV 1
 		TNT1 A 0 A_SetRoll(0, SPF_INTERPOLATE)
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols", 1, "SelectAnimationDualWield")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo, "SelectAnimationDualWield")
 		D5GA WXY 1
 		Goto Ready3
 		
@@ -1025,7 +1007,7 @@ ACTOR PB_Pistol : PB_Weapon
 		TNT1 A 0 A_PlaySoundEx("weapons/pistolup", "Auto")
 		D5GF VWX 1
 		TNT1 A 0 A_SetRoll(0)
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols", 1, "SelectAnimationDualWield")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo, "SelectAnimationDualWield")
 		D5GF YZ 1
 		D5GG AB 1
 		Goto Ready3
@@ -1052,7 +1034,7 @@ ACTOR PB_Pistol : PB_Weapon
 				A_SetInventory("ToggledPistolBurstFire", 1);
 			}
 		}
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols", 1, "DualToggle")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo, "DualToggle")
 	SingleToggle:
 		D5GE AB 0
 		D5GD ZYXWVU 0
@@ -1103,7 +1085,7 @@ ACTOR PB_Pistol : PB_Weapon
 		TNT1 A 0 A_SetInventory("ADSMode",0)
 		TNT1 A 0 A_SetInventory("Zoomed",0)
 		
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols", 1, "DualWieldDeselect")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo, "DualWieldDeselect")
 	NormalDeselect:
 		DEGG BCDE 1	{
 			if(CountInv("SilencerEquipped") == 1) {A_SetWeaponSprite("D3GG");}
@@ -1151,7 +1133,7 @@ ACTOR PB_Pistol : PB_Weapon
 			A_SetInventory("PB_LockScreenTilt",0);
 		}
 		"####" "#" 0 A_JumpIfInventory("Zoomed", 1, "Fire2")
-		//"####" "#" 0 A_JumpIfInventory("DualWieldingPistols", 1, "FireDualWield")
+		//"####" "#" 0 A_JumpIf(A_CheckAkimbo, "FireDualWield")
 		//"####" "#" 0 A_JumpIfInventory("SilencerEquipped",1,"FireSilencer")
 		"####" "#" 0 A_JumpIfInventory("ToggledPistolBurstFire",1,"FireBurst")
 		
@@ -1667,7 +1649,7 @@ ACTOR PB_Pistol : PB_Weapon
 			A_SetCrosshair(-1);
 			A_SetInventory("PB_LockScreenTilt",0);
 		}
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols", 1, "ReadyToFireDualWield")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo, "ReadyToFireDualWield")
 		TNT1 A 0 A_StartSound("IronSights", 0)
 		TNT1 A 0 A_JumpIfInventory("Zoomed",1,"Zoomout")
 		TNT1 A 0 A_ZoomFactor(1.25)
@@ -2078,7 +2060,7 @@ ACTOR PB_Pistol : PB_Weapon
 	Unload:
 		TNT1 A 0 PB_SetReloading(true)
 		TNT1 A 0 A_JumpIf(PB_GetMagUnloaded && !PB_GetChamberEmpty,"Unchamber")
-		"####" "#" 0 A_JumpIfInventory("DualWieldingPistols", 1, "UnloadDualWield")
+		"####" "#" 0 A_JumpIf(A_CheckAkimbo, "UnloadDualWield")
 		D5GB ABCD 1 {
 			if (CountInv("SilencerEquipped") == 1 ) {
 					A_SetWeaponSprite("D5GD");
@@ -2189,7 +2171,7 @@ ACTOR PB_Pistol : PB_Weapon
 	// Flash States
 		
 	FlashKicking:
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols",1,"FlashKickingDualWield")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo,"FlashKickingDualWield")
 		D5GV A 0 A_JumpIfInventory("SilencerEquipped",1,2)
 		D5GU A 0
 		"####" ABCDEFGHIJKLMN 1 A_DoPBWeaponAction
@@ -2199,7 +2181,7 @@ ACTOR PB_Pistol : PB_Weapon
 		Goto Ready3	
 		
 	FlashAirKicking:
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols",1,"FlashKickingDualWield")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo,"FlashKickingDualWield")
 		D5GV A 0 A_JumpIfInventory("SilencerEquipped",1,2)
 		D5GU A 0
 		"####" ABCDEFGHIJKLMN 1 A_DoPBWeaponAction
@@ -2209,14 +2191,14 @@ ACTOR PB_Pistol : PB_Weapon
 		Goto Ready3
 		
 	FlashSlideKicking:
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols",1,"FlashSlideKickingDualWield")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo,"FlashSlideKickingDualWield")
 		D5GZ A 0 A_JumpIfInventory("SilencerEquipped",1,2)
 		D5GY A 0
 		"####" ABCDEFGHIJKKKKLMNOPQRSTUV 1 A_DoPBWeaponAction
 		Goto Ready3
 		
 	FlashSlideKickingStop:
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols",1,"FlashSlideKickingDualWieldStop")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo,"FlashSlideKickingDualWieldStop")
 		D5GZ W 0 A_JumpIfInventory("SilencerEquipped",1,2)
 		D5GY W 0
 		"####" WXYZ 1 A_DoPBWeaponAction
@@ -2227,7 +2209,7 @@ ACTOR PB_Pistol : PB_Weapon
 		
 	FlashPunching:
 		TNT1 A 0 A_ClearOverlays(10,11)
-		TNT1 A 0 A_JumpIfInventory("DualWieldingPistols",1,"FlashPunchingDualWield")
+		TNT1 A 0 A_JumpIf(A_CheckAkimbo,"FlashPunchingDualWield")
 		D5GT A 0 A_JumpIfInventory("SilencerEquipped",1,2)
 		D5GS A 0
 		"####" ABCDEFGHIJKLMN 1 

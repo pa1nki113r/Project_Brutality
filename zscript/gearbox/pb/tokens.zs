@@ -43,12 +43,12 @@ Class PB_CarbineWeaponWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 			
-		bool dualling = requester.FindInventory("DualWieldingCarbines");
+		let weap = PB_WeaponBase(requester.player.readyweapon);
 		bool scope = requester.FindInventory("CarbineScope");
 		
 		vector2 iconScale = (0.65, 0.65);
 		
-		if(!dualling)
+		if(!weap.akimboMode)
 		{
 			PB_SpecialWheel_Mode carbine_dualwield = new ("PB_SpecialWheel_Mode");
 			carbine_dualwield.img = "graphics/pywheel/Carbine_Dual.png";
@@ -135,10 +135,11 @@ class PB_pistolWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 		
+		let weap = PB_WeaponBase(requester.player.readyweapon);
 		vector2 iconScale = (0.75, 0.75);
 		
 		//check dw
-		if(requester.FindInventory("DualWieldingPistols"))
+		if(weap.akimboMode)
 		{
 			PB_SpecialWheel_Mode pistol_single = new ("PB_SpecialWheel_Mode");
 			if(requester.FindInventory("SilencerEquipped"))
@@ -293,9 +294,10 @@ Class PB_SMGWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 			
+		let weap = PB_WeaponBase(requester.player.readyweapon);
 		vector2 iconScale = (0.6, 0.6);
 			
-		if(!requester.FindInventory("DualWieldingSMGs")) 
+		if(!weap.akimboMode) 
 		{
 			PB_SpecialWheel_Mode smg_dualwield = new ("PB_SpecialWheel_Mode");
 			if(requester.FindInventory("SilencedSMG"))
@@ -388,10 +390,11 @@ Class PB_RifleWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 			
+		let weap = PB_WeaponBase(requester.player.readyweapon);
 		vector2 iconScale = (0.55, 0.55);
 		
 		// Check Dual Wield Icons
-		if(requester.FindInventory("DualWieldingDMRs"))
+		if(weap.akimboMode)
 		{
 			PB_SpecialWheel_Mode rifle_single = new ("PB_SpecialWheel_Mode");
 			rifle_single.img = "graphics/pywheel/hdmr_single.png";
@@ -475,9 +478,10 @@ Class PB_QSGWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 			
+		let weap = PB_WeaponBase(requester.player.readyweapon);
 		vector2 iconScale = (0.55, 0.55);
 			
-		if(requester.FindInventory("QuadAkimboMode")) 
+		if(weap.akimboMode) 
 		{
 			PB_SpecialWheel_Mode qsg_undual = new ("PB_SpecialWheel_Mode");
 			qsg_undual.img = "graphics/pywheel/Quad_Single.png";

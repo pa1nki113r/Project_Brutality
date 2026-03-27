@@ -12,7 +12,6 @@ Class PB_Shotgun : PB_WeaponBase
 		weapon.ammogive1 8;		
 		weapon.ammotype2 "ShotgunAmmo";
 		weapon.slotpriority 0.5;
-		PB_WeaponBase.respectItem "RespectShotgun";
 		inventory.pickupsound "SHOTPICK";
 		inventory.pickupmessage "$PB_SG_PICKUP";
 		Tag "$PB_SG_TAG";
@@ -446,7 +445,6 @@ Class PB_Shotgun : PB_WeaponBase
 			TNT1 A 0 PB_CheckReload(null,null,"Pump","Ready3","Ready3",9);
 			TNT1 A 0 A_WeaponOffset(0,32);
 			SH0G BCDEFGHIJ 1 A_SetRoll(roll-0.1,SPF_INTERPOLATE);
-			TNT1 A 0 A_SetInventory("PBPumpShotgunHasUnloaded", 0);
 		ShellChecker:
 			TNT1 A 0 A_JumpIf(CountInv("PB_Shell") < 1 || countinv("shotgunAmmo") >= 9,"ReloadFinished");
 			SSHR A 1 {
@@ -469,7 +467,6 @@ Class PB_Shotgun : PB_WeaponBase
 			TNT1 A 0 A_DoPBWeaponAction(WRF_NOBOB);
 			loop;
 		ChamberInsertShell:
-			TNT1 A 0 A_SetInventory("PBPumpShotgunWasEmpty",0);
 			SSHR A 1 A_DoPBWeaponAction(WRF_NOSECONDARY);
 			SSHR H 2 A_StartSound("weapons/sgmvpump",10,CHANF_OVERLAP);
 			SSHR I 3 A_StartSound("insertshell",10,CHANF_OVERLAP);
@@ -573,7 +570,6 @@ Class PB_Shotgun : PB_WeaponBase
 			{
 				A_SetInventory("Reloading",0);
 				A_SetInventory("PB_LockScreenTilt",0);
-				A_SetInventory("PBPumpShotgunHasUnloaded",0);
 				A_SetRoll(0,SPF_INTERPOLATE);
 				PB_SetReloading(false);
 			}
@@ -733,14 +729,14 @@ Class PB_Shotgun : PB_WeaponBase
 					if (PressingFire() && PressingAltfire() && CountInv("ShotgunAmmo") > 0)
 							return resolvestate("Fire2");
 					
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY, CheckUnloaded("PBPumpShotgunHasUnloaded"));
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY);
 				}
 				else 
 				{
 					if (PressingFire() && CountInv("ShotgunAmmo") > 0 )
 						return resolvestate("Fire2");
 					
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD, CheckUnloaded("PBPumpShotgunHasUnloaded"));
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
 				}
 				return resolvestate(null);
 			}
@@ -1212,7 +1208,6 @@ Class PB_Shotgun : PB_WeaponBase
 			{
 				A_SetInventory("Reloading",0);
 				A_SetInventory("PB_LockScreenTilt",0);
-				A_SetInventory("PBPumpShotgunHasUnloaded",0);
 				A_SetRoll(0,SPF_INTERPOLATE);
 			}
 			TNT1 A 0 pb_postwheel();
@@ -1407,38 +1402,6 @@ Class DragonBreathUpgrade : Inventory
 }
 
 Class IsCocking : Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 1;
-	}
-}
-
-Class ShotgunWasEmpty : Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 1;
-	}
-}
-
-Class PBPumpShotgunWasEmpty : Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 1;
-	}
-}
-
-Class PBPumpShotgunHasUnloaded: Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 1;
-	}
-}
-
-Class RespectShotgun : Inventory
 {
 	default
 	{

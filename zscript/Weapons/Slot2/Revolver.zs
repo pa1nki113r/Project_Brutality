@@ -21,9 +21,7 @@ Class PB_Revolver : PB_WeaponBase
 		+WEAPON.NOAUTOFIRE;
 		+WEAPON.NOALERT;
 		Inventory.AltHUDIcon "RVICA0";
-		PB_WeaponBase.respectItem "RespectRevolver";
 		FloatBobStrength 0.5;
-		PB_WeaponBase.DualWieldToken "DualWieldingRevolver";
 		PB_WeaponBase.Upgrade "PB_Deagle";
 	}
 	
@@ -37,7 +35,6 @@ Class PB_Revolver : PB_WeaponBase
 		
 		WeaponRespect:
 			TNT1 A 0 {
-				A_SetInventory("RespectRevolver",1);
 				A_SetInventory("PB_LockScreenTilt",1);
 				A_StartSound("REVOUP",10,CHANF_OVERLAP);
 				A_SetCrosshair(-1);
@@ -474,13 +471,11 @@ Class PB_Revolver : PB_WeaponBase
 					if (A_CheckAkimbo()) 
 					{
 						A_SetAkimbo(False);
-						A_SetInventory("DualWieldingRevolver",0); // this
 						A_ClearOverlays(10,11);
 						return resolvestate("SwitchFromDualWield");
 					}
 					
 					A_SetAkimbo(True);
-					A_SetInventory("DualWieldingRevolver",1); // and this
 					return resolvestate(null);
 				}
 			R3V1 ABCDJ 1 A_SetRoll(roll+0.8, SPF_INTERPOLATE);
@@ -490,7 +485,6 @@ Class PB_Revolver : PB_WeaponBase
 		StopDualWield:
 			TNT1 A 0 {
 				A_SetAkimbo(False);
-				A_SetInventory("DualWieldingRevolver",0);
 				A_ClearOverlays(10,11);
 			}
 		SwitchFromDualWield:
@@ -863,39 +857,5 @@ Class RevolverAmmo : PB_WeaponAmmo
 		Ammo.BackpackMaxAmount 6;
 		+INVENTORY.IGNORESKILL;
 		Inventory.Icon "RVICA0";
-	}
-}
-
-//revolver tokens
-
-Class RespectRevolver : Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 1;
-	}
-}
-
-Class SwitchingFromDualWieldRevolver : Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 1;
-	}
-}
-
-Class SwitchingToDualWieldRevolver : Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 1;
-	}
-}
-
-Class DualWieldingRevolver: Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 1;
 	}
 }

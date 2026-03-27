@@ -28,7 +28,6 @@ Class PB_SuperGL : PB_Weapon
 		Inventory.PickupMessage "$PB_SGL_PICKUP";
 		Tag "$PB_SGL_TAG";
 		Inventory.AltHUDIcon "SGL0Z0";
-		PB_WeaponBase.respectItem "RespectSGL";
 		PB_WeaponBase.UsesWheel true;
 		PB_WeaponBase.WheelInfo "PB_SGLWheel";
 	}
@@ -51,7 +50,6 @@ Class PB_SuperGL : PB_Weapon
 		
 		WeaponRespect:
 			TNT1 A 0 {
-				A_SetInventory("RespectSGL",1);
 				A_SetInventory("PB_LockScreenTilt",1);
 				A_StartSound("weapons/sgl/inspect1", CHAN_AUTO);
 				A_SetCurrentGrenadeType("Impact");
@@ -739,14 +737,6 @@ Class GrenadeRounds : PB_WeaponAmmo
 	}
 }
 
-Class RespectSGL : Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 1;
-	}
-}
-
 Class GrenadeTypeImpact : Inventory
 {
 	default
@@ -801,29 +791,6 @@ Class CycleAnimation : Inventory
 		Inventory.MaxAmount 1;
 	}
 }
-/*
-Class SGLDetonateSoundCooldown : Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 22;
-	}
-}*/
-
-
-Class SGLUnloaded : Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 1;
-	}
-}
-
-
-
-//
-//
-//
 
 Class PB_FragGrenade : Actor
 {

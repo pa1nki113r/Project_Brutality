@@ -10,8 +10,6 @@ Class PB_M1Plasma : PB_WeaponBase
 		weapon.ammotype2 "PlasmaAmmo";
 		PB_WeaponBase.AmmoTypeLeft "LeftPlasmaAmmo";
 		Inventory.MaxAmount 2;
-		PB_WeaponBase.respectItem "RespectPlasmaGun";	
-		PB_WeaponBase.DualWieldToken "DualWieldingPlasma";	
 		inventory.pickupmessage "$PB_M1_PICKUP";
 		Inventory.PickupSound "7LSPICK";
 		Inventory.AltHUDIcon "PL4SA0";
@@ -35,7 +33,6 @@ Class PB_M1Plasma : PB_WeaponBase
 		WeaponRespect:
 			TNT1 A 0 {
 				A_SetCrosshair(-1);
-				A_SetInventory("RespectPlasmaGun",1);
 				A_Setinventory("PB_LockScreenTilt",1);
 				A_StartSound("Ironsights", 22,CHANF_OVERLAP);
 			}
@@ -121,7 +118,7 @@ Class PB_M1Plasma : PB_WeaponBase
 		SelectContinue:
 			TNT1 A 0;
 		SelectAnimation:
-			TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma", 1, "SelectAnimationDualWield");
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "SelectAnimationDualWield");
 			PLSD ABCD 1;
 			goto ready;
 			
@@ -135,7 +132,7 @@ Class PB_M1Plasma : PB_WeaponBase
 			TNT1 A 0 A_StopSound(6);
 			TNT1 A 0 A_StopSound(26);
 			TNT1 A 0 A_startsound("PLSOFF", 4);
-			TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma",1,"DeselectDualWield");
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(),"DeselectDualWield");
 			PLSD EFGH 1;
 			TNT1 A 0 A_lower(120);
 			wait;
@@ -147,7 +144,7 @@ Class PB_M1Plasma : PB_WeaponBase
 				PB_HandleCrosshair(71);
 				}
 			TNT1 A 0 A_startsound("PLSIDLE",6,CHANF_LOOPING);
-			TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma", 1, "ReadyDualWield");
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReadyDualWield");
 		ReadyToFire:
 			P1SG A 0 A_Overlay(60, "AmmoCounter");
 			4LSG B 0 A_DoPBWeaponAction();
@@ -217,7 +214,7 @@ Class PB_M1Plasma : PB_WeaponBase
 				PB_HandleCrosshair(71);
 				A_Setinventory("PB_LockScreenTilt",0);
 			}
-			TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma", 1, "FireDualWield");
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "FireDualWield");
 			TNT1 A 0 PB_jumpIfNoAmmo();
 			P1SF A 1 BRIGHT {	
 				A_Overlay(-5,"FireRecoil");
@@ -441,7 +438,6 @@ Class PB_M1Plasma : PB_WeaponBase
 				A_StartSound("Ironsights", 12,CHANF_OVERLAP);
 				A_ClearOverlays(10,65);
 				}
-			//TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma", 1,"StopDualWield");
 			TNT1 A 0 A_JumpIfInventory("PB_M1Plasma", 2,"SwitchToDualWield");
 			TNT1 A 0 A_print("You need two plasma rifles to dual wield!");
 			Goto Ready3;
@@ -451,14 +447,12 @@ Class PB_M1Plasma : PB_WeaponBase
 						if(A_CheckAkimbo()) 
 						{
 							A_SetAkimbo(False);
-							A_SetInventory(invoker.DualWieldToken,0);
 							A_ClearOverlays(10,11);
 							A_ClearOverlays(60,65);
 							return resolvestate("SwitchFromDualWield");
 						}
 						
 						A_SetAkimbo(True);
-						A_SetInventory(invoker.DualWieldToken,1); 
 						if(PB_GetMagUnloaded())
 							A_Overlay(2,"OverlayGunEmpty");
 						return resolvestate(null);
@@ -472,13 +466,6 @@ Class PB_M1Plasma : PB_WeaponBase
 						A_Overlay(11,"RightGunEmpty");
 				}
 				Goto ReadyDualWield;
-		StopDualWield:
-			TNT1 A 0 {
-				A_SetAkimbo(False);
-				A_SetInventory(invoker.DualWieldToken,0);
-				A_ClearOverlays(10,11);
-				A_ClearOverlays(60,65);
-			}
 		SwitchFromDualWield:
 				TNT1 A 0 {
 					if(PB_GetMagUnloaded(true))
@@ -572,7 +559,7 @@ Class PB_M1Plasma : PB_WeaponBase
 				A_WeaponOffset(0, 32);
 				A_SetRoll(roll-0.2);
 			}
-			TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma",1,"ReloadDualUnloadContinue");
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(),"ReloadDualUnloadContinue");
 			Goto FinishingReload;
 		ReloadDualWield:
 			TNT1 A 0 PB_CheckReload(null,null,null,"ReloadLeftOnly","Ready3",60);
@@ -718,7 +705,7 @@ Class PB_M1Plasma : PB_WeaponBase
 				A_ClearOverlays(10,65);
 				A_StopSound(6);
 			}
-			TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma",1,"UnloadDualWield");
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(),"UnloadDualWield");
 			P1R0 ABCDE 1 A_SetRoll(roll-0.2);
 			P1R0 FGHIJ 1 A_SetRoll(roll+0.2);
 			P1R0 J 1 A_WeaponOffset(1,32);
@@ -980,7 +967,7 @@ Class PB_M1Plasma : PB_WeaponBase
 		////////////////////////////////////////////////////////////////////////
 		FlashKicking:
 			TNT1 A 0 A_ClearOverlays(10,65);
-			TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma", 1, "FlashKickingDualWield");
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "FlashKickingDualWield");
 			P1SG WXYZ 1;
 			P1R2 CDEEDC 1;
 			P1SG ZYXW 1;
@@ -988,7 +975,7 @@ Class PB_M1Plasma : PB_WeaponBase
 			Goto Ready3;
 		FlashAirKicking:
 			TNT1 A 0 A_ClearOverlays(10,65);
-			TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma", 1, "FlashAirKickingDualWield");
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "FlashAirKickingDualWield");
 			P1SG WXYZ 1;
 			P1R2 BCDEEDCB 1;
 			P1SG ZYXW 1;
@@ -996,21 +983,21 @@ Class PB_M1Plasma : PB_WeaponBase
 			Goto Ready3;
 		FlashSlideKicking:
 			TNT1 A 0 A_ClearOverlays(10,65);
-			TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma", 1, "FlashSlideKickingDualWield");
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "FlashSlideKickingDualWield");
 			P1SG WXYZ 1;
 			P1R2 ABCDEFGHHHIJKLMNEDCB 1;
 			P1SG ZYXW 1;
 			Goto Ready3;
 		FlashSlideKickingStop:
 			TNT1 A 0 A_ClearOverlays(10,65);
-			TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma", 1, "FlashSlideKickingStopDualWield");
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "FlashSlideKickingStopDualWield");
 			P1R2 DCB 1;
 			P1SG ZYXW 1; 
 			Goto Ready3;
 		FlashPunching:
 			TNT1 A 0 A_ClearOverlays(10,65);
 			TNT1 A 0 A_ClearReFire();
-			TNT1 A 0 A_JumpIfInventory("DualWieldingPlasma", 1, "FlashPunchingDualWield");
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "FlashPunchingDualWield");
 			P1SG WXYZ 1;
 			P1R2 CDEEDC 1;
 			P1SG ZYXW 1;
@@ -1172,29 +1159,6 @@ Class LeftPlasmaAmmo : PB_WeaponAmmo
 }
 
 Class HasPlasmaWeapon: Inventory
-{
-	default
-	{
-		inventory.maxamount 1;
-	}
-}
-
-Class RespectPlasmaGun : Inventory
-{
-	default
-	{
-		inventory.maxamount 1;
-	}
-}
-
-Class DualWieldingPlasma : Inventory
-{
-	default
-	{
-		inventory.maxamount 1;
-	}
-}
-Class PlasmaRifleHasUnloaded : Inventory
 {
 	default
 	{

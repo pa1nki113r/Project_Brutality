@@ -30,12 +30,6 @@ ACTOR ChexRifleAmmo : PB_WeaponAmmo {
 	+INVENTORY.IGNORESKILL
 	Inventory.Icon "CRRSA0"
 }
-ACTOR UnloadedChexRifle : Inventory {
-Inventory.MaxAmount 1 }
-ACTOR JustGotAChexWeapon : Inventory {
-Inventory.MaxAmount 1 }
-ACTOR ChexWeaponLooked : Inventory {
-Inventory.MaxAmount 1 }
 
 Actor LaserShot : FastProjectile
 {	
@@ -250,15 +244,12 @@ ACTOR PB_ChexRifle : PB_Weapon
 		CRRS A -1 
 		Loop
 	Select:
-			TNT1 A 0 PB_WeaponRaise("PLSDRAW")
+		TNT1 A 0 PB_WeaponRaise("PLSDRAW")
+		TNT1 A 0 PB_RespectIfNeeded
 		TNT1 A 0 PB_HandleCrosshair(10)
-		TNT1 A 0 A_SetInventory ("JustGotAChexWeapon",1)
 		TNT1 A 0 A_Raise
 		Wait
-	RespectAnimation:
-		TNT1 A 0 A_SetInventory ("JustGotAChexWeapon", 0)
-		TNT1 A 0 A_JumpIfInventory("ChexWeaponLooked", 1, "Ready")
-		TNT1 A 0 A_SetInventory ("ChexWeaponLooked", 1)
+	WeaponRespect:
 		TNT1 A 0 A_SetCrosshair(-1)
 		CRR1 ABCDEFGHIKLMNOPQRSTVXYZ 1 A_DoPBWeaponAction
 		CRR2 ABCD 1 A_DoPBWeaponAction
@@ -285,16 +276,16 @@ ACTOR PB_ChexRifle : PB_Weapon
 		TNT1 A 0 A_SetRoll(0)
 		Goto RealReady
 	Ready:
-		TNT1 A 0 A_JumpIfInventory("JustGotAChexWeapon", 1, "RespectAnimation")
+	SelectAnimation:
 		CHRS D 1
-		CXSU A 0 A_JumpIfInventory("UnloadedChexRifle",1,2)
+		CXSU A 0 A_JumpIf(PB_GetMagUnloaded,2)
 		CHRS A 0
 		"####" CBA 1
 		Goto RealReady
 	RealReady:
 	Ready3:
 		TNT1 A 0 PB_HandleCrosshair(10)
-		TNT1 A 0 A_JumpIfInventory("UnloadedChexRifle",1,"Unloaded")
+		TNT1 A 0 A_JumpIf(PB_GetMagUnloaded,"Unloaded")
 		CHRE EEEEEEAABBCCCDDDDCCCBBAAEEEEEE 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD)
 		Loop
 	Unloaded:
@@ -351,7 +342,7 @@ ACTOR PB_ChexRifle : PB_Weapon
 		TNT1 A 0 PB_ReFire
 		Goto RealReady
 	Deselect:
-		CXSU A 0 A_JumpIfInventory("UnloadedChexRifle",1,2)
+		CXSU A 0 A_JumpIf(PB_GetMagUnloaded,2)
 		CHRS A 0
 		"####" ABC 1
 		CHRS D 1
@@ -399,7 +390,6 @@ ACTOR PB_ChexRifle : PB_Weapon
 		TNT1 A 0 A_SetInventory ("GoWeaponSpecialAbility",0)
 		Goto RealReady
 	ReloadAnimationIfUnloaded:
-		TNT1 A 0 A_SetInventory ("UnloadedChexRifle",0)
 		CHRU ABC 1 A_SetRoll(roll-1.8, SPF_INTERPOLATE)
 		CHRU DEF 1 A_SetRoll(roll-1.8, SPF_INTERPOLATE)
 		CHRU GHIJ 1 A_SetRoll(roll+.4)
@@ -411,8 +401,6 @@ ACTOR PB_ChexRifle : PB_Weapon
 		TNT1 A 0 A_JumpIfInventory("ChexRifleAmmo", 1, "UnloadAnimation")
 		Goto RealReady
 	UnloadAnimation:
-		TNT1 A 0 A_SetInventory ("Unloading",0)
-		TNT1 A 0 A_SetInventory ("UnloadedChexRifle",1)
 		CXR1 ABC 1 A_SetRoll(roll-1.2, SPF_INTERPOLATE)
 		CXRE A 0 A_JumpIf(CountInv("ChexRifleAmmo") < 1, 2)
 		CXR1 A 0
