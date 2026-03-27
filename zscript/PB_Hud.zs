@@ -99,8 +99,8 @@ class PB_Hud_ZS : BaseStatusBar
     int tickRandSeed;
 
 	//CVars
-	int16 hudXMargin, hudYMargin, playerMsgPrint;
-	bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks, bottomMiddlePart, showtutorials;
+	int16 hudXMargin, hudYMargin, playerMsgPrint, bottomMiddlePart;
+	bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks, showtutorials;
 	float playerAlpha, playerBoxAlpha, messageSize, bloodDropsAlpha, glassCracksAlpha, visorScale, visorOffsets;
 
 	bool centerNotify;
@@ -204,7 +204,7 @@ class PB_Hud_ZS : BaseStatusBar
         visorScale = CVar.GetCVar("pb_visorscale", CPlayer).GetFloat();
         visorOffsets = CVar.GetCVar("pb_visorofsx", CPlayer).GetFloat();
 
-        bottomMiddlePart = CVar.GetCVar("pb_visormiddlepartbottom", CPlayer).GetFloat();
+        bottomMiddlePart = CVar.GetCVar("pb_visormiddlepartbottom", CPlayer).GetInt();
 
         showtutorials = CVar.GetCVar("pb_showtutorials", CPlayer).GetBool();
 	}
@@ -1153,13 +1153,13 @@ class PB_Hud_ZS : BaseStatusBar
 
                 if(showVisorGlass)
                 {
-                    if(bottomMiddlePart) 
+                    if(bottomMiddlePart == 1 || bottomMiddlePart == 2) 
                     {    
                         if(m0to1Float < 1.0)
                             PBHud_DrawImageManualAlpha("HUDMIOF2", (0, 50 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);  
                         PBHud_DrawImageManualAlpha("HUDMIDD2", (0, 50 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, clamp(m0to1Float * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);
                     }
-                    else
+                    if(bottomMiddlePart == 0 || bottomMiddlePart == 2)
                     {
                         if(m0to1Float < 1.0)
                             PBHud_DrawImageManualAlpha("HUDMIOF2", (0, -50 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);  
@@ -1168,12 +1168,12 @@ class PB_Hud_ZS : BaseStatusBar
                 }
 
                 if(showVisor) {     
-                    if(bottomMiddlePart) 
+                    if(bottomMiddlePart == 1 || bottomMiddlePart == 2) 
                     {
                         PBHud_DrawImageManualAlpha("HUDMDARK", (0, 44 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, 1, scale: (visorScale, visorScale), col: flsectorlightcolor); 
                         PBHud_DrawImageManualAlpha("HUDMIDOF", (0, 44 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, sectorlightlevel, scale: (visorScale, visorScale), col: flsectorlightcolor);   
                     }
-                    else
+                    if(bottomMiddlePart == 0 || bottomMiddlePart == 2)
                     {
                         PBHud_DrawImageManualAlpha("HUDMDARK", (0, -44 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, 1, scale: (visorScale, visorScale), col: flsectorlightcolor); 
                         PBHud_DrawImageManualAlpha("HUDMIDOF", (0, -44 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, sectorlightlevel, scale: (visorScale, visorScale), col: flsectorlightcolor);   
