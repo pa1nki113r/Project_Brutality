@@ -88,6 +88,7 @@ class PlayerPawnBase : PlayerPawn
 	int		JumpSoundCooler;
 	vector3	FloorNormal;
     uint8 coyoteTime;
+	int dashJumped;
 	
 	//Double Jump
 	bool	BlockDoubleJump;
@@ -686,6 +687,19 @@ class PlayerPawnBase : PlayerPawn
 				Float JumpFac = GetPowerJump();
 				if(JumpFac) { JumpVelZ *= JumpFac; }
 				
+				let ddj = DEDashJump(FindInventory("DEDashJump"));
+				if(ddj && ddj.dashTics > 0 && ddj.dashCharge >= ddj.DASHMAXCHARGE / 2) {
+					ddj.dashCharge = 0;
+					ddj.dashTics = 0;
+					TakeInventory("PlayerDashed",1);
+					ddj.TakeInventory( "EvadeCheck", 2 );
+					ddj.TakeInventory( "EvadeHold", 2 );
+					A_StartSound("JMPBOOT", 33);
+					JumpVelZ *= 2.0;
+					VelFromAngle(JumpVelZ * 5);
+					dashJumped = 2;
+				}
+				
 				Vel.Z = (- FloorNormal.XY dot SafeUnit2(Vel.XY) > 0 ? 1.f + sin(FloorAngle) : 1.f) * JumpVelZ; // - FloorNormal.XY dot SafeUnit2(Vel.XY) > 0 == going uphill on a slope
 				
 				bOnMobj = false;
@@ -846,6 +860,10 @@ class PlayerPawnBase : PlayerPawn
 		let player = self.player;
 		UserCmd cmd = player.cmd;
 		
+		if(dashJumped) {
+			dashJumped--;
+		}
+		
 		///////////////////////////////////////////
 		//Actual Movement
 		
@@ -879,7 +897,12 @@ class PlayerPawnBase : PlayerPawn
 		Vel.XY += Acceleration;
 		
 		//Limiter
-		Vel.XY = min(Vel.XY.Length(), MaxGroundSpeed) * SafeUnit2(Vel.XY);
+		if(dashJumped) {
+			Vel.XY *= 0.95;
+		}
+		else {
+			Vel.XY = min(Vel.XY.Length(), MaxGroundSpeed) * SafeUnit2(Vel.XY);
+		}
 		
 		//Sprite Animation
 		AirSpriteAnimation();
@@ -1857,11 +1880,13 @@ Class SpeedoMeterHandler : EventHandler
 				{
 					Vector2 drawPos = (-4 * (screenSize.x / 320), 106 * (screenSize.y / 200));
 					Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y, String.format("%i", mo.Vel.XY.Length() * 32), DTA_HUDRules, true);
+					Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y + (screenSize.y / 50), String.format("%i", mo.Vel.z * 32), DTA_HUDRules, true);
 				}
 				else
 				{
 					Vector2 drawPos = (-4 * (screenSize.x / 320), 106 * (screenSize.y / 200));
 					Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y, String.format("%i", mo.Vel.XY.Length() * 10), DTA_HUDRules, true);
+					Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y + (screenSize.y / 50), String.format("%i", mo.Vel.z * 10), DTA_HUDRules, true);
 				}
 			}
 		}
@@ -1933,7 +1958,9 @@ class DEDashJump : Inventory
 				dashCharge = 0; 
 			}
 			
-			dashCharge = max( 0, dashCharge - DASHMAXCHARGE / 2 );
+			if(!owner.FindInventory("PB_PowerSpeed")) {
+				dashCharge = max( 0, dashCharge - DASHMAXCHARGE / 2 );
+			}
 			
 			dashSpeed = 100;
 			dashTics = 10;
@@ -2011,6 +2038,10 @@ class DEDashJump : Inventory
 		// [gng] recharge the dash
 		if( dashCharge < DASHMAXCHARGE )
 		{
+			if(owner.FindInventory("PB_PowerSpeed")) {
+				dashCharge = DASHMAXCHARGE;
+				owner.A_StartSound( "player/dashready", 69, CHANF_OVERLAP );
+			}
 			dashCharge++;
 			
 			if( dashCharge == DASHMAXCHARGE && !plr.onGround ) 
