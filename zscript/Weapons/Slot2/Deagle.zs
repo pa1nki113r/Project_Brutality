@@ -185,7 +185,7 @@ class PB_Deagle : PB_WeaponBase
 				}
 			TNT1 A 0 A_jumpif(A_CheckAkimbo(),"StopDualWield");
 			TNT1 A 0 A_JumpIfInventory(invoker.getclassname(), 2,"SwitchToDualWield");
-			TNT1 A 0 A_Print("You need two Deagles to dual wield!");
+			TNT1 A 0 A_Print("$PB_DEAGLE_NOAKIMBO");
 			Goto Ready;
 		SwitchToDualWield:
 			TNT1 A 0 A_SetInventory("CantDoAction", 1);

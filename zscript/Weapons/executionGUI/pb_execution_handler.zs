@@ -87,10 +87,10 @@ class pb_ExecutionHandler : EventHandler
                 if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 3, CVar.GetCvar("pb_helpflags", players[consoleplayer])))
                 {
                     Array<String> pbTipsBuf;
-                    pbTipsBuf.Push("If you see a red frame around an enemy, that means they can be executed.");
-                    pbTipsBuf.Push("You can execute an enemy by pressing the Quick Melee button or punching them while the red frame is being displayed.");
-                    pbTipsBuf.Push("Executing enemies will grant you a bit of health, depending on the amount you currently have.");
-                    pbTipsBuf.Push("The Berserk powerup will also lower the health threshold required to execute an enemy.");
+                    pbTipsBuf.Push("$PB_EXECUTION_TIP_1");
+                    pbTipsBuf.Push("$PB_EXECUTION_TIP_2");
+                    pbTipsBuf.Push("$PB_EXECUTION_TIP_3");
+                    pbTipsBuf.Push("$PB_EXECUTION_TIP_4");
                     PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 3);
                 }
 				draw(target, event);

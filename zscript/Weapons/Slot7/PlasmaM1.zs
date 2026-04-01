@@ -439,7 +439,7 @@ Class PB_M1Plasma : PB_WeaponBase
 				A_ClearOverlays(10,65);
 				}
 			TNT1 A 0 A_JumpIfInventory("PB_M1Plasma", 2,"SwitchToDualWield");
-			TNT1 A 0 A_print("You need two plasma rifles to dual wield!");
+			TNT1 A 0 A_print("$PB_M1_NOAKIMBO");
 			Goto Ready3;
 		
 		SwitchToDualWield:

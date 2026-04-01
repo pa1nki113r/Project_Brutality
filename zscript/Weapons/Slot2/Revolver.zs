@@ -462,7 +462,7 @@ Class PB_Revolver : PB_WeaponBase
 				A_StartSound("Ironsights", 10);
 			}
 			TNT1 A 0 A_JumpIfInventory("PB_Revolver", 2,"SwitchToDualWield");
-			TNT1 A 0 A_print("You need two revolvers to dual wield!");
+			TNT1 A 0 A_print("$PB_REVOLVER_NOAKIMBO");
 			Goto Ready3;
 			
 			
