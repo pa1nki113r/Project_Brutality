@@ -91,7 +91,7 @@ class PB_Hud_ZS : BaseStatusBar
     float wipePrgOldFrame, wiperWarningIndScale;
     int16 dirtyScreenTimer; 
     int16 screenFXCount;
-	DEDashJump Dasher;
+	PlayerPawnBase Dasher;
     PB_FPP_Holder flPointer;
 	
 	Weapon oldWeapon;
@@ -388,7 +388,7 @@ class PB_Hud_ZS : BaseStatusBar
 			oldDashCharge = Dasher.DashCharge;
 		}
         else if(plr)
-            Dasher = DEDashJump(plr.FindInventory("DEDashJump"));
+            Dasher = PlayerPawnBase(plr);
 
 		if(Health <= 25)
 		{
