@@ -4,7 +4,7 @@ class PB_Deagle : PB_WeaponBase
 	{
 		weapon.slotnumber 2;
 		weapon.ammotype1 "PB_LowCalMag";
-		weapon.ammogive1 16;	
+		weapon.ammogive1 20;	
 		weapon.ammotype2 "DeagleAmmo";
 		weapon.slotpriority 1;
 		PB_WeaponBase.ReserveToMagAmmoFactor 2;

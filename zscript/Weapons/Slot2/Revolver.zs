@@ -7,7 +7,7 @@ Class PB_Revolver : PB_WeaponBase
 		//SpawnID 9210;
 		weapon.slotnumber 2;							
 		weapon.ammotype1 "PB_LowCalMag";
-		weapon.ammogive1 12;	
+		weapon.ammogive1 20;	
 		weapon.ammotype2 "RevolverAmmo";
 		weapon.slotpriority 0.25;
 		PB_WeaponBase.ReserveToMagAmmoFactor 2;

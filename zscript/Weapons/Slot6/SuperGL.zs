@@ -16,7 +16,7 @@ Class PB_SuperGL : PB_Weapon
 		Weapon.AmmoUse1 0;
 		Weapon.AmmoUse2 0;
 		Weapon.AmmoGive2 0;
-		Weapon.AmmoGive1 6;
+		Weapon.AmmoGive1 2;
 		Weapon.AmmoType1 "PB_RocketAmmo";
 		Weapon.AmmoType2 "GrenadeRounds";
 		Inventory.PickupSound "misc/rockboxa";

@@ -6,7 +6,7 @@ Class PB_M1Plasma : PB_WeaponBase
 		//$Sprite PL4SA0
 		weapon.slotnumber 7;							
 		weapon.ammotype1 "PB_Cell";	
-		Weapon.AmmoGive1 60;		
+		Weapon.AmmoGive1 40;		
 		weapon.ammotype2 "PlasmaAmmo";
 		PB_WeaponBase.AmmoTypeLeft "LeftPlasmaAmmo";
 		Inventory.MaxAmount 2;
