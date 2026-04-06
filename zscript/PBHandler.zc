@@ -370,6 +370,21 @@ class PB_EventHandler : EventHandler
 	
 	Override Void WorldThingSpawned(WorldEvent e)
 	{
+		if (!e.Thing) return;
+
+		// Guard against projectiles spawned at NaN/infinite positions or velocities
+		// (e.g. RevenantMissile fired by an incompatible enemy via mods like Corruption
+		// Cards). A NaN position causes GZDoom's 3D audio to emit warnings; infinite
+		// velocity causes an int32 overflow in FastProjectile-derived Tick() loops that
+		// permanently stalls the game. !(v <= limit) catches both NaN and infinity.
+		let mo = e.Thing;
+		if (mo && (!(mo.pos.x == mo.pos.x) || !(mo.pos.y == mo.pos.y) || !(mo.pos.z == mo.pos.z)
+			|| (mo.bMissile && !(Abs(mo.vel.x) <= 65535.0 && Abs(mo.vel.y) <= 65535.0 && Abs(mo.vel.z) <= 65535.0))))
+		{
+			mo.Destroy();
+			return;
+		}
+
 		if(!e.Thing.bCORPSE && !e.Thing.bFRIENDLY && e.thing is 'PB_Monster')
 		{
 			CVar HatsEnabled = Cvar.FindCvar("PB_HatExtravaganza");
