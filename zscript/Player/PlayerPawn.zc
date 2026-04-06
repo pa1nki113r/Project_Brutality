@@ -25,6 +25,12 @@ class PlayerPawnBase : PlayerPawn
 	const pb_cslidestrength		= 2.0;
 	const pb_cslideduration		= 10;
 	
+	const DASHMAXCHARGE = 35;
+	
+	double dashDir, dashSpeed;
+	int dashTics, dashCharge, airTics;
+	bool dJump, waiting;
+	
 	PB_GlobalStats Stats;
 	TextureID dashTex;
 	float alphaFade;
@@ -88,6 +94,7 @@ class PlayerPawnBase : PlayerPawn
 	int		JumpSoundCooler;
 	vector3	FloorNormal;
     uint8 coyoteTime;
+	int dashJumped;
 	
 	//Double Jump
 	bool	BlockDoubleJump;
@@ -686,6 +693,19 @@ class PlayerPawnBase : PlayerPawn
 				Float JumpFac = GetPowerJump();
 				if(JumpFac) { JumpVelZ *= JumpFac; }
 				
+				if(dashCharge >= DASHMAXCHARGE / 2 && FindInventory("PlayerDashed") && !FindInventory("Kicking") && !dashJumped) {
+					if(!FindInventory("PB_PowerSpeed")) {
+						waiting = true;
+						dashCharge = 0;
+					}
+					dashTics = 0;
+					SetInventory("PlayerDashed", 0);
+					A_StartSound("JMPBOOT", 33);
+					JumpVelZ *= 2.0;
+					VelFromAngle(JumpVelZ * 5);
+					dashJumped = 2;
+				}
+				
 				Vel.Z = (- FloorNormal.XY dot SafeUnit2(Vel.XY) > 0 ? 1.f + sin(FloorAngle) : 1.f) * JumpVelZ; // - FloorNormal.XY dot SafeUnit2(Vel.XY) > 0 == going uphill on a slope
 				
 				bOnMobj = false;
@@ -846,6 +866,10 @@ class PlayerPawnBase : PlayerPawn
 		let player = self.player;
 		UserCmd cmd = player.cmd;
 		
+		if(dashJumped) {
+			dashJumped--;
+		}
+		
 		///////////////////////////////////////////
 		//Actual Movement
 		
@@ -879,7 +903,12 @@ class PlayerPawnBase : PlayerPawn
 		Vel.XY += Acceleration;
 		
 		//Limiter
-		Vel.XY = min(Vel.XY.Length(), MaxGroundSpeed) * SafeUnit2(Vel.XY);
+		if(dashJumped) {
+			Vel.XY *= 0.95;
+		}
+		else {
+			Vel.XY = min(Vel.XY.Length(), MaxGroundSpeed) * SafeUnit2(Vel.XY);
+		}
 		
 		//Sprite Animation
 		AirSpriteAnimation();
@@ -1709,6 +1738,93 @@ class PlayerPawnBase : PlayerPawn
 		}
 		//CatchUpOnTiers();
 
+		// Dash and double jump code by malingo ( https://www.youtube.com/watch?v=mTfGxY_Afhs )
+		PlayerInfo plr = player;
+		
+		if(plr && !waiting && (!dashJumped || !JumpSoundCooler) && (plr.cmd.buttons & BT_USER3) && dashCharge >= DASHMAXCHARGE / 2 && !dashTics && !FindInventory("IsSlideKicking")) {
+			sector sss = floorsector;
+			if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
+				A_StartSound("Daedabus/impact", 32);
+				return;
+			}
+			// [gng] thanks to kodi and lewisk3, analog compatible dash direction
+			dashDir = DeltaAngle(atan2(plr.cmd.sidemove, plr.cmd.forwardmove), angle);
+			
+			if(DashCharge < DASHMAXCHARGE) { 
+				waiting = true; 
+				dashCharge = 0; 
+			}
+			
+			if(!FindInventory("PB_PowerSpeed")) {
+				dashCharge = max(0, dashCharge - DASHMAXCHARGE / 2);
+			}
+			
+			dashSpeed = 50;
+			dashTics = 10;
+			
+			EventHandler.SendInterfaceEvent(PlayerNumber(), "PB_DashWhatchamacallit");
+			A_StartSound("player/dash", 69, CHANF_OVERLAP);
+			
+			if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 1, CVar.GetCvar("pb_helpflags", Player))) {
+				Array<String> pbDashTips;
+				pbDashTips.Push("$PB_DASH_TIP_1");
+				pbDashTips.Push("$PB_DASH_TIP_2");
+				pbDashTips.Push("$PB_DASH_TIP_3");
+				pbDashTips.Push("$PB_DASH_TIP_4");
+				PB_HelpNotificationsHandler.PB_SendTipArray(pbDashTips, "pb_helpflags", 1 << 1);
+			}
+			
+			SetInventory("PlayerDashed", 1);
+			A_QuakeEx(2, 2, 2, dashTics, 0, 1, "", QF_SCALEDOWN, rollintensity:0.2);
+		}
+		
+		if(FindInventory("ExecutionToken")) {
+			vel.xy *= 0;
+			dashTics = 0;
+			SetInventory("PlayerDashed", 0);
+		}
+		
+		double airControlBuffer = level.aircontrol;
+		if(dashTics) {
+			dashTics--;
+			
+			if(dashTics == 3) {
+				dashSpeed *= 0.4;
+				SetInventory("PlayerDashed", 0);
+			}
+			VelFromAngle(DashSpeed, DashDir );
+			
+			vel.z = 0;
+			
+			level.airControl = 0.25;
+		}
+		
+		if(plr && plr.onGround) {
+			dJump = true;
+			airTics = 0;
+			level.airControl = airControlBuffer;
+		}
+		else {
+			airTics++;
+		}	
+			
+		// [gng] recharge the dash
+		if(dashCharge < DASHMAXCHARGE) {
+			if(FindInventory("PB_PowerSpeed")) {
+				dashCharge = DASHMAXCHARGE;
+			}
+			dashCharge++;
+			
+			if(dashCharge == DASHMAXCHARGE && !plr.onGround) 
+				dashCharge = DASHMAXCHARGE - 1;
+				
+			if(dashCharge == DASHMAXCHARGE) {
+				waiting = false;
+				if (gamestate != GS_TITLELEVEL) // Just don't play this on TitleMaps it's unnecessary.
+					A_StartSound("player/dashready", 69, CHANF_OVERLAP);
+			}
+		}
+		
         if(CheckNotPredicting())
         {
             if(m_MuzzleFlashTimer > 0)
@@ -1857,11 +1973,13 @@ Class SpeedoMeterHandler : EventHandler
 				{
 					Vector2 drawPos = (-4 * (screenSize.x / 320), 106 * (screenSize.y / 200));
 					Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y, String.format("%i", mo.Vel.XY.Length() * 32), DTA_HUDRules, true);
+					Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y + (screenSize.y / 50), String.format("%i", mo.Vel.z * 32), DTA_HUDRules, true);
 				}
 				else
 				{
 					Vector2 drawPos = (-4 * (screenSize.x / 320), 106 * (screenSize.y / 200));
 					Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y, String.format("%i", mo.Vel.XY.Length() * 10), DTA_HUDRules, true);
+					Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y + (screenSize.y / 50), String.format("%i", mo.Vel.z * 10), DTA_HUDRules, true);
 				}
 			}
 		}
@@ -1883,193 +2001,5 @@ Class LedgeGrabWeapon : PB_WeaponBase
 		Fire:
 			TNT1 A 0 SetInventory("LedgeGrabWeapon", 0);
 			Stop;
-	}
-}
-
-
-class DEDashJumpHandler : EventHandler
-{
-	override void PlayerEntered(PlayerEvent e)
-	{
-		if(!deathmatch || pb_forcespmovement)
-			players[e.PlayerNumber].mo.A_SetInventory("DEDashJump", 1);
-		else
-			players[e.PlayerNumber].mo.A_SetInventory("DEDashJump", 0);
-	}
-}
-
-/// Dash and double jump code by malingo ( https://www.youtube.com/watch?v=mTfGxY_Afhs )
-class DEDashJump : Inventory
-{
-	double dashDir, dashSpeed;
-	int dashTics, dashCharge, airTics;
-	bool dJump, waiting;
-	
-	const DASHMAXCHARGE = 35;
-	Default{+INVENTORY.UNCLEARABLE +INVENTORY.UNDROPPABLE} //This is an ESSENTIAL part of the PlayerPawn. it also turns out that some maps can force you to clear and drop this item. Declared New Apocalypse is where I found this issue. DO NOT REMOVE.
-	override void Tick()
-	{
-		Super.Tick();
-		
-		if( !owner || owner && ( !owner.player || owner.health < 1 ) ) 
-			return;
-			
-		PlayerInfo plr = owner.player;
-		int plrCmd = plr.cmd.buttons;
-		
-		if( !waiting && ( plrCmd & BT_USER3 ) && dashCharge >= DASHMAXCHARGE / 2 && !dashTics && !owner.CheckInventory( "IsSlideKicking", 1 ) )
-		{
-			sector sss=owner.floorsector;
-			if(owner.A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
-				owner.A_StartSound("Daedabus/impact", 32);
-				return;
-			}
-			// [gng] thanks to kodi and lewisk3, analog compatible dash direction
-			dashDir = DeltaAngle( atan2( plr.cmd.sidemove, plr.cmd.forwardmove ), owner.angle );
-			
-			if( DashCharge < DASHMAXCHARGE ) 
-			{ 
-				waiting = true; 
-				dashCharge = 0; 
-			}
-			
-			dashCharge = max( 0, dashCharge - DASHMAXCHARGE / 2 );
-			
-			dashSpeed = 100;
-			dashTics = 10;
-			
-			EventHandler.SendInterfaceEvent(owner.PlayerNumber(), "PB_DashWhatchamacallit");
-			owner.A_StartSound( "player/dash", 69, CHANF_OVERLAP );		
-
-            if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 1, CVar.GetCvar("pb_helpflags", owner.Player)))
-            {
-                Array<String> pbDashTips;
-                pbDashTips.Push("When dashing, you can kick to activate a dropkick.");
-                pbDashTips.Push("A dropkick will deal massive damage, and instantly kill lesser enemies.");
-                pbDashTips.Push("They are also very useful to kick away or stun bigger enemies.");
-                PB_HelpNotificationsHandler.PB_SendTipArray(pbDashTips, "pb_helpflags", 1 << 1);
-            }
-
-			owner.A_GiveInventory("PlayerDashed",1);
-			owner.A_QuakeEx( 2, 2, 2, dashTics, 0, 1, "", QF_SCALEDOWN, rollintensity: 0.2 );	
-			
-			Actor pCollide = Spawn( "DashCollisionChecker", owner.Pos );
-			if( pCollide )
-			{
-				pCollide.bSOLID = true;
-				pCollide.bNOTIMEFREEZE = true;
-				
-				pCollide.master = self;
-				pCollide.target = owner;
-				
-				pCollide.A_SetSize( owner.radius, owner.height );
-				
-				GiveInventory( "EvadeCheck", 1 );
-			}
-		}
-		
-		if( owner.CheckInventory( "ExecutionToken", 1 ) ) 
-		{
-			owner.vel.xy *= 0;
-			dashTics = 0;
-			owner.TakeInventory("PlayerDashed",1);
-			TakeInventory( "EvadeCheck", 2 );
-			TakeInventory( "EvadeHold", 2 );
-		}
-		
-		double airControlBuffer = level.aircontrol;
-		if( dashTics )
-		{
-			dashTics--;
-			
-			if( dashTics == 3 )
-			{
-				dashSpeed *= 0.4;
-				owner.A_TakeInventory("PlayerDashed",1);
-			}
-			owner.VelFromAngle( DashSpeed * 0.5, DashDir );
-							
-			//owner.vel.xy *= 0.50;
-			owner.vel.z = 0;
-			
-			level.airControl = 0.25;
-			
-			GiveInventory( "EvadeHold", 1 );
-		}
-		
-		if( plr.onGround )
-		{
-			dJump = true;
-			airTics = 0;
-			level.airControl = airControlBuffer;
-		}
-		else
-		{
-			airTics++;
-		}	
-			
-		// [gng] recharge the dash
-		if( dashCharge < DASHMAXCHARGE )
-		{
-			dashCharge++;
-			
-			if( dashCharge == DASHMAXCHARGE && !plr.onGround ) 
-				dashCharge = DASHMAXCHARGE - 1;
-				
-			if( dashCharge == DASHMAXCHARGE )
-			{
-				waiting = false;
-				if (gamestate != GS_TITLELEVEL) // Just don't play this on TitleMaps it's unnecessary.
-					owner.A_StartSound( "player/dashready", 69, CHANF_OVERLAP );
-					
-				TakeInventory( "EvadeCheck", 2 );
-				TakeInventory( "EvadeHold", 2 );
-			}
-		}
-	}
-}
-
-class DashCollisionChecker : Actor
-{
-	DEDashJump dasher;
-	
-	override void PostBeginPlay()
-	{
-		Super.PostBeginPlay();
-		
-		if( master )
-			DEDashJump dasher = DEDashJump( master );
-	}
-	
-	override bool CanCollideWith( Actor other, bool passive )
-	{
-		if( ( other == target || other.bMISSILE ) || ( pos.z > other.pos.z + other.height || other.pos.z > pos.z + height ) )
-			return false;
-		
-		if( other.bSOLID && other.bSHOOTABLE && other.CanCollideWith( Self, 0 ) )
-			tracer = other;
-		
-		return false;
-	}
-	
-	override void Tick()
-	{
-		Super.Tick();
-		
-		if( !target || !dasher || dasher && !dasher.dashTics ) 
-		{ 
-			Destroy(); 
-			return; 
-		}
-		
-		SetOrigin( target.pos + target.vel * 0.1, 0 );
-		vel = target.vel;
-		
-		if( tracer )
-		{
-			bTHRUACTORS = true;
-			dasher.dashSpeed = 0;
-			Destroy();
-		}
 	}
 }

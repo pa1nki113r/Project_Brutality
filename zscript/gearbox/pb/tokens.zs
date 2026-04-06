@@ -43,16 +43,16 @@ Class PB_CarbineWeaponWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 			
-		bool dualling = requester.FindInventory("DualWieldingCarbines");
+		let weap = PB_WeaponBase(requester.player.readyweapon);
 		bool scope = requester.FindInventory("CarbineScope");
 		
 		vector2 iconScale = (0.65, 0.65);
 		
-		if(!dualling)
+		if(!weap.akimboMode)
 		{
 			PB_SpecialWheel_Mode carbine_dualwield = new ("PB_SpecialWheel_Mode");
 			carbine_dualwield.img = "graphics/pywheel/Carbine_Dual.png";
-			carbine_dualwield.Alias = "Akimbo Carbines";
+			carbine_dualwield.Alias = "$PB_CARBINE_WHEEL_AKIMBO";
 			carbine_dualwield.tokentogive = "SelectCarbine_DualWield";
 			carbine_dualwield.scalex = iconscale.x;
 			carbine_dualwield.scaley = iconscale.y;
@@ -64,7 +64,7 @@ Class PB_CarbineWeaponWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode carbine_dualwield = new ("PB_SpecialWheel_Mode");
 			carbine_dualwield.img = "sprites/weapons/Slot 4/Carbine/CB00Z0.png";
-			carbine_dualwield.Alias = "Single Carbine";
+			carbine_dualwield.Alias = "$PB_CARBINE_WHEEL_SINGLE";
 			carbine_dualwield.tokentogive = "SelectCarbine_DualWield";
 			carbine_dualwield.scalex = iconscale.x;
 			carbine_dualwield.scaley = iconscale.y;
@@ -74,21 +74,21 @@ Class PB_CarbineWeaponWheel : wheelinfocontainer
 		
 		PB_SpecialWheel_Mode carbine_fullauto = new ("PB_SpecialWheel_Mode");
 		carbine_fullauto.img = "graphics/pywheel/Carbine_Auto.png";
-		carbine_fullauto.Alias = "Full-Auto Mode";
+		carbine_fullauto.Alias = "$PB_WHEEL_FULL";
 		carbine_fullauto.tokentogive = "SelectCarbine_FullAutoFire";
 		carbine_fullauto.scalex = iconscale.x;
 		carbine_fullauto.scaley = iconscale.y;
 		
 		PB_SpecialWheel_Mode carbine_burst = new ("PB_SpecialWheel_Mode");
 		carbine_burst.img = "graphics/pywheel/Carbine_Burst.png";
-		carbine_burst.Alias = "Burst Mode";
+		carbine_burst.Alias = "$PB_WHEEL_BURST";
 		carbine_burst.tokentogive = "SelectCarbine_BurstFire";
 		carbine_burst.scalex = iconscale.x;
 		carbine_burst.scaley = iconscale.y;
 		
 		PB_SpecialWheel_Mode carbine_semi = new ("PB_SpecialWheel_Mode");
 		carbine_semi.img = "graphics/pywheel/Carbine_Semi.png";
-		carbine_semi.Alias = "Semi-Auto Mode";
+		carbine_semi.Alias = "$PB_WHEEL_SEMI";
 		carbine_semi.tokentogive = "SelectCarbine_SemiFire";
 		carbine_semi.scalex = iconscale.x;
 		carbine_semi.scaley = iconscale.y;
@@ -101,7 +101,7 @@ Class PB_CarbineWeaponWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode carbine_sights = new ("PB_SpecialWheel_Mode");
 			carbine_sights.img = "graphics/pywheel/Carbine_Scope.png";
-			carbine_sights.Alias = "Secondary 3x Scope Mode";
+			carbine_sights.Alias = "$PB_CARBINE_WHEEL_SCOPE";
 			carbine_sights.tokentogive = "SelectCarbine_Sights";
 			carbine_sights.scalex = iconscale.x;
 			carbine_sights.scaley = iconscale.y;
@@ -113,7 +113,7 @@ Class PB_CarbineWeaponWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode carbine_sights = new ("PB_SpecialWheel_Mode");
 			carbine_sights.img = "graphics/pywheel/Carbine_Reflex.png";
-			carbine_sights.Alias = "Secondary 1x Red Dot Mode";
+			carbine_sights.Alias = "$PB_CARBINE_WHEEL_REFLEX";
 			carbine_sights.tokentogive = "SelectCarbine_Sights";
 			carbine_sights.scalex = iconscale.x;
 			carbine_sights.scaley = iconscale.y;
@@ -135,17 +135,18 @@ class PB_pistolWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 		
+		let weap = PB_WeaponBase(requester.player.readyweapon);
 		vector2 iconScale = (0.75, 0.75);
 		
 		//check dw
-		if(requester.FindInventory("DualWieldingPistols"))
+		if(weap.akimboMode)
 		{
 			PB_SpecialWheel_Mode pistol_single = new ("PB_SpecialWheel_Mode");
 			if(requester.FindInventory("SilencerEquipped"))
 				pistol_single.img = "graphics/pywheel/PISTOL_1.png";
 			else
 				pistol_single.img = "graphics/pywheel/PISTOL_0.png";
-			pistol_single.Alias = "Single Pistol";
+			pistol_single.Alias = "$PB_PISTOL_WHEEL_SINGLE";
 			pistol_single.tokentogive = "SelectDualWieldPistols";
 			pistol_single.scalex = iconscale.x;
 			pistol_single.scaley = iconscale.y;
@@ -159,7 +160,7 @@ class PB_pistolWheel : wheelinfocontainer
 				pistol_dual.img = "graphics/pywheel/PISTOL_7.png";
 			else
 				pistol_dual.img = "graphics/pywheel/PISTOL_4.png";
-			pistol_dual.Alias = "Akimbo Pistols";
+			pistol_dual.Alias = "$PB_PISTOL_WHEEL_AKIMBO";
 			pistol_dual.tokentogive = "SelectDualWieldPistols";
 			pistol_dual.scalex = iconscale.x;
 			pistol_dual.scaley = iconscale.y;
@@ -175,7 +176,7 @@ class PB_pistolWheel : wheelinfocontainer
 				pistol_semi.img = "graphics/pywheel/PISTOL_6.png";
 			else
 				pistol_semi.img = "graphics/pywheel/PISTOL_3.png";
-			pistol_semi.Alias = "Semi-Auto Mode";
+			pistol_semi.Alias = "$PB_WHEEL_SEMI";
 			pistol_semi.tokentogive = "SelectPistolBurstFire";
 			pistol_semi.scalex = iconscale.x;
 			pistol_semi.scaley = iconscale.y;
@@ -189,7 +190,7 @@ class PB_pistolWheel : wheelinfocontainer
 				pistol_burst.img = "graphics/pywheel/PISTOL_5.png";
 			else
 				pistol_burst.img = "graphics/pywheel/PISTOL_2.png";
-			pistol_burst.Alias = "Burst Mode";
+			pistol_burst.Alias = "$PB_WHEEL_BURST";
 			pistol_burst.tokentogive = "SelectPistolBurstFire";
 			pistol_burst.scalex = iconscale.x;
 			pistol_burst.scaley = iconscale.y;
@@ -202,7 +203,7 @@ class PB_pistolWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode pistol_unsilenced = new ("PB_SpecialWheel_Mode");
 			pistol_unsilenced.img = "graphics/pywheel/PISTOL_0.png";
-			pistol_unsilenced.Alias = "Detach Suppressor";
+			pistol_unsilenced.Alias = "$PB_PISTOL_WHEEL_SUPPRESSOFF";
 			pistol_unsilenced.tokentogive = "SelectPistolSuppressor";
 			pistol_unsilenced.scalex = iconscale.x;
 			pistol_unsilenced.scaley = iconscale.y;
@@ -213,7 +214,7 @@ class PB_pistolWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode pistol_silencer = new ("PB_SpecialWheel_Mode");
 			pistol_silencer.img = "graphics/pywheel/PISTOL_1.png";
-			pistol_silencer.Alias = "Attach Suppressor";
+			pistol_silencer.Alias = "$PB_PISTOL_WHEEL_SUPPRESSON";
 			pistol_silencer.tokentogive = "SelectPistolSuppressor";
 			pistol_silencer.scalex = iconscale.x;
 			pistol_silencer.scaley = iconscale.y;
@@ -239,35 +240,35 @@ Class PB_SGLWheel : wheelinfocontainer
 		
 		PB_SpecialWheel_Mode grenade_impact = new ("PB_SpecialWheel_Mode");
 		grenade_impact.img = "graphics/pywheel/grenade_impact.png";
-		grenade_impact.Alias = "Impact Grenades";
+		grenade_impact.Alias = "$PB_SGL_WHEEL_IMPACT";
 		grenade_impact.tokentogive = "GrenadeTypeImpact";
 		grenade_impact.scalex = iconscale.x;
 		grenade_impact.scaley = iconscale.y;
 		
 		PB_SpecialWheel_Mode grenade_sticky = new ("PB_SpecialWheel_Mode");
 		grenade_sticky.img = "graphics/pywheel/grenade_sticky.png";
-		grenade_sticky.Alias = "Sticky Bombs";
+		grenade_sticky.Alias = "$PB_SGL_WHEEL_STICKY";
 		grenade_sticky.tokentogive = "GrenadeTypeSticky";
 		grenade_sticky.scalex = iconscale.x;
 		grenade_sticky.scaley = iconscale.y;
 		
 		PB_SpecialWheel_Mode grenade_incendiary = new ("PB_SpecialWheel_Mode");
 		grenade_incendiary.img = "graphics/pywheel/grenade_incendiary.png";
-		grenade_incendiary.Alias = "Incendiary Grenades";
+		grenade_incendiary.Alias = "$PB_SGL_WHEEL_INCENDIARY";
 		grenade_incendiary.tokentogive = "GrenadeTypeIncendiary";
 		grenade_incendiary.scalex = iconscale.x;
 		grenade_incendiary.scaley = iconscale.y;
 		
 		PB_SpecialWheel_Mode grenade_cryo = new ("PB_SpecialWheel_Mode");
 		grenade_cryo.img = "graphics/pywheel/grenade_cryo.png";
-		grenade_cryo.Alias = "Cryogenic Grenades";
+		grenade_cryo.Alias = "$PB_SGL_WHEEL_CRYO";
 		grenade_cryo.tokentogive = "GrenadeTypeCryo";
 		grenade_cryo.scalex = iconscale.x;
 		grenade_cryo.scaley = iconscale.y;
 		
 		PB_SpecialWheel_Mode grenade_acid = new ("PB_SpecialWheel_Mode");
 		grenade_acid.img = "graphics/pywheel/grenade_acid.png";
-		grenade_acid.Alias = "Acid Grenades";
+		grenade_acid.Alias = "$PB_SGL_WHEEL_ACID";
 		grenade_acid.tokentogive = "GrenadeTypeAcid";
 		grenade_acid.scalex = iconscale.x;
 		grenade_acid.scaley = iconscale.y;
@@ -293,16 +294,17 @@ Class PB_SMGWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 			
+		let weap = PB_WeaponBase(requester.player.readyweapon);
 		vector2 iconScale = (0.6, 0.6);
 			
-		if(!requester.FindInventory("DualWieldingSMGs")) 
+		if(!weap.akimboMode) 
 		{
 			PB_SpecialWheel_Mode smg_dualwield = new ("PB_SpecialWheel_Mode");
 			if(requester.FindInventory("SilencedSMG"))
 				smg_dualwield.img = "graphics/pywheel/SMG/SMG_DUAL_SUPPRESSED.png";
 			else
 				smg_dualwield.img = "graphics/pywheel/SMG/SMG_DUAL.png";
-			smg_dualwield.Alias = "Akimbo SMGs";
+			smg_dualwield.Alias = "$PB_SMG_WHEEL_AKIMBO";
 			smg_dualwield.tokentogive = "SelectDualWieldSMG";
 			smg_dualwield.scalex = iconscale.x;
 			smg_dualwield.scaley = iconscale.y;
@@ -316,7 +318,7 @@ Class PB_SMGWheel : wheelinfocontainer
 				smg_dualwield.img = "sprites/weapons/Slot 2/UACSMG/Pickup/ATFLA0.png";
 			else
 				smg_dualwield.img = "sprites/weapons/Slot 2/UACSMG/Pickup/ATFLB0.png";
-			smg_dualwield.Alias = "Single SMG";
+			smg_dualwield.Alias = "$PB_SMG_WHEEL_SINGLE";
 			smg_dualwield.tokentogive = "SelectDualWieldSMG";
 			smg_dualwield.scalex = iconscale.x;
 			smg_dualwield.scaley = iconscale.y;
@@ -330,7 +332,7 @@ Class PB_SMGWheel : wheelinfocontainer
 				smg_burst.img = "graphics/pywheel/SMG/SMG_BURST_SUPPRESSED.png";
 			else
 				smg_burst.img = "graphics/pywheel/SMG/SMG_BURST.png";
-			smg_burst.Alias = "Burst Mode";
+			smg_burst.Alias = "$PB_WHEEL_BURST";
 			smg_burst.tokentogive = "SelectBurstFireSMG";
 			smg_burst.scalex = iconscale.x;
 			smg_burst.scaley = iconscale.y;
@@ -344,7 +346,7 @@ Class PB_SMGWheel : wheelinfocontainer
 				smg_auto.img = "graphics/pywheel/SMG/SMG_FULLAUTO_SUPPRESSED.png";
 			else
 				smg_auto.img = "graphics/pywheel/SMG/SMG_FULLAUTO.png";
-			smg_auto.Alias = "Full-Auto Mode";
+			smg_auto.Alias = "$PB_WHEEL_FULL";
 			smg_auto.tokentogive = "SelectBurstFireSMG";
 			smg_auto.scalex = iconscale.x;
 			smg_auto.scaley = iconscale.y;
@@ -355,7 +357,7 @@ Class PB_SMGWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode smg_silencer = new ("PB_SpecialWheel_Mode");
 			smg_silencer.img = "sprites/weapons/Slot 2/UACSMG/Pickup/ATFLA0.png";
-			smg_silencer.Alias = "Attach Suppressor";
+			smg_silencer.Alias = "$PB_PISTOL_WHEEL_SUPPRESSON";
 			smg_silencer.tokentogive = "SelectSilencedSMG";
 			smg_silencer.scalex = iconscale.x;
 			smg_silencer.scaley = iconscale.y;
@@ -366,7 +368,7 @@ Class PB_SMGWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode smg_silencer = new ("PB_SpecialWheel_Mode");
 			smg_silencer.img = "sprites/weapons/Slot 2/UACSMG/Pickup/ATFLB0.png";
-			smg_silencer.Alias = "Detach Suppressor";
+			smg_silencer.Alias = "$PB_PISTOL_WHEEL_SUPPRESSOFF";
 			smg_silencer.tokentogive = "SelectSilencedSMG";
 			smg_silencer.scalex = iconscale.x;
 			smg_silencer.scaley = iconscale.y;
@@ -388,14 +390,15 @@ Class PB_RifleWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 			
+		let weap = PB_WeaponBase(requester.player.readyweapon);
 		vector2 iconScale = (0.55, 0.55);
 		
 		// Check Dual Wield Icons
-		if(requester.FindInventory("DualWieldingDMRs"))
+		if(weap.akimboMode)
 		{
 			PB_SpecialWheel_Mode rifle_single = new ("PB_SpecialWheel_Mode");
 			rifle_single.img = "graphics/pywheel/hdmr_single.png";
-			rifle_single.Alias = "Single DMR";
+			rifle_single.Alias = "$PB_HDMR_WHEEL_SINGLE";
 			rifle_single.tokentogive = "SelectDualWieldDMRs";
 			rifle_single.scalex = iconscale.x;
 			rifle_single.scaley = iconscale.y;
@@ -406,7 +409,7 @@ Class PB_RifleWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode rifle_dual = new ("PB_SpecialWheel_Mode");
 			rifle_dual.img = "graphics/pywheel/hdmr_dual.png";
-			rifle_dual.Alias = "Akimbo DMRs";
+			rifle_dual.Alias = "$PB_HDMR_WHEEL_AKIMBO";
 			rifle_dual.tokentogive = "SelectDualWieldDMRs";
 			rifle_dual.scalex = iconscale.x;
 			rifle_dual.scaley = iconscale.y;
@@ -418,7 +421,7 @@ Class PB_RifleWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode rifle_grenade_off = new ("PB_SpecialWheel_Mode");
 			rifle_grenade_off.img = "graphics/pywheel/hdmr_grenade_off.png";
-			rifle_grenade_off.Alias = "Secondary Aiming Mode";
+			rifle_grenade_off.Alias = "$PB_HDMR_WHEEL_AIM";
 			rifle_grenade_off.tokentogive = "SelectHDMRGrenade";
 			rifle_grenade_off.scalex = iconscale.x;
 			rifle_grenade_off.scaley = iconscale.y;
@@ -429,7 +432,7 @@ Class PB_RifleWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode rifle_grenade_on = new ("PB_SpecialWheel_Mode");
 			rifle_grenade_on.img = "graphics/pywheel/hdmr_grenade_on.png";
-			rifle_grenade_on.Alias = "Secondary Grenade Mode";
+			rifle_grenade_on.Alias = "$PB_HDMR_WHEEL_GRENADE";
 			rifle_grenade_on.tokentogive = "SelectHDMRGrenade";
 			rifle_grenade_on.scalex = iconscale.x;
 			rifle_grenade_on.scaley = iconscale.y;
@@ -442,7 +445,7 @@ Class PB_RifleWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode rifle_normal = new ("PB_SpecialWheel_Mode");
 			rifle_normal.img = "graphics/pywheel/hdmr_normal.png";
-			rifle_normal.Alias = "Heavy DMR Mode";
+			rifle_normal.Alias = "$PB_HDMR_WHEEL_DMR";
 			rifle_normal.tokentogive = "SelectHDMRMode";
 			rifle_normal.scalex = iconscale.x;
 			rifle_normal.scaley = iconscale.y;
@@ -453,7 +456,7 @@ Class PB_RifleWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode rifle_sniper = new ("PB_SpecialWheel_Mode");
 			rifle_sniper.img = "graphics/pywheel/hdmr_sniper.png";
-			rifle_sniper.Alias = "Sniper Mode";
+			rifle_sniper.Alias = "$PB_HDMR_WHEEL_SNIPER";
 			rifle_sniper.tokentogive = "SelectHDMRMode";
 			rifle_sniper.scalex = iconscale.x;
 			rifle_sniper.scaley = iconscale.y;
@@ -475,13 +478,14 @@ Class PB_QSGWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 			
+		let weap = PB_WeaponBase(requester.player.readyweapon);
 		vector2 iconScale = (0.55, 0.55);
 			
-		if(requester.FindInventory("QuadAkimboMode")) 
+		if(weap.akimboMode) 
 		{
 			PB_SpecialWheel_Mode qsg_undual = new ("PB_SpecialWheel_Mode");
 			qsg_undual.img = "graphics/pywheel/Quad_Single.png";
-			qsg_undual.Alias = "Single Quad Shotgun";
+			qsg_undual.Alias = "$PB_QSG_WHEEL_SINGLE";
 			qsg_undual.tokentogive = "SelectDualWieldQuads";
 			qsg_undual.scalex = iconscale.x;
 			qsg_undual.scaley = iconscale.y;
@@ -492,7 +496,7 @@ Class PB_QSGWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode qsg_dual = new ("PB_SpecialWheel_Mode");
 			qsg_dual.img = "graphics/pywheel/Quad_Dual.png";
-			qsg_dual.Alias = "Akimbo Quad Shotguns";
+			qsg_dual.Alias = "$PB_QSG_WHEEL_AKIMBO";
 			qsg_dual.tokentogive = "SelectDualWieldQuads";
 			qsg_dual.scalex = iconscale.x;
 			qsg_dual.scaley = iconscale.y;
@@ -504,7 +508,7 @@ Class PB_QSGWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode qsg_halfnormal = new ("PB_SpecialWheel_Mode");
 			qsg_halfnormal.img = "graphics/pywheel/Quad_Half.png";
-			qsg_halfnormal.Alias = "Half Blast Mode";
+			qsg_halfnormal.Alias = "$PB_QSG_WHEEL_HALF";
 			qsg_halfnormal.tokentogive = "BlastToggle";
 			qsg_halfnormal.scalex = iconscale.x;
 			qsg_halfnormal.scaley = iconscale.y;
@@ -515,7 +519,7 @@ Class PB_QSGWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode qsg_fullnormal = new ("PB_SpecialWheel_Mode");
 			qsg_fullnormal.img = "graphics/pywheel/Quad_Full.png";
-			qsg_fullnormal.Alias = "Full Blast Mode";
+			qsg_fullnormal.Alias = "$PB_QSG_WHEEL_FULL";
 			qsg_fullnormal.tokentogive = "BlastToggle";
 			qsg_fullnormal.scalex = iconscale.x;
 			qsg_fullnormal.scaley = iconscale.y;
@@ -527,7 +531,7 @@ Class PB_QSGWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode qsg_shell = new ("PB_SpecialWheel_Mode");
 			qsg_shell.img = "graphics/pywheel/Quad_Shells.png";
-			qsg_shell.Alias = "Buckshot Mode";
+			qsg_shell.Alias = "$PB_QSG_WHEEL_SHELLS";
 			qsg_shell.tokentogive = "BreathToggle";
 			qsg_shell.scalex = iconscale.x;
 			qsg_shell.scaley = iconscale.y;
@@ -538,7 +542,7 @@ Class PB_QSGWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode qsg_demon = new ("PB_SpecialWheel_Mode");
 			qsg_demon.img = "graphics/pywheel/Quad_Demonic.png";
-			qsg_demon.Alias = "Demon's Breath Mode";
+			qsg_demon.Alias = "$PB_QSG_WHEEL_DBREATH";
 			qsg_demon.tokentogive = "BreathToggle";
 			qsg_demon.scalex = iconscale.x;
 			qsg_demon.scaley = iconscale.y;
@@ -564,7 +568,7 @@ Class PB_CryoRifleWheel : wheelinfocontainer
 			
 		PB_SpecialWheel_Mode cryorifle_missile = new ("PB_SpecialWheel_Mode");
 		cryorifle_missile.img = "graphics/pywheel/CryoRifle_Missile.png";
-		cryorifle_missile.Alias = "Ice Missile Mode";
+		cryorifle_missile.Alias = "$PB_CRYO_WHEEL_MISSILE";
 		cryorifle_missile.tokentogive = "FireModeCryoRifleMissile_WW";
 		cryorifle_missile.scalex = iconscale.x;
 		cryorifle_missile.scaley = iconscale.y;
@@ -573,7 +577,7 @@ Class PB_CryoRifleWheel : wheelinfocontainer
 
 		PB_SpecialWheel_Mode cryorifle_beam = new ("PB_SpecialWheel_Mode");
 		cryorifle_beam.img = "graphics/pywheel/cryorifle_beam.png";
-		cryorifle_beam.Alias = "Ice Beam Mode";
+		cryorifle_beam.Alias = "$PB_CRYO_WHEEL_BEAM";
 		cryorifle_beam.tokentogive = "FireModeCryoRifleBeam_WW";
 		cryorifle_beam.scalex = iconscale.x;
 		cryorifle_beam.scaley = iconscale.y;
@@ -582,7 +586,7 @@ Class PB_CryoRifleWheel : wheelinfocontainer
 
 		PB_SpecialWheel_Mode cryorifle_spear = new ("PB_SpecialWheel_Mode");
 		cryorifle_spear.img = "graphics/pywheel/CryoRifle_Spear.png";
-		cryorifle_spear.Alias = "Secondary Ice Spear Mode";
+		cryorifle_spear.Alias = "$PB_CRYO_WHEEL_SPEAR";
 		cryorifle_spear.tokentogive = "FireModeCryoRifleSpear_WW";
 		cryorifle_spear.scalex = iconscale.x;
 		cryorifle_spear.scaley = iconscale.y;
@@ -591,7 +595,7 @@ Class PB_CryoRifleWheel : wheelinfocontainer
 
 		PB_SpecialWheel_Mode cryorifle_flak = new ("PB_SpecialWheel_Mode");
 		cryorifle_flak.img = "graphics/pywheel/CryoRifle_Flak.png";
-		cryorifle_flak.Alias = "Secondary Ice Flak Mode";
+		cryorifle_flak.Alias = "$PB_CRYO_WHEEL_FLAK";
 		cryorifle_flak.tokentogive = "FireModeCryoRifleFlak_WW";
 		cryorifle_flak.scalex = iconscale.x;
 		cryorifle_flak.scaley = iconscale.y;
@@ -618,7 +622,7 @@ Class PB_MinigunWheel : wheelinfocontainer
 			
 		PB_SpecialWheel_Mode minigun_chaingun = new ("PB_SpecialWheel_Mode");
 		minigun_chaingun.img = "graphics/pywheel/Minigun_1.png";
-		minigun_chaingun.Alias = "525 RPM Mode";
+		minigun_chaingun.Alias = "$PB_MINIGUN_WHEEL_CHAINGUN";
 		minigun_chaingun.tokentogive = "SelectMinigun_Chaingun";
 		minigun_chaingun.scalex = iconscale.x;
 		minigun_chaingun.scaley = iconscale.y;
@@ -627,7 +631,7 @@ Class PB_MinigunWheel : wheelinfocontainer
 
 		PB_SpecialWheel_Mode minigun_gatling = new ("PB_SpecialWheel_Mode");
 		minigun_gatling.img = "graphics/pywheel/Minigun_2.png";
-		minigun_gatling.Alias = "1050-2100 RPM Mode";
+		minigun_gatling.Alias = "$PB_MINIGUN_WHEEL_GATLING";
 		minigun_gatling.tokentogive = "SelectMinigun_Gatling";
 		minigun_gatling.scalex = iconscale.x;
 		minigun_gatling.scaley = iconscale.y;
@@ -639,7 +643,7 @@ Class PB_MinigunWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode minigun_triple = new ("PB_SpecialWheel_Mode");
 			minigun_triple.img = "graphics/pywheel/Minigun_3.png";
-			minigun_triple.Alias = "6300 RPM Mode";
+			minigun_triple.Alias = "$PB_MINIGUN_WHEEL_TRIPLE";
 			minigun_triple.tokentogive = "SelectMinigun_Triple";
 			minigun_triple.scalex = iconscale.x;
 			minigun_triple.scaley = iconscale.y;
@@ -667,7 +671,7 @@ Class PB_PumpShotgunWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode shotgun_dragonbreath = new ("PB_SpecialWheel_Mode");
 			shotgun_dragonbreath.img = "graphics/pywheel/SG_DB.png";
-			shotgun_dragonbreath.Alias = "Dragon's Breath Shells";
+			shotgun_dragonbreath.Alias = "$PB_SG_WHEEL_DBREATH";
 			shotgun_dragonbreath.tokentogive = "SelectShotgun_Dragonsbreath";
 			shotgun_dragonbreath.scalex = iconscale.x;
 			shotgun_dragonbreath.scaley = iconscale.y;
@@ -678,7 +682,7 @@ Class PB_PumpShotgunWheel : wheelinfocontainer
 		{
 			PB_SpecialWheel_Mode shotgun_No = new ("PB_SpecialWheel_Mode");
 			shotgun_No.img = "graphics/pywheel/SG_NO.png";
-			shotgun_No.Alias = "Not Available";
+			shotgun_No.Alias = "$PB_NOTAVAILABLE";
 			shotgun_No.tokentogive = "SelectShotgun_No";
 			shotgun_No.scalex = iconscale.x;
 			shotgun_No.scaley = iconscale.y;
@@ -688,7 +692,7 @@ Class PB_PumpShotgunWheel : wheelinfocontainer
 
 		PB_SpecialWheel_Mode shotgun_buckshot = new ("PB_SpecialWheel_Mode");
 		shotgun_buckshot.img = "graphics/pywheel/SG_Buck.png";
-		shotgun_buckshot.Alias = "Buckshot Shells";
+		shotgun_buckshot.Alias = "$PB_SG_WHEEL_BUCKSHOT";
 		shotgun_buckshot.tokentogive = "SelectShotgun_Buckshot";
 		shotgun_buckshot.scalex = iconscale.x;
 		shotgun_buckshot.scaley = iconscale.y;
@@ -696,7 +700,7 @@ Class PB_PumpShotgunWheel : wheelinfocontainer
 		
 		PB_SpecialWheel_Mode shotgun_slugshot = new ("PB_SpecialWheel_Mode");
 		shotgun_slugshot.img = "graphics/pywheel/SG_Slug.png";
-		shotgun_slugshot.Alias = "Slug Shells";
+		shotgun_slugshot.Alias = "$PB_SG_WHEEL_SLUG";
 		shotgun_slugshot.tokentogive = "SelectShotgun_Slugshot";
 		shotgun_slugshot.scalex = iconscale.x;
 		shotgun_slugshot.scaley = iconscale.y;
@@ -723,21 +727,21 @@ Class PB_RocketLauncherWheel : wheelinfocontainer
 			
 		PB_SpecialWheel_Mode rocket_standard = new ("PB_SpecialWheel_Mode");
 		rocket_standard.img = "graphics/pywheel/rocket_standard.png";
-		rocket_standard.Alias = "Standard Mode";
+		rocket_standard.Alias = "$PB_RL_WHEEL_NORMAL";
 		rocket_standard.tokentogive = "RocketLauncher_Standard";
 		rocket_standard.scalex = iconscale.x;
 		rocket_standard.scaley = iconscale.y;
 		
 		PB_SpecialWheel_Mode rocket_homing = new ("PB_SpecialWheel_Mode");
 		rocket_homing.img = "graphics/pywheel/rocket_homing.png";
-		rocket_homing.Alias = "Lock-On Mode";
+		rocket_homing.Alias = "$PB_RL_WHEEL_LOCKON";
 		rocket_homing.tokentogive = "RocketLauncher_Homing";
 		rocket_homing.scalex = iconscale.x;
 		rocket_homing.scaley = iconscale.y;
 		
 		PB_SpecialWheel_Mode rocket_laser = new ("PB_SpecialWheel_Mode");
 		rocket_laser.img = "graphics/pywheel/rocket_laser.png";
-		rocket_laser.Alias = "Laser Guided Mode";
+		rocket_laser.Alias = "$PB_RL_WHEEL_GUIDED";
 		rocket_laser.tokentogive = "RocketLauncher_Laser";
 		rocket_laser.scalex = iconscale.x;
 		rocket_laser.scaley = iconscale.y;

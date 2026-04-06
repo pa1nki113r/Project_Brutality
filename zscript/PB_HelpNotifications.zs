@@ -95,9 +95,9 @@ class PB_HelpNotificationsHandler : EventHandler
     ui void RegisterTip(string tipText = "")
     {
         let sb = PB_Hud_ZS(statusBar);
-        console.printfex(PRINT_NONOTIFY, tipText);
+        console.printfex(PRINT_NONOTIFY, StringTable.Localize(tipText));
         if(!sb) return;
-        sb.UpdateTooltip(tipText);
+        sb.UpdateTooltip(StringTable.Localize(tipText));
     }
 
     override void WorldTick()

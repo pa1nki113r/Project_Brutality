@@ -91,7 +91,7 @@ class PB_Hud_ZS : BaseStatusBar
     float wipePrgOldFrame, wiperWarningIndScale;
     int16 dirtyScreenTimer; 
     int16 screenFXCount;
-	DEDashJump Dasher;
+	PlayerPawnBase Dasher;
     PB_FPP_Holder flPointer;
 	
 	Weapon oldWeapon;
@@ -99,8 +99,8 @@ class PB_Hud_ZS : BaseStatusBar
     int tickRandSeed;
 
 	//CVars
-	int16 hudXMargin, hudYMargin, playerMsgPrint;
-	bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks, bottomMiddlePart, showtutorials;
+	int16 hudXMargin, hudYMargin, playerMsgPrint, bottomMiddlePart;
+	bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks, showtutorials;
 	float playerAlpha, playerBoxAlpha, messageSize, bloodDropsAlpha, glassCracksAlpha, visorScale, visorOffsets;
 
 	bool centerNotify;
@@ -204,7 +204,7 @@ class PB_Hud_ZS : BaseStatusBar
         visorScale = CVar.GetCVar("pb_visorscale", CPlayer).GetFloat();
         visorOffsets = CVar.GetCVar("pb_visorofsx", CPlayer).GetFloat();
 
-        bottomMiddlePart = CVar.GetCVar("pb_visormiddlepartbottom", CPlayer).GetFloat();
+        bottomMiddlePart = CVar.GetCVar("pb_visormiddlepartbottom", CPlayer).GetInt();
 
         showtutorials = CVar.GetCVar("pb_showtutorials", CPlayer).GetBool();
 	}
@@ -388,7 +388,7 @@ class PB_Hud_ZS : BaseStatusBar
 			oldDashCharge = Dasher.DashCharge;
 		}
         else if(plr)
-            Dasher = DEDashJump(plr.FindInventory("DEDashJump"));
+            Dasher = PlayerPawnBase(plr);
 
 		if(Health <= 25)
 		{
@@ -1153,13 +1153,13 @@ class PB_Hud_ZS : BaseStatusBar
 
                 if(showVisorGlass)
                 {
-                    if(bottomMiddlePart) 
+                    if(bottomMiddlePart == 1 || bottomMiddlePart == 2) 
                     {    
                         if(m0to1Float < 1.0)
                             PBHud_DrawImageManualAlpha("HUDMIOF2", (0, 50 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);  
                         PBHud_DrawImageManualAlpha("HUDMIDD2", (0, 50 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, clamp(m0to1Float * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);
                     }
-                    else
+                    if(bottomMiddlePart == 0 || bottomMiddlePart == 2)
                     {
                         if(m0to1Float < 1.0)
                             PBHud_DrawImageManualAlpha("HUDMIOF2", (0, -50 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);  
@@ -1168,12 +1168,12 @@ class PB_Hud_ZS : BaseStatusBar
                 }
 
                 if(showVisor) {     
-                    if(bottomMiddlePart) 
+                    if(bottomMiddlePart == 1 || bottomMiddlePart == 2) 
                     {
                         PBHud_DrawImageManualAlpha("HUDMDARK", (0, 44 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, 1, scale: (visorScale, visorScale), col: flsectorlightcolor); 
                         PBHud_DrawImageManualAlpha("HUDMIDOF", (0, 44 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, sectorlightlevel, scale: (visorScale, visorScale), col: flsectorlightcolor);   
                     }
-                    else
+                    if(bottomMiddlePart == 0 || bottomMiddlePart == 2)
                     {
                         PBHud_DrawImageManualAlpha("HUDMDARK", (0, -44 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, 1, scale: (visorScale, visorScale), col: flsectorlightcolor); 
                         PBHud_DrawImageManualAlpha("HUDMIDOF", (0, -44 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, sectorlightlevel, scale: (visorScale, visorScale), col: flsectorlightcolor);   
@@ -1246,12 +1246,19 @@ class PB_Hud_ZS : BaseStatusBar
 			if(dasher) {
 				/*PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge, 17.5, (252, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);
 				PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge - 17.5, 17.5, (261, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);*/
-			   
-				PBHud_DrawImage(Dasher.DashCharge >= 17.5 ? "DASHHUD2" : "DASHHUD1", (251 - 9 * dashScale2, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_LEFT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale1, 1 + dashScale1));
-				PBHud_DrawImage(Dasher.DashCharge >= 35 ? "DASHHUD2" : "DASHHUD1", (275 + 9 * dashScale1, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_RIGHT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale2, 1 + dashScale2));
-				
-				if(Dasher.DashCharge != 35 && dashIndAlpha < 1)
+				if(CheckInventory("PB_PowerSpeed")) {
+					PBHud_DrawImage("DASHHUD3", (251, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_LEFT);
+					PBHud_DrawImage("DASHHUD3", (275, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_RIGHT);
 					dashIndAlpha = 5.0;
+				}
+				else {
+					PBHud_DrawImage(Dasher.DashCharge >= 17.5 ? "DASHHUD2" : "DASHHUD1", (251 - 9 * dashScale2, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_LEFT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale1, 1 + dashScale1));
+					PBHud_DrawImage(Dasher.DashCharge >= 35 ? "DASHHUD2" : "DASHHUD1", (275 + 9 * dashScale1, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_RIGHT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale2, 1 + dashScale2));
+					
+					if(Dasher.DashCharge != 35 && dashIndAlpha < 1) {
+						dashIndAlpha = 5.0;
+					}
+				}
 			}
 			
 			PBHud_DrawBar(inPain ? "HOBAR" : "HPBAR", "BGBARL", IntHealth, min(MaxHealth, 100), (111, -52), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);

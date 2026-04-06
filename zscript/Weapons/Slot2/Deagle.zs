@@ -4,14 +4,12 @@ class PB_Deagle : PB_WeaponBase
 	{
 		weapon.slotnumber 2;
 		weapon.ammotype1 "PB_LowCalMag";
-		weapon.ammogive1 16;	
+		weapon.ammogive1 20;	
 		weapon.ammotype2 "DeagleAmmo";
 		weapon.slotpriority 1;
 		PB_WeaponBase.ReserveToMagAmmoFactor 2;
 		PB_WeaponBase.AmmoTypeLeft "LeftDeagleAmmo";
 		Inventory.MaxAmount 2;
-		PB_WeaponBase.respectItem "RespectDeagle";
-		PB_WeaponBase.DualWieldToken "DualWieldingDeagles";	
 		Inventory.PickupSound "weapons/deagle/equip";
 		inventory.pickupmessage "$PB_DEAGLE_PICKUP";
 		Obituary "%o was popped by %k's .50 Caliber Hand Cannon.";
@@ -187,7 +185,7 @@ class PB_Deagle : PB_WeaponBase
 				}
 			TNT1 A 0 A_jumpif(A_CheckAkimbo(),"StopDualWield");
 			TNT1 A 0 A_JumpIfInventory(invoker.getclassname(), 2,"SwitchToDualWield");
-			TNT1 A 0 A_Print("You need two Deagles to dual wield!");
+			TNT1 A 0 A_Print("$PB_DEAGLE_NOAKIMBO");
 			Goto Ready;
 		SwitchToDualWield:
 			TNT1 A 0 A_SetInventory("CantDoAction", 1);
@@ -195,7 +193,6 @@ class PB_Deagle : PB_WeaponBase
 				A_SetAkimbo(True);
 				A_Startsound("Ironsights",15,CHANF_OVERLAP);
 				//A_Startsound("weapons/deagle/equip",10,CHANF_OVERLAP);
-				A_SetInventory(invoker.DualWieldToken,1); 
 			}
 			D6E2 A 1 PB_SetDualSpriteIfUnload("D6E3","D6E4","D6E5");
 			D6E2 BCD 1 {
@@ -214,7 +211,6 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 {
 				A_SetAkimbo(False);
 				A_Startsound("Ironsights",15,CHANF_OVERLAP);
-				A_SetInventory(invoker.DualWieldToken,0);
 				A_ClearOverlays(10,11);
 				//A_Startsound("weapons/deagle/equip",10,CHANF_OVERLAP);
 			}
@@ -1200,31 +1196,6 @@ Class LeftDeagleAmmo : PB_WeaponAmmo
 		Ammo.BackpackMaxAmount 8;
 		+INVENTORY.IGNORESKILL;
 		Inventory.Icon "D4E0Z0";
-	}
-}
-
-Class DeagleHasUnloaded: Inventory
-{
-	default
-	{
-		Inventory.maxamount 1;
-	}
-}
-
-
-Class RespectDeagle : Inventory
-{
-	default
-	{
-		Inventory.maxamount 1;
-	}
-}
-
-Class DualWieldingDeagles: Inventory
-{
-	default
-	{
-		Inventory.maxamount 1;
 	}
 }
 
