@@ -650,6 +650,17 @@ Class PB_MinigunWheel : wheelinfocontainer
 			
 			spw.Push(minigun_triple);
 		}
+		else
+		{
+			PB_SpecialWheel_Mode minigun_triple = new ("PB_SpecialWheel_Mode");
+			minigun_triple.img = "graphics/pywheel/Minigun_N.png";
+			minigun_triple.Alias = "$PB_NOTAVAILABLE";
+			minigun_triple.tokentogive = "SelectMinigun_Triple";
+			minigun_triple.scalex = iconscale.x;
+			minigun_triple.scaley = iconscale.y;
+			
+			spw.Push(minigun_triple);
+		}
 	}
 }
 
@@ -666,7 +677,25 @@ Class PB_PumpShotgunWheel : wheelinfocontainer
 			return;
 			
 		vector2 iconScale = (0.7, 0.7);
-			
+		
+		PB_SpecialWheel_Mode shotgun_buckshot = new ("PB_SpecialWheel_Mode");
+		shotgun_buckshot.img = "graphics/pywheel/SG_Buck.png";
+		shotgun_buckshot.Alias = "$PB_SG_WHEEL_BUCKSHOT";
+		shotgun_buckshot.tokentogive = "SelectShotgun_Buckshot";
+		shotgun_buckshot.scalex = iconscale.x;
+		shotgun_buckshot.scaley = iconscale.y;
+		
+		
+		PB_SpecialWheel_Mode shotgun_slugshot = new ("PB_SpecialWheel_Mode");
+		shotgun_slugshot.img = "graphics/pywheel/SG_Slug.png";
+		shotgun_slugshot.Alias = "$PB_SG_WHEEL_SLUG";
+		shotgun_slugshot.tokentogive = "SelectShotgun_Slugshot";
+		shotgun_slugshot.scalex = iconscale.x;
+		shotgun_slugshot.scaley = iconscale.y;
+		
+		spw.Push(shotgun_buckshot);
+		spw.Push(shotgun_slugshot);
+		
 		if(requester.FindInventory("DragonBreathUpgrade")) 
 		{
 			PB_SpecialWheel_Mode shotgun_dragonbreath = new ("PB_SpecialWheel_Mode");
@@ -689,25 +718,7 @@ Class PB_PumpShotgunWheel : wheelinfocontainer
 			
 			spw.Push(shotgun_No);
 		}
-
-		PB_SpecialWheel_Mode shotgun_buckshot = new ("PB_SpecialWheel_Mode");
-		shotgun_buckshot.img = "graphics/pywheel/SG_Buck.png";
-		shotgun_buckshot.Alias = "$PB_SG_WHEEL_BUCKSHOT";
-		shotgun_buckshot.tokentogive = "SelectShotgun_Buckshot";
-		shotgun_buckshot.scalex = iconscale.x;
-		shotgun_buckshot.scaley = iconscale.y;
 		
-		
-		PB_SpecialWheel_Mode shotgun_slugshot = new ("PB_SpecialWheel_Mode");
-		shotgun_slugshot.img = "graphics/pywheel/SG_Slug.png";
-		shotgun_slugshot.Alias = "$PB_SG_WHEEL_SLUG";
-		shotgun_slugshot.tokentogive = "SelectShotgun_Slugshot";
-		shotgun_slugshot.scalex = iconscale.x;
-		shotgun_slugshot.scaley = iconscale.y;
-		
-
-		spw.Push(shotgun_buckshot);
-		spw.Push(shotgun_slugshot);
 	}
 }
 
