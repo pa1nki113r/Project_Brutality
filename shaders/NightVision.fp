@@ -12,7 +12,7 @@ void main()
 	vec3 col = texture(InputTexture, TexCoord).rgb;
 
 	// [Ace] Desaturate, fix levels, and colorize.
-	col = mix(vec3(dot(col, vec3(0.5))), col, max(0, 0.5 - length(hsl.y)));
+	col = mix(vec3(dot(col, vec3(0.5))), col, max(0.f, 0.5 - length(hsl.y)));
 	col = pow(col, vec3(0.98)) * exp;
 	col = clamp(pow(col * HSLToRGB(hsl), vec3(0.7)), 0.0, 1.0);
 
