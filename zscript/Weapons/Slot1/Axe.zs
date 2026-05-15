@@ -176,7 +176,7 @@ class PB_Axe : PB_Weapon
         name greenblood, 
         name blueblood, 
         name redblood, 
-        name default, 
+        name defaultsprite, 
         int layer = PSP_WEAPON)
     {
 		let psp = player.findpsprite(layer);
@@ -194,7 +194,7 @@ class PB_Axe : PB_Weapon
             }
         }
         else
-            sprite = default;
+            sprite = defaultsprite;
 
         psp.sprite = GetspriteIndex(sprite);
     }

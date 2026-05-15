@@ -1,3 +1,5 @@
+class BlackHoleDetonator : inventory {default{inventory.maxamount 1;}}
+
 class PB_BFG9000 : PB_Weapon
 {
     Default
@@ -5,7 +7,7 @@ class PB_BFG9000 : PB_Weapon
         //$Category Project Brutality - Weapons
         //$Sprite 097GA0
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
-        SpawnID 9800;
+        // SpawnID 9800;
         Weapon.AmmoGive1 40;
         PB_WeaponBase.OffsetRecoilX 1.9;
         PB_WeaponBase.OffsetRecoilY 1.6;
@@ -35,6 +37,26 @@ class PB_BFG9000 : PB_Weapon
 	// beef: done
     const bfgpartstep       = 30;
 
+//////////////////////////// OVERRIDES ////////////////////////////////////////////////////////////////////////////////////
+    Override void DoEffect()
+    {
+		if (!owner || !owner.player)
+        return;
+
+		let rw = PB_WeaponBase(owner.player.ReadyWeapon);
+		if (!rw)
+        return;
+		
+		if( self.GetClass() is rw.GetClass() ){
+			if( (owner.player.cmd.buttons & BT_RELOAD) && !owner.FindInventory("BlackHoleDetonator") ){
+				owner.A_SetInventory("BlackHoleDetonator",1);owner.A_Startsound("weapons/pbarm",36,CHANF_NOSTOP);
+			}
+			if( !(owner.player.cmd.buttons & BT_RELOAD) && owner.FindInventory("BlackHoleDetonator") ){
+				owner.A_SetInventory("BlackHoleDetonator",0);
+			}
+		}
+	}
+
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
     action bool getBlackholeMode()
     {
@@ -52,62 +74,62 @@ class PB_BFG9000 : PB_Weapon
         {
             // Fire Green
             case 1:
-                switch(tic)
-                {  
-                    case 0:
-                    A_StopSound(CHAN_WEAPON);
-                    A_StartSound("weapons/bfg_chargestart2", CHAN_6);
-                    A_Overlay(-3,"MuzzleFlash");
-                    A_OverlayFlags(-3,PSPF_RENDERSTYLE,true);
-                    A_OverlayRenderStyle(-3,STYLE_Add);
-                    A_AlertMonsters();
-                    break;
-
-                    case 1:
-                    PB_FireOffset();
-				    A_GunFlash();
-                    break;
-
-                    case 2:
-                    A_SetBlend("GREEN",0.5,18);
-                    A_StopSound(CHAN_WEAPON);
-                    A_StopSound(CHAN_6);
-                    A_StartSound("bfg/fire_primary", CHAN_WEAPON);
-                    break;
-
-                    case 3:
-                    A_FireCustomMissile("PB_SuperBFGBall");
-                    A_TakeInventory(invoker.ammo1.getClassName(), ammoTakeGreen, TIF_NOTAKEINFINITE);
-                    A_ZoomFactor(0.98, ZOOM_INSTANT);
-                    A_GunFlash();
-                    A_AlertMonsters();
-                    break;
-
-                    case 4:
-                    A_ZoomFactor(1.0);
-                    break;
-                }
+            switch(tic)
+            {  
+                case 0:
+                A_StopSound(CHAN_WEAPON);
+                A_StartSound("weapons/bfg_chargestart2", CHAN_6);
+                A_Overlay(-3,"MuzzleFlash");
+                A_OverlayFlags(-3,PSPF_RENDERSTYLE,true);
+                A_OverlayRenderStyle(-3,STYLE_Add);
+                A_AlertMonsters();
                 break;
+
+                case 1:
+                PB_FireOffset();
+                A_GunFlash();
+                break;
+
+                case 2:
+                A_SetBlend("GREEN",0.5,18);
+                A_StopSound(CHAN_WEAPON);
+                A_StopSound(CHAN_6);
+                A_StartSound("bfg/fire_primary", CHAN_WEAPON);
+                break;
+
+                case 3:
+                A_FireCustomMissile("PB_SuperBFGBall");
+                A_TakeInventory(invoker.ammo1.getClassName(), ammoTakeGreen, TIF_NOTAKEINFINITE);
+                A_ZoomFactor(0.98, ZOOM_INSTANT);
+                A_GunFlash();
+                A_AlertMonsters();
+                break;
+
+                case 4:
+                A_ZoomFactor(1.0);
+                break;
+            }
+            break;
 
             // Fire Black Hole
             case 2:
-                switch(tic)
-                {
-                    case 0:
-                    A_StopSound(CHAN_WEAPON);
-                    A_StartSound("bh_Charge", CHAN_WEAPON,1.0, ATTN_NORM, false); //CHAN_WEAPON
-                    A_AlertMonsters();
-                    break;
-
-                    case 1:
-                    A_StopSound(CHAN_6);
-                    A_StopSound(CHAN_7);
-                    A_FireCustomMissile("Blackhole_Ball",0,1,0,0);
-                    A_TakeInventory(invoker.ammo1.getClassName(), ammoTakePurple, TIF_NOTAKEINFINITE);
-                    A_AlertMonsters();
-                    break;
-                }
+            switch(tic)
+            {
+                case 0:
+                A_StopSound(CHAN_WEAPON);
+                A_StartSound("bh_Charge", CHAN_WEAPON,1.0, ATTN_NORM, false); //CHAN_WEAPON
+                A_AlertMonsters();
                 break;
+
+                case 1:
+                A_StopSound(CHAN_6);
+                A_StopSound(CHAN_7);
+                A_FireCustomMissile("Blackhole_Ball",0,1,0,0);
+                A_TakeInventory(invoker.ammo1.getClassName(), ammoTakePurple, TIF_NOTAKEINFINITE);
+                A_AlertMonsters();
+                break;
+            }
+            break;
         }
     }
 
@@ -176,7 +198,7 @@ class PB_BFG9000 : PB_Weapon
         }
     }
 
-    acion state BFG_SwitchMode()
+    action state BFG_SwitchMode()
     {
         A_WeaponOffset(0,32);
         PB_SetRoll(0);
@@ -194,14 +216,16 @@ class PB_BFG9000 : PB_Weapon
     action state BFG_Ready()
     {
 		PB_HandleCrosshair(72);
-        string sound;
-		if(getBlackholeMode() && invoker.ammo1.amount > 0) 
-            string = "weapons/bfg_idle";
-        else if(invoker.ammo1.amount > 0) 
-            string = "weapons/bhg_idle";
-        A_StartSound(string, CHAN_WEAPON, CHANF_LOOPING|CHANF_OVERLAP );
 
-        if(invoker.ammo1.amount => 1)
+        string snd;
+		if(getBlackholeMode() && invoker.ammo1.amount > 0) 
+            snd = "weapons/bfg_idle";
+        else if(invoker.ammo1.amount > 0) 
+            snd = "weapons/bhg_idle";
+
+        A_StartSound(snd, CHAN_WEAPON, CHANF_LOOPING|CHANF_OVERLAP);
+
+        if(invoker.ammo1.amount >= 1)
             return ResolveState("ReadyToFire");
         else
             return ResolveState("ReadyToFire2");
@@ -225,7 +249,7 @@ class PB_BFG9000 : PB_Weapon
     action void BFG_ChangeSprite(
         name blackHole, 
         name empty = '', 
-        name default =,
+        name defaultsprite = '',
         int layer = PSP_WEAPON,
         bool checkPurpleOnly = false)
     {
@@ -239,7 +263,7 @@ class PB_BFG9000 : PB_Weapon
         else if(invoker.ammo1.amount <= 0 && !checkPurpleOnly)
             sprite = empty;
         else
-            sprite = default;
+            sprite = defaultsprite;
 
         psp.sprite = GetspriteIndex(sprite);
     }
@@ -427,7 +451,7 @@ class PB_BFG9000 : PB_Weapon
 			TNT1 A 0 A_StartSound("weapons/bfg_brap", CHAN_AUTO);
 			009G ABCD 1 A_DoPBWeaponAction();
 			009G EFGHIJKLMNOPQRST 1 A_DoPBWeaponAction();
-			TNT1 A 0 A_JumpIf(invoker.ammo1.amount => 1, "Ready3"); // Jump to ready if have cells
+			TNT1 A 0 A_JumpIf(invoker.ammo1.amount >= 1, "Ready3"); // Jump to ready if have cells
 		RespectButEmpty:
 			TNT1 A 0 A_StartSound("weapons/railgun/deselectblue", CHAN_AUTO);
 			017G ABCDEFGHIJKLMNOP 1;
@@ -469,18 +493,18 @@ class PB_BFG9000 : PB_Weapon
 			TNT1 A 0 BFG_Ready();
         ReadyToFire:
 			011G ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 {
-                BFG_ChangeSprite("021G", default:"011G", checkPurpleOnly: true);
+                BFG_ChangeSprite("021G", defaultsprite:"011G", checkPurpleOnly: true);
 				return A_DoPBWeaponAction();
 			}
 			012G ABCD 1 {
-                BFG_ChangeSprite("022G", default:"012G", checkPurpleOnly: true);
+                BFG_ChangeSprite("022G", defaultsprite:"012G", checkPurpleOnly: true);
 				return A_DoPBWeaponAction();
 			}
 			Loop;
 
         // This is basically Ready Empty
         ReadyToFire2:
-            TNT1 A 0 A_JumpIf(invoker.ammo1.amount => 1, "PowerOn");
+            TNT1 A 0 A_JumpIf(invoker.ammo1.amount >= 1, "PowerOn");
 			046G A 1 A_DoPBWeaponAction();
 			Loop;
 
@@ -491,11 +515,11 @@ class PB_BFG9000 : PB_Weapon
             // Actual PowerOn
 			TNT1 A 0 A_StartSound("weapons/bfg_switch", CHAN_WEAPON, CHANF_OVERLAP );
 			017G QRSTUVWXYZ 1 {
-                BFG_ChangeSprite("019G", default:"017G", checkPurpleOnly: true);
+                BFG_ChangeSprite("019G", defaultsprite:"017G", checkPurpleOnly: true);
 				return A_DoPBWeaponAction();
 			}
 			018G ABCD 1 {
-                BFG_ChangeSprite("020G", default:"018G", checkPurpleOnly: true);
+                BFG_ChangeSprite("020G", defaultsprite:"018G", checkPurpleOnly: true);
 				return A_DoPBWeaponAction();
             }
 			Goto Ready3;
@@ -573,15 +597,15 @@ class PB_BFG9000 : PB_Weapon
         FailedToFire:
             TNT1 A 0 A_JumpIf(invoker.ammo1.amount == 0, "FailedToFireEmpty");
 			TNT1 A 0 A_StartSound("weapons/railgun/deselectblue", CHAN_AUTO);
-			017G ABCDEFGHIJKLMNO 1 BFG_ChangeSprite("019G", default:"017G", checkPurpleOnly: true);
+			017G ABCDEFGHIJKLMNO 1 BFG_ChangeSprite("019G", defaultsprite:"017G", checkPurpleOnly: true);
 			TNT1 A 0 A_StartSound("weapons/empty", CHAN_AUTO);
-			017G PPPPPPP 1 BFG_ChangeSprite("019G", default:"017G", checkPurpleOnly: true);
-			017G PP 1 BFG_ChangeSprite("019G", default:"017G", checkPurpleOnly: true);
+			017G PPPPPPP 1 BFG_ChangeSprite("019G", defaultsprite:"017G", checkPurpleOnly: true);
+			017G PP 1 BFG_ChangeSprite("019G", defaultsprite:"017G", checkPurpleOnly: true);
 			TNT1 A 0 A_StartSound("weapons/empty", CHAN_AUTO);
-			017G PPPPPPP 1 BFG_ChangeSprite("019G", default:"017G", checkPurpleOnly: true);
+			017G PPPPPPP 1 BFG_ChangeSprite("019G", defaultsprite:"017G", checkPurpleOnly: true);
             TNT1 A 0 A_JumpIf(invoker.ammo1.amount == 0, "Ready3");
-			017G QRSTUVWXYZ 1 BFG_ChangeSprite("019G", default:"017G", checkPurpleOnly: true);
-			018G ABCD 1 BFG_ChangeSprite("020G", default:"018G", checkPurpleOnly: true);
+			017G QRSTUVWXYZ 1 BFG_ChangeSprite("019G", defaultsprite:"017G", checkPurpleOnly: true);
+			018G ABCD 1 BFG_ChangeSprite("020G", defaultsprite:"018G", checkPurpleOnly: true);
 			Goto Ready3;
 
         FailedToFireEmpty:
@@ -604,13 +628,13 @@ class PB_BFG9000 : PB_Weapon
 		BeamLoop:
 			016G GHIJKL 1 {
 				BFG_AltFire(1,3);
-                if(invoker.ammo1 < 1)
+                if(invoker.ammo1.amount < 1)
 				if(CountInv("PB_Cell") < 1)
                     return ResolveState("AltHoldStop");
                 return ResolveState(null);
 			}
 			TNT1 A 0 A_StartSound("Leech/Fire", CHAN_WEAPON, CHANF_LOOPING);
-			TNT1 A 0 PB_ReFire("BeamLoop")
+			TNT1 A 0 PB_ReFire("BeamLoop");
 		AltHoldStop:
 			TNT1 A 0 BFG_AltFire(1,4);
 			016G MNOPQR 1;
@@ -636,7 +660,7 @@ class PB_BFG9000 : PB_Weapon
 			035G ABCDEFGGGHIJKLMNO 0;
             // Actual Kick
 			033G ABCDEFGGGHIJKLMNO 1 BFG_ChangeSprite("034G","035G","033G");
-			Goto Ready3
+			Goto Ready3;
 			
 		FlashSlideKicking:
             // Cache Sprites
@@ -698,7 +722,7 @@ class BlackHole_GravityBomb : actor
         Spawn:
 			TNT1 A 0 NoDelay A_StartSound("PLSBULB", CHAN_5, CHANF_LOOPING);
 		Fly:
-			031G ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 bright Light("BlackholeBallSmall");{
+			031G ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 bright Light("BlackholeBallSmall"){
 				A_SpawnItemEx("PurpleTrailSparksSmall", 0, 0, 0, 0, 0, 0, 0, 128);
 				A_SetRoll(roll-10);
 			}	
@@ -786,8 +810,8 @@ class TinyBlackHoleSingularity : BlackHoleSingularity
 {
     Default
     {
-        Alpha .9
-        Scale 1.35
+        Alpha .9;
+        Scale 1.35;
     }
 }
 
@@ -909,7 +933,7 @@ class Blackhole_Ball : actor
 				A_Explode(20,90,0);
 				A_SpawnItemEx("PurpleTrailSparks", 0, 0, 8, 0, 0, 0, 0, 128);
 				A_RadiusThrust(-100,100, RTF_NOIMPACTDAMAGE);
-				return resolvestate("");
+				return resolvestate(null);
 			}
 			030G ABCD 1 Bright Light("BlackholeBall")  {
 				if(CountInv("BlackHoleDetonator", AAPTR_TARGET) >=1) 
@@ -917,7 +941,7 @@ class Blackhole_Ball : actor
 				A_Explode(20,90,0);
 				A_SpawnItemEx("PurpleTrailSparks", 0, 0, 8, 0, 0, 0, 0, 128);
 				A_RadiusThrust(-100,100, RTF_NOIMPACTDAMAGE);
-				return resolvestate("");
+				return resolvestate(null);
 			}
 			loop;
 			
@@ -962,7 +986,7 @@ class BlackHOL : actor
     States
 	{
 		Spawn:
-		TNT1 A 0
+		TNT1 A 0;
 		TNT1 A 1 A_StartSound("bh_Charge", CHAN_5, 1.0, ATTN_NORM, false);
 		TNT1 A 150 A_StartSound("bh/Fire", 3, 1.0, ATTN_NORM, false);
 		
@@ -994,7 +1018,7 @@ class BlackHole : actor
         Radius 20;
         Height 20;
         Speed 0;
-        SpawnID 176;
+        // SpawnID 176;
         Projectile;
         //+NOCLIP;
         +NOBLOCKMAP;
@@ -1010,9 +1034,9 @@ class BlackHole : actor
         +Friendly;
         +DONTSPLASH;
         +RollSprite;
-        RenderStyle Normal;
+        RenderStyle "Normal";
     //	RenderStyle Add;
-        Damagetype BlackHole;
+        Damagetype "BlackHole";
         Scale 0.05;
         ReactionTime 360;
         Obituary "%o got absorbed by the darkness.";
@@ -1087,7 +1111,7 @@ class BFGDeathParticle : Actor
         -NOGRAVITY;
         +LOWGRAVITY;
         +DONTSPLASH;
-        +DOOMBOUNCETYPE;
+        // +DOOMBOUNCETYPE;
         +SQUAREPIXELS;
         +FORCEXYBILLBOARD;
         BounceFactor 0.5;
@@ -1233,7 +1257,7 @@ class BFGLooker : Actor
 {
     Default
     {
-        +MONSTER;
+        // +MONSTER;
         Scale 0.5;
         RenderStyle "None";
         Obituary "%o was dealt green hot death by %k's BFG9000!";
@@ -1290,7 +1314,7 @@ class SuperBFGBall : Actor
 {
     Default
     {
-        +PROJECTILE;
+        // +PROJECTILE;
         Speed 24;
         RenderStyle "Normal";
         Scale 0.9;
@@ -1623,7 +1647,7 @@ class BFGSmallSphere : Actor
         Height 8;
         Speed 40;
         FastSpeed 50;
-        +PROJECTILE;
+        // +PROJECTILE;
         +FORCEXYBILLBOARD;
         -THRUGHOST;
         Damage 30;
@@ -2190,12 +2214,12 @@ class LightningBall : FastProjectile
         Speed 80;
         Height 8;
         Radius 8;
-        Damage (random(0, 1));
+        Damage 1;
         Scale 0.55;
         RenderStyle "Add";
         Alpha 0.95;
         DeathSound "LightningHit";
-        +PROJECTILE;
+        // +PROJECTILE;
         Decal "Scorch";
         +NOBLOCKMAP;
         +DROPOFF;
@@ -2206,6 +2230,7 @@ class LightningBall : FastProjectile
         +SEEKERMISSILE;
         DamageType "Plasma";
     }
+
     States
     {
         Spawn:
