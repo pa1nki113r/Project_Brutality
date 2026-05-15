@@ -47,25 +47,25 @@ class PB_Axe : PB_Weapon
             default:
             // Swing 1
             case 1:
-                switch(tic)
-                {
-                    case 0:
-                    A_PlaySound("AXSWING");
-                    PB_SetRoll(0);
-				    Axe_SetSequence(1);
-                    break;
+            switch(tic)
+            {
+                case 0:
+                A_PlaySound("AXSWING");
+                PB_SetRoll(0);
+                Axe_SetSequence(1);
+                break;
 
-                    case 1: case 2:
-                    Axe_ChangeModeSprite("AX13","AX12","AX11","AX10");
-				    PB_SetRoll(roll-1.0);
-				    A_SetAngle(angle+0.5, SPF_INTERPOLATE);
-                    break;
+                case 1: case 2:
+                Axe_ChangeModeSprite("AX13","AX12","AX11","AX10");
+                PB_SetRoll(roll-1.0);
+                A_SetAngle(angle+0.5, SPF_INTERPOLATE);
+                break;
 
-                    case 3: case 4:
-				    PB_SetRoll(roll+1.0);
-				    A_SetAngle(angle-0.5, SPF_INTERPOLATE);
-                    break;
-                }
+                case 3: case 4:
+                PB_SetRoll(roll+1.0);
+                A_SetAngle(angle-0.5, SPF_INTERPOLATE);
+                break;
+            }
             break;
 
             // Swing 2
@@ -73,72 +73,72 @@ class PB_Axe : PB_Weapon
             switch(tic)
             {
                 case 0:
-                    A_PlaySound("AXSWING");
-                    PB_SetRoll(0);
-                    if(Axe_GetSequence() == 2) {
-                        A_OverlayFlags(PSP_WEAPON, PSPF_FLIP|PSPF_MIRROR, true);
-                        Axe_SetSequence(1);
-                    } else {
-                        A_OverlayFlags(PSP_WEAPON, PSPF_FLIP|PSPF_MIRROR, false);
-                        Axe_SetSequence(2);
-                    }
-                    break;
+                A_PlaySound("AXSWING");
+                PB_SetRoll(0);
+                if(Axe_GetSequence() == 2) {
+                    A_OverlayFlags(PSP_WEAPON, PSPF_FLIP|PSPF_MIRROR, true);
+                    Axe_SetSequence(1);
+                } else {
+                    A_OverlayFlags(PSP_WEAPON, PSPF_FLIP|PSPF_MIRROR, false);
+                    Axe_SetSequence(2);
+                }
+                break;
 
                 case 1: case 2:
-                    Axe_ChangeModeSprite("AX23","AX22","AX21","AX20");
-                    PB_SetRoll(roll - 1.0);
-                    A_SetAngle(angle + (tic == 1 ? 1.0 : 0.5), SPF_INTERPOLATE);
-                    break;
+                Axe_ChangeModeSprite("AX23","AX22","AX21","AX20");
+                PB_SetRoll(roll - 1.0);
+                A_SetAngle(angle + (tic == 1 ? 1.0 : 0.5), SPF_INTERPOLATE);
+                break;
 
                 case 3: case 4:
-                    PB_SetRoll(roll + 1.0);
-                    A_SetAngle(angle - 0.5, SPF_INTERPOLATE);
-                    break;
+                PB_SetRoll(roll + 1.0);
+                A_SetAngle(angle - 0.5, SPF_INTERPOLATE);
+                break;
             }
             break;
 
             // Throw Axe (Altfire)
             case 3:
-                switch(tic)
-                {
-                    // Start Altfire
-                    case 0:
-                    A_WeaponOffset(0,32);
-                    PB_SetRoll(0);
-                    PB_HandleCrosshair(90);
-                    A_SetInventory("PB_LockScreenTilt",1);
-                    A_PlaySound("AXTHROW");
-                    break;
+            switch(tic)
+            {
+                // Start Altfire
+                case 0:
+                A_WeaponOffset(0,32);
+                PB_SetRoll(0);
+                PB_HandleCrosshair(90);
+                A_SetInventory("PB_LockScreenTilt",1);
+                A_PlaySound("AXTHROW");
+                break;
 
-                    case 1:
-				    PB_SetRoll(roll+0.5);
-                    break;
-                    
-                    // Hold ALtfire
-                    case 2:
-                    A_PlaySound("AXSWING", 1);
-				    A_PlaySound("weapons/axe/throw", 3);
-                    break;
+                case 1:
+                PB_SetRoll(roll+0.5);
+                break;
+                
+                // Hold ALtfire
+                case 2:
+                A_PlaySound("AXSWING", 1);
+                A_PlaySound("weapons/axe/throw", 3);
+                break;
 
-                    case 3:
-				    PB_SetRoll(roll-5.0);
-                    break;
-                    
-                    // Throw Axe
-                    case 4:
-                    Axe_Throw();
-                    A_SetInventory("HasCutingWeapon",0);
-                    break;
+                case 3:
+                PB_SetRoll(roll-5.0);
+                break;
+                
+                // Throw Axe
+                case 4:
+                Axe_Throw();
+                A_SetInventory("HasCutingWeapon",0);
+                break;
 
-                    case 5:
-				    PB_SetRoll(roll+4.25);
-                    break;
+                case 5:
+                PB_SetRoll(roll+4.25);
+                break;
 
-                    case 6:
-				    PB_SetRoll(0);
-				    A_SetInventory("PB_LockScreenTilt",0);
-                    break;
-                }
+                case 6:
+                PB_SetRoll(0);
+                A_SetInventory("PB_LockScreenTilt",0);
+                break;
+            }
             break;
         }
     }
