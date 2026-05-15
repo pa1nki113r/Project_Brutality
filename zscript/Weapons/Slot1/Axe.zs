@@ -76,10 +76,10 @@ class PB_Axe : PB_Weapon
                     A_PlaySound("AXSWING");
                     PB_SetRoll(0);
                     if(Axe_GetSequence() == 2) {
-                        A_OverlayFlags(1, PSPF_FLIP|PSPF_MIRROR, true);
+                        A_OverlayFlags(PSP_WEAPON, PSPF_FLIP|PSPF_MIRROR, true);
                         Axe_SetSequence(1);
                     } else {
-                        A_OverlayFlags(1, PSPF_FLIP|PSPF_MIRROR, false);
+                        A_OverlayFlags(PSP_WEAPON, PSPF_FLIP|PSPF_MIRROR, false);
                         Axe_SetSequence(2);
                     }
                     break;
@@ -180,8 +180,7 @@ class PB_Axe : PB_Weapon
         int layer = PSP_WEAPON)
     {
 		let psp = player.findpsprite(layer);
-		if(!psp)
-			return;
+		if(!psp) return;
 
         name sprite;
 
@@ -210,9 +209,6 @@ class PB_Axe : PB_Weapon
 			"####" A 0 A_PbvpInterpolate();
 			loop;
 
-        Steady:
-            TNT1 A 0;
-            Goto Ready;
         Deselect:
            TNT1 A 0 {
 				A_WeaponOffset(0,32);
@@ -227,15 +223,21 @@ class PB_Axe : PB_Weapon
 			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower();
 			TNT1 A 1 A_Lower();
 			Wait;
+            
 		Select:
-			TNT1 A 0 PB_WeapTokenSwitch("HasCutingWeapon");
-			TNT1 A 0 PB_ResetVisorBloodTokens();
-			TNT1 A 0 PB_WeaponRaise("AXEDRAW");
+			TNT1 A 0 {
+                PB_WeapTokenSwitch("HasCutingWeapon");
+				PB_HandleCrosshair(90);
+			    PB_ResetVisorBloodTokens();
+                PB_WeaponRaise("AXEDRAW");
+			    return PB_RespectIfNeeded();
+            }
+        // No Weapon Special
 		SelectAnimation:
 			AX00 ABCD 1 Axe_ChangeModeSprite("AX03","AX02","AX01","AX00");
         WeaponSpecial:
 			TNT1 A 0 A_SetInventory("GoWeaponSpecialAbility",0);
-        // Fallthrough to ready
+            // Fallthrough to ready
 //////////////////////////// READY ////////////////////////////////////////////////////////////////////////////////////
         Ready3:
             // Cache Sprites
@@ -303,7 +305,7 @@ class PB_Axe : PB_Weapon
 				return A_DoPBWeaponAction();
 			}
 			TNT1 A 0 PB_ReFire("Swing2");
-			TNT1 A 0 A_OverlayFlags(1,PSPF_FLIP|PSPF_MIRROR,false);
+			TNT1 A 0 A_OverlayFlags(PSP_WEAPON,PSPF_FLIP|PSPF_MIRROR,false);
 			AX00 ABCD 1 Axe_ChangeModeSprite("AX03","AX02","AX01","AX00");
 			Goto Ready3;
 
