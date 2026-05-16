@@ -29,15 +29,16 @@ class PB_MG42 : PB_Weapon
         +WEAPON.NOAUTOFIRE;
         +WEAPON.NOALERT;
         +FLOORCLIP;
-        +dontgib;
+        +DONTGIB;
         
     }
 
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
     bool barrelOverheating;
-    bool hasOverheated;
+    bool hasOverheated; // Checks for the MG42 heat meter to increase higher if the barrel has overheated
     bool isADS; // This is basically useless since pb still uses that zoomed token lol
     const ammoTake              = 1; // Just for consistency
+    // Overlays
     const coolingOverlay        = 3;
     const selectOverlay         = 999;
     const beltOverlay           = 5;
@@ -326,6 +327,8 @@ class PB_MG42 : PB_Weapon
 		    MGSE F 1;
             TNT1 A 0 A_Overlay(selectOverlay,"SelectBelt");
 		    MGSE DCB 1;
+        WeaponSpecial:
+			TNT1 A 0 A_SetInventory("GoWeaponSpecialAbility",0);
         // Fallthrough to ready
 //////////////////////////// READY ////////////////////////////////////////////////////////////////////////////////////
         Ready3:
