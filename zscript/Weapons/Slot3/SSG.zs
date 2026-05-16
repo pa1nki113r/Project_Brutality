@@ -15,7 +15,18 @@ Class SSGAmmoCounter : PB_WeaponAmmo
 	}
 }
 
-class LeftSSGAmmo : SSGAmmoCounter {}
+Class LeftSSGAmmo : PB_WeaponAmmo
+{
+	default
+	{
+		Inventory.Amount 0;
+		Inventory.MaxAmount PB_SSGFullAmmo;
+		Ammo.BackpackAmount 0;
+		Ammo.BackpackMaxAmount PB_SSGFullAmmo;
+		+INVENTORY.IGNORESKILL;
+		Inventory.Icon "SGN3A0";
+	}
+}
 
 // The Actual Weapon
 class PB_SSG : PB_Weapon
@@ -46,7 +57,7 @@ class PB_SSG : PB_Weapon
         Inventory.PickupSound "CLIPINQS";
         Inventory.PickupMessage "$PB_SSG_PICKUP";
         Obituary "%o was splattered by %k's SSG";
-	    Tag "$PB_SSG_TAG"
+	    Tag "$PB_SSG_TAG";
         //FloatBobStrength 0.5
 //////////////////////////// WEAPON FLAGS ////////////////////////////////////////////////////////////////////////////////////
         +WEAPON.NOAUTOAIM;
@@ -77,32 +88,32 @@ class PB_SSG : PB_Weapon
     
     action int getSpentR()
     {
-        return invoker.ssgSpentR
+        return invoker.ssgSpentR;
     }
 
     action int getSpentL()
     {
-        return invoker.ssgSpentL
+        return invoker.ssgSpentL;
     }
 
     action int getFireAnimation()
     {
-        return invoker.ssgFireAnimation
+        return invoker.ssgFireAnimation;
     }
 
     action void setSpentR(int set)
     {
-        invoker.ssgSpentR = set
+        invoker.ssgSpentR = set;
     }
 
     action void setSpentL(int set)
     {
-        invoker.ssgSpentL = set
+        invoker.ssgSpentL = set;
     }
 
     action void setFireAnimation(int set)
     {
-        invoker.ssgFireAnimation = set
+        invoker.ssgFireAnimation = set;
     }
 
     action void SSG_Altfire(int tic, bool isLeft)
@@ -229,7 +240,7 @@ class PB_SSG : PB_Weapon
         // Ammo
         int ammoToTake = singleShot ? ammoTakeHalf : ammoTakeFull;
         if (isLeft)
-            PB_TakeAmmo(invoker.ammotypeleft.getClassName(), ammoToTake, 0, 0, true);
+            PB_TakeAmmo(invoker.AmmoLeft.getClassName(), ammoToTake, 0, 0, true);
         else
             PB_TakeAmmo("SSGAmmoCounter", ammoToTake, 0);
 
@@ -246,7 +257,7 @@ class PB_SSG : PB_Weapon
     {
         int    flashLayer = isLeft ? LEFTMUZZLEFLASH : RIGHTMUZZLEFLASH;
         double recoilY    = isLeft ? +2.40 : -2.40;
-        int    ammoNow    = isLeft ? invoker.ammotypeleft.amount : invoker.ammo2.amount;
+        int    ammoNow    = isLeft ? invoker.AmmoLeft.amount : invoker.ammo2.amount;
 
         switch(tic)
         {
@@ -278,17 +289,17 @@ class PB_SSG : PB_Weapon
 
             case 6:
                 if (isLeft) {
-                    if (invoker.ammotypeleft.amount <= 0 || invoker.ammo2.amount > 0)
+                    if (invoker.AmmoLeft.amount <= 0 || invoker.ammo2.amount > 0)
                         A_GiveInventory("DualFiring", 1);
                 }
                 else {
-                    if (invoker.ammotypeleft.amount > 0 || invoker.ammo2.amount <= 0)
+                    if (invoker.AmmoLeft.amount > 0 || invoker.ammo2.amount <= 0)
                         A_TakeInventory("DualFiring", 1);
                 }
                 break;
 
             case 7:
-                if (isLeft && invoker.ammotypeleft.amount <= 0)
+                if (isLeft && invoker.AmmoLeft.amount <= 0)
                     A_GiveInventory("DualFireReload", 1);
                 else if (!isLeft && invoker.ammo2.amount <= 0)
                     A_GiveInventory("DualFireReload", 1);
@@ -335,7 +346,7 @@ class PB_SSG : PB_Weapon
         A_SetFiringLeftWeapon(False);
         A_TakeInventory("DualFiring",1);
         A_Overlay(LEFTGUNOVERLAY, "IdleLeft_Overlay", false);
-        A_Overlay(11, "IdleRight_Overlay", false);
+        A_Overlay(RIGHTGUNOVERLAY, "IdleRight_Overlay", false);
     }
 
     action state SSG_Ready()
@@ -391,9 +402,9 @@ class PB_SSG : PB_Weapon
                 PB_SetRoll(0);
                 A_SetInventory("PB_LockScreenTilt",0);
             }
-            TNT1 A 0 A_SetInventory("SSGSelected",0) 
-            TNT1 A 0 //A_JumpIfInventory("PB_QuadSG",1,"DeselectUpgrade")
-            TNT1 A 0 A_JumpIf(A_CheckAkimbo(),"DeselectAnimationDualWield")
+            TNT1 A 0 A_SetInventory("SSGSelected",0) ;
+            TNT1 A 0; //A_JumpIfInventory("PB_QuadSG",1,"DeselectUpgrade")
+            TNT1 A 0 A_JumpIf(A_CheckAkimbo(),"DeselectAnimationDualWield");
             SHO9 FEDC 1;
             TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower();
             Wait;
@@ -415,18 +426,18 @@ class PB_SSG : PB_Weapon
 			    return PB_RespectIfNeeded();
             }
         SelectAnimation:
-		    TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "SelectAnimationDualWield")
+		    TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "SelectAnimationDualWield");
 		    SG1S DCBA 1;
         // Fallthrough to ready
 //////////////////////////// READY ////////////////////////////////////////////////////////////////////////////////////
         Ready3:
 		    TNT1 A 0 SSG_Ready();
 	    ReadyToFire:	
-            TNT1 A 0 PB_SelectIfUpgrade("PB_QuadSG") //A_SelectWeapon("PB_QuadSG")
+            TNT1 A 0 PB_SelectIfUpgrade("PB_QuadSG"); //A_SelectWeapon("PB_QuadSG")
             SHT3 A 1 {
                 PB_CoolDownBarrel(2, 0, 3);
                 PB_CoolDownBarrel(-2, 0, 3);
-                if (PressingFire() && invoker.ammotypeleft.amount > 0 ){
+                if (PressingFire() && invoker.AmmoLeft.amount > 0 ){
                         return ResolveState("Fire");
                 }
                 return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
@@ -441,8 +452,8 @@ class PB_SSG : PB_Weapon
             TNT1 A 0 PB_SelectIfUpgrade("PB_QuadSG"); //A_SelectWeapon("PB_QuadSG")
             TNT1 A 0 SSG_ReadyDual();
         ReadyToFireDualWield:
-            TNT1 A 0 PB_SelectIfUpgrade("PB_QuadSG")
-            TNT1 A 0 A_DoPBDualAction();
+            TNT1 A 0 PB_SelectIfUpgrade("PB_QuadSG");
+            TNT1 A 1 A_DoPBDualAction();
             Loop;
 
         IdleLeft_Overlay:
@@ -493,7 +504,7 @@ class PB_SSG : PB_Weapon
         
         Fire:
             TNT1 A 0 SSG_FireNormal(0);
-            TNT1 A 0 PB_JumpIfNoAmmo("AltFire2",2,true,true,"")
+            TNT1 A 0 PB_JumpIfNoAmmo("AltFire2",2,true,true,"");
             SHO9 A 1 BRIGHT SSG_FireNormal(1);
             SHO9 B 1 BRIGHT SSG_FireNormal(2);
             SHO8 C 1        SSG_FireNormal(3);
@@ -504,11 +515,11 @@ class PB_SSG : PB_Weapon
 
 //////////////////////////// ALTFIRE ////////////////////////////////////////////////////////////////////////////////////
         AltFire:
-            TNT1 A 0 SSG_AltfireShared(0, isLeft:false);
-            TNT1 A 0 PB_JumpIfNoAmmo("AltFire2", 2, true, true, "")
-            SHTA A 1 BRIGHT SSG_AltfireShared(1, isLeft:false);
-            SHTA B 1 BRIGHT SSG_AltfireShared(2, isLeft:false);
-            SHO8 C 1        SSG_AltfireShared(3, isLeft:false);
+            TNT1 A 0 SSG_Altfire(0, isLeft:false);
+            TNT1 A 0 PB_JumpIfNoAmmo("AltFire2", 2, true, true, "");
+            SHTA A 1 BRIGHT SSG_Altfire(1, isLeft:false);
+            SHTA B 1 BRIGHT SSG_Altfire(2, isLeft:false);
+            SHO8 C 1        SSG_Altfire(3, isLeft:false);
             SHO8 LCM 1;
             SHT3 A 2;
             TNT1 A 0 PB_ReFire("AltFire2");
@@ -516,9 +527,9 @@ class PB_SSG : PB_Weapon
 
         AltFire2:
             TNT1 A 0 PB_JumpIfNoAmmo();
-            SHTA C 1 BRIGHT SSG_AltfireShared(1, isLeft:true);
-            SHTA D 1 BRIGHT SSG_AltfireShared(2, isLeft:true);
-            SHO8 C 1        SSG_AltfireShared(3, isLeft:true);
+            SHTA C 1 BRIGHT SSG_Altfire(1, isLeft:true);
+            SHTA D 1 BRIGHT SSG_Altfire(2, isLeft:true);
+            SHO8 C 1        SSG_Altfire(3, isLeft:true);
             SHO8 LCM 1;
             Goto Reload;
 
@@ -621,7 +632,7 @@ class PB_SSG : PB_Weapon
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/open", "Auto");
             SGAR KJOP 1;
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/open2", "Auto");
-            TNT1 A 0 A_JumpIf(invoker.ammo2.amount >= 1, "HalfReloadRight")
+            TNT1 A 0 A_JumpIf(invoker.ammo2.amount >= 1, "HalfReloadRight");
             TNT1 A 0 {
                 if(getSpentR() > 0) {
                     PB_SpawnCasing("ShotgunCasing",14,-3,30,-1,4,4);
@@ -646,7 +657,7 @@ class PB_SSG : PB_Weapon
             SG11 FGHIJKLMNO 1;
             SGAR QR 1;
             TNT1 A 3;
-            TNT1 A 0 A_JumpIf(invoker.ammotypeleft.amount == 2 || invoker.ammo1.amount < 1, "FinishReloadDualWield")
+            TNT1 A 0 A_JumpIf(invoker.AmmoLeft.amount == 2 || invoker.ammo1.amount < 1, "FinishReloadDualWield");
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
             Goto ReloadLeft;
 
@@ -662,7 +673,7 @@ class PB_SSG : PB_Weapon
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/open", "Auto");
             SGAL KJOP 1;
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/open2", "Auto");
-            TNT1 A 0 A_JumpIf(invoker.ammotypeleft.amount >= 1, "HalfReloadLeft");
+            TNT1 A 0 A_JumpIf(invoker.AmmoLeft.amount >= 1, "HalfReloadLeft");
             TNT1 A 0 {
                 if(getSpentL() > 1) {
                     PB_SpawnCasing("ShotgunCasing",14,3,30,-1,-5,4);
@@ -676,7 +687,7 @@ class PB_SSG : PB_Weapon
             S1AL CDE 1 PB_SetRoll(roll+1.0);
             TNT1 A 0 {
                 A_PlaySoundEx("weapons/ssg/inspect2", "Auto");
-                PB_AmmoIntoMag(invoker.ammotypeleft.getClassName(), invoker.ammo1.getClassName(), PB_SSGFullAmmo);
+                PB_AmmoIntoMag(invoker.AmmoLeft.getClassName(), invoker.ammo1.getClassName(), PB_SSGFullAmmo);
                 PB_SetMagEmpty(false,true);
                 PB_SetChamberEmpty(false,true);
             }
@@ -700,7 +711,7 @@ class PB_SSG : PB_Weapon
             SG10 ABC 1 PB_SetRoll(roll+0.5);
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/open", "Auto");
             SG10 DEF 1 PB_SetRoll(roll+0.5);
-            TNT1 A 0 A_JumpIf(CountInv("SSGAmmoCounter") < 1,"UnloadEmpty")
+            TNT1 A 0 A_JumpIf(invoker.ammo2.amount < 1,"UnloadEmpty");
             SG10 Y 1 PB_SetRoll(roll+0.5);
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/open2", "Auto");
             SG10 XW 1;
@@ -743,13 +754,13 @@ class PB_SSG : PB_Weapon
                 getSpentR() == 0 && 
                 PB_GetChamberEmpty(true) && 
                 getSpentL() == 0, 
-                "Ready3")
+                "Ready3");
             TNT1 A 0 A_ClearOverlays(LEFTGUNOVERLAY, RIGHTGUNOVERLAY);
             P6SS ED 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
             P6SS CBA 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
             TNT1 A 3;
-            TNT1 A 0 A_JumpIf(getSpentR == 0 && PB_GetChamberEmpty(),"UnloadLeft");
+            TNT1 A 0 A_JumpIf(getSpentR() == 0 && PB_GetChamberEmpty(),"UnloadLeft");
             SGAR ABCDEFGHI 1;
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/open", "Auto");
             SGAR KJOP 1;
@@ -793,14 +804,14 @@ class PB_SSG : PB_Weapon
             SGAL ABCDEFGHI 1;
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/open", "Auto");
             SGAL KJOP 1;
-            TNT1 A 0 A_JumpIf(invoker.ammotypeleft.amount < 1, "UnloadEmptyLeft");
+            TNT1 A 0 A_JumpIf(invoker.AmmoLeft.amount < 1, "UnloadEmptyLeft");
             S1AL F 1;
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/open2", "Auto");
             S1AL ED 1;
             TNT1 A 0 {
                 setSpentL(0);
                 A_PlaySound("weapons/ssg/inspect2", 0);
-                PB_UnloadMag(invoker.ammotypeleft.getClassName(),invoker.ammo1.getClassName(),1,1,1,0,"PB_SingleShell");
+                PB_UnloadMag(invoker.AmmoLeft.getClassName(),invoker.ammo1.getClassName(),1,1,1,0,"PB_SingleShell");
                 PB_SetChamberEmpty(true,true);
                 PB_SetMagEmpty(true,true);
             }
@@ -816,7 +827,7 @@ class PB_SSG : PB_Weapon
                 PB_SpawnCasing("ShotgunCasing",15,-3,30,-1,-4,4);
                 setSpentL(0);
                 A_PlaySound("weapons/ssg/inspect2", 0);
-                PB_UnloadMag(invoker.ammotypeleft.getClassName(),invoker.ammo1.getClassName(),1,1,1,0,"PB_SingleShell");
+                PB_UnloadMag(invoker.AmmoLeft.getClassName(),invoker.ammo1.getClassName(),1,1,1,0,"PB_SingleShell");
                 PB_SetChamberEmpty(true,true);
                 PB_SetMagEmpty(true,true);
             }
@@ -859,7 +870,7 @@ class PB_SSG : PB_Weapon
             P6SK ABCDEFGGGFEDCBA 1;
             P6SK AAA 1;
             Goto Ready3;
-        DualWieldFlashSlideKicking:;
+        DualWieldFlashSlideKicking:
             P6SK ABCDEFGGGGGGGGGGGGGFEDCBA 1;
             Goto Ready3;
         DualWieldFlashSlideKickingStop:
