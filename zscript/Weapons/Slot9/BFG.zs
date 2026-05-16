@@ -30,9 +30,12 @@ class PB_BFG9000 : PB_Weapon
 
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
     bool blackholeMode;
-    // Reduce them boilerplates
-    const ammoTakeGreen     = 40;
-    const ammoTakePurple    = 80;
+    // How many cells should it take for each mode
+    const ammoTakeGreen     = 40;   // Fire Normal BFG
+    const ammoTakePurple    = 80;   // Fire Black Hole
+    const ammoTakeGreenAlt  = 1;    // Fire Laser (takes per tic) 
+    const ammoTakePurpleAlt = 30;   // Fire Gravity Bomb
+    
 	//temporal thing for the bfg alt fire, move this to the bfg when/if it gets rewritten in zscript
 	// beef: done
     const bfgpartstep       = 30;
@@ -43,11 +46,12 @@ class PB_BFG9000 : PB_Weapon
 		if (!owner || !owner.player)
         return;
 
-		let rw = PB_WeaponBase(owner.player.ReadyWeapon);
-		if (!rw)
-        return;
+        let bfg = PB_BFG9000(owner.player.ReadyWeapon);
+        if(!bfg) return;
 		
-		if( self.GetClass() is rw.GetClass() ){
+		if( self.GetClass() is bfg.GetClass() ){
+            //only have the remote det when youre using the blackhole mode
+            if(!bfg.blackholeMode) return; 
 			if( (owner.player.cmd.buttons & BT_RELOAD) && !owner.FindInventory("BlackHoleDetonator") ){
 				owner.A_SetInventory("BlackHoleDetonator",1);owner.A_Startsound("weapons/pbarm",36,CHANF_NOSTOP);
 			}
@@ -165,7 +169,7 @@ class PB_BFG9000 : PB_Weapon
                 //A_FireCustomMissile ("BFG_BeamProjectile", 0, 0, 0, -8, 0,0);
                 PB_FireAltBFGRail();  //function defined in BaseWeapon_Function.zsc to replace the rail and the projectilew
                 //A_RailAttack(0, 0, 0,"None", "Green", RGF_SILENT || RGF_NOPIERCING || RGF_FULLBRIGHT, 2.0, "NullPuff", 0, 0, 0, 0, 10.0, 1.0, "BFGLightningTrial_Small", -7,0,0);
-                A_TakeInventory("PB_Cell", 1, TIF_NOTAKEINFINITE);
+                A_TakeInventory(invoker.ammo1.getClassName(), ammoTakeGreenAlt, TIF_NOTAKEINFINITE);
                 A_GunFlash();
                 break;
 
@@ -190,7 +194,7 @@ class PB_BFG9000 : PB_Weapon
                 A_StopSound(CHAN_BODY);
 				A_StartSound("weapons/bh_secondary", CHAN_WEAPON);
 				A_FireCustomMissile("BlackHole_GravityBomb",0,1,0,0);
-				A_TakeInventory("PB_Cell", 30, TIF_NOTAKEINFINITE);
+				A_TakeInventory(invoker.ammo1.getClassName(), ammoTakePurpleAlt, TIF_NOTAKEINFINITE);
 				A_GunFlash();
                 break;
             }
@@ -629,7 +633,6 @@ class PB_BFG9000 : PB_Weapon
 			016G GHIJKL 1 {
 				BFG_AltFire(1,3);
                 if(invoker.ammo1.amount < 1)
-				if(CountInv("PB_Cell") < 1)
                     return ResolveState("AltHoldStop");
                 return ResolveState(null);
 			}

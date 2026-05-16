@@ -348,7 +348,7 @@ class PB_Axe : PB_Weapon
 
 //////////////////////////// FLASH STATES ////////////////////////////////////////////////////////////////////////////////////
         FlashPunching:
-			TNT1 A 0 Axe_ChangeModeSprite("AX03","AX02","AX01","AX00",layer:OverlayID());
+			TNT1 A 0 Axe_ChangeModeSprite("AX03","AX02","AX01","AX00");
             "####" DCBA 1;
             "####" Z 6;
             "####" ABCD 1;
@@ -356,19 +356,19 @@ class PB_Axe : PB_Weapon
 
         FlashKicking:
         FlashAirKicking:
-			TNT1 A 0 Axe_ChangeModeSprite("AX03","AX02","AX01","AX00",layer:OverlayID());
+			TNT1 A 0 Axe_ChangeModeSprite("AX03","AX02","AX01","AX00");
             "####" DCBA 1;
             "####" Z 7;
             "####" ABCD 1;
             Goto Ready3;
             
         FlashSlideKicking:
-			TNT1 A 0 Axe_ChangeModeSprite("AX03","AX02","AX01","AX00",layer:OverlayID());
+			TNT1 A 0 Axe_ChangeModeSprite("AX03","AX02","AX01","AX00");
             "####" DCBAZZZZZZZZZZZZZZZZZABCD 1;
             Goto Ready3;
         
         FlashSlideKickingStop:
-			TNT1 A 0 Axe_ChangeModeSprite("AX03","AX02","AX01","AX00",layer:OverlayID());
+			TNT1 A 0 Axe_ChangeModeSprite("AX03","AX02","AX01","AX00");
             "####" ZZABCD 1;
             Goto Ready3;
     }

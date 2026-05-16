@@ -280,7 +280,7 @@ extend class PB_WeaponBase
 	//	goto reload
 	//it also lets you specify the specific reload state to jump
 	// reloadstate is the state to jump if theres no ammo (default is reload)
-	// min is the minimum ammo in the mag before its considered empty, lower than this means it will jump the specified reloadstate
+	// min is the minimum ammo in the mag before its considered empty, lower than this means it will jump to the specified reloadstate
 	// secondary means the weapon uses a magazine, set this to false if the weapon uses the reserve ammo
 	action state PB_jumpIfNoAmmo(statelabel reloadstate = "Reload",int min = 1,bool chamber = true,bool secondary = true,string emptysound = "weapons/empty")
 	{
@@ -2451,6 +2451,16 @@ action int getReadyFlags(int weapflags, bool noReload)
 		return newflags;
 	}
 
+	action bool checkMG42()
+	{
+		let mg42 = pb_mg42(invoker);
+		if(!mg42) return false;
+
+		if(mg42 && mg42 is "PB_MG42" && mg42.barrelOverheating || mg42.hasOverheated && !IsHoldingBarrel())
+			return true;
+		return false;
+	}
+
 	action state A_DoPBWeaponAction(int weapflags = WRF_ALLOWRELOAD, int pbFlags = 0, bool noReload = false)
 	{
 		bool grabbedbarrel = IsHoldingBarrel();
@@ -2458,7 +2468,7 @@ action int getReadyFlags(int weapflags, bool noReload)
 		if (weapflags & WRF_ALLOWRELOAD) initialWRF_ALLOWRELOAD = true;
 		weapFlags &= ~(WRF_ALLOWRELOAD);
 		if(invoker is "PB_Fists" && !grabbedbarrel){weapFlags |= WRF_ALLOWRELOAD;}
-		if(invoker is "PB_MG42" && (CountInv("MG42HasOverheated") || CountInv("MG42BarrelOverheat") >= 1) && !grabbedbarrel){weapFlags |= WRF_ALLOWRELOAD;}
+		if(checkMG42()){weapFlags |= WRF_ALLOWRELOAD;}
 		bool dualWieldCheck = A_CheckAkimbo();
 		bool canLoadAmmoLeft = invoker.AmmoTypeLeft && countinv(invoker.ammotype1) > 0 && (countInv(invoker.AmmoTypeLeft) < GetAmmoCapacity(invoker.AmmoTypeLeft) || PB_GetMagUnloaded(true));
 		bool canLoadAmmo = invoker.ammotype2 && countinv(invoker.ammotype1) > 0 && (countinv(invoker.ammotype2) < GetAmmoCapacity(invoker.ammotype2) || PB_GetMagUnloaded());
