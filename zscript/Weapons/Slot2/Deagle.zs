@@ -777,7 +777,7 @@ class PB_Deagle : PB_WeaponBase
 			wait;
 		
 		ReadyDualWield:
-			TNT1 A 0 PB_SetupDualWield();
+			TNT1 A 0 PB_SetupDualWield(crosshair:32);
 		ReadyToFireDualWield:
 			TNT1 A 1 A_DoPBDualAction(2);
 			Loop;

@@ -618,18 +618,7 @@ Class PB_Revolver : PB_WeaponBase
 			goto ReadyDualWield;
 		
 		ReadyDualWield:
-			TNT1 A 0 {
-				A_SetRoll(0);
-				PB_HandleCrosshair(42);
-				A_SetInventory("PB_LockScreenTilt",0);
-				A_SetFiringRightWeapon(False);
-				A_SetFiringLeftWeapon(False);
-				if(CountInv("LeftRevolverAmmo") < CountInv("RevolverAmmo")){
-					A_GiveInventory("DualFiring",1);
-				}
-				A_Overlay(10, "IdleLeft_Overlay", false);
-				A_Overlay(11, "IdleRight_Overlay", false);
-				}
+			TNT1 A 0 PB_SetupDualWield(crosshair:42);
 		ReadyToFireDualWield:
 			TNT1 A 0 PB_SelectIfUpgrade("PB_Deagle");
 			TNT1 A 1 A_DoPBDualAction(2);

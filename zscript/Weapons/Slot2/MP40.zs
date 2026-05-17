@@ -71,7 +71,7 @@ class PB_MP40 : PB_Weapon
     const RIGHTMUZZLEFLASH  = 8;
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
 
-    action state MP40_Fire(int tic)
+    action void MP40_Fire(int tic)
     {
         bool ads = PB_GetZoom();
         double recoilX  = ads ? -0.15 : -0.19;
@@ -111,7 +111,10 @@ class PB_MP40 : PB_Weapon
                 A_ZoomFactor(zoomA);
                 A_GunFlash();
 
-                A_Overlay(MAINMUZZLEFLASH, flashAnim);
+                if(ads)
+                    A_Overlay(MAINMUZZLEFLASH, "Flash2Variation");
+                else
+                    A_Overlay(MAINMUZZLEFLASH, "FlashVariation");
                 A_OverlayFlags(MAINMUZZLEFLASH, PSPF_RENDERSTYLE, true);
                 A_OverlayRenderStyle(MAINMUZZLEFLASH, STYLE_Add);
 
@@ -122,33 +125,7 @@ class PB_MP40 : PB_Weapon
                 A_ZoomFactor(tic == 2 ? zoomB : zoomC);
                 if(tic == 2) PB_WeaponRecoil(recoilX, recoilY);
                 break;
-
-            case 5:
-                if(ads)
-                {
-                    if(GetCvar("pb_toggle_aim_hold"))
-                    {
-                        if(JustReleased(BT_ALTATTACK))
-                            return ResolveState("Zoomout");
-                        if(JustPressed(BT_ATTACK) && PressingAltfire())
-                            return ResolveState("Fire2");
-                    }
-                    else
-                    {
-                        if(PressingAltfire())
-                            return ResolveState("Zoomout");
-                        if(JustPressed(BT_ATTACK))
-                            return ResolveState("Fire2");
-                        PB_ReFire("Fire2");
-                    }
-                    return A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOFIRE);
-                }
-                else
-                {
-                    return ResolveState(PB_ReFire("Fire") ? null : "Ready3");
-                }
         }
-        return ResolveState(null);
     }
 
     action state MP40_CheckSpecial()
@@ -162,8 +139,8 @@ class PB_MP40 : PB_Weapon
 
         if(A_CheckAkimbo())
             return ResolveState("StopDualWield");
-        if(CountInv("PB_SSG") >= 2)
-            return ResolveState("StopDualSwitchToDualWieldWield");
+        if(invoker.amount >= 2)
+            return ResolveState("SwitchToDualWield");
 
         A_Print("$PB_MP40_NOAKIMBO");
 
@@ -197,7 +174,10 @@ class PB_MP40 : PB_Weapon
         A_AlertMonsters();
         A_StartSound("weapons/mp40_fire", isLeft ? CHAN_7 : CHAN_6, CHANF_DEFAULT, 1.0);
         PB_DynamicTail("smg", "smg");
-        PB_LowAmmoSoundWarning("smg", isLeft ? invoker.AmmoLeft.getClassName() : "");
+        if(isLeft)
+            PB_LowAmmoSoundWarning("smg", invoker.AmmoLeft.getClassName());
+        else
+            PB_LowAmmoSoundWarning("smg");
         PB_FireBullets("PB_9x19mm", 1, 1.5, 0, 0, 1.5);
         A_FireCustomMissile("YellowFlareSpawn", 0, 0, flareOfs, 0);
         PB_GunSmoke(smokeOfs, 0, 0);
@@ -227,12 +207,12 @@ class PB_MP40 : PB_Weapon
                 A_ZoomFactor(0.99);
                 if(isLeft)
                 {
-                    if(invoker.GetLeftAmmo() <= 0 || invoker.GetRightAmmo() > 0)
+                    if(invoker.ammoleft.amount <= 0 || invoker.ammo1.amount > 0)
                         A_GiveInventory("DualFiring", 1);
                 }
                 else
                 {
-                    if(invoker.GetLeftAmmo() > 0 || invoker.GetRightAmmo() <= 0)
+                    if(invoker.ammoleft.amount > 0 || invoker.ammo1.amount <= 0)
                         A_TakeInventory("DualFiring", 1);
                 }
                 PB_WeaponRecoil(-1.05, recoilY);
@@ -244,9 +224,9 @@ class PB_MP40 : PB_Weapon
                 break;
 
             case 4:
-                if(isLeft && invoker.GetLeftAmmo() <= 0)
+                if(isLeft && invoker.ammoleft.amount <= 0)
                     A_GiveInventory("DualFireReload", 1);
-                else if(!isLeft && invoker.GetRightAmmo() <= 0)
+                else if(!isLeft && invoker.ammo1.amount <= 0)
                     A_GiveInventory("DualFireReload", 1);
                 break;
         }
@@ -352,10 +332,10 @@ class PB_MP40 : PB_Weapon
 				PB_CoolDownBarrel(-4.5, -2, -3, 0, frandom(0.5, 1.0), 0., 1, 0.5);
 				PB_CoolDownBarrel(-4.5, -3.5, -3, 0, frandom(0.5, 1.0), 0, 1, 0.5);
 				PB_CoolDownBarrel(-4.5, -5, -3, 0, frandom(0.5, 1.0), 0, 1, 0.5);
-				if (PressingFire() && PressingAltfire() && CountInv("MP40Ammo") > 0){
+				if (PressingFire() && PressingAltfire() && invoker.ammo2.amount > 0){
                     return ResolveState("Fire");
 				}
-				if (PressingFire() && CountInv("MP40Ammo") > 0){
+				if (PressingFire() && invoker.ammo2.amount > 0){
                     return ResolveState("Fire");
 				}
 				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);	
@@ -379,10 +359,10 @@ class PB_MP40 : PB_Weapon
         // Ready Dual Wield
         ReadyDualWield:
 			TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(), "UnloadedReadyDualWield");
-			TNT1 A 0 PB_SetupDualWield(44);
+			TNT1 A 0 PB_SetupDualWield(crosshair:44);
 		ReadyToFireDualWield:
 			TNT1 A 1 A_DoPBDualAction();
-			Loop
+			Loop;
 
         IdleLeft_Overlay:
 			MP21 A 1 {
@@ -447,7 +427,7 @@ class PB_MP40 : PB_Weapon
                         return ResolveState("Zoomout");
                     if (JustPressed(BT_ATTACK))
                         return ResolveState("Fire2");
-                    return PB_ReFire("Fire2");
+                    // return PB_ReFire("Fire2");
 				}
 				return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
 			}
@@ -569,7 +549,7 @@ class PB_MP40 : PB_Weapon
                 MR22 WX 1 A_SetRoll(roll+3, SPF_INTERPOLATE);
                 MR22 YZ 1 A_SetRoll(roll-1.5, SPF_INTERPOLATE);
                 MR23 ABCDEFGH 1;
-                TNT1 A 0 A_JumpIf(!PB_GetChamberEmpty*,"FinishReload");
+                TNT1 A 0 A_JumpIf(!PB_GetChamberEmpty(),"FinishReload");
                 MR23 IJK 1;
                 goto Rechamber;
 
@@ -672,7 +652,7 @@ class PB_MP40 : PB_Weapon
                 MR24 IJKLMN 1 A_SetRoll(roll-0.35, SPF_INTERPOLATE);
                 MR24 NOO 1;
                 MRCO ABCDE 1;
-                TNT1 A 0 A_JumpIf((PB_GetMagUnloaded(true) || PB_GetChamberEmpty(true) || CountInv("LeftMP40Ammo") < PB_MP40FullAmmo) && CountInv("PB_LowCalMag") > 0, "ReloadLeftGunAfterEmpty");
+                TNT1 A 0 A_JumpIf((PB_GetMagUnloaded(true) || PB_GetChamberEmpty(true) || invoker.AmmoLeft.amount < PB_MP40FullAmmo) && invoker.ammo1.amount > 0, "ReloadLeftGunAfterEmpty");
                 TNT1 AAAA 1;
                 M2R1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
                 MP25 MNOPQ 1;
@@ -704,12 +684,12 @@ class PB_MP40 : PB_Weapon
                 MPR2 TU 1 A_SetRoll(roll-1.5, SPF_INTERPOLATE);
                 MPR2 VWXYZ 1;
                 MPR3 A 1;
-                TNT1 A 0 A_JumpIf((PB_GetMagUnloaded(true) || PB_GetChamberEmpty(true) || CountInv("LeftMP40Ammo") < PB_MP40FullAmmo) && CountInv("PB_LowCalMag") > 0, "ReloadLeftGun");
+                TNT1 A 0 A_JumpIf((PB_GetMagUnloaded(true) || PB_GetChamberEmpty(true) || invoker.AmmoLeft.amount < PB_MP40FullAmmo) && invoker.ammo1.amount > 0, "ReloadLeftGun");
                 M2R1 A 0;
                 "####" A 0;
                 M2R1 DCBA 1;
                 TNT1 A 0 PB_SetReloading(false);
-                Goto Ready3
+                Goto Ready3;
 
             ReloadLeftUnloaded:
                 TNT1 A 0 A_JumpIf(PB_GetChamberEmpty(true),"ReloadLeftUnloadedEmpty");
@@ -817,7 +797,7 @@ class PB_MP40 : PB_Weapon
 			TNT1 A 0 A_StopSound(CHAN_AUTO);
 			TNT1 A 0 {
 				A_SetCrosshair(-1);
-                PB_ClearDual();
+                PB_ClearDualWield();
 			}
 			TNT1 A 0 A_JumpIf(PB_GetMagEmpty() || PB_GetMagUnloaded(), "UnloadLeftOnly");
 		UnloadRight:
@@ -832,7 +812,7 @@ class PB_MP40 : PB_Weapon
 				PB_SetMagEmpty(true);
 			}
 			MPR1 TUVWXYZ 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
-            TNT1 A 0 A_JumpIf(invoker.LeftAmmo.amount >= 1, "UnloadLeft");
+            TNT1 A 0 A_JumpIf(invoker.AmmoLeft.amount >= 1, "UnloadLeft");
 			M2U1 HGFEDCBA 1;
 			TNT1 A 0 PB_SetReloading(false);
 			Goto Ready3;
@@ -855,7 +835,7 @@ class PB_MP40 : PB_Weapon
 			M2R2 HIJKLM 1;
 			TNT1 A 0 {
 				A_PlaySoundEx("MP40CLR", "Auto");
-				PB_UnloadMag(invoker.LeftAmmo.getClassName(),invoker.ammo1.getClassName(),invoker.ReserveToMagAmmoFactor);
+				PB_UnloadMag(invoker.AmmoLeft.getClassName(),invoker.ammo1.getClassName(),invoker.ReserveToMagAmmoFactor);
 				PB_SetMagUnloaded(true,true);
 				PB_SetMagEmpty(true,true);
 			}
@@ -948,16 +928,16 @@ class PB_MP40 : PB_Weapon
 			Goto Ready3;
 			
 		FlashKicking:
-			TNT1 A 0 PB_ClearDual();
+			TNT1 A 0 PB_ClearDualWield();
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "FlashKickingDW");
 			MPKI ACDEFHIHFEDCBA 1 A_DoPBWeaponAction();
-			Goto Ready3
+			Goto Ready3;
 		
 		FlashAirKicking:
-			TNT1 A 0 PB_ClearDual();
+			TNT1 A 0 PB_ClearDualWield();
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "FlashAirKickingDW");
 			MPKI ABCDEFHIIHFEDCBA 1 A_DoPBWeaponAction();
-			Goto Ready3
+			Goto Ready3;
 		
 		FlashKickingDW:
 			MPKI JKLMNOOOONMLKJ 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
@@ -968,12 +948,12 @@ class PB_MP40 : PB_Weapon
 			Goto Ready3;
 			
 		FlashPunchingDW:
-			TNT1 A 0 PB_ClearDual();
+			TNT1 A 0 PB_ClearDualWield();
 			TNT1 A 15;
 			Goto Ready3;
 		
 		FlashSlideKicking:
-			TNT1 A 0 PB_ClearDual();
+			TNT1 A 0 PB_ClearDualWield();
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "FlashSlideKickingDW");
 			MPKI ABCDEGHHHGFGHHHGHHHGFEDCBA 1 A_DoPBWeaponAction();
 			Goto Ready3;
@@ -983,10 +963,10 @@ class PB_MP40 : PB_Weapon
 			Goto Ready3;
 		
 		FlashSlideKickingStop:
-			TNT1 A 0 PB_ClearDual();
-			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "FlashSlideKickingStopDW")
+			TNT1 A 0 PB_ClearDualWield();
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "FlashSlideKickingStopDW");
 			MPKI HGFEDCB 1 A_DoPBWeaponAction();
-			Goto Ready3
+			Goto Ready3;
 		
 		FlashSlideKickingStopDW:
 			MPKI OONMLKJ 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);

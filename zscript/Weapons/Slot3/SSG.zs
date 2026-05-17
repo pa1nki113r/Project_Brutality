@@ -308,7 +308,7 @@ class PB_SSG : PB_Weapon
             PB_ClearDualWield();
             PB_HandleCrosshair(40);
 
-            if(CountInv("PB_SSG") >= 2)
+            if(invoker.amount >= 2)
                 return ResolveState("SwitchToDualWield");
 
             A_Print("$PB_SSG_NOAKIMBO");
