@@ -34,9 +34,8 @@ class PB_MG42 : PB_Weapon
     }
 
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
-    bool barrelOverheating;
-    bool hasOverheated; // Checks for the MG42 heat meter to increase higher if the barrel has overheated
-    bool isADS; // This is basically useless since pb still uses that zoomed token lol
+    bool  barrelOverheating;
+    bool  hasOverheated; // Checks for the MG42 heat meter to increase higher if the barrel has overheated
     const ammoTake              = 1; // Just for consistency
     // Overlays
     const coolingOverlay        = 3;
@@ -97,7 +96,7 @@ class PB_MG42 : PB_Weapon
 
     action void MG42_Fire(int tic)
     {
-        bool ads = getADS();
+        bool ads = PB_GetZoom();
         bool overheating = getBarrelIsOverheating();
         
         switch(tic)
@@ -160,7 +159,7 @@ class PB_MG42 : PB_Weapon
         {
             if(getbarrelHasOverheated())
                 return ResolveState("BarrelChange");
-            if(getADS())
+            if(PB_GetZoom())
                 return ResolveState("Fire2");
             if(invoker.ammo1.amount >= 1 && PB_GetOverheat() < 500)
                 return ResolveState("FireNormal");
@@ -213,12 +212,6 @@ class PB_MG42 : PB_Weapon
     {
         return invoker.hasOverheated;
     }
-    action bool getADS()
-    {
-        // Maybe when they finally moved from tokens
-        // return invoker.isADS || countinv("Zoomed") > 0 || countinv("ADSMode") > 0;
-        return countinv("Zoomed") > 0 || countinv("ADSMode") > 0;
-    }
 
     action void setbarrelIsOverheating(bool set)
     {
@@ -228,13 +221,6 @@ class PB_MG42 : PB_Weapon
     action void setbarrelHasOverheated(bool set)
     {
         invoker.hasOverheated = set;
-    }
-
-    action void setADS(bool set)
-    {
-        // invoker.isADS = set;
-		A_SetInventory("Zoomed",set);
-		A_SetInventory("ADSMode",set);
     }
 
 //////////////////////////// STATES ////////////////////////////////////////////////////////////////////////////////////
@@ -289,7 +275,7 @@ class PB_MG42 : PB_Weapon
             }
             TNT1 A 0 {
                 A_Overlay(selectOverlay,"DeselectFlash");
-                setADS(false);
+                PB_SetZoom(false);
                 A_ZoomFactor(1.0);
                 A_PlaySoundEx("weapons/changing", "Auto");
             }
@@ -408,9 +394,9 @@ class PB_MG42 : PB_Weapon
 
 //////////////////////////// ALTFIRE ////////////////////////////////////////////////////////////////////////////////////
         AltFire:
-        TNT1 A 0 A_JumpIf(getADS(), "Unzoom");
+        TNT1 A 0 A_JumpIf(PB_GetZoom(), "Unzoom");
 		TNT1 A 0 {
-            setADS(true);
+            PB_SetZoom(true);
             A_PlaySoundEx("IronSights", "Auto");
             A_Overlay(5, "BeltZoomFlash");
             A_ZoomFactor(1.25);
@@ -421,7 +407,7 @@ class PB_MG42 : PB_Weapon
 
         Unzoom:
 		TNT1 A 0 {
-            setADS(false);
+            PB_SetZoom(false);
             A_PlaySoundEx("IronSights", "Auto");
             A_Overlay(beltOverlay, "BeltUnzoomFlash");
             A_ZoomFactor(1.0);
@@ -465,7 +451,7 @@ class PB_MG42 : PB_Weapon
 
         UnzoomBarrelChange:
             TNT1 A 0 {
-                setADS(false);
+                PB_SetZoom(false);
                 A_PlaySoundEx("IronSights", "Auto");
                 A_Overlay(beltOverlay, "BeltUnzoomFlash");
                 A_ZoomFactor(1.0);
@@ -474,7 +460,7 @@ class PB_MG42 : PB_Weapon
             MRGZ DCB 1;
             Goto BarrelChange+2;
         BarrelChange:
-            TNT1 A 0 A_JumpIf(getADS(), "UnzoomBarrelChange");
+            TNT1 A 0 A_JumpIf(PB_GetZoom(), "UnzoomBarrelChange");
             TNT1 AA 0;
             TNT1 A 0{
                 A_ClearOverlays(beltOverlay);
@@ -509,7 +495,7 @@ class PB_MG42 : PB_Weapon
 
         UnzoomOverheat:
             TNT1 A 0 {
-                setADS(false);
+                PB_SetZoom(false);
                 A_PlaySoundEx("IronSights", "Auto");
                 A_Overlay(beltOverlay, "BeltUnzoomFlash");
                 A_ZoomFactor(1.0);

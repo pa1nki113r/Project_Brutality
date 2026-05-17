@@ -81,8 +81,6 @@ class PB_SSG : PB_Weapon
     // Overlays
     const LEFTMUZZLEFLASH   = -5;
     const RIGHTMUZZLEFLASH  = -6;
-    const LEFTGUNOVERLAY    = 10;
-    const RIGHTGUNOVERLAY   = 11;
 
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
     
@@ -125,12 +123,6 @@ class PB_SSG : PB_Weapon
 
         switch(tic)
         {
-            case 0:
-                A_WeaponOffset(0, 32);
-                PB_SetRoll(0);
-                PB_HandleCrosshair(40);
-                break;
-
             case 1:
                 if(isLeft)
                     A_Overlay(LEFTMUZZLEFLASH, "HalfFlash2", true);
@@ -313,7 +305,7 @@ class PB_SSG : PB_Weapon
         {
             A_SetInventory("GoWeaponSpecialAbility",0);
             A_SetInventory("PB_LockScreenTilt",1);
-            A_ClearOverlays(LEFTGUNOVERLAY, RIGHTGUNOVERLAY);
+            PB_ClearDualWield();
             PB_HandleCrosshair(40);
 
             if(CountInv("PB_SSG") >= 2)
@@ -336,25 +328,12 @@ class PB_SSG : PB_Weapon
         return ResolveState(null);
     }
 
-    // Different function since SSG_Ready() returns a state
-    action void SSG_ReadyDual()
-    {
-        PB_SetRoll(0);
-        PB_HandleCrosshair(40);
-        A_SetInventory("PB_LockScreenTilt",0);
-        A_SetFiringRightWeapon(False);
-        A_SetFiringLeftWeapon(False);
-        A_TakeInventory("DualFiring",1);
-        A_Overlay(LEFTGUNOVERLAY, "IdleLeft_Overlay", false);
-        A_Overlay(RIGHTGUNOVERLAY, "IdleRight_Overlay", false);
-    }
-
     action state SSG_Ready()
     {
         if(A_CheckAkimbo())
             return ResolveState("ReadyDualWield");
 
-        A_ClearOverlays(LEFTGUNOVERLAY, RIGHTGUNOVERLAY);
+        PB_ClearDualWield();
         A_SetInventory("PB_LockScreenTilt",0);
         PB_HandleCrosshair(40);
         PB_SetRoll(0);
@@ -397,7 +376,7 @@ class PB_SSG : PB_Weapon
 
         Deselect:
             TNT1 A 0 {
-                A_ClearOverlays(LEFTGUNOVERLAY,RIGHTGUNOVERLAY);
+                PB_ClearDualWield();
                 A_WeaponOffset(0,32);
                 PB_SetRoll(0);
                 A_SetInventory("PB_LockScreenTilt",0);
@@ -414,9 +393,15 @@ class PB_SSG : PB_Weapon
             TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower();
             Wait;
 
+        SelectAnimationDualWield:
+            TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
+            P6SS ABCD 1;
+            TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
+            Goto ReadyDualWield;
+
         Select:
             TNT1 A 0 {
-                A_ClearOverlays(LEFTGUNOVERLAY,RIGHTGUNOVERLAY);
+                PB_ClearDualWield();
                 PB_WeapTokenSwitch("SSGSelected");
                 A_SetInventory("PB_LockScreenTilt",0);
                 A_SetInventory("HasNotPickedUpSSG",0);
@@ -444,13 +429,9 @@ class PB_SSG : PB_Weapon
             }
             Loop;
 
-        SelectAnimationDualWield:
-            TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
-            P6SS ABCD 1;
-            TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
         ReadyDualWield:
             TNT1 A 0 PB_SelectIfUpgrade("PB_QuadSG"); //A_SelectWeapon("PB_QuadSG")
-            TNT1 A 0 SSG_ReadyDual();
+            TNT1 A 0 PB_SetupDualWield(crosshair:40);
         ReadyToFireDualWield:
             TNT1 A 0 PB_SelectIfUpgrade("PB_QuadSG");
             TNT1 A 1 A_DoPBDualAction();
@@ -474,7 +455,7 @@ class PB_SSG : PB_Weapon
 
         StopDualWield:
             TNT1 A 0 {
-                A_ClearOverlays(LEFTGUNOVERLAY, RIGHTGUNOVERLAY);
+                PB_ClearDualWield();
                 A_SetAkimbo(false);
             }
             Goto Ready3;
@@ -515,7 +496,11 @@ class PB_SSG : PB_Weapon
 
 //////////////////////////// ALTFIRE ////////////////////////////////////////////////////////////////////////////////////
         AltFire:
-            TNT1 A 0 SSG_Altfire(0, isLeft:false);
+            TNT1 A 0 {
+                A_WeaponOffset(0, 32);
+                PB_SetRoll(0);
+                PB_HandleCrosshair(40);
+            }
             TNT1 A 0 PB_JumpIfNoAmmo("AltFire2", 2, true, true, "");
             SHTA A 1 BRIGHT SSG_Altfire(1, isLeft:false);
             SHTA B 1 BRIGHT SSG_Altfire(2, isLeft:false);
@@ -622,7 +607,7 @@ class PB_SSG : PB_Weapon
             
         ReloadDualWield:
             TNT1 A 0 PB_CheckReload(null,null,null,"ReloadOnlyLeft","Ready3",PB_SSGFullAmmo);
-            TNT1 A 0 A_ClearOverlays(LEFTGUNOVERLAY,RIGHTGUNOVERLAY);
+            TNT1 A 0 PB_ClearDualWield();
             P6SS ED 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
             P6SS CBA 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
@@ -663,7 +648,7 @@ class PB_SSG : PB_Weapon
 
         ReloadOnlyLeft:
             TNT1 A 0 PB_CheckReload(null,null,null,"Ready3","Ready3",PB_SSGFullAmmo,1,true);
-            TNT1 A 0 A_ClearOverlays(LEFTGUNOVERLAY, RIGHTGUNOVERLAY);
+            TNT1 A 0 PB_ClearDualWield();
             P6SS ED 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
             P6SS CBA 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
@@ -755,7 +740,7 @@ class PB_SSG : PB_Weapon
                 PB_GetChamberEmpty(true) && 
                 getSpentL() == 0, 
                 "Ready3");
-            TNT1 A 0 A_ClearOverlays(LEFTGUNOVERLAY, RIGHTGUNOVERLAY);
+            TNT1 A 0 PB_ClearDualWield();
             P6SS ED 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
             P6SS CBA 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
@@ -879,28 +864,28 @@ class PB_SSG : PB_Weapon
             Goto Ready3;
             
         FlashPunching:
-            TNT1 A 0 A_ClearOverlays(LEFTGUNOVERLAY, RIGHTGUNOVERLAY);
+            TNT1 A 0 PB_ClearDualWield();
             TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DualWieldFlashPunching");
             SG21 ABCDEFGGGFEDCBA 1;
             Goto Ready3;
         FlashKicking:
-            TNT1 A 0 A_ClearOverlays(LEFTGUNOVERLAY, RIGHTGUNOVERLAY);
+            TNT1 A 0 PB_ClearDualWield();
             TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DualWieldFlashKicking");
             SG20 ABCDEFGGGFEDCBA 1;
             Goto Ready3;
         FlashAirKicking:
-            TNT1 A 0 A_ClearOverlays(LEFTGUNOVERLAY, RIGHTGUNOVERLAY);
+            TNT1 A 0 PB_ClearDualWield();
             TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DualWieldFlashAirKicking");
             SG20 ABCDEFGGGFEDCBA 1;
             SHT3 AAA 1;
             Goto Ready3;
         FlashSlideKicking:
-            TNT1 A 0 A_ClearOverlays(LEFTGUNOVERLAY, RIGHTGUNOVERLAY);
+            TNT1 A 0 PB_ClearDualWield();
             TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DualWieldFlashSlideKicking");
             SG20 ABCDEFGGGGGGGGGGGGGFEDCBA 1;
             Goto Ready3;
         FlashSlideKickingStop:
-            TNT1 A 0 A_ClearOverlays(LEFTGUNOVERLAY, RIGHTGUNOVERLAY);
+            TNT1 A 0 PB_ClearDualWield();
             TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DualWieldFlashSlideKickingStop");
             SG20 FEDCA 1;
             SHT3 AAA 1;

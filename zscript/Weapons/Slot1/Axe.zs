@@ -171,7 +171,6 @@ class PB_Axe : PB_Weapon
         A_FireCustomMissile(axe,0,0,0,0);
     }
 
-    // I dont think this is the new blood overlay thing but I'll just put this here first
     action void Axe_ChangeModeSprite(
         name greenblood, 
         name blueblood, 
