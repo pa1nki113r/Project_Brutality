@@ -1,3 +1,4 @@
+// For the black hole remote det
 class BlackHoleDetonator : inventory {default{inventory.maxamount 1;}}
 
 class PB_BFG9000 : PB_Weapon
@@ -41,6 +42,7 @@ class PB_BFG9000 : PB_Weapon
     const bfgpartstep       = 30;
 
 //////////////////////////// OVERRIDES ////////////////////////////////////////////////////////////////////////////////////
+    // This handles the black hole remote detonation
     Override void DoEffect()
     {
 		if (!owner || !owner.player)

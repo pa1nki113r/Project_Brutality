@@ -135,14 +135,14 @@ class PB_pistolWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 		
-		let weap = PB_WeaponBase(requester.player.readyweapon);
+		let weap = PB_Pistol(requester.player.readyweapon);
 		vector2 iconScale = (0.75, 0.75);
 		
-		//check dw
+		//check dual wield
 		if(weap.akimboMode)
 		{
 			PB_SpecialWheel_Mode pistol_single = new ("PB_SpecialWheel_Mode");
-			if(requester.FindInventory("SilencerEquipped"))
+			if(weap.hasSilencer)
 				pistol_single.img = "graphics/pywheel/PISTOL_1.png";
 			else
 				pistol_single.img = "graphics/pywheel/PISTOL_0.png";
@@ -156,7 +156,7 @@ class PB_pistolWheel : wheelinfocontainer
 		else
 		{
 			PB_SpecialWheel_Mode pistol_dual = new ("PB_SpecialWheel_Mode");
-			if(requester.FindInventory("SilencerEquipped"))
+			if(weap.hasSilencer)
 				pistol_dual.img = "graphics/pywheel/PISTOL_7.png";
 			else
 				pistol_dual.img = "graphics/pywheel/PISTOL_4.png";
@@ -169,10 +169,10 @@ class PB_pistolWheel : wheelinfocontainer
 		}
 		
 		//check burst
-		if(requester.FindInventory("ToggledPistolBurstFire"))
+		if(weap.burstFire)
 		{
 			PB_SpecialWheel_Mode pistol_semi = new ("PB_SpecialWheel_Mode");
-			if(requester.FindInventory("SilencerEquipped"))
+			if(weap.hasSilencer)
 				pistol_semi.img = "graphics/pywheel/PISTOL_6.png";
 			else
 				pistol_semi.img = "graphics/pywheel/PISTOL_3.png";
@@ -186,7 +186,7 @@ class PB_pistolWheel : wheelinfocontainer
 		else
 		{
 			PB_SpecialWheel_Mode pistol_burst = new ("PB_SpecialWheel_Mode");
-			if(requester.FindInventory("SilencerEquipped"))
+			if(weap.hasSilencer)
 				pistol_burst.img = "graphics/pywheel/PISTOL_5.png";
 			else
 				pistol_burst.img = "graphics/pywheel/PISTOL_2.png";
@@ -199,7 +199,7 @@ class PB_pistolWheel : wheelinfocontainer
 		}
 		
 		//check suppresor
-		if(requester.FindInventory("SilencerEquipped"))
+		if(weap.hasSilencer)
 		{
 			PB_SpecialWheel_Mode pistol_unsilenced = new ("PB_SpecialWheel_Mode");
 			pistol_unsilenced.img = "graphics/pywheel/PISTOL_0.png";

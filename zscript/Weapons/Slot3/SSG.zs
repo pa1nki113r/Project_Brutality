@@ -124,10 +124,9 @@ class PB_SSG : PB_Weapon
         switch(tic)
         {
             case 1:
-                if(isLeft)
-                    A_Overlay(LEFTMUZZLEFLASH, "HalfFlash2", true);
-                else
-                    A_Overlay(RIGHTMUZZLEFLASH, "HalfFlash1", true);
+                if(isLeft) A_Overlay(LEFTMUZZLEFLASH, "HalfFlash2", true);
+                else A_Overlay(RIGHTMUZZLEFLASH, "HalfFlash1", true);
+
                 // A_Overlay(flashLayer, flashState, true);
                 A_OverlayFlags(flashLayer, PSPF_RENDERSTYLE, true);
                 A_OverlayRenderStyle(flashLayer, STYLE_Add);
@@ -180,7 +179,7 @@ class PB_SSG : PB_Weapon
                 PB_DynamicTail("shotgun", "dbshotgun");
                 A_ZoomFactor(0.95);
                 
-                // End
+                // Take Ammo + More Effects
                 PB_TakeAmmo(invoker.ammo2.getClassName(),ammoTakeFull,0);
                 setSpentR(ammoTakeFull);
                 A_AlertMonsters();
@@ -209,13 +208,11 @@ class PB_SSG : PB_Weapon
         double wadB   = isLeft ?  -6 : 10;
 
         // Bullets
-        if (singleShot)
-        {
+        if (singleShot) {
             PB_FireBullets("PB_10GAPellet", 10, 8, 0, 0, 6);
             A_StartSound("weapons/shh2", CHAN_Weapon, CHANF_DEFAULT, 1.0);
         }
-        else
-        {
+        else {
             PB_FireBullets("PB_10GAPellet_LP", 1, 0, 0, 0, 0);
             PB_FireBullets("PB_10GAPellet", 20, 8, 0, 0, 6);
             A_StartSound("SSHFIRE", CHAN_Weapon, CHANF_DEFAULT, 1.0);
@@ -231,18 +228,15 @@ class PB_SSG : PB_Weapon
 
         // Ammo
         int ammoToTake = singleShot ? ammoTakeHalf : ammoTakeFull;
-        if (isLeft)
-            PB_TakeAmmo(invoker.AmmoLeft.getClassName(), ammoToTake, 0, 0, true);
-        else
-            PB_TakeAmmo("SSGAmmoCounter", ammoToTake, 0);
+        if (isLeft) PB_TakeAmmo(invoker.AmmoLeft.getClassName(), ammoToTake, 0, 0, true);
+        else PB_TakeAmmo("SSGAmmoCounter", ammoToTake, 0);
 
         if (isLeft) setSpentL(ammoToTake);
         else        setSpentR(ammoToTake);
 
         // Wads
         A_FireProjectile("ShotgunWad", random(-1,1), 0, wadA, -2, FPF_NOAUTOAIM, random(-1,1));
-        if (!singleShot)
-            A_FireProjectile("ShotgunWad", random(-1,1), 0, wadB, -2, FPF_NOAUTOAIM, random(-1,1));
+        if (!singleShot) A_FireProjectile("ShotgunWad", random(-1,1), 0, wadB, -2, FPF_NOAUTOAIM, random(-1,1));
     }
 
     action void SSG_FireOverlay(int tic, bool isLeft)
@@ -256,10 +250,8 @@ class PB_SSG : PB_Weapon
             case 1:
                 PB_IncrementHeat(10, isLeft);
                 // Blame the zdoom bug for this one
-                if(isLeft)
-                    A_Overlay(LEFTMUZZLEFLASH, "LeftFlash", true);
-                else
-                    A_Overlay(RIGHTMUZZLEFLASH, "RightFlash", true);
+                if(isLeft) A_Overlay(LEFTMUZZLEFLASH, "LeftFlash", true);
+                else A_Overlay(RIGHTMUZZLEFLASH, "RightFlash", true);
                 // A_Overlay(flashLayer, isLeft ? "LeftFlash" : "RightFlash", true);
                 A_OverlayFlags(flashLayer, PSPF_RENDERSTYLE, true);
                 A_OverlayRenderStyle(flashLayer, STYLE_Add);

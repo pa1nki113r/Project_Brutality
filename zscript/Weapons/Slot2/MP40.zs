@@ -71,24 +71,25 @@ class PB_MP40 : PB_Weapon
     const RIGHTMUZZLEFLASH  = 8;
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
 
+    // This is for the normal fire
     action void MP40_Fire(int tic)
     {
-        bool ads = PB_GetZoom();
-        double recoilX  = ads ? -0.15 : -0.19;
+        bool ads        = PB_GetZoom();         // So we dont need to make another function just for zoom fire
+        double recoilX  = ads ? -0.15 : -0.19;  // Sets recoil
         double recoilY  = ads ? +0.13 : +0.17;
-        double zoomA    = ads ?  1.24 :  0.985;
+        double zoomA    = ads ?  1.24 :  0.985; // Sets the different zoomfactor
         double zoomB    = ads ?  1.245:  0.99;
         double zoomC    = ads ?  1.25 :  1.0;
-        int casingDist  = ads ?  18   :  21;
+        int casingDist  = ads ?  18   :  21;    // Just casing stuff
         int casingY     = ads ?   3   :   2;
         int casingZ     = ads ?  40   :  32;
-        string flashAnim = ads ? "Flash2Variation" : "FlashVariation";
+        // string flashAnim = ads ? "Flash2Variation" : "FlashVariation"; // Zdoom bug lol
 
         switch(tic)
         {
             case 0:
                 A_WeaponOffset(0, 32);
-                A_SetRoll(0);
+                PB_SetRoll(0);
                 if(ads) A_SetCrosshair(-1);
                 else    PB_HandleCrosshair(44);
                 A_SetInventory("PB_LockScreenTilt", 0);
@@ -105,16 +106,15 @@ class PB_MP40 : PB_Weapon
                 A_FireCustomMissile("YellowFlareSpawn", 0, 0, 0, 0);
                 PB_GunSmoke(0, 0, 0);
                 PB_MuzzleFlashEffects(0, 0, 0);
-                A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
+                // A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
                 PB_SpawnCasing("EmptyBrassMP40", casingDist, casingY, casingZ, frandom(-2,2), frandom(2,5), frandom(2,5), true, true);
                 PB_TakeAmmo("MP40Ammo", 1, 0, 0);
                 A_ZoomFactor(zoomA);
                 A_GunFlash();
 
-                if(ads)
-                    A_Overlay(MAINMUZZLEFLASH, "Flash2Variation");
-                else
-                    A_Overlay(MAINMUZZLEFLASH, "FlashVariation");
+                if(ads) A_Overlay(MAINMUZZLEFLASH, "Flash2Variation");
+                else A_Overlay(MAINMUZZLEFLASH, "FlashVariation");
+
                 A_OverlayFlags(MAINMUZZLEFLASH, PSPF_RENDERSTYLE, true);
                 A_OverlayRenderStyle(MAINMUZZLEFLASH, STYLE_Add);
 
@@ -124,6 +124,85 @@ class PB_MP40 : PB_Weapon
             case 2: case 3:
                 A_ZoomFactor(tic == 2 ? zoomB : zoomC);
                 if(tic == 2) PB_WeaponRecoil(recoilX, recoilY);
+                break;
+        }
+    }
+
+    // This is for the dual fire
+    action void MP40_FireOverlay(int tic, bool isLeft)
+    {
+        // Sets up variables
+        double smokeOfs     = isLeft ?  7 : -7;
+        double flareOfs     = isLeft ? -4 :  4;
+        double horOfs       = isLeft ? -11 : 14;
+        double vertOfs      = isLeft ? 32 : 31;
+        double horSpeed     = frandom(2,5);
+        double vertSpeed    = isLeft ? frandom(0,3) : frandom(4,7);
+        double recoilY      = isLeft ? +0.70 : -0.70;
+        int flashLayer      = isLeft ? LEFTMUZZLEFLASH : RIGHTMUZZLEFLASH;
+        string ammoClass    = isLeft 
+            ? invoker.AmmoLeft.getClassName() 
+            : invoker.ammo2.getClassName();
+
+        switch(tic)
+        {
+            case 1:
+                // This is for the gun smoke
+                PB_IncrementHeat(1, isLeft);
+
+                // Set up flashes
+                if(isLeft) A_Overlay(flashLayer, "LeftFlashVariation", true);
+                else A_Overlay(flashLayer, "RightFlashVariation", true);
+                A_OverlayFlags(flashLayer, PSPF_RENDERSTYLE, true);
+                A_OverlayRenderStyle(flashLayer, STYLE_Add);
+
+                // Start firing the weapon
+                A_AlertMonsters();
+                A_StartSound("weapons/mp40_fire", isLeft ? CHAN_7 : CHAN_6, CHANF_DEFAULT, 1.0);
+                PB_DynamicTail("smg", "smg");
+                
+                if(isLeft) PB_LowAmmoSoundWarning("smg", invoker.AmmoLeft.getClassName());
+                else PB_LowAmmoSoundWarning("smg");
+
+                // Fire the bullet
+                PB_FireBullets("PB_9x19mm", 1, 1.5, 0, 0, 1.5);
+
+                // Effects
+                A_FireCustomMissile("YellowFlareSpawn", 0, 0, flareOfs, 0);
+                PB_GunSmoke(smokeOfs, 0, 0);
+                PB_MuzzleFlashEffects(smokeOfs, 0, 0);
+                PB_SpawnCasing("EmptyBrassMP40", 21, horOfs, vertOfs, frandom(-2,2), horSpeed, vertSpeed, true, true);
+
+                // Take the ammo and end firing
+                PB_TakeAmmo(ammoClass, 1, 0, 0, isLeft);
+                A_ZoomFactor(0.985);
+                A_GunFlash();
+                PB_WeaponRecoil(-1.05, recoilY);
+                break;
+
+            case 2:
+                A_ZoomFactor(0.99);
+                if(isLeft) {
+                    if(invoker.ammoleft.amount <= 0 || invoker.ammo1.amount > 0)
+                        A_GiveInventory("DualFiring", 1);
+                }
+                else {
+                    if(invoker.ammoleft.amount > 0 || invoker.ammo1.amount <= 0)
+                        A_TakeInventory("DualFiring", 1);
+                }
+                PB_WeaponRecoil(-1.05, recoilY);
+                break;
+
+            case 3:
+                A_ZoomFactor(1.0);
+                PB_WeaponRecoil(-1.05, recoilY);
+                break;
+
+            case 4:
+                if(isLeft && invoker.ammoleft.amount <= 0)
+                    A_GiveInventory("DualFireReload", 1);
+                else if(!isLeft && invoker.ammo1.amount <= 0)
+                    A_GiveInventory("DualFireReload", 1);
                 break;
         }
     }
@@ -145,91 +224,6 @@ class PB_MP40 : PB_Weapon
         A_Print("$PB_MP40_NOAKIMBO");
 
         return ResolveState(null);
-    }
-
-    action void MP40_FireShot(bool isLeft)
-    {
-        double smokeOfs     = isLeft ?  7 : -7;
-        double flareOfs     = isLeft ? -4 :  4;
-        double casingYOfs   = isLeft ? -11 : 14;
-        double casingZOfs   = frandom(2,5);
-        double casingSpinA  = isLeft ? frandom(0,3) : frandom(4,7);
-        double recoilY      = isLeft ? +0.70 : -0.70;
-        string ammoClass    = isLeft 
-            ? invoker.AmmoLeft.getClassName() 
-            : invoker.ammo2.getClassName();
-
-        PB_IncrementHeat(1, isLeft);
-
-        int flashLayer = isLeft ? LEFTMUZZLEFLASH : RIGHTMUZZLEFLASH;
-
-        if(isLeft)
-            A_Overlay(flashLayer, "LeftFlashVariation", true);
-        else
-            A_Overlay(flashLayer, "RightFlashVariation", true);
-
-        A_OverlayFlags(flashLayer, PSPF_RENDERSTYLE, true);
-        A_OverlayRenderStyle(flashLayer, STYLE_Add);
-
-        A_AlertMonsters();
-        A_StartSound("weapons/mp40_fire", isLeft ? CHAN_7 : CHAN_6, CHANF_DEFAULT, 1.0);
-        PB_DynamicTail("smg", "smg");
-        if(isLeft)
-            PB_LowAmmoSoundWarning("smg", invoker.AmmoLeft.getClassName());
-        else
-            PB_LowAmmoSoundWarning("smg");
-        PB_FireBullets("PB_9x19mm", 1, 1.5, 0, 0, 1.5);
-        A_FireCustomMissile("YellowFlareSpawn", 0, 0, flareOfs, 0);
-        PB_GunSmoke(smokeOfs, 0, 0);
-        PB_MuzzleFlashEffects(smokeOfs, 0, 0);
-        PB_SpawnCasing("EmptyBrassMP40", 21, casingYOfs, 
-            isLeft ? 32 : 31, 
-            frandom(-2,2), casingZOfs, casingSpinA, 
-            true, true);
-        // A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
-        PB_TakeAmmo(ammoClass, 1, 0, 0, isLeft);
-        A_ZoomFactor(0.985);
-        A_GunFlash();
-        PB_WeaponRecoil(-1.05, recoilY);
-    }
-
-    action void MP40_FireOverlay(int tic, bool isLeft)
-    {
-        double recoilY = isLeft ? +0.70 : -0.70;
-
-        switch(tic)
-        {
-            case 1:
-                MP40_FireShot(isLeft);
-                break;
-
-            case 2:
-                A_ZoomFactor(0.99);
-                if(isLeft)
-                {
-                    if(invoker.ammoleft.amount <= 0 || invoker.ammo1.amount > 0)
-                        A_GiveInventory("DualFiring", 1);
-                }
-                else
-                {
-                    if(invoker.ammoleft.amount > 0 || invoker.ammo1.amount <= 0)
-                        A_TakeInventory("DualFiring", 1);
-                }
-                PB_WeaponRecoil(-1.05, recoilY);
-                break;
-
-            case 3:
-                A_ZoomFactor(1.0);
-                PB_WeaponRecoil(-1.05, recoilY);
-                break;
-
-            case 4:
-                if(isLeft && invoker.ammoleft.amount <= 0)
-                    A_GiveInventory("DualFireReload", 1);
-                else if(!isLeft && invoker.ammo1.amount <= 0)
-                    A_GiveInventory("DualFireReload", 1);
-                break;
-        }
     }
 
 //////////////////////////// STATES ////////////////////////////////////////////////////////////////////////////////////
@@ -277,7 +271,7 @@ class PB_MP40 : PB_Weapon
         Deselect:
             TNT1 A 0 {
 				A_WeaponOffset(0,32);
-				A_SetRoll(0);
+				PB_SetRoll(0);
 				A_SetInventory("PB_LockScreenTilt",0);
 				PB_ClearDualWield();
 			}
@@ -332,27 +326,21 @@ class PB_MP40 : PB_Weapon
 				PB_CoolDownBarrel(-4.5, -2, -3, 0, frandom(0.5, 1.0), 0., 1, 0.5);
 				PB_CoolDownBarrel(-4.5, -3.5, -3, 0, frandom(0.5, 1.0), 0, 1, 0.5);
 				PB_CoolDownBarrel(-4.5, -5, -3, 0, frandom(0.5, 1.0), 0, 1, 0.5);
-				if (PressingFire() && PressingAltfire() && invoker.ammo2.amount > 0){
-                    return ResolveState("Fire");
-				}
-				if (PressingFire() && invoker.ammo2.amount > 0){
-                    return ResolveState("Fire");
-				}
-				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);	
+				return PB_ReadyFire(ads:false);
 			}
 			Loop;
 
         // Ready ADS
         Ready2:
 			TNT1 A 0 {
-				A_SetRoll(0);
+				PB_SetRoll(0);
 				A_SetCrosshair(-1);
 				A_SetInventory("PB_LockScreenTilt",0);
 			}
 		ReadyToFire2:
 			MPZO E 1 {
 				PB_CoolDownBarrel(-1, 0, 0);
-				return PB_ReadyZoom();
+				return PB_ReadyFire(ads:true);
 			}
 			Loop;
 
@@ -415,29 +403,14 @@ class PB_MP40 : PB_Weapon
 			MPZO G 1 MP40_Fire(2);
 			MPZO H 1 A_ZoomFactor(1.25);
 			MPZO G 1 Offset(0,31);
-			TNT1 A 0 Offset(0,32) {
-				if(PB_GetAimMode()) {
-                    if(JustReleased(BT_ALTATTACK))
-                        return ResolveState("Zoomout");
-                    if (JustPressed(BT_ATTACK) && PressingAltfire())
-                        return ResolveState("Fire2");
-                }
-                else {
-                    if(PressingAltfire())
-                        return ResolveState("Zoomout");
-                    if (JustPressed(BT_ATTACK))
-                        return ResolveState("Fire2");
-                    // return PB_ReFire("Fire2");
-				}
-				return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
-			}
+			TNT1 A 0 Offset(0,32) PB_ReadyFire(ads:true);
 			Goto Ready2;
 
 //////////////////////////// ALTFIRE ////////////////////////////////////////////////////////////////////////////////////
         AltFire:
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
-				A_SetRoll(0);
+				PB_SetRoll(0);
 				PB_HandleCrosshair(44);
 				A_SetInventory("PB_LockScreenTilt",0);
 			}
@@ -472,8 +445,8 @@ class PB_MP40 : PB_Weapon
 				A_SetAkimbo(True);
 				A_PlaySoundEx("weapons/MP40_up", "Auto");
 			}
-			MP25 BCDEFG 1 A_Setroll(roll-0.5, SPF_INTERPOLATE);
-			MP25 HIJKL 1 A_Setroll(roll+1.0, SPF_INTERPOLATE);
+			MP25 BCDEFG 1 PB_SetRoll(roll-0.5);
+			MP25 HIJKL 1 PB_SetRoll(roll+1.0);
 			Goto ReadyDualWield;
 
 		StopDualWield:
@@ -481,8 +454,8 @@ class PB_MP40 : PB_Weapon
 				A_SetAkimbo(False);
 				A_PlaySoundEx("weapons/MP40_up", "Auto");
 			}
-			MP25 LKJIH 1 A_Setroll(roll+0.5, SPF_INTERPOLATE);
-			MP25 GFEDCB 1 A_Setroll(roll-1.0, SPF_INTERPOLATE);
+			MP25 LKJIH 1 PB_SetRoll(roll+0.5);
+			MP25 GFEDCB 1 PB_SetRoll(roll-1.0);
 			Goto Ready3;
 
 //////////////////////////// RELOAD ////////////////////////////////////////////////////////////////////////////////////
@@ -492,17 +465,17 @@ class PB_MP40 : PB_Weapon
                 MPR1 ABC 1;
                 TNT1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
                 MPR1 DEFG 1;
-                MPR1 HIJKLMN 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
+                MPR1 HIJKLMN 1 PB_SetRoll(roll+1.3);
                 MPR1 OPQRS 1;
                 TNT1 A 0 {
                     A_PlaySoundEx("MP40CLR", "Auto");
                     PB_SetMagUnloaded(true);
                 }
-                MPR1 TUVWXYZ 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
+                MPR1 TUVWXYZ 1 PB_SetRoll(roll-1.3);
             ReloadInsert:
-                MPR2 ABCDE 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
+                MPR2 ABCDE 1 PB_SetRoll(roll-1.3);
                 TNT1 A 0 A_PlaySoundEx("MP40CLI", "Auto");
-                MPR2 FGHIJ 1 A_SetRoll(roll+1.4, SPF_INTERPOLATE);
+                MPR2 FGHIJ 1 PB_SetRoll(roll+1.4);
                 MPR2 KLMNOPQ 1;
                 TNT1 A 0 {
                     A_PlaySoundEx("weapons/riflemagslap", "Auto");
@@ -510,9 +483,9 @@ class PB_MP40 : PB_Weapon
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                 }
-                MPR2 R 1 A_SetRoll(roll-2, SPF_INTERPOLATE);
-                MPR2 S 1 A_SetRoll(roll+3, SPF_INTERPOLATE);
-                MPR2 TU 1 A_SetRoll(roll-1.5, SPF_INTERPOLATE);
+                MPR2 R 1 PB_SetRoll(roll-2);
+                MPR2 S 1 PB_SetRoll(roll+3);
+                MPR2 TU 1 PB_SetRoll(roll-1.5);
                 MPR2 VWXYZ 1;
                 MPR3 ABCD 1;
             FinishReload:
@@ -524,19 +497,19 @@ class PB_MP40 : PB_Weapon
                 MR21 ABC 1;
                 TNT1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
                 MR21 DEFG 1;
-                MR21 HIJKLMN 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
+                MR21 HIJKLMN 1 PB_SetRoll(roll+1.3);
                 MR21 OP 1;
                 TNT1 A 0 {
                     A_PlaySoundEx("MP40CLR", "Auto");
                     PB_SetMagUnloaded(true);
                     A_FireCustomMissile("EmptyMagMP40",5,0,6,-4);
                 }
-                MR21 QRSTUVWXYZ 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
+                MR21 QRSTUVWXYZ 1 PB_SetRoll(roll-1.3);
             ReloadEmptyInsert:
-                MR22 ABCDEFG 1 A_SetRoll(roll-1, SPF_INTERPOLATE);
+                MR22 ABCDEFG 1 PB_SetRoll(roll-1);
                 TNT1 A 0 A_PlaySoundEx("MP40CLI", "Auto");
-                MR22 HIJKLMN 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
-                MR22 OPQRS 1 A_SetRoll(roll+1.4, SPF_INTERPOLATE);
+                MR22 HIJKLMN 1 PB_SetRoll(roll-1.3);
+                MR22 OPQRS 1 PB_SetRoll(roll+1.4);
                 TNT1 A 0
                 {
                     A_PlaySoundEx("weapons/riflemagslap", "Auto");
@@ -545,9 +518,9 @@ class PB_MP40 : PB_Weapon
                     PB_SetMagEmpty(false);
                 }
                 MR22 T 1;
-                MR22 UV 1 A_SetRoll(roll-2, SPF_INTERPOLATE);
-                MR22 WX 1 A_SetRoll(roll+3, SPF_INTERPOLATE);
-                MR22 YZ 1 A_SetRoll(roll-1.5, SPF_INTERPOLATE);
+                MR22 UV 1 PB_SetRoll(roll-2);
+                MR22 WX 1 PB_SetRoll(roll+3);
+                MR22 YZ 1 PB_SetRoll(roll-1.5);
                 MR23 ABCDEFGH 1;
                 TNT1 A 0 A_JumpIf(!PB_GetChamberEmpty(),"FinishReload");
                 MR23 IJK 1;
@@ -557,23 +530,23 @@ class PB_MP40 : PB_Weapon
                 MR21 ABC 1;
                 TNT1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
                 MR21 DEFG 1;
-                MPR1 HIJ 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
+                MPR1 HIJ 1 PB_SetRoll(roll+1.3);
                 TNT1 A 0 A_JumpIf(PB_GetMagEmpty(),"ReloadUnloadedEmpty");
-                MP4U IJKLMN 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
+                MP4U IJKLMN 1 PB_SetRoll(roll+1.3);
                 Goto ReloadInsert;
 
             ReloadUnloadedEmpty:
-                MP4U OPQRST 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
+                MP4U OPQRST 1 PB_SetRoll(roll+1.3);
                 Goto ReloadEmptyInsert;
 
             Rechamber:
                 TNT1 A 0 A_PlaySoundEx("IronSights", "Auto");
-                MR24 BCDEFGH 1 A_SetRoll(roll+0.35, SPF_INTERPOLATE);
+                MR24 BCDEFGH 1 PB_SetRoll(roll+0.35);
                 TNT1 A 0 {
                     A_PlaySoundEx("weapons/MP40_chamber", "Auto");
                     PB_SetChamberEmpty(false);
                 }
-                MR24 IJKLMN 1 A_SetRoll(roll-0.35, SPF_INTERPOLATE);
+                MR24 IJKLMN 1 PB_SetRoll(roll-0.35);
                 MR24 NOPQRST 1;
                 TNT1 A 0 PB_SetReloading(false);
                 goto Ready3;
@@ -614,19 +587,19 @@ class PB_MP40 : PB_Weapon
 
             ReloadRightEmpty:
                 M2E1 ABCD 1;
-                MR21 MN 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
+                MR21 MN 1 PB_SetRoll(roll+1.3);
                 MR21 OP 1;
                 TNT1 A 0 {
                     A_PlaySoundEx("MP40CLR", "Auto");
                     PB_SetMagUnloaded(true);
                     A_FireCustomMissile("EmptyMagMP40",-5,0,6,-4);
                 }
-                MR21 QRSTUVWXYZ 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
+                MR21 QRSTUVWXYZ 1 PB_SetRoll(roll-1.3);
             ReloadRightEmptyInsert:
-                MR22 ABCDEFG 1 A_SetRoll(roll-1, SPF_INTERPOLATE);
+                MR22 ABCDEFG 1 PB_SetRoll(roll-1);
                 TNT1 A 0 A_PlaySoundEx("MP40CLI", "Auto");
-                MR22 HIJKLMN 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
-                MR22 OPQRS 1 A_SetRoll(roll+1.4, SPF_INTERPOLATE);
+                MR22 HIJKLMN 1 PB_SetRoll(roll-1.3);
+                MR22 OPQRS 1 PB_SetRoll(roll+1.4);
                 TNT1 A 0 {
                     A_PlaySoundEx("weapons/riflemagslap", "Auto");
                     PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),PB_MP40FullAmmo);
@@ -634,9 +607,9 @@ class PB_MP40 : PB_Weapon
                     PB_SetMagEmpty(false);
                 }
                 MR22 T 1;
-                MR22 UV 1 A_SetRoll(roll-2, SPF_INTERPOLATE);
-                MR22 WX 1 A_SetRoll(roll+3, SPF_INTERPOLATE);
-                MR22 YZ 1 A_SetRoll(roll-1.5, SPF_INTERPOLATE);
+                MR22 UV 1 PB_SetRoll(roll-2);
+                MR22 WX 1 PB_SetRoll(roll+3);
+                MR22 YZ 1 PB_SetRoll(roll-1.5);
                 MR23 ABCDEFGHIJK 1;
                 TNT1 A 0 A_PlaySoundEx("IronSights", "Auto");
                 Goto RechamberRight;
@@ -644,12 +617,12 @@ class PB_MP40 : PB_Weapon
             StartRechamberRight:
                 MP25 LKJIHGE 1;
             RechamberRight:
-                MR24 BCDEFGH 1 A_SetRoll(roll+0.35, SPF_INTERPOLATE);
+                MR24 BCDEFGH 1 PB_SetRoll(roll+0.35);
                 TNT1 A 0 {
                     A_PlaySoundEx("weapons/MP40_chamber", "Auto");
                     PB_SetChamberEmpty(false);
                 }
-                MR24 IJKLMN 1 A_SetRoll(roll-0.35, SPF_INTERPOLATE);
+                MR24 IJKLMN 1 PB_SetRoll(roll-0.35);
                 MR24 NOO 1;
                 MRCO ABCDE 1;
                 TNT1 A 0 A_JumpIf((PB_GetMagUnloaded(true) || PB_GetChamberEmpty(true) || invoker.AmmoLeft.amount < PB_MP40FullAmmo) && invoker.ammo1.amount > 0, "ReloadLeftGunAfterEmpty");
@@ -660,18 +633,18 @@ class PB_MP40 : PB_Weapon
                 Goto Ready3;
 
             ReloadRight:
-                MPR1 MN 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
+                MPR1 MN 1 PB_SetRoll(roll+1.3);
                 MPR1 OPQRS 1;
                 TNT1 A 0 {
                     A_PlaySoundEx("MP40CLR", "Auto");
                     PB_SetMagUnloaded(true);
                 }
-                MPR1 TUVWX 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
-                MPR1 YZ 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
+                MPR1 TUVWX 1 PB_SetRoll(roll-1.3);
+                MPR1 YZ 1 PB_SetRoll(roll-1.3);
             ReloadRightInsert:
-                MPR2 ABCDE 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
+                MPR2 ABCDE 1 PB_SetRoll(roll-1.3);
                 TNT1 A 0 A_PlaySoundEx("MP40CLI", "Auto");
-                MPR2 FGHIJ 1 A_SetRoll(roll+1.4, SPF_INTERPOLATE);
+                MPR2 FGHIJ 1 PB_SetRoll(roll+1.4);
                 MPR2 KLMNOPQ 1;
                 TNT1 A 0 {
                     A_PlaySoundEx("weapons/riflemagslap", "Auto");
@@ -679,9 +652,9 @@ class PB_MP40 : PB_Weapon
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                 }
-                MPR2 R 1 A_SetRoll(roll-2, SPF_INTERPOLATE);
-                MPR2 S 1 A_SetRoll(roll+3, SPF_INTERPOLATE);
-                MPR2 TU 1 A_SetRoll(roll-1.5, SPF_INTERPOLATE);
+                MPR2 R 1 PB_SetRoll(roll-2);
+                MPR2 S 1 PB_SetRoll(roll+3);
+                MPR2 TU 1 PB_SetRoll(roll-1.5);
                 MPR2 VWXYZ 1;
                 MPR3 A 1;
                 TNT1 A 0 A_JumpIf((PB_GetMagUnloaded(true) || PB_GetChamberEmpty(true) || invoker.AmmoLeft.amount < PB_MP40FullAmmo) && invoker.ammo1.amount > 0, "ReloadLeftGun");
@@ -715,7 +688,7 @@ class PB_MP40 : PB_Weapon
                 M2R4 A 0 A_JumpIf(PB_GetChamberEmpty(true), 2);
                 M2R2 A 0;
                 "####" A 0;
-                "####" FG 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
+                "####" FG 1 PB_SetRoll(roll-1.3);
                 "####" HIJKLM 1;
                 "####" A 0 {
                     A_PlaySoundEx("MP40CLR", "Auto");
@@ -723,15 +696,15 @@ class PB_MP40 : PB_Weapon
                     if (PB_GetMagEmpty(true))
                         A_FireCustomMissile("EmptyMagMP40",5,0,-6,-4);
                 }
-                "####" NOPQ 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
-                "####" RS 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
-                "####" TU 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
+                "####" NOPQ 1 PB_SetRoll(roll-1.3);
+                "####" RS 1 PB_SetRoll(roll+1.3);
+                "####" TU 1 PB_SetRoll(roll+1.3);
             ReloadLeftGunInsert:
                 M2R4 A 0 A_JumpIf(PB_GetChamberEmpty(true), 2);
                 M2R2 A 0;
                 "####" VW 1;
                 "####" A 0 A_PlaySoundEx("MP40CLI", "Auto");
-                "####" XYZ 1 A_SetRoll(roll+1.4, SPF_INTERPOLATE);
+                "####" XYZ 1 PB_SetRoll(roll+1.4);
                 M2R5 A 0 A_JumpIf(PB_GetChamberEmpty(true), 2);
                 M2R3 A 0;
                 "####" A 0;
@@ -742,8 +715,8 @@ class PB_MP40 : PB_Weapon
                     PB_SetMagUnloaded(false,true);
                     PB_SetMagEmpty(false,true);
                 }
-                "####" JKLMNO 1 A_SetRoll(roll+2, SPF_INTERPOLATE);
-                "####" PQRSTUV 1 A_SetRoll(roll-0.75, SPF_INTERPOLATE);
+                "####" JKLMNO 1 PB_SetRoll(roll+2);
+                "####" PQRSTUV 1 PB_SetRoll(roll-0.75);
                 TNT1 A 0 A_JumpIf(PB_GetChamberEmpty(true), "RechamberLeft");
                 M2R3 WXY 1;
                 TNT1 A 0 PB_SetReloading(false);
@@ -757,12 +730,12 @@ class PB_MP40 : PB_Weapon
             StartRechamberLeft:
                 M2R6 VUT 1;
             RechamberLeft:
-                MR24 BCDEFGH 1 A_SetRoll(roll+0.35, SPF_INTERPOLATE);
+                MR24 BCDEFGH 1 PB_SetRoll(roll+0.35);
                 TNT1 A 0 {
                     A_PlaySoundEx("weapons/MP40_chamber", "Auto");
                     PB_SetChamberEmpty(false,true);
                 }
-                MR24 IJKLMN 1 A_SetRoll(roll-0.35, SPF_INTERPOLATE);
+                MR24 IJKLMN 1 PB_SetRoll(roll-0.35);
                 MR24 NO 1;
                 M2R6 RSTUV 1;
                 TNT1 A 0 PB_SetReloading(false);
@@ -780,7 +753,7 @@ class PB_MP40 : PB_Weapon
 			}
 			MPR1 ABC 1;
 			MPR1 DEFG 1;
-			MPR1 HIJKLMN 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
+			MPR1 HIJKLMN 1 PB_SetRoll(roll+1.3);
 			MPR1 OPQRS 1;
 			TNT1 A 0 {
 				A_PlaySoundEx("MP40CLR", "Auto");
@@ -788,7 +761,7 @@ class PB_MP40 : PB_Weapon
 				PB_SetMagUnloaded(true);
 				PB_SetMagEmpty(true);
 			}
-			MPR1 TUVWX 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
+			MPR1 TUVWX 1 PB_SetRoll(roll-1.3);
 			MPR1 YZZZZ 1;
 			MP4U ABCDEFGH 1;
 			Goto Ready3;
@@ -803,7 +776,7 @@ class PB_MP40 : PB_Weapon
 		UnloadRight:
 			TNT1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
 			M2R1 ABCDE 1;
-			MPR1 MN 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
+			MPR1 MN 1 PB_SetRoll(roll+1.3);
 			MPR1 OPQRS 1;
 			TNT1 A 0 {
 				A_PlaySoundEx("MP40CLR", "Auto");
@@ -811,7 +784,7 @@ class PB_MP40 : PB_Weapon
 				PB_SetMagUnloaded(true);
 				PB_SetMagEmpty(true);
 			}
-			MPR1 TUVWXYZ 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
+			MPR1 TUVWXYZ 1 PB_SetRoll(roll-1.3);
             TNT1 A 0 A_JumpIf(invoker.AmmoLeft.amount >= 1, "UnloadLeft");
 			M2U1 HGFEDCBA 1;
 			TNT1 A 0 PB_SetReloading(false);
@@ -831,7 +804,7 @@ class PB_MP40 : PB_Weapon
 			M2R1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
 			M2R8 EDCBA 1;
 		UnloadLeftSequence:
-			M2R2 FG 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
+			M2R2 FG 1 PB_SetRoll(roll-1.3);
 			M2R2 HIJKLM 1;
 			TNT1 A 0 {
 				A_PlaySoundEx("MP40CLR", "Auto");
@@ -839,9 +812,9 @@ class PB_MP40 : PB_Weapon
 				PB_SetMagUnloaded(true,true);
 				PB_SetMagEmpty(true,true);
 			}
-			M2R2 NOPQ 1 A_SetRoll(roll-1.3, SPF_INTERPOLATE);
-			M2R2 RS 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
-			M2R2 TU 1 A_SetRoll(roll+1.3, SPF_INTERPOLATE);
+			M2R2 NOPQ 1 PB_SetRoll(roll-1.3);
+			M2R2 RS 1 PB_SetRoll(roll+1.3);
+			M2R2 TU 1 PB_SetRoll(roll+1.3);
 			M2U2 FEDCBA 1;
 			TNT1 A 0 PB_SetReloading(false);
 			Goto Ready3;

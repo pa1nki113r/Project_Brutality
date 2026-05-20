@@ -19,30 +19,38 @@ enum PB_OverlayLayers{
 	
 extend class PB_WeaponBase
 {
-	action state PB_ReadyZoom(statelabel zoomout = "Zoomout", statelabel firezoom = "Fire2", bool useMag = true)
+	// Function for weapons that have both dual wield and ads, just enable the ads if its called in ready2
+	action state PB_ReadyFire(
+		statelabel fire     = "Fire",
+		statelabel firezoom = "Fire2",
+		statelabel zoomout  = "Zoomout",
+		bool ads            = false,
+		bool useMag         = true)
 	{
 		int ammoToCheck = useMag ? invoker.ammo2.amount : invoker.ammo1.amount;
-		if(PB_GetAimMode())
+
+		if(ads && PB_GetAimMode())
 		{
 			if(!PressingAltfire() || JustReleased(BT_ALTATTACK))
 				return ResolveState(zoomout);
-			if (PressingFire() && PressingAltfire() && ammoToCheck > 0)
+			if(PressingFire() && PressingAltfire() && ammoToCheck > 0)
 				return ResolveState(firezoom);
-			return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY);
+			return A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOSECONDARY);
 		}
-		else
-		{
-			if (PressingFire() && ammoToCheck > 0 )
-				return ResolveState(firezoom);
-			return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
-		}
-		return ResolveState(null);
+
+		if(PressingFire() && PressingAltfire() && ammoToCheck > 0)
+			return ResolveState(ads ? firezoom : fire);
+		if(PressingFire() && ammoToCheck > 0)
+			return ResolveState(ads ? firezoom : fire);
+
+		return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
 	}
 
 	// It would be nice if the zoomed token can be turned into variable inside baseweapon
 	action void PB_SetZoom(bool set)
 	{
 		A_SetInventory("Zoomed", set);
+		if(set == false) A_ZoomFactor(1.0);
 	}
 
 	action bool PB_GetZoom()
@@ -2441,8 +2449,8 @@ extend class PB_WeaponBase
 			InStateSequence(PSPState,invoker.ResolveState("FlashBarrelAirKicking"))||
 			InStateSequence(PSPState,invoker.ResolveState("FlashBarrelSlideKickingStop")))
 		 ||
-		(InStateSequence(invoker.owner.player.GetPSprite(10).Curstate,invoker.ResolveState("IdleLeft_Overlay")) && 
-		 InStateSequence(invoker.owner.player.GetPSprite(11).Curstate,invoker.ResolveState("IdleRight_Overlay")) && 
+		(InStateSequence(invoker.owner.player.GetPSprite(PSP_LEFTGUN).Curstate,invoker.ResolveState("IdleLeft_Overlay")) && 
+		 InStateSequence(invoker.owner.player.GetPSprite(PSP_RIGHTGUN).Curstate,invoker.ResolveState("IdleRight_Overlay")) && 
 		 (InStateSequence(PSPState,invoker.ResolveState("ReadyToFireDualWield")) ||
 		 InStateSequence(PSPState,invoker.ResolveState("ReadyDualWield")))))
 			return true;
@@ -2784,17 +2792,17 @@ action int getReadyFlags(int weapflags, bool noReload)
 		if(owner.FindInventory("HasBarrel")) {
 			owner.SetInventory("HasBarrel",0);
 			owner.SetInventory("GrabbedBarrel",1);
-			owner.player.SetPSprite(1,resolvestate("ReadyBarrel"));
+			owner.player.SetPSprite(PSP_WEAPON,resolvestate("ReadyBarrel"));
 		}
 		if(owner.FindInventory("HasFlameBarrel")) {
 			owner.SetInventory("HasFlameBarrel",0);
 			owner.SetInventory("GrabbedFlameBarrel",1);
-			owner.player.SetPSprite(1,resolvestate("ReadyFlameBarrel"));
+			owner.player.SetPSprite(PSP_WEAPON,resolvestate("ReadyFlameBarrel"));
 		}
 		if(owner.FindInventory("HasIceBarrel")) {
 			owner.SetInventory("HasIceBarrel",0);
 			owner.SetInventory("GrabbedIceBarrel",1);
-			owner.player.SetPSprite(1,resolvestate("ReadyIceBarrel"));
+			owner.player.SetPSprite(PSP_WEAPON,resolvestate("ReadyIceBarrel"));
 		}
 		
 		if((overheat > 0 || leftOverheat > 0) && overheatCoolingRate > 0 && owner.player.ReadyWeapon != self && level.time % overheatCoolingRate == 0) {

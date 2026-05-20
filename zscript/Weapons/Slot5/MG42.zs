@@ -437,6 +437,7 @@ class PB_MG42 : PB_Weapon
             MG4C ABCD 0;
             MG3C ABCD 0;
             MG2C ABCD 0;
+            
             // Actual ChangeBullet
             TNT1 A 0 MG42_SetBeltSprite("MA15","MA14","MA13","MA12","TNT1",layer:overlayID());
             "####" ABCDEFGHIIIJKLMNOPQRSTTTTTTUVVVVWXYZ 1;
