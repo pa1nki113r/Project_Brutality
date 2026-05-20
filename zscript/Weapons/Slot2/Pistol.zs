@@ -77,6 +77,7 @@ class PB_Pistol : PB_Weapon
     }
 
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
+    bool lastShotLeft;
     bool hasSilencer;
     bool burstFire;
     int pistolFireAnimation;
@@ -85,6 +86,54 @@ class PB_Pistol : PB_Weapon
     const LEFTMUZZLEFLASH   = -5;
     const RIGHTMUZZLEFLASH  = -6;
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
+
+    // I added the useMag so its easier to turn it into a generic function
+	action state PB_DualRefire(bool isLeft, bool useMag = true)
+    {
+        // Get the CVAR and weapon side
+        int firemode = Cvar.GetCvar("SingleDualFire", player).GetInt();
+        bool isFiring = isLeft ? A_IsFiringLeftWeapon() : A_IsFiringRightWeapon();
+        
+        // Separates the input based on the mode
+        bool inputPressed = false;
+        // Mode 0: Single Button
+        if (firemode == 0)
+        {
+            bool shouldFire = (isLeft && !invoker.lastShotLeft) || (!isLeft && invoker.lastShotLeft);
+            inputPressed = JustPressed(BT_ATTACK) && shouldFire;
+        }
+        // Mode 1: Default (Primary fire: Fire left weapon, Alt-fire: Fire right weapon)
+        else if (firemode == 1)
+        {
+            int fireButton = isLeft ? BT_ATTACK : BT_ALTATTACK;
+            inputPressed = JustPressed(fireButton);
+        }
+        // Mode 2: Inverted (Primary fire: Fire right weapon, Alt-fire: Fire left weapon)
+        else if (firemode == 2)
+        {
+            int fireButton = isLeft ? BT_ALTATTACK : BT_ATTACK;
+            inputPressed = JustPressed(fireButton);
+        }
+
+        // Actually do the Refire
+        if (inputPressed && !isFiring)
+        {
+			int ammoCount = 0;
+			// Checks if the weapon uses a mag (just in case)
+			if(useMag) ammoCount = isLeft ? invoker.ammoleft.amount : invoker.ammo2.amount;
+			else ammoCount = invoker.ammo1.amount;
+			// Checks if the weapon has the mag unloaded, this is skipped if the weapon doesnt use a mag
+            bool magUnloaded = isLeft ? PB_GetMagUnloaded(true) : PB_GetMagUnloaded();
+
+            if (ammoCount > 0 && !magUnloaded && useMag || ammoCount > 0 && !useMag)
+            {
+                if(isLeft) return ResolveState("FireLeft_Overlay");
+                else return ResolveState("FireRight_Overlay");
+            }
+            A_PlaySoundEx("weapons/empty", "Auto");
+        }
+        return ResolveState(null);
+    }
 
     // Normal / ADS Fire
     action void Pistol_Fire(int tic, bool burst)
@@ -201,6 +250,7 @@ class PB_Pistol : PB_Weapon
                 PB_SpawnCasing("EmptyBrassPistol", 26, vertOfs, 38, frandom(-2,2), -frandom(2,5), frandom(3,6), true, true);
                 if(isLeft)
                 {
+                    invoker.lastShotLeft = true;
                     setFireAnimation(2);
                     PB_LowAmmoSoundWarning("pistol", ammoClass);
                     PB_TakeAmmo(ammoClass, 1, 1, 0, true);
@@ -208,6 +258,7 @@ class PB_Pistol : PB_Weapon
                 }
                 else
                 {
+                    invoker.lastShotLeft = false;
                     setFireAnimation(1);
                     PB_LowAmmoSoundWarning("pistol");
                     PB_TakeAmmo(ammoClass, 1);
@@ -281,93 +332,6 @@ class PB_Pistol : PB_Weapon
 
         if (getSilencer()) psp.sprite = GetSpriteIndex(silencedSprite);
         else psp.sprite = GetSpriteIndex(normalSprite);
-    }
-
-    // I tried just copying the refire function to this one without combining them
-    // It still gives the same bug
-    // action state Pistol_LeftRefire()
-    // {
-    //     if(JustPressed(BT_ALTATTACK) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") == 2)
-    //     {
-    //         if(invoker.ammoleft.amount > 0){
-    //             return ResolveState("FireLeft_Overlay");
-    //         }
-    //         else {
-    //             A_PlaySoundEx("weapons/empty", "Auto");
-    //             return ResolveState(null);
-    //         }
-    //     }
-    //     if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") < 2)
-    //     {
-    //         if(invoker.ammoleft.amount > 0){
-    //             return ResolveState("FireLeft_Overlay");
-    //         }
-    //         else {
-    //             A_PlaySoundEx("weapons/empty", "Auto");
-    //             return ResolveState(null);
-    //         }
-    //     }
-    //     return ResolveState(null);
-    // }
-
-    // action state Pistol_RightRefire()
-    // {
-    //     if(JustPressed(BT_ATTACK) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire") == 2)
-    //     {
-    //         if(invoker.ammo2.amount > 0 && !PB_GetMagUnloaded()){
-    //             return ResolveState("FireRight_Overlay");
-    //         }
-    //         else {
-    //             A_PlaySoundEx("weapons/empty", "Auto");
-    //             return ResolveState(null);
-    //         }
-    //     }
-    //     if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && GetCvar("SingleDualFire") < 2)
-    //     {
-    //         if(invoker.ammo2.amount > 0 && !PB_GetMagUnloaded()){
-    //             return ResolveState("FireRight_Overlay");
-    //         }
-    //         else {
-    //             A_PlaySoundEx("weapons/empty", "Auto");
-    //             return ResolveState(null);
-    //         }
-    //     }
-    //     return ResolveState(null);
-    // }
-
-
-    action state Pistol_DualRefire(bool isLeft)
-    {
-        int firemode        = Cvar.GetCvar("SingleDualFire", player).GetInt();
-        int primaryBtn      = isLeft ? BT_ATTACK    : BT_ATTACK;
-        int secondaryBtn    = isLeft ? BT_ALTATTACK : BT_ALTATTACK;
-        bool isFiring       = isLeft ? A_IsFiringLeftWeapon() : A_IsFiringRightWeapon();
-        int ammoCount       = isLeft ? invoker.ammoleft.amount : invoker.ammo2.amount;
-        bool magUnloaded    = isLeft ? false : PB_GetMagUnloaded();
-        // statelabel fireState = isLeft ? "FireLeft_Overlay" : "FireRight_Overlay";
-
-        int cvar2Btn        = isLeft ? BT_ALTATTACK : BT_ATTACK;
-        int cvarLowBtn      = isLeft ? BT_ATTACK : BT_ALTATTACK;
-
-        if(JustPressed(cvar2Btn) && !isFiring && firemode == 2)
-        {
-            if(ammoCount > 0 && !magUnloaded)
-                if(isLeft) return ResolveState("FireLeft_Overlay");
-                else return ResolveState("FireRight_Overlay");
-            A_PlaySoundEx("weapons/empty", "Auto");
-            return ResolveState(null);
-        }
-
-        if(JustPressed(cvarLowBtn) && !isFiring && firemode < 2)
-        {
-            if(ammoCount > 0 && !magUnloaded)
-                if(isLeft) return ResolveState("FireLeft_Overlay");
-                else return ResolveState("FireRight_Overlay");
-            A_PlaySoundEx("weapons/empty", "Auto");
-            return ResolveState(null);
-        }
-
-        return ResolveState(null);
     }
 
     action state Pistol_WeaponSpecial()
@@ -517,7 +481,7 @@ class PB_Pistol : PB_Weapon
         D2GG A 0;
         D2GS ABCDEFGHIJKLM 0;
         D2GT ABCDEFGHIJKLM 0;
-        D6GC ABCDEFGHIJKLMN 0;              // Attach Suppressor Dual Wield
+        D6GC ABCDEFGHIJKLMN 0;              // Attach Suppressor Dual Wield (This is unused?)
         D6GG ABCDEFGHIJKLMN 0;              // Kicking Dual Wield
         D6GH ABCDEFGHIJKLMN 0;              // Kicking Dual Wield Suppressor
         // Reload Dual Wield
@@ -530,7 +494,7 @@ class PB_Pistol : PB_Weapon
         D6GZ ABCDEFGHIJKLMNOPZ 0;           // Eject Right
         D6GE ABCDEFGHIJKLMNOPQRSTUVWXYZ 0;  // Reload Suppressor Dual Wield
         D6GF ABCDEFGHIJKLMNOPQRSTUVWXYZ 0;  // Reload Suppressor Dual Wield
-        D6GD ABCDEFGHIJKLMNO 0;             // Remove Silencer Dual Wiel
+        D6GD ABCDEFGHIJKLMNO 0;             // Remove Silencer Dual Wield (This is also unused)
         D6GI ABCDEFGHIJKLMNOPQRSTUVWZ 0;    // Slide Dual Wield
         D6GJ ABCDEFGHIJKLMNOPQRSTUVWZ 0;    // Slide Suppressor Dual Wield
 
@@ -789,7 +753,7 @@ class PB_Pistol : PB_Weapon
             D2GR AAAAA 1 {
                 setSilencerSprites(silencedRight: "D33R");
                 // return Pistol_RightRefire();
-                return Pistol_DualRefire(false);
+                return PB_DualRefire(false);
             }
             D2GR AA 1 setSilencerSprites(silencedRight: "D33R");
             Goto IdleRight_Overlay;
@@ -803,7 +767,7 @@ class PB_Pistol : PB_Weapon
             D2GL AAAAA 1 {
                 setSilencerSprites(silencedLeft:"D33L");
                 // return Pistol_LeftRefire();
-                return Pistol_DualRefire(true);
+                return PB_DualRefire(true);
             }
             D2GL AA 1 setSilencerSprites(silencedLeft:"D33L");
             TNT1 A 0 {
@@ -815,7 +779,7 @@ class PB_Pistol : PB_Weapon
         FireRightBurst_Overlay:
             TNT1 A 0 { invoker.pistolBurstCount = 0; }
         FireRightBurstLoop:
-            TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo", 1, "FireRightBurstShot");
+            TNT1 A 0 A_JumpIf(invoker.ammo2.amount >= 1, "FireRightBurstShot");
             TNT1 A 0 A_PlaySoundEx("weapons/empty", "Auto");
             Goto StopRightBurst_Overlay;
         FireRightBurstShot:
@@ -834,7 +798,7 @@ class PB_Pistol : PB_Weapon
             D2GR AAAAA 1 {
                 setSilencerSprites(silencedRight:"DR3F");
                 // return Pistol_RightRefire();
-                return Pistol_DualRefire(false);
+                return PB_DualRefire(false);
             }
             D2GR AA 1 setSilencerSprites(silencedRight:"D33R");
             Goto IdleRight_Overlay;
@@ -842,7 +806,7 @@ class PB_Pistol : PB_Weapon
         FireLeftBurst_Overlay:
             TNT1 A 0 { invoker.pistolBurstCount = 0; }
         FireLeftBurstLoop:
-            TNT1 A 0 A_JumpIfInventory("SecondaryPistolAmmo", 1, "FireLeftBurstShot");
+            TNT1 A 0 A_JumpIf(invoker.ammoleft.amount >= 1, "FireLeftBurstShot");
             TNT1 A 0 A_PlaySoundEx("weapons/empty", "Auto");
             Goto StopLeftBurst_Overlay;
         FireLeftBurstShot:
@@ -861,7 +825,7 @@ class PB_Pistol : PB_Weapon
             D2GL AAAAA 1 {
                 setSilencerSprites(silencedLeft:"D33L");
                 // return Pistol_LeftRefire();
-                return Pistol_DualRefire(true);
+                return PB_DualRefire(true);
             }
             D2GL AA 1 setSilencerSprites(silencedLeft:"D33L");
             TNT1 A 0 {
@@ -1009,10 +973,11 @@ class PB_Pistol : PB_Weapon
                     PB_SetRoll(roll-.1);
                 }
                 TNT1 A 0 {
-                    if(PB_GetChamberEmpty())
-                        PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),PB_PistolFullAmmo-1,invoker.reservetomagammofactor);
-                    else
-                        PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),PB_PistolFullAmmo,invoker.reservetomagammofactor);
+                    PB_AmmoIntoMag(
+                        invoker.ammo2.getClassName(),
+                        invoker.ammo1.getClassName(),
+                        PB_GetChamberEmpty() ? PB_PistolFullAmmo-1 : PB_PistolFullAmmo,
+                        invoker.reservetomagammofactor);
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                     A_PlaySoundEx("PSRLIN", "Auto");
@@ -1056,7 +1021,7 @@ class PB_Pistol : PB_Weapon
                 // Actual Reload Dual Wield
                 TNT1 A 0 PB_ClearDualWield();
                 TNT1 A 0 PB_CheckReload(null,null,null,"ReloadLeftOnly","Ready3",PB_PistolFullAmmo,invoker.reservetomagammofactor);
-                TNT1 A 0 A_JumpIf(invoker.ammoleft.amount >= 16, "ReloadRightOnly");
+                TNT1 A 0 A_JumpIf(invoker.ammoleft.amount >= PB_PistolFullAmmo, "ReloadRightOnly"); // If left weapon is full
                 TNT1 A 0 A_JumpIf(invoker.ammo1.amount < 1, "NoAmmo");
                 TNT1 A 0 A_JumpIf(PB_GetMagUnloaded() || PB_GetMagUnloaded(true),"ReloadDualWieldUnloaded");
                 TNT1 A 0 A_PlaySoundEx("PSRLOUT", "Auto");
@@ -1064,10 +1029,8 @@ class PB_Pistol : PB_Weapon
                 TNT1 A 0 A_PlaySoundEx("PSRLOUT", "Auto");
                 D6GA BCDE 1 setSilencerSprites("D6GE");
                 TNT1 A 0 {
-                    if (PB_GetMagEmpty())
-                        PB_SpawnCasing("EmptyPistolMag",30,12,16,1,-2,-2,false);
-                    if (PB_GetMagEmpty(true))
-                        PB_SpawnCasing("EmptyPistolMag",30,-12,16,1,2,-2,false);
+                    if (PB_GetMagEmpty()) PB_SpawnCasing("EmptyPistolMag",30,12,16,1,-2,-2,false);
+                    if (PB_GetMagEmpty(true)) PB_SpawnCasing("EmptyPistolMag",30,-12,16,1,2,-2,false);
                     PB_SetMagUnloaded(true);
                     PB_SetMagUnloaded(true,true);
                 }
@@ -1101,13 +1064,12 @@ class PB_Pistol : PB_Weapon
                 // Cache Sprites
                 D6GY ABCDEFGHIJKLMZ 0;
                 // Actual Reload Left Only
-                TNT1 A 0 PB_CheckReload(null,null,null,"ReloadRightOnly","Ready3",16,1,true);
+                TNT1 A 0 PB_CheckReload(null,null,null,"ReloadRightOnly","Ready3",PB_PistolFullAmmo,invoker.reservetomagammofactor,true);
                 TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(true) && !PB_GetMagUnloaded(),"ReloadLeftOnlyUnloaded");
                 TNT1 A 0 A_PlaySoundEx("PSRLOUT", "Auto");
                 D6GW ABCDE 1 setSilencerSprites("D6GY");
                 TNT1 A 0 {
-                    if (PB_GetMagEmpty(true))
-                        PB_SpawnCasing("EmptyPistolMag",30,-12,16,1,2,-2,false);
+                    if (PB_GetMagEmpty(true)) PB_SpawnCasing("EmptyPistolMag",30,-12,16,1,2,-2,false);
                     PB_SetMagUnloaded(true,true);
                 }
                 D6GW FGHI 1 setSilencerSprites("D6GY");
@@ -1132,8 +1094,7 @@ class PB_Pistol : PB_Weapon
                 TNT1 A 0 A_PlaySoundEx("PSRLOUT", "Auto");
                 D6GX ABCDE 1 setSilencerSprites("D6GZ");
                 TNT1 A 0 {
-                    if (PB_GetMagEmpty())
-                        PB_SpawnCasing("EmptyPistolMag",30,12,16,1,-2,-2,false);
+                    if (PB_GetMagEmpty()) PB_SpawnCasing("EmptyPistolMag",30,12,16,1,-2,-2,false);
                     PB_SetMagUnloaded(true);
                 }
                 D6GX FGHI 1 setSilencerSprites("D6GZ");
@@ -1180,13 +1141,12 @@ class PB_Pistol : PB_Weapon
                     PB_SetRoll(roll-.5);
                 }
                 TNT1 A 0 {
-                    if(PB_GetChamberEmpty(true)) {
-                        A_PlaySoundEx("PSRLFIN", "Auto");
-                        PB_AmmoIntoMag(invoker.ammoleft.getClassName(),invoker.ammo1.getClassName(),PB_PistolFullAmmo-1,invoker.reservetomagammofactor);
-                    }
-                    else {
-                        PB_AmmoIntoMag(invoker.ammoleft.getClassName(),invoker.ammo1.getClassName(),PB_PistolFullAmmo,invoker.reservetomagammofactor);
-                    }
+                    if(PB_GetChamberEmpty(true)) A_PlaySoundEx("PSRLFIN", "Auto");
+                    PB_AmmoIntoMag(
+                        invoker.ammoleft.getClassName(),
+                        invoker.ammo1.getClassName(),
+                        PB_GetChamberEmpty(true) ? PB_PistolFullAmmo-1 : PB_PistolFullAmmo,
+                        invoker.reservetomagammofactor);
                     PB_SetMagUnloaded(false,true);
                     PB_SetMagEmpty(false,true);
                     PB_SetChamberEmpty(false,true);
@@ -1197,7 +1157,7 @@ class PB_Pistol : PB_Weapon
                     PB_SetRoll(roll-.5);
                 }
                 D6GA W 1 setSilencerSprites("D6GE");
-                TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",16,"FinishReloadLeftOnly");
+                TNT1 A 0 A_JumpIf(invoker.ammo2.amount >= 16,"FinishReloadLeftOnly");
                 D6GA XYZ 1 setSilencerSprites("D6GE");
                 TNT1 A 1;
                 D6GB ABCDE 1 {
@@ -1217,10 +1177,11 @@ class PB_Pistol : PB_Weapon
                 TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,2);
                 TNT1 A 0 A_PlaySoundEx("PSRLFIN", "Auto");
                 TNT1 A 0 {
-                    if(PB_GetChamberEmpty())
-                        PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),PB_PistolFullAmmo-1,invoker.reservetomagammofactor);
-                    else
-                        PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),PB_PistolFullAmmo,invoker.reservetomagammofactor);
+                    PB_AmmoIntoMag(
+                        invoker.ammo2.getClassName(),
+                        invoker.ammo1.getClassName(),
+                        PB_GetChamberEmpty() ? PB_PistolFullAmmo-1 : PB_PistolFullAmmo,
+                        invoker.reservetomagammofactor);
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                     PB_SetChamberEmpty(false);
