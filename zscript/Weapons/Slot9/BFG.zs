@@ -749,7 +749,7 @@ class BlackHole_GravityBomb : actor
 			}
 			TNT1 AAAAA 0 A_CustomMissile ("PurplePlasmaParticle", 0, 0, random (0, 360), 2, random (0, 360));
 			031G ABCDEFGHIJK 1 BRIGHT Light("BlackholeBallSmall"){
-				A_SetScale(ScaleX-0.01, ScaleY-0.01);
+				A_SetScale(Scale.X-0.01, Scale.Y-0.01);
 				A_RadiusThrust(-10,800,0);
 			}
 			TNT1 A 0 A_Explode(220, 120, 0, 0, 120);
@@ -854,7 +854,7 @@ class BFG_BeamProjectile : MageWandMissile
             TNT1 A 0 A_SpawnItemEx("BFGLightningTrial", 0, random(-1,1), random(4,6));
             TNT1 A 0 A_SpawnItemEx("NewBFGTrailGreen", 0, random(8,-8), random(8,-8), 0, 0, 0, 0, 128, 0);
             TNT1 A 0 A_SpawnItemEx("BFGFOG", 0, 0);
-            HSPL ABCDEFGHIJ 1 bright Light("BFGALT") A_SetScale(ScaleX -0.1, ScaleY -0.1);
+            HSPL ABCDEFGHIJ 1 bright Light("BFGALT") A_SetScale(Scale.X -0.1, Scale.Y -0.1);
             stop;
     }
 }
@@ -897,7 +897,7 @@ class BFGBeamPuff : actor
 				A_SpawnItemEx("NewBFGTrailGreen", 0, random(8,-8), random(8,-8), 0, 0, 0, 0, 128, 0);
 				A_SpawnItemEx("BFGFOG", 0, 0);
 			}
-			HSPL ABCDEFGHIJ 1 bright Light("BFGALT") A_SetScale(ScaleX - 0.1, ScaleY - 0.1);
+			HSPL ABCDEFGHIJ 1 bright Light("BFGALT") A_SetScale(Scale.X - 0.1, Scale.Y - 0.1);
 			stop;
 	}
 }
@@ -959,7 +959,7 @@ class Blackhole_Ball : actor
 			TNT1 A 0 A_StartSound("weapons/bh_app", CHAN_5);
 			029G ABCDEFGHIJKLM 1 Bright Light("BlackholeBall")
 			{
-				A_SetScale(ScaleX-0.02, ScaleY-0.02);
+				A_SetScale(Scale.X-0.02, Scale.Y-0.02);
 				Radius_Quake (8, 16, 0, 200, 0);//(intensity, duration, damrad, tremrad, tid)
 			}
 			TNT1 A 0 A_SpawnItemEx ("PB_BlackHole",0,0,0,0,0,0,0,SXF_SETTARGET); //Set the projectiles target AKA shooter as the black holes' source, for proper kill credit.

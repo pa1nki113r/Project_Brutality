@@ -77,7 +77,7 @@ class PB_Pistol : PB_Weapon
     }
 
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
-    bool lastShotLeft;
+    bool pistolLastShotLeft;
     bool hasSilencer;
     bool burstFire;
     int pistolFireAnimation;
@@ -99,7 +99,7 @@ class PB_Pistol : PB_Weapon
         // Mode 0: Single Button
         if (firemode == 0)
         {
-            bool shouldFire = (isLeft && !invoker.lastShotLeft) || (!isLeft && invoker.lastShotLeft);
+            bool shouldFire = (isLeft && !invoker.pistolLastShotLeft) || (!isLeft && invoker.pistolLastShotLeft);
             inputPressed = JustPressed(BT_ATTACK) && shouldFire;
         }
         // Mode 1: Default (Primary fire: Fire left weapon, Alt-fire: Fire right weapon)
@@ -250,7 +250,7 @@ class PB_Pistol : PB_Weapon
                 PB_SpawnCasing("EmptyBrassPistol", 26, vertOfs, 38, frandom(-2,2), -frandom(2,5), frandom(3,6), true, true);
                 if(isLeft)
                 {
-                    invoker.lastShotLeft = true;
+                    invoker.pistolLastShotLeft = true;
                     setFireAnimation(2);
                     PB_LowAmmoSoundWarning("pistol", ammoClass);
                     PB_TakeAmmo(ammoClass, 1, 1, 0, true);
@@ -258,7 +258,7 @@ class PB_Pistol : PB_Weapon
                 }
                 else
                 {
-                    invoker.lastShotLeft = false;
+                    invoker.pistolLastShotLeft = false;
                     setFireAnimation(1);
                     PB_LowAmmoSoundWarning("pistol");
                     PB_TakeAmmo(ammoClass, 1);
@@ -656,7 +656,7 @@ class PB_Pistol : PB_Weapon
             DEGG A 0 setSilencerSprites("D3GG");
             TNT1 A 0 {
                 A_WeaponOffset(0, 32);
-                A_SetRoll(0);
+                PB_SetRoll(0);
                 PB_HandleCrosshair(43);
                 A_SetInventory("PB_LockScreenTilt", 0);
             }
