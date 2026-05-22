@@ -32,10 +32,10 @@ class PB_BFG9000 : PB_Weapon
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
     bool blackholeMode;
     // How many cells should it take for each mode
-    const ammoTakeGreen     = 40;   // Fire Normal BFG
-    const ammoTakePurple    = 80;   // Fire Black Hole
-    const ammoTakeGreenAlt  = 1;    // Fire Laser (takes per tic) 
-    const ammoTakePurpleAlt = 30;   // Fire Gravity Bomb
+    const AMMO_TAKE_GREEN      = 40;   // Fire Normal BFG
+    const AMMO_TAKE_PURPLE     = 80;   // Fire Black Hole
+    const AMMO_TAKE_GREEN_ALT  = 1;    // Fire Laser (takes per tic) 
+    const AMMO_TAKE_PURPLE_ALT = 30;   // Fire Gravity Bomb
     
 	//temporal thing for the bfg alt fire, move this to the bfg when/if it gets rewritten in zscript
 	// beef: done
@@ -105,7 +105,7 @@ class PB_BFG9000 : PB_Weapon
 
                 case 3:
                 A_FireCustomMissile("PB_SuperBFGBall");
-                A_TakeInventory(invoker.ammo1.getClassName(), ammoTakeGreen, TIF_NOTAKEINFINITE);
+                A_TakeInventory(invoker.ammo1.getClassName(), AMMO_TAKE_GREEN, TIF_NOTAKEINFINITE);
                 A_ZoomFactor(0.98, ZOOM_INSTANT);
                 A_GunFlash();
                 A_AlertMonsters();
@@ -131,7 +131,7 @@ class PB_BFG9000 : PB_Weapon
                 A_StopSound(CHAN_6);
                 A_StopSound(CHAN_7);
                 A_FireCustomMissile("Blackhole_Ball",0,1,0,0);
-                A_TakeInventory(invoker.ammo1.getClassName(), ammoTakePurple, TIF_NOTAKEINFINITE);
+                A_TakeInventory(invoker.ammo1.getClassName(), AMMO_TAKE_PURPLE, TIF_NOTAKEINFINITE);
                 A_AlertMonsters();
                 break;
             }
@@ -171,7 +171,7 @@ class PB_BFG9000 : PB_Weapon
                 //A_FireCustomMissile ("BFG_BeamProjectile", 0, 0, 0, -8, 0,0);
                 PB_FireAltBFGRail();  //function defined in BaseWeapon_Function.zsc to replace the rail and the projectilew
                 //A_RailAttack(0, 0, 0,"None", "Green", RGF_SILENT || RGF_NOPIERCING || RGF_FULLBRIGHT, 2.0, "NullPuff", 0, 0, 0, 0, 10.0, 1.0, "BFGLightningTrial_Small", -7,0,0);
-                A_TakeInventory(invoker.ammo1.getClassName(), ammoTakeGreenAlt, TIF_NOTAKEINFINITE);
+                A_TakeInventory(invoker.ammo1.getClassName(), AMMO_TAKE_GREEN_ALT, TIF_NOTAKEINFINITE);
                 A_GunFlash();
                 break;
 
@@ -196,7 +196,7 @@ class PB_BFG9000 : PB_Weapon
                 A_StopSound(CHAN_BODY);
 				A_StartSound("weapons/bh_secondary", CHAN_WEAPON);
 				A_FireCustomMissile("BlackHole_GravityBomb",0,1,0,0);
-				A_TakeInventory(invoker.ammo1.getClassName(), ammoTakePurpleAlt, TIF_NOTAKEINFINITE);
+				A_TakeInventory(invoker.ammo1.getClassName(), AMMO_TAKE_PURPLE_ALT, TIF_NOTAKEINFINITE);
 				A_GunFlash();
                 break;
             }
@@ -212,10 +212,8 @@ class PB_BFG9000 : PB_Weapon
         A_SetInventory("PB_LockScreenTilt",0);
         A_SetInventory("GoWeaponSpecialAbility",0);
 
-        if(invoker.ammo1.amount < 1)
-            return ResolveState("FailedToFireEmpty");
-        else if(getBlackholeMode())
-            return ResolveState("SwitchToGreen");
+        if(invoker.ammo1.amount < 1)    return ResolveState("FailedToFireEmpty");
+        else if(getBlackholeMode())     return ResolveState("SwitchToGreen");
         return ResolveState(null);
     }
 
@@ -224,17 +222,13 @@ class PB_BFG9000 : PB_Weapon
 		PB_HandleCrosshair(72);
 
         string snd;
-		if(getBlackholeMode() && invoker.ammo1.amount > 0) 
-            snd = "weapons/bfg_idle";
-        else if(invoker.ammo1.amount > 0) 
-            snd = "weapons/bhg_idle";
+		if(getBlackholeMode() && invoker.ammo1.amount > 0)  snd = "weapons/bfg_idle";
+        else if(invoker.ammo1.amount > 0)                   snd = "weapons/bhg_idle";
 
         A_StartSound(snd, CHAN_WEAPON, CHANF_LOOPING|CHANF_OVERLAP);
 
-        if(invoker.ammo1.amount >= 1)
-            return ResolveState("ReadyToFire");
-        else
-            return ResolveState("ReadyToFire2");
+        if(invoker.ammo1.amount >= 1)   return ResolveState("ReadyToFire");
+        else                            return ResolveState("ReadyToFire2");
         return ResolveState(null);
     }
 
@@ -245,10 +239,8 @@ class PB_BFG9000 : PB_Weapon
         PB_HandleCrosshair(72);
         A_SetInventory("PB_LockScreenTilt",0);
 
-        if(getBlackholeMode())
-            return ResolveState("AltFire_Blackhole");
-        else if(invoker.ammo1.amount < 5)
-            return ResolveState("FailedToFire");
+        if(getBlackholeMode())              return ResolveState("AltFire_Blackhole");
+        else if(invoker.ammo1.amount < 5)   return ResolveState("FailedToFire");
         return ResolveState(null);
     }
 
@@ -264,12 +256,9 @@ class PB_BFG9000 : PB_Weapon
 
         name sprite;
 
-        if(getBlackholeMode())
-            sprite = blackHole;
-        else if(invoker.ammo1.amount <= 0 && !checkPurpleOnly)
-            sprite = empty;
-        else
-            sprite = defaultsprite;
+        if(getBlackholeMode())                                  sprite = blackHole;
+        else if(invoker.ammo1.amount <= 0 && !checkPurpleOnly)  sprite = empty;
+        else                                                    sprite = defaultsprite;
 
         psp.sprite = GetspriteIndex(sprite);
     }
@@ -465,6 +454,7 @@ class PB_BFG9000 : PB_Weapon
 
         Deselect:
             // Cache Sprites
+            013G ABCD 0;
             044G ABCD 0;
 			045G ABCD 0;
             // Actual Deselect
@@ -472,14 +462,14 @@ class PB_BFG9000 : PB_Weapon
 				A_StopSound(CHAN_BODY);
 				A_ClearOverlays(-52,-52);
 			}
-			013G ABCD 1 BFG_ChangeSprite("044G", "045G");
+			013G ABCD 1 BFG_ChangeSprite("044G", "045G","013G");
 			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower();
 			Wait;
 
         Select:
             TNT1 A 0 {
-                PB_WeapTokenSwitch("BFGSelected");
 				PB_HandleCrosshair(72);
+                PB_WeapTokenSwitch("BFGSelected");
                 PB_WeaponRaise("weapons/bfg_raise");
 			    return PB_RespectIfNeeded();
             }
@@ -487,12 +477,14 @@ class PB_BFG9000 : PB_Weapon
             // Cache Sprites
 			042G ABCD 0;
 			043G ABCD 0;
+			010G ABCD 0;
             // Actual Select
-            010G ABCD 1 BFG_ChangeSprite("042G", "043G");
+            010G ABCD 1 BFG_ChangeSprite("042G", "043G","010G");
         // Fallthrough to ready
 //////////////////////////// READY ////////////////////////////////////////////////////////////////////////////////////
         Ready3:
             // Cache Sprites
+			011G ABCDEFGHIJKLMNOPQRSTUVWXYZ 0;
 			021G ABCDEFGHIJKLMNOPQRSTUVWXYZ 0;
 			022G ABCD 0;
             // Actual Ready
@@ -572,7 +564,7 @@ class PB_BFG9000 : PB_Weapon
 				A_SetInventory("PB_LockScreenTilt",0);
 			}
             TNT1 A 0 A_JumpIf(getBlackholeMode(), "Fire_Blackhole");
-            TNT1 A 0 PB_jumpIfNoAmmo("FailedToFire",ammoTakeGreen,false,false);
+            TNT1 A 0 PB_jumpIfNoAmmo("FailedToFire",AMMO_TAKE_GREEN,false,false);
         Fire_Green:
 			TNT1 A 0 BFG_Primary(1,0);
 			014G ABCD 1 LIGHT("BARONBALL_X2");
@@ -588,7 +580,7 @@ class PB_BFG9000 : PB_Weapon
 			Goto Ready3;
 
         Fire_Blackhole:
-            TNT1 A 0 PB_jumpIfNoAmmo("FailedToFire",ammoTakePurple,false,false);
+            TNT1 A 0 PB_jumpIfNoAmmo("FailedToFire",AMMO_TAKE_PURPLE,false,false);
 			TNT1 A 0 BFG_Primary(2,0);
 			023G ABCDEFGHIJKLMNOPQRSTUVWXYZ 1;
 			024G ABCDEFGH 1;
@@ -646,7 +638,7 @@ class PB_BFG9000 : PB_Weapon
 			Goto Ready3;
 			
 		AltFire_Blackhole:
-            TNT1 A 0 PB_jumpIfNoAmmo("FailedToFire",ammoTakePurple,false,false);
+            TNT1 A 0 PB_jumpIfNoAmmo("FailedToFire",AMMO_TAKE_PURPLE,false,false);
 			TNT1 A 0 A_StartSound("weapons/bh_sec_charge1", CHAN_AUTO);
 			027G ABCDEFGH 1 PB_FireOffset();
 			TNT1 A 0 A_StartSound("weapons/bh_sec_charge2", CHAN_BODY);

@@ -300,7 +300,6 @@ class PB_MP40 : PB_Weapon
 				A_WeaponOffset(0,32);
 				PB_SetRoll(0);
                 PB_ClearDualWield();
-                PB_WeapTokenSwitch("MP40Selected");
 				PB_HandleCrosshair(44);
 				A_SetInventory("PB_LockScreenTilt",0);
                 PB_WeaponRaise("weapons/MP40_up");

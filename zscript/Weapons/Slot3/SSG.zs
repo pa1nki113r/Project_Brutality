@@ -71,8 +71,8 @@ class PB_SSG : PB_Weapon
 
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
     // AmmoTakes (Is this stupid? yes)
-    const ammoTakeFull      = 2;
-    const ammoTakeHalf      = 1;
+    const AMMO_TAKE_FULL      = 2;
+    const AMMO_TAKE_HALF      = 1;
     // Tracks the spent casings
     int ssgSpentR;
     int ssgSpentL;
@@ -118,14 +118,14 @@ class PB_SSG : PB_Weapon
     {
         double smokeOfs   = isLeft ?  2 : -2;
         double wadOfs     = isLeft ? -4 :  3;
-        // string flashState = isLeft ? "HalfFlash2" : "HalfFlash1";
         int flashLayer    = isLeft ? LEFTMUZZLEFLASH : RIGHTMUZZLEFLASH;
+        // string flashState = isLeft ? "HalfFlash2" : "HalfFlash1";
 
         switch(tic)
         {
             case 1:
                 if(isLeft) A_Overlay(LEFTMUZZLEFLASH, "HalfFlash2", true);
-                else A_Overlay(RIGHTMUZZLEFLASH, "HalfFlash1", true);
+                else       A_Overlay(RIGHTMUZZLEFLASH, "HalfFlash1", true);
 
                 // A_Overlay(flashLayer, flashState, true);
                 A_OverlayFlags(flashLayer, PSPF_RENDERSTYLE, true);
@@ -135,11 +135,12 @@ class PB_SSG : PB_Weapon
                 PB_GunSmoke(smokeOfs, 0, 0); PB_MuzzleFlashEffects(smokeOfs, 0, 0);
                 A_StartSound("weapons/shh2", CHAN_Weapon, CHANF_DEFAULT, 1.0);
                 PB_DynamicTail("shotgun", "shotgun");
-                PB_TakeAmmo(invoker.ammo2.getClassName(), ammoTakeHalf, 0);
-                setSpentR(ammoTakeHalf);
+                PB_TakeAmmo(invoker.ammo2.getClassName(), AMMO_TAKE_HALF, 0);
+                setSpentR(AMMO_TAKE_HALF);
                 A_ZoomFactor(0.98);
                 break;
 
+            // This is just effects stuff
             case 2: case 3:
                 A_ZoomFactor(tic == 2 ? 0.99 : 1.0);
                 PB_GunSmoke(smokeOfs, 0, 0); PB_MuzzleFlashEffects(smokeOfs, 0, 0);
@@ -180,8 +181,8 @@ class PB_SSG : PB_Weapon
                 A_ZoomFactor(0.95);
                 
                 // Take Ammo + More Effects
-                PB_TakeAmmo(invoker.ammo2.getClassName(),ammoTakeFull,0);
-                setSpentR(ammoTakeFull);
+                PB_TakeAmmo(invoker.ammo2.getClassName(),AMMO_TAKE_FULL,0);
+                setSpentR(AMMO_TAKE_FULL);
                 A_AlertMonsters();
                 break;
 
@@ -202,10 +203,10 @@ class PB_SSG : PB_Weapon
     action void HandleSSGShot(int ammoLeft, bool isLeft)
     {
         bool singleShot = (ammoLeft == 1);
-        double smokeA = isLeft ?  3  : -3;
-        double smokeB = isLeft ?  5  : -5;
-        double wadA   = isLeft ? -10 :  6;
-        double wadB   = isLeft ?  -6 : 10;
+        double smokeA   = isLeft ?  3  : -3;
+        double smokeB   = isLeft ?  5  : -5;
+        double wadA     = isLeft ? -10 :  6;
+        double wadB     = isLeft ?  -6 : 10;
 
         // Bullets
         if (singleShot) {
@@ -227,12 +228,15 @@ class PB_SSG : PB_Weapon
         setFireAnimation(isLeft ? 2 : 1);
 
         // Ammo
-        int ammoToTake = singleShot ? ammoTakeHalf : ammoTakeFull;
-        if (isLeft) PB_TakeAmmo(invoker.AmmoLeft.getClassName(), ammoToTake, 0, 0, true);
-        else PB_TakeAmmo("SSGAmmoCounter", ammoToTake, 0);
-
-        if (isLeft) setSpentL(ammoToTake);
-        else        setSpentR(ammoToTake);
+        int ammoToTake = singleShot ? AMMO_TAKE_HALF : AMMO_TAKE_FULL;
+        if (isLeft) {
+            PB_TakeAmmo(invoker.AmmoLeft.getClassName(), ammoToTake, 0, 0, true);
+            setSpentL(ammoToTake);
+        }
+        else {
+            PB_TakeAmmo(invoker.ammo2.getClassName(), ammoToTake, 0);
+            setSpentR(ammoToTake);
+        }
 
         // Wads
         A_FireProjectile("ShotgunWad", random(-1,1), 0, wadA, -2, FPF_NOAUTOAIM, random(-1,1));
@@ -300,8 +304,7 @@ class PB_SSG : PB_Weapon
             PB_ClearDualWield();
             PB_HandleCrosshair(40);
 
-            if(invoker.amount >= 2)
-                return ResolveState("SwitchToDualWield");
+            if(invoker.amount >= 2) return ResolveState("SwitchToDualWield");
 
             A_Print("$PB_SSG_NOAKIMBO");
         }
@@ -394,8 +397,8 @@ class PB_SSG : PB_Weapon
         Select:
             TNT1 A 0 {
                 PB_ClearDualWield();
-                PB_WeapTokenSwitch("SSGSelected");
                 A_SetInventory("PB_LockScreenTilt",0);
+                PB_WeapTokenSwitch("SSGSelected");
                 A_SetInventory("HasNotPickedUpSSG",0);
                 PB_HandleCrosshair(40);
                 PB_SelectIfUpgrade("PB_QuadSG");
@@ -461,7 +464,7 @@ class PB_SSG : PB_Weapon
             P6W2 E 1        SSG_FireOverlay(5, isLeft:true);
             P6W2 F 1        SSG_FireOverlay(6, isLeft:true);
             P6W2 GHIJK 1;
-            TNT1 A 0        SSG_FireOverlay(7, isLeft:true);
+            // TNT1 A 0        SSG_FireOverlay(7, isLeft:true);
             Goto IdleLeft_Overlay;
 
         FireRight_Overlay:
@@ -472,7 +475,7 @@ class PB_SSG : PB_Weapon
             P6W1 E 1        SSG_FireOverlay(5, isLeft:false);
             P6W1 F 1        SSG_FireOverlay(6, isLeft:false);
             P6W1 GHIJK 1;
-            TNT1 A 0        SSG_FireOverlay(7, isLeft:false);
+            // TNT1 A 0        SSG_FireOverlay(7, isLeft:false)
             Goto IdleRight_Overlay;
         
         Fire:

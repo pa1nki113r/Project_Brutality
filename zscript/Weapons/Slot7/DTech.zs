@@ -188,7 +188,7 @@ class PB_Demontech : PB_Weapon
         invoker.causticCharge = set;
     }
 
-    // I also dont know if theres any system that checks for this lol
+    // Turns out this is used for the monsters death states
     action void setHasWeapon(int mode)
     {
         switch(mode)
@@ -302,9 +302,9 @@ class PB_Demontech : PB_Weapon
             TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				PB_SetRoll(0);
-                PB_WeapTokenSwitch("HellRifleSelected");
 				PB_HandleCrosshair(39);
 				A_SetInventory("PB_LockScreenTilt",0);
+                PB_WeapTokenSwitch("HellRifleSelected");
                 PB_WeaponRaise("HRReady");
 			    return PB_RespectIfNeeded();
 			}

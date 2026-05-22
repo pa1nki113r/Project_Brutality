@@ -1,5 +1,5 @@
-//  Constants
-const PB_PistolFullAmmo = 16;
+// Constants
+const PB_PistolFullAmmo = 16; // You only need to change this value to modify the pistol ammo lol
 
 // Gearbox Tokens
 class SelectPistolBurstFire : Inventory {Default{Inventory.MaxAmount 1;}}
@@ -82,12 +82,14 @@ class PB_Pistol : PB_Weapon
     bool burstFire;
     int pistolFireAnimation;
     int pistolBurstCount;
+    int pistolBurstCountLeft;
     // Overlays
     const LEFTMUZZLEFLASH   = -5;
     const RIGHTMUZZLEFLASH  = -6;
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
 
     // I added the useMag so its easier to turn it into a generic function
+    // This thing is pretty inconsistent but I dont know if theres any other way
 	action state PB_DualRefire(bool isLeft, bool useMag = true)
     {
         // Get the CVAR and weapon side
@@ -136,9 +138,10 @@ class PB_Pistol : PB_Weapon
     }
 
     // Normal / ADS Fire
-    action void Pistol_Fire(int tic, bool burst)
+    action void Pistol_Fire(int tic)
     {
         // Set up Variables
+        bool burst          = getBurstFire();
         bool ads            = PB_GetZoom();
         bool silenced       = getSilencer();
         int  heat           = burst ? 3 : 1;
@@ -148,51 +151,49 @@ class PB_Pistol : PB_Weapon
         double zoomB        = ads ? 1.245 : 0.99;
         double zoomC        = ads ? 1.25  : 1.0;
         double smokeZ       = ads ? 0.0   : 1.6;
-        int    casingDist   = ads ? 22  : 26;
-        int    casingZ      = ads ? 40  : 32;
-        // string flash     = ads ? "GunFlash2" : "GunFlash";
+        int    xOfs         = ads ? 22  : 26;
+        int    vertOfs      = ads ? 40  : 32;
         name silSprite      = ads ? "D8GG" : "D3GF";
         name idleSprite     = ads ? "D8GG" : "D3GG";
+        string sound        = silenced ? "weapons/suppressedpistol" : "weapons/firepistol";
+        string dynamicTail  = silenced ? "pistol_sup" : "pistol";
 
         switch(tic)
         {
             case 1:
-                PB_IncrementHeat(heat);
+                // Start
                 if(!ads) A_OverlayOffset(PSP_WEAPON, 0, 33.5);
-                // if(!ads && burst) PB_FireOffset();
+                PB_IncrementHeat(heat);
                 PB_FireOffset(); // I'll just make it so fireoffset is always called
 
                 // Sets up muzzle flash
                 if(ads) A_Overlay(LEFTMUZZLEFLASH, "GunFlash2", true);
-                else A_Overlay(LEFTMUZZLEFLASH, "GunFlash", true);
+                else    A_Overlay(LEFTMUZZLEFLASH, "GunFlash", true);
                 
                 A_OverlayFlags(LEFTMUZZLEFLASH, PSPF_RENDERSTYLE, true);
                 A_OverlayRenderStyle(LEFTMUZZLEFLASH, STYLE_Add);
 
-                // Sounds and Effects
-                if(silenced)
-                {
+                // Condition based Effects
+                if(silenced) {
                     setSilencerSprites(silSprite);
-                    A_StartSound("weapons/suppressedpistol", CHAN_Weapon, CHANF_DEFAULT, 1.0);
-                    PB_DynamicTail("pistol_sup", "pistol_sup");
                 }
-                else
-                {
+                else {
                     A_AlertMonsters();
                     PB_GunSmoke(0, 0, smokeZ);
                     PB_MuzzleFlashEffects(0, 0, smokeZ);
-                    A_StartSound("weapons/firepistol", CHAN_Weapon, CHANF_DEFAULT, 1.0);
-                    PB_DynamicTail("pistol", "pistol");
                     if(!ads) A_FireCustomMissile("YellowFlareSpawn", 0, 0, 0, 0);
                 }
+                
+                invoker.pistolBurstCount++;
 
                 // Fire Bullet + Take Ammo + More Effects
+                A_StartSound(sound, CHAN_Weapon, CHANF_DEFAULT, 1.0);
                 PB_FireBullets("PB_45ACPHP", 1, 0.1, 0, 0, 0.1);
+                PB_DynamicTail(dynamicTail,dynamicTail); // Inside tail and Outside tail are the same for the pistol
                 A_ZoomFactor(zoomA);
                 PB_LowAmmoSoundWarning("pistol");
                 PB_TakeAmmo(invoker.ammo2.getClassName(), 1);
-                PB_SpawnCasing("EmptyBrassPistol", casingDist, -2, casingZ,
-                    frandom(-2,2), -frandom(2,5), frandom(3,6), true, true);
+                PB_SpawnCasing("EmptyBrassPistol", xOfs, -2, vertOfs, frandom(-2,2), -frandom(2,5), frandom(3,6), true, true);
                 PB_WeaponRecoil(recoilX, recoilY);
                 break;
 
@@ -210,20 +211,18 @@ class PB_Pistol : PB_Weapon
                 if(!burst) PB_WeaponRecoil(recoilX, recoilY);
                 break;
 
-            case 4:
+            case 4: case 5:
                 if(!ads) A_OverlayOffset(PSP_WEAPON, 0, 32, WOF_INTERPOLATE);
-                setSilencerSprites(silSprite);
+                setSilencerSprites(tic == 4 ? silSprite : idleSprite);
                 break;
 
-            case 5:
-                setSilencerSprites(idleSprite);
-                break;
         }
     }
 
     // Dual Wield Fire
-    action void Pistol_FireOverlay(int tic, bool isLeft, bool burst)
+    action void Pistol_FireOverlay(int tic, bool isLeft)
     {
+        bool burst          = getBurstFire();
         bool silenced       = getSilencer();
         int  heat           = burst ? 3 : 1;
         double recoilX      = burst ? -0.6  : -0.24;
@@ -231,66 +230,57 @@ class PB_Pistol : PB_Weapon
         double smokeOfs     = isLeft ?  6  : -6;
         double vertOfs      = isLeft ? -16 :  9;
         int    flashLayer   = isLeft ? LEFTMUZZLEFLASH : RIGHTMUZZLEFLASH;
-        // string flash     = isLeft ? "LeftFlash" : "RightFlash";
-        // name firingSprite   = isLeft ? "DL3F" : "DR3F";
-        // name idleSprite     = isLeft ? "D33L" : "D33R";
-        string ammoClass    = isLeft 
-            ? invoker.ammoleft.getClassName() 
-            : invoker.ammo2.getClassName();
+        string ammoClass    = isLeft ? invoker.ammoleft.getClassName() : invoker.ammo2.getClassName();
+        string sound        = silenced ? "weapons/suppressedpistol" : "weapons/firepistol";
+        string dynamicTail  = silenced ? "pistol_sup" : "pistol";
 
         switch(tic)
         {
             case 1:
-                PB_IncrementHeat(heat, isLeft);
+                // Sets up Overlays
                 if(isLeft) A_Overlay(flashLayer, "LeftFlash", true);
                 else       A_Overlay(flashLayer, "RightFlash", true);
                 A_OverlayFlags(flashLayer, PSPF_RENDERSTYLE, true);
                 A_OverlayRenderStyle(flashLayer, STYLE_Add);
+
+                // Shoot + Effects
+                PB_IncrementHeat(heat, isLeft);
                 PB_FireBullets("PB_45ACPHP", 1, 0.1, 0, 0, 0.1);
                 PB_SpawnCasing("EmptyBrassPistol", 26, vertOfs, 38, frandom(-2,2), -frandom(2,5), frandom(3,6), true, true);
-                if(isLeft)
-                {
+                A_StartSound(sound, CHAN_Weapon, CHANF_DEFAULT, 1.0);
+                PB_DynamicTail(dynamicTail,dynamicTail); // Inside tail and Outside tail are the same for the pistol
+                A_ZoomFactor(0.985);
+                PB_WeaponRecoil(recoilX, recoilY);
+                setFireAnimation(isLeft ? 2 : 1);
+
+                // Everything Else
+                if(isLeft) {
                     invoker.pistolLastShotLeft = true;
-                    setFireAnimation(2);
+                    invoker.pistolBurstCountLeft++;
                     PB_LowAmmoSoundWarning("pistol", ammoClass);
                     PB_TakeAmmo(ammoClass, 1, 1, 0, true);
                     A_SetFiringLeftWeapon(true);
                 }
-                else
-                {
+                else {
                     invoker.pistolLastShotLeft = false;
-                    setFireAnimation(1);
+                    invoker.pistolBurstCount++;
                     PB_LowAmmoSoundWarning("pistol");
                     PB_TakeAmmo(ammoClass, 1);
                     A_SetFiringRightWeapon(true);
                 }
-                A_ZoomFactor(0.985);
-                if(silenced)
-                {
-                    A_StartSound("weapons/suppressedpistol", CHAN_Weapon, CHANF_DEFAULT, 1.0);
-                    PB_DynamicTail("pistol_sup", "pistol_sup");
+                if(silenced) {
                     if(isLeft) setSilencerSprites(silencedLeft: "DL3F");
                     else       setSilencerSprites(silencedRight: "DR3F");
                 }
-                else
-                {
+                else {
                     A_AlertMonsters();
-                    A_StartSound("weapons/firepistol", CHAN_Weapon, CHANF_DEFAULT, 1.0);
-                    PB_DynamicTail("pistol", "pistol");
                     PB_GunSmoke(smokeOfs, 0, 1.6);
                     PB_MuzzleFlashEffects(smokeOfs, 0, 1.6);
                 }
-                PB_WeaponRecoil(recoilX, recoilY);
                 break;
 
-            case 2:
-                if(isLeft) setSilencerSprites(silencedLeft: "DL3F");
-                else       setSilencerSprites(silencedRight: "DR3F");
-                A_ZoomFactor(1.0);
-                PB_WeaponRecoil(recoilX, recoilY);
-                break;
-
-            case 3:
+            case 2: case 3:
+                if(tic == 2) A_ZoomFactor(1.0);
                 if(isLeft) setSilencerSprites(silencedLeft: "DL3F");
                 else       setSilencerSprites(silencedRight: "DR3F");
                 PB_WeaponRecoil(recoilX, recoilY);
@@ -313,9 +303,8 @@ class PB_Pistol : PB_Weapon
                 }
                 break;
 
-            case 5: // DualFireReload check
-                if(isLeft) setSilencerSprites(silencedLeft: "D33L");
-                else       setSilencerSprites(silencedRight: "D33R");
+            case 5: // DualFireReload check, reset burst
+                setBurstCount(0, isLeft ? true : false);
                 if(isLeft && invoker.ammo2.amount <= 0)
                     A_GiveInventory("DualFireReload", 1);
                 else if(!isLeft && invoker.ammoleft.amount <= 0)
@@ -334,6 +323,7 @@ class PB_Pistol : PB_Weapon
         else psp.sprite = GetSpriteIndex(normalSprite);
     }
 
+    // Handles weapon special
     action state Pistol_WeaponSpecial()
     {
         A_SetInventory("PB_LockScreenTilt", 1);
@@ -402,6 +392,7 @@ class PB_Pistol : PB_Weapon
         A_SetInventory("SelectPistolBurstFire",0);
     }
 
+    // I should probably use A_SetWeaponSprite for these but oh well
     action void setSilencerSprites(
         name silenced       = '',
         name silencedLeft   = '', 
@@ -434,6 +425,8 @@ class PB_Pistol : PB_Weapon
         }
     }
 
+    // Auxilliary Functions
+
     action bool getSilencer()
     {
         return invoker.hasSilencer;
@@ -462,6 +455,18 @@ class PB_Pistol : PB_Weapon
     action bool getFireAnimation()
     {
         return invoker.pistolFireAnimation;
+    }
+
+    action void setBurstCount(int set, bool isLeft = false)
+    {
+        if(!isLeft) invoker.pistolBurstCount  = set;
+        else        invoker.pistolBurstCountLeft = set;
+    }
+
+    action int getBurstCount(bool isLeft = false)
+    {
+        if(!isLeft) return invoker.pistolBurstCount;
+        else        return invoker.pistolBurstCountLeft;
     }
 
 //////////////////////////// STATES ////////////////////////////////////////////////////////////////////////////////////
@@ -557,10 +562,10 @@ class PB_Pistol : PB_Weapon
 				A_WeaponOffset(0,32);
 				PB_SetRoll(0);
                 PB_ClearDualWield();
-                PB_WeapTokenSwitch("HandgunSelected");
 			    PB_HandleCrosshair(43);
                 PB_SelectIfUpgrade("PB_SMG");
 				A_SetInventory("PB_LockScreenTilt",0);
+                PB_WeapTokenSwitch("HandgunSelected");
                 PB_WeaponRaise("weapons/pistolup");
                 invoker.pistolBurstCount = 0;
 			    return PB_RespectIfNeeded();
@@ -652,53 +657,28 @@ class PB_Pistol : PB_Weapon
             // Cache Sprites
             D3GF ABCD 0;
             // Actual Fire
-            TNT1 A 0 PB_JumpIfNoAmmo();
-            DEGG A 0 setSilencerSprites("D3GG");
+            TNT1 A 0 A_JumpIf(PB_GetZoom(), "Fire2");
             TNT1 A 0 {
                 A_WeaponOffset(0, 32);
                 PB_SetRoll(0);
                 PB_HandleCrosshair(43);
                 A_SetInventory("PB_LockScreenTilt", 0);
             }
-            TNT1 A 0 A_JumpIf(PB_GetZoom(), "Fire2");
-            TNT1 A 0 A_JumpIf(getBurstFire(), "FireBurst");
-            DEGF A 1 BRIGHT Pistol_Fire(1, false);
-            DEGF D 1        Pistol_Fire(2, false);
-            DEGF B 1        Pistol_Fire(3, false);
-            DEGF D 1 {
-                Pistol_Fire(4, false);
-                if(JustPressed(BT_ATTACK)) return ResolveState("Fire");
-                return A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOPRIMARY);
-            }
-            DEGG AAAAAAAA 1 {
-                Pistol_Fire(5, false);
-                if(JustPressed(BT_ATTACK)) return ResolveState("Fire");
-                return A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOPRIMARY);
-            }
-            Goto ReadyToFire;
-
+            TNT1 A 0 setBurstCount(0);
         FireBurst:
-            TNT1 A 0 { invoker.pistolBurstCount = 0; }
-        FireBurstLoop:
-            TNT1 A 0 PB_JumpIfNoAmmo("FireBurstDone");
-            DEGF A 1 BRIGHT Pistol_Fire(1, true);
-            DEGF BC 1       Pistol_Fire(2, true);
-            TNT1 A 0 {
-                invoker.pistolBurstCount++;
-                if(invoker.pistolBurstCount < 3) return ResolveState("FireBurstLoop");
-                return ResolveState(null);
-            }
-        FireBurstDone:
-            TNT1 A 0 { invoker.pistolBurstCount = 0; }
-            DEGF D 1        Pistol_Fire(2, true);
-            DEGF B 1        Pistol_Fire(3, true);
+            TNT1 A 0 PB_JumpIfNoAmmo();
+            DEGF A 1 BRIGHT Pistol_Fire(1);
+            DEGF D 1        Pistol_Fire(2);
+            DEGF B 1        Pistol_Fire(3);
+		    TNT1 A 0 A_JumpIf(getBurstCount() < 3 && getBurstFire() && !PB_GetChamberEmpty(), "FireBurst");
             DEGF D 1 {
-                Pistol_Fire(4, true);
+                setBurstCount(0);
+                Pistol_Fire(4);
                 if(JustPressed(BT_ATTACK)) return ResolveState("Fire");
                 return A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOPRIMARY);
             }
             DEGG AAAAAAAA 1 {
-                Pistol_Fire(5, true);
+                Pistol_Fire(5);
                 if(JustPressed(BT_ATTACK)) return ResolveState("Fire");
                 return A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOPRIMARY);
             }
@@ -709,129 +689,53 @@ class PB_Pistol : PB_Weapon
                 A_WeaponOffset(0, 32);
                 A_SetCrosshair(-1);
             }
+        FireBurst2:
             TNT1 A 0 PB_JumpIfNoAmmo();
-            TNT1 A 0 A_JumpIf(getBurstFire(), "Fire2Burst");
-            D7GG G 1 BRIGHT Pistol_Fire(1, false);
-            D7GG H 1        Pistol_Fire(2, false);
+            D7GG G 1 BRIGHT Pistol_Fire(1);
+            D7GG H 1        Pistol_Fire(2);
+		    TNT1 A 0 A_JumpIf(getBurstCount() < 3 && getBurstFire() && !PB_GetChamberEmpty(), "FireBurst2");
             D7GG I 1 {
-                Pistol_Fire(3, false);
+                Pistol_Fire(3);
+                setBurstCount(0);
                 if(JustPressed(BT_ATTACK)) return ResolveState("Fire2");
                 return ResolveState(null);
             }
             D7GG JKLFFFFFF 1 {
                 if(JustPressed(BT_ATTACK)) return ResolveState("Fire2");
-                return ResolveState(null);
-            }
-            Goto Ready2;
-
-        Fire2Burst:
-            TNT1 A 0 { invoker.pistolBurstCount = 0; }
-        Fire2BurstLoop:
-            TNT1 A 0 PB_JumpIfNoAmmo("Fire2BurstDone");
-            D7GG G 1 BRIGHT Pistol_Fire(1, true);
-            D7GG HI 1       Pistol_Fire(2, true);
-            TNT1 A 0 {
-                invoker.pistolBurstCount++;
-                if(invoker.pistolBurstCount < 3) return ResolveState("Fire2BurstLoop");
-                return ResolveState(null);
-            }
-        Fire2BurstDone:
-            TNT1 A 0 { invoker.pistolBurstCount = 0; }
-            TNT1 A 0 A_ZoomFactor(1.25);
-            D7GG JKLFFFFFF 1 {
-                if(JustPressed(BT_ATTACK) && invoker.ammo2.amount > 0) return ResolveState("Fire2Burst");
                 return ResolveState(null);
             }
             Goto Ready2;
 
         FireRight_Overlay:
-            TNT1 A 0 A_JumpIf(getBurstFire(), "FireRightBurst_Overlay");
-            D2RF A 1 BRIGHT Pistol_FireOverlay(1, false, false);
-            D2RF B 1 BRIGHT Pistol_FireOverlay(2, false, false);
-            D2RF C 1        Pistol_FireOverlay(3, false, false);
-            D2RF D 1        Pistol_FireOverlay(4, false, false);
+            TNT1 A 0 setBurstCount(0);
+        BurstRight_Overlay:
+            D2RF A 1 BRIGHT Pistol_FireOverlay(1, false);
+            D2RF B 1 BRIGHT Pistol_FireOverlay(2, false);
+            D2RF C 1        Pistol_FireOverlay(3, false);
+            D2RF D 1        Pistol_FireOverlay(4, false);
+		    TNT1 A 0 A_JumpIf(getBurstCount() < 3 && getBurstFire() && !PB_GetChamberEmpty(), "BurstRight_Overlay");
             D2GR AAAAA 1 {
                 setSilencerSprites(silencedRight: "D33R");
-                // return Pistol_RightRefire();
                 return PB_DualRefire(false);
             }
+            TNT1 A 0  Pistol_FireOverlay(5, false);
             D2GR AA 1 setSilencerSprites(silencedRight: "D33R");
             Goto IdleRight_Overlay;
 
         FireLeft_Overlay:
-            TNT1 A 0 A_JumpIf(getBurstFire(), "FireLeftBurst_Overlay");
-            D2LF A 1 BRIGHT Pistol_FireOverlay(1, true, false);
-            D2LF B 1 BRIGHT Pistol_FireOverlay(2, true, false);
-            D2LF C 1        Pistol_FireOverlay(3, true, false);
-            D2LF D 1        Pistol_FireOverlay(4, true, false);
+            TNT1 A 0 setBurstCount(0,true);
+        BurstLeft_Overlay:
+            D2LF A 1 BRIGHT Pistol_FireOverlay(1, true);
+            D2LF B 1 BRIGHT Pistol_FireOverlay(2, true);
+            D2LF C 1        Pistol_FireOverlay(3, true);
+            D2LF D 1        Pistol_FireOverlay(4, true);
+		    TNT1 A 0 A_JumpIf(getBurstCount(true) < 3 && getBurstFire() && !PB_GetChamberEmpty(true), "BurstLeft_Overlay");
             D2GL AAAAA 1 {
                 setSilencerSprites(silencedLeft:"D33L");
-                // return Pistol_LeftRefire();
                 return PB_DualRefire(true);
             }
             D2GL AA 1 setSilencerSprites(silencedLeft:"D33L");
-            TNT1 A 0 {
-                if(invoker.ammo2.amount <= 0)
-                    A_GiveInventory("DualFireReload", 1);
-            }
-            Goto IdleLeft_Overlay;
-
-        FireRightBurst_Overlay:
-            TNT1 A 0 { invoker.pistolBurstCount = 0; }
-        FireRightBurstLoop:
-            TNT1 A 0 A_JumpIf(invoker.ammo2.amount >= 1, "FireRightBurstShot");
-            TNT1 A 0 A_PlaySoundEx("weapons/empty", "Auto");
-            Goto StopRightBurst_Overlay;
-        FireRightBurstShot:
-            D2RF A 1 BRIGHT Pistol_FireOverlay(1, false, true);
-            D2RF BC 1 BRIGHT Pistol_FireOverlay(2, false, true);
-            TNT1 A 0 {
-                invoker.pistolBurstCount++;
-                if(invoker.pistolBurstCount < 3) return ResolveState("FireRightBurstLoop");
-                return ResolveState("StopRightBurst_Overlay");
-            }
-        StopRightBurst_Overlay:
-            TNT1 A 0 { invoker.pistolBurstCount = 0; }
-            D2RF C 1        Pistol_FireOverlay(3, false, true);
-            D2RF D 1        Pistol_FireOverlay(4, false, true);
-            TNT1 A 0        Pistol_FireOverlay(5, false, true);
-            D2GR AAAAA 1 {
-                setSilencerSprites(silencedRight:"DR3F");
-                // return Pistol_RightRefire();
-                return PB_DualRefire(false);
-            }
-            D2GR AA 1 setSilencerSprites(silencedRight:"D33R");
-            Goto IdleRight_Overlay;
-
-        FireLeftBurst_Overlay:
-            TNT1 A 0 { invoker.pistolBurstCount = 0; }
-        FireLeftBurstLoop:
-            TNT1 A 0 A_JumpIf(invoker.ammoleft.amount >= 1, "FireLeftBurstShot");
-            TNT1 A 0 A_PlaySoundEx("weapons/empty", "Auto");
-            Goto StopLeftBurst_Overlay;
-        FireLeftBurstShot:
-            D2LF A 1 BRIGHT Pistol_FireOverlay(1, true, true);
-            D2LF BC 1 BRIGHT Pistol_FireOverlay(2, true, true);
-            TNT1 A 0 {
-                invoker.pistolBurstCount++;
-                if(invoker.pistolBurstCount < 3) return ResolveState("FireLeftBurstLoop");
-                return ResolveState("StopLeftBurst_Overlay");
-            }
-        StopLeftBurst_Overlay:
-            TNT1 A 0 { invoker.pistolBurstCount = 0; }
-            D2LF C 1        Pistol_FireOverlay(3, true, true);
-            D2LF D 1        Pistol_FireOverlay(4, true, true);
-            TNT1 A 0        Pistol_FireOverlay(5, true, true);
-            D2GL AAAAA 1 {
-                setSilencerSprites(silencedLeft:"D33L");
-                // return Pistol_LeftRefire();
-                return PB_DualRefire(true);
-            }
-            D2GL AA 1 setSilencerSprites(silencedLeft:"D33L");
-            TNT1 A 0 {
-                if(invoker.ammo2.amount <= 0)
-                    A_GiveInventory("DualFireReload", 1);
-            }
+            TNT1 A 0  Pistol_FireOverlay(5, true);
             Goto IdleLeft_Overlay;
 
 //////////////////////////// ALTFIRE ////////////////////////////////////////////////////////////////////////////////////
@@ -938,7 +842,7 @@ class PB_Pistol : PB_Weapon
 //////////////////////////// RELOAD ////////////////////////////////////////////////////////////////////////////////////
             Reload:
                 TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReloadDualWield");
-                TNT1 A 0 PB_CheckReload(null,null,"LoadChamber","Ready3","Ready3",PB_PistolFullAmmo,invoker.reservetomagammofactor);
+                TNT1 A 0 PB_CheckReload(null,null,"LoadChamber","Ready3","Ready3",PB_PistolFullAmmo);
                 D5GD ABCDEFGHIJKLMNOPQRSTUVWXY 0;
                 D5GB ABCD 1 {
                     setSilencerSprites("D5GD");
@@ -976,8 +880,7 @@ class PB_Pistol : PB_Weapon
                     PB_AmmoIntoMag(
                         invoker.ammo2.getClassName(),
                         invoker.ammo1.getClassName(),
-                        PB_GetChamberEmpty() ? PB_PistolFullAmmo-1 : PB_PistolFullAmmo,
-                        invoker.reservetomagammofactor);
+                        PB_GetChamberEmpty() ? PB_PistolFullAmmo-1 : PB_PistolFullAmmo);
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                     A_PlaySoundEx("PSRLIN", "Auto");
@@ -1020,7 +923,7 @@ class PB_Pistol : PB_Weapon
                 D6GF ABCDEFGHIJKLMNOPQRSTUVW 0;
                 // Actual Reload Dual Wield
                 TNT1 A 0 PB_ClearDualWield();
-                TNT1 A 0 PB_CheckReload(null,null,null,"ReloadLeftOnly","Ready3",PB_PistolFullAmmo,invoker.reservetomagammofactor);
+                TNT1 A 0 PB_CheckReload(null,null,null,"ReloadLeftOnly","Ready3",PB_PistolFullAmmo);
                 TNT1 A 0 A_JumpIf(invoker.ammoleft.amount >= PB_PistolFullAmmo, "ReloadRightOnly"); // If left weapon is full
                 TNT1 A 0 A_JumpIf(invoker.ammo1.amount < 1, "NoAmmo");
                 TNT1 A 0 A_JumpIf(PB_GetMagUnloaded() || PB_GetMagUnloaded(true),"ReloadDualWieldUnloaded");
@@ -1145,8 +1048,7 @@ class PB_Pistol : PB_Weapon
                     PB_AmmoIntoMag(
                         invoker.ammoleft.getClassName(),
                         invoker.ammo1.getClassName(),
-                        PB_GetChamberEmpty(true) ? PB_PistolFullAmmo-1 : PB_PistolFullAmmo,
-                        invoker.reservetomagammofactor);
+                        PB_GetChamberEmpty(true) ? PB_PistolFullAmmo-1 : PB_PistolFullAmmo);
                     PB_SetMagUnloaded(false,true);
                     PB_SetMagEmpty(false,true);
                     PB_SetChamberEmpty(false,true);
@@ -1174,14 +1076,13 @@ class PB_Pistol : PB_Weapon
                     setSilencerSprites("D6GF");
                     PB_SetRoll(roll-.5);
                 }
-                TNT1 A 0 A_JumpIfInventory("PrimaryPistolAmmo",1,2);
+                TNT1 A 0 A_JumpIf(invoker.ammo2.amount >= 1,2);
                 TNT1 A 0 A_PlaySoundEx("PSRLFIN", "Auto");
                 TNT1 A 0 {
                     PB_AmmoIntoMag(
                         invoker.ammo2.getClassName(),
                         invoker.ammo1.getClassName(),
-                        PB_GetChamberEmpty() ? PB_PistolFullAmmo-1 : PB_PistolFullAmmo,
-                        invoker.reservetomagammofactor);
+                        PB_GetChamberEmpty() ? PB_PistolFullAmmo-1 : PB_PistolFullAmmo);
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                     PB_SetChamberEmpty(false);

@@ -38,10 +38,10 @@ class PB_MG42 : PB_Weapon
     bool  hasOverheated; // Checks for the MG42 heat meter to increase higher if the barrel has overheated
     const ammoTake              = 1; // Just for consistency
     // Overlays
-    const coolingOverlay        = 3;
-    const selectOverlay         = 999;
-    const beltOverlay           = 5;
-    const muzzleFlashOverlay    = -3;
+    const COOLING_OVERLAY        = 3;
+    const SELECT_OVERLAY         = 999;
+    const BELT_OVERLAY           = 5;
+    const MUZZLEFLASH_OVERLAY    = -3;
 
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
     action void MG42_CoolDownBarrel()
@@ -66,26 +66,18 @@ class PB_MG42 : PB_Weapon
         switch(tic)
         {
             case 0:
-                if(PB_GetOverheat() == 500)
-                    return ResolveState("UnzoomOverheat");
-                else
-                    return ResolveState("FinishedZoomFire");
+                if(PB_GetOverheat() == 500) return ResolveState("UnzoomOverheat");
+                else return ResolveState("FinishedZoomFire");
                 return ResolveState(null);
                 break;
 
             case 1:
-                if(PB_GetAimMode()) 
-                {
-                    if(JustReleased(BT_ALTATTACK))
-                        return ResolveState("UnZoom");
-                    if (PressingFire() && PressingAltfire())
-                        return ResolveState("Fire2");
+                if(PB_GetAimMode())  {
+                    if(JustReleased(BT_ALTATTACK)) return ResolveState("UnZoom");
+                    if (PressingFire() && PressingAltfire()) return ResolveState("Fire2");
                 }
-                else 
-                {
-                    if(PressingAltfire()){
-                        return ResolveState("UnZoom");
-                    }
+                else  {
+                    if(PressingAltfire()) return ResolveState("UnZoom");
                     PB_ReFire("Fire2");
                 }
                 return ResolveState(null);
@@ -108,17 +100,22 @@ class PB_MG42 : PB_Weapon
                 
                 // Overlays
                 PB_IncrementHeat();
-                A_ClearOverlays(coolingOverlay,beltOverlay);
-                if(ads) A_Overlay(muzzleFlashOverlay,"MuzzleFlashZoom");
-                else    A_Overlay(muzzleFlashOverlay,"MuzzleFlash");
-                A_OverlayFlags(muzzleFlashOverlay, PSPF_RENDERSTYLE, true);
-                A_OverlayRenderStyle(muzzleFlashOverlay, STYLE_Add);
-                if(ads) A_Overlay(beltOverlay,"BeltFlashZoomFire");
-                else    A_Overlay(beltOverlay,"BeltFlash");
+                A_ClearOverlays(COOLING_OVERLAY,BELT_OVERLAY);
+                if(ads) {
+                    A_Overlay(MUZZLEFLASH_OVERLAY,"MuzzleFlashZoom");
+                    A_Overlay(BELT_OVERLAY,"BeltFlashZoomFire");
+                }
+                else {
+                    A_Overlay(MUZZLEFLASH_OVERLAY,"MuzzleFlash");
+                    A_Overlay(BELT_OVERLAY,"BeltFlash");
+                }
+                A_OverlayFlags(MUZZLEFLASH_OVERLAY, PSPF_RENDERSTYLE, true);
+                A_OverlayRenderStyle(MUZZLEFLASH_OVERLAY, STYLE_Add);
                 
                 // Overheat
                 PB_ModifyOverheat(overheating ? 15 : 5);
                 
+                // Take Ammo
                 A_TakeInventory(invoker.ammo1.getClassName(), ammoTake, TIF_NOTAKEINFINITE);
                 A_StartSound("MG42FIR", CHAN_WEAPON, CHANF_DEFAULT, 1.0);
                 PB_DynamicTail("lmg", "lmg");
@@ -127,12 +124,9 @@ class PB_MG42 : PB_Weapon
             case 1:
                 // Bullet spread
                 double spread;
-                if(overheating)
-                    spread = 7;
-                else if(PB_GetOverheat() > 300)
-                    spread = 1.0 + (PB_GetOverheat() / 100.0);
-                else
-                    spread = 4;
+                if(overheating)                 spread = 7;
+                else if(PB_GetOverheat() > 300) spread = 1.0 + (PB_GetOverheat() / 100.0);
+                else                            spread = 4;
                 PB_FireBullets("PB_792x57mm", 1, spread, 0, 0, spread);
                 
                 // Casings
@@ -143,41 +137,30 @@ class PB_MG42 : PB_Weapon
                 PB_SpawnCasing("MG42Casing", 13, 0, casingY, 0, 0, 0, false);
                 PB_SpawnCasing("LMGBeltLink", beltOfs, beltX, beltY, 0, 2, frandom(-2.0, 0.5), false);
                 
+                // Effcts
                 A_FireCustomMissile("MinigunTracer", random(-3, 3), 0, -1, random(-3, 3));
                 PB_GunSmoke_Basic(0, 0, 0);
                 A_AlertMonsters();
-                
                 PB_WeaponRecoil(ads ? -2.0 : -2.2, ads ? -0.5 : -0.6);
-                if(ads) PB_FireOffset();
+                PB_FireOffset(); //Always call fire offset
                 break;
         }
     }
 
     action state MG42_FireStart(bool zoomed = false)
     {
-        if(!zoomed)
-        {
-            if(getbarrelHasOverheated())
-                return ResolveState("BarrelChange");
-            if(PB_GetZoom())
-                return ResolveState("Fire2");
-            if(invoker.ammo1.amount >= 1 && PB_GetOverheat() < 500)
-                return ResolveState("FireNormal");
-            else if(PB_GetOverheat() == 500)
-                return ResolveState("Overheat");
-            else
-                return ResolveState("EmptyFire");
+        if(!zoomed) {
+            if(getbarrelHasOverheated())                            return ResolveState("BarrelChange");
+            if(PB_GetZoom())                                        return ResolveState("Fire2");
+            if(invoker.ammo1.amount >= 1 && PB_GetOverheat() < 500) return ResolveState("FireNormal");
+            else if(PB_GetOverheat() == 500)                        return ResolveState("Overheat");
+            else                                                    return ResolveState("EmptyFire");
         }
-        else
-        {
-            if(getbarrelHasOverheated())
-                return ResolveState("UnzoomBarrelChange");
-            if(invoker.ammo1.amount >= 1 && PB_GetOverheat() < 500)
-                return ResolveState("FireADS");
-            else if(PB_GetOverheat() == 500)
-                return ResolveState("UnzoomOverheat");
-            else
-                return ResolveState("Unzoom");
+        else {
+            if(getbarrelHasOverheated())                            return ResolveState("UnzoomBarrelChange");
+            if(invoker.ammo1.amount >= 1 && PB_GetOverheat() < 500) return ResolveState("FireADS");
+            else if(PB_GetOverheat() == 500)                        return ResolveState("UnzoomOverheat");
+            else                                                    return ResolveState("Unzoom");
         }
         return ResolveState(null);
     }
@@ -274,13 +257,13 @@ class PB_MG42 : PB_Weapon
                 A_ClearOverlays(10,11);
             }
             TNT1 A 0 {
-                A_Overlay(selectOverlay,"DeselectFlash");
+                A_Overlay(SELECT_OVERLAY,"DeselectFlash");
                 PB_SetZoom(false);
                 A_ZoomFactor(1.0);
                 A_PlaySoundEx("weapons/changing", "Auto");
             }
             MGSE BCDF 1;
-            TNT1 A 0 A_ClearOverlays(coolingOverlay);
+            TNT1 A 0 A_ClearOverlays(COOLING_OVERLAY);
             TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower();
             Wait;
 
@@ -299,19 +282,19 @@ class PB_MG42 : PB_Weapon
 
         Select:
             TNT1 A 0 {
-                PB_WeapTokenSwitch("MG42Selected");
                 A_SetInventory("PB_LockScreenTilt",0);
                 PB_HandleCrosshair(50);
+                PB_WeapTokenSwitch("MG42Selected");
                 PB_WeaponRaise("weapons/MG42/Select");
 			    return PB_RespectIfNeeded();
             }
         SelectAnimation:
             TNT1 A 0 {
                 if(PB_GetOverheat() > 1)
-                    A_Overlay(coolingOverlay,"Cooling",true);
+                    A_Overlay(COOLING_OVERLAY,"Cooling",true);
             }
 		    MGSE F 1;
-            TNT1 A 0 A_Overlay(selectOverlay,"SelectBelt");
+            TNT1 A 0 A_Overlay(SELECT_OVERLAY,"SelectBelt");
 		    MGSE DCB 1;
         WeaponSpecial:
 			TNT1 A 0 A_SetInventory("GoWeaponSpecialAbility",0);
@@ -326,8 +309,7 @@ class PB_MG42 : PB_Weapon
             MG1R A 0;
             // Actual Ready
             "####" A 0 {
-                if(PB_GetOverheat() > 1)
-                    A_Overlay(coolingOverlay,"Cooling",true);
+                if(PB_GetOverheat() > 1) A_Overlay(COOLING_OVERLAY,"Cooling",true);
 			    PB_HandleCrosshair(50);
             }
 	    ReadyToFire:	
@@ -358,8 +340,7 @@ class PB_MG42 : PB_Weapon
                         Return ResolveState("UnzoomOverheat");
                     return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY);
                 }
-                else 
-                    return A_DoPBWeaponAction();
+                else return A_DoPBWeaponAction();
             }
             Loop;
 
@@ -372,7 +353,7 @@ class PB_MG42 : PB_Weapon
             MGFI AB 1;
             TNT1 A 0 PB_ReFire();
             MGFI CD 1;
-            TNT1 A 0 A_Overlay(coolingOverlay, "Cooling", true);
+            TNT1 A 0 A_Overlay(COOLING_OVERLAY, "Cooling", true);
             Goto Ready3;
 
         Fire2:
@@ -385,11 +366,11 @@ class PB_MG42 : PB_Weapon
         FinishedZoomFire:
             TNT1 A 0 MG42_FinishFire(1);
             MGZF C 1 {
-                A_Overlay(beltOverlay, "BeltFlashZoomFireFinished");
-                A_Overlay(coolingOverlay, "Cooling",true);
+                A_Overlay(BELT_OVERLAY, "BeltFlashZoomFireFinished");
+                A_Overlay(COOLING_OVERLAY, "Cooling",true);
             }
             MG1Z A 1 MG42_SetBeltSprite("MG3Z","MG3Z","MG3Z","MG2Z","MG1Z",layer:overlayID());
-            TNT1 A 0 A_Overlay(coolingOverlay, "Cooling", true);
+            TNT1 A 0 A_Overlay(COOLING_OVERLAY, "Cooling", true);
             Goto Ready2;
 
 //////////////////////////// ALTFIRE ////////////////////////////////////////////////////////////////////////////////////
@@ -409,7 +390,7 @@ class PB_MG42 : PB_Weapon
 		TNT1 A 0 {
             PB_SetZoom(false);
             A_PlaySoundEx("IronSights", "Auto");
-            A_Overlay(beltOverlay, "BeltUnzoomFlash");
+            A_Overlay(BELT_OVERLAY, "BeltUnzoomFlash");
             A_ZoomFactor(1.0);
             PB_HandleCrosshair(50);
 		}
@@ -454,7 +435,7 @@ class PB_MG42 : PB_Weapon
             TNT1 A 0 {
                 PB_SetZoom(false);
                 A_PlaySoundEx("IronSights", "Auto");
-                A_Overlay(beltOverlay, "BeltUnzoomFlash");
+                A_Overlay(BELT_OVERLAY, "BeltUnzoomFlash");
                 A_ZoomFactor(1.0);
                 PB_HandleCrosshair(50);
             }
@@ -464,8 +445,8 @@ class PB_MG42 : PB_Weapon
             TNT1 A 0 A_JumpIf(PB_GetZoom(), "UnzoomBarrelChange");
             TNT1 AA 0;
             TNT1 A 0{
-                A_ClearOverlays(beltOverlay);
-                A_Overlay(coolingOverlay, "ChangeBullet");
+                A_ClearOverlays(BELT_OVERLAY);
+                A_Overlay(COOLING_OVERLAY, "ChangeBullet");
                 A_SetInventory("CantDoAction",1);
                 A_SetCrosshair(-1);
                 PB_SetReloading(true);
@@ -485,7 +466,7 @@ class PB_MG42 : PB_Weapon
             TNT1 A 0 A_PlaySound("MG42RC");
             MGRC DDDDCBA 1;
             MGC3 OPQRST 1;
-            TNT1 A 0 A_Overlay(coolingOverlay,"Cooling",true);
+            TNT1 A 0 A_Overlay(COOLING_OVERLAY,"Cooling",true);
             TNT1 A 0 {
                 A_SetInventory("CantDoAction",0);
                 PB_SetOverheat(0);
@@ -498,7 +479,7 @@ class PB_MG42 : PB_Weapon
             TNT1 A 0 {
                 PB_SetZoom(false);
                 A_PlaySoundEx("IronSights", "Auto");
-                A_Overlay(beltOverlay, "BeltUnzoomFlash");
+                A_Overlay(BELT_OVERLAY, "BeltUnzoomFlash");
                 A_ZoomFactor(1.0);
                 A_PlaySound("MG42HEAT");
                 PB_HandleCrosshair(50);
@@ -513,7 +494,7 @@ class PB_MG42 : PB_Weapon
                 setbarrelHasOverheated(true);
             }
             TNT1 A 0 MG42_SetBeltSprite("MG5R","MG4R","MG3R","MG2R","MG1R");
-            "####" A 0 A_Overlay(coolingOverlay,"Cooling");
+            "####" A 0 A_Overlay(COOLING_OVERLAY,"Cooling");
             "####" A 45 A_DoPBWeaponAction(WRF_NOFIRE|WRF_NOSWITCH);
             Goto ReadyToFire;
 
