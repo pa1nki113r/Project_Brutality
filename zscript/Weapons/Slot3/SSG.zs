@@ -287,10 +287,10 @@ class PB_SSG : PB_Weapon
                 break;
 
             case 7:
-                if (isLeft && invoker.AmmoLeft.amount <= 0)
-                    A_GiveInventory("DualFireReload", 1);
-                else if (!isLeft && invoker.ammo2.amount <= 0)
-                    A_GiveInventory("DualFireReload", 1);
+                // if (isLeft && invoker.AmmoLeft.amount <= 0)
+                //     A_GiveInventory("DualFireReload", 1);
+                // else if (!isLeft && invoker.ammo2.amount <= 0)
+                //     A_GiveInventory("DualFireReload", 1);
                 break;
         }
     }
