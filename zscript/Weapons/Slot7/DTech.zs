@@ -49,9 +49,11 @@ class PB_Demontech : PB_Weapon
     bool causticMode;
     int  causticCharge;
     enum dtech_mode{RESET,INFERNO,CAUSTIC}
-    // Constants
-    const ammoTakeAltInferno = 20;
-    const ammoTakeAltGreen   = 5;
+    // Constants 
+    const CHARGE_RATE        = 1;  // How many caustic charge to increase for it to shoot the bigger ball
+    const CHARGE_MAX         = 20; // Max Caustic Charges, also dictates how much ammo to take at full charge
+    const TAKE_ALT_INFERNO   = 20;
+    const TAKE_ALT_CAUSTIC   = 5;  // Note that for the bigger ball to shoot it needs to be 3 times this value
     const MUZZLEFLASH        = -4;
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
     
@@ -125,11 +127,11 @@ class PB_Demontech : PB_Weapon
         int charge = getCausticCharge();
 
         // No idea why the fire uncharged and charge 5 fires the same projectile
-        if(charge      >= ammoTakeAltGreen*3)  projectile = "CausticGreenPlasmaBall";
-        else if(charge >= ammoTakeAltGreen)    projectile = "ShrinkBeam";
+        if(charge      >= TAKE_ALT_CAUSTIC*3)  projectile = "CausticGreenPlasmaBall";
+        else if(charge >= TAKE_ALT_CAUSTIC)    projectile = "ShrinkBeam";
         else                                   projectile = "ShrinkBeam";
 
-        PB_TakeAmmo(invoker.ammo2.getClassName(), clamp(getCausticCharge(),1,20), 0); // So you only tak 20 ammo at max charge
+        PB_TakeAmmo(invoker.ammo2.getClassName(), clamp(getCausticCharge(),CHARGE_RATE,CHARGE_MAX), 0); // So you only tak 20 ammo at max charge
         // console.Printf("Take Ammo %d", invoker.causticcharge);
         A_StopSound(5);
         A_StopSound(6);
@@ -153,10 +155,10 @@ class PB_Demontech : PB_Weapon
         int charge = getCausticCharge();
         double blend;
 
-        if     (charge >= ammoTakeAltGreen*4) blend = 0.30;
-        else if(charge >= ammoTakeAltGreen*3) blend = 0.25;
-        else if(charge >= ammoTakeAltGreen*2) blend = 0.20;
-        else if(charge >= ammoTakeAltGreen)   blend = 0.15;
+        if     (charge >= TAKE_ALT_CAUSTIC*4) blend = 0.30; // Level 4
+        else if(charge >= TAKE_ALT_CAUSTIC*3) blend = 0.25; // Level 3
+        else if(charge >= TAKE_ALT_CAUSTIC*2) blend = 0.20; // Level 2
+        else if(charge >= TAKE_ALT_CAUSTIC)   blend = 0.15; // Level 1
         else                                  blend = 0.10;
 
         // PB_FireOffset();
@@ -382,7 +384,7 @@ class PB_Demontech : PB_Weapon
 //////////////////////////// ALTFIRE ////////////////////////////////////////////////////////////////////////////////////
         AltFire:
         AltFireInferno:
-			TNT1 A 0 PB_JumpIfNoAmmo("Reload",ammoTakeAltInferno);
+			TNT1 A 0 PB_JumpIfNoAmmo("Reload",TAKE_ALT_INFERNO);
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				PB_SetRoll(0);
@@ -403,13 +405,13 @@ class PB_Demontech : PB_Weapon
 			TNT1 A 0 A_Overlay(MUZZLEFLASH, "InfernoFlash", true);
 			D3T0 AB 1 BRIGHT;
 			D3T0 CD 1;
-			TNT1 A 0 PB_TakeAmmo(invoker.ammo2.getClassName(), ammoTakeAltInferno, 0);
+			TNT1 A 0 PB_TakeAmmo(invoker.ammo2.getClassName(), TAKE_ALT_INFERNO, 0);
 			TNT1 A 0 A_PlaySoundEx("HRSteam", "Auto");
 			D3T0 EFGHIJKLNOPQRS 1;
 			Goto ReadyToFireInferno;
 
         AltFireCaustic:
-            TNT1 A 0 A_JumpIf(invoker.ammo2.amount >= ammoTakeAltGreen, "CausticCharging");
+            TNT1 A 0 A_JumpIf(invoker.ammo2.amount >= TAKE_ALT_CAUSTIC, "CausticCharging");
 			Goto Reload;
 
 		CausticCharging:
@@ -417,17 +419,16 @@ class PB_Demontech : PB_Weapon
             TNT1 A 0 A_PlaySound("Weapons/StachanovCharge", 5, 1.0, 1);
         CausticChargingLoop:
             TNT1 A 0 {
-                if(getCausticCharge() > invoker.ammo2.amount)
-                    return ResolveState("CausticChargedBlast");
+                if(getCausticCharge() > invoker.ammo2.amount) return ResolveState("CausticChargedBlast");
                 return ResolveState(null);
             }
-            TNT1 A 0 A_JumpIf(invoker.ammo2.amount >= ammoTakeAltGreen, "ChargingContinue");
+            TNT1 A 0 A_JumpIf(invoker.ammo2.amount >= TAKE_ALT_CAUSTIC, "ChargingContinue");
             Goto CausticChargedBlast;
 
         ChargingContinue:
             TNT1 A 0 DTech_ChargeLevel();
             D5T1 ABCD 1 BRIGHT {
-                invoker.causticCharge++;
+                setCausticCharge(invoker.causticCharge + CHARGE_RATE);
                 A_WeaponOffset(random(-1,1), random(32,34));
                 // PB_FireOffset();
                 // A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);

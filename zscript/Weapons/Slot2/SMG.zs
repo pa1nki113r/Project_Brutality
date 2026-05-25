@@ -1,5 +1,5 @@
 // Constants
-const PB_SMGFullAmmo = 36; // You only need to change this value to modify the pistol ammo lol
+const PB_SMGFullAmmo = 36;
 
 // Gearbox Tokens
 class SelectSilencedSMG : Inventory {Default{Inventory.MaxAmount 1;}}
@@ -360,7 +360,7 @@ class PB_SMG : PB_Weapon
         invoker.hasSilencer = set;
     }
 
-     action void setBurstFire(bool set)
+    action void setBurstFire(bool set)
     {
         invoker.burstFire = set;
     }
