@@ -104,6 +104,7 @@ class PB_BFG9000 : PB_Weapon
                 break;
 
                 case 3:
+                // PB_FireBullets("PB_SuperBFGBall",1,0,0,0,0);
                 A_FireCustomMissile("PB_SuperBFGBall");
                 A_TakeInventory(invoker.ammo1.getClassName(), AMMO_TAKE_GREEN, TIF_NOTAKEINFINITE);
                 A_ZoomFactor(0.98, ZOOM_INSTANT);
@@ -130,6 +131,7 @@ class PB_BFG9000 : PB_Weapon
                 case 1:
                 A_StopSound(CHAN_6);
                 A_StopSound(CHAN_7);
+                // PB_FireBullets("Blackhole_Ball",1,0,0,0,0);
                 A_FireCustomMissile("Blackhole_Ball",0,1,0,0);
                 A_TakeInventory(invoker.ammo1.getClassName(), AMMO_TAKE_PURPLE, TIF_NOTAKEINFINITE);
                 A_AlertMonsters();
@@ -195,6 +197,7 @@ class PB_BFG9000 : PB_Weapon
                 case 2:
                 A_StopSound(CHAN_BODY);
 				A_StartSound("weapons/bh_secondary", CHAN_WEAPON);
+                // PB_FireBullets("BlackHole_GravityBomb",1,0,0,0,0);
 				A_FireCustomMissile("BlackHole_GravityBomb",0,1,0,0);
 				A_TakeInventory(invoker.ammo1.getClassName(), AMMO_TAKE_PURPLE_ALT, TIF_NOTAKEINFINITE);
 				A_GunFlash();
@@ -688,14 +691,18 @@ class PB_BFG9000 : PB_Weapon
 }
 
 //////////////////////////// PROJECTILES/OTHERS ////////////////////////////////////////////////////////////////////////////////////
-class BlackHole_GravityBomb : actor
+class BlackHole_GravityBomb : actor //PB_ProjectileAlt //actor
 {
     Default
     {
+        // PB_Projectile.BaseDamage 150;
+        // +PB_PROJECTILE.NOCRITICALS;
+        // -RIPPER;
+        // Gravity 0;
+        Damage 150;
         Projectile;
         Radius 16;
         Height 16;
-        Damage 150;
         Speed 40;
         RenderStyle "Normal";
         Scale 0.12;
@@ -894,14 +901,18 @@ class BFGBeamPuff : actor
 	}
 }
 
-class Blackhole_Ball : actor
+class Blackhole_Ball : actor //PB_ProjectileAlt //actor
 {
     Default
     {
+        // PB_Projectile.BaseDamage 30;
+        // PB_Projectile.RipperCount 15;
+        // Gravity 0;
+        // +PB_PROJECTILE.NOCRITICALS;
+        Damage 30;
         Radius 13;
         Height 8;
         Speed 17;
-        Damage 30;
         Projectile;
         +FORCEXYBILLBOARD;
         +SQUAREPIXELS;

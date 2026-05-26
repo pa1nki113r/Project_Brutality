@@ -72,18 +72,80 @@ class PB_CryoRifle : PB_Weapon
         MAX_COOLING    = 420,
         ADD_COOLING    = 60,
         ADD_COOLING2   = 8,     // The beam adds this much every tic
+        COOL_RATE      = 1,     // Decrease the overcool by this every tic when in Ready State
         // Overlays
         BIG_TUBEGLOW   = 7,
         SMALL_TUBEGLOW = 8,
         MUZZLE_GLOW    = 9,
         BEAM_FLASH     = -2
     }
+	const frozenspacepx = 15;   // This is from BaseWeapon_Functions
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
     override void postbeginplay()
 	{
         cryoPrimary   = PRIM_BEAM;
         cryoSecondary = SEC_FLAK;
 		super.postbeginplay();
+	}
+
+    // This is moved from BaseWeapon_Functions
+    action void PB_FireCryoRifleBeam()
+	{
+		FLineTraceData t;
+		double zoff = (height * 0.5 - floorclip + player.mo.AttackZOffset*player.crouchFactor) - 9;
+		bool hit = LineTrace(angle,8000,pitch,TRF_NOSKY ,zoff,data:t);
+		
+		vector3 fpos = t.hitlocation - t.hitdir; //substract one to the final pos so the puff doesnt spawn in the wall and therefore in a higher sector if any
+		vector3 spos = (pos.xy, pos.z + zoff);
+		
+		vector3 dif = levellocals.Vec3Diff(spos,fpos);
+		vector3 dr = dif.unit();
+		double dist = dif.length();
+		
+		int steps = int(dist / frozenspacepx) + 1;
+		
+		FSpawnParticleParams FrostBeam;
+		FrostBeam.Texture = TexMan.CheckForTexture("X027A0"); //FIR5G0 also looks cool
+		FrostBeam.Color1 = "FFFFFF";
+		FrostBeam.Style = STYLE_Add;
+		FrostBeam.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
+		FrostBeam.Vel = (0,0,0); 
+		FrostBeam.Startroll =random(0,360); //randompick(0,90,180,270,360);
+		FrostBeam.RollVel = 0;
+		FrostBeam.StartAlpha = 0.90;
+		FrostBeam.FadeStep = 0.1;
+		FrostBeam.Size = 20;
+		FrostBeam.SizeStep = 0;
+		FrostBeam.Lifetime = 1; 
+		
+		//basically, simulate a hitscan attack by damaging the actor the trace hits, spawning a puff and spraying a decal
+		//damage victim (if any)
+		if(t.hitactor)
+		{
+			actor v = t.hitactor;
+			if(v && v.bismonster && v.health > 0 && !isfriend(v))
+				v.damagemobj(self,self,2,"Freeze",DMG_THRUSTLESS);
+		}
+		
+		//spawn puff if hit anything that is not sky
+		if(hit)
+		{
+			actor p = Spawn("CryoRifleBeamPuff",fpos);
+			if(p)
+			{
+				p.target = self; //no self damage
+				p.A_SprayDecal("FreezerBurnSmall",2,(0,0,0),t.hitdir); //spray the decal manually
+			}
+		}
+		
+		for(int i = 0; i < steps; i++)
+		{
+			spos += (dr * frozenspacepx);
+			FrostBeam.Pos = spos;
+			if(i > 0) //skip the first iteration
+				Level.SpawnParticle(FrostBeam);
+		}
+		
 	}
 
     action void Cryo_SetGlowOverlay(int layer)
@@ -137,6 +199,7 @@ class PB_CryoRifle : PB_Weapon
         if(!isAlt) {
             if(getPrimary() == PRIM_MISSILE)
             {
+                // PB_FireBullets("IceMissile",1,0,0,0,0);
                 A_FireCustomMissile("IceMissile", 0, 0, 0, 0);
                 PB_TakeAmmo(invoker.ammo2.getClassName(),TAKE_MISSILE, 0);
                 A_StartSound("weapons/CryoRifle/missile", CHAN_WEAPON, CHANF_OVERLAP);
@@ -145,6 +208,7 @@ class PB_CryoRifle : PB_Weapon
         else {
             if(getSecondary() == SEC_SPEAR)
             {
+                // PB_FireBullets("IceSpear",1,0,0,0,0);
                 A_FireCustomMissile("IceSpear", 0, 0, 0, 0);
                 PB_TakeAmmo(invoker.ammo2.getClassName(),TAKE_SPEAR, 0);
                 A_StartSound("weapons/CryoRifle/spearfire", CHAN_WEAPON, CHANF_OVERLAP);
@@ -284,7 +348,8 @@ class PB_CryoRifle : PB_Weapon
         A_Overlay(BIG_TUBEGLOW, "BigTubeGlow");
         A_Overlay(SMALL_TUBEGLOW, "SmallTubeGlow");
         A_Overlay(MUZZLE_GLOW, "MuzzleGlow");
-        invoker.cryoOvercooling--;
+        setOvercooling(invoker.cryoOvercooling - COOL_RATE);
+        // invoker.cryoOvercooling--;
         if(!isEmpty) A_FireCustomMissile("TinyGunSmoker", 0, 0, 0, -3, 0, 0);
         return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
     }
@@ -297,6 +362,7 @@ class PB_CryoRifle : PB_Weapon
         A_ZoomFactor(1.0);
         A_ClearOverlays(BIG_TUBEGLOW,MUZZLE_GLOW);
 
+        // Get tokens
         bool goMissile = CountInv("FireModeCryoRifleMissile_WW") > 0;
         bool goBeam    = CountInv("FireModeCryoRifleBeam_WW")    > 0;
         bool goSpear   = CountInv("FireModeCryoRifleSpear_WW")   > 0;
@@ -314,31 +380,13 @@ class PB_CryoRifle : PB_Weapon
         A_StartSound("weapons/CryoRifle/up", CHAN_AUTO, CHANF_OVERLAP);
         A_StartSound("weapons/CryoRifle/reload1", CHAN_AUTO, CHANF_OVERLAP);
 
-        if(goMissile) {
-            A_Print("$PB_CRYO_MISSILE"); 
-            setPrimary(PRIM_MISSILE);
-            clearModeTokens();
-            return ResolveState("SwitchMode");
-        } 
-        if(goBeam) {
-            A_Print("$PB_CRYO_BEAM");    
-            setPrimary(PRIM_BEAM);  
-            clearModeTokens();
-            return ResolveState("SwitchMode");
-        }
-        if(goSpear) {
-            A_Print("$PB_CRYO_SPEAR");   
-            setSecondary(SEC_SPEAR); 
-            setPrimary(PRIM_MISSILE);
-            return ResolveState("SwitchMode");
-        }
-        if(goFlak) {
-            A_Print("$PB_CRYO_FLAK");    
-            setSecondary(SEC_FLAK);
-            setPrimary(PRIM_MISSILE);
-            return ResolveState("SwitchMode");
-        }     
+        // Change Mode and then fallthrough to the switch animation
+        if(goMissile) { A_Print("$PB_CRYO_MISSILE"); setPrimary(PRIM_MISSILE);} 
+        if(goBeam)    { A_Print("$PB_CRYO_BEAM");    setPrimary(PRIM_BEAM);}
+        if(goSpear)   { A_Print("$PB_CRYO_SPEAR");   setSecondary(SEC_SPEAR);}
+        if(goFlak)    { A_Print("$PB_CRYO_FLAK");    setSecondary(SEC_FLAK);}     
 
+        clearModeTokens();
         return ResolveState(null);
     }
 
@@ -541,8 +589,6 @@ class PB_CryoRifle : PB_Weapon
 //////////////////////////// WEAPON SPECIAL ////////////////////////////////////////////////////////////////////////////////////
         WeaponSpecial:
             TNT1 A 0 Cryo_WeaponSpecial(); // Handles all the weapon wheel logic
-            Goto Ready3;
-
         SwitchMode:
             FR20 ABCDEFGHIJKL 1;
             TNT1 A 0 A_StartSound("weapons/CryoRifle/respect2", CHAN_AUTO, CHANF_OVERLAP);
@@ -719,13 +765,17 @@ class PB_CryoRifle : PB_Weapon
 }
 
 //////////////////////////// PROJECTILES/OTHERS ////////////////////////////////////////////////////////////////////////////////////
-class IceMissile : FastProjectile 
+class IceMissile : fastprojectile //PB_ProjectileAlt //fastprojectile
 {
     Default {
+    // PB_Projectile.BaseDamage 0;
+    // +PB_PROJECTILE.NOCRITICALS
+    // -RIPPER;
+    // Gravity 0;
+	Damage 0;
 	Radius 4;
 	Height 8;
 	Speed 52;
-	Damage 0;
 	Projectile;
 	DamageType "Freeze";
 	RenderStyle "Add";
@@ -787,9 +837,14 @@ class CryoBeamDamage : actor
 			TNT1 A 0 A_Explode(10,10);
 			TNT1 A 0 A_Explode(10,30);
 				Stop;	}}
-class IceSpear : actor
+class IceSpear : actor //PB_ProjectileAlt //actor
 {
     Default {
+     // PB_Projectile.BaseDamage 75;
+    // PB_Projectile.RipperCount 15;
+    // +PB_PROJECTILE.NOCRITICALS;
+	Gravity 0.1;
+	Damage 75	;
 	+BloodSplatter;
 	+Ripper;
 	-NOGRAVITY;
@@ -798,14 +853,12 @@ class IceSpear : actor
 	Radius 4;
 	Height 8;
 	Speed 110;
-	Damage 75	;
 	Damagetype "Blast";
 	Scale 1.25;
 	RipperLevel 1;
 	+MISSILE	;
 	SeeSound " ";
 	DeathSound "weapons/CryoRifle/speardeath";
-	Gravity 0.1;
 	Decal "FreezerBurnSmall";
     }
 		States {
@@ -835,13 +888,17 @@ class IceSpear : actor
 			XDeath:
 				NLPJ B 0 A_PlaySound("Weapons/NailHitBleed");
 				Stop;	}}
-class IceFlak1 : actor
+class IceFlak1 : actor //PB_ProjectileAlt //actor
 {
     Default {
+    // PB_Projectile.BaseDamage 7;
+    // +PB_PROJECTILE.NOCRITICALS;
+    // -RIPPER;
+    // Gravity 0;
+	Damage 7;
 	Radius 3;
 	Height 4;
 	Speed 45;
-	Damage 7;
 	Mass 200;
 	Scale 0.75;
 	Damagetype "Cutless";

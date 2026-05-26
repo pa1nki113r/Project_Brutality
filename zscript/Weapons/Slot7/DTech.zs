@@ -93,6 +93,7 @@ class PB_Demontech : PB_Weapon
                 else         setHasWeapon(CAUSTIC);
 
                 A_FireCustomMissile(projectile, 0, 0, 0, 0, 0, random(-1,1));
+                // PB_FireBullets(projectile,1,0,0,0,random(-1,1));
                 PB_GunSmoke(0, 0, 0);
                 PB_MuzzleFlashEffects(0, 0, 0, "FF0000");
                 A_PlaySoundEx(sound, "Weapon");
@@ -647,15 +648,19 @@ class PB_Demontech : PB_Weapon
 }
 
 //////////////////////////// PROJECTILES/OTHERS ////////////////////////////////////////////////////////////////////////////////////
-class Hellbullet : FastProjectile
+class Hellbullet : fastprojectile // PB_ProjectileAlt //fastprojectile
 {
     Default
     {
+        // PB_Projectile.BaseDamage 12;
+        // +PB_PROJECTILE.NOCRITICALS;
+        // -RIPPER;
+        // Gravity 0;
+        damage 12;
         +FORCEXYBILLBOARD;
         +SQUAREPIXELS;
         +BLOODSPLATTER ;
         +NOEXTREMEDEATH;
-        damage 12;
         damagetype "fire";
         radius 2;
         height 1;
@@ -719,13 +724,17 @@ class DTechTrailSpark : actor
 	
 //GreenPlasma_Puff
 
-class Hellbullet2 : FastProjectile
+class Hellbullet2 : fastprojectile //PB_ProjectileAlt //fastprojectile
 {
     Default {
+    // PB_Projectile.BaseDamage 13;
+    // +PB_PROJECTILE.NOCRITICALS;
+    // -RIPPER;
+    // Gravity 0;
+	damage 13;
 	+FORCEXYBILLBOARD;
 	+BLOODSPLATTER ;
 	+NOEXTREMEDEATH;
-	damage 13;
 	damagetype "Disintegrate";
 	radius 2;
 	height 1;
