@@ -57,28 +57,28 @@ class PB_CryoRifle : PB_Weapon
     bool cryoSecondary;
     int cryoOvercooling;
     // Why did I make it like this? idk maybe so its easier to add other modes lol
-    enum cryoEnum{
-        // Modes
-        PRIM_MISSILE   = 0,
-        PRIM_BEAM      = 1,
-        SEC_SPEAR      = 0,
-        SEC_FLAK       = 1,
-        // Ammo Take, each mode takes different aomunts
-        TAKE_MISSILE   = 5,
-        TAKE_BEAM      = 1,     // This is taken per tic
-        TAKE_SPEAR     = 10,
-        TAKE_FLAK      = 2,
-        // Over Cooling System, this dictates how cold the weapon is and sets the sprites accordingly
-        MAX_COOLING    = 420,
-        ADD_COOLING    = 60,
-        ADD_COOLING2   = 8,     // The beam adds this much every tic
-        COOL_RATE      = 1,     // Decrease the overcool by this every tic when in Ready State
+    enum cryoEnum {
+        // Modes, right now they are booleans but they can be changed to int if anyone wants to add other modes
+        PRIM_MISSILE    = 0,
+        PRIM_BEAM       = 1,
+        SEC_SPEAR       = 0,
+        SEC_FLAK        = 1,
+        // Ammo Take, each mode takes different amounts
+        TAKE_MISSILE    = 5,
+        TAKE_BEAM       = 1,     // This is taken per tic
+        TAKE_SPEAR      = 10,
+        TAKE_FLAK       = 2,
+        // Over Cooling System, this dictates how cold the weapon is and set the sprites accordingly
+        MAX_COOLING     = 420,
+        ADD_COOLING     = 60,
+        ADD_COOLING2    = 8,     // The beam adds this much every tic
+        COOL_RATE       = 1,     // Decrease the overcool by this every tic when in Ready State
+        HASOVERCOOLED   = 100,   // The weapon counts as "overcooled" when it has reached this number
         // Overlays
-        BIG_TUBEGLOW   = 7,
-        SMALL_TUBEGLOW = 8,
-        MUZZLE_GLOW    = 9,
-        BEAM_FLASH     = -2
-    }
+        BIG_TUBEGLOW    = 7,
+        SMALL_TUBEGLOW  = 8,
+        MUZZLE_GLOW     = 9,
+        BEAM_FLASH      = -2 }
 	const frozenspacepx = 15;   // This is from BaseWeapon_Functions
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
     override void postbeginplay()
@@ -229,7 +229,7 @@ class PB_CryoRifle : PB_Weapon
         A_GunFlash();
         A_AlertMonsters();
         setOvercooling(min(invoker.cryoOvercooling + ADD_COOLING, MAX_COOLING));
-        // console.printf("Added 60 overcooling, currently is %d",invoker.cryoOvercooling);
+        // console.printf("Current Overcooling is %d",invoker.cryoOvercooling);
         PB_GunSmoke(0, 0, 0);
         PB_GunSmoke(0, 0, 0);
         PB_GunSmoke(0, 0, 0);
@@ -273,7 +273,7 @@ class PB_CryoRifle : PB_Weapon
                     A_AlertMonsters();
                     PB_GunSmoke(0, 0, 0);
                     setOvercooling(min(invoker.cryoOvercooling + ADD_COOLING2, MAX_COOLING));
-                    // console.printf("Added 8 overcooling, currently is %d",invoker.cryoOvercooling);
+                    // console.printf("Current Overcooling is %d",invoker.cryoOvercooling);
                 }
                 else
                 {
@@ -390,10 +390,14 @@ class PB_CryoRifle : PB_Weapon
         return ResolveState(null);
     }
 
+    action bool hasCooled()
+    {
+        return getOvercooling() >= HASOVERCOOLED;
+    }
+
     action void setSprite(name normal, name overcooled)
     {
-        bool hasovercooled = getOvercooling() >= 100;
-        A_SetWeaponSprite(hasovercooled ? overcooled : normal);
+        A_SetWeaponSprite(hasCooled() ? overcooled : normal);
     }
 
     action void clearModeTokens()
@@ -696,7 +700,7 @@ class PB_CryoRifle : PB_Weapon
 
 //////////////////////////// FLASH STATES ////////////////////////////////////////////////////////////////////////////////////
         FlashPunching:
-            TNT1 A 0 A_JumpIf(getOvercooling() >= 100, "FlashPunchingFrost");
+            TNT1 A 0 A_JumpIf(hasCooled(), "FlashPunchingFrost");
             FR42 ABCDEFGGHIJKLM 1;
             Goto Ready3;
 
@@ -705,7 +709,7 @@ class PB_CryoRifle : PB_Weapon
             Goto Ready3;
 
         FlashKicking:
-            TNT1 A 0 A_JumpIf(getOvercooling() >= 100, "FlashKickingFrost");
+            TNT1 A 0 A_JumpIf(hasCooled(), "FlashKickingFrost");
             FR40 ABCDEFGGHIJKLM 1;
             Goto Ready3;
 
@@ -714,7 +718,7 @@ class PB_CryoRifle : PB_Weapon
             Goto Ready3;
 
         FlashAirKicking:
-            TNT1 A 0 A_JumpIf(getOvercooling() >= 100, "FlashAirKickingFrost");
+            TNT1 A 0 A_JumpIf(hasCooled(), "FlashAirKickingFrost");
             FR40 ABCDEFGGGHIJKLM 1;
             Goto Ready3;
 
@@ -723,7 +727,7 @@ class PB_CryoRifle : PB_Weapon
             Goto Ready3;
 
         FlashSlideKicking:
-            TNT1 A 0 A_JumpIf(getOvercooling() >= 100, "FlashSlideKickingFrost");
+            TNT1 A 0 A_JumpIf(hasCooled(), "FlashSlideKickingFrost");
             FR41 ABCDEFGHIJKLMNOPQRSSSTUVWX 1;
             Goto Ready3;
 
@@ -732,7 +736,7 @@ class PB_CryoRifle : PB_Weapon
             Goto Ready3;
 
         FlashSlideKickingStop:
-            TNT1 A 0 A_JumpIf(getOvercooling() >= 100, "FlashSlideKickingStopFrost");
+            TNT1 A 0 A_JumpIf(hasCooled(), "FlashSlideKickingStopFrost");
             FR41 TTTUVWX 1;
             Goto Ready3;
             

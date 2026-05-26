@@ -132,7 +132,7 @@ class PB_Demontech : PB_Weapon
         else if(charge >= TAKE_ALT_CAUSTIC)    projectile = "ShrinkBeam";
         else                                   projectile = "ShrinkBeam";
 
-        PB_TakeAmmo(invoker.ammo2.getClassName(), clamp(getCausticCharge(),CHARGE_RATE,CHARGE_MAX), 0); // So you only tak 20 ammo at max charge
+        PB_TakeAmmo(invoker.ammo2.getClassName(), min(getCausticCharge(),CHARGE_MAX), 0); // So you only tak 20 ammo at max charge
         // console.Printf("Take Ammo %d", invoker.causticcharge);
         A_StopSound(5);
         A_StopSound(6);
@@ -429,8 +429,9 @@ class PB_Demontech : PB_Weapon
         ChargingContinue:
             TNT1 A 0 DTech_ChargeLevel();
             D5T1 ABCD 1 BRIGHT {
-                setCausticCharge(invoker.causticCharge + CHARGE_RATE);
+                setCausticCharge(min(invoker.causticcharge + CHARGE_RATE, CHARGE_MAX));
                 A_WeaponOffset(random(-1,1), random(32,34));
+                // console.Printf("Current Charge: %d",invoker.causticcharge);
                 // PB_FireOffset();
                 // A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
             }
