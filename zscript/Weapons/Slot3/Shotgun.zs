@@ -231,12 +231,9 @@ Class PB_Shotgun : PB_WeaponBase
 				PB_SetChamberEmpty(true);
 				A_AlertMonsters();
 				A_fireprojectile("YellowFlareSpawn", 0, 0, 0, 0);
-				A_fireprojectile("ShakeYourAssDouble", 0, 0, 0, 0);
 				_SpawnMuzzleSparksSG(0,0,-4);
 				PB_GunSmoke_Sniper(1,0,-4);
                 PB_MuzzleFlashEffects(0,0,-4);
-                A_QuakeEx(-3, 0, 0, 15, 0, 2, "", QF_RELATIVE | QF_WAVE | QF_SCALEDOWN | QF_SCALEUP | QF_FULLINTENSITY, 2, 0, 0, 0, 2, frandom(-0.5, 0.5), 2);
-                //A_QuakeEx(2, 2, 2, 10, 0, 2, "", QF_RELATIVE | QF_SCALEDOWN);
 				A_Overlay(-6, "ShotFlash",true);
 				A_OverlayFlags(-6,PSPF_RENDERSTYLE,true);
 				A_OverlayRenderStyle(-6,STYLE_Add);
@@ -257,11 +254,13 @@ Class PB_Shotgun : PB_WeaponBase
 						PB_FireBullets("PB_DragonsBreathTracer",8,4.5,0,-14,4.5);
 						break;
 				}
+				A_ZoomFactor(0.98);
 			}
 			SH0F B 1 PB_SetShellSprite("SH0F","SH1F","SH2F");
 			SH0F C 1 {
 				A_FireProjectile("ShotgunWad",random(-2,2),0,random(-2,2),-4,FPF_NOAUTOAIM,random(-2,2));
 				PB_WeaponRecoil(-1.24,+0.44);
+				A_ZoomFactor(1.0);
 			}
 			SH0F G 1 PB_WeaponRecoil(-1.24,+0.44);
 			SH0F FED 1;
@@ -760,8 +759,6 @@ Class PB_Shotgun : PB_WeaponBase
 				 _SpawnMuzzleSparksSG(0,0,-4);
 				 PB_GunSmoke_Sniper(1,0,0);
                  PB_MuzzleFlashEffects(0,0,0);
-                 A_QuakeEx(-3, 0, 0, 15, 0, 2, "", QF_RELATIVE | QF_WAVE | QF_SCALEDOWN | QF_SCALEUP | QF_FULLINTENSITY, 2, 0, 0, 0, 2, frandom(-0.5, 0.5), 2);
-                //A_QuakeEx(2, 2, 2, 10, 0, 2, "", QF_RELATIVE | QF_SCALEDOWN);
 				 PB_DynamicTail("shotgun", "shotgun");
 				 A_SetInventory("CantDoAction",1);
 				 
