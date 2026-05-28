@@ -335,7 +335,7 @@ class PB_Axe : PB_Weapon
 			THRF EF 1 Axe_SwingWeapon(3,5);
 			TNT1 A 0 Axe_SwingWeapon(3,6);
 			TNT1 A 10;
-			Goto Ready;
+			Goto Select;
 
         OutOfAxe:
             TNT1 A 0 {
