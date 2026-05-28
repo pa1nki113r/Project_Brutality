@@ -890,7 +890,6 @@ class RedTracerSmall : actor
   -NoGravity;
   //+LowGravity;
   +DontSplash;
-  +DoomBounce;
   +FORCEXYBILLBOARD;
   BounceFactor 0.2;
   Gravity 0.8;
@@ -898,7 +897,6 @@ class RedTracerSmall : actor
   //Speed 2;
   Speed 0;
 	+NoGravity;
-  -DOOMBOUNCE;
   RenderStyle "Add";
   Scale 0.25;
   Alpha 0.6;
@@ -933,7 +931,6 @@ class GreenTracerSmall : actor
   -NoGravity;
   //+LowGravity;
   +DontSplash;
-  +DoomBounce;
   +FORCEXYBILLBOARD;
   BounceFactor 0.2;
   Gravity 0.8;
@@ -942,7 +939,6 @@ class GreenTracerSmall : actor
   //Speed 2;
   Speed 0;
 	+NoGravity;
-  -DOOMBOUNCE;
   Scale 0.25;
   Alpha 0.6;
   }
@@ -1384,7 +1380,7 @@ class TossedHellRifle : actor
         Decal "BrutalBloodSplat";
         BounceFactor 0.4;
         BounceCount 3;
-        +DOOMBOUNCE;
+        BounceType "Doom";
         +MOVEWITHSECTOR;
         //+CLIENTSIDEONLY
         +NOBLOCKMAP;

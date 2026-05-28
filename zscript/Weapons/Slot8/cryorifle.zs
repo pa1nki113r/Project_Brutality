@@ -907,9 +907,9 @@ class IceFlak1 : actor //PB_ProjectileAlt //actor
 	Scale 0.75;
 	Damagetype "Cutless";
 	+MISSILE;
-	+DOOMBOUNCE;
 	+BLOODSPLATTER;
 	+ROLLSPRITE;
+	BounceType "Doom";
 	BounceFactor 0.65;
 	BounceSound "IceShardBounce";
 	BounceSound "IceShardBounce";
@@ -1017,18 +1017,14 @@ class IceTracer : actor
 	+RollSprite;
 	+Missile;
 	+NoBlockMap;
-	+LowGravity;
 	+DontSplash;
-	+DoomBounce;
 	+FORCEXYBILLBOARD;
-	BounceFactor 0.2;
 	Gravity 0.1;
 	RenderStyle "Add";
 	Alpha 0.9;
 	StencilColor "A0 FF FF";
 	Scale 0.4;
 	Speed 0;
-	-DOOMBOUNCE;
     }
 		States {
 			Spawn:
