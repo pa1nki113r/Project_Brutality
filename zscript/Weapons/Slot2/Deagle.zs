@@ -777,16 +777,7 @@ class PB_Deagle : PB_WeaponBase
 			wait;
 		
 		ReadyDualWield:
-			TNT1 A 0 {
-					//set the overlays for the sides and other things needed, like
-					A_SetRoll(0);
-					PB_HandleCrosshair(32);
-					A_SetInventory("PB_LockScreenTilt",0);
-					A_SetFiringRightWeapon(False);
-					A_SetFiringLeftWeapon(False);
-					A_overlay(10,"IdleLeft_Overlay",false);
-					A_overlay(11,"IdleRight_Overlay",false);
-				}
+			TNT1 A 0 PB_SetupDualWield(crosshair:32);
 		ReadyToFireDualWield:
 			TNT1 A 1 A_DoPBDualAction(2);
 			Loop;

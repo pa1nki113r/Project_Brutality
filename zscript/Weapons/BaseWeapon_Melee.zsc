@@ -27,23 +27,29 @@ extend class PB_WeaponBase
 				A_StartSound("KNIFSWNG", 0);
 				
 				double knifeRoll = frandom(-1.0,1.0);
-				A_Overlayrotate(-998,knifeRoll);
-				if(invoker.curBlood.x != 0 || invoker.curBlood.y != 0 || invoker.curBlood.z != 0)
+				A_Overlayrotate(PSP_QUICKMELEE,knifeRoll);
+				if(PB_IsVisorBlood())
 				{
-					double BR = invoker.curBlood.x;
-					double BG = invoker.curBlood.y;
-					double BB = invoker.curBlood.z;
-					double mostlyred = (BR - (BG + BB));
-					double mostlygreen = (BG - (BB + BR));
-					double mostlyblue = (BB - (BR + BG));
-					if(mostlyred > 0)
-						A_overlay(-997,"BloodyKnife_Red");
-					else if(mostlygreen > 0)
-						A_overlay(-997,"BloodyKnife_Green");
-					else if(mostlyblue > 0)
-						A_overlay(-997,"BloodyKnife_Blue");
+					switch(PB_GetVisorBlood())
+					{
+						case REDBLOODVISOR: 	A_overlay(PSP_QUICKMELEEBLOOD,"BloodyKnife_Red"); 		break;
+						case GREENBLOODVISOR: 	A_overlay(PSP_QUICKMELEEBLOOD,"BloodyKnife_Green"); 	break;
+						case BLUEBLOODVISOR: 	A_overlay(PSP_QUICKMELEEBLOOD,"BloodyKnife_Blue"); 	break;
+					}
+					// double BR = invoker.curBlood.x;
+					// double BG = invoker.curBlood.y;
+					// double BB = invoker.curBlood.z;
+					// double mostlyred = (BR - (BG + BB));
+					// double mostlygreen = (BG - (BB + BR));
+					// double mostlyblue = (BB - (BR + BG));
+					// if(mostlyred > 0)
+					// 	A_overlay(-997,"BloodyKnife_Red");
+					// else if(mostlygreen > 0)
+					// 	A_overlay(-997,"BloodyKnife_Green");
+					// else if(mostlyblue > 0)
+					// 	A_overlay(-997,"BloodyKnife_Blue");
 					
-					A_Overlayrotate(-997,knifeRoll);
+					A_Overlayrotate(PSP_QUICKMELEEBLOOD,knifeRoll);
 					/*
 					//colors dont match
 					A_Overlay(overlayID() + 1,"BloodyKnife_Black");
@@ -64,8 +70,8 @@ extend class PB_WeaponBase
 				}
 				if(invoker.leftHandMelee || findinventory("GrabbedBarrel") || findinventory("GrabbedFlameBarrel") || findinventory("GrabbedIceBarrel"))
 				{
-					A_OverlayFlags(-998,PSPF_FLIP|PSPF_MIRROR,true);
-					A_OverlayFlags(-997,PSPF_FLIP|PSPF_MIRROR,true);
+					A_OverlayFlags(PSP_QUICKMELEE,PSPF_FLIP|PSPF_MIRROR,true);
+					A_OverlayFlags(PSP_QUICKMELEEBLOOD,PSPF_FLIP|PSPF_MIRROR,true);
 				}
 			}
 			MC3S AB 1 {
@@ -120,11 +126,11 @@ extend class PB_WeaponBase
 				PB_SetUsingMelee(false);
 				if(invoker.leftHandMelee)
 				{
-					A_OverlayFlags(-998,PSPF_FLIP|PSPF_MIRROR,false);
-					A_OverlayFlags(-997,PSPF_FLIP|PSPF_MIRROR,false);
+					A_OverlayFlags(PSP_QUICKMELEE,PSPF_FLIP|PSPF_MIRROR,false);
+					A_OverlayFlags(PSP_QUICKMELEEBLOOD,PSPF_FLIP|PSPF_MIRROR,false);
 				}
 			}
-			TNT1 A 0 A_Overlayrotate(-998,0);
+			TNT1 A 0 A_Overlayrotate(PSP_QUICKMELEE,0);
 			Stop;
 		BloodyKnife:
 		BloodyKnife_Red:
@@ -164,8 +170,8 @@ extend class PB_WeaponBase
 			TNT1 A 0 A_JumpIfInventory("PlayerIsDead",1,"FailOverlay");
 			TNT1 A 0 A_JumpIfHealthLower(0, "FailOverlay");
 			TNT1 A 0 {
-				A_LegOverlay(-1000, "FirstPersonLegsKickRight");
-				A_OverlayFlags(-1000, PSPF_ADDWEAPON|PSPF_ADDBOB, False);
+				A_LegOverlay(PSP_FIRSPERSONLEGS, "FirstPersonLegsKickRight");
+				A_OverlayFlags(PSP_FIRSPERSONLEGS, PSPF_ADDWEAPON|PSPF_ADDBOB, False);
 				A_OverlayOffset(-999, 0, 32);
 				if(FindInventory("Zoomed")) {
 					A_SetInventory("Zoomed",0);
@@ -250,7 +256,7 @@ extend class PB_WeaponBase
 			}
 			TNT1 A 0 {
 				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, false);
-				A_LegOverlay(-1000, "FirstPersonLegsStand");
+				A_LegOverlay(PSP_FIRSPERSONLEGS, "FirstPersonLegsStand");
 				A_TakeInventory("Kicking",1);
 			}
 			Stop;
@@ -285,7 +291,7 @@ extend class PB_WeaponBase
 					A_Overlay(PSP_WEAPON, "FlashSlideKicking");
 					A_OverlayOffset(PSP_WEAPON, 0, 32);
 				}
-				A_ClearOverlays(-1000,-1000);
+				A_ClearOverlays(PSP_FIRSPERSONLEGS,PSP_FIRSPERSONLEGS);
 				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, true);
 				A_OverlayOffset(-999, 0, max(32, -pitch*2 + 32));
 			}
@@ -327,7 +333,7 @@ extend class PB_WeaponBase
 			SLDK OPQRSTU 1 A_OverlayOffset(-999, 0, max(32, -pitch*2 + 32),WOF_INTERPOLATE);
 			TNT1 A 0 {
 				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, false);
-				A_LegOverlay(-1000, "FirstPersonLegsStand");
+				A_LegOverlay(PSP_FIRSPERSONLEGS, "FirstPersonLegsStand");
 				A_Takeinventory("Kicking",1);
 			}
 			Stop;
@@ -390,7 +396,7 @@ extend class PB_WeaponBase
 				A_Takeinventory("PB_LockScreenTilt",1);
 				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, false);
 				PB_SetUsingKick(false);
-				A_LegOverlay(-1000, "FirstPersonLegsStand");
+				A_LegOverlay(PSP_FIRSPERSONLEGS, "FirstPersonLegsStand");
 				A_TakeInventory("Kicking",1);
 			}
 			Stop;
@@ -427,13 +433,13 @@ extend class PB_WeaponBase
 				A_Takeinventory("PB_LockScreenTilt",1);
 				A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, false);
 				PB_SetUsingKick(false);
-				A_LegOverlay(-1000, "FirstPersonLegsStand");
+				A_LegOverlay(PSP_FIRSPERSONLEGS, "FirstPersonLegsStand");
 				A_TakeInventory("Kicking",1);
 			}
 			Stop;
 		GrabEnemy:	
 			TNT1 A 0 {
-				A_ClearOverlays(-1000,65);
+				A_ClearOverlays(PSP_FIRSPERSONLEGS,65);
 				A_StartSound("weapons/fistwhoosh");
 			}
 			PKUP ABCDEF 1;

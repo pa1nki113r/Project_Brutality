@@ -135,14 +135,14 @@ class PB_pistolWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 		
-		let weap = PB_WeaponBase(requester.player.readyweapon);
+		let pistol = PB_Pistol(requester.player.readyweapon);
 		vector2 iconScale = (0.75, 0.75);
 		
-		//check dw
-		if(weap.akimboMode)
+		//check dual wield
+		if(pistol.akimboMode)
 		{
 			PB_SpecialWheel_Mode pistol_single = new ("PB_SpecialWheel_Mode");
-			if(requester.FindInventory("SilencerEquipped"))
+			if(pistol.hasSilencer)
 				pistol_single.img = "graphics/pywheel/PISTOL_1.png";
 			else
 				pistol_single.img = "graphics/pywheel/PISTOL_0.png";
@@ -156,7 +156,7 @@ class PB_pistolWheel : wheelinfocontainer
 		else
 		{
 			PB_SpecialWheel_Mode pistol_dual = new ("PB_SpecialWheel_Mode");
-			if(requester.FindInventory("SilencerEquipped"))
+			if(pistol.hasSilencer)
 				pistol_dual.img = "graphics/pywheel/PISTOL_7.png";
 			else
 				pistol_dual.img = "graphics/pywheel/PISTOL_4.png";
@@ -169,10 +169,10 @@ class PB_pistolWheel : wheelinfocontainer
 		}
 		
 		//check burst
-		if(requester.FindInventory("ToggledPistolBurstFire"))
+		if(pistol.burstFire)
 		{
 			PB_SpecialWheel_Mode pistol_semi = new ("PB_SpecialWheel_Mode");
-			if(requester.FindInventory("SilencerEquipped"))
+			if(pistol.hasSilencer)
 				pistol_semi.img = "graphics/pywheel/PISTOL_6.png";
 			else
 				pistol_semi.img = "graphics/pywheel/PISTOL_3.png";
@@ -186,7 +186,7 @@ class PB_pistolWheel : wheelinfocontainer
 		else
 		{
 			PB_SpecialWheel_Mode pistol_burst = new ("PB_SpecialWheel_Mode");
-			if(requester.FindInventory("SilencerEquipped"))
+			if(pistol.hasSilencer)
 				pistol_burst.img = "graphics/pywheel/PISTOL_5.png";
 			else
 				pistol_burst.img = "graphics/pywheel/PISTOL_2.png";
@@ -199,7 +199,7 @@ class PB_pistolWheel : wheelinfocontainer
 		}
 		
 		//check suppresor
-		if(requester.FindInventory("SilencerEquipped"))
+		if(pistol.hasSilencer)
 		{
 			PB_SpecialWheel_Mode pistol_unsilenced = new ("PB_SpecialWheel_Mode");
 			pistol_unsilenced.img = "graphics/pywheel/PISTOL_0.png";
@@ -294,13 +294,13 @@ Class PB_SMGWheel : wheelinfocontainer
 		if(!spw || !requester)
 			return;
 			
-		let weap = PB_WeaponBase(requester.player.readyweapon);
+		let smg = PB_SMG(requester.player.readyweapon);
 		vector2 iconScale = (0.6, 0.6);
 			
-		if(!weap.akimboMode) 
+		if(!smg.akimboMode) 
 		{
 			PB_SpecialWheel_Mode smg_dualwield = new ("PB_SpecialWheel_Mode");
-			if(requester.FindInventory("SilencedSMG"))
+			if(smg.hasSilencer)
 				smg_dualwield.img = "graphics/pywheel/SMG/SMG_DUAL_SUPPRESSED.png";
 			else
 				smg_dualwield.img = "graphics/pywheel/SMG/SMG_DUAL.png";
@@ -314,7 +314,7 @@ Class PB_SMGWheel : wheelinfocontainer
 		else 
 		{
 			PB_SpecialWheel_Mode smg_dualwield = new ("PB_SpecialWheel_Mode");
-			if(requester.FindInventory("SilencedSMG"))
+			if(smg.hasSilencer)
 				smg_dualwield.img = "sprites/weapons/Slot 2/UACSMG/Pickup/ATFLA0.png";
 			else
 				smg_dualwield.img = "sprites/weapons/Slot 2/UACSMG/Pickup/ATFLB0.png";
@@ -325,10 +325,10 @@ Class PB_SMGWheel : wheelinfocontainer
 			
 			spw.Push(smg_dualwield);
 		}
-		if(!requester.FindInventory("PB_SMGBurstFire")) 
+		if(!smg.burstFire) 
 		{
 			PB_SpecialWheel_Mode smg_burst = new ("PB_SpecialWheel_Mode");
-			if(requester.FindInventory("SilencedSMG"))
+			if(smg.hasSilencer)
 				smg_burst.img = "graphics/pywheel/SMG/SMG_BURST_SUPPRESSED.png";
 			else
 				smg_burst.img = "graphics/pywheel/SMG/SMG_BURST.png";
@@ -342,7 +342,7 @@ Class PB_SMGWheel : wheelinfocontainer
 		else 
 		{
 			PB_SpecialWheel_Mode smg_auto = new ("PB_SpecialWheel_Mode");
-			if(requester.FindInventory("SilencedSMG"))
+			if(smg.hasSilencer)
 				smg_auto.img = "graphics/pywheel/SMG/SMG_FULLAUTO_SUPPRESSED.png";
 			else
 				smg_auto.img = "graphics/pywheel/SMG/SMG_FULLAUTO.png";
@@ -353,7 +353,7 @@ Class PB_SMGWheel : wheelinfocontainer
 			
 			spw.Push(smg_auto);
 		}
-		if(!requester.FindInventory("SilencedSMG")) 
+		if(!smg.hasSilencer) 
 		{
 			PB_SpecialWheel_Mode smg_silencer = new ("PB_SpecialWheel_Mode");
 			smg_silencer.img = "sprites/weapons/Slot 2/UACSMG/Pickup/ATFLA0.png";
