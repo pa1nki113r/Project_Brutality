@@ -402,12 +402,12 @@ mixin class PB_SpawnGore
 }
 
 mixin class PB_LocationalDamage {
-	action int, name GetLimbDamage(int baseDamage, name damageType, Actor victim, Actor inflictor, bool omnidirectional = false, double headSizeMul = 1.0) {
+	action int, name GetLimbDamage(int baseDamage, name damageType, vector3 hitPos, Actor victim, Actor inflictor, bool omnidirectional = false, double headSizeMul = 1.0) {
 		int scaledDamage = baseDamage;
 		name dmgType = damageType;
 		double ang;
 		
-		ang = AbsAngle(victim.angle, AngleTo(victim));
+		ang = AbsAngle(victim.angle, atan2(victim.pos.y - hitPos.y, victim.pos.x - hitPos.x));
 		
 		let ptrPBMon = PB_Monster(victim);
 		double headPos, torsoPos, dickPos, legPos;
@@ -447,8 +447,8 @@ mixin class PB_LocationalDamage {
 		
 		double victimZ = victim.pos.z + (victim.ProjectilePassHeight > victim.Height ? victim.ProjectilePassHeight : victim.Height);
 		
-		if (Pos.Z > victimZ * torsoPos) {
-			if (Pos.Z > victimZ * headPos / headSizeMul) {
+		if (hitPos.Z > victimZ * torsoPos) {
+			if (hitPos.Z > victimZ * headPos / headSizeMul) {
 				if(!noHead) {
 					dmgtype = "Head";
 					scaledDamage *= headMult;
@@ -458,7 +458,7 @@ mixin class PB_LocationalDamage {
 				scaledDamage *= torsoMult;
 			}
 		}
-		else if (Pos.Z < victimZ * legPos) {
+		else if (hitPos.Z < victimZ * legPos) {
 			if (!noDick && Pos.Z > victimZ * dickPos) {
 				dmgtype = "Dick";
 				scaledDamage *= dickMult;

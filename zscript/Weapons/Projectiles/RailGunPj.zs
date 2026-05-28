@@ -57,23 +57,6 @@ class PB_Laser : LineTracer
 	}
 }
 
-class PB_RailDamage: PB_Projectile
-{
-	Default
-	{
-		PB_Projectile.BaseDamage 757;
-		PB_Projectile.RipperCount 1;
-		PB_Projectile.PenetrationCount 0;
-		Obituary "%o was railed by %k.";
-	}
-	States
-	{
-		Spawn:
-			TNT1 A 0;
-			Goto Super::Death;
-	}
-}
-
 class PB_RailImpact : Actor
 {
 	Default
