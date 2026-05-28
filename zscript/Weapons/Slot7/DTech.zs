@@ -219,7 +219,7 @@ class PB_Demontech : PB_Weapon
     action state DTech_WeaponSpecial()
     {
         A_SetInventory("GoWeaponSpecialAbility", 0);
-        PB_HandleCrosshair(39);
+        PB_HandleDTechCrosshair();
         A_StopSound(1);
 
         // Toggle
@@ -243,6 +243,15 @@ class PB_Demontech : PB_Weapon
         }
         return ResolveState(null);
     }
+	
+	action void PB_HandleDTechCrosshair() {
+		if(getCausticMode()) {
+			PB_HandleCrosshair(95);
+		}
+		else {
+			PB_HandleCrosshair(39);
+		}
+	}
 
 //////////////////////////// STATES ////////////////////////////////////////////////////////////////////////////////////
     States
@@ -305,7 +314,7 @@ class PB_Demontech : PB_Weapon
             TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				PB_SetRoll(0);
-				PB_HandleCrosshair(39);
+				PB_HandleDTechCrosshair();
 				A_SetInventory("PB_LockScreenTilt",0);
                 PB_WeapTokenSwitch("HellRifleSelected");
                 PB_WeaponRaise("HRReady");
@@ -318,7 +327,7 @@ class PB_Demontech : PB_Weapon
         Ready3:
             TNT1 A 0 {
                 A_SetInventory("PB_LockScreenTilt", 0);
-                PB_HandleCrosshair(39);
+                PB_HandleDTechCrosshair();
             }
         ReadyToFire1:
         ReadyToFireInferno:
@@ -357,7 +366,7 @@ class PB_Demontech : PB_Weapon
             TNT1 A 0 {
                 A_WeaponOffset(0, 32);
                 PB_SetRoll(0);
-                PB_HandleCrosshair(39);
+                PB_HandleDTechCrosshair();
                 A_SetInventory("PB_LockScreenTilt", 0);
             }
             TNT1 A 0 A_JumpIf(getCausticMode(), "FireCaustic");
@@ -389,7 +398,7 @@ class PB_Demontech : PB_Weapon
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				PB_SetRoll(0);
-				PB_HandleCrosshair(39);
+				PB_HandleDTechCrosshair();
 				A_SetInventory("PB_LockScreenTilt",0);
 			}
             TNT1 A 0 A_JumpIf(getCausticMode(), "AltFireCaustic");
@@ -457,13 +466,19 @@ class PB_Demontech : PB_Weapon
 
         WeaponSpecialCausticAnim:
             D1T0 ABCD 1        { if(PB_GetMagUnloaded()) A_SetWeaponSprite("D1T2"); }
-            TNT1 A 0 A_PlaySoundEx("weapons/demontech/weaponspecial2", "Auto");
+            TNT1 A 0 {
+				A_PlaySoundEx("weapons/demontech/weaponspecial2", "Auto");
+				PB_HandleDTechCrosshair();
+			}
             D1T0 EFGHIJKLMN 2  { if(PB_GetMagUnloaded()) A_SetWeaponSprite("D1T2"); }
             Goto ReadyToFireAcid;
 
         WeaponSpecialInfernoAnim:
             D1T1 ABCD 1        { if(PB_GetMagUnloaded()) A_SetWeaponSprite("D1T3"); }
-            TNT1 A 0 A_PlaySoundEx("weapons/demontech/weaponspecial2", "Auto");
+            TNT1 A 0 {
+				A_PlaySoundEx("weapons/demontech/weaponspecial2", "Auto");
+				PB_HandleDTechCrosshair();
+			}
             D1T1 EFGHIJKLMN 2  { if(PB_GetMagUnloaded()) A_SetWeaponSprite("D1T3"); }
             Goto ReadyToFireInferno;
 
