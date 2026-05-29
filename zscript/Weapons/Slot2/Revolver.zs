@@ -25,6 +25,16 @@ Class PB_Revolver : PB_WeaponBase
 		PB_WeaponBase.Upgrade "PB_Deagle";
 	}
 	
+	override void AttachToOwner(Actor Other)
+	{
+		Super.AttachToOwner(other);
+		if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 9, CVar.GetCvar("pb_helpflags", Other.Player))) {
+			Array<String> pbTipsBuf;
+			pbTipsBuf.Push("$PB_REVOLVER_TIP");
+			PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 9);
+		}
+	}
+	
 	states
 	{
 		Spawn:

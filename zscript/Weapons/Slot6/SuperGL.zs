@@ -552,6 +552,21 @@ Class PB_SuperGL : PB_Weapon
 			stop;
 	}
 	
+	override void AttachToOwner(Actor Other)
+	{
+		Super.AttachToOwner(other);
+		if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 13, CVar.GetCvar("pb_helpflags", Other.Player))) {
+			Array<String> pbTipsBuf;
+			pbTipsBuf.Push("$PB_BARREL_TIP_1");
+			PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 13);
+		}
+		if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 14, CVar.GetCvar("pb_helpflags", Other.Player))) {
+			Array<String> pbTipsBuf;
+			pbTipsBuf.Push("$PB_BARREL_TIP_2");
+			PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 14);
+		}
+	}
+	
 	action int getSGLMode()
 	{
 		return invoker.GrenadeMode;

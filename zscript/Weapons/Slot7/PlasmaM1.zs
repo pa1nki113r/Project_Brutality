@@ -22,6 +22,16 @@ Class PB_M1Plasma : PB_WeaponBase
 		+WEAPON.NOAUTOFIRE
 	}
 	
+	override void AttachToOwner(Actor Other)
+	{
+		Super.AttachToOwner(other);
+		if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 12, CVar.GetCvar("pb_helpflags", Other.Player))) {
+			Array<String> pbTipsBuf;
+			pbTipsBuf.Push("$PB_BARREL_TIP_3");
+			PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 12);
+		}
+	}
+	
 	states
 	{
 		Spawn:
