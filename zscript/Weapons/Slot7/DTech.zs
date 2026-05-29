@@ -19,7 +19,7 @@ Class HellAmmo : PB_WeaponAmmo
 }
 
 // The Actual Weapon
-class PB_Demontech : PB_Weapon
+class PB_DTechRifle : PB_Weapon
 {
     Default
     {
@@ -1417,11 +1417,11 @@ class TossedHellRifle : actor
 	Death:
 		TNT1 A 0 A_jumpif( V5_MODELS == 1 , "Death.V5");
 		HRPU A 1 A_SetRoll(0);
-		TNT1 A 0 A_SpawnItemEx("PB_Demontech",0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | 288);
+		TNT1 A 0 A_SpawnItemEx("PB_DTechRifle",0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | 288);
 		Stop;
 	Death.V5:
 		VRPU A 1 A_SetRoll(0);
-		TNT1 A 0 A_SpawnItemEx("PB_Demontech",0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | 288);
+		TNT1 A 0 A_SpawnItemEx("PB_DTechRifle",0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | 288);
 		Stop;
 		
 	
