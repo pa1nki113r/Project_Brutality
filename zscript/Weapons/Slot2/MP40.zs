@@ -29,7 +29,7 @@ Class LeftMP40Ammo : PB_WeaponAmmo
 }
 
 // The Actual Weapon
-class PB_MP40 : PB_Weapon
+class PB_MP40 : PB_WeaponBase
 {
     Default
     {

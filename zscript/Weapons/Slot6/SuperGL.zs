@@ -1,4 +1,4 @@
-Class PB_SuperGL : PB_Weapon
+Class PB_SuperGL : PB_WeaponBase
 {
 	default
 	{

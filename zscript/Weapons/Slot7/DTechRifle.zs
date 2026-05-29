@@ -19,7 +19,7 @@ Class HellAmmo : PB_WeaponAmmo
 }
 
 // The Actual Weapon
-class PB_DTechRifle : PB_Weapon
+class PB_DTechRifle : PB_WeaponBase
 {
     Default
     {

@@ -29,7 +29,7 @@ Class LeftSSGAmmo : PB_WeaponAmmo
 }
 
 // The Actual Weapon
-class PB_SSG : PB_Weapon
+class PB_SSG : PB_WeaponBase
 {
     Default
     {

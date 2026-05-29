@@ -1,4 +1,4 @@
-class PB_Axe : PB_Weapon
+class PB_Axe : PB_WeaponBase
 {
     Default
     {

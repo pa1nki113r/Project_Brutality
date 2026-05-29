@@ -34,7 +34,7 @@ Class SecondaryPistolAmmo : PB_WeaponAmmo
 }
 
 // The Actual Weapon
-class PB_Pistol : PB_Weapon
+class PB_Pistol : PB_WeaponBase
 {
     Default
     {

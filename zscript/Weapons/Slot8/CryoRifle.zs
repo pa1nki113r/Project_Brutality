@@ -23,7 +23,7 @@ Class CryoRifleAmmo : PB_WeaponAmmo
 }
 
 // The Actual Weapon
-class PB_CryoRifle : PB_Weapon
+class PB_CryoRifle : PB_WeaponBase
 {
     Default
     {

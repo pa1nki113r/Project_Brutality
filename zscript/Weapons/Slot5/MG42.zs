@@ -1,4 +1,4 @@
-class PB_MG42 : PB_Weapon
+class PB_MG42 : PB_WeaponBase
 {
     Default
     {
