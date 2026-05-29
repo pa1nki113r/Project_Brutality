@@ -443,12 +443,15 @@ mixin class PB_LocationalDamage {
 			armMult = 0.8;
 			dickMult = 1.25;
 			legMult = 0.7;
+			
+			noArm = omnidirectional;
 		}
 		
-		double victimZ = victim.pos.z + (victim.ProjectilePassHeight > victim.Height ? victim.ProjectilePassHeight : victim.Height);
+		double victimZ = victim.pos.z;
+		double victimHeight = victim.ProjectilePassHeight > victim.Height ? victim.ProjectilePassHeight : victim.Height;
 		
-		if (hitPos.Z > victimZ * torsoPos) {
-			if (hitPos.Z > victimZ * headPos / headSizeMul) {
+		if (hitPos.Z > victimZ + victimHeight * torsoPos) {
+			if (hitPos.Z > victimZ + victimHeight * headPos / headSizeMul) {
 				if(!noHead) {
 					dmgtype = "Head";
 					scaledDamage *= headMult;
@@ -458,8 +461,8 @@ mixin class PB_LocationalDamage {
 				scaledDamage *= torsoMult;
 			}
 		}
-		else if (hitPos.Z < victimZ * legPos) {
-			if (!noDick && Pos.Z > victimZ * dickPos) {
+		else if (hitPos.Z < victimZ + victimHeight * legPos) {
+			if (!noDick && hitPos.Z > victimZ + victimHeight * dickPos) {
 				dmgtype = "Dick";
 				scaledDamage *= dickMult;
 			}
@@ -477,7 +480,7 @@ mixin class PB_LocationalDamage {
 		}
 		
 		scaledDamage = victim.GetModifiedDamage(dmgType, scaledDamage, true, self, inflictor);
-		//console.printf("damage:%u angle:%f type:"..dmgtype, scaledDamage, ang);
+		//console.printf("dmg %u ang %.1f @ %.1f %.1f %.1f | victim @ %.1f height %.1f | type "..dmgtype, scaledDamage, ang, hitPos.x, hitPos.y, hitPos.z, victimZ, victimHeight);
 		return scaledDamage, dmgType;
 	}
 }
