@@ -154,13 +154,13 @@ class PB_MG42 : PB_Weapon
             if(PB_GetZoom())                                        return ResolveState("Fire2");
             if(invoker.ammo1.amount >= 1 && PB_GetOverheat() < 500) return ResolveState("FireNormal");
             else if(PB_GetOverheat() == 500)                        return ResolveState("Overheat");
-            else                                                    return ResolveState("EmptyFire");
+            else                                                   A_StartSound("weapons/empty", 0);  return ResolveState("Ready");
         }
         else {
             if(getbarrelHasOverheated())                            return ResolveState("UnzoomBarrelChange");
             if(invoker.ammo1.amount >= 1 && PB_GetOverheat() < 500) return ResolveState("FireADS");
             else if(PB_GetOverheat() == 500)                        return ResolveState("UnzoomOverheat");
-            else                                                    return ResolveState("Unzoom");
+            else                                                    A_StartSound("weapons/empty", 0); return ResolveState("Ready2");
         }
         return ResolveState(null);
     }
