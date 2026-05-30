@@ -1454,6 +1454,8 @@ class PB_PDAHandler : EventHandler
 			if (pdaPrevCurFrame >= pdaPrevFrames.Size())
 				pdaPrevCurFrame = 0;
 			pdaPrevTicsRemain = pdaPrevFrameTics[pdaPrevCurFrame];
+			if (pdaPrevTicsRemain < 1)
+				pdaPrevTicsRemain = 1;
 		}
 	}
 
@@ -1473,6 +1475,7 @@ class PB_PDAHandler : EventHandler
 				|| p4 ~== "LEGZ"
 				|| p4 ~== "PUNG" || p4 ~== "PUNS"
 				|| p4 ~== "MARN" || p4 ~== "MARJ" || p4 ~== "MARI" || p4 ~== "PLA1"
+				|| p4 ~== "PLA2" || p4 ~== "PLA3"
 				|| p4 ~== "DOOM"
 				|| p4 ~== "ARMZ"
 				|| p4 ~== "MISG"
@@ -1504,10 +1507,22 @@ class PB_PDAHandler : EventHandler
 				|| p4 ~== "SATZ"
 				|| p4 ~== "HDF1" || p4 ~== "UH0D" || p4 ~== "H0HE" || p4 ~== "HS0D" || p4 ~== "H0PF" || p4 ~== "HDF0"
 				|| p4 ~== "LSLS"
-				|| p4 ~== "MHML" || p4 ~== "ARF2")
+				|| p4 ~== "MHML" || p4 ~== "ARF2"
+				|| p4 ~== "CB01" || p4 ~== "CB02" || p4 ~== "CB03"
+				|| p4 ~== "4BFF" || p4 ~== "4CFF")
 				return true;
 		}
 		return false;
+	}
+
+	clearscope bool PDA_BlockyHubTextureUsable(TextureID tid) const
+	{
+		if (!tid.IsValid() || !PDA_WeaponStrip_TextureRenderable(tid))
+			return false;
+		string tn = TexMan.GetName(tid);
+		if (tn.Length() >= 4 && tn.Mid(0, 4) ~== "TNT1")
+			return false;
+		return !PDA_ShouldSuppressWeaponPlayerSideArt(tn);
 	}
 
 	clearscope bool PDA_ShouldSuppressWeaponStripArt(readonly<Actor> def, string tn) const
@@ -1590,6 +1605,20 @@ class PB_PDAHandler : EventHandler
 		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "ThrowMine")) return true;
 		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "DoFatality")) return true;
 		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "Steady")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "Ready")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "Ready2")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "Ready3")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "RealReady")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "ReadyToFire")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "ReadyToFire1")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "ReadyToFire2")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "GunEmpty")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "Fire2")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "AltFire")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "Reload")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "Deselect")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "ZoomIn")) return true;
+		if (PDA_FireWalk_NextIsLabelEntry(def, nx, "ZoomOut")) return true;
 		if (PDA_FireWalk_InNamedSequence(def, nx, "Execution_Zombieman1_Overlay1")) return true;
 		if (PDA_FireWalk_InNamedSequence(def, nx, "Execution_Zombieman1")) return true;
 		if (PDA_FireWalk_InNamedSequence(def, nx, "Execution_Zombieman2_Overlay1")) return true;
@@ -1633,7 +1662,9 @@ class PB_PDAHandler : EventHandler
 
 	bool PDA_Play_UseFireLikeWalkBreak(string segLabel)
 	{
-		return segLabel ~== "Fire" || segLabel ~== "AltFire" || segLabel ~== "Hold";
+		if (segLabel.Length() >= 11 && segLabel.Mid(0, 11) ~== "PDA_Preview")
+			return false;
+		return true;
 	}
 
 	clearscope bool PDA_WeaponStrip_TextureRenderable(TextureID tid) const
@@ -1641,7 +1672,7 @@ class PB_PDAHandler : EventHandler
 		if (!tid.IsValid())
 			return false;
 		Vector2 sz = TexMan.GetScaledSize(tid);
-		return sz.X > 0 && sz.Y > 0;
+		return sz.X >= 8 && sz.Y >= 8;
 	}
 
 	void PDA_WeaponStrip_PushFrame(Array<TextureID> outFr, Array<int> outTi, Array<int> outSeg,
@@ -1812,13 +1843,20 @@ class PB_PDAHandler : EventHandler
 		if (!st)
 			return;
 		int steps = 0;
-		while (st && steps < PB_PDA_WEAPON_PREVIEW_FIRE_MAX_HOPS && outFr.Size() < hardCap)
+		int pushed = 0;
+		int pushCap = PB_PDA_WEAPON_PREVIEW_FIRE_MAX_HOPS;
+		if (!(label.Length() >= 11 && label.Mid(0, 11) ~== "PDA_Preview"))
+			pushCap = min(pushCap, 12);
+		while (st && steps < PB_PDA_WEAPON_PREVIEW_FIRE_MAX_HOPS && pushed < pushCap && outFr.Size() < hardCap)
 		{
 			if (PDA_WeaponStrip_TryPushFrame(st, def, outFr, outTi, outSeg, useSeg, segIdx,
-				-1, true, fireAuthoredTicCap, hardCap)
-				&& insertFlashSlice)
-				PDA_WeaponStrip_AppendFlashSlice(def, outFr, outTi, outSeg, useSeg, hardCap,
-					flashTics, flashSeek, segFlash);
+				-1, true, fireAuthoredTicCap, hardCap))
+			{
+				pushed++;
+				if (insertFlashSlice)
+					PDA_WeaponStrip_AppendFlashSlice(def, outFr, outTi, outSeg, useSeg, hardCap,
+						flashTics, flashSeek, segFlash);
+			}
 			State nx = st.NextState;
 			if (!nx || nx == st)
 				break;
@@ -1832,66 +1870,67 @@ class PB_PDAHandler : EventHandler
 
 	void PDA_WeaponStrip_AppendPrimaryFireWithDispatchFallbacks(Name nm,
 		Array<TextureID> outFr, Array<int> outTi, Array<int> outSeg,
-		bool useSeg, int hardCap, int fireAuthoredTicCap, int flashTics, int flashSeek, int segFlash)
+		bool useSeg, int hardCap, int fireAuthoredTicCap, int flashTics, int flashSeek, int segFlash,
+		bool insertFlashSlice = true)
 	{
 		int szBefore = outFr.Size();
-		PDA_WeaponStrip_AppendFireLike(nm, "Fire", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "Fire", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "FireShrink", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "FireShrink", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "SemiFire", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "SemiFire", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "ChargeFire", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "ChargeFire", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "Hold2", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "Hold2", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "FireHip", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "FireHip", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "FireADS", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "FireADS", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "Fire_ADS", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "Fire_ADS", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "DoFireHMG", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "DoFireHMG", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "M41S1Body", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "M41S1Body", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "M41S2Body", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "M41S2Body", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "FireCryoPellets", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "FireCryoPellets", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "FireCryoShot", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "FireCryoShot", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "Firing_Single", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "Firing_Single", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 		if (outFr.Size() > szBefore)
 			return;
-		PDA_WeaponStrip_AppendFireLike(nm, "CyclingAnimation", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, true,
+		PDA_WeaponStrip_AppendFireLike(nm, "CyclingAnimation", PB_PDA_WEAPON_PREVIEW_SEG_FIRE, insertFlashSlice,
 			outFr, outTi, outSeg, useSeg, hardCap, fireAuthoredTicCap, flashTics, flashSeek, segFlash);
 	}
 
@@ -2937,27 +2976,45 @@ class PB_PDAHandler : EventHandler
 		}
 	}
 
-	void PDA_WeaponStrip_AppendStagingRosterWeapon(Name nm,
+	bool PDA_WeaponStrip_HasStateLabel(Name nm, string label) const
+	{
+		readonly<Actor> def = GetDefaultByType((class<Actor>)(nm));
+		return def && def.FindStateByString(label, true);
+	}
+
+	void PDA_WeaponStrip_AppendStagingCodexGeneric(Name nm,
 		Array<TextureID> outFr, Array<int> outTi, Array<int> outSeg,
 		bool useSeg, int hardCap,
 		int readyMax, int readySeek, int readyFixedTic, int readyAuthoredTicCap,
 		int fireTicCap, int flashTics, int flashSeek)
 	{
-		int effReadyMax = readyMax;
+		int effReadyMax = min(readyMax, 4);
 		int effReadyFixedTic = readyFixedTic;
-		if (nm == 'PB_MetalSniper')
-			effReadyMax = 1;
-		if (nm != 'Paingiver')
+		if (nm == 'PB_M1Plasma' || nm == 'PB_Flamethrower' || nm == 'PB_Minigun'
+			|| nm == 'PB_Unmaker' || nm == 'PB_BFG9000' || nm == 'PB_DMR'
+			|| nm == 'PB_CryoRifle' || nm == 'PB_Railgun')
+		{
+			effReadyMax = max(1, effReadyMax / 2);
+			effReadyFixedTic = max(1, readyFixedTic / 4);
+		}
+		else if (nm == 'PB_Deagle')
+			effReadyFixedTic = max(1, readyFixedTic / 4);
+
+		if (nm != 'PB_Fists')
 		{
 			PDA_WeaponStrip_AppendReady(nm, outFr, outTi, outSeg, useSeg, hardCap,
 				effReadyMax, readySeek, effReadyFixedTic, readyAuthoredTicCap, PB_PDA_WEAPON_PREVIEW_SEG_READY);
 		}
+
+		int fireBefore = outFr.Size();
 		PDA_WeaponStrip_AppendPrimaryFireWithDispatchFallbacks(nm,
-			outFr, outTi, outSeg, useSeg, hardCap, fireTicCap, flashTics, flashSeek, PB_PDA_WEAPON_PREVIEW_SEG_FLASH);
-		PDA_WeaponStrip_AppendFireLike(nm, "AltFire", PB_PDA_WEAPON_PREVIEW_SEG_HOLD, false,
-			outFr, outTi, outSeg, useSeg, hardCap, fireTicCap, flashTics, flashSeek, PB_PDA_WEAPON_PREVIEW_SEG_FLASH);
-		PDA_WeaponStrip_AppendFireLike(nm, "Hold", PB_PDA_WEAPON_PREVIEW_SEG_HOLD, false,
-			outFr, outTi, outSeg, useSeg, hardCap, fireTicCap, flashTics, flashSeek, PB_PDA_WEAPON_PREVIEW_SEG_FLASH);
+			outFr, outTi, outSeg, useSeg, hardCap, fireTicCap, flashTics, flashSeek, PB_PDA_WEAPON_PREVIEW_SEG_FLASH,
+			false);
+		if (outFr.Size() == fireBefore && PDA_WeaponStrip_HasStateLabel(nm, "AltFire"))
+		{
+			PDA_WeaponStrip_AppendFireLike(nm, "AltFire", PB_PDA_WEAPON_PREVIEW_SEG_HOLD, false,
+				outFr, outTi, outSeg, useSeg, hardCap, fireTicCap, flashTics, flashSeek, PB_PDA_WEAPON_PREVIEW_SEG_FLASH);
+		}
 	}
 
 	void PDA_WeaponStrip_AppendFullWeapon(Name nm,
@@ -2975,7 +3032,7 @@ class PB_PDAHandler : EventHandler
 			PB_PDA_WEAPON_PREVIEW_SEG_PICKUP);
 		if (PDA_IsStagingCodexWeapon(nm))
 		{
-			PDA_WeaponStrip_AppendStagingRosterWeapon(nm, outFr, outTi, outSeg, useSeg, hardCap,
+			PDA_WeaponStrip_AppendStagingCodexGeneric(nm, outFr, outTi, outSeg, useSeg, hardCap,
 				readyMax, readySeek, readyFixedTic, readyAuthoredTicCap,
 				fireTicCap, flashTics, flashSeek);
 			return;
@@ -3862,7 +3919,7 @@ class PB_PDAHandler : EventHandler
 						if (tn.Length() >= 4 && tn.Mid(0, 4) ~== "PLAY")
 							ok = false;
 					}
-					else if (PDA_ShouldSuppressWeaponPlayerSideArt(tn))
+					else if (PDA_ShouldSuppressWeaponStripArt(def, tn))
 						ok = false;
 				}
 			}
@@ -3894,12 +3951,66 @@ class PB_PDAHandler : EventHandler
 			State nx = st.NextState;
 			if (!nx || nx == st)
 				break;
-			if (target == PB_PDA_MAIN_TARGET_WEAP && filterPlay && label ~== "Fire"
+			if (target == PB_PDA_MAIN_TARGET_WEAP && filterPlay
 				&& PDA_Main_FireWalk_ShouldStopBeforeState(def, nx))
 				break;
 			st = nx;
 			steps++;
 		}
+	}
+
+	void PDA_Main_PushWeaponHubIconFallback(Name nm, int entryCap)
+	{
+		if (pdaMainWeapFrames.Size() >= entryCap)
+			return;
+		TextureID ic;
+		readonly<Inventory> idef = GetDefaultByType((class<Inventory>)(nm));
+		if (idef && idef.Icon.IsValid())
+			ic = idef.Icon;
+		if (!ic.IsValid())
+		{
+			readonly<Weapon> wdef = GetDefaultByType((class<Weapon>)(nm));
+			if (wdef && wdef.AltHUDIcon.IsValid())
+				ic = wdef.AltHUDIcon;
+		}
+		if (!ic.IsValid())
+		{
+			readonly<Actor> adef = GetDefaultByType((class<Actor>)(nm));
+			State st = adef ? adef.SpawnState : null;
+			for (int s = 0; s < 48 && st; s++)
+			{
+				TextureID tid = st.GetSpriteTexture(0);
+				if (PDA_BlockyHubTextureUsable(tid))
+				{
+					ic = tid;
+					break;
+				}
+				st = st.NextState;
+			}
+		}
+		if (PDA_BlockyHubTextureUsable(ic))
+		{
+			pdaMainWeapFrames.Push(ic);
+			pdaMainWeapTics.Push(6);
+		}
+	}
+
+	void PDA_Main_AppendWeaponHubEntry(Name nm, int entryCap)
+	{
+		int n0 = pdaMainWeapFrames.Size();
+		if (n0 >= entryCap)
+			return;
+		PDA_Main_PushTo(PB_PDA_MAIN_TARGET_WEAP, nm, "Fire", PB_PDA_MAIN_FIRE_MAX_HOPS, true, entryCap);
+		if (pdaMainWeapFrames.Size() == n0)
+			PDA_Main_PushTo(PB_PDA_MAIN_TARGET_WEAP, nm, "FireShrink", PB_PDA_MAIN_FIRE_MAX_HOPS, true, entryCap);
+		if (pdaMainWeapFrames.Size() == n0)
+			PDA_Main_PushTo(PB_PDA_MAIN_TARGET_WEAP, nm, "SemiFire", PB_PDA_MAIN_FIRE_MAX_HOPS, true, entryCap);
+		if (pdaMainWeapFrames.Size() == n0)
+			PDA_Main_PushTo(PB_PDA_MAIN_TARGET_WEAP, nm, "FireHip", PB_PDA_MAIN_FIRE_MAX_HOPS, true, entryCap);
+		if (pdaMainWeapFrames.Size() == n0)
+			PDA_Main_PushTo(PB_PDA_MAIN_TARGET_WEAP, nm, "FireADS", PB_PDA_MAIN_FIRE_MAX_HOPS, true, entryCap);
+		if (pdaMainWeapFrames.Size() == n0)
+			PDA_Main_PushWeaponHubIconFallback(nm, entryCap);
 	}
 
 	void PDA_Main_RebuildChains()
@@ -3927,13 +4038,7 @@ class PB_PDAHandler : EventHandler
 				int weapEntryStart = pdaMainWeapFrames.Size();
 				int weapEntryCap = min(PB_PDA_MAIN_WEAPON_STRIP_CHAIN_CAP,
 					weapEntryStart + PB_PDA_MAIN_WEAPON_ENTRY_CAP);
-				PDA_WeaponStrip_AppendFullWeapon(nm, pdaMainWeapFrames, pdaMainWeapTics, pdaMainAnimSegScratch, false,
-					weapEntryCap,
-					PB_PDA_MAIN_WEAPON_PICKUP_TICS, PB_PDA_WEAPON_PREVIEW_SPAWN_SEEK,
-					PB_PDA_WEAPON_PREVIEW_READY_MAX, PB_PDA_WEAPON_PREVIEW_READY_SEEK,
-					PB_PDA_MAIN_WEAPON_READY_TICS, 0,
-					PB_PDA_MAIN_WEAPON_FIRE_TIC_CAP, PB_PDA_MAIN_WEAPON_FLASH_TICS, PB_PDA_WEAPON_PREVIEW_FLASH_SEEK,
-					false, 0, 0);
+				PDA_Main_AppendWeaponHubEntry(nm, weapEntryCap);
 			}
 			for (int mi = 0; mi < wc.PDA_CodexMonsterClasses.Size(); mi++)
 			{
@@ -4646,7 +4751,7 @@ class PB_PDAHandler : EventHandler
 		readonly<Actor> adef = GetDefaultByType((class<Actor>)(nm));
 		{
 			readonly<Inventory> idef = GetDefaultByType((class<Inventory>)(nm));
-			if (idef && idef.Icon.IsValid())
+			if (idef && idef.Icon.IsValid() && PDA_BlockyHubTextureUsable(idef.Icon))
 				resolved = idef.Icon;
 		}
 		if (!resolved.IsValid() && adef)
@@ -4656,20 +4761,26 @@ class PB_PDAHandler : EventHandler
 		if (!resolved.IsValid())
 		{
 			readonly<Weapon> wdef = GetDefaultByType((class<Weapon>)(nm));
-			if (wdef && wdef.AltHUDIcon.IsValid())
+			if (wdef && wdef.AltHUDIcon.IsValid() && PDA_BlockyHubTextureUsable(wdef.AltHUDIcon))
 				resolved = wdef.AltHUDIcon;
 		}
 		if (!resolved.IsValid() && adef)
 		{
 			string iconLump = cn .. "ICON";
 			TextureID ic = TexMan.CheckForTexture(iconLump, TexMan.Type_Any);
-			if (ic.IsValid())
+			if (ic.IsValid() && PDA_BlockyHubTextureUsable(ic))
 				resolved = ic;
 			else
 			{
 				State rd = adef.FindStateByString("Ready", true);
 				if (rd)
 					resolved = BlockyFirstFrameOfState(rd);
+				if (!resolved.IsValid())
+				{
+					rd = adef.FindStateByString("Ready3", true);
+					if (rd)
+						resolved = BlockyFirstFrameOfState(rd);
+				}
 			}
 		}
 		if (resolved.IsValid())
@@ -5230,7 +5341,7 @@ class PB_PDAHandler : EventHandler
 		if (!drawTex.IsValid())
 			return;
 		Vector2 ts = TexMan.GetScaledSize(drawTex);
-		if (ts.X < 0.5 || ts.Y < 0.5)
+		if (ts.X < 8 || ts.Y < 8)
 			return;
 		double targetH = double(pdaPreviewPaneH) * 0.86;
 		double targetW = double(pdaPreviewPaneW) * 0.92;
@@ -5715,14 +5826,25 @@ class PB_PDAHandler : EventHandler
 						double slotW = bw * 0.94 * pulseMul;
 						double slotH = (contentBottom - by - 8) * pulseMul;
 						TextureID anim;
+						TextureID nullAnim;
 						if (UiObjects[i].objecttype == 2 && pdaMainWeapFrames.Size() > 0)
+						{
 							anim = pdaMainWeapFrames[pdaMainWeapCur];
+							if (!PDA_BlockyHubTextureUsable(anim))
+								anim = nullAnim;
+						}
 						else if (UiObjects[i].objecttype == 1 && pdaMainMonFrames.Size() > 0)
 							anim = pdaMainMonFrames[pdaMainMonCur];
 						else if (UiObjects[i].objecttype == 14 && pdaMainEquipFrames.Size() > 0)
 							anim = pdaMainEquipFrames[pdaMainEquipCur];
 						if (anim.IsValid())
 							DrawClipFittedTexture(anim, midX, midCont, slotW, slotH, globalPDAAlpha * 0.92, false, true);
+						else if (UiObjects[i].objecttype == 2 && pdaWeapTextArray.Size() > 0)
+						{
+							TextureID fb = ResolveBlockyWeaponIconTex(pdaWeapTextArray[0].PDAWeapClassName);
+							if (PDA_BlockyHubTextureUsable(fb))
+								DrawClipFittedTexture(fb, midX, midCont, slotW, slotH, globalPDAAlpha * 0.92, false, true);
+						}
 						Screen.Dim(color(6, 10, 18), 0.62 * globalPDAAlpha, bx + 4, contentBottom - 4, bw - 8, bandH + 8);
 						string lab = UiObjects[i].toDraw;
 						double lblSc = pdaTextScale * 0.72;
