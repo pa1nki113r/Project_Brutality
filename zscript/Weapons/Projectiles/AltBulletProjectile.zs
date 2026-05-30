@@ -158,4 +158,18 @@ class PB_ProjectileAlt : PB_Projectile abstract
 			}
 		}
 	}
+	
+	Default {
+		-NOEXTREMEDEATH
+		-RIPPER
+		+NOGRAVITY
+		Renderstyle "Normal";
+		Scale 1.0;
+	}
+	States {
+		XDeath:
+		Crash:
+			TNT1 A 0 A_Jump(256, "Death");
+			Stop;
+	}
 }
