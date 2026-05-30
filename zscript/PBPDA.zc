@@ -510,8 +510,6 @@ class PB_PDAUi_Object
 	bool Clicked;
 	bool UnSelectable;
 	bool MainHubBlockyExit;
-	bool MainHubBlockySlot;
-	bool MainHubBlockyAchievements;
 	virtual string GetString()
 	{
 		Switch(objecttype)
@@ -528,12 +526,6 @@ class PB_PDAUi_Object
 				break;
 			case 14:
 				return "Equipment";
-				break;
-			case 16:
-				return "Reward";
-				break;
-			case 17:
-				return "Achievements";
 				break;
 		}
 		return "Exit";
@@ -570,13 +562,7 @@ class PB_PDAHandler : EventHandler
 	int MouseX,MouseY,DeltaMouseX,DeltaMouseY;
 	uint HeldDownTics;
 	transient int PDAMode;
-	transient int KatanaDualChoiceMode;
-	transient int KatanaDualVariant;
-	transient int KatanaDualFrozenPlr;
 	transient int LastPDAToggleTic;
-	ui transient int pdaAchUnlockedCache;
-	ui transient int pdaAchTotalCache;
-	ui transient int pdaAchCacheGametic;
 	bool isnetgame;
 	ui Vector2 UpArrowPos,DownArrowPos;
 	ui Vector2 LeftCatArrowVisPos, RightCatArrowVisPos;
@@ -584,16 +570,6 @@ class PB_PDAHandler : EventHandler
 	transient ui int pdaBlockyXOffset;
 	ui double globalPDAAlpha;
 	bool NonMainMenu;
-	bool AchievementsMenuOpened;
-	transient int pdaAchBrowseInvalidateGen;
-	transient int pdaAchBrowseScrollResetGen;
-	transient ui int pdaAchBrowseScrollResetAppliedGen;
-	transient ui int pdaAchBrowseInvalidateAppliedGen;
-	transient ui int pdaAchBrowseScroll; // vertical pixel offset into achievement list
-	transient ui bool pdaAchBrowseCacheValid;
-	transient ui Array<int> pdaAchBrowseRowKind;
-	transient ui Array<int> pdaAchBrowseRowAch;
-	transient ui Array<String> pdaAchBrowseRowLabel;
 	bool MonsterMenuOpened,MonsterMenuOnly;
 	bool WeaponMenuOpened,WeaponMenuOnly;
 	bool EquipmentMenuOpened;
@@ -654,18 +630,6 @@ class PB_PDAHandler : EventHandler
 	int pdaPrevCurFrame;
 	int pdaPrevTicsRemain;
 	int pdaPrevLastAdvGametic;
-	Array<TextureID> katDualFrL;
-	Array<int> katDualTiL;
-	Array<int> katDualSegL;
-	Array<TextureID> katDualFrR;
-	Array<int> katDualTiR;
-	Array<int> katDualSegR;
-	int katDualCurL;
-	int katDualCurR;
-	int katDualRemL;
-	int katDualRemR;
-	int katDualLastGtL;
-	int katDualLastGtR;
 	Array<TextureID> pdaMainWeapFrames;
 	Array<int> pdaMainWeapTics;
 	Array<TextureID> pdaMainMonFrames;
@@ -1091,67 +1055,7 @@ class PB_PDAHandler : EventHandler
 		return null;
 	}
 
-	clearscope static bool PB_XP_RewardsOn()
-	{
-		return false;
-	}
-
-	void InvalidatePDAAchievementCache()
-	{
-		pdaAchBrowseInvalidateGen++;
-	}
-
-	void RequestPDAAchievementScrollReset()
-	{
-		pdaAchBrowseScrollResetGen++;
-	}
-
-	ui void PDA_SyncAchievementBrowseState()
-	{
-		if (pdaAchBrowseScrollResetAppliedGen != pdaAchBrowseScrollResetGen)
-		{
-			pdaAchBrowseScrollResetAppliedGen = pdaAchBrowseScrollResetGen;
-			pdaAchBrowseScroll = 0;
-		}
-		if (pdaAchBrowseInvalidateAppliedGen == pdaAchBrowseInvalidateGen)
-			return;
-		pdaAchBrowseInvalidateAppliedGen = pdaAchBrowseInvalidateGen;
-		pdaAchBrowseCacheValid = false;
-		pdaAchBrowseRowKind.Clear();
-		pdaAchBrowseRowAch.Clear();
-		pdaAchBrowseRowLabel.Clear();
-	}
-
-	const PDA_ACH_ROW_HEADER = 1;
-	const PDA_ACH_ROW_CATEGORY = 2;
-	const PDA_ACH_ROW_ACHIEVEMENT = 3;
-	const PB_PDA_ACH_BROWSE_SCROLL_LINES = 4;
-	const PB_PDA_ACH_BROWSE_TEXT_SCALE_MUL = 0.66;
-	const PB_PDA_ACH_BROWSE_ICON_TEXT_GAP = 14;
-	// Defer heavy PDA UI object build off the first RenderOverlay frames (Windows busy-cursor / mouse jitter).
 	const PB_PDA_UI_INIT_MIN_GAMETIC = 35;
-
-	ui double PDA_AchievementBrowseTextScale()
-	{
-		return clamp(Screen.GetHeight() / 240.0, 2.0, 6.0) * PB_PDA_ACH_BROWSE_TEXT_SCALE_MUL;
-	}
-
-	ui int PDA_AchievementBrowseCenteredX(String text, double textScale, int listLeft, int listRight)
-	{
-		double w = SmallFont.StringWidth(text) * textScale;
-		return int((listLeft + listRight) * 0.5 - w * 0.5);
-	}
-
-	ui void PDA_AchievementBrowseDrawCenteredLine(int color, int y, String text,
-		double textScale, int listLeft, int listRight, double alpha, bool untranslated = false)
-	{
-		int drawColor = untranslated ? Font.CR_UNTRANSLATED : color;
-		int drawX = PDA_AchievementBrowseCenteredX(text, textScale, listLeft, listRight);
-		Screen.DrawText(SmallFont, drawColor, drawX, y, text,
-			DTA_ScaleX, textScale, DTA_ScaleY, textScale,
-			DTA_ClipLeft, listLeft, DTA_ClipRight, listRight,
-			DTA_Alpha, alpha);
-	}
 
 	ui bool PDA_TryEnsureUiObjects(bool force = false)
 	{
@@ -1163,398 +1067,10 @@ class PB_PDAHandler : EventHandler
 		{
 			if (gametic < PB_PDA_UI_INIT_MIN_GAMETIC)
 				return false;
-			if (!PDAMode && !KatanaDualChoiceMode)
+			if (!PDAMode)
 				return false;
 		}
 		return InitializeUiObjects();
-	}
-
-	ui void PDA_AchievementBrowseListMetrics(out int listLeft, out int listTop,
-		out int listRight, out int listBottom)
-	{
-		int sw = Screen.GetWidth();
-		int sh = Screen.GetHeight();
-		listTop = int(sh * 0.14);
-		listBottom = sh - int(sh * 0.12);
-		int sideMargin = max(24, sw / 40);
-		listLeft = sideMargin;
-		listRight = sw - sideMargin;
-	}
-
-	ui int PDA_AchievementBrowseScrollStepPx(int direction, double textScale)
-	{
-		int lineH = max(1, int(SmallFont.GetHeight() * textScale));
-		int targetPx = lineH * PB_PDA_ACH_BROWSE_SCROLL_LINES;
-		int n = pdaAchBrowseRowKind.Size();
-		if (n < 1)
-			return targetPx;
-
-		int scroll = pdaAchBrowseScroll;
-		int y = 0;
-		int anchor = 0;
-
-		if (direction > 0)
-		{
-			for (int i = 0; i < n; i++)
-			{
-				int rh = PDA_AchievementRowPixelHeight(pdaAchBrowseRowKind[i], textScale);
-				if (y + rh > scroll + 1)
-				{
-					anchor = i;
-					break;
-				}
-				y += rh;
-				anchor = i + 1;
-			}
-			int step = 0;
-			for (int i = anchor; i < n && step < targetPx; i++)
-				step += PDA_AchievementRowPixelHeight(pdaAchBrowseRowKind[i], textScale);
-			return max(lineH, step);
-		}
-
-		for (int i = 0; i < n; i++)
-		{
-			int rh = PDA_AchievementRowPixelHeight(pdaAchBrowseRowKind[i], textScale);
-			if (y + rh > scroll + 1)
-			{
-				anchor = i;
-				break;
-			}
-			y += rh;
-		}
-		int stepUp = 0;
-		for (int i = anchor - 1; i >= 0 && stepUp < targetPx; i--)
-			stepUp += PDA_AchievementRowPixelHeight(pdaAchBrowseRowKind[i], textScale);
-		return max(lineH, stepUp);
-	}
-
-	ui void PDA_AchievementBrowseColorCodes(PlayerInfo p, out String ccUnlocked,
-		out String ccLocked, out String ccTitle, out String ccDesc, out String ccProgress)
-	{
-		ccUnlocked = VUAS_RenderSettings.GetColorCode(
-			VUAS_AchievementHandler.GetCVarInt('ach_color_unlocked', p, 3));
-		ccLocked = VUAS_RenderSettings.GetColorCode(
-			VUAS_AchievementHandler.GetCVarInt('ach_color_locked', p, 20));
-		ccTitle = VUAS_RenderSettings.GetColorCode(
-			VUAS_AchievementHandler.GetCVarInt('ach_color_title', p, 10));
-		ccDesc = VUAS_RenderSettings.GetColorCode(
-			VUAS_AchievementHandler.GetCVarInt('ach_color_description', p, 2));
-		ccProgress = VUAS_RenderSettings.GetColorCode(
-			VUAS_AchievementHandler.GetCVarInt('ach_color_progress', p, 10));
-	}
-
-	ui String PDA_AchievementBrowseTitleLine(VUAS_AchievementData ach)
-	{
-		let p = players[consoleplayer];
-		String ccUnlocked, ccLocked, ccTitle, ccDesc, ccProgress;
-		PDA_AchievementBrowseColorCodes(p, ccUnlocked, ccLocked, ccTitle, ccDesc, ccProgress);
-
-		String achTitle = StringTable.Localize(ach.title, false);
-
-		if (ach.isHidden && !ach.isUnlocked)
-			return String.Format("%s[LOCKED]\c- %s??? - Hidden Achievement\c-", ccLocked, ccTitle);
-
-		if (ach.isUnlocked)
-		{
-			String timeStr = "";
-			if (ach.unlockTime > 0)
-				timeStr = String.Format(" %s(%s)\c-", ccDesc, SystemTime.Format("%d %b %Y", ach.unlockTime));
-			return String.Format("%s[UNLOCKED]\c- %s%s\c-%s", ccUnlocked, ccTitle, achTitle, timeStr);
-		}
-
-		String progressStr = "";
-		if (ach.targetCount > 1)
-			progressStr = String.Format(" %s[%d/%d]\c-", ccProgress, ach.currentCount, ach.targetCount);
-		return String.Format("%s[LOCKED]\c- %s%s\c-%s", ccLocked, ccTitle, achTitle, progressStr);
-	}
-
-	ui String PDA_AchievementBrowseDescLine(VUAS_AchievementData ach)
-	{
-		if (ach.isHidden && !ach.isUnlocked)
-			return "";
-
-		let p = players[consoleplayer];
-		String ccUnlocked, ccLocked, ccTitle, ccDesc, ccProgress;
-		PDA_AchievementBrowseColorCodes(p, ccUnlocked, ccLocked, ccTitle, ccDesc, ccProgress);
-
-		String achDesc = StringTable.Localize(ach.description, false);
-		if (achDesc.Length() < 1)
-			return "";
-		return String.Format("%s%s\c-", ccDesc, achDesc);
-	}
-
-	ui int PDA_AchievementRowPixelHeight(int rowKind, double textScale)
-	{
-		int lineH = max(1, int(SmallFont.GetHeight() * textScale));
-		if (rowKind == PDA_ACH_ROW_HEADER) return lineH * 2;
-		if (rowKind == PDA_ACH_ROW_CATEGORY) return int(lineH * 1.35);
-		return int(lineH * 3.85);
-	}
-
-	ui int PDA_AchievementBrowseContentHeight(double textScale)
-	{
-		int h = 0;
-		for (int i = 0; i < pdaAchBrowseRowKind.Size(); i++)
-			h += PDA_AchievementRowPixelHeight(pdaAchBrowseRowKind[i], textScale);
-		return h;
-	}
-
-	ui bool PDA_AchievementPassesBrowseFilter(VUAS_AchievementData ach, bool showHidden, int menuFilter)
-	{
-		if (ach.isHidden && !ach.isUnlocked && !showHidden)
-			return false;
-		if (menuFilter == 1 && !ach.isUnlocked)
-			return false;
-		if (menuFilter == 2 && ach.isUnlocked)
-			return false;
-		return true;
-	}
-
-	ui void RebuildPDAAchievementBrowseCache()
-	{
-		pdaAchBrowseRowKind.Clear();
-		pdaAchBrowseRowAch.Clear();
-		pdaAchBrowseRowLabel.Clear();
-
-		let handler = VUAS_AchievementHandler.GetHandler();
-		if (!handler || handler.achievements.Size() == 0)
-		{
-			pdaAchBrowseCacheValid = true;
-			return;
-		}
-
-		bool showHidden = VUAS_AchievementHandler.GetCVarBool('ach_show_hidden', players[consoleplayer], false);
-		int menuFilter = VUAS_AchievementHandler.GetCVarInt('ach_menu_filter', players[consoleplayer], 0);
-		int totalCount = handler.achievements.Size();
-
-		pdaAchBrowseRowKind.Push(PDA_ACH_ROW_HEADER);
-		pdaAchBrowseRowAch.Push(-1);
-		pdaAchBrowseRowLabel.Push("");
-
-		Array<String> categories;
-		for (int i = 0; i < totalCount; i++)
-		{
-			let ach = handler.achievements[i];
-			bool found = false;
-			for (int c = 0; c < categories.Size(); c++)
-			{
-				if (categories[c] ~== ach.category)
-				{
-					found = true;
-					break;
-				}
-			}
-			if (!found)
-				categories.Push(ach.category);
-		}
-
-		for (int pass = 0; pass < 2; pass++)
-		{
-			bool wantUnlocked = (pass == 0);
-			for (int c = 0; c < categories.Size(); c++)
-			{
-				String cat = categories[c];
-				bool pushedCat = false;
-				for (int i = 0; i < totalCount; i++)
-				{
-					let ach = handler.achievements[i];
-					if (!(ach.category ~== cat))
-						continue;
-					if (ach.isUnlocked != wantUnlocked)
-						continue;
-					if (!PDA_AchievementPassesBrowseFilter(ach, showHidden, menuFilter))
-						continue;
-
-					if (!pushedCat)
-					{
-						String catHeader = "";
-						for (int ch = 0; ch < cat.Length(); ch++)
-						{
-							int byte = cat.ByteAt(ch);
-							if (ch == 0 && byte >= 97 && byte <= 122)
-								catHeader.AppendFormat("%c", byte - 32);
-							else
-								catHeader.AppendFormat("%c", byte);
-						}
-						pdaAchBrowseRowKind.Push(PDA_ACH_ROW_CATEGORY);
-						pdaAchBrowseRowAch.Push(-1);
-						pdaAchBrowseRowLabel.Push(String.Format("--- %s ---", catHeader));
-						pushedCat = true;
-					}
-
-					pdaAchBrowseRowKind.Push(PDA_ACH_ROW_ACHIEVEMENT);
-					pdaAchBrowseRowAch.Push(i);
-					pdaAchBrowseRowLabel.Push("");
-				}
-			}
-		}
-
-		pdaAchBrowseCacheValid = true;
-	}
-
-	ui void DrawPDAAchievementBrowse(double alpha)
-	{
-		if (alpha <= 0) return;
-		PDA_SyncAchievementBrowseState();
-		if (!pdaAchBrowseCacheValid)
-			RebuildPDAAchievementBrowseCache();
-
-		let handler = VUAS_AchievementHandler.GetHandler();
-		int listLeft, listTop, listRight, listBottom;
-		PDA_AchievementBrowseListMetrics(listLeft, listTop, listRight, listBottom);
-		double textScale = PDA_AchievementBrowseTextScale();
-
-		if (!handler)
-		{
-			PDA_AchievementBrowseDrawCenteredLine(Font.CR_GREEN, listTop,
-				"No achievements defined.", textScale, listLeft, listRight, alpha);
-			return;
-		}
-
-		int totalRows = pdaAchBrowseRowKind.Size();
-		if (totalRows < 1)
-		{
-			PDA_AchievementBrowseDrawCenteredLine(Font.CR_GREEN, listTop,
-				"No achievements match the current filter.", textScale, listLeft, listRight, alpha);
-			return;
-		}
-
-		int viewH = listBottom - listTop;
-		int contentH = PDA_AchievementBrowseContentHeight(textScale);
-		int maxScroll = max(0, contentH - viewH);
-		if (pdaAchBrowseScroll < 0)
-			pdaAchBrowseScroll = 0;
-		else if (pdaAchBrowseScroll > maxScroll)
-			pdaAchBrowseScroll = maxScroll;
-		int scrollY = pdaAchBrowseScroll;
-
-		int y = listTop - scrollY;
-		Screen.SetClipRect(listLeft, listTop, listRight - listLeft, viewH);
-
-		for (int rowIdx = 0; rowIdx < totalRows; rowIdx++)
-		{
-			int kind = pdaAchBrowseRowKind[rowIdx];
-			int rowH = PDA_AchievementRowPixelHeight(kind, textScale);
-			int achIdx = pdaAchBrowseRowAch[rowIdx];
-
-			if (y + rowH > listTop && y < listBottom)
-			{
-				if (kind == PDA_ACH_ROW_HEADER)
-				{
-					int unlocked = 0;
-					for (int u = 0; u < handler.achievements.Size(); u++)
-					{
-						if (handler.achievements[u].isUnlocked)
-							unlocked++;
-					}
-					int menuFilter = VUAS_AchievementHandler.GetCVarInt('ach_menu_filter', players[consoleplayer], 0);
-					String filterLabel = "";
-					if (menuFilter == 1) filterLabel = " (Unlocked Only)";
-					else if (menuFilter == 2) filterLabel = " (Locked Only)";
-					String header = String.Format("Achievements: %d / %d%s",
-						unlocked, handler.achievements.Size(), filterLabel);
-					PDA_AchievementBrowseDrawCenteredLine(Font.CR_YELLOW, y, header,
-						textScale, listLeft, listRight, alpha);
-				}
-				else if (kind == PDA_ACH_ROW_CATEGORY)
-				{
-					String catLine = (rowIdx < pdaAchBrowseRowLabel.Size())
-						? pdaAchBrowseRowLabel[rowIdx] : "--- ---";
-					PDA_AchievementBrowseDrawCenteredLine(Font.CR_GOLD, y, catLine,
-						textScale, listLeft, listRight, alpha);
-				}
-				else if (kind == PDA_ACH_ROW_ACHIEVEMENT && achIdx >= 0 && achIdx < handler.achievements.Size())
-				{
-					let ach = handler.achievements[achIdx];
-					String titleLine = PDA_AchievementBrowseTitleLine(ach);
-					String descLine = PDA_AchievementBrowseDescLine(ach);
-					int lineH = int(SmallFont.GetHeight() * textScale);
-					int iconSize = lineH * 2;
-					int titleY = y + int(lineH * 0.08);
-					int descY = y + lineH + int(lineH * 0.22);
-					double titleW = SmallFont.StringWidth(titleLine) * textScale;
-					double descW = descLine.Length() > 0
-						? SmallFont.StringWidth(descLine) * textScale : 0.0;
-					double textW = max(titleW, descW);
-					int blockW = iconSize + PB_PDA_ACH_BROWSE_ICON_TEXT_GAP + int(textW + 0.5);
-					int blockLeft = int((listLeft + listRight) * 0.5 - blockW * 0.5);
-					if (blockLeft < listLeft)
-						blockLeft = listLeft;
-					int textX = blockLeft + iconSize + PB_PDA_ACH_BROWSE_ICON_TEXT_GAP;
-					int iconX = blockLeft;
-
-					TextureID iconTex = TexMan.CheckForTexture(ach.icon, TexMan.Type_Any);
-					if (!(ach.isHidden && !ach.isUnlocked) && iconTex.IsValid())
-					{
-						if (ach.isUnlocked)
-						{
-							Screen.DrawTexture(iconTex, true, iconX, y,
-								DTA_DestWidth, iconSize, DTA_DestHeight, iconSize,
-								DTA_Alpha, alpha);
-						}
-						else
-						{
-							Screen.DrawTexture(iconTex, true, iconX, y,
-								DTA_DestWidth, iconSize, DTA_DestHeight, iconSize,
-								DTA_AlphaChannel, true, DTA_FillColor, 0xBBBBCC,
-								DTA_Alpha, alpha);
-						}
-					}
-
-					Screen.DrawText(SmallFont, Font.CR_UNTRANSLATED, textX, titleY, titleLine,
-						DTA_ScaleX, textScale, DTA_ScaleY, textScale,
-						DTA_ClipLeft, listLeft, DTA_ClipRight, listRight,
-						DTA_Alpha, alpha);
-					if (descLine.Length() > 0)
-					{
-						Screen.DrawText(SmallFont, Font.CR_UNTRANSLATED, textX, descY, descLine,
-							DTA_ScaleX, textScale, DTA_ScaleY, textScale,
-							DTA_ClipLeft, listLeft, DTA_ClipRight, listRight,
-							DTA_Alpha, alpha);
-					}
-				}
-			}
-
-			y += rowH;
-		}
-
-		Screen.ClearClipRect();
-
-		if (scrollY > 0 || contentH > viewH)
-		{
-			double hintSc = textScale * 0.85;
-			int hintY = listBottom - int(SmallFont.GetHeight() * hintSc);
-			PDA_AchievementBrowseDrawCenteredLine(Font.CR_GRAY, hintY,
-				"Use page arrows or BACK / PDA key.", hintSc, listLeft, listRight, alpha * 0.9);
-		}
-	}
-
-	ui void ScrollPDAAchievementBrowse(int direction)
-	{
-		PDA_SyncAchievementBrowseState();
-		if (!pdaAchBrowseCacheValid)
-			RebuildPDAAchievementBrowseCache();
-
-		double textScale = PDA_AchievementBrowseTextScale();
-		int listLeft, listTop, listRight, listBottom;
-		PDA_AchievementBrowseListMetrics(listLeft, listTop, listRight, listBottom);
-		int viewH = listBottom - listTop;
-		int contentH = PDA_AchievementBrowseContentHeight(textScale);
-		int maxScroll = max(0, contentH - viewH);
-		if (maxScroll < 1)
-			return;
-
-		int step = PDA_AchievementBrowseScrollStepPx(direction, textScale);
-		if (direction < 0)
-			pdaAchBrowseScroll -= step;
-		else if (direction > 0)
-			pdaAchBrowseScroll += step;
-		pdaAchBrowseScroll = clamp(pdaAchBrowseScroll, 0, maxScroll);
-	}
-
-	clearscope static bool PB_AchievementsOn()
-	{
-		return false;
 	}
 
 	override void WorldThingDamaged(WorldEvent e)
@@ -1741,25 +1257,6 @@ class PB_PDAHandler : EventHandler
 			else
 				pdaPrevUILastQueuedKey = "";
 		}
-		if (KatanaDualChoiceMode)
-		{
-			if (MouseClicked && !MouseHeldDown)
-			{
-				int lx, ly, lw, lh, rx, ry, rw, rh;
-				PB_KatanaDualChoiceGetTileLayout(lx, ly, lw, lh, rx, ry, rw, rh);
-				bool hitL = MouseX >= lx && MouseX < lx + lw && MouseY >= ly && MouseY < ly + lh;
-				bool hitR = MouseX >= rx && MouseX < rx + rw && MouseY >= ry && MouseY < ry + rh;
-				if (hitL || hitR)
-				{
-					bool leftPickSith = (KatanaDualVariant == 0) ? hitL : hitR;
-					if (leftPickSith)
-						SendNetworkEvent("katanachoice_pick_sith");
-					else
-						SendNetworkEvent("katanachoice_pick_jedi");
-				}
-				SendNetworkEvent("releasemouse");
-			}
-		}
 		for (int i = 0;i < uiObjects.Size();i++)
 		{
 			if (MouseX >= uiObjects[i].ImagePos.x
@@ -1831,9 +1328,7 @@ class PB_PDAHandler : EventHandler
 							}
 							break;
 						case 4:
-							if (AchievementsMenuOpened)
-								ScrollPDAAchievementBrowse(-1);
-							else if (BlockyEnabled())
+							if (BlockyEnabled())
 							{
 								if (MonsterMenuOpened)
 									pdaBlockyMonsterPage = max(0, pdaBlockyMonsterPage - 1);
@@ -1845,9 +1340,7 @@ class PB_PDAHandler : EventHandler
 							}
 							break;
 						case 5:
-							if (AchievementsMenuOpened)
-								ScrollPDAAchievementBrowse(1);
-							else if (BlockyEnabled())
+							if (BlockyEnabled())
 							{
 								if (MonsterMenuOpened) pdaBlockyMonsterPage++;
 								else if (WeaponMenuOpened) pdaBlockyWeapPage++;
@@ -1863,24 +1356,11 @@ class PB_PDAHandler : EventHandler
 							WeaponTextMode = 0;
 							UpdateDesc();
 							break;
-						case 16:
-							if (!BlockyEnabled() || !PB_PDAHandler.PB_XP_RewardsOn() || NonMainMenu || netgame)
-								break;
-							SendNetworkEvent("pb_xp_spin");
-							break;
-						case 17:
-							if (!BlockyEnabled() || !PB_PDAHandler.PB_AchievementsOn() || NonMainMenu)
-								break;
-							SendNetworkEvent("pb_pda_open_achievements");
-							break;
 						}
 					}
 					if (uiObjects[i].BackButtonTrue)
 					{
-						if (AchievementsMenuOpened)
-							SendNetworkEvent("closepdaachievements");
-						else
-							SendNetworkEvent("closemonstermenu");
+						SendNetworkEvent("closemonstermenu");
 						globalPDAAlpha = 0;
 						descriptiondialog.todraw = "Select a entry to \nview its description";
 						descriptiondialog.ImagePos = descriptiondialog.InitialImagePos;
@@ -4561,9 +4041,6 @@ class PB_PDAHandler : EventHandler
 		if (ppb) { ppb.baseweaponpda = false; }
 		pmo.A_SetBlend("black",1.0,35);
 	}
-	ui void DrawGloryKillFuelHud()
-	{
-	}
 	override void WorldTick()
 	{
 		if (gamestate == GS_TITLELEVEL) return;
@@ -4584,8 +4061,6 @@ class PB_PDAHandler : EventHandler
 			PDA_Play_ResetAnim();
 		}
 		PDA_Play_AdvancePreviewAnim();
-		if (KatanaDualChoiceMode)
-			PB_KatanaDualAdvancePreviewAnims();
 		if (pdaMainAnimDirty && PDAMode && !NonMainMenu)
 		{
 			pdaMainAnimDirty = false;
@@ -4689,9 +4164,6 @@ class PB_PDAHandler : EventHandler
 		}
 		if (e.Name ~== "openmonstermenu")
 		{
-			AchievementsMenuOpened = false;
-			RequestPDAAchievementScrollReset();
-			InvalidatePDAAchievementCache();
 			MonsterMenuOpened = true;
 			WeaponMenuOpened = false;
 			EquipmentMenuOpened = false;
@@ -4703,32 +4175,15 @@ class PB_PDAHandler : EventHandler
 			MonsterMenuOpened = false;
 			WeaponMenuOpened = false;
 			EquipmentMenuOpened = false;
-			AchievementsMenuOpened = false;
 			NonMainMenu = false;
-			InvalidatePDAAchievementCache();
-			RequestPDAAchievementScrollReset();
 			S_StartSound("PDABACK",CHAN_AUTO);
 			PDA_Play_ClearPreview();
 			pdaPrevPendingKey = "";
 			pdaPrevNeedsBuild = false;
 			pdaMainAnimDirty = true;
 		}
-		if (e.Name ~== "closepdaachievements")
-		{
-			if (!AchievementsMenuOpened)
-				return;
-			AchievementsMenuOpened = false;
-			NonMainMenu = false;
-			InvalidatePDAAchievementCache();
-			RequestPDAAchievementScrollReset();
-			S_StartSound("PDABACK", CHAN_AUTO);
-			pdaMainAnimDirty = true;
-		}
 		if (e.Name ~== "openweaponmenu")
 		{
-			AchievementsMenuOpened = false;
-			RequestPDAAchievementScrollReset();
-			InvalidatePDAAchievementCache();
 			WeaponMenuOpened = true;
 			MonsterMenuOpened = false;
 			EquipmentMenuOpened = false;
@@ -4737,9 +4192,6 @@ class PB_PDAHandler : EventHandler
 		}
 		if (e.Name ~== "openequipmentmenu")
 		{
-			AchievementsMenuOpened = false;
-			RequestPDAAchievementScrollReset();
-			InvalidatePDAAchievementCache();
 			EquipmentMenuOpened = true;
 			MonsterMenuOpened = false;
 			WeaponMenuOpened = false;
@@ -4768,7 +4220,7 @@ class PB_PDAHandler : EventHandler
 		if (MouseHeldDown == false && MouseClicked == true && !(HeldDownTics <= 0) ) HeldDownTics--;
 		if (e.Name ~== "input")
 		{
-			if (PDAMode || KatanaDualChoiceMode)
+			if (PDAMode)
 			{
 				DeltaMouseX = e.Args[0] / 2;
 				DeltaMouseY = e.Args[1];
@@ -4805,10 +4257,7 @@ class PB_PDAHandler : EventHandler
 			MonsterMenuOpened = false;
 			WeaponMenuOpened = False;
 			EquipmentMenuOpened = false;
-			AchievementsMenuOpened = false;
 			NonMainMenu = false;
-			InvalidatePDAAchievementCache();
-			RequestPDAAchievementScrollReset();
 			LastPDAToggleTic = gametic;
 			PDA_Play_ClearPreview();
 			pdaPrevPendingKey = "";
@@ -4816,33 +4265,13 @@ class PB_PDAHandler : EventHandler
 			PDA_Main_ClearAnimChains();
 			pdaMainAnimDirty = false;
 		}
-		if (e.Name ~== "pb_pda_open_achievements")
-		{
-			if (!PB_AchievementsOn() || isnetgame || !PDAMode)
-				return;
-			MonsterMenuOpened = false;
-			WeaponMenuOpened = false;
-			EquipmentMenuOpened = false;
-			NonMainMenu = true;
-			AchievementsMenuOpened = true;
-			RequestPDAAchievementScrollReset();
-			InvalidatePDAAchievementCache();
-			S_StartSound("PDAOPEN", CHAN_AUTO);
-		}
 		if (e.Name ~== "openpda")
 		{
-			if (KatanaDualChoiceMode)
-				return;
 			if (isnetgame) return;
 			if (e.Player < 0 || e.Player >= MAXPLAYERS) return;
 			if (!playeringame[e.Player]) return;
 			if (gametic - LastPDAToggleTic < 6) return;
 			LastPDAToggleTic = gametic;
-			if (AchievementsMenuOpened)
-			{
-				SendNetworkEvent("closepdaachievements");
-				return;
-			}
 			if (PDAMode)
 			{
 				SetPlayerProperty(1,0,4);
@@ -4859,11 +4288,8 @@ class PB_PDAHandler : EventHandler
 				MonsterMenuOpened = false;
 				WeaponMenuOpened = false;
 				EquipmentMenuOpened = false;
-				AchievementsMenuOpened = false;
-				NonMainMenu = false;
-				InvalidatePDAAchievementCache();
-				RequestPDAAchievementScrollReset();
-				PDA_Play_ClearPreview();
+					NonMainMenu = false;
+						PDA_Play_ClearPreview();
 				pdaPrevPendingKey = "";
 				pdaPrevNeedsBuild = false;
 				PDA_Main_ClearAnimChains();
@@ -4891,80 +4317,6 @@ class PB_PDAHandler : EventHandler
 			MouseX = e.Args[0];
 			MouseY = e.Args[1];
 			MousePositionSet = true;
-		}
-		if (e.Name ~== "katanachoice_open0")
-		{
-			if (e.Player < 0 || e.Player >= MAXPLAYERS || !playeringame[e.Player])
-				return;
-			if (PDAMode)
-			{
-				PB_KatanaDualChoiceApplyPick(true, e.Player);
-				return;
-			}
-			if (isnetgame)
-			{
-				PB_KatanaDualChoiceApplyPick(true, e.Player);
-				return;
-			}
-			KatanaDualChoiceMode = 1;
-			KatanaDualVariant = 0;
-			KatanaDualFrozenPlr = e.Player;
-			SetPlayerProperty(1, 1, 4);
-			players[e.Player].timefreezer |= (1 << e.Player);
-			Level.SetFrozen(true);
-			MouseX = 1;
-			MouseY = 1;
-			MousePositionSet = false;
-			MouseClicked = false;
-			MouseHeldDown = false;
-			HeldDownTics = 0;
-			PB_KatanaDualChoiceBuildPreviews(0);
-			PB_KatanaDualChoiceResetPreviewAnims();
-			return;
-		}
-		if (e.Name ~== "katanachoice_open1")
-		{
-			if (e.Player < 0 || e.Player >= MAXPLAYERS || !playeringame[e.Player])
-				return;
-			if (PDAMode)
-			{
-				PB_KatanaDualChoiceApplyPick(false, e.Player);
-				return;
-			}
-			if (isnetgame)
-			{
-				PB_KatanaDualChoiceApplyPick(false, e.Player);
-				return;
-			}
-			KatanaDualChoiceMode = 1;
-			KatanaDualVariant = 1;
-			KatanaDualFrozenPlr = e.Player;
-			SetPlayerProperty(1, 1, 4);
-			players[e.Player].timefreezer |= (1 << e.Player);
-			Level.SetFrozen(true);
-			MouseX = 1;
-			MouseY = 1;
-			MousePositionSet = false;
-			MouseClicked = false;
-			MouseHeldDown = false;
-			HeldDownTics = 0;
-			PB_KatanaDualChoiceBuildPreviews(1);
-			PB_KatanaDualChoiceResetPreviewAnims();
-			return;
-		}
-		if (e.Name ~== "katanachoice_pick_sith")
-		{
-			if (!KatanaDualChoiceMode)
-				return;
-			PB_KatanaDualChoiceApplyPick(true, e.Player);
-			return;
-		}
-		if (e.Name ~== "katanachoice_pick_jedi")
-		{
-			if (!KatanaDualChoiceMode)
-				return;
-			PB_KatanaDualChoiceApplyPick(false, e.Player);
-			return;
 		}
 		if (e.Name ~== "pdaprevclear")
 		{
@@ -5020,19 +4372,13 @@ class PB_PDAHandler : EventHandler
 	}
 	override void WorldLoaded(WorldEvent e)
 	{
-		PB_KatanaDualChoiceClose();
 	}
 	override void OnRegister()
 	{
 		MouseX = 1;
 		MouseY = 1;
 		PDAMode = false;
-		AchievementsMenuOpened = false;
-		RequestPDAAchievementScrollReset();
-		InvalidatePDAAchievementCache();
-		KatanaDualChoiceMode = 0;
-		KatanaDualVariant = 0;
-		KatanaDualFrozenPlr = -1;
+
 	}
 	override void InterfaceProcess(ConsoleEvent e)
 	{
@@ -5059,8 +4405,6 @@ class PB_PDAHandler : EventHandler
 	const PB_PDA_BLOCKY_CAT_ARROW_VIS_MUL = 1.65;
 	const PB_PDA_BLOCKY_CAT_ARROW_HIT_PAD = 8;
 	const PB_PDA_BLOCKY_CAT_ARROW_BELOW_DESC = 12;
-	const PB_KATANA_DUAL_TILE_FRAC = 0.5;
-	const PB_KATANA_DUAL_LABEL_MAX_FRAC_OF_TILE_H = 0.36;
 	const PB_PDA_PREVIEW_GAP_768 = 16;
 	const PB_PDA_PREVIEW_WIDTH_768 = 300;
 	const PB_PDA_PREVIEW_SEG_FRAMES = 48;
@@ -5925,31 +5269,7 @@ class PB_PDAHandler : EventHandler
 		int sh = Screen.GetHeight();
 		int midX = sw / 2;
 
-		if (AchievementsMenuOpened && BlockyEnabled())
-		{
-			font pageFont = NULL;
-			for (int pi = 0; pi < UiObjects.Size(); pi++)
-			{
-				PB_PDAUi_Object po = UiObjects[pi];
-				if (po && po.objecttype == 4 && po.usefont)
-				{
-					pageFont = po.usefont;
-					break;
-				}
-			}
-			double pageVisH = SmallFont.GetHeight() * pdaTextScale
-				* PB_PDA_BLOCKY_PAGE_ARROW_VIS_MUL;
-			if (pageFont)
-				pageVisH = pageFont.GetHeight() * pdaTextScale
-					* PB_PDA_BLOCKY_PAGE_ARROW_VIS_MUL;
-			double om = PB_PDA_BLOCKY_PAGE_ARROW_OUTSIDE_MARGIN;
-			int listLeft, listTop, listRight, listBottom;
-			PDA_AchievementBrowseListMetrics(listLeft, listTop, listRight, listBottom);
-			int arrowX = (listLeft + listRight) / 2;
-			UpArrowPos = (arrowX, double(listTop) - pageVisH - om);
-			DownArrowPos = (arrowX, double(listBottom) + om);
-		}
-		else if (BlockyEnabled() && descriptiondialog != null)
+		if (BlockyEnabled() && descriptiondialog != null)
 		{
 			font pageFont = NULL;
 			for (int pi = 0; pi < UiObjects.Size(); pi++)
@@ -6076,7 +5396,7 @@ class PB_PDAHandler : EventHandler
 			for (int z = 0; z < UiObjects.Size(); z++)
 			{
 				PB_PDAUi_Object zo = UiObjects[z];
-				if (zo && (zo.MainHubBlockyExit || zo.MainHubBlockySlot || zo.MainHubBlockyAchievements))
+				if (zo && zo.MainHubBlockyExit)
 				{
 					zo.ImagePos = (-9999, -9999);
 					zo.ImageSize = (1, 1);
@@ -6089,7 +5409,7 @@ class PB_PDAHandler : EventHandler
 			for (int z = 0; z < UiObjects.Size(); z++)
 			{
 				PB_PDAUi_Object zo = UiObjects[z];
-				if (zo && (zo.MainHubBlockyExit || zo.MainHubBlockySlot || zo.MainHubBlockyAchievements))
+				if (zo && zo.MainHubBlockyExit)
 				{
 					zo.ImagePos = (-9999, -9999);
 					zo.ImageSize = (1, 1);
@@ -6108,53 +5428,15 @@ class PB_PDAHandler : EventHandler
 		int exitH = clamp(int(double(tileH) * 0.88), 72, tileH);
 		int vGap = max(gap, tileH / 2);
 		int exitY = y0 + tileH + vGap;
-		bool xpOn = PB_PDAHandler.PB_XP_RewardsOn();
-		bool achOn = PB_PDAHandler.PB_AchievementsOn();
-		int footerCount = 1;
-		if (xpOn)
-			footerCount++;
-		if (achOn)
-			footerCount++;
 		int availableW = sw - margin * 2;
 		int footerGap = gap;
-		int footerGaps = max(0, footerCount - 1);
-		int btnW = max(120, (availableW - footerGap * footerGaps) / footerCount);
+		int btnW = max(120, availableW);
 		int cx = margin;
 		for (int i = 0; i < UiObjects.Size(); i++)
 		{
 			PB_PDAUi_Object o = UiObjects[i];
 			if (!o)
 				continue;
-			if (o.MainHubBlockySlot)
-			{
-				if (!xpOn)
-				{
-					o.ImagePos = (-9999, -9999);
-					o.ImageSize = (1, 1);
-				}
-				else
-				{
-					o.ImagePos = (cx, exitY);
-					o.ImageSize = (btnW, exitH);
-					cx += btnW + footerGap;
-				}
-				continue;
-			}
-			if (o.MainHubBlockyAchievements)
-			{
-				if (!achOn)
-				{
-					o.ImagePos = (-9999, -9999);
-					o.ImageSize = (1, 1);
-				}
-				else
-				{
-					o.ImagePos = (cx, exitY);
-					o.ImageSize = (btnW, exitH);
-					cx += btnW + footerGap;
-				}
-				continue;
-			}
 			if (o.MainHubBlockyExit)
 			{
 				o.ImagePos = (cx, exitY);
@@ -6327,11 +5609,9 @@ class PB_PDAHandler : EventHandler
 				);
 			}
 		}
-		if (!coldStart && !hideHUD && !PDAMode && !KatanaDualChoiceMode)
-			DrawGloryKillFuelHud();
 		if (gametic >= PB_PDA_UI_INIT_MIN_GAMETIC
 			&& MouseX == 1 && MouseY == 1 && !MousePositionSet
-			&& (PDAMode || KatanaDualChoiceMode))
+			&& PDAMode)
 		{
 			SendNetworkEvent("modifymousepos",Screen.GetWidth() / 2,Screen.GetHeight() / 2);
 		}
@@ -6357,39 +5637,16 @@ class PB_PDAHandler : EventHandler
 					? (descriptiondialog.descClipH - descriptiondialog.descClipY) : 0;
 			}
 			PB_PDAUiBackdrop.DrawFullScreen(globalPDAAlpha);
-			if (AchievementsMenuOpened)
-				DrawPDAAchievementBrowse(globalPDAAlpha);
 			if (UiObjects.Size() >= 1)
 			{
 				for (int i = 0; i < UiObjects.Size(); i++)
 				{
-					if (AchievementsMenuOpened)
-					{
-						if (UiObjects[i].objecttype != 4 && UiObjects[i].objecttype != 5
-							&& !UiObjects[i].BackButtonTrue
-							&& !(UiObjects[i].ExitButtonTrue && !UiObjects[i].MainHubBlockyExit))
-						{
-							UiObjects[i].notdrawn = true;
-							continue;
-						}
-					}
 					if (UiObjects[i].dontdraw == true)
 					{
 						UiObjects[i].notdrawn = true;
 						continue;
 					}
 					if (!blockyOn && UiObjects[i].MainHubBlockyExit)
-					{
-						UiObjects[i].notdrawn = true;
-						continue;
-					}
-					if (UiObjects[i].MainHubBlockySlot && (!blockyOn || !PB_PDAHandler.PB_XP_RewardsOn()))
-					{
-						UiObjects[i].notdrawn = true;
-						continue;
-					}
-					if (UiObjects[i].MainHubBlockyAchievements
-						&& (!blockyOn || !PB_PDAHandler.PB_AchievementsOn() || NonMainMenu))
 					{
 						UiObjects[i].notdrawn = true;
 						continue;
@@ -6478,66 +5735,6 @@ class PB_PDAHandler : EventHandler
 						UiObjects[i].notdrawn = false;
 						continue;
 					}
-					if (blockyOn && UiObjects[i].MainHubBlockyAchievements && PB_PDAHandler.PB_AchievementsOn() && !NonMainMenu)
-					{
-						bool hovered = UiObjects[i].MouseOvered;
-						int bx = int(UiObjects[i].ImagePos.x);
-						int by = int(UiObjects[i].ImagePos.y);
-						int bw = int(UiObjects[i].ImageSize.x);
-						int bh = int(UiObjects[i].ImageSize.y);
-						DrawBlockyTile(bx, by, bw, bh, hovered, false, globalPDAAlpha);
-						double lblSc = pdaTextScale * 0.62;
-						string lab = UiObjects[i].toDraw;
-						double lw = BigFont.StringWidth(lab) * lblSc;
-						double lx = bx + (bw - lw) / 2;
-						double ly = by + bh * 0.1;
-						Screen.DrawText(BigFont, hovered ? Font.CR_OLIVE : Font.CR_GREEN,
-							lx, ly, lab,
-							DTA_ScaleX, lblSc, DTA_ScaleY, lblSc,
-							DTA_Alpha, globalPDAAlpha);
-						int unlocked = 0, total = 0;
-						if (gametic - pdaAchCacheGametic > 28)
-						{
-							let achHandler = VUAS_AchievementHandler.GetHandler();
-							unlocked = 0;
-							total = 0;
-							if (achHandler)
-							{
-								total = achHandler.achievements.Size();
-								for (int ai = 0; ai < total; ai++)
-								{
-									if (achHandler.achievements[ai].isUnlocked)
-										unlocked++;
-								}
-							}
-							pdaAchUnlockedCache = unlocked;
-							pdaAchTotalCache = total;
-							pdaAchCacheGametic = gametic;
-						}
-						else
-						{
-							unlocked = pdaAchUnlockedCache;
-							total = pdaAchTotalCache;
-						}
-						string sub = total > 0
-							? String.Format("%d / %d unlocked", unlocked, total)
-							: "View progress";
-						double statSc = clamp(pdaTextScale * 0.46, 2.5, 5.5);
-						double tw = BigFont.StringWidth(sub) * statSc;
-						for (int fit = 0; fit < 6 && tw > bw - 16; fit++)
-						{
-							statSc *= 0.9;
-							tw = BigFont.StringWidth(sub) * statSc;
-						}
-						double tx = bx + (bw - tw) / 2;
-						double ty = by + bh * 0.52;
-						Screen.DrawText(BigFont, hovered ? Font.CR_OLIVE : Font.CR_GRAY,
-							tx, ty, sub,
-							DTA_ScaleX, statSc, DTA_ScaleY, statSc,
-							DTA_Alpha, globalPDAAlpha * 0.95);
-						UiObjects[i].notdrawn = false;
-						continue;
-					}
 					if (blockyOn && UiObjects[i].MainHubBlockyExit && !NonMainMenu)
 					{
 						bool hovered = UiObjects[i].MouseOvered;
@@ -6555,106 +5752,6 @@ class PB_PDAHandler : EventHandler
 							lx, ly, lab,
 							DTA_ScaleX, lblSc, DTA_ScaleY, lblSc,
 							DTA_Alpha, globalPDAAlpha);
-						UiObjects[i].notdrawn = false;
-						continue;
-					}
-					if (blockyOn && UiObjects[i].MainHubBlockySlot && PB_PDAHandler.PB_XP_RewardsOn() && !NonMainMenu)
-					{
-						bool hovered = UiObjects[i].MouseOvered;
-						int bx = int(UiObjects[i].ImagePos.x);
-						int by = int(UiObjects[i].ImagePos.y);
-						int bw = int(UiObjects[i].ImageSize.x);
-						int bh = int(UiObjects[i].ImageSize.y);
-						DrawBlockyTile(bx, by, bw, bh, hovered, false, globalPDAAlpha);
-						double lblSc = pdaTextScale * 0.68;
-						string lab = UiObjects[i].toDraw;
-						double lw = BigFont.StringWidth(lab) * lblSc;
-						double lx = bx + (bw - lw) / 2;
-						double ly = by + bh * 0.08;
-						Screen.DrawText(BigFont, hovered ? Font.CR_OLIVE : Font.CR_GREEN,
-							lx, ly, lab,
-							DTA_ScaleX, lblSc, DTA_ScaleY, lblSc,
-							DTA_Alpha, globalPDAAlpha);
-						int xpV = 0, rkV = 0, spV = 0;
-						if (playeringame[consoleplayer])
-						{
-							let mo = players[consoleplayer].mo;
-							if (mo)
-							{
-								xpV = mo.CountInv("PB_XPBank");
-								rkV = mo.CountInv("PB_XPRank");
-								spV = mo.CountInv("PB_RewardSpin");
-							}
-						}
-						string sub1 = String.Format("XP: %d    RANK: %d", xpV, rkV);
-						string sub2 = String.Format("PTS: %d  (%d to spin)", spV, 0);
-						double statSc = clamp(pdaTextScale * 0.46, 2.5, 5.5);
-						int statPad = max(8, bh / 22);
-						int margin = max(8, bw / 28);
-						for (int fit = 0; fit < 6; fit++)
-						{
-							double twA = BigFont.StringWidth(sub1) * statSc;
-							double twB = BigFont.StringWidth(sub2) * statSc;
-							if (max(twA, twB) + statPad * 2 <= bw - margin * 2)
-								break;
-							statSc *= 0.9;
-						}
-						double lineH = BigFont.GetHeight() * statSc;
-						double tw1 = BigFont.StringWidth(sub1) * statSc;
-						double tw2 = BigFont.StringWidth(sub2) * statSc;
-						int boxW = int(max(tw1, tw2) + statPad * 2 + 0.5);
-						int boxH = int(lineH * 2.2 + statPad * 2 + 0.5);
-						boxW = min(boxW, bw - margin * 2);
-						int boxX = bx + (bw - boxW) / 2;
-						double titleBottom = ly + BigFont.GetHeight() * lblSc + bh * 0.04;
-						double availBot = by + bh - margin;
-						double extraY = (availBot - titleBottom) - boxH;
-						if (extraY < 0)
-							extraY = 0;
-						int boxY = int(titleBottom + extraY * 0.5 + 0.5);
-						if (boxY + boxH > by + bh - margin)
-							boxY = max(int(titleBottom + 0.5), by + bh - margin - boxH);
-						Screen.Dim(color(4, 8, 14), 0.72 * globalPDAAlpha, boxX, boxY, boxW, boxH);
-						{
-							int brA = int(clamp(200 * globalPDAAlpha, 80, 255));
-							Screen.DrawLine(boxX, boxY, boxX + boxW - 1, boxY, "Gray", brA);
-							Screen.DrawLine(boxX, boxY + boxH - 1, boxX + boxW - 1, boxY + boxH - 1, "Gray", brA);
-							Screen.DrawLine(boxX, boxY, boxX, boxY + boxH - 1, "Gray", brA);
-							Screen.DrawLine(boxX + boxW - 1, boxY, boxX + boxW - 1, boxY + boxH - 1, "Gray", brA);
-						}
-						double tx = boxX + (boxW - tw1) / 2;
-						double ty = double(boxY) + statPad;
-						double statAlph = globalPDAAlpha * 0.98;
-						for (int ox = -1; ox <= 1; ox++)
-						{
-							for (int oy = -1; oy <= 1; oy++)
-							{
-								if (ox == 0 && oy == 0)
-									continue;
-								Screen.DrawText(BigFont, Font.CR_BLACK, tx + ox, ty + oy, sub1,
-									DTA_ScaleX, statSc, DTA_ScaleY, statSc,
-									DTA_Alpha, statAlph * 0.55);
-							}
-						}
-						Screen.DrawText(BigFont, Font.CR_GREEN, tx, ty, sub1,
-							DTA_ScaleX, statSc, DTA_ScaleY, statSc,
-							DTA_Alpha, statAlph);
-						ty += lineH * 1.12;
-						double tx2 = boxX + (boxW - tw2) / 2;
-						for (int ox2 = -1; ox2 <= 1; ox2++)
-						{
-							for (int oy2 = -1; oy2 <= 1; oy2++)
-							{
-								if (ox2 == 0 && oy2 == 0)
-									continue;
-								Screen.DrawText(BigFont, Font.CR_BLACK, tx2 + ox2, ty + oy2, sub2,
-									DTA_ScaleX, statSc, DTA_ScaleY, statSc,
-									DTA_Alpha, statAlph * 0.55);
-							}
-						}
-						Screen.DrawText(BigFont, Font.CR_OLIVE, tx2, ty, sub2,
-							DTA_ScaleX, statSc, DTA_ScaleY, statSc,
-							DTA_Alpha, statAlph);
 						UiObjects[i].notdrawn = false;
 						continue;
 					}
@@ -6774,7 +5871,7 @@ class PB_PDAHandler : EventHandler
 					else UiObjects[i].notdrawn = true;
 				}
 			}
-			if (descriptiondialog != null && NonMainMenu == true && !AchievementsMenuOpened)
+			if (descriptiondialog != null && NonMainMenu == true)
 			{
 				int paneRight = int(min(UpArrowPos.X, pdaDescClipRight));
 				if (blockyOn)
@@ -6822,321 +5919,6 @@ class PB_PDAHandler : EventHandler
 				DTA_DestWidthF, pdaCursorW, DTA_DestHeightF, pdaCursorH,
 				DTA_CenterOffset, true);
 		}
-		if (!hideHUD && KatanaDualChoiceMode)
-			DrawKatanaDualChoiceOverlay();
-	}
-
-	void PB_KatanaDualChoiceClearPreview()
-	{
-		katDualFrL.Clear();
-		katDualTiL.Clear();
-		katDualSegL.Clear();
-		katDualFrR.Clear();
-		katDualTiR.Clear();
-		katDualSegR.Clear();
-		katDualCurL = katDualCurR = 0;
-		katDualRemL = katDualRemR = 0;
-		katDualLastGtL = katDualLastGtR = 0;
-	}
-
-	void PB_KatanaDualChoiceBuildPreviews(int variant)
-	{
-		PB_KatanaDualChoiceClearPreview();
-		if (variant == 0)
-		{
-			PDA_WeaponStrip_AppendFullWeapon('PB_ArgentSith', katDualFrL, katDualTiL, katDualSegL, true,
-				PB_PDA_WEAPON_PREVIEW_STRIP_MAX,
-				PB_PDA_WEAPON_PREVIEW_PICKUP_TICS, PB_PDA_WEAPON_PREVIEW_SPAWN_SEEK,
-				PB_PDA_WEAPON_PREVIEW_READY_MAX, PB_PDA_WEAPON_PREVIEW_READY_SEEK,
-				PB_PDA_WEAPON_PREVIEW_READY_TICS, PB_PDA_WEAPON_PREVIEW_BODY_TIC_CAP,
-				PB_PDA_WEAPON_PREVIEW_BODY_TIC_CAP, PB_PDA_WEAPON_PREVIEW_FLASH_TICS, PB_PDA_WEAPON_PREVIEW_FLASH_SEEK,
-				true, PB_PDA_WEAPON_PREVIEW_OVERLAY_TIC_CAP, PB_PDA_WEAPON_PREVIEW_OVERLAY_MAX_STEPS);
-			PDA_WeaponStrip_AppendFullWeapon('PB_BeamKatana', katDualFrR, katDualTiR, katDualSegR, true,
-				PB_PDA_WEAPON_PREVIEW_STRIP_MAX,
-				PB_PDA_WEAPON_PREVIEW_PICKUP_TICS, PB_PDA_WEAPON_PREVIEW_SPAWN_SEEK,
-				PB_PDA_WEAPON_PREVIEW_READY_MAX, PB_PDA_WEAPON_PREVIEW_READY_SEEK,
-				PB_PDA_WEAPON_PREVIEW_READY_TICS, PB_PDA_WEAPON_PREVIEW_BODY_TIC_CAP,
-				PB_PDA_WEAPON_PREVIEW_BODY_TIC_CAP, PB_PDA_WEAPON_PREVIEW_FLASH_TICS, PB_PDA_WEAPON_PREVIEW_FLASH_SEEK,
-				true, PB_PDA_WEAPON_PREVIEW_OVERLAY_TIC_CAP, PB_PDA_WEAPON_PREVIEW_OVERLAY_MAX_STEPS);
-		}
-		else
-		{
-			PDA_WeaponStrip_AppendFullWeapon('PB_BeamKatana', katDualFrL, katDualTiL, katDualSegL, true,
-				PB_PDA_WEAPON_PREVIEW_STRIP_MAX,
-				PB_PDA_WEAPON_PREVIEW_PICKUP_TICS, PB_PDA_WEAPON_PREVIEW_SPAWN_SEEK,
-				PB_PDA_WEAPON_PREVIEW_READY_MAX, PB_PDA_WEAPON_PREVIEW_READY_SEEK,
-				PB_PDA_WEAPON_PREVIEW_READY_TICS, PB_PDA_WEAPON_PREVIEW_BODY_TIC_CAP,
-				PB_PDA_WEAPON_PREVIEW_BODY_TIC_CAP, PB_PDA_WEAPON_PREVIEW_FLASH_TICS, PB_PDA_WEAPON_PREVIEW_FLASH_SEEK,
-				true, PB_PDA_WEAPON_PREVIEW_OVERLAY_TIC_CAP, PB_PDA_WEAPON_PREVIEW_OVERLAY_MAX_STEPS);
-			PDA_WeaponStrip_AppendFullWeapon('PB_ArgentSith', katDualFrR, katDualTiR, katDualSegR, true,
-				PB_PDA_WEAPON_PREVIEW_STRIP_MAX,
-				PB_PDA_WEAPON_PREVIEW_PICKUP_TICS, PB_PDA_WEAPON_PREVIEW_SPAWN_SEEK,
-				PB_PDA_WEAPON_PREVIEW_READY_MAX, PB_PDA_WEAPON_PREVIEW_READY_SEEK,
-				PB_PDA_WEAPON_PREVIEW_READY_TICS, PB_PDA_WEAPON_PREVIEW_BODY_TIC_CAP,
-				PB_PDA_WEAPON_PREVIEW_BODY_TIC_CAP, PB_PDA_WEAPON_PREVIEW_FLASH_TICS, PB_PDA_WEAPON_PREVIEW_FLASH_SEEK,
-				true, PB_PDA_WEAPON_PREVIEW_OVERLAY_TIC_CAP, PB_PDA_WEAPON_PREVIEW_OVERLAY_MAX_STEPS);
-		}
-	}
-
-	void PB_KatanaDualChoiceResetPreviewAnims()
-	{
-		int g = gametic;
-		if (katDualFrL.Size() > 0 && katDualTiL.Size() == katDualFrL.Size())
-		{
-			katDualCurL = 0;
-			katDualRemL = max(1, katDualTiL[0]);
-			katDualLastGtL = g;
-		}
-		else
-		{
-			katDualCurL = 0;
-			katDualRemL = 1;
-			katDualLastGtL = g;
-		}
-		if (katDualFrR.Size() > 0 && katDualTiR.Size() == katDualFrR.Size())
-		{
-			katDualCurR = 0;
-			katDualRemR = max(1, katDualTiR[0]);
-			katDualLastGtR = g;
-		}
-		else
-		{
-			katDualCurR = 0;
-			katDualRemR = 1;
-			katDualLastGtR = g;
-		}
-	}
-
-	void PB_KatanaDualAdvancePreviewAnims()
-	{
-		if (!KatanaDualChoiceMode)
-			return;
-		while (katDualFrL.Size() > 0 && katDualTiL.Size() == katDualFrL.Size()
-			&& gametic >= katDualLastGtL + katDualRemL)
-		{
-			katDualLastGtL += katDualRemL;
-			katDualCurL++;
-			if (katDualCurL >= katDualFrL.Size())
-				katDualCurL = 0;
-			katDualRemL = max(1, katDualTiL[katDualCurL]);
-		}
-		while (katDualFrR.Size() > 0 && katDualTiR.Size() == katDualFrR.Size()
-			&& gametic >= katDualLastGtR + katDualRemR)
-		{
-			katDualLastGtR += katDualRemR;
-			katDualCurR++;
-			if (katDualCurR >= katDualFrR.Size())
-				katDualCurR = 0;
-			katDualRemR = max(1, katDualTiR[katDualCurR]);
-		}
-	}
-
-	ui void PB_KatanaDualChoiceGetTileLayout(out int lx, out int ly, out int lw, out int lh,
-		out int rx, out int ry, out int rw, out int rh) const
-	{
-		int sw = Screen.GetWidth();
-		int sh = Screen.GetHeight();
-		int pad = max(10, sh / 54);
-		int gap = max(10, pad / 2);
-		int top = max(28, sh / 22);
-		int bot = max(pad * 2 + SmallFont.GetHeight(), sh / 14);
-		int fullH = sh - top - bot;
-		if (fullH < 120)
-			fullH = max(120, sh / 2);
-		int fullW = (sw - pad * 2 - gap) / 2;
-		if (fullW < 80)
-			fullW = max(80, sw / 2 - gap);
-		lh = max(96, int(double(fullH) * PB_KATANA_DUAL_TILE_FRAC));
-		lw = max(72, int(double(fullW) * PB_KATANA_DUAL_TILE_FRAC));
-		rw = lw;
-		rh = lh;
-		int pairW = lw + gap + rw;
-		lx = (sw - pairW) / 2;
-		rx = lx + lw + gap;
-		int availH = sh - top - bot;
-		int y0 = top + max(0, (availH - lh) / 2);
-		ly = y0;
-		ry = y0;
-	}
-
-	ui void DrawKatanaDualWeaponInTileArea(int x, int y, int w, int h, TextureID iconTex,
-		bool hovered, double alpha, double iconScaleMul = 1.0) const
-	{
-		int pad = max(2, h / 16);
-		int iconTop = y + pad;
-		int iconBottom = y + h - pad;
-		if (iconBottom <= iconTop + 2)
-			return;
-		double slotH = double(iconBottom - iconTop);
-		slotH = min(slotH, h * 0.92);
-		double cx = double(x) + double(w) * 0.5;
-		double cy = double(iconTop) + slotH * 0.5;
-		if (!iconTex.IsValid())
-		{
-			Screen.DrawText(BigFont, Font.CR_OLIVE, int(cx - BigFont.StringWidth("?") / 2),
-				int(cy - BigFont.GetHeight() / 2), "?",
-				DTA_Alpha, alpha,
-				DTA_ScaleX, iconScaleMul, DTA_ScaleY, iconScaleMul);
-			return;
-		}
-		Vector2 texSize = TexMan.GetScaledSize(iconTex);
-		if (texSize.X < 1 || texSize.Y < 1)
-		{
-			Screen.DrawText(BigFont, Font.CR_OLIVE, int(cx - BigFont.StringWidth("?") / 2),
-				int(cy - BigFont.GetHeight() / 2), "?",
-				DTA_Alpha, alpha,
-				DTA_ScaleX, iconScaleMul, DTA_ScaleY, iconScaleMul);
-			return;
-		}
-		double maxH = slotH * 0.92;
-		double maxW = double(w - pad * 2);
-		double scale = min(maxW / texSize.X, maxH / texSize.Y);
-		double dw = texSize.X * scale * iconScaleMul;
-		double dh = texSize.Y * scale * iconScaleMul;
-		if (hovered)
-		{
-			dw *= 1.04;
-			dh *= 1.04;
-		}
-		Screen.DrawTexture(iconTex, false, cx, cy,
-			DTA_DestWidthF, dw, DTA_DestHeightF, dh,
-			DTA_KeepRatio, true,
-			DTA_Alpha, alpha,
-			DTA_CenterOffset, true);
-	}
-
-	ui void DrawKatanaDualChoiceOverlay()
-	{
-		if (!KatanaDualChoiceMode)
-			return;
-		int sw = Screen.GetWidth();
-		int sh = Screen.GetHeight();
-		Screen.Dim("black", 0.58, 0, 0, sw, sh);
-		int lx, ly, lw, lh, rx, ry, rw, rh;
-		PB_KatanaDualChoiceGetTileLayout(lx, ly, lw, lh, rx, ry, rw, rh);
-		bool hoverL = MouseX >= lx && MouseX < lx + lw && MouseY >= ly && MouseY < ly + lh;
-		bool hoverR = MouseX >= rx && MouseX < rx + rw && MouseY >= ry && MouseY < ry + rh;
-		int refWpx = max(BigFont.StringWidth("Sith Lord"), BigFont.StringWidth("Jedi Master"));
-		int bh0 = max(1, BigFont.GetHeight());
-		double lblScCap = double(lh) * PB_KATANA_DUAL_LABEL_MAX_FRAC_OF_TILE_H / double(bh0);
-		double hiSc = min(3.75, max(1.05, lblScCap));
-		double lblScL = clamp(double(lw - 12) / double(max(1, refWpx)), 1.05, hiSc);
-		double lblScR = clamp(double(rw - 12) / double(max(1, refWpx)), 1.05, hiSc);
-		bool sithLeft = (KatanaDualVariant == 0);
-		int leftCol = sithLeft ? Font.CR_RED : Font.CR_LIGHTBLUE;
-		int rightCol = sithLeft ? Font.CR_LIGHTBLUE : Font.CR_RED;
-		int labelBarH = int(ceil(BigFont.GetHeight() * max(lblScL, lblScR))) + max(6, lh / 20);
-		labelBarH = min(labelBarH, max(10, int(double(lh) * (PB_KATANA_DUAL_LABEL_MAX_FRAC_OF_TILE_H + 0.04))));
-		DrawBlockyTile(lx, ly, lw, lh, hoverL, false, 1.0);
-		DrawBlockyTile(rx, ry, rw, rh, hoverR, false, 1.0);
-		{
-			string lt = sithLeft ? "Sith Lord" : "Jedi Master";
-			string ltFull = lt;
-			int maxW = lw - 10;
-			while (lt.length() > 0 && int(BigFont.StringWidth(lt) * lblScL) > maxW)
-				lt = lt.Mid(0, lt.length() - 1);
-			if (lt.length() < ltFull.length() && lt.length() >= 2)
-			{
-				lt.DeleteLastCharacter();
-				lt = lt .. "..";
-			}
-			double lcx = lx + (lw - BigFont.StringWidth(lt) * lblScL) / 2.0;
-			double lcy = ly + (labelBarH - BigFont.GetHeight() * lblScL) / 2.0;
-			int lc = hoverL ? Font.CR_OLIVE : leftCol;
-			Screen.DrawText(BigFont, lc, int(lcx), int(lcy), lt,
-				DTA_ScaleX, lblScL, DTA_ScaleY, lblScL);
-		}
-		{
-			string rt = sithLeft ? "Jedi Master" : "Sith Lord";
-			string rtFull = rt;
-			int maxWr = rw - 10;
-			while (rt.length() > 0 && int(BigFont.StringWidth(rt) * lblScR) > maxWr)
-				rt = rt.Mid(0, rt.length() - 1);
-			if (rt.length() < rtFull.length() && rt.length() >= 2)
-			{
-				rt.DeleteLastCharacter();
-				rt = rt .. "..";
-			}
-			double rcx = rx + (rw - BigFont.StringWidth(rt) * lblScR) / 2.0;
-			double rcy = ry + (labelBarH - BigFont.GetHeight() * lblScR) / 2.0;
-			int rc = hoverR ? Font.CR_OLIVE : rightCol;
-			Screen.DrawText(BigFont, rc, int(rcx), int(rcy), rt,
-				DTA_ScaleX, lblScR, DTA_ScaleY, lblScR);
-		}
-		TextureID texL;
-		TextureID texR;
-		if (katDualFrL.Size() > 0 && katDualCurL >= 0 && katDualCurL < katDualFrL.Size())
-			texL = katDualFrL[katDualCurL];
-		if (katDualFrR.Size() > 0 && katDualCurR >= 0 && katDualCurR < katDualFrR.Size())
-			texR = katDualFrR[katDualCurR];
-		int bodyY = ly + labelBarH;
-		int bodyH = max(8, lh - labelBarH);
-		DrawKatanaDualWeaponInTileArea(lx, bodyY, lw, bodyH, texL, hoverL, 1.0, 1.0);
-		bodyY = ry + labelBarH;
-		bodyH = max(8, rh - labelBarH);
-		DrawKatanaDualWeaponInTileArea(rx, bodyY, rw, bodyH, texR, hoverR, 1.0, 1.0);
-		string hint = "Click a tile to choose your path.";
-		double hintSc = clamp(sh / 480.0, 1.0, 1.85);
-		int hw = int(SmallFont.StringWidth(hint) * hintSc);
-		int hx = (sw - hw) / 2;
-		int hy = sh - max(28, sh / 18);
-		Screen.DrawText(SmallFont, Font.CR_GOLD, hx, hy, hint,
-			DTA_ScaleX, hintSc, DTA_ScaleY, hintSc);
-		TextureID cursortex = TexMan.CheckForTexture("ZCURSOR", TexMan.Type_Any);
-		if (cursortex.IsValid())
-		{
-			double pdaCursorScale = clamp(Screen.GetHeight() / 540.0, 1.5, 3.5);
-			double pdaCursorH = 32.0 * pdaCursorScale;
-			Vector2 cursorNative = TexMan.GetScaledSize(cursortex);
-			double cursorAspect = (cursorNative.X > 0 && cursorNative.Y > 0)
-				? cursorNative.X / cursorNative.Y
-				: 1.0;
-			double pdaCursorW = pdaCursorH * cursorAspect;
-			double pdaCursorAnchorOfsX = pdaCursorW * 0.22;
-			double pdaCursorAnchorOfsY = pdaCursorH * 0.25;
-			Screen.DrawTexture(cursortex, false,
-				double(MouseX) + pdaCursorAnchorOfsX,
-				double(MouseY) + pdaCursorAnchorOfsY,
-				DTA_DestWidthF, pdaCursorW, DTA_DestHeightF, pdaCursorH,
-				DTA_CenterOffset, true);
-		}
-	}
-
-	void PB_KatanaDualChoiceClose()
-	{
-		PB_KatanaDualChoiceClearPreview();
-		KatanaDualChoiceMode = 0;
-		KatanaDualVariant = 0;
-		if (KatanaDualFrozenPlr >= 0 && KatanaDualFrozenPlr < MAXPLAYERS && playeringame[KatanaDualFrozenPlr])
-			players[KatanaDualFrozenPlr].timefreezer &= ~(1 << KatanaDualFrozenPlr);
-		KatanaDualFrozenPlr = -1;
-		SetPlayerProperty(1, 0, 4);
-		Level.SetFrozen(false);
-		MouseX = 1;
-		MouseY = 1;
-		MousePositionSet = false;
-		MouseClicked = false;
-		MouseHeldDown = false;
-		HeldDownTics = 0;
-	}
-
-	void PB_KatanaDualChoiceApplyPick(bool sith, int plrnum)
-	{
-		if (plrnum < 0 || plrnum >= MAXPLAYERS || !playeringame[plrnum])
-			return;
-		let mo = players[plrnum].mo;
-		if (!mo)
-		{
-			PB_KatanaDualChoiceClose();
-			return;
-		}
-		mo.TakeInventory("PB_KatanaChoicePickSith", 0x7fffffff);
-		mo.TakeInventory("PB_KatanaChoicePickJedi", 0x7fffffff);
-		if (sith)
-			mo.GiveInventory("PB_KatanaChoicePickSith", 1);
-		else
-			mo.GiveInventory("PB_KatanaChoicePickJedi", 1);
-		PB_KatanaDualChoiceClose();
 	}
 
 	ui bool InitializeUiObjects()
@@ -7305,18 +6087,6 @@ class PB_PDAHandler : EventHandler
 		equipmentdialog.InitializeUiObject(BigFont);
 		equipmentdialog.ImagePos = (weapondialog.ImagePos.x, weapondialog.ImagePos.y + weapondialog.ImageSize.y);
 		uiObjects.Push(equipmentdialog);
-		let mainHubSlotBtn = new("PB_PDAUi_Object");
-		mainHubSlotBtn.objecttype = 16;
-		mainHubSlotBtn.MainHubBlockySlot = true;
-		mainHubSlotBtn.toDraw = "REWARD SPIN";
-		mainHubSlotBtn.InitializeUiObject(BigFont);
-		uiObjects.Push(mainHubSlotBtn);
-		let mainHubAchBtn = new("PB_PDAUi_Object");
-		mainHubAchBtn.objecttype = 17;
-		mainHubAchBtn.MainHubBlockyAchievements = true;
-		mainHubAchBtn.toDraw = "ACHIEVEMENTS";
-		mainHubAchBtn.InitializeUiObject(BigFont);
-		uiObjects.Push(mainHubAchBtn);
 		let mainHubExitBtn = new("PB_PDAUi_Object");
 		mainHubExitBtn.objecttype = 15;
 		mainHubExitBtn.toDraw = "EXIT";
@@ -7339,7 +6109,7 @@ class PB_PDAHandler : EventHandler
 	{
 		if (gamestate == GS_TITLELEVEL || gametic < PB_PDA_UI_INIT_MIN_GAMETIC) return false;
 		if (!e) return false;
-		if (!PDAMode && !KatanaDualChoiceMode) return false;
+		if (!PDAMode) return false;
 		int mouseinput = 0;
 		bool relevant = false;
 		if (e.Type == InputEvent.Type_Mouse)
