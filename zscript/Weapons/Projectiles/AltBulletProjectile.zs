@@ -163,6 +163,7 @@ class PB_ProjectileAlt : PB_Projectile abstract
 		-NOEXTREMEDEATH
 		-RIPPER
 		+NOGRAVITY
+		Gravity 1.0;
 		Renderstyle "Normal";
 		Scale 1.0;
 	}
