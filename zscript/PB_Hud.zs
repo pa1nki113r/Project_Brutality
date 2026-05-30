@@ -915,7 +915,7 @@ class PB_Hud_ZS : BaseStatusBar
                 if(drawNumbers) 
                     PBHud_DrawString(mDefaultFont, string.format(pbWeap.secondaryFormat, Secondary.Amount / pbWeap.secondaryDivisor), (-205, -68.75), DI_TEXT_ALIGN_RIGHT, pbWeap.magUnloaded ? Font.CR_DARKGRAY : fontTranslation);
             }
-			else {
+			else if(drawPrimary && Primary) {
                 PBHud_DrawImage(emptyBG, (-73, -49), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
 			}
 
@@ -1381,7 +1381,7 @@ class PB_Hud_ZS : BaseStatusBar
 					let reserveType = PB_Ammo(Primary);
 					int fontColor = font.FindFontColor(reserveType.fontTranslation);
 					weaponBarAccent = fontColor;
-					DrawAmmoBar(reserveType.lowerBG, reserveType.upperBG, reserveType.dualBG, reserveType.emptyBG, reserveType.currentBar, reserveType.ammoIcon, fontColor);
+					DrawAmmoBar(reserveType.lowerBG, reserveType.upperBG, reserveType.dualBG, reserveType.emptyBG, reserveType.currentBar, reserveType.ammoIcon, fontColor, true, pbWeap.showPrimary, pbWeap.showSecondary, pbWeap.showLeft);
                 }
 				else
 				{
