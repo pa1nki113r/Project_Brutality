@@ -29,6 +29,8 @@ class PB_ProjectileAlt : PB_Projectile abstract
 				count += count;
 			}
 		}
+		
+        vel.z -= GetGravity();
 
 		// Handle movement
 		bool ismoved = Vel != (0, 0, 0)
