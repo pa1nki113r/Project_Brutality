@@ -1,0 +1,448 @@
+class PB_LeanLeft : Inventory {}
+class PB_LeanRight : Inventory {}
+class PB_LeanToggle : Inventory {}
+
+class PB_WeaponTilterInventory : Inventory
+{
+	double currentRoll;
+	double loweringAmount;
+	double landingKick;
+	double reloadBlend;
+	double motionEnableBlend;
+	// Smoothed tactical lean angle (degrees). Tilt++ reads this and adds its offset; do not A_SetRoll here.
+	double leanRoll;
+	double previousVelZ;
+	bool previousOnFloor;
+	int tickCounter;
+	double appliedYOffset;
+	Name lastWeaponClass;
+	double neutralWeaponY;
+	bool hasNeutralWeaponY;
+	double smoothedWeaponRoll;
+	double prevStrafeDot;
+
+	double cvRollResistance;
+	double cvRollVelocity;
+	double cvRollCap;
+	double cvLoweringScale;
+	double cvLeanAngle;
+	double cvLeanSmoothing;
+	double cvTiltSmoothing;
+	bool cvEnabled;
+	bool cvEnableLean;
+	bool cvEnableReadyOnly;
+	bool cvEnableMoveOnly;
+	bool cvCapRoll;
+
+	static const Name NO_TACTICAL_WEAPONS[] =
+	{
+		'PB_Minigun',
+		'PB_MG42',
+		'PB_BFG9000',
+		'PB_Unmaker',
+		'MastermindChaingun'
+	};
+
+	static const Name SCOPED_TACTICAL_WEAPONS[] =
+	{
+		'PB_Railgun',
+		'PB_Carbine',
+		'PB_DMR',
+		'PB_ChexRifle'
+	};
+
+	private void ApplyWeaponTiltToAttachedOverlays(PlayerInfo pi, double roll)
+	{
+		if (!pi) { return; }
+		let o10 = pi.FindPSprite(10); if (o10) { o10.Rotation = roll; }
+		let o11 = pi.FindPSprite(11); if (o11) { o11.Rotation = roll; }
+		let o60 = pi.FindPSprite(60); if (o60) { o60.Rotation = roll; }
+		let o61 = pi.FindPSprite(61); if (o61) { o61.Rotation = roll; }
+		let o63 = pi.FindPSprite(63); if (o63) { o63.Rotation = roll; }
+		let o64 = pi.FindPSprite(64); if (o64) { o64.Rotation = roll; }
+	}
+
+	Default
+	{
+		Inventory.MaxAmount 1;
+	}
+
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		reloadBlend = 0.;
+		motionEnableBlend = 1.;
+		smoothedWeaponRoll = 0.;
+		prevStrafeDot = 0.;
+	}
+
+	private bool IsOnFloor()
+	{
+		if (!owner) { return false; }
+		let pp = PlayerPawn(owner);
+		if (pp && pp.player)
+		{
+			return pp.player.OnGround || owner.bONMOBJ || owner.bMBFBOUNCER
+				|| ((pp.player.Cheats & CF_NOCLIP2) != 0);
+		}
+		return owner.Pos.Z <= owner.FloorZ + 1.0;
+	}
+
+	private bool IsExcludedWeapon(Weapon weap)
+	{
+		if (!weap) { return true; }
+		Name cls = weap.GetClassName();
+		for (int i = 0; i < NO_TACTICAL_WEAPONS.Size(); i++)
+		{
+			if (cls == NO_TACTICAL_WEAPONS[i]) { return true; }
+		}
+		return false;
+	}
+
+	private bool IsReadyState(Weapon weap, PSprite psp)
+	{
+		State st;
+		if (!weap || !psp || !psp.CurState) { return false; }
+		st = weap.FindState("Ready");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("Hold");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("Ready3");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("ReadyLoop");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("ReadyAim");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("Ready_ADS");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("BDReady3");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("BDReadyADS");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+
+		return true;
+	}
+
+	private bool IsScopedWeapon(Weapon weap)
+	{
+		if (!weap) { return false; }
+		Name cls = weap.GetClassName();
+		for (int i = 0; i < SCOPED_TACTICAL_WEAPONS.Size(); i++)
+		{
+			if (cls == SCOPED_TACTICAL_WEAPONS[i]) { return true; }
+		}
+		return false;
+	}
+
+	private bool IsScopedNow(Actor plr, Weapon weap, PSprite psp)
+	{
+		if (!plr || !weap || !psp || !psp.CurState || !IsScopedWeapon(weap)) { return false; }
+
+		if (plr.CountInv("Zoomed") > 0 || plr.CountInv("ADSMode") > 0) { return true; }
+
+		State st = weap.FindState("ZoomIn");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("ZoomOut");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("Ready_ADS");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("BDReadyADS");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+
+		return false;
+	}
+
+	private bool ShouldBlockForSafety(Actor plr, Weapon weap, PSprite psp)
+	{
+		if (!plr || !weap || !psp || !plr.player) { return true; }
+		if (IsScopedNow(plr, weap, psp)) { return true; }
+		let ov10 = plr.player.GetPSprite(10);
+		let ov11 = plr.player.GetPSprite(11);
+		bool hasOverlayActions = (ov10 && ov10.CurState) || (ov11 && ov11.CurState);
+		if (hasOverlayActions && !IsReadyState(weap, psp)) { return true; }
+		if (plr.CountInv("Zoomed") > 0 || plr.CountInv("ADSMode") > 0) { return true; }
+		if (plr.CountInv("GoFatality") > 0 || plr.CountInv("ExecutionToken") > 0) { return true; }
+		if (plr.CountInv("Kicking") > 0 || plr.CountInv("UseEquipment") > 0 || plr.CountInv("ToggleEquipment") > 0) { return true; }
+		if (plr.CountInv("PlayerIsThrowingAGrenade") > 0) { return true; }
+		if (plr.CountInv("PB_LockScreenTilt") > 0) { return true; }
+		return false;
+	}
+
+	private bool IsFiringState(Weapon weap, PSprite psp)
+	{
+		State st;
+		if (!weap || !psp || !psp.CurState) { return false; }
+
+		st = weap.FindState("Fire");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("Fire_ADS");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("FireRight_Overlay");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("FireLeft_Overlay");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("FireGrenade");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("Scope_Fire");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+
+		return false;
+	}
+
+	private bool UsesExtraMoveLowering(Name weaponClass)
+	{
+		return weaponClass == 'PB_RocketLauncher';
+	}
+
+	private bool IsReloadState(Weapon weap, PSprite psp)
+	{
+		State st;
+		if (!weap || !psp || !psp.CurState) { return false; }
+		st = weap.FindState("Reload");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("Reload2");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("Reload3");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("ReloadLoop");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("Reloading");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("BDReload");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		st = weap.FindState("BDReloadADS");
+		if (st && weap.InStateSequence(psp.CurState, st)) { return true; }
+		return false;
+	}
+
+	private void ResetAppliedOffset(PSprite psp)
+	{
+		if (psp && appliedYOffset != 0)
+		{
+			double expectedY = hasNeutralWeaponY ? neutralWeaponY + appliedYOffset : psp.Y;
+			if (!hasNeutralWeaponY || abs(psp.Y - expectedY) <= 2.0)
+			{
+				psp.Y -= appliedYOffset;
+			}
+		}
+		appliedYOffset = 0;
+	}
+
+	private void RefreshCvars(PlayerInfo pi)
+	{
+		cvEnabled = CVar.GetCVar("pb_tac_enable", pi).GetBool();
+		cvRollResistance = CVar.GetCVar("pb_tac_roll_resistance", pi).GetFloat();
+		cvRollVelocity = CVar.GetCVar("pb_tac_roll_velocity", pi).GetFloat();
+		cvRollCap = CVar.GetCVar("pb_tac_roll_cap_value", pi).GetFloat();
+		cvLoweringScale = CVar.GetCVar("pb_tac_lowering_scale", pi).GetFloat();
+		cvEnableLean = CVar.GetCVar("pb_tac_lean_enable", pi).GetBool();
+		cvLeanAngle = CVar.GetCVar("pb_tac_lean_angle", pi).GetFloat();
+		cvLeanSmoothing = CVar.GetCVar("pb_tac_lean_smoothing", pi).GetFloat();
+		cvTiltSmoothing = clamp(CVar.GetCVar("pb_tac_tilt_smoothing", pi).GetFloat(), 0.5, 0.95);
+		cvEnableReadyOnly = CVar.GetCVar("pb_tac_ready_only", pi).GetBool();
+		cvEnableMoveOnly = CVar.GetCVar("pb_tac_move_only", pi).GetBool();
+		cvCapRoll = CVar.GetCVar("pb_tac_roll_cap", pi).GetBool();
+	}
+
+	override void DoEffect()
+	{
+		Super.DoEffect();
+		tickCounter++;
+
+		if (!owner || !owner.player || owner.player.health <= 0) { return; }
+
+		PlayerInfo pi = owner.player;
+		UserCmd cmd = pi.cmd;
+		Weapon weap = pi.ReadyWeapon;
+		let psp = pi.FindPSprite(PSP_WEAPON);
+		if (!weap || !psp) { return; }
+		Name weaponClass = weap.GetClassName();
+		if (weaponClass != lastWeaponClass)
+		{
+			ResetAppliedOffset(psp);
+			currentRoll = 0;
+			smoothedWeaponRoll = 0;
+			prevStrafeDot = 0;
+			loweringAmount = 0;
+			landingKick = 0;
+			reloadBlend = 0;
+			motionEnableBlend = 1.;
+			hasNeutralWeaponY = false;
+			lastWeaponClass = weaponClass;
+		}
+
+		if (tickCounter % 8 == 0) { RefreshCvars(pi); }
+		if (!cvEnabled)
+		{
+			ResetAppliedOffset(psp);
+			smoothedWeaponRoll = 0;
+			psp.Rotation = 0;
+			ApplyWeaponTiltToAttachedOverlays(pi, 0.);
+			leanRoll = 0;
+			return;
+		}
+
+		bool blocked = ShouldBlockForSafety(owner, weap, psp);
+		bool ready = IsReadyState(weap, psp);
+		bool moving = owner.Vel.XY.Length() > 0.75;
+		bool reloading = IsReloadState(weap, psp);
+		if (reloading)
+			reloadBlend += (1.0 - reloadBlend) * 0.18;
+		else
+			reloadBlend += (0.0 - reloadBlend) * 0.18;
+
+		bool excluded = IsExcludedWeapon(weap);
+		bool fireSuppressed = IsFiringState(weap, psp) && weaponClass == 'PB_Nailgun';
+
+		bool allowMotion = !blocked && !excluded;
+		if (cvEnableReadyOnly) { allowMotion = allowMotion && ready; }
+		if (cvEnableMoveOnly) { allowMotion = allowMotion && moving; }
+		if (fireSuppressed) { allowMotion = false; }
+		bool allowLowering = allowMotion;
+
+		if (allowMotion)
+			motionEnableBlend += (1.0 - motionEnableBlend) * 0.15;
+		else
+			motionEnableBlend += (0.0 - motionEnableBlend) * 0.15;
+
+		Vector2 strafeDir = (sin(-owner.angle), cos(-owner.angle));
+		double strafeDot = (owner.Vel.X * strafeDir.X) + (owner.Vel.Y * strafeDir.Y);
+		if (allowMotion)
+		{
+			if (prevStrafeDot * strafeDot < 0. && abs(strafeDot) > 0.02 && abs(prevStrafeDot) > 0.02)
+				currentRoll *= 0.55;
+			currentRoll += strafeDot * cvRollVelocity * motionEnableBlend;
+			currentRoll *= cvRollResistance;
+			if (cvCapRoll)
+			{
+				currentRoll = clamp(currentRoll, -cvRollCap, cvRollCap);
+			}
+		}
+		else
+		{
+			currentRoll *= 0.75;
+		}
+		prevStrafeDot = strafeDot;
+
+		double targetLower = 0;
+		if (allowLowering)
+		{
+			double speedXY = owner.Vel.XY.Length();
+			double sidewaysInput = abs(cmd.sidemove);
+			if (sidewaysInput < 64.0) sidewaysInput = 0.;
+			double baseLower = (abs(strafeDot) * 0.9) + (speedXY * 0.225) + (sidewaysInput * 0.015);
+			double lowerCap = 30.0;
+			if (UsesExtraMoveLowering(weaponClass))
+			{
+				baseLower *= 1.14;
+				baseLower += abs(currentRoll) * 0.11;
+				lowerCap = 38.0;
+			}
+			targetLower = min(lowerCap, baseLower) * cvLoweringScale;
+			targetLower = min(targetLower, 7.0);
+		}
+		loweringAmount += (targetLower - loweringAmount) * 0.20;
+
+		bool onFloor = IsOnFloor();
+		if (previousOnFloor == false && onFloor == true && previousVelZ < -1.0)
+		{
+			landingKick += min(12.0, abs(previousVelZ) * 0.5) * 1.5;
+		}
+		if (abs(landingKick) > 1.0)
+			landingKick *= 0.78;
+		else
+			landingKick *= 0.92;
+		previousOnFloor = onFloor;
+		previousVelZ = owner.Vel.Z;
+
+		double targetLean = 0;
+		if (cvEnableLean && !blocked && ready && !excluded)
+		{
+			bool toggleLean = owner.CountInv("PB_LeanToggle") > 0;
+			bool moveLeft = (cmd.buttons & BT_MOVELEFT) != 0;
+			bool moveRight = (cmd.buttons & BT_MOVERIGHT) != 0;
+			if (toggleLean)
+			{
+				if (moveLeft && !moveRight) { targetLean = -cvLeanAngle; }
+				else if (moveRight && !moveLeft) { targetLean = cvLeanAngle; }
+				else if (cmd.sidemove < 0) { targetLean = -cvLeanAngle; }
+				else if (cmd.sidemove > 0) { targetLean = cvLeanAngle; }
+			}
+			else
+			{
+				bool left = owner.CountInv("PB_LeanLeft") > 0;
+				bool right = owner.CountInv("PB_LeanRight") > 0;
+				if (left && !right) { targetLean = -cvLeanAngle; }
+				else if (right && !left) { targetLean = cvLeanAngle; }
+			}
+		}
+		leanRoll += (targetLean - leanRoll) * cvLeanSmoothing;
+
+		double tiltS = cvTiltSmoothing;
+		smoothedWeaponRoll = smoothedWeaponRoll * tiltS + currentRoll * (1.0 - tiltS);
+
+		psp.Rotation = smoothedWeaponRoll;
+		ApplyWeaponTiltToAttachedOverlays(pi, smoothedWeaponRoll);
+		if (hasNeutralWeaponY && appliedYOffset != 0)
+		{
+			double expectedY = neutralWeaponY + appliedYOffset;
+			if (abs(psp.Y - expectedY) > 2.0 && abs(psp.Y - neutralWeaponY) < abs(psp.Y - expectedY))
+			{
+				appliedYOffset = 0;
+			}
+		}
+		double baseY = psp.Y - appliedYOffset;
+		if (!hasNeutralWeaponY)
+		{
+			neutralWeaponY = baseY;
+			hasNeutralWeaponY = true;
+		}
+		if (ready && !blocked)
+		{
+			neutralWeaponY += (baseY - neutralWeaponY) * 0.12;
+		}
+		double extraLowerPixels = UsesExtraMoveLowering(weaponClass) ? 4.5 : 3.0;
+		double targetYOffset = - (loweringAmount + (landingKick * 0.45) + (0.8 * reloadBlend) + extraLowerPixels);
+		double yLowerCap = UsesExtraMoveLowering(weaponClass) ? -30.0 : -22.0;
+		targetYOffset = clamp(targetYOffset, yLowerCap, 0.0);
+		double newYOffset = appliedYOffset + (targetYOffset - appliedYOffset) * 0.20;
+		double finalY = baseY + newYOffset;
+		double maxRaisePixels = 1.0;
+		if (finalY < neutralWeaponY - maxRaisePixels)
+		{
+			finalY = neutralWeaponY - maxRaisePixels;
+		}
+		psp.Y = finalY;
+		appliedYOffset = finalY - baseY;
+	}
+}
+
+class PB_TacticalFeelHandler : EventHandler
+{
+	override void PlayerEntered(PlayerEvent e)
+	{
+		if (!e) return;
+		if (e.PlayerNumber < 0 || e.PlayerNumber >= MAXPLAYERS) return;
+		if (!playeringame[e.PlayerNumber]) return;
+		if (players[e.PlayerNumber].mo)
+		{
+			players[e.PlayerNumber].mo.GiveInventory("PB_WeaponTilterInventory", 1);
+		}
+	}
+
+	override void NetworkProcess(ConsoleEvent e)
+	{
+		if (!e) return;
+		if (e.Player < 0 || e.Player >= MAXPLAYERS || !playeringame[e.Player] || !players[e.Player].mo) { return; }
+		let mo = players[e.Player].mo;
+		if (e.Name ~== "pb_lean_toggle")
+		{
+			if (mo.CountInv("PB_LeanToggle") > 0) { mo.TakeInventory("PB_LeanToggle", 1); }
+			else { mo.GiveInventory("PB_LeanToggle", 1); }
+		}
+		else if (e.Name ~== "pb_lean_left") { mo.GiveInventory("PB_LeanLeft", 1); }
+		else if (e.Name ~== "pb_unlean_left") { mo.TakeInventory("PB_LeanLeft", 1); }
+		else if (e.Name ~== "pb_lean_right") { mo.GiveInventory("PB_LeanRight", 1); }
+		else if (e.Name ~== "pb_unlean_right") { mo.TakeInventory("PB_LeanRight", 1); }
+	}
+}

@@ -40,7 +40,12 @@ class TiltPlusPlusHandler : EventHandler
 {
 	override void PlayerEntered(PlayerEvent e)
 	{
-		players[e.PlayerNumber].mo.A_GiveInventory("Z_TiltMe", 1);
+		if (!e) return;
+		int pn = e.PlayerNumber;
+		if (pn < 0 || pn >= MAXPLAYERS || !playeringame[pn]) return;
+		let pmo = players[pn].mo;
+		if (!pmo) return;
+		pmo.A_GiveInventory("Z_TiltMe", 1);
 	}
 }
 
@@ -59,46 +64,48 @@ class Z_TiltMe : CustomInventory
 	double deathTiltOsc;
 	double deathTiltAngle;
 	double lastRoll;
+	double dashRollMul;
 
-	//===========================================================================
-	//
-	//
-	//
-	//===========================================================================
+	override void BeginPlay()
+	{
+		Super.BeginPlay();
+		dashRollMul = 1.;
+	}
 
 	bool bIsOnFloor (void)
 	{
-		return (Owner.Pos.Z == Owner.FloorZ) || (Owner.bOnMObj);
+		if (!Owner) return false;
+		let pp = PlayerPawn(Owner);
+		if (pp && pp.player)
+			return pp.player.OnGround || Owner.bOnMObj;
+		return (Owner.Pos.Z <= Owner.FloorZ + 0.5) || Owner.bOnMObj;
 	}
 
 	bool bIsCrouching (void)
 	{
-		return Owner.GetCameraHeight() <= (Owner.player.mo.ViewHeight / 2);
+		return Owner && Owner.player && Owner.player.mo
+			&& Owner.GetCameraHeight() <= (Owner.player.mo.ViewHeight / 2);
 	}
 
 	double GetVelocity (void)
 	{
-		return Owner.Vel.Length();
+		return Owner ? Owner.Vel.Length() : 0.;
 	}
 
 	int GetWaterLevel (void)
 	{
-		return Owner.WaterLevel;
+		return Owner ? Owner.WaterLevel : 0;
 	}
 
 	bool bIsPlayerAlive (void)
 	{
-		return Owner.Health > 0;
+		return Owner && Owner.Health > 0;
 	}
 
-	//===========================================================================
-	//
-	//
-	//
-	//===========================================================================
 	void Tilt_CalcViewRoll (void)
 	{
-		// CVARS ///////////////////////////////////////////////////////////////
+		if (!Owner || !Owner.player)
+			return;
 		bool strafeTiltEnabled = sv_strafetilt;
 		bool moveTiltEnabled = sv_movetilt;
 		bool turnTiltEnabled = sv_turntilt;
@@ -120,122 +127,80 @@ class Z_TiltMe : CustomInventory
 		double underwaterTiltAngle = sv_underwatertiltangle;
 		double underwaterTiltScalar = sv_underwatertiltscalar;
 
-		// Shared variables we'll need later
-		double r, v;
-
-		//===========================================================================
-		//
-		// Strafe Tilting
-		//
-		//===========================================================================
-
-		// normalized strafe input
+		double targetStrafe = 0.;
 		if (strafeTiltEnabled && bIsOnFloor() && bIsPlayerAlive())
 		{
 			int dir;
 			if (strafeTiltReversed) dir = -1;
 			else dir = 1;
-			strafeInput = strafeTiltSpeed * (Owner.GetPlayerInput(MODINPUT_SIDEMOVE) / 10240.0);
-			strafeInput *= strafeTiltAngle;
-			strafeInput *= dir;
+			targetStrafe = strafeTiltSpeed * (Owner.GetPlayerInput(MODINPUT_SIDEMOVE) / 10240.0);
+			targetStrafe *= strafeTiltAngle;
+			targetStrafe *= dir;
 		}
+		strafeInput += (targetStrafe - strafeInput) * 0.22;
 
-		// tilt!
-		if (Owner.CheckInventory("PlayerDashed",1)) {
-			lastRoll += (5*strafeInput);
-		}
-		else {
-			lastRoll += strafeInput;
-		}
+		if (Owner.CheckInventory("PlayerDashed", 1))
+			dashRollMul += (5.0 - dashRollMul) * 0.20;
+		else
+			dashRollMul += (1.0 - dashRollMul) * 0.20;
 
-		//===========================================================================
-		//
-		// Movement Tilting
-		//
-		//===========================================================================
+		lastRoll += dashRollMul * strafeInput;
 
+		double rollMove = 0.;
 		if (moveTiltEnabled && bIsOnFloor() && bIsPlayerAlive())
 		{
-			// get player's velocity
-			v = GetVelocity() * moveTiltScalar;
+			double v = GetVelocity() * moveTiltScalar;
 
-			// increment angle
 			moveTiltOsc += moveTiltSpeed;
 
-			// clamp angle
 			if (moveTiltOsc >= 360. || moveTiltOsc < 0.)
 			{
 				moveTiltOsc = 0.;
 			}
 
-			// calculate roll
-			r = Sin(moveTiltOsc);
-			r *= moveTiltAngle;
-			r *= v;
+			rollMove = Sin(moveTiltOsc);
+			rollMove *= moveTiltAngle;
+			rollMove *= v;
 		}
 
-		// tilt!
-		lastRoll += r;
+		lastRoll += rollMove;
 
-		//===========================================================================
-		//
-		// Turn Tilting
-		//
-		//===========================================================================
-
-		if (turnTiltEnabled && bIsPlayerAlive())
+		double rollTurn = 0.;
+		if (turnTiltEnabled && bIsPlayerAlive() && !Owner.CheckInventory("PlayerWheelOpen", 1))
 		{
-			// get player look input
 			double xinput = PlayerPawn(Owner).GetPlayerInput(MODINPUT_YAW) * (turnTiltReversed ? -1 : 1);
 			xinput = turnTiltScalar * xinput / 32767.0;
-			r = xinput;
+			rollTurn = xinput;
 		}
 
-		// tilt!
-		lastRoll += r;
+		lastRoll += rollTurn;
 
-		//===========================================================================
-		//
-		// Underwater Tilting
-		//
-		//===========================================================================
-
+		double rollUnderwater = 0.;
 		if (GetWaterLevel() >= 3 && underwaterTiltEnabled)
 		{
-			// fixed rate of 15
-			v = 15. * underwaterTiltScalar;
+			double v = 15. * underwaterTiltScalar;
 
-			// increment angle
 			underwaterTiltOsc += underwaterTiltSpeed;
 
-			// clamp angle
 			if (underwaterTiltOsc >= 360. || underwaterTiltOsc < 0.)
 			{
 				underwaterTiltOsc = 0.;
 			}
 
-			// calculate roll
-			r = Sin(underwaterTiltOsc);
-			r *= underwaterTiltAngle;
-			r *= v;
+			rollUnderwater = Sin(underwaterTiltOsc);
+			rollUnderwater *= underwaterTiltAngle;
+			rollUnderwater *= v;
 		}
 
-		// tilt!
-		lastRoll += r;
+		lastRoll += rollUnderwater;
 
-		//===========================================================================
-		//
-		// Death Tilting
-		//
-		//===========================================================================
-
+		double rollDeath = 0.;
 		if (!bIsPlayerAlive() && deathTiltEnabled)
 		{
 			double deathTiltSpeed = 1.0;
 
 			if (deathTiltAngle == 0)
 			{
-				// vary the angle a little
 				deathTiltAngle = -90.f;
 				deathTiltAngle += FRandom(-45.f, 45.f);
 				deathTiltAngle *= RandomPick(-1, 1);
@@ -246,38 +211,30 @@ class Z_TiltMe : CustomInventory
 				deathTiltOsc += deathTiltSpeed;
 			}
 
-			r = Sin(deathTiltOsc);
-			r *= deathTiltAngle;
+			rollDeath = Sin(deathTiltOsc);
+			rollDeath *= deathTiltAngle;
 		}
-		else
-	//	{
-	//		deathTiltOsc = 0;
-	//		deathTiltAngle = 0;
-		//}
 
-		// tilt!
-		lastRoll += r;
-
-		//===========================================================================
-		//
-		// Tilt Post Processing
-		//
-		//===========================================================================
+		lastRoll += rollDeath;
 
 		if (abs(lastRoll) > 0.000001)
 		{
-			// Stabilize tilt
 			lastRoll *= 0.75;
 		}
 
-		// Apply the sum of all rolling routines
-		// (including after stabilization)
-		if(!(owner.FindInventory("PlayerWheelOpen") && CVar.GetCVar("gb_time_freeze",owner.player).GetInt() == 1)) Owner.A_SetRoll((Owner.Roll + lastRoll) * 0.5, SPF_INTERPOLATE);
+		double leanBase = 0.;
+		let tacInv = Owner.FindInventory("PB_WeaponTilterInventory");
+		if (tacInv)
+		{
+			let tac = PB_WeaponTilterInventory(tacInv);
+			if (tac) leanBase = tac.leanRoll;
+		}
+		Owner.A_SetRoll(leanBase + lastRoll, SPF_INTERPOLATE);
 	}
 
 	override void Tick(void)
 	{
-		if (Owner && Owner is "PlayerPawn") //&& !Owner.CheckInventory("PB_LockScreenTilt",1)) always do viewroll stuff
+		if (Owner && Owner is "PlayerPawn")
 		{
 			Tilt_CalcViewRoll();
 		}
@@ -285,11 +242,6 @@ class Z_TiltMe : CustomInventory
 		Super.Tick();
 	}
 
-	//===========================================================================
-	//
-	//
-	//
-	//===========================================================================
 	States
 	{
 	Use:
