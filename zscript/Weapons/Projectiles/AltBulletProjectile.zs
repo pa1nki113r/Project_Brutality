@@ -88,6 +88,7 @@ class PB_ProjectileAlt : PB_Projectile abstract
 						if(BounceWall())
 							return;
 						ExplodeMissile (BlockingLine, BlockingMobj);
+						OnExplode(FindExplosionType(BlockingMobj));
 						return;
 					}
 				}
@@ -114,6 +115,7 @@ class PB_ProjectileAlt : PB_Projectile abstract
 					HitFloor ();
                     Destructible.ProjectileHitPlane(self, SECPART_Floor);
 					ExplodeMissile (NULL, NULL);
+					OnExplode(EType_Geometry);
 					return;
 				}
 				if (pos.Z + height > ceilingz)
@@ -133,6 +135,7 @@ class PB_ProjectileAlt : PB_Projectile abstract
 					}
                     Destructible.ProjectileHitPlane(self, SECPART_Ceiling);
 					ExplodeMissile (NULL, NULL);
+					OnExplode(EType_Geometry);
 					return;
 				}
 				CheckPortalTransition();
