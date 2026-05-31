@@ -28,6 +28,14 @@ Class LeftSSGAmmo : PB_WeaponAmmo
 	}
 }
 
+class DualWieldingSSG : Inventory
+{
+	Default
+	{
+		Inventory.MaxAmount 1;
+	}
+}
+
 // The Actual Weapon
 class PB_SSG : PB_Weapon
 {
@@ -295,49 +303,6 @@ class PB_SSG : PB_Weapon
         }
     }
 
-    action state SSG_CheckAkimbo(bool switchtoDual)
-    {
-        if(!switchtoDual)
-        {
-            A_SetInventory("GoWeaponSpecialAbility",0);
-            A_SetInventory("PB_LockScreenTilt",1);
-            PB_ClearDualWield();
-            PB_HandleCrosshair(40);
-
-            if(invoker.amount >= 2) return ResolveState("SwitchToDualWield");
-
-            A_Print("$PB_SSG_NOAKIMBO");
-        }
-        else
-        {
-            A_PlaySoundEx("Ironsights", "Auto");
-            if (A_CheckAkimbo()) {
-                A_SetAkimbo(False);
-                return ResolveState("SwitchFromDualWield");
-            }
-            else {
-                A_SetAkimbo(True);
-                return ResolveState(null);
-            }
-        }
-        return ResolveState(null);
-    }
-
-    action state SSG_Ready()
-    {
-        if(A_CheckAkimbo())
-            return ResolveState("ReadyDualWield");
-
-        PB_ClearDualWield();
-        A_SetInventory("PB_LockScreenTilt",0);
-        PB_HandleCrosshair(40);
-        PB_SetRoll(0);
-
-        if(A_CheckAkimbo())
-            return ResolveState("ReadyToFireDualWield");
-        return ResolveState(null);
-    }
-
 //////////////////////////// STATES ////////////////////////////////////////////////////////////////////////////////////
     States
     {
@@ -406,31 +371,87 @@ class PB_SSG : PB_Weapon
 			    return PB_RespectIfNeeded();
             }
         SelectAnimation:
+		    TNT1 A 0 A_JumpIfInventory("DualWieldingSSG", 1, "SelectAnimationDualWield");
 		    TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "SelectAnimationDualWield");
 		    SG1S DCBA 1;
         // Fallthrough to ready
 //////////////////////////// READY ////////////////////////////////////////////////////////////////////////////////////
         Ready3:
-		    TNT1 A 0 SSG_Ready();
-	    ReadyToFire:	
-            TNT1 A 0 PB_SelectIfUpgrade("PB_QuadSG"); //A_SelectWeapon("PB_QuadSG")
+            TNT1 A 0 A_JumpIfInventory("DualWieldingSSG", 1, "ReadyDualWield");
+            TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReadyDualWield");
+            TNT1 A 0 {
+                A_ClearOverlays(10, 11);
+                A_SetInventory("PB_LockScreenTilt", 0);
+                PB_HandleCrosshair(40);
+                PB_SetRoll(0);
+            }
+            TNT1 A 0 A_JumpIfInventory("DualWieldingSSG", 1, "ReadyToFireDualWield");
+            TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReadyToFireDualWield");
+        ReadyToFire:
+            TNT1 A 0 PB_SelectIfUpgrade("PB_QuadSG");
             SHT3 A 1 {
                 PB_CoolDownBarrel(2, 0, 3);
                 PB_CoolDownBarrel(-2, 0, 3);
-                if (PressingFire() && invoker.AmmoLeft.amount > 0 ){
-                        return ResolveState("Fire");
+                if (PressingFire() && CountInv("SSGAmmoCounter") > 0) {
+                    return ResolveState("Fire");
                 }
                 return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
             }
             Loop;
 
         ReadyDualWield:
-            TNT1 A 0 PB_SelectIfUpgrade("PB_QuadSG"); //A_SelectWeapon("PB_QuadSG")
-            TNT1 A 0 PB_SetupDualWield(crosshair:40);
+            TNT1 A 0 PB_SelectIfUpgrade("PB_QuadSG");
+            TNT1 A 0 {
+                PB_SetRoll(0);
+                PB_HandleCrosshair(40);
+                A_SetInventory("PB_LockScreenTilt", 0);
+                A_SetFiringRightWeapon(False);
+                A_SetFiringLeftWeapon(False);
+                A_TakeInventory("DualFiring", 1);
+                if (CountInv("LeftSSGAmmo") < CountInv("SSGAmmoCounter")) {
+                    A_GiveInventory("DualFiring", 1);
+                }
+                A_Overlay(10, "IdleLeft_Overlay", false);
+                A_Overlay(11, "IdleRight_Overlay", false);
+            }
+        DualFireCheck:
+            TNT1 A 0 {
+                if (CountInv("PB_Shell") > 0) {
+                    if (CountInv("LeftSSGAmmo") <= 0 || CountInv("SSGAmmoCounter") <= 0) {
+                        if (CountInv("LeftSSGAmmo") <= 0 && CountInv("SSGAmmoCounter") <= 0) {
+                            A_SetInventory("DualFireReload", 2);
+                        }
+                        else {
+                            A_SetInventory("DualFireReload", 1);
+                        }
+                    }
+                }
+
+                if (!PB_CanDualWield()) {
+                    A_ClearOverlays(10, 11);
+                    A_SetAkimbo(false);
+                    return ResolveState("StopDualWield");
+                }
+
+                if ((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon()
+                    || ((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon())) {
+                    return ResolveState("FireDualBlank");
+                }
+                return A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOFIRE);
+            }
         ReadyToFireDualWield:
             TNT1 A 0 PB_SelectIfUpgrade("PB_QuadSG");
-            TNT1 A 1 A_DoPBDualAction();
-            Loop;
+            TNT1 A 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD | WRF_NOFIRE);
+            Goto DualFireCheck;
+
+        FireDualBlank:
+            TNT1 A 0 A_JumpIfInventory("DualFireReload", 2, "AltFireDualBlank");
+            TNT1 A 12 A_DoPBWeaponAction(WRF_NOSWITCH | WRF_NOFIRE);
+            Goto DualFireCheck;
+
+        AltFireDualBlank:
+            TNT1 A 0;
+            Goto ReloadDualWield;
 
         IdleLeft_Overlay:
             P6SS H 1 {
@@ -449,11 +470,8 @@ class PB_SSG : PB_Weapon
             Loop;
 
         StopDualWield:
-            TNT1 A 0 {
-                PB_ClearDualWield();
-                A_SetAkimbo(false);
-            }
-            Goto Ready3;
+            TNT1 A 0 A_TakeInventory("DualWieldingSSG", 1);
+            Goto SwitchFromDualWield;
 
 //////////////////////////// FIRE ////////////////////////////////////////////////////////////////////////////////////
         FireLeft_Overlay:
@@ -515,20 +533,39 @@ class PB_SSG : PB_Weapon
 
 //////////////////////////// WEAPON SPECIAL ////////////////////////////////////////////////////////////////////////////////////
         WeaponSpecial:
-            TNT1 A 0 SSG_CheckAkimbo(switchtoDual:false);
+            TNT1 A 0 {
+                A_TakeInventory("GoWeaponSpecialAbility", 1);
+                A_SetInventory("PB_LockScreenTilt", 1);
+                A_ClearOverlays(10, 11);
+                PB_HandleCrosshair(40);
+            }
+            TNT1 A 0 A_JumpIfInventory("PB_SSG", 2, "SwitchToDualWield");
+            TNT1 A 0 A_Print("$PB_SSG_NOAKIMBO");
             Goto Ready3;
-            
+
         SwitchToDualWield:
-            TNT1 A 0 SSG_CheckAkimbo(switchtoDual:true);
+            TNT1 A 0 {
+                A_PlaySoundEx("Ironsights", "Auto");
+                if (A_CheckAkimbo()) {
+                    A_SetAkimbo(false);
+                    A_TakeInventory("DualWieldingSSG", 1);
+                    return ResolveState("SwitchFromDualWield");
+                }
+                else {
+                    A_SetAkimbo(true);
+                    A_GiveInventory("DualWieldingSSG", 1);
+                    return ResolveState(null);
+                }
+            }
             SG3S ABCD 1;
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
             SG3S EFGHIJ 1;
             Goto ReadyDualWield;
-        
+
         SwitchFromDualWield:
             SG3S JIHGFE 1;
             TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
-            SG3S DCBA 1 ;
+            SG3S DCBA 1;
             Goto Ready3;
 
 //////////////////////////// RELOAD ////////////////////////////////////////////////////////////////////////////////////
