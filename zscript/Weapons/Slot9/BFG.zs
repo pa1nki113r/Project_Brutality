@@ -839,7 +839,7 @@ class BFG_BeamProjectile : MageWandMissile
         +BLOODLESSIMPACT;
         +FORCERADIUSDMG
         -BLOODSPLATTER;
-        +DontHurtSpecies;
+        +DontHarmSpecies;
         Species "Marine";
     }
 
@@ -878,7 +878,7 @@ class BFGBeamPuff : actor
         +BLOODLESSIMPACT;
         +FORCERADIUSDMG;
         -BLOODSPLATTER;
-        +DontHurtSpecies;
+        +DontHarmSpecies;
         +SQUAREPIXELS;
         +FORCEXYBILLBOARD;
         Species "Marine";
@@ -1117,7 +1117,7 @@ class BFGDeathParticle : Actor
         +MISSILE;
         +NOBLOCKMAP;
         -NOGRAVITY;
-        +LOWGRAVITY;
+        Gravity 0.125;
         +DONTSPLASH;
         // +DOOMBOUNCETYPE;
         +SQUAREPIXELS;
@@ -1439,7 +1439,7 @@ class SuperBFGExtra : BFGExtra replaces BFGExtra
         Species "Marines";
         +THRUSPECIES;
         +MTHRUSPECIES;
-        +DONTHURTSPECIES;
+        +DontHarmSpecies;
         +SQUAREPIXELS;
         +FORCEXYBILLBOARD;
     }
@@ -1668,7 +1668,7 @@ class BFGSmallSphere : Actor
         Species "Marines";
         +THRUSPECIES;
         +MTHRUSPECIES;
-        +DONTHURTSPECIES;
+        +DontHarmSpecies;
     }
     States
     {
@@ -1736,7 +1736,7 @@ class BFGAltShockWave : GreenShockWave
         Species "Marines";
         +THRUSPECIES;
         +MTHRUSPECIES;
-        +DONTHURTSPECIES;
+        +DontHarmSpecies;
         DamageType "Disintegrate";
     }
     States
@@ -1782,7 +1782,7 @@ class BFGAltExplosion : Actor
         Species "Marines";
         +THRUSPECIES;
         +MTHRUSPECIES;
-        +DONTHURTSPECIES;
+        +DontHarmSpecies;
         DamageType "ExplosiveImpact";
     }
     States
