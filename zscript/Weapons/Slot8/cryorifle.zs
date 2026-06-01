@@ -498,7 +498,6 @@ class PB_CryoRifle : PB_Weapon
                 A_SetInventory("PB_LockScreenTilt",0);
                 PB_WeapTokenSwitch("CryoRifleSelected");
                 PB_HandleCrosshair(79);
-                PB_SelectIfUpgrade("PB_QuadSG");
                 PB_WeaponRaise("weapons/CryoRifle/respect1");
 			    return PB_RespectIfNeeded();
             }
