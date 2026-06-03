@@ -39,10 +39,10 @@ class PB_ProjectileAlt : PB_Projectile abstract
 			|| (   (pos.Z != floorz           ) /* Did it hit the floor?   */
 				&& (pos.Z != ceilingz - Height) /* Did it hit the ceiling? */ );
 
-		if (ismoved)
+		if (ismoved && bMISSILE)
 		{
 			// force some lateral movement so that collision detection works as intended.
-			if (bMissile && Vel.X == 0 && Vel.Y == 0 && !IsZeroDamage())
+			if (Vel.X == 0 && Vel.Y == 0 && !IsZeroDamage())
 			{
 				VelFromAngle(MinVel);
 			}
