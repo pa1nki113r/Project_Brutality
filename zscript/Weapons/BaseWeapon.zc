@@ -195,9 +195,34 @@ class PB_WeaponBase : DoomWeapon
 	Ammo AmmoLeft;
 	Property AmmoTypeLeft: AmmoTypeLeft;
 	
-	Const PSP_RevenantLauncherLayer = -85;
-
-
+	enum PB_VisorBlood {
+		REDBLOODVISOR,
+		GREENBLOODVISOR,
+		BLUEBLOODVISOR,
+		ERRORBLOODVISOR
+	}
+	
+	enum PB_OverlayLayers {
+		PSP_LEDGEGRAB					= 1000,
+		PSP_LEFTGUN						= 10,
+		PSP_RIGHTGUN					= 11,
+		FLASH_LAYER						= -3,
+		LEFT_FLASH_LAYER				= -4,
+		RIGHT_FLASH_LAYER				= -5,
+		PSP_REVENANTLAUNCHERLAYER		= -85,
+		PSP_MELEEEQHANDLER				= -777,
+		PSP_KICKHANDLER					= -778,
+		PSP_EQTOGGLEHANDLER				= -779,
+		PSP_QUICKMELEEBLOOD				= -997,
+		PSP_QUICKMELEE					= -998,
+		PSP_FIRSPERSONLEGS				= -1000
+	}
+	
+	enum PB_WeaponReadyFlags {
+		PB_NOWEAPONSPECIAL				= 1 << 0,
+		PB_NOUNLOAD						= 1 << 1
+	}
+	
 	Default
 	{
 		Weapon.BobRangeX 0.3;
@@ -216,9 +241,11 @@ class PB_WeaponBase : DoomWeapon
 		PB_WeaponBase.HUDFormatLeft true, "%u", 1;
 		//Weapon.WeaponScaleX 1.2;
 		+DONTGIB
+		+FLOORCLIP
 		+WEAPON.NOALERT
-		+WEAPON.AMMO_OPTIONAL
+		+WEAPON.NOAUTOAIM
 		+WEAPON.NOAUTOFIRE
+		+WEAPON.AMMO_OPTIONAL
 	}
 	
 	States
@@ -802,23 +829,6 @@ class PB_WeaponBase : DoomWeapon
 
 class PB_Weapon : PB_WeaponBase {} //This is just a dummy class for inheriting reasons
 
-class PB_DualWeapon : PB_Weapon
-{
-	States
-	{
-	 ThrowMine:
-	 ThrowGrenade:
-		TNT1 A 0 {
-			A_ZoomFactor(1.0);
-			A_TakeInventory("ADSMode", 1);
-			A_TakeInventory("DoGrenade", 1);
-			A_TakeInventory("DoMine", 1);
-			A_Print("You can't throw right now!");
-		}
-		Goto GoingToReady;
-	}
-}
-
 class PB_UpgradeItem : CustomInventory
 {
 	Default
@@ -849,5 +859,11 @@ Class PB_WeaponAmmo : Ammo{
 		class<Object> type = GetClass();
 		while(type.GetParentClass()!= "PB_WeaponAmmo"&&type.GetParentClass()!=null) type = type.GetParentClass();
 		return(class<Ammo>)(type);
+	}
+}
+
+class PB_Token : Inventory abstract {
+	Default {
+		Inventory.MaxAmount 1;
 	}
 }
