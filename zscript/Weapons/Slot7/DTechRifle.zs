@@ -1,19 +1,13 @@
-// Constants
-const PB_DTechFullAmmo = 60;
-
 // Tokens
 class HasIncendiaryWeapon : Inventory {Default{Inventory.MaxAmount 1;}}
 
 // Ammo Class
-Class HellAmmo : PB_WeaponAmmo
+Class PB_DTechRifleMag : PB_WeaponAmmo
 {
 	default
 	{
-		Inventory.Amount 0;
-		Inventory.MaxAmount PB_DTechFullAmmo;
-		Ammo.BackpackAmount 0;
-		Ammo.BackpackMaxAmount PB_DTechFullAmmo;
-		+INVENTORY.IGNORESKILL;
+		Inventory.MaxAmount PB_DTechRifle.MAGAZINE_SIZE;
+		Ammo.BackpackMaxAmount PB_DTechRifle.MAGAZINE_SIZE;
 		Inventory.Icon "HRPUA0";
 	}
 }
@@ -26,7 +20,7 @@ class PB_DTechRifle : PB_WeaponBase
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
         Weapon.SelectionOrder 400;
         Weapon.AmmoType1 "PB_DTech";
-        Weapon.AmmoType2 "HellAmmo";
+        Weapon.AmmoType2 "PB_DTechRifleMag";
         Weapon.AmmoGive1 20;
         PB_WeaponBase.OffsetRecoilX 3.5;
         PB_WeaponBase.OffsetRecoilY 0;
@@ -38,11 +32,6 @@ class PB_DTechRifle : PB_WeaponBase
         Obituary "%o was set ablaze by %k's hellish rifle.";
         Tag "$PB_DTECH_NAME";
         Inventory.PickupMessage "$PB_DTECH_PICKUP";
-//////////////////////////// WEAPON FLAGS ////////////////////////////////////////////////////////////////////////////////////
-        +WEAPON.NOAUTOAIM;
-        +WEAPON.NOAUTOFIRE;
-        +FLOORCLIP;
-        +DONTGIB;
     }
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
     // Weapon Modes
@@ -55,6 +44,7 @@ class PB_DTechRifle : PB_WeaponBase
     const TAKE_ALT_INFERNO   = 20;
     const TAKE_ALT_CAUSTIC   = 5;  // Note that for the bigger ball to shoot it needs to be 3 times this value
     const MUZZLEFLASH        = -4;
+	const MAGAZINE_SIZE = 60;
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
     
     // Select Animation
@@ -101,11 +91,8 @@ class PB_DTechRifle : PB_WeaponBase
                 A_AlertMonsters();
                 A_ZoomFactor(0.99);
 
-                if(caustic) A_Overlay(MUZZLEFLASH, "CausticFlash", true);
-                else A_Overlay(MUZZLEFLASH, "InfernoFlash", true);
-
-                A_OverlayFlags(MUZZLEFLASH, PSPF_RENDERSTYLE, true);
-                A_OverlayRenderStyle(MUZZLEFLASH, STYLE_Add);
+                if(caustic) A_FlashOverlay(state:"CausticFlash");
+                else A_Overlay(FLASH_LAYER, "MuzzleFlash");
 
                 PB_WeaponRecoil(recoilX, recoilY);
                 break;
@@ -146,9 +133,7 @@ class PB_DTechRifle : PB_WeaponBase
         PB_GunSmoke(0, 0, 0);
         PB_MuzzleFlashEffects(0, 0, 0, "FF0000");
         setCausticCharge(0);
-        A_Overlay(MUZZLEFLASH, "CausticFlash", true);
-        A_OverlayFlags(MUZZLEFLASH, PSPF_RENDERSTYLE, true);
-        A_OverlayRenderStyle(MUZZLEFLASH, STYLE_Add);
+        A_FlashOverlay(state:"CausticFlash");
     }
 
     action void DTech_ChargeLevel()
@@ -412,7 +397,7 @@ class PB_DTechRifle : PB_WeaponBase
 			TNT1 A 0 A_FireCustomMissile("RedFlareSpawn",0,0,0,0);
 			TNT1 A 0 A_FireCustomMissile("PossessionGhost");
 			TNT1 A 0 A_AlertMonsters();
-			TNT1 A 0 A_Overlay(MUZZLEFLASH, "InfernoFlash", true);
+			TNT1 A 0 A_Overlay(FLASH_LAYER, "MuzzleFLash");
 			D3T0 AB 1 BRIGHT;
 			D3T0 CD 1;
 			TNT1 A 0 PB_TakeAmmo(invoker.ammo2.getClassName(), TAKE_ALT_INFERNO, 0);
@@ -492,7 +477,7 @@ class PB_DTechRifle : PB_WeaponBase
 			D6T4 A 0;
 			D6T5 A 0;
             // Actual Reload
-			TNT1 A 0 PB_CheckReload("ReloadUnloaded",null,null,"Ready3","Ready3",PB_DTechFullAmmo);
+			TNT1 A 0 PB_CheckReload("ReloadUnloaded",null,null,"Ready3","Ready3",MAGAZINE_SIZE);
 			TNT1 A 0 A_PlaySoundEx("Ironsights", "Auto");
 			D4T0 ABCDEFGHIJK 1 {if(getCausticMode()) {A_SetWeaponSprite("D6T0");}}
 			TNT1 A 0 A_PlaySoundEx("weapons/riflemagslap", "Auto");
@@ -517,7 +502,7 @@ class PB_DTechRifle : PB_WeaponBase
 			D4T1 JKLM 1 {if(getCausticMode()) {A_SetWeaponSprite("D6T1");}}
 			D4T1 N 1 {
 				A_PlaySoundEx("weapons/demontech/respect4", "Auto");
-				PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(), PB_DTechFullAmmo);
+				PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(), MAGAZINE_SIZE);
 				PB_SetMagEmpty(false);
 			}
 			TNT1 A 0 {
@@ -560,7 +545,7 @@ class PB_DTechRifle : PB_WeaponBase
         // No idea why this wepona doesnt have an unload
 
 //////////////////////////// FLASH STATES ////////////////////////////////////////////////////////////////////////////////////
-        InfernoFlash:
+        MuzzleFlash:
 			TNT1 A 0 A_Jump(256, "FMuzzle1", "FMuzzle2", "FMuzzle3");
 		FMuzzle1:
 			D3T2 AB 1 BRIGHT A_GunFlash();
@@ -664,19 +649,16 @@ class PB_DTechRifle : PB_WeaponBase
 }
 
 //////////////////////////// PROJECTILES/OTHERS ////////////////////////////////////////////////////////////////////////////////////
-class Hellbullet : fastprojectile // PB_ProjectileAlt //fastprojectile
+class Hellbullet : PB_ProjectileAlt
 {
     Default
     {
-        // PB_Projectile.BaseDamage 12;
-        // +PB_PROJECTILE.NOCRITICALS;
-        // -RIPPER;
-        // Gravity 0;
-        damage 12;
-        +FORCEXYBILLBOARD;
-        +SQUAREPIXELS;
-        +BLOODSPLATTER ;
-        +NOEXTREMEDEATH;
+        PB_Projectile.BaseDamage 54;
+        +PB_PROJECTILE.NOCRITICALS
+        +FORCEXYBILLBOARD
+        +SQUAREPIXELS
+        +BLOODSPLATTER
+        +NOEXTREMEDEATH
         damagetype "fire";
         radius 2;
         height 1;
@@ -740,17 +722,15 @@ class DTechTrailSpark : actor
 	
 //GreenPlasma_Puff
 
-class Hellbullet2 : fastprojectile //PB_ProjectileAlt //fastprojectile
+class Hellbullet2 : PB_ProjectileAlt
 {
     Default {
-    // PB_Projectile.BaseDamage 13;
-    // +PB_PROJECTILE.NOCRITICALS;
-    // -RIPPER;
-    // Gravity 0;
-	damage 13;
-	+FORCEXYBILLBOARD;
-	+BLOODSPLATTER ;
-	+NOEXTREMEDEATH;
+    PB_Projectile.BaseDamage 60;
+    +PB_PROJECTILE.NOCRITICALS
+	+FORCEXYBILLBOARD
+	+SQUAREPIXELS
+	+BLOODSPLATTER
+	+NOEXTREMEDEATH
 	damagetype "Disintegrate";
 	radius 2;
 	height 1;
