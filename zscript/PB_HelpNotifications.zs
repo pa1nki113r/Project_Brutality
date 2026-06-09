@@ -33,36 +33,9 @@ class PB_HelpNotificationsHandler : EventHandler
 		Bindings.GetAllKeysForCommand(keys, cmd);
 		string keystr = "\cl\cv"..Bindings.NameAllKeys(keys, false).."\cl"; //get buttons and colorize
 		keystr.Replace(", ","\cl/\cv"); //clean up the separators
-		if(CVar.GetCVar("pb_psbuttonprompts", players[consoleplayer]).GetBool()) { //nobody's ever going to use cuneiform
-			keystr.replace("\cvLStickRight\cl", "𒀓"); //U+12013
-			keystr.replace("\cvLStickLeft\cl", "𒀔"); //U+12014
-			keystr.replace("\cvLStickDown\cl", "𒀕"); //U+12015
-			keystr.replace("\cvLStickUp\cl", "𒀖"); //U+12016
-			
-			keystr.replace("\cvRStickRight\cl", "𒀓"); //U+12013
-			keystr.replace("\cvRStickLeft\cl", "𒀔"); //U+12014
-			keystr.replace("\cvRStickDown\cl", "𒀕"); //U+12015
-			keystr.replace("\cvRStickUp\cl", "𒀖"); //U+12016
-			
-			keystr.replace("\cvDPadUp\cl", "𒀗"); //U+12017
-			keystr.replace("\cvDPadDown\cl", "𒀘"); //U+12018
-			keystr.replace("\cvDPadLeft\cl", "𒀙"); //U+12019
-			keystr.replace("\cvDPadRight\cl", "𒀚"); //U+1201A
-			keystr.replace("\cvPad_Start\cl", "𒀛"); //U+1201B
-			keystr.replace("\cvPad_Back\cl", "𒀜"); //U+1201C
-			keystr.replace("\cvLThumb\cl", "𒀝"); //U+1201D
-			keystr.replace("\cvRThumb\cl", "𒀝"); //U+1201D
-			keystr.replace("\cvLShoulder\cl", "𒀞"); //U+1201E
-			keystr.replace("\cvRShoulder\cl", "𒀟"); //U+1201F
-			keystr.replace("\cvLTrigger\cl", "𒀠"); //U+12020
-			keystr.replace("\cvRTrigger\cl", "𒀡"); //U+12021
-			
-			keystr.replace("\cvPad_A\cl", "𒀢"); //U+12022
-			keystr.replace("\cvPad_B\cl", "𒀣"); //U+12023
-			keystr.replace("\cvPad_X\cl", "𒀤"); //U+12024
-			keystr.replace("\cvPad_Y\cl", "𒀥"); //U+12025
-		}
-		else {
+		switch(CVar.GetCVar("pb_button_prompt_type", players[consoleplayer]).GetInt()) {
+		default:
+		case 0:
 			keystr.replace("\cvLStickRight\cl", "𒀀"); //U+12000
 			keystr.replace("\cvLStickLeft\cl", "𒀁"); //U+12001
 			keystr.replace("\cvLStickDown\cl", "𒀂"); //U+12002
@@ -93,6 +66,34 @@ class PB_HelpNotificationsHandler : EventHandler
 			
 			keystr.replace("\cvGuide\cl", "𒀯"); //U+1201F
 			keystr.replace("\cvPad_Misc\cl", "𒀰"); //U+12030
+		case 1:
+			keystr.replace("\cvLStickRight\cl", "𒀓"); //U+12013
+			keystr.replace("\cvLStickLeft\cl", "𒀔"); //U+12014
+			keystr.replace("\cvLStickDown\cl", "𒀕"); //U+12015
+			keystr.replace("\cvLStickUp\cl", "𒀖"); //U+12016
+			
+			keystr.replace("\cvRStickRight\cl", "𒀓"); //U+12013
+			keystr.replace("\cvRStickLeft\cl", "𒀔"); //U+12014
+			keystr.replace("\cvRStickDown\cl", "𒀕"); //U+12015
+			keystr.replace("\cvRStickUp\cl", "𒀖"); //U+12016
+			
+			keystr.replace("\cvDPadUp\cl", "𒀗"); //U+12017
+			keystr.replace("\cvDPadDown\cl", "𒀘"); //U+12018
+			keystr.replace("\cvDPadLeft\cl", "𒀙"); //U+12019
+			keystr.replace("\cvDPadRight\cl", "𒀚"); //U+1201A
+			keystr.replace("\cvPad_Start\cl", "𒀛"); //U+1201B
+			keystr.replace("\cvPad_Back\cl", "𒀜"); //U+1201C
+			keystr.replace("\cvLThumb\cl", "𒀝"); //U+1201D
+			keystr.replace("\cvRThumb\cl", "𒀝"); //U+1201D
+			keystr.replace("\cvLShoulder\cl", "𒀞"); //U+1201E
+			keystr.replace("\cvRShoulder\cl", "𒀟"); //U+1201F
+			keystr.replace("\cvLTrigger\cl", "𒀠"); //U+12020
+			keystr.replace("\cvRTrigger\cl", "𒀡"); //U+12021
+			
+			keystr.replace("\cvPad_A\cl", "𒀢"); //U+12022
+			keystr.replace("\cvPad_B\cl", "𒀣"); //U+12023
+			keystr.replace("\cvPad_X\cl", "𒀤"); //U+12024
+			keystr.replace("\cvPad_Y\cl", "𒀥"); //U+12025
 		}
 		keystr.replace("\cvMouse1\cl", "𒀦"); //U+12026
 		keystr.replace("\cvMouse2\cl", "𒀧"); //U+12027
