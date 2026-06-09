@@ -307,7 +307,7 @@ class PB_MG42 : PB_WeaponBase
 			MG1R A 1 {
 				MG42_CoolDownBarrel();
 				MG42_SetBeltSprite("MG5R","MG4R","MG3R","MG2R","MG1R");
-				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
+				return A_DoPBWeaponAction(WRF_ALLOWRELOAD, PB_FORCERELOAD);
 			}
 			Loop;
 
@@ -329,7 +329,7 @@ class PB_MG42 : PB_WeaponBase
 						Return ResolveState("Fire2");
 					else if (PressingFire() && PressingAltfire() && invoker.ammo1.amount > 1 && PB_GetOverheat() == 500) 
 						Return ResolveState("UnzoomOverheat");
-					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY);
+					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY, PB_FORCERELOAD);
 				}
 				else return A_DoPBWeaponAction();
 			}
