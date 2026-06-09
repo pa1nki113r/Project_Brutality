@@ -10,22 +10,22 @@ enum Bobbing
 
 class PlayerPawnBase : PlayerPawn
 {
-	const pb_friction			= 1.6;
-	const pb_maxgroundspeed		= 15.1;
-	const pb_maxhopspeed		= 28;
-	const pb_walkspeed			= 0.5;
-	const pb_crouchspeed		= 0.5;
-	const pb_strafemodifier		= 1.33;
+	const MOVEMENT_FRICTION		= 1.6;
+	const MAX_GROUND_SPEED		= 15.1;
+	const MAX_HOP_SPEED			= 28;
+	const WALK_SPEED			= 0.5;
+	const CROUCH_SPEED			= 0.5;
+	const STRAFE_MODIFIER		= 1.33;
 
-	const pb_jumpheight			= 8.0;
-	const pb_setgravity			= 1.0;
+	const JUMP_HEIGHT			= 8.0;
+	const SET_GRAVITY			= 1.0;
 
-	const pb_doublejumpheight 	= 1.0;
+	const DOUBLE_JUMP_HEIGHT	= 1.0;
 
-	const pb_cslidestrength		= 2.0;
-	const pb_cslideduration		= 10;
+	const CSLIDE_STRENGTH		= 2.0;
+	const CSLIDE_DURATION		= 10;
 	
-	const DASHMAXCHARGE = 35;
+	const DASH_MAX_CHARGE		= 35;
 	
 	double dashDir, dashSpeed;
 	int dashTics, dashCharge, airTics;
@@ -196,7 +196,7 @@ class PlayerPawnBase : PlayerPawn
 			ActualSpeed = Speed * GetPowerSpeed();
 			bNOFRICTION = True;
 			GetFloorInfo();
-			MaxGroundSpeed = (deathmatch && !pb_forcespmovement) ? 10.1 * ActualSpeed : pb_maxgroundspeed * ActualSpeed;
+			MaxGroundSpeed = (deathmatch && !pb_forcespmovement) ? 10.1 * ActualSpeed : MAX_GROUND_SPEED * ActualSpeed;
 			Pain = InStateSequence(CurState, FindState("Pain"));
 			StrafeRunning = abs(cmd.forwardmove) == 12800 && abs(cmd.sidemove) == 12800;
 			ZMoveFactor = ZMScale();
@@ -278,7 +278,7 @@ class PlayerPawnBase : PlayerPawn
 	Override void DeathThink()
 	{
 		bNOFRICTION = False;
-		Gravity = pb_setgravity;
+		Gravity = SET_GRAVITY;
 		
 		Super.DeathThink();
 	}
@@ -647,7 +647,7 @@ class PlayerPawnBase : PlayerPawn
 		}
 		else
 		{
-			Gravity = pb_setgravity;
+			Gravity = SET_GRAVITY;
 		}
 	}
 	
@@ -689,11 +689,11 @@ class PlayerPawnBase : PlayerPawn
 			else if(coyoteTime > 0 && !BlockJump)
 			{
                 coyoteTime = 0;
-				Float JumpVelZ = pb_jumpheight;
+				Float JumpVelZ = JUMP_HEIGHT;
 				Float JumpFac = GetPowerJump();
 				if(JumpFac) { JumpVelZ *= JumpFac; }
 				
-				if(dashCharge >= DASHMAXCHARGE / 2 && FindInventory("PlayerDashed") && !FindInventory("Kicking") && !dashJumped) {
+				if(dashCharge >= DASH_MAX_CHARGE / 2 && FindInventory("PlayerDashed") && !FindInventory("Kicking") && !dashJumped) {
 					if(!FindInventory("PB_PowerSpeed")) {
 						waiting = true;
 						dashCharge = 0;
@@ -726,7 +726,7 @@ class PlayerPawnBase : PlayerPawn
 			}
 			else if(!Player.OnGround && CanDoubleJump && !BlockDoubleJump)
 			{
-				Float DoubleJumpVelZ = pb_jumpheight * pb_doublejumpheight;
+				Float DoubleJumpVelZ = JUMP_HEIGHT * DOUBLE_JUMP_HEIGHT;
 				Float JumpFac = GetPowerJump();
 				if(JumpFac) { DoubleJumpVelZ *= JumpFac; }
 				Vel.Z = DoubleJumpVelZ;
@@ -763,9 +763,9 @@ class PlayerPawnBase : PlayerPawn
 		if(cmd.sidemove || cmd.forwardmove)
 		{
 			if(Player.CrouchFactor == 0.5)
-				MoveMulti = min(pb_crouchspeed, pb_walkspeed);
+				MoveMulti = min(CROUCH_SPEED, WALK_SPEED);
 			else if(IsWalking)
-				MoveMulti = pb_walkspeed;
+				MoveMulti = WALK_SPEED;
 			else
 				MoveMulti = 1;
 		}
@@ -779,7 +779,7 @@ class PlayerPawnBase : PlayerPawn
 	
 	float GroundSpeedMulti(bool SpeedOrAccel)
 	{
-		return (SpeedOrAccel ? ZMoveFactor : ActualSpeed) * (Straferunning ? pb_strafemodifier : 1);
+		return (SpeedOrAccel ? ZMoveFactor : ActualSpeed) * (Straferunning ? STRAFE_MODIFIER : 1);
 	}
 	
     bool CheckRunning() {
@@ -862,8 +862,8 @@ class PlayerPawnBase : PlayerPawn
 		}
 		else
 		{
-			Acceleration *= pb_friction;
-			Vel.XY *= 1 - pb_friction / 10.f;
+			Acceleration *= MOVEMENT_FRICTION;
+			Vel.XY *= 1 - MOVEMENT_FRICTION / 10.f;
 		}
 	}
 	
@@ -1124,7 +1124,7 @@ class PlayerPawnBase : PlayerPawn
 					CanCSlide = True;
 					A_StartSound("SlideKick/Start",32);
 					A_GiveInventory("CanSlideKick");
-					MaximumSlideSpeed = pb_cslidestrength * MaxGroundSpeed;
+					MaximumSlideSpeed = CSLIDE_STRENGTH * MaxGroundSpeed;
 					Vel.XY = MaximumSlideSpeed * AngleToVector(SlideAngle);
 				}
 				
@@ -1149,7 +1149,7 @@ class PlayerPawnBase : PlayerPawn
 		Acceleration = 2.f * SafeUnit2(Acceleration);
 		
 		//Friction (if in the air or slide time has run out)
-		if(Level.MapTime > CSlideStartTime + pb_cslideduration)
+		if(Level.MapTime > CSlideStartTime + CSLIDE_DURATION)
 		{
 			Int FrictionDiv = abs(GetZAt(0,0) - Pos.Z) > 16 ? 500 : 100;
 			MaximumSlideSpeed *= 1 - Vel.XY.Length() / FrictionDiv;
@@ -1355,11 +1355,11 @@ class PlayerPawnBase : PlayerPawn
 	{
 		///////////////////////////
 		//Bobbing Speed
-		if(MoveRangeMulti) { BobTime += Vel.XY.Length() / pb_maxgroundspeed; }
+		if(MoveRangeMulti) { BobTime += Vel.XY.Length() / MAX_GROUND_SPEED; }
 		
 		///////////////////////////
 		//Bobbing Range
-		Double MaxBobCandidate = pb_maxgroundspeed * ZMoveFactor;
+		Double MaxBobCandidate = MAX_GROUND_SPEED * ZMoveFactor;
 		
 		if(MaxBobCandidate == MaxBob || !MaxBob)
 		{
@@ -1491,7 +1491,7 @@ class PlayerPawnBase : PlayerPawn
 					
 					if((cmd.forwardmove || cmd.sidemove) && Vel.XY.Length() > 1.f)
 					{	
-						BobRangeMulti = min(Vel.XY.Length(), pb_maxgroundspeed) / pb_maxgroundspeed;
+						BobRangeMulti = min(Vel.XY.Length(), MAX_GROUND_SPEED) / MAX_GROUND_SPEED;
 						MoveRangeMulti = min(MoveRangeMulti + BobRangeMulti / SpeedToFullBob, MaxBob);
 						StillRangeMulti = 0;
 					}
@@ -1745,7 +1745,7 @@ class PlayerPawnBase : PlayerPawn
 		// Dash and double jump code by malingo ( https://www.youtube.com/watch?v=mTfGxY_Afhs )
 		PlayerInfo plr = player;
 		
-		if(plr && !waiting && (!dashJumped || !JumpSoundCooler) && (plr.cmd.buttons & BT_USER3) && dashCharge >= DASHMAXCHARGE / 2 && !dashTics && !FindInventory("IsSlideKicking")) {
+		if(plr && !waiting && (!dashJumped || !JumpSoundCooler) && (plr.cmd.buttons & BT_USER3) && dashCharge >= DASH_MAX_CHARGE / 2 && !dashTics && !FindInventory("IsSlideKicking")) {
 			sector sss = floorsector;
 			if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
 				A_StartSound("Daedabus/impact", 32);
@@ -1754,13 +1754,13 @@ class PlayerPawnBase : PlayerPawn
 			// [gng] thanks to kodi and lewisk3, analog compatible dash direction
 			dashDir = DeltaAngle(atan2(plr.cmd.sidemove, plr.cmd.forwardmove), angle);
 			
-			if(DashCharge < DASHMAXCHARGE) { 
+			if(DashCharge < DASH_MAX_CHARGE) { 
 				waiting = true; 
 				dashCharge = 0; 
 			}
 			
 			if(!FindInventory("PB_PowerSpeed")) {
-				dashCharge = max(0, dashCharge - DASHMAXCHARGE / 2);
+				dashCharge = max(0, dashCharge - DASH_MAX_CHARGE / 2);
 			}
 			
 			dashSpeed = 50;
@@ -1812,16 +1812,16 @@ class PlayerPawnBase : PlayerPawn
 		}	
 			
 		// [gng] recharge the dash
-		if(dashCharge < DASHMAXCHARGE) {
+		if(dashCharge < DASH_MAX_CHARGE) {
 			if(FindInventory("PB_PowerSpeed")) {
-				dashCharge = DASHMAXCHARGE;
+				dashCharge = DASH_MAX_CHARGE;
 			}
 			dashCharge++;
 			
-			if(dashCharge == DASHMAXCHARGE && !plr.onGround) 
-				dashCharge = DASHMAXCHARGE - 1;
+			if(dashCharge == DASH_MAX_CHARGE && !plr.onGround) 
+				dashCharge = DASH_MAX_CHARGE - 1;
 				
-			if(dashCharge == DASHMAXCHARGE) {
+			if(dashCharge == DASH_MAX_CHARGE) {
 				waiting = false;
 				if (gamestate != GS_TITLELEVEL) // Just don't play this on TitleMaps it's unnecessary.
 					A_StartSound("player/dashready", 69, CHANF_OVERLAP);
