@@ -212,7 +212,7 @@ class PlayerPawnBase : PlayerPawn
         else if(coyoteTime > 0) coyoteTime--;
 
         // Stick player to ground when going down stairs
-        if (wasOnGround && !dashtics && !player.onGround && pos.z - GetZAt() < maxDropOffHeight && vel.z <= 0)
+        if (wasOnGround && dashtics < 1 && !player.onGround && pos.z - GetZAt() < maxDropOffHeight && vel.z <= 0)
         {
             //player.viewHeight += (pos.z - GetZAt());
             //player.deltaViewHeight -= (pos.z - GetZAt()) / 8;
@@ -739,7 +739,7 @@ class PlayerPawnBase : PlayerPawn
 				
 				CanDoubleJump = False;
 				SetInventory("PlayerDashed", 0);
-				dashtics = 0;
+				dashtics = -5;
 			}
 		}
 		else
@@ -1777,7 +1777,7 @@ class PlayerPawnBase : PlayerPawn
 		// Dash and double jump code by malingo ( https://www.youtube.com/watch?v=mTfGxY_Afhs )
 		PlayerInfo plr = player;
 		
-		if(plr && !waiting && (!dashJumped || !JumpSoundCooler) && (plr.cmd.buttons & BT_USER3) && dashCharge >= DASH_MAX_CHARGE / 2 && !dashTics && !FindInventory("IsSlideKicking")) {
+		if(plr && !waiting && (!dashJumped || !JumpSoundCooler) && (plr.cmd.buttons & BT_USER3) && dashCharge >= DASH_MAX_CHARGE / 2 && dashtics == 0 && !FindInventory("IsSlideKicking")) {
 			sector sss = floorsector;
 			if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
 				A_StartSound("Daedabus/impact", 32);
@@ -1820,7 +1820,7 @@ class PlayerPawnBase : PlayerPawn
 		}
 		
 		double airControlBuffer = level.aircontrol;
-		if(dashTics) {
+		if(dashTics > 0) {
 			dashTics--;
 			
 			if(dashTics == 3) {
@@ -1858,6 +1858,10 @@ class PlayerPawnBase : PlayerPawn
 				if (gamestate != GS_TITLELEVEL) // Just don't play this on TitleMaps it's unnecessary.
 					A_StartSound("player/dashready", 69, CHANF_OVERLAP);
 			}
+		}
+		
+		if(dashtics < 0) {
+			dashtics++;
 		}
 		
         if(CheckNotPredicting())
