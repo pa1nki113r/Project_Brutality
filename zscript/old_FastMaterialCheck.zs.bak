@@ -9,20 +9,42 @@ somewhere visible, please.
 
 class PB_Materialsys : StaticEventHandler
 {  
-	map<string, int> texToMatKeyMap;
+	map<int, PB_MaterialDataStorage> materialKeyMap;
+	array<int> materialRanges;
+	array<string> textureNames;
 	array<PB_MaterialDataStorage> materialData;
+	int lastMaterialKey;
 	
+	// format: 
+	// range from, range to, key
 	// key is used for identifying material type
-	void SetupMaterial( array<string> refArray, name materialId, PB_MaterialDataStorage matData, int key )
+	void SetupMaterial( array<string> refArray, name materialId, PB_MaterialDataStorage matData )
 	{
-		// dump texture names in the map as keys, with the material key as value
+		// push initial range
+		materialRanges.Push( textureNames.Size() );
+
+		// dump textures in the names array
 		for ( int i = 0; i < refArray.Size(); i++ ) 
-			texToMatKeyMap.Insert( refArray[i].MakeLower(), key );
-		
-		/*console.printf( 
-			"PB_Materialsys: Finished setting up %s with a key of %i.", 
-			materialId, key
-		);*/
+		{
+			textureNames.Push( refArray[i].MakeLower() );
+			//console.printf( "PB_Materialsys: Texture %s added to %s", refArray[i], materialId );
+		}
+
+		// push end range
+		materialRanges.Push( textureNames.Size() - 1 );
+
+		// setup material key and add it to the key map
+		lastMaterialKey++;
+		materialRanges.Push( lastMaterialKey );
+		materialKeyMap.Insert( lastMaterialKey, matData );
+
+		console.printf( 
+			"PB_Materialsys: Finished setting up %s, takes range %i..%i, with a key of %i.", 
+			materialId,
+			materialRanges[materialRanges.Size() - 3], // min
+			materialRanges[materialRanges.Size() - 2], // max
+			materialRanges[materialRanges.Size() - 1]  // key
+		);
 	}
 
 	clearscope static name GetMaterialFromTexName( string texName )
@@ -39,26 +61,44 @@ class PB_Materialsys : StaticEventHandler
 
 	clearscope static PB_MaterialDataStorage GetMaterialDefFromTexName( string texName )
 	{
+		double time = MsTimeF();
 		PB_Materialsys seh = PB_Materialsys( PB_Materialsys.Find( "PB_Materialsys" ) );
+		int matindex;
+
 		texName = texName.MakeLower();
-		
-		if( texName.CodePointCount() > 8 )
-			return seh.materialData[ seh.texToMatKeyMap.CheckValue( texName ) ];
 
-		// [gng] previously the check matched the first few characters of the 
-		// string, the map lookup cannot do this. it has to trim the characters
-		// one by one to find the proper material, this is still faster
-		while( texName.CodePointCount() >= 4 )
+		for( int i = 0; i < seh.textureNames.Size(); i++ )
 		{
-			let [ result, exists ] = seh.texToMatKeyMap.CheckValue( texName );
-
-			if( exists )
-				return seh.materialData[ result ];	
-			else
-				texName.DeleteLastCharacter();
+			if( texName.IndexOf( seh.textureNames[i] ) == 0 )
+			{
+				matIndex = i;
+				break;
+			}
 		}
 
-		return seh.materialData[0];
+		// [gng] double check here or else it plays WATER sounds
+		if( texName.IndexOf( seh.textureNames[matindex] ) < 0 )
+		{
+			console.printf("%f", MsTimeF() - time);
+			return seh.materialKeyMap.GetIfExists( 1 );
+		}
+
+		// i = from range
+		// i + 1 = to range
+		// I + 2 = material key
+		for( int i = 0; i < seh.materialRanges.Size(); i += 3 )
+		{
+			// console.printf( "%i %i %i", seh.materialRanges[i], seh.materialRanges[i + 1], seh.materialRanges[i + 2] );
+			if( matIndex >= seh.materialRanges[i] && matIndex <= seh.materialRanges[i + 1] )
+			{
+				// console.printf( "%s", seh.materialKeyMap.GetIfExists( seh.materialRanges[i + 2] ) );
+				console.printf("%f", MsTimeF() - time);
+				return seh.materialKeyMap.GetIfExists( seh.materialRanges[i + 2] );
+			}
+		}
+
+		console.printf("%f", MsTimeF() - time);
+		return seh.materialKeyMap.GetIfExists( 1 );
 	}
 
 	const PB_INCLUDE_FILE = "PBINCLUD";
@@ -75,14 +115,16 @@ class PB_Materialsys : StaticEventHandler
 
 		// the reason this is done here is because you want the index to be 1
 		// always
+		tmpBufferReusable.Push( "-NOFLAT-" );
 		PB_MaterialDataStorage matData = PB_MaterialDataStorage.CreateMaterial( 
 			"PB_BulletImpact", 
 			"FFFFFF", 
 			"step/default", 
 			"default"
-		);
-		matData.tmpTextureNames.Push( "-NOFLAT-" );
-		materialData.Push( matData );
+		 );
+		SetupMaterial( tmpBufferReusable, "default", matData );
+
+		tmpBufferReusable.Clear();
 
 		int lump = Wads.FindLump( PB_INCLUDE_FILE, 0 );
 		PB_JsonObject materialsInclude;
@@ -110,7 +152,9 @@ class PB_Materialsys : StaticEventHandler
 
 			lump = Wads.FindLump( PB_INCLUDE_FILE, lump + 1 );
 		}
-
+		
+		////////////////////////////////////////////////////////////////////////
+		////////////////////////////////////////////////////////////////////////
 
 		map<string, int> materialKeysToIndex; // this is used later for textures
 
@@ -126,15 +170,15 @@ class PB_Materialsys : StaticEventHandler
 
 			matListJsonObject.GetKeysInto( tempKeyNames );
 
-			for( int j = 0; j < tempKeyNames.Size(); j++ )
+			for( int i = 0; i < tempKeyNames.Size(); i++ )
 			{
-				// tmpBufferReusable holds processed materials here
-				if( tmpBufferReusable.Find( tempKeyNames[j] ) == tmpBufferReusable.Size() )
+				// tmpBufferReusable holds processed materials here!
+				if( tmpBufferReusable.Find( tempKeyNames[i] ) == tmpBufferReusable.Size() )
 				{
-					tmpBufferReusable.Push( tempKeyNames[j] );
-					materialKeysToIndex.Insert( tempKeyNames[j], materialData.Size() );
+					tmpBufferReusable.Push( tempKeyNames[i] );
+					materialKeysToIndex.Insert( tempKeyNames[i], i );
 
-					PB_JsonObject materialDef = PB_JsonObject( matListJsonObject.Get( tempKeyNames[j] ) );
+					PB_JsonObject materialDef = PB_JsonObject( matListJsonObject.Get( tempKeyNames[i] ) );
 
 					PB_JsonString bulletImpact = PB_JsonString( materialDef.get( "bulletimpact" ) );
 					PB_JsonString tintColor = PB_JsonString( materialDef.get( "color" ) );
@@ -144,8 +188,8 @@ class PB_Materialsys : StaticEventHandler
 						bulletImpact ? bulletImpact.s : "PB_BulletImpact", 
 						tintColor ? tintColor.s : "FFFFFF", 
 						footstepSound ? footstepSound.s : "step/default", 
-						tempKeyNames[j]
-					);
+						tempKeyNames[i]
+					 );
 
 					materialData.Push( matData );
 				}
@@ -197,7 +241,7 @@ class PB_Materialsys : StaticEventHandler
 
 		for( int i = 0; i < materialData.Size(); i++ )
 		{
-			SetupMaterial( materialData[i].tmpTextureNames, materialData[i].materialName, materialData[i], i );
+			SetupMaterial( materialData[i].tmpTextureNames, materialData[i].materialName, materialData[i] );
 			materialData[i].tmpTextureNames.Clear();
 		}
 
