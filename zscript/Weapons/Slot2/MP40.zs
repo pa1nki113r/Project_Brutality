@@ -1,35 +1,26 @@
-//  Constants
-const PB_MP40FullAmmo = 32;
-
 // Ammo Class
-Class MP40Ammo : PB_WeaponAmmo
+Class PB_MP40Mag : PB_WeaponAmmo
 {
 	default
 	{
-		Inventory.Amount 0;
-		Inventory.MaxAmount PB_MP40FullAmmo;
-		Ammo.BackpackAmount 0;
-		Ammo.BackpackMaxAmount PB_MP40FullAmmo;
-		+INVENTORY.IGNORESKILL;
+		Inventory.MaxAmount PB_MP40.MAGAZINE_SIZE;
+		Ammo.BackpackMaxAmount PB_MP40.MAGAZINE_SIZE;
 		Inventory.Icon "AMP4A0";
 	}
 }
 
-Class LeftMP40Ammo : PB_WeaponAmmo
+Class PB_MP40LeftMag : PB_WeaponAmmo
 {
 	default
 	{
-		Inventory.Amount 0;
-		Inventory.MaxAmount PB_MP40FullAmmo;
-		Ammo.BackpackAmount 0;
-		Ammo.BackpackMaxAmount PB_MP40FullAmmo;
-		+INVENTORY.IGNORESKILL;
+		Inventory.MaxAmount PB_MP40.MAGAZINE_SIZE;
+		Ammo.BackpackMaxAmount PB_MP40.MAGAZINE_SIZE;
 		Inventory.Icon "AMP4A0";
 	}
 }
 
 // The Actual Weapon
-class PB_MP40 : PB_Weapon
+class PB_MP40 : PB_WeaponBase
 {
     Default
     {
@@ -40,9 +31,9 @@ class PB_MP40 : PB_Weapon
         // SpawnID 9200
         Weapon.AmmoGive1 20;
         Weapon.AmmoType1 "PB_LowCalMag";
-        Weapon.AmmoType2 "MP40Ammo";
+        Weapon.AmmoType2 "PB_MP40Mag";
 
-        PB_WeaponBase.AmmoTypeLeft "LeftMP40Ammo";
+        PB_WeaponBase.AmmoTypeLeft "PB_MP40LeftMag";
         PB_WeaponBase.OffsetRecoilX 2.5;
         PB_WeaponBase.OffsetRecoilY 2.5;
 
@@ -57,18 +48,11 @@ class PB_MP40 : PB_Weapon
         Inventory.Pickupmessage "$PB_MP40_PICKUP";
         Tag "$PB_MP40_TAG";
 //////////////////////////// WEAPON FLAGS ////////////////////////////////////////////////////////////////////////////////////
-        +FLOORCLIP;
-        +WEAPON.NOAUTOAIM;
-        +WEAPON.NOALERT;
-        +WEAPON.NOAUTOFIRE;
-        +DONTGIB;
+        +WEAPON.WIMPY_WEAPON;
     }
 
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
-    // Overlays
-    const MAINMUZZLEFLASH   = -2;
-    const LEFTMUZZLEFLASH   = 9;
-    const RIGHTMUZZLEFLASH  = 8;
+	const MAGAZINE_SIZE = 32;
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
 
     // This is for the normal fire
@@ -108,15 +92,12 @@ class PB_MP40 : PB_Weapon
                 PB_MuzzleFlashEffects(0, 0, 0);
                 // A_FireCustomMissile("ShakeYourAssMinor", 0, 0, 0, 0);
                 PB_SpawnCasing("EmptyBrassMP40", casingDist, casingY, casingZ, frandom(-2,2), frandom(2,5), frandom(2,5), true, true);
-                PB_TakeAmmo("MP40Ammo", 1, 0, 0);
+                PB_TakeAmmo("PB_MP40Mag", 1, 0, 0);
                 A_ZoomFactor(zoomA);
                 A_GunFlash();
 
-                if(ads) A_Overlay(MAINMUZZLEFLASH, "Flash2Variation");
-                else A_Overlay(MAINMUZZLEFLASH, "FlashVariation");
-
-                A_OverlayFlags(MAINMUZZLEFLASH, PSPF_RENDERSTYLE, true);
-                A_OverlayRenderStyle(MAINMUZZLEFLASH, STYLE_Add);
+                if(ads) A_FlashOverlay(state:"Flash2Variation");
+                else A_FlashOverlay(state:"FlashVariation");
 
                 PB_WeaponRecoil(recoilX, recoilY);
                 break;
@@ -139,7 +120,7 @@ class PB_MP40 : PB_Weapon
         double horSpeed     = frandom(2,5);
         double vertSpeed    = isLeft ? frandom(0,3) : frandom(4,7);
         double recoilY      = isLeft ? +0.70 : -0.70;
-        int flashLayer      = isLeft ? LEFTMUZZLEFLASH : RIGHTMUZZLEFLASH;
+        int flashLayer      = isLeft ? LEFT_FLASH_LAYER : RIGHT_FLASH_LAYER;
         string ammoClass    = isLeft 
             ? invoker.AmmoLeft.getClassName() 
             : invoker.ammo2.getClassName();
@@ -151,10 +132,8 @@ class PB_MP40 : PB_Weapon
                 PB_IncrementHeat(1, isLeft);
 
                 // Set up flashes
-                if(isLeft) A_Overlay(flashLayer, "LeftFlashVariation", true);
-                else A_Overlay(flashLayer, "RightFlashVariation", true);
-                A_OverlayFlags(flashLayer, PSPF_RENDERSTYLE, true);
-                A_OverlayRenderStyle(flashLayer, STYLE_Add);
+                if(isLeft) A_FlashOverlay(LEFT_FLASH_LAYER, "LeftFlashVariation");
+                else A_FlashOverlay(RIGHT_FLASH_LAYER, "RightFlashVariation");
 
                 // Start firing the weapon
                 A_AlertMonsters();
@@ -235,13 +214,8 @@ class PB_MP40 : PB_Weapon
 			AMP4 A 10 A_PbvpFramework("VMP4");
 			"####" A 0 A_PbvpInterpolate();
 		    Loop;
-
         WeaponRespect:
-            TNT1 A 0 {
-				A_SetInventory("PB_LockScreenTilt",1);
-				A_PlaySoundEx("weapons/MP40_up", "Auto");
-				A_SetCrosshair(-1);
-			}
+            TNT1 A 0 A_SetCrosshair(-1);
 			MPSE ABCDE 1 A_DoPBWeaponAction();
 			MRE1 ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction();
 			MRE2 ABCDE 1 A_DoPBWeaponAction();
@@ -267,7 +241,6 @@ class PB_MP40 : PB_Weapon
 			TNT1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
 			MPSE ABCD 1 A_DoPBWeaponAction();
 			Goto Ready3;
-
         Deselect:
             TNT1 A 0 {
 				A_WeaponOffset(0,32);
@@ -281,20 +254,16 @@ class PB_MP40 : PB_Weapon
 			TNT1 A 0 A_ZoomFactor(1.0);
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DeselectDualWield");
 			MPSE DCBA 1;
-			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower();
+			TNT1 A 0 A_Lower();
 			Wait;
-
         DeselectDualWield:
 			MP25 PONM 1;
-			TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower();
+			TNT1 A 0 A_Lower();
 			Wait;
-
         SelectAnimationDualWield:
-			TNT1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
 			MP25 MNOP 1;
-			TNT1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
+			TNT1 A 0 A_StartSound("weapons/MP40_up", CHAN_AUTO);
             Goto ReadyDualWield;
-
         Select:
             TNT1 A 0 {
 				A_WeaponOffset(0,32);
@@ -460,9 +429,9 @@ class PB_MP40 : PB_Weapon
 //////////////////////////// RELOAD ////////////////////////////////////////////////////////////////////////////////////
             Reload:
                 TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReloadDualWield");
-                TNT1 A 0 PB_CheckReload("ReloadUnloaded","ReloadEmpty","Rechamber","Ready3","Ready3",PB_MP40FullAmmo);
+                TNT1 A 0 PB_CheckReload("ReloadUnloaded","ReloadEmpty","Rechamber","Ready3","Ready3",MAGAZINE_SIZE);
                 MPR1 ABC 1;
-                TNT1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
+                TNT1 A 0 A_PlaySoundEx("IronSights", "Auto");
                 MPR1 DEFG 1;
                 MPR1 HIJKLMN 1 PB_SetRoll(roll+1.3);
                 MPR1 OPQRS 1;
@@ -478,7 +447,7 @@ class PB_MP40 : PB_Weapon
                 MPR2 KLMNOPQ 1;
                 TNT1 A 0 {
                     A_PlaySoundEx("weapons/riflemagslap", "Auto");
-                    PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),PB_MP40FullAmmo);
+                    PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),MAGAZINE_SIZE);
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                 }
@@ -494,7 +463,7 @@ class PB_MP40 : PB_Weapon
                 
             ReloadEmpty:
                 MR21 ABC 1;
-                TNT1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
+                TNT1 A 0 A_PlaySoundEx("IronSights", "Auto");
                 MR21 DEFG 1;
                 MR21 HIJKLMN 1 PB_SetRoll(roll+1.3);
                 MR21 OP 1;
@@ -512,7 +481,7 @@ class PB_MP40 : PB_Weapon
                 TNT1 A 0
                 {
                     A_PlaySoundEx("weapons/riflemagslap", "Auto");
-                    PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),PB_MP40FullAmmo);
+                    PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),MAGAZINE_SIZE);
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                 }
@@ -527,7 +496,7 @@ class PB_MP40 : PB_Weapon
 
             ReloadUnloaded:
                 MR21 ABC 1;
-                TNT1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
+                TNT1 A 0 A_PlaySoundEx("IronSights", "Auto");
                 MR21 DEFG 1;
                 MPR1 HIJ 1 PB_SetRoll(roll+1.3);
                 TNT1 A 0 A_JumpIf(PB_GetMagEmpty(),"ReloadUnloadedEmpty");
@@ -551,8 +520,8 @@ class PB_MP40 : PB_Weapon
                 goto Ready3;
             
             ReloadLeftGunOnly:
-                TNT1 A 0 PB_CheckReload("ReloadLeftUnloadedAlone",null,"StartRechamberLeft","Ready3","Ready3",PB_MP40FullAmmo,invoker.ReserveToMagAmmoFactor,true);
-                M2R1 A 1 A_PlaySoundEx("weapons/MP40_up", "Auto");
+                TNT1 A 0 PB_CheckReload("ReloadLeftUnloadedAlone",null,"StartRechamberLeft","Ready3","Ready3",MAGAZINE_SIZE,invoker.ReserveToMagAmmoFactor,true);
+                M2R1 A 1 A_PlaySoundEx("IronSights", "Auto");
                 M2R4 A 0 A_JumpIf(PB_GetMagEmpty(true), 2);
                 M2R2 A 0;
                 "####" A 0;
@@ -569,13 +538,13 @@ class PB_MP40 : PB_Weapon
                 Goto ReloadLeftGunInsert;
 
             ReloadDualWield:
-                TNT1 A 0 PB_CheckReload("ReloadRightUnloaded","ReloadRightEmpty","StartRechamberRight","ReloadLeftGunOnly","Ready3",PB_MP40FullAmmo);
-                M2R1 A 1 A_PlaySoundEx("weapons/MP40_up", "Auto");
+                TNT1 A 0 PB_CheckReload("ReloadRightUnloaded","ReloadRightEmpty","StartRechamberRight","ReloadLeftGunOnly","Ready3",MAGAZINE_SIZE);
+                M2R1 A 1 A_PlaySoundEx("IronSights", "Auto");
                 M2R1 BCDE 1;
                 Goto ReloadRight;
 
             ReloadRightUnloaded:
-                M2R1 A 1 A_PlaySoundEx("weapons/MP40_up", "Auto");
+                M2R1 A 1 A_PlaySoundEx("IronSights", "Auto");
                 TNT1 A 0 A_JumpIf(PB_GetChamberEmpty,"RightUnloadedEmpty");
                 M2U1 EFGH 1;
                 goto ReloadRightInsert;
@@ -601,7 +570,7 @@ class PB_MP40 : PB_Weapon
                 MR22 OPQRS 1 PB_SetRoll(roll+1.4);
                 TNT1 A 0 {
                     A_PlaySoundEx("weapons/riflemagslap", "Auto");
-                    PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),PB_MP40FullAmmo);
+                    PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),MAGAZINE_SIZE);
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                 }
@@ -624,9 +593,9 @@ class PB_MP40 : PB_Weapon
                 MR24 IJKLMN 1 PB_SetRoll(roll-0.35);
                 MR24 NOO 1;
                 MRCO ABCDE 1;
-                TNT1 A 0 A_JumpIf((PB_GetMagUnloaded(true) || PB_GetChamberEmpty(true) || invoker.AmmoLeft.amount < PB_MP40FullAmmo) && invoker.ammo1.amount > 0, "ReloadLeftGunAfterEmpty");
+                TNT1 A 0 A_JumpIf((PB_GetMagUnloaded(true) || PB_GetChamberEmpty(true) || invoker.AmmoLeft.amount < MAGAZINE_SIZE) && invoker.ammo1.amount > 0, "ReloadLeftGunAfterEmpty");
                 TNT1 AAAA 1;
-                M2R1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
+                M2R1 A 0 A_PlaySoundEx("IronSights", "Auto");
                 MP25 MNOPQ 1;
                 TNT1 A 0 PB_SetReloading(false);
                 Goto Ready3;
@@ -647,7 +616,7 @@ class PB_MP40 : PB_Weapon
                 MPR2 KLMNOPQ 1;
                 TNT1 A 0 {
                     A_PlaySoundEx("weapons/riflemagslap", "Auto");
-                    PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),PB_MP40FullAmmo);
+                    PB_AmmoIntoMag(invoker.ammo2.getClassName(),invoker.ammo1.getClassName(),MAGAZINE_SIZE);
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                 }
@@ -656,7 +625,7 @@ class PB_MP40 : PB_Weapon
                 MPR2 TU 1 PB_SetRoll(roll-1.5);
                 MPR2 VWXYZ 1;
                 MPR3 A 1;
-                TNT1 A 0 A_JumpIf((PB_GetMagUnloaded(true) || PB_GetChamberEmpty(true) || invoker.AmmoLeft.amount < PB_MP40FullAmmo) && invoker.ammo1.amount > 0, "ReloadLeftGun");
+                TNT1 A 0 A_JumpIf((PB_GetMagUnloaded(true) || PB_GetChamberEmpty(true) || invoker.AmmoLeft.amount < MAGAZINE_SIZE) && invoker.ammo1.amount > 0, "ReloadLeftGun");
                 M2R1 A 0;
                 "####" A 0;
                 M2R1 DCBA 1;
@@ -677,7 +646,7 @@ class PB_MP40 : PB_Weapon
             ReloadLeftGunAfterEmpty:
                 TNT1 A 0 A_JumpIf(PB_GetChamberEmpty(true) && !PB_GetMagEmpty(true),"RechamberLeftFromNothing");
                 TNT1 A 6;
-                TNT1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
+                TNT1 A 0 A_PlaySoundEx("IronSights", "Auto");
                 TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(true), "ReloadLeftUnloaded");
                 M2R7 A 0 A_JumpIf(PB_GetChamberEmpty(true), 2);
                 M2R8 A 0;
@@ -710,7 +679,7 @@ class PB_MP40 : PB_Weapon
                 "####" ABCDEFGHI 1;
                 "####" A 0 {
                     A_PlaySoundEx("weapons/riflemagslap", "Auto");
-                    PB_AmmoIntoMag(invoker.AmmoLeft.getClassName(),invoker.ammo1.getClassName(),PB_MP40FullAmmo);
+                    PB_AmmoIntoMag(invoker.AmmoLeft.getClassName(),invoker.ammo1.getClassName(),MAGAZINE_SIZE);
                     PB_SetMagUnloaded(false,true);
                     PB_SetMagEmpty(false,true);
                 }
@@ -748,7 +717,7 @@ class PB_MP40 : PB_Weapon
 				A_ZoomFactor(1.0);
 				A_SetCrosshair(-1);
                 PB_SetZoom(0);
-				A_PlaySoundEx("weapons/MP40_up", "Auto");
+				A_PlaySoundEx("IronSights", "Auto");
 			}
 			MPR1 ABC 1;
 			MPR1 DEFG 1;
@@ -773,7 +742,7 @@ class PB_MP40 : PB_Weapon
 			}
 			TNT1 A 0 A_JumpIf(PB_GetMagEmpty() || PB_GetMagUnloaded(), "UnloadLeftOnly");
 		UnloadRight:
-			TNT1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
+			TNT1 A 0 A_PlaySoundEx("IronSights", "Auto");
 			M2R1 ABCDE 1;
 			MPR1 MN 1 PB_SetRoll(roll+1.3);
 			MPR1 OPQRS 1;
@@ -791,7 +760,7 @@ class PB_MP40 : PB_Weapon
 
 		UnloadLeftOnly:
 			TNT1 A 0 A_JumpIf(PB_GetMagEmpty(true) || PB_GetMagUnloaded(true),"Ready3");
-			M2R1 A 1 A_PlaySoundEx("weapons/MP40_up", "Auto");
+			M2R1 A 1 A_PlaySoundEx("IronSights", "Auto");
 			M2R2 A 0	;
 			"####" A 0;
 			"####" BCDE 1;
@@ -800,7 +769,7 @@ class PB_MP40 : PB_Weapon
 		UnloadLeft:
 			M2U1 HIJKLMN 1;
 			TNT1 A 6;
-			M2R1 A 0 A_PlaySoundEx("weapons/MP40_up", "Auto");
+			M2R1 A 0 A_PlaySoundEx("IronSights", "Auto");
 			M2R8 EDCBA 1;
 		UnloadLeftSequence:
 			M2R2 FG 1 PB_SetRoll(roll-1.3);

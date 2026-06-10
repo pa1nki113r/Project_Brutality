@@ -1,7 +1,7 @@
 // For the black hole remote det
 class BlackHoleDetonator : inventory {default{inventory.maxamount 1;}}
 
-class PB_BFG9000 : PB_Weapon
+class PB_BFG9000 : PB_WeaponBase
 {
     Default
     {
@@ -22,11 +22,7 @@ class PB_BFG9000 : PB_Weapon
         Inventory.PickupMessage "$PB_BFG_PICKUP";
         Tag "$PB_BFG_TAG";
 //////////////////////////// WEAPON FLAGS ////////////////////////////////////////////////////////////////////////////////////
-        +WEAPON.NOAUTOAIM;
-        +WEAPON.NOAUTOFIRE;
-        +FLOORCLIP;
-        +DONTGIB;
-    //	+WEAPON.BFG
+    	+WEAPON.BFG
     }
 
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
@@ -839,7 +835,6 @@ class BFG_BeamProjectile : MageWandMissile
         +BLOODLESSIMPACT;
         +FORCERADIUSDMG
         -BLOODSPLATTER;
-        +DontHurtSpecies;
         Species "Marine";
     }
 
@@ -878,7 +873,6 @@ class BFGBeamPuff : actor
         +BLOODLESSIMPACT;
         +FORCERADIUSDMG;
         -BLOODSPLATTER;
-        +DontHurtSpecies;
         +SQUAREPIXELS;
         +FORCEXYBILLBOARD;
         Species "Marine";
@@ -1116,8 +1110,7 @@ class BFGDeathParticle : Actor
         Mass 0;
         +MISSILE;
         +NOBLOCKMAP;
-        -NOGRAVITY;
-        +LOWGRAVITY;
+        Gravity 0.125;
         +DONTSPLASH;
         // +DOOMBOUNCETYPE;
         +SQUAREPIXELS;
@@ -1291,7 +1284,7 @@ class BFGLooker : Actor
             TNT1 A 0;
             Stop;
         See:
-            TNT1 A 0 A_CustomRailgun(6, 0, "None", "Green", RGF_SILENT | RGF_FULLBRIGHT | RGF_NOPIERCING, 2, 0, "GreenShockWave", 0, 0, 1024, 1, 60, 0, "BFGLightningTrial_Small", 0, 0, 1);
+            TNT1 A 0 A_CustomRailgun(6, 0, "", "Green", RGF_SILENT | RGF_FULLBRIGHT | RGF_NOPIERCING, 2, 0, "GreenShockWave", 0, 0, 1024, 1, 60, 0, "BFGLightningTrial_Small", 0, 0, 1);
             TNT1 A 1;
             Stop;
     }
@@ -1439,7 +1432,6 @@ class SuperBFGExtra : BFGExtra replaces BFGExtra
         Species "Marines";
         +THRUSPECIES;
         +MTHRUSPECIES;
-        +DONTHURTSPECIES;
         +SQUAREPIXELS;
         +FORCEXYBILLBOARD;
     }
@@ -1668,7 +1660,6 @@ class BFGSmallSphere : Actor
         Species "Marines";
         +THRUSPECIES;
         +MTHRUSPECIES;
-        +DONTHURTSPECIES;
     }
     States
     {
@@ -1736,7 +1727,6 @@ class BFGAltShockWave : GreenShockWave
         Species "Marines";
         +THRUSPECIES;
         +MTHRUSPECIES;
-        +DONTHURTSPECIES;
         DamageType "Disintegrate";
     }
     States
@@ -1782,7 +1772,6 @@ class BFGAltExplosion : Actor
         Species "Marines";
         +THRUSPECIES;
         +MTHRUSPECIES;
-        +DONTHURTSPECIES;
         DamageType "ExplosiveImpact";
     }
     States

@@ -1,40 +1,31 @@
-// Constants
-const PB_PistolFullAmmo = 16; // You only need to change this value to modify the pistol ammo lol
-
 // Gearbox Tokens
 class SelectPistolBurstFire : Inventory {Default{Inventory.MaxAmount 1;}}
 class SelectDualWieldPistols : Inventory {Default{Inventory.MaxAmount 1;}}
 class SelectPistolSuppressor : Inventory {Default{Inventory.MaxAmount 1;}}
 
 // Ammo Class
-Class PrimaryPistolAmmo : PB_WeaponAmmo
+Class PB_PistolMag : PB_WeaponAmmo
 {
 	default
 	{
-		Inventory.Amount 0;
-		Inventory.MaxAmount PB_PistolFullAmmo;
-		Ammo.BackpackAmount 0;
-		Ammo.BackpackMaxAmount PB_PistolFullAmmo;
-		+INVENTORY.IGNORESKILL;
+		Inventory.MaxAmount PB_Pistol.MAGAZINE_SIZE;
+		Ammo.BackpackMaxAmount PB_Pistol.MAGAZINE_SIZE;
 		Inventory.Icon "DEGTA0";
 	}
 }
 
-Class SecondaryPistolAmmo : PB_WeaponAmmo
+Class PB_PistolLeftMag : PB_WeaponAmmo
 {
 	default
 	{
-		Inventory.Amount 0;
-		Inventory.MaxAmount PB_PistolFullAmmo;
-		Ammo.BackpackAmount 0;
-		Ammo.BackpackMaxAmount PB_PistolFullAmmo;
-		+INVENTORY.IGNORESKILL;
+		Inventory.MaxAmount PB_Pistol.MAGAZINE_SIZE;
+		Ammo.BackpackMaxAmount PB_Pistol.MAGAZINE_SIZE;
 		Inventory.Icon "DEGTA0";
 	}
 }
 
 // The Actual Weapon
-class PB_Pistol : PB_Weapon
+class PB_Pistol : PB_WeaponBase
 {
     Default
     {
@@ -44,8 +35,8 @@ class PB_Pistol : PB_Weapon
         // SpawnID 9220
         Weapon.AmmoGive1 20;
         Weapon.AmmoType1 "PB_LowCalMag";
-        Weapon.AmmoType2 "PrimaryPistolAmmo";
-        PB_WeaponBase.AmmoTypeLeft "SecondaryPistolAmmo";
+        Weapon.AmmoType2 "PB_PistolMag";
+        PB_WeaponBase.AmmoTypeLeft "PB_PistolLeftMag";
         weapon.slotpriority 0.5;
 
         PB_WeaponBase.OffsetRecoilX 3.5;
@@ -67,13 +58,7 @@ class PB_Pistol : PB_Weapon
         AttackSound "None";
         Tag "$PB_PISTOL_TAG";
 //////////////////////////// WEAPON FLAGS ////////////////////////////////////////////////////////////////////////////////////
-        +FLOORCLIP;
         +WEAPON.WIMPY_WEAPON;
-        +WEAPON.NOAUTOAIM;
-        +WEAPON.NOAUTOFIRE;
-        +WEAPON.NOALERT;
-        +WEAPON.NO_AUTO_SWITCH;
-        +DONTGIB;
     }
 
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
@@ -86,6 +71,7 @@ class PB_Pistol : PB_Weapon
     // Overlays
     const LEFTMUZZLEFLASH   = -5;
     const RIGHTMUZZLEFLASH  = -6;
+	const MAGAZINE_SIZE = 16; // You only need to change this value to modify the pistol ammo lol
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
 
     // I added the useMag so its easier to turn it into a generic function
@@ -842,7 +828,7 @@ class PB_Pistol : PB_Weapon
 //////////////////////////// RELOAD ////////////////////////////////////////////////////////////////////////////////////
             Reload:
                 TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReloadDualWield");
-                TNT1 A 0 PB_CheckReload(null,null,"LoadChamber","Ready3","Ready3",PB_PistolFullAmmo);
+                TNT1 A 0 PB_CheckReload(null,null,"LoadChamber","Ready3","Ready3",MAGAZINE_SIZE);
                 D5GD ABCDEFGHIJKLMNOPQRSTUVWXY 0;
                 D5GB ABCD 1 {
                     setSilencerSprites("D5GD");
@@ -880,7 +866,7 @@ class PB_Pistol : PB_Weapon
                     PB_AmmoIntoMag(
                         invoker.ammo2.getClassName(),
                         invoker.ammo1.getClassName(),
-                        PB_GetChamberEmpty() ? PB_PistolFullAmmo-1 : PB_PistolFullAmmo);
+                        PB_GetChamberEmpty() ? MAGAZINE_SIZE-1 : MAGAZINE_SIZE);
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                     A_PlaySoundEx("PSRLIN", "Auto");
@@ -923,8 +909,8 @@ class PB_Pistol : PB_Weapon
                 D6GF ABCDEFGHIJKLMNOPQRSTUVW 0;
                 // Actual Reload Dual Wield
                 TNT1 A 0 PB_ClearDualWield();
-                TNT1 A 0 PB_CheckReload(null,null,null,"ReloadLeftOnly","Ready3",PB_PistolFullAmmo);
-                TNT1 A 0 A_JumpIf(invoker.ammoleft.amount >= PB_PistolFullAmmo, "ReloadRightOnly"); // If left weapon is full
+                TNT1 A 0 PB_CheckReload(null,null,null,"ReloadLeftOnly","Ready3",MAGAZINE_SIZE);
+                TNT1 A 0 A_JumpIf(invoker.ammoleft.amount >= MAGAZINE_SIZE, "ReloadRightOnly"); // If left weapon is full
                 TNT1 A 0 A_JumpIf(invoker.ammo1.amount < 1, "NoAmmo");
                 TNT1 A 0 A_JumpIf(PB_GetMagUnloaded() || PB_GetMagUnloaded(true),"ReloadDualWieldUnloaded");
                 TNT1 A 0 A_PlaySoundEx("PSRLOUT", "Auto");
@@ -967,7 +953,7 @@ class PB_Pistol : PB_Weapon
                 // Cache Sprites
                 D6GY ABCDEFGHIJKLMZ 0;
                 // Actual Reload Left Only
-                TNT1 A 0 PB_CheckReload(null,null,null,"ReloadRightOnly","Ready3",PB_PistolFullAmmo,invoker.reservetomagammofactor,true);
+                TNT1 A 0 PB_CheckReload(null,null,null,"ReloadRightOnly","Ready3",MAGAZINE_SIZE,invoker.reservetomagammofactor,true);
                 TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(true) && !PB_GetMagUnloaded(),"ReloadLeftOnlyUnloaded");
                 TNT1 A 0 A_PlaySoundEx("PSRLOUT", "Auto");
                 D6GW ABCDE 1 setSilencerSprites("D6GY");
@@ -1048,7 +1034,7 @@ class PB_Pistol : PB_Weapon
                     PB_AmmoIntoMag(
                         invoker.ammoleft.getClassName(),
                         invoker.ammo1.getClassName(),
-                        PB_GetChamberEmpty(true) ? PB_PistolFullAmmo-1 : PB_PistolFullAmmo);
+                        PB_GetChamberEmpty(true) ? MAGAZINE_SIZE-1 : MAGAZINE_SIZE);
                     PB_SetMagUnloaded(false,true);
                     PB_SetMagEmpty(false,true);
                     PB_SetChamberEmpty(false,true);
@@ -1082,7 +1068,7 @@ class PB_Pistol : PB_Weapon
                     PB_AmmoIntoMag(
                         invoker.ammo2.getClassName(),
                         invoker.ammo1.getClassName(),
-                        PB_GetChamberEmpty() ? PB_PistolFullAmmo-1 : PB_PistolFullAmmo);
+                        PB_GetChamberEmpty() ? MAGAZINE_SIZE-1 : MAGAZINE_SIZE);
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                     PB_SetChamberEmpty(false);

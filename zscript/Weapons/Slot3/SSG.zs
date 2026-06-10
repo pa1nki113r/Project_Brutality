@@ -1,35 +1,26 @@
-//  Constants
-const PB_SSGFullAmmo = 2; // This is just for consistency
-
 // Ammo Class
-Class SSGAmmoCounter : PB_WeaponAmmo
+Class PB_SSGMag : PB_WeaponAmmo
 {
 	default
 	{
-		Inventory.Amount 0;
-		Inventory.MaxAmount PB_SSGFullAmmo;
-		Ammo.BackpackAmount 0;
-		Ammo.BackpackMaxAmount PB_SSGFullAmmo;
-		+INVENTORY.IGNORESKILL;
+		Inventory.MaxAmount PB_SSG.MAGAZINE_SIZE;
+		Ammo.BackpackMaxAmount PB_SSG.MAGAZINE_SIZE;
 		Inventory.Icon "SGN3A0";
 	}
 }
 
-Class LeftSSGAmmo : PB_WeaponAmmo
+Class PB_SSGLeftMag : PB_WeaponAmmo
 {
 	default
 	{
-		Inventory.Amount 0;
-		Inventory.MaxAmount PB_SSGFullAmmo;
-		Ammo.BackpackAmount 0;
-		Ammo.BackpackMaxAmount PB_SSGFullAmmo;
-		+INVENTORY.IGNORESKILL;
+		Inventory.MaxAmount PB_SSG.MAGAZINE_SIZE;
+		Ammo.BackpackMaxAmount PB_SSG.MAGAZINE_SIZE;
 		Inventory.Icon "SGN3A0";
 	}
 }
 
 // The Actual Weapon
-class PB_SSG : PB_Weapon
+class PB_SSG : PB_WeaponBase
 {
     Default
     {
@@ -44,8 +35,8 @@ class PB_SSG : PB_Weapon
 
         Weapon.AmmoGive1 8;
         Weapon.AmmoType "PB_Shell";
-        Weapon.AmmoType2 "SSGAmmoCounter";
-        PB_WeaponBase.AmmoTypeLeft "LeftSSGAmmo";
+        Weapon.AmmoType2 "PB_SSGMag";
+        PB_WeaponBase.AmmoTypeLeft "PB_SSGLeftMag";
 
         Inventory.MaxAmount 2;
         Scale 0.5;
@@ -59,14 +50,6 @@ class PB_SSG : PB_Weapon
         Obituary "%o was splattered by %k's SSG";
 	    Tag "$PB_SSG_TAG";
         //FloatBobStrength 0.5
-//////////////////////////// WEAPON FLAGS ////////////////////////////////////////////////////////////////////////////////////
-        +WEAPON.NOAUTOAIM;
-        +WEAPON.AMMO_OPTIONAL;
-        +WEAPON.NOAUTOFIRE;
-        +WEAPON.NOALERT;
-        +FLOORCLIP;
-        +DONTGIB;
-        
     }
 
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
@@ -78,9 +61,7 @@ class PB_SSG : PB_Weapon
     int ssgSpentL;
     // Fire Animation
     int ssgFireAnimation;
-    // Overlays
-    const LEFTMUZZLEFLASH   = -5;
-    const RIGHTMUZZLEFLASH  = -6;
+	const MAGAZINE_SIZE = 2; // This is just for consistency
 
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
     
@@ -118,18 +99,13 @@ class PB_SSG : PB_Weapon
     {
         double smokeOfs   = isLeft ?  2 : -2;
         double wadOfs     = isLeft ? -4 :  3;
-        int flashLayer    = isLeft ? LEFTMUZZLEFLASH : RIGHTMUZZLEFLASH;
-        // string flashState = isLeft ? "HalfFlash2" : "HalfFlash1";
 
         switch(tic)
         {
             case 1:
-                if(isLeft) A_Overlay(LEFTMUZZLEFLASH, "HalfFlash2", true);
-                else       A_Overlay(RIGHTMUZZLEFLASH, "HalfFlash1", true);
+                if(isLeft) A_FlashOverlay(state:"HalfFlash2");
+                else       A_FlashOverlay(state:"HalfFlash1");
 
-                // A_Overlay(flashLayer, flashState, true);
-                A_OverlayFlags(flashLayer, PSPF_RENDERSTYLE, true);
-                A_OverlayRenderStyle(flashLayer, STYLE_Add);
                 PB_IncrementHeat(10, isLeft);
                 PB_FireBullets("PB_10GAPellet", 10, 7, 0, 0, 6);
                 PB_GunSmoke(smokeOfs, 0, 0); PB_MuzzleFlashEffects(smokeOfs, 0, 0);
@@ -165,9 +141,7 @@ class PB_SSG : PB_Weapon
                 // Overlays
                 PB_IncrementHeat(10);
                 PB_IncrementHeat(10, true);
-                A_Overlay(LEFTMUZZLEFLASH, "FullFlash", true);
-                A_OverlayFlags(LEFTMUZZLEFLASH,PSPF_RENDERSTYLE,true);
-                A_OverlayRenderStyle(LEFTMUZZLEFLASH,STYLE_Add);
+                A_FlashOverlay();
 
                 // Fire
                 PB_FireBullets("PB_10GAPellet_LP",1,0,0,0,0);
@@ -245,7 +219,6 @@ class PB_SSG : PB_Weapon
 
     action void SSG_FireOverlay(int tic, bool isLeft)
     {
-        int    flashLayer = isLeft ? LEFTMUZZLEFLASH : RIGHTMUZZLEFLASH;
         double recoilY    = isLeft ? +2.40 : -2.40;
         int    ammoNow    = isLeft ? invoker.AmmoLeft.amount : invoker.ammo2.amount;
 
@@ -254,11 +227,14 @@ class PB_SSG : PB_Weapon
             case 1:
                 PB_IncrementHeat(10, isLeft);
                 // Blame the zdoom bug for this one
-                if(isLeft) A_Overlay(LEFTMUZZLEFLASH, "LeftFlash", true);
-                else A_Overlay(RIGHTMUZZLEFLASH, "RightFlash", true);
-                // A_Overlay(flashLayer, isLeft ? "LeftFlash" : "RightFlash", true);
-                A_OverlayFlags(flashLayer, PSPF_RENDERSTYLE, true);
-                A_OverlayRenderStyle(flashLayer, STYLE_Add);
+                if(isLeft) {
+					A_FlashOverlay(LEFT_FLASH_LAYER, "LeftFlash");
+					A_SetFiringLeftWeapon(true);
+				}
+                else {
+					A_FlashOverlay(RIGHT_FLASH_LAYER, "RightFlash");
+					A_SetFiringRightWeapon(true);
+				}
                 A_AlertMonsters();
                 HandleSSGShot(ammoNow, isLeft);
                 break;
@@ -287,10 +263,12 @@ class PB_SSG : PB_Weapon
                 break;
 
             case 7:
-                // if (isLeft && invoker.AmmoLeft.amount <= 0)
-                //     A_GiveInventory("DualFireReload", 1);
-                // else if (!isLeft && invoker.ammo2.amount <= 0)
-                //     A_GiveInventory("DualFireReload", 1);
+				if(isLeft) {
+					A_SetFiringLeftWeapon(false);
+				}
+				else {
+					A_SetFiringRightWeapon(false);
+				}
                 break;
         }
     }
@@ -457,25 +435,25 @@ class PB_SSG : PB_Weapon
 
 //////////////////////////// FIRE ////////////////////////////////////////////////////////////////////////////////////
         FireLeft_Overlay:
-            P6W2 A 1 BRIGHT SSG_FireOverlay(1, isLeft:true);
-            P6W2 B 1 BRIGHT SSG_FireOverlay(2, isLeft:true);
-            P6W2 C 1        SSG_FireOverlay(3, isLeft:true);
-            P6W2 D 1        SSG_FireOverlay(4, isLeft:true);
-            P6W2 E 1        SSG_FireOverlay(5, isLeft:true);
-            P6W2 F 1        SSG_FireOverlay(6, isLeft:true);
+            P6W2 A 1 BRIGHT SSG_FireOverlay(1, true);
+            P6W2 B 1 BRIGHT SSG_FireOverlay(2, true);
+            P6W2 C 1        SSG_FireOverlay(3, true);
+            P6W2 D 1        SSG_FireOverlay(4, true);
+            P6W2 E 1        SSG_FireOverlay(5, true);
+            P6W2 F 1        SSG_FireOverlay(6, true);
             P6W2 GHIJK 1;
-            // TNT1 A 0        SSG_FireOverlay(7, isLeft:true);
+			TNT1 A 0        SSG_FireOverlay(7, true);
             Goto IdleLeft_Overlay;
 
         FireRight_Overlay:
-            P6W1 A 1 BRIGHT SSG_FireOverlay(1, isLeft:false);
-            P6W1 B 1 BRIGHT SSG_FireOverlay(2, isLeft:false);
-            P6W1 C 1        SSG_FireOverlay(3, isLeft:false);
-            P6W1 D 1        SSG_FireOverlay(4, isLeft:false);
-            P6W1 E 1        SSG_FireOverlay(5, isLeft:false);
-            P6W1 F 1        SSG_FireOverlay(6, isLeft:false);
+            P6W1 A 1 BRIGHT SSG_FireOverlay(1, false);
+            P6W1 B 1 BRIGHT SSG_FireOverlay(2, false);
+            P6W1 C 1        SSG_FireOverlay(3, false);
+            P6W1 D 1        SSG_FireOverlay(4, false);
+            P6W1 E 1        SSG_FireOverlay(5, false);
+            P6W1 F 1        SSG_FireOverlay(6, false);
             P6W1 GHIJK 1;
-            // TNT1 A 0        SSG_FireOverlay(7, isLeft:false)
+            TNT1 A 0        SSG_FireOverlay(7, false);
             Goto IdleRight_Overlay;
         
         Fire:
@@ -534,7 +512,7 @@ class PB_SSG : PB_Weapon
 //////////////////////////// RELOAD ////////////////////////////////////////////////////////////////////////////////////
         Reload:
             TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReloadDualWield");
-            TNT1 A 0 PB_CheckReload(null,null,null,"Ready3","Ready3",PB_SSGFullAmmo);
+            TNT1 A 0 PB_CheckReload(null,null,null,"Ready3","Ready3",MAGAZINE_SIZE);
             TNT1 A 0 {
                 A_SetInventory("PB_LockScreenTilt",1);
                 setFireAnimation(0);
@@ -557,7 +535,7 @@ class PB_SSG : PB_Weapon
             SG12 MNO 1 PB_SetRoll(roll-1.0);
             TNT1 A 0 {
                 A_PlaySoundEx("weapons/ssg/inspect2", "Auto");
-                PB_AmmoIntoMag(invoker.ammo2.getClassName(), invoker.ammo1.getClassName(), PB_SSGFullAmmo);
+                PB_AmmoIntoMag(invoker.ammo2.getClassName(), invoker.ammo1.getClassName(), MAGAZINE_SIZE);
                 PB_SetMagEmpty(false);
                 PB_SetChamberEmpty(false);
             }
@@ -584,7 +562,7 @@ class PB_SSG : PB_Weapon
             SG10 TUV 1 PB_SetRoll(roll-1.0);
             TNT1 A 0 {
                 A_PlaySoundEx("weapons/ssg/inspect2", "Auto");
-                PB_AmmoIntoMag(invoker.ammo2.getClassName(), invoker.ammo1.getClassName(), PB_SSGFullAmmo);
+                PB_AmmoIntoMag(invoker.ammo2.getClassName(), invoker.ammo1.getClassName(), MAGAZINE_SIZE);
                 PB_SetMagEmpty(false);
                 PB_SetChamberEmpty(false);
             }
@@ -601,11 +579,10 @@ class PB_SSG : PB_Weapon
             Goto Ready3;
             
         ReloadDualWield:
-            TNT1 A 0 PB_CheckReload(null,null,null,"ReloadOnlyLeft","Ready3",PB_SSGFullAmmo);
+            TNT1 A 0 PB_CheckReload(null,null,null,"ReloadOnlyLeft","Ready3",MAGAZINE_SIZE);
             TNT1 A 0 PB_ClearDualWield();
-            P6SS ED 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
-            TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
-            P6SS CBA 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
+            P6SS DC 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
+            P6SS BA 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
             TNT1 A 3;
         ReloadRight:
             SGAR ABCDEFGHI 1;
@@ -626,7 +603,7 @@ class PB_SSG : PB_Weapon
             SG10 TUV 1 PB_SetRoll(roll-1.0);
             TNT1 A 0 {
                 A_PlaySoundEx("weapons/ssg/inspect2", "Auto");
-                PB_AmmoIntoMag(invoker.ammo2.getClassName(), invoker.ammo1.getClassName(), PB_SSGFullAmmo);
+                PB_AmmoIntoMag(invoker.ammo2.getClassName(), invoker.ammo1.getClassName(), MAGAZINE_SIZE);
                 PB_SetMagEmpty(false);
                 PB_SetChamberEmpty(false);
             }
@@ -638,15 +615,13 @@ class PB_SSG : PB_Weapon
             SGAR QR 1;
             TNT1 A 3;
             TNT1 A 0 A_JumpIf(invoker.AmmoLeft.amount == 2 || invoker.ammo1.amount < 1, "FinishReloadDualWield");
-            TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
             Goto ReloadLeft;
 
         ReloadOnlyLeft:
-            TNT1 A 0 PB_CheckReload(null,null,null,"Ready3","Ready3",PB_SSGFullAmmo,1,true);
+            TNT1 A 0 PB_CheckReload(null,null,null,"Ready3","Ready3",MAGAZINE_SIZE,1,true);
             TNT1 A 0 PB_ClearDualWield();
-            P6SS ED 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
-            TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
-            P6SS CBA 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
+            P6SS DC 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
+            P6SS BA 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
             TNT1 A 3;
         ReloadLeft:
             SGAL ABCDEFGHI 1;
@@ -667,7 +642,7 @@ class PB_SSG : PB_Weapon
             S1AL CDE 1 PB_SetRoll(roll+1.0);
             TNT1 A 0 {
                 A_PlaySoundEx("weapons/ssg/inspect2", "Auto");
-                PB_AmmoIntoMag(invoker.AmmoLeft.getClassName(), invoker.ammo1.getClassName(), PB_SSGFullAmmo);
+                PB_AmmoIntoMag(invoker.AmmoLeft.getClassName(), invoker.ammo1.getClassName(), MAGAZINE_SIZE);
                 PB_SetMagEmpty(false,true);
                 PB_SetChamberEmpty(false,true);
             }
@@ -677,11 +652,9 @@ class PB_SSG : PB_Weapon
             S1AL OPQRSTUVWXYZ 1;
         FinishReloadDualWield:
             TNT1 A 0 A_SetInventory("DualFireReload",0);
-            TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
             TNT1 A 3;
-            P6SS ABC 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
-            TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
-            P6SS DE 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
+            P6SS AB 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
+            P6SS CD 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
             Goto ReadyDualWield;
 
 //////////////////////////// UNLOAD ////////////////////////////////////////////////////////////////////////////////////
@@ -736,9 +709,8 @@ class PB_SSG : PB_Weapon
                 getSpentL() == 0, 
                 "Ready3");
             TNT1 A 0 PB_ClearDualWield();
-            P6SS ED 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
-            TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
-            P6SS CBA 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
+            P6SS DC 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
+            P6SS BA 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
             TNT1 A 3;
             TNT1 A 0 A_JumpIf(getSpentR() == 0 && PB_GetChamberEmpty(),"UnloadLeft");
             SGAR ABCDEFGHI 1;
@@ -818,13 +790,12 @@ class PB_SSG : PB_Weapon
             TNT1 A 0 A_PlaySound("weapons/ssg/inspect3", 0);
             TNT1 A 3;
         FinishDualUnload:
-            P6SS ABC 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
-            TNT1 A 0 A_PlaySoundEx("weapons/ssg/inspect4", "Auto");
-            P6SS DE 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
+            P6SS AB 1 A_SetPitch(pitch-0.4, SPF_INTERPOLATE);
+            P6SS CD 1 A_SetPitch(pitch+0.4, SPF_INTERPOLATE);
             Goto Ready3;
 
 //////////////////////////// FLASH STATES ////////////////////////////////////////////////////////////////////////////////////
-        FullFlash:
+        MuzzleFlash:
 			SH2M AB 1 Bright A_GunFlash();
 			Stop;
 		HalfFlash1:

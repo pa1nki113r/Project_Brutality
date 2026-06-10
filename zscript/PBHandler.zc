@@ -19,6 +19,8 @@ class PB_EventHandler : EventHandler
 	
 	transient int pickuptic[MAXPLAYERS];
 	
+	array <PB_NailgunGlue> nails; //nail projectiles
+	
 	///////////////////////////////////////////////////////////////////////////
 	
 	override void WorldTick()
@@ -297,7 +299,20 @@ class PB_EventHandler : EventHandler
 		{
 			holder.FixState();
 		}
+		
+		//painslayer code by agent_ash, see Weapons/Projectiles/painslayer-license for license
+		if (!e.isSaveGame)
+			return;
+		for (int i = 0; i < nails.Size(); i++) {
+			PB_NailgunGlue nail = nails[i];
+			if (!nail)
+				continue;
+			if (!nail.stuckToSecPlane)
+				continue;
+			nail.StickToWall();
+		}
 	}
+	
 	override void WorldUnloaded(WorldEvent e)
 	{
 		// [Ace] Hack to work around death exits.
@@ -337,7 +352,7 @@ class PB_EventHandler : EventHandler
 		}
 	}
 
-    Override Void WorldThingDied(WorldEvent e)
+    /*Override Void WorldThingDied(WorldEvent e)
 	{
         if(!e.thing || !e.Inflictor) return;
 
@@ -347,12 +362,12 @@ class PB_EventHandler : EventHandler
             {
                 Array<String> pbTipsBuf;
                 pbTipsBuf.Push("$PB_UNMAKER_TIP_1");
-                pbTipsBuf.Push("$PB_UNMAKER_TIP_2");
+				pbTipsBuf.Push(string.format(StringTable.Localize("$PB_UNMAKER_TIP_2"), PB_HelpNotificationsHandler.PB_FormatKeybinds("+pb_specialwheel")));
                 pbTipsBuf.Push("$PB_UNMAKER_TIP_3");
                 PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 4);
             }
         }
-    }
+    }*/
 
     override void PlayerDied(PlayerEvent e)
     {
@@ -408,6 +423,14 @@ class PB_EventHandler : EventHandler
 		
 		if(e.Thing.bROLLSPRITE && !e.thing.bSQUAREPIXELS)
 			e.Thing.bSTRETCHPIXELS = true;
+		
+		//record all nail projectiles that exist in the world
+		if (e.Thing is "PB_NailgunGlue") {
+			let nail = PB_NailgunGlue(e.Thing);
+			if (nail) {
+				nails.Push(nail);
+			}
+		}
 	}
 	
 	 /* [Pop] Keeping this here so its backed up, in may become useful

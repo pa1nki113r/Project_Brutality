@@ -1,4 +1,4 @@
-Class PB_SuperGL : PB_Weapon
+Class PB_SuperGL : PB_WeaponBase
 {
 	default
 	{
@@ -18,13 +18,9 @@ Class PB_SuperGL : PB_Weapon
 		Weapon.AmmoGive2 0;
 		Weapon.AmmoGive1 2;
 		Weapon.AmmoType1 "PB_RocketAmmo";
-		Weapon.AmmoType2 "GrenadeRounds";
+		Weapon.AmmoType2 "PB_SuperGLMag";
 		Inventory.PickupSound "misc/rockboxa";
-		+WEAPON.NOAUTOAIM;
 		+WEAPON.EXPLOSIVE;
-		+WEAPON.NOALERT;
-		+WEAPON.NOAUTOFIRE;
-		+FLOORCLIP;
 		Inventory.PickupMessage "$PB_SGL_PICKUP";
 		Tag "$PB_SGL_TAG";
 		Inventory.AltHUDIcon "SGL0Z0";
@@ -105,7 +101,6 @@ Class PB_SuperGL : PB_Weapon
 		Select:
 			TNT1 A 0 PB_WeaponRaise("weapons/sgl/inspect2");	//this replaces the jump to SelectFirstPersonLegs state and a lot of other things
 			TNT1 A 0 PB_WeapTokenSwitch("SGLSelected");
-			TNT1 A 0 A_SetInventory("HasExplosiveWeapon",1);
 			TNT1 A 0 A_SetInventory("CycleAnimation",0);
 			TNT1 A 0 A_SetInventory("CantWeaponSpecial",0);
 			TNT1 A 0 A_overlay(Det_layer,"DetonatorLayer");
@@ -119,7 +114,6 @@ Class PB_SuperGL : PB_Weapon
 		Deselect:
 			TNT1 A 0 {
 				A_SetInventory("CycleAnimation", 0);
-				A_SetInventory("HasExplosiveWeapon", 0);
 				A_ClearOverlays(Det_layer,Det_layer);
 			}
 			SL02 FGHI 1 SGL_ChangeModeSprite("SL02","SL12","SL22","SL32","SL42","S001");
@@ -158,7 +152,7 @@ Class PB_SuperGL : PB_Weapon
 				if(PB_GetMagUnloaded()) {A_SetWeaponSprite("S002");}
 				A_Alertmonsters();
 				A_Startsound("weapons/firegrenade", CHAN_WEAPON);
-				PB_TakeAmmo("GrenadeRounds",1);
+				PB_TakeAmmo("PB_SuperGLMag",1);
 				A_ZoomFactor(0.98);
 				A_GunFlash();
 				PB_GunSmoke_Launcher(0, 0, 0);
@@ -267,7 +261,7 @@ Class PB_SuperGL : PB_Weapon
 			SL05 A 1 SGL_ChangeModeSprite("SL05","SL16","SL26","SL36","SL46");
 			TNT1 A 0 {
 				A_StartSound("weapons/nailgun/inspect4", 17, CHANF_OVERLAP);
-				PB_AmmoIntoMag("GrenadeRounds","PB_RocketAmmo",7,1);
+				PB_AmmoIntoMag("PB_SuperGLMag","PB_RocketAmmo",7,1);
 				PB_SetMagUnloaded(false);
 				PB_SetMagEmpty(false);
 			}
@@ -283,7 +277,7 @@ Class PB_SuperGL : PB_Weapon
 		Rechamber:
 			TNT1 A 0 {
 				A_StartSound("weapons/nailgun/inspect4", 9, CHANF_OVERLAP);
-				PB_AmmoIntoMag("GrenadeRounds","PB_RocketAmmo",6,1);
+				PB_AmmoIntoMag("PB_SuperGLMag","PB_RocketAmmo",6,1);
 				PB_SetMagUnloaded(false);
 				PB_SetMagEmpty(false);
 				A_SetRoll(0,SPF_INTERPOLATE);
@@ -328,7 +322,7 @@ Class PB_SuperGL : PB_Weapon
 			TNT1 A 0 A_StartSound("Weapons/GrenadeLoad", 9);
 			S400 ABCD 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
 			TNT1 A 0 {
-				PB_UnloadSGL(CountInv("GrenadeRounds") - 1);
+				PB_UnloadSGL(CountInv("PB_SuperGLMag") - 1);
 				PB_SetChamberEmpty(true);
 			}
 			S400 EFGHIJKL 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
@@ -367,7 +361,7 @@ Class PB_SuperGL : PB_Weapon
 			TNT1 A 0 A_StartSound("Weapons/GrenadeLoad", 9);
 			S400 ABCD 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
 			TNT1 A 0 {
-				PB_UnloadSGL(CountInv("GrenadeRounds") - 1);
+				PB_UnloadSGL(CountInv("PB_SuperGLMag") - 1);
 				PB_SetChamberEmpty(true);
 			}
 			S400 EFGHIJKL 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
@@ -552,6 +546,21 @@ Class PB_SuperGL : PB_Weapon
 			stop;
 	}
 	
+	override void AttachToOwner(Actor Other)
+	{
+		Super.AttachToOwner(other);
+		if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 13, CVar.GetCvar("pb_helpflags", Other.Player))) {
+			Array<String> pbTipsBuf;
+			pbTipsBuf.Push("$PB_BARREL_TIP_1");
+			PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 13);
+		}
+		if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 14, CVar.GetCvar("pb_helpflags", Other.Player))) {
+			Array<String> pbTipsBuf;
+			pbTipsBuf.Push("$PB_BARREL_TIP_2");
+			PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 14);
+		}
+	}
+	
 	action int getSGLMode()
 	{
 		return invoker.GrenadeMode;
@@ -631,19 +640,19 @@ Class PB_SuperGL : PB_Weapon
 		switch(getSGLMode())
 		{
 		case SGL_Impact:
-			PB_UnloadMag("GrenadeRounds","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmo");
+			PB_UnloadMag("PB_SuperGLMag","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmo");
 			break;
 		case SGL_Sticky:
-			PB_UnloadMag("GrenadeRounds","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmoSticky");
+			PB_UnloadMag("PB_SuperGLMag","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmoSticky");
 			break;
 		case SGL_Acid:
-			PB_UnloadMag("GrenadeRounds","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmoAcid");
+			PB_UnloadMag("PB_SuperGLMag","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmoAcid");
 			break;
 		case SGL_Fire:
-			PB_UnloadMag("GrenadeRounds","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmoFire");
+			PB_UnloadMag("PB_SuperGLMag","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmoFire");
 			break;
 		case SGL_Cryo:
-			PB_UnloadMag("GrenadeRounds","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmoCryo");
+			PB_UnloadMag("PB_SuperGLMag","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmoCryo");
 			break;
 		}
 	}
@@ -724,7 +733,7 @@ Class PB_SuperGL : PB_Weapon
 //	sgl tokens
 //
 
-Class GrenadeRounds : PB_WeaponAmmo
+Class PB_SuperGLMag : PB_WeaponAmmo
 {
 	default
 	{

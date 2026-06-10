@@ -1,6 +1,3 @@
-// Constants
-const PB_SMGFullAmmo = 36;
-
 // Gearbox Tokens
 class SelectSilencedSMG : Inventory {Default{Inventory.MaxAmount 1;}}
 class SelectDualWieldSMG : Inventory {Default{Inventory.MaxAmount 1;}}
@@ -10,34 +7,28 @@ class SelectBurstFireSMG : Inventory {Default{Inventory.MaxAmount 1;}}
 class KeepLaserDeactivated : Inventory {Default{Inventory.MaxAmount 1;}}
 
 // Ammo Class
-Class SMGAmmo : PB_WeaponAmmo
+Class PB_SMGMag : PB_WeaponAmmo
 {
 	default
 	{
-		Inventory.Amount 0;
-		Inventory.MaxAmount PB_SMGFullAmmo;
-		Ammo.BackpackAmount 0;
-		Ammo.BackpackMaxAmount PB_SMGFullAmmo;
-		+INVENTORY.IGNORESKILL;
+		Inventory.MaxAmount PB_SMG.MAGAZINE_SIZE;
+		Ammo.BackpackMaxAmount PB_SMG.MAGAZINE_SIZE;
 		Inventory.Icon "ATFLA0";
 	}
 }
 
-Class LeftSMGAmmo : PB_WeaponAmmo
+Class PB_SMGLeftMag : PB_WeaponAmmo
 {
 	default
 	{
-		Inventory.Amount 0;
-		Inventory.MaxAmount PB_SMGFullAmmo;
-		Ammo.BackpackAmount 0;
-		Ammo.BackpackMaxAmount PB_SMGFullAmmo;
-		+INVENTORY.IGNORESKILL;
+		Inventory.MaxAmount PB_SMG.MAGAZINE_SIZE;
+		Ammo.BackpackMaxAmount PB_SMG.MAGAZINE_SIZE;
 		Inventory.Icon "ATFLA0";
 	}
 }
 
 // The Actual Weapon
-class PB_SMG : PB_Weapon
+class PB_SMG : PB_WeaponBase
 {
     Default
     {
@@ -48,8 +39,8 @@ class PB_SMG : PB_Weapon
         Inventory.MaxAmount 2;
         Weapon.AmmoGive1 20;
         Weapon.AmmoType1 "PB_LowCalMag";
-        Weapon.AmmoType2 "SMGAmmo";
-        PB_WeaponBase.AmmoTypeLeft "LeftSMGAmmo";
+        Weapon.AmmoType2 "PB_SMGMag";
+        PB_WeaponBase.AmmoTypeLeft "PB_SMGLeftMag";
         weapon.slotpriority 0.75;
         Inventory.Amount 1;
         Inventory.AltHUDIcon "ATFLA0";
@@ -67,14 +58,8 @@ class PB_SMG : PB_Weapon
         Obituary "%o was shot down by %k's UAC-17 Compact Submachine Gun.";
         Tag "$PB_SMG_TAG";
 //////////////////////////// WEAPON FLAGS ////////////////////////////////////////////////////////////////////////////////////
-        +FLOORCLIP;
         +WEAPON.WIMPY_WEAPON;
-        +WEAPON.NOAUTOAIM;
-        +WEAPON.NOAUTOFIRE;
-        +WEAPON.NOALERT;
-        +WEAPON.NO_AUTO_SWITCH;
         +WEAPON.CHEATNOTWEAPON
-        +DONTGIB;
     }
 
 //////////////////////////// VARIABLES ////////////////////////////////////////////////////////////////////////////////////
@@ -93,6 +78,7 @@ class PB_SMG : PB_Weapon
     const EMPTYBOLT_OVERLAY      = 2;
     const LEFTMUZZLEFLASH        = -5;
     const RIGHTMUZZLEFLASH       = -6;
+	const MAGAZINE_SIZE = 36;
 //////////////////////////// FUNCTIONS ////////////////////////////////////////////////////////////////////////////////////
 
     action void SMG_Fire(int tic)
@@ -740,7 +726,7 @@ class PB_SMG : PB_Weapon
                 //             return state(null);
                 //         }
                 //     }
-                // if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("SMGAmmo")<=0) || GetCvar("SingleDualFire")==1){
+                // if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("PB_SMGMag")<=0) || GetCvar("SingleDualFire")==1){
                 //     if((PressingFire() && CountInv("PB_SMGBurstFire") == 0 || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && GetCvar("SingleDualFire") < 2){
                 //         if(!PB_GetChamberEmpty(true)){
                 //             return state("FireLeft_Overlay");
@@ -1069,7 +1055,7 @@ class PB_SMG : PB_Weapon
 //////////////////////////// RELOAD ////////////////////////////////////////////////////////////////////////////////////
             Reload:
                 TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReloadDualWield");
-                TNT1 A 0 PB_CheckReload("ReloadUnloaded","BoltPull","Rechamber","Ready3","Ready3",PB_SMGFullAmmo);
+                TNT1 A 0 PB_CheckReload("ReloadUnloaded","BoltPull","Rechamber","Ready3","Ready3",MAGAZINE_SIZE);
                 TNT1 A 0 {
                     if(getSilencer()) A_Overlay(SILENCER_OVERLAY, "ReloadSilencer");
                 }
@@ -1149,7 +1135,7 @@ class PB_SMG : PB_Weapon
                     PB_AmmoIntoMag(
                         invoker.ammo2.getClassName(),
                         invoker.ammo1.getClassName(),
-                        PB_GetChamberEmpty() ? PB_SMGFullAmmo-1 : PB_SMGFullAmmo);
+                        PB_GetChamberEmpty() ? MAGAZINE_SIZE-1 : MAGAZINE_SIZE);
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                 }
@@ -1271,7 +1257,7 @@ class PB_SMG : PB_Weapon
 
             InsertBulletsRight:
                 HKSQ FGH 1;
-                TNT1 A 0 A_JumpIf(invoker.ammoleft.amount < PB_SMGFullAmmo || PB_GetMagUnloaded(true),"ReloadLeftGun");
+                TNT1 A 0 A_JumpIf(invoker.ammoleft.amount < MAGAZINE_SIZE || PB_GetMagUnloaded(true),"ReloadLeftGun");
                 Goto FinishInsertBullets;
 
             BoltPullRight:
@@ -1288,12 +1274,12 @@ class PB_SMG : PB_Weapon
                 Goto Reload2DW;
 
             ReloadDualWield:
-                TNT1 A 0 PB_CheckReload(null,null,null,"ReloadLeftGunOnly","Ready3",PB_SMGFullAmmo);
+                TNT1 A 0 PB_CheckReload(null,null,null,"ReloadLeftGunOnly","Ready3",MAGAZINE_SIZE);
                 TNT1 A 6 {
                     A_Overlay(PSP_LEFTGUN, "StopDualWield_Left", false);
                     A_Overlay(PSP_RIGHTGUN, "StopDualWield_Right", false);
                 }
-                TNT1 A 0 PB_CheckReload("ReloadUnloaded","BoltPullRight","RechamberRight","ReloadLeftGunOnly","Ready3",PB_SMGFullAmmo);
+                TNT1 A 0 PB_CheckReload("ReloadUnloaded","BoltPullRight","RechamberRight","ReloadLeftGunOnly","Ready3",MAGAZINE_SIZE);
                 TNT1 A 0 {
                     if(getSilencer()) A_Overlay(SILENCER_OVERLAY, "ReloadSilencer");
                 }
@@ -1358,7 +1344,7 @@ class PB_SMG : PB_Weapon
                     PB_AmmoIntoMag(
                         invoker.ammo2.getClassName(),
                         invoker.ammo1.getClassName(),
-                        PB_GetChamberEmpty() ? PB_SMGFullAmmo-1 : PB_SMGFullAmmo);
+                        PB_GetChamberEmpty() ? MAGAZINE_SIZE-1 : MAGAZINE_SIZE);
                     PB_SetMagUnloaded(false);
                     PB_SetMagEmpty(false);
                 }
@@ -1369,7 +1355,7 @@ class PB_SMG : PB_Weapon
                     if(getSilencer()) A_Overlay(SILENCER_OVERLAY, "ReloadDWEndSilencer");
                 }	
                 A3F4 DCBA 1;
-                TNT1 A 0 A_JumpIf(invoker.ammoleft.amount < PB_SMGFullAmmo || PB_GetMagUnloaded(true),"ReloadLeftGun");
+                TNT1 A 0 A_JumpIf(invoker.ammoleft.amount < MAGAZINE_SIZE || PB_GetMagUnloaded(true),"ReloadLeftGun");
                 Goto FinishInsertBullets;
 
             RechamberDWSilencer:
@@ -1401,7 +1387,7 @@ class PB_SMG : PB_Weapon
                 HKSP MOPRSTUVWXYZ 1 SMG_SetSprite("HKSP",silenced:"HKSR");
                 HKSQ AB 1 SMG_SetSprite("HKSQ",silenced:"HKSS");
                 HKSQ FGH 1 SMG_SetSprite("HKSQ",silenced:"HKSS");
-                TNT1 A 0 A_JumpIf(invoker.ammoleft.amount < PB_SMGFullAmmo || PB_GetMagUnloaded(true),"ReloadLeftGun");
+                TNT1 A 0 A_JumpIf(invoker.ammoleft.amount < MAGAZINE_SIZE || PB_GetMagUnloaded(true),"ReloadLeftGun");
                 Goto FinishInsertBullets;
 
             BoltPullLeft:
@@ -1424,13 +1410,13 @@ class PB_SMG : PB_Weapon
                 Stop;
 
             ReloadLeftGunOnly:
-                TNT1 A 0 PB_CheckReload(null,null,null,"Ready3","Ready3",PB_SMGFullAmmo,invoker.reservetomagammofactor,true);
+                TNT1 A 0 PB_CheckReload(null,null,null,"Ready3","Ready3",MAGAZINE_SIZE,invoker.reservetomagammofactor,true);
                 TNT1 A 3 {
                     A_Overlay(PSP_LEFTGUN, "StopDualWield_Left", false);
                     A_Overlay(PSP_RIGHTGUN, "StopDualWield_Right", false);
                 }
             ReloadLeftGun:
-                TNT1 A 0 PB_CheckReload("ReloadLeftUnloaded","BoltPullLeft","RechamberLeft","Ready3","Ready3",PB_SMGFullAmmo,invoker.reservetomagammofactor,true);
+                TNT1 A 0 PB_CheckReload("ReloadLeftUnloaded","BoltPullLeft","RechamberLeft","Ready3","Ready3",MAGAZINE_SIZE,invoker.reservetomagammofactor,true);
                 TNT1 A 3;
                 TNT1 A 0 A_PlaySoundEx("weapons/smg_up", "Auto");
                 TNT1 A 0 {
@@ -1529,7 +1515,7 @@ class PB_SMG : PB_Weapon
                     PB_AmmoIntoMag(
                         invoker.ammoleft.getClassName(),
                         invoker.ammo1.getClassName(),
-                        PB_GetChamberEmpty(true) ? PB_SMGFullAmmo-1 : PB_SMGFullAmmo);
+                        PB_GetChamberEmpty(true) ? MAGAZINE_SIZE-1 : MAGAZINE_SIZE);
                     PB_SetMagUnloaded(false,true);
                     PB_SetMagEmpty(false,true);
                 }

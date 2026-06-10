@@ -8,21 +8,29 @@ Class PB_Revolver : PB_WeaponBase
 		weapon.slotnumber 2;							
 		weapon.ammotype1 "PB_LowCalMag";
 		weapon.ammogive1 20;	
-		weapon.ammotype2 "RevolverAmmo";
+		weapon.ammotype2 "PB_RevolverMag";
 		weapon.slotpriority 0.25;
 		PB_WeaponBase.ReserveToMagAmmoFactor 2;
-		PB_WeaponBase.AmmoTypeLeft "LeftRevolverAmmo";
+		PB_WeaponBase.AmmoTypeLeft "PB_RevolverLeftMag";
 		inventory.pickupsound "REVOUP";
 		Inventory.Pickupmessage "$PB_REVOLVER_PICKUP";
 		Inventory.MaxAmount 2;					
 		Obituary "%o was shot down by %k's revolver.";
 		Tag "$PB_REVOLVER_TAG";
 		scale 0.4;
-		+WEAPON.NOAUTOFIRE;
-		+WEAPON.NOALERT;
 		Inventory.AltHUDIcon "RVICA0";
 		FloatBobStrength 0.5;
 		PB_WeaponBase.Upgrade "PB_Deagle";
+	}
+	
+	override void AttachToOwner(Actor Other)
+	{
+		Super.AttachToOwner(other);
+		if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 9, CVar.GetCvar("pb_helpflags", Other.Player))) {
+			Array<String> pbTipsBuf;
+			pbTipsBuf.Push("$PB_REVOLVER_TIP");
+			PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 9);
+		}
 	}
 	
 	states
@@ -143,7 +151,7 @@ Class PB_Revolver : PB_WeaponBase
                     PB_MuzzleFlashEffects(0, 0, 0);
 					A_Fireprojectile("YellowFlareSpawn",0,0,0,0);
 					PB_LowAmmoSoundWarning("revolver");
-					PB_TakeAmmo("RevolverAmmo",1,0);
+					PB_TakeAmmo("PB_RevolverMag",1,0);
 					A_ZoomFactor(0.96);
 					PB_WeaponRecoil(-1.15,-0.26);
 				}
@@ -195,7 +203,7 @@ Class PB_Revolver : PB_WeaponBase
                     PB_MuzzleFlashEffects(0, 0, 0);
 					A_FireProjectile("YellowFlareSpawn",0,0,0,0);
 					PB_LowAmmoSoundWarning("revolver");
-					PB_TakeAmmo("RevolverAmmo",1,0);
+					PB_TakeAmmo("PB_RevolverMag",1,0);
 					A_ZoomFactor(0.96);
 					PB_WeaponRecoil(-1.15,-0.35);
 				}
@@ -228,7 +236,7 @@ Class PB_Revolver : PB_WeaponBase
                     PB_MuzzleFlashEffects(0, 0, 0);
 					A_FireProjectile("YellowFlareSpawn",0,0,0,0);
 					PB_LowAmmoSoundWarning("revolver");
-					PB_TakeAmmo("RevolverAmmo",1,0);
+					PB_TakeAmmo("PB_RevolverMag",1,0);
 					A_ZoomFactor(0.96);
 					PB_WeaponRecoil(-1.2,-0.36);
 				}
@@ -260,7 +268,7 @@ Class PB_Revolver : PB_WeaponBase
 			R6V1 KLMNO 1;
 			TNT1 A 0 {
 				A_StartSound("Weapons/Revolver/Click2",10,CHANF_OVERLAP);
-				PB_RevolverCasingSpawn("RevolverAmmo");
+				PB_RevolverCasingSpawn("PB_RevolverMag");
 				PB_SetMagUnloaded(true);
 				PB_SetChamberEmpty(true);
 			}
@@ -277,7 +285,7 @@ Class PB_Revolver : PB_WeaponBase
 			R6V1 VWXYZ 1 A_SetRoll(roll-0.5, SPF_INTERPOLATE);
 			TNT1 A 0 {
 				A_StartSound("Weapons/Revolver/Load",10,CHANF_OVERLAP);
-				PB_AmmoIntoMag("RevolverAmmo","PB_LowCalMag",6,2);
+				PB_AmmoIntoMag("PB_RevolverMag","PB_LowCalMag",6,2);
 				PB_SpawnCasing("RevolverSpeedLoader", 45.6, 9, 18.75,frandom(-1,1),frandom(-1.2, -0.6), frandom(1,-1));
 				PB_SetMagUnloaded(false);
 				PB_SetChamberEmpty(false);
@@ -301,7 +309,7 @@ Class PB_Revolver : PB_WeaponBase
 			42V1 DEF 1 A_SetRoll(roll+0.3, SPF_INTERPOLATE);
 			TNT1 A 0 {
 				A_StartSound("Weapons/Revolver/Click2",10,CHANF_OVERLAP);
-				PB_RevolverCasingSpawn("RevolverAmmo");
+				PB_RevolverCasingSpawn("PB_RevolverMag");
 				PB_SetChamberEmpty(true);
 				PB_SetMagUnloaded(true);
 			}
@@ -317,7 +325,7 @@ Class PB_Revolver : PB_WeaponBase
 			42V1 RSTUV 1 A_SetRoll(roll-0.4, SPF_INTERPOLATE);
 			TNT1 A 0 {
 				A_StartSound("Weapons/Revolver/Load",10,CHANF_OVERLAP);
-				PB_AmmoIntoMag("RevolverAmmo","PB_LowCalMag",6,2);
+				PB_AmmoIntoMag("PB_RevolverMag","PB_LowCalMag",6,2);
 				PB_SpawnCasing("RevolverSpeedLoader", 45.6, 9, 18.75,frandom(-1,1),frandom(-1.2, -0.6), frandom(1,-1));
 				PB_SetMagUnloaded(false);
 				PB_SetChamberEmpty(false);
@@ -327,7 +335,7 @@ Class PB_Revolver : PB_WeaponBase
 			TNT1 A 0 A_Startsound("CYLNSPIN", 10,CHANF_OVERLAP);
 			42V2 ABBC 1	A_SetRoll(roll+0.6, SPF_INTERPOLATE);
 			TNT1 A 0 A_Startsound("Weapons/Revolver/Close", 10,CHANF_OVERLAP);
-			TNT1 A 0 A_JumpIfInventory("LeftRevolverAmmo", 6, "FinishDualReload");
+			TNT1 A 0 A_JumpIfInventory("PB_RevolverLeftMag", 6, "FinishDualReload");
 			42V2 DEF 1 A_SetRoll(roll-0.6, SPF_INTERPOLATE);
 			TNT1 A 2;
 			TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(true), "ReloadUnloadedLeft");
@@ -343,7 +351,7 @@ Class PB_Revolver : PB_WeaponBase
 			42V2 KLM 1 A_SetRoll(roll+0.3, SPF_INTERPOLATE);
 			TNT1 A 0 {
 				A_StartSound("Weapons/Revolver/Click2",10,CHANF_OVERLAP);
-				PB_RevolverCasingSpawn("LeftRevolverAmmo");
+				PB_RevolverCasingSpawn("PB_RevolverLeftMag");
 				PB_SetChamberEmpty(true,true);
 				PB_SetMagUnloaded(true,true);
 			}
@@ -360,7 +368,7 @@ Class PB_Revolver : PB_WeaponBase
 			42V3 A 1 A_SetRoll(roll-0.4, SPF_INTERPOLATE);
 			TNT1 A 0 {
 				A_StartSound("Weapons/Revolver/Load",10,CHANF_OVERLAP);
-				PB_AmmoIntoMag("LeftRevolverAmmo","PB_LowCalMag",6,2);
+				PB_AmmoIntoMag("PB_RevolverLeftMag","PB_LowCalMag",6,2);
 				PB_SpawnCasing("RevolverSpeedLoader", 45.6, 9, 18.75,frandom(-1,1),frandom(-1.2, -0.6), frandom(1,-1));
 				PB_SetChamberEmpty(false,true);
 				PB_SetMagUnloaded(false,true);
@@ -390,8 +398,8 @@ Class PB_Revolver : PB_WeaponBase
 			R7V1 KLMNO 1;
 			TNT1 A 0 {
 				A_StartSound("Weapons/Revolver/Click2", 10,CHANF_OVERLAP);
-				PB_RevolverCasingSpawn("RevolverAmmo");
-				PB_UnloadMag("RevolverAmmo","PB_LowCalMag",2,1,2,0,"PB_MagnumRound");
+				PB_RevolverCasingSpawn("PB_RevolverMag");
+				PB_UnloadMag("PB_RevolverMag","PB_LowCalMag",2,1,2,0,"PB_MagnumRound");
 				PB_SetChamberEmpty(true);
 				PB_SetMagUnloaded(true);
 				PB_SetMagEmpty(true);
@@ -413,8 +421,8 @@ Class PB_Revolver : PB_WeaponBase
 			43V1 ABCDEFGHIJ 1 A_SetRoll(roll+0.5, SPF_INTERPOLATE);
 			TNT1 A 0 {
 				A_StartSound("Weapons/Revolver/Click2", 10,CHANF_OVERLAP);
-				PB_RevolverCasingSpawn("RevolverAmmo");
-				PB_UnloadMag("RevolverAmmo","PB_LowCalMag",2,1,2,0,"PB_MagnumRound");
+				PB_RevolverCasingSpawn("PB_RevolverMag");
+				PB_UnloadMag("PB_RevolverMag","PB_LowCalMag",2,1,2,0,"PB_MagnumRound");
 				PB_SetChamberEmpty(true);
 				PB_SetMagUnloaded(true);
 				PB_SetMagEmpty(true);
@@ -435,8 +443,8 @@ Class PB_Revolver : PB_WeaponBase
 			43V2 GHIJKL 1 A_SetRoll(roll+0.5, SPF_INTERPOLATE);
 			TNT1 A 0 {
 				A_StartSound("Weapons/Revolver/Click2", 10,CHANF_OVERLAP);
-				PB_RevolverCasingSpawn("LeftRevolverAmmo");
-				PB_UnloadMag("LeftRevolverAmmo","PB_LowCalMag",2,1,2,0,"PB_MagnumRound");
+				PB_RevolverCasingSpawn("PB_RevolverLeftMag");
+				PB_UnloadMag("PB_RevolverLeftMag","PB_LowCalMag",2,1,2,0,"PB_MagnumRound");
 				PB_SetChamberEmpty(true,true);
 				PB_SetMagUnloaded(true,true);
 				PB_SetMagEmpty(true,true);
@@ -538,14 +546,14 @@ Class PB_Revolver : PB_WeaponBase
 				{
 					if(!PressingAltfire() || JustReleased(BT_ALTATTACK))
 						return resolvestate("Zoomout");
-					if (PressingFire() && CountInv("RevolverAmmo") > 0 )
+					if (PressingFire() && CountInv("PB_RevolverMag") > 0 )
 						return resolvestate("Fire2");
 					
 					return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOSECONDARY);
 				}
 				else 
 				{
-					if (PressingFire() && CountInv("RevolverAmmo") > 0 )
+					if (PressingFire() && CountInv("PB_RevolverMag") > 0 )
 						return resolvestate("Fire2");
 					
 					return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
@@ -573,7 +581,7 @@ Class PB_Revolver : PB_WeaponBase
                     PB_MuzzleFlashEffects(0, 0, 0);
 					A_Fireprojectile("YellowFlareSpawn",0,0,0,0);
 					PB_LowAmmoSoundWarning("revoPB_TakeAmmolver");
-					PB_TakeAmmo("RevolverAmmo",1,0);
+					PB_TakeAmmo("PB_RevolverMag",1,0);
 					A_ZoomFactor(1.20);
 					A_GunFlash();
 					PB_WeaponRecoil(-1.15,-0.26);
@@ -643,8 +651,8 @@ Class PB_Revolver : PB_WeaponBase
 				A_FireProjectile("PB_500SW", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 				PB_GunSmoke(5,0,0);
                 PB_MuzzleFlashEffects(5, 0, 0);
-				PB_LowAmmoSoundWarning("revolver", "LeftRevolverAmmo");
-				PB_TakeAmmo("LeftRevolverAmmo",1,0,0,true);
+				PB_LowAmmoSoundWarning("revolver", "PB_RevolverLeftMag");
+				PB_TakeAmmo("PB_RevolverLeftMag",1,0,0,true);
 				A_ZoomFactor(0.99);
 				A_StartSound("revolver/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(0.95, 1.05));
 				PB_DynamicTail("pistol", "shotgun");
@@ -662,14 +670,14 @@ Class PB_Revolver : PB_WeaponBase
 			41V1 D 1;
 			41V1 E 1 {
 				A_SetFiringLeftWeapon(False);
-				if(CountInv("LeftRevolverAmmo")<=0 || CountInv("RevolverAmmo")>0 )
+				if(CountInv("PB_RevolverLeftMag")<=0 || CountInv("PB_RevolverMag")>0 )
 					A_GiveInventory("DualFiring",1);
 			}
 			41V1 F 1;
 			41V1 GGG 1 {
 				int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
 				if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && firemodecvar == 2){
-					if(CountInv("LeftRevolverAmmo") > 0)
+					if(CountInv("PB_RevolverLeftMag") > 0)
 						return resolvestate("FireLeft_Overlay");
 					else 
 					{
@@ -679,7 +687,7 @@ Class PB_Revolver : PB_WeaponBase
 				}
 				if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon())
 				{
-					if(CountInv("LeftRevolverAmmo") > 0)
+					if(CountInv("PB_RevolverLeftMag") > 0)
 					{
 						return resolvestate("FireLeft_Overlay");
 					}
@@ -692,7 +700,7 @@ Class PB_Revolver : PB_WeaponBase
 				return resolvestate(Null);
 			}
 			TNT1 A 0 {
-				if(CountInv("LeftRevolverAmmo")<=0)
+				if(CountInv("PB_RevolverLeftMag")<=0)
 					A_GiveInventory("DualFireReload",1);
 			}
 			Goto IdleLeft_Overlay;
@@ -708,7 +716,7 @@ Class PB_Revolver : PB_WeaponBase
 				PB_GunSmoke(-5,0,0);
                 PB_MuzzleFlashEffects(-5, 0, 0);
 				PB_LowAmmoSoundWarning("revolver");
-				PB_TakeAmmo("RevolverAmmo",1,0);
+				PB_TakeAmmo("PB_RevolverMag",1,0);
 				A_ZoomFactor(0.99);
 				A_StartSound("revolver/fire", CHAN_Weapon, CHANF_DEFAULT, 1.0, ATTN_NORM, frandom(0.95, 1.05));
 				PB_DynamicTail("pistol", "shotgun");
@@ -726,14 +734,14 @@ Class PB_Revolver : PB_WeaponBase
 			41V1 L 1;
 			41V1 M 1 {
 				A_SetFiringRightWeapon(False);
-				if(CountInv("LeftRevolverAmmo")>0 || CountInv("RevolverAmmo")<=0 )
+				if(CountInv("PB_RevolverLeftMag")>0 || CountInv("PB_RevolverMag")<=0 )
 					A_TakeInventory("DualFiring",1);
 			}
 			41V1 N 1;
 			41V1 OOO 1 {
 				int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
 				if(JustPressed(BT_ATTACK) && !A_IsFiringRightWeapon() && firemodecvar == 2){
-					if(CountInv("RevolverAmmo") > 0)
+					if(CountInv("PB_RevolverMag") > 0)
 						return resolvestate("FireRight_Overlay");
 					else 
 					{
@@ -742,7 +750,7 @@ Class PB_Revolver : PB_WeaponBase
 					}
 				}
 				if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && firemodecvar > 2){
-					if(CountInv("RevolverAmmo") > 0)
+					if(CountInv("PB_RevolverMag") > 0)
 						return resolvestate("FireRight_Overlay");
 					else 
 					{
@@ -753,7 +761,7 @@ Class PB_Revolver : PB_WeaponBase
 				return resolvestate(null);
 			}
 			TNT1 A 0 {
-				if(CountInv("RevolverAmmo")<=0)
+				if(CountInv("PB_RevolverMag")<=0)
 					A_GiveInventory("DualFireReload",1);
 			}
 			Goto IdleRight_Overlay;
@@ -823,7 +831,7 @@ Class PB_Revolver : PB_WeaponBase
 }
 
 
-Class LeftRevolverAmmo : PB_WeaponAmmo //Your weapon's magazine ammo.
+Class PB_RevolverLeftMag : PB_WeaponAmmo //Your weapon's magazine ammo.
 {
 	default
 	{
@@ -836,7 +844,7 @@ Class LeftRevolverAmmo : PB_WeaponAmmo //Your weapon's magazine ammo.
 	}
 }
 
-Class RevolverAmmo : PB_WeaponAmmo
+Class PB_RevolverMag : PB_WeaponAmmo
 {
    default
 	{

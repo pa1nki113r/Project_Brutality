@@ -31,72 +31,14 @@ class PB_Projectile : FastProjectile abstract
 	const WHIZ_PLRDIST_MED = WHIZ_PLRDIST_STEP * 0.5;
 	const WHIZ_PLRDIST_FAR = WHIZ_PLRDIST_STEP * 1.5;
 
+	mixin PB_LocationalDamage;
+
 	virtual int Handle_MissileHit(Actor victim)
 	{
-		double scaled_damage = truedamage;
-		Name dmgType = DamageType;
-		double ang;
+		int scaledDamage = truedamage;
+		name dmgType = damageType;
+		if(!bNOCRITICALS) [scaledDamage, dmgType] = GetLimbDamage(truedamage, damageType, pos, victim, target, self.bOMNIDIRECTIONAL, headSizeMul);
 		
-		if(target)
-		{
-			ang = AbsAngle(self.Angle, AngleTo(victim));
-			ang = AbsAngle(ang, AngleTo(target));
-		}
-		
-		let ptrPBMon = PB_Monster(victim);
-		float victimHeight = (victim.ProjectilePassHeight > victim.Height)?(victim.ProjectilePassHeight):victim.Height;
-		if (!bNOCRITICALS && Pos.Z > victim.Pos.Z + victimHeight * ((ptrPBMon) ? ptrPBMon.posTorsoHB : 0.65))
-		{
-			//Console.Printf("Critical");
-			scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgTorsoMult : 1.5);
-			dmgtype = damagetype;
-			if (Pos.Z > victim.Pos.Z + victimHeight * ((ptrPBMon) ? ptrPBMon.posHeadHB : 0.80) / headSizeMul)
-			{
-				// Check if the monster doesn't ignore headshots else default to 0 (its funky)
-				if(!((ptrPBMon) ? ptrPBMon.ignoreHeadDamage : 0))
-				{
-					dmgtype = "Head";
-					//A_StartSound("headshotmarker", CHAN_AUTO, CHAN_UI);
-					scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgHeadMult : 2.0);
-				}
-			}
-// 			else
-// 			{
-// 				//A_StartSound("torsshotmarker", CHAN_AUTO, CHAN_UI);
-// 			}
-		}
-		else if (!bNOCRITICALS && Pos.Z < victim.Pos.Z + victimHeight * ((ptrPBMon) ? ptrPBMon.posLegHB : 0.40) && !((ptrPBMon) ? ptrPBMon.ignoreLegDamage : 0))
-		{
-			if (Pos.Z > victim.Pos.Z + victimHeight * ((ptrPBMon) ? ptrPBMon.posDickHB : 0.38) && !((ptrPBMon) ? ptrPBMon.ignoreDickDamage : 0))
-			{
-				//Console.Printf("Dick Shot");
-				//A_StartSound("apenshotmarker", CHAN_AUTO, CHAN_UI);
-				dmgtype = "Dick";
-				scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgDickMult : 1.25);
-			}
-			else
-			{
-				//Console.Printf("Legshot");
-				//A_StartSound("apenshotmarker", CHAN_AUTO, CHAN_UI);
-				dmgtype = "Leg";
-				scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgLegMult : 0.7);
-			}
-		}
-		else if (!bNOCRITICALS && !bOMNIDIRECTIONAL && ang > 32 && ang < 148 && !((ptrPBMon) ? ptrPBMon.ignoreArmDamage : 0))
-		{
-			//Console.Printf("Armshot");
-			//A_StartSound("apenshotmarker", CHAN_AUTO, CHAN_UI);
-			dmgtype = "Arm";
-			scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgArmMult : 0.8);
-		}
-		else
-		{
-			//A_StartSound("bodyshotmarker", CHAN_AUTO, CHAN_UI);
-			dmgtype = damagetype;
-			scaled_damage = scaled_damage * ((ptrPBMon) ? ptrPBMon.dmgLowTorsoMult : 1);
-		}
-		
-		scaled_damage = victim.GetModifiedDamage(dmgType, scaled_damage, true, self, target);
 		
 		if(victim.bsolid || victim.bshootable)	//dont spawn puffs on casings,ammo,etc
 		{
@@ -104,7 +46,7 @@ class PB_Projectile : FastProjectile abstract
 				SpawnPuff("PB_NoBloodPuff", pos, angle, 0, 0, PF_HITTHING);
 			else
             {
-                Actor tmpBlood = victim.SpawnBlood( pos, angle, ceil(scaled_damage * 0.47) );
+                Actor tmpBlood = victim.SpawnBlood( pos, angle, ceil(scaledDamage * 0.47) );
                 PB_GunshotBlood pbBlood = PB_GunshotBlood(tmpBlood);
                 if(pbBlood) {
                     pbBlood.sourceIsProjectile = true;
@@ -115,11 +57,11 @@ class PB_Projectile : FastProjectile abstract
                     // console.printf("ste: %p %s %i %i", pbBlood, pbBlood.GetClassName(), pbBlood.sourceIsProjectile, pbBlood.projectileDamage);
                 }
 
-				victim.TraceBleed( ceil(scaled_damage * 0.47), self );
+				victim.TraceBleed( ceil(scaledDamage * 0.47), self );
             }	
 		}
 		
-		victim.DamageMobj(self, target, ceil(scaled_damage), dmgType, 0, angle);
+		victim.DamageMobj(self, target, ceil(scaledDamage), dmgType, 0, angle);
 		
 		// ( victim.bISMONSTER || victim.BloodType != 'Blood' ) 
 		

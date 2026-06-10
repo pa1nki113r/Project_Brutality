@@ -29,6 +29,8 @@ class PB_ProjectileAlt : PB_Projectile abstract
 				count += count;
 			}
 		}
+		
+        vel.z -= GetGravity();
 
 		// Handle movement
 		bool ismoved = Vel != (0, 0, 0)
@@ -37,10 +39,10 @@ class PB_ProjectileAlt : PB_Projectile abstract
 			|| (   (pos.Z != floorz           ) /* Did it hit the floor?   */
 				&& (pos.Z != ceilingz - Height) /* Did it hit the ceiling? */ );
 
-		if (ismoved)
+		if (ismoved && bMISSILE)
 		{
 			// force some lateral movement so that collision detection works as intended.
-			if (bMissile && Vel.X == 0 && Vel.Y == 0 && !IsZeroDamage())
+			if (Vel.X == 0 && Vel.Y == 0 && !IsZeroDamage())
 			{
 				VelFromAngle(MinVel);
 			}
@@ -86,6 +88,7 @@ class PB_ProjectileAlt : PB_Projectile abstract
 						if(BounceWall())
 							return;
 						ExplodeMissile (BlockingLine, BlockingMobj);
+						OnExplode(FindExplosionType(BlockingMobj));
 						return;
 					}
 				}
@@ -112,6 +115,7 @@ class PB_ProjectileAlt : PB_Projectile abstract
 					HitFloor ();
                     Destructible.ProjectileHitPlane(self, SECPART_Floor);
 					ExplodeMissile (NULL, NULL);
+					OnExplode(EType_Geometry);
 					return;
 				}
 				if (pos.Z + height > ceilingz)
@@ -131,6 +135,7 @@ class PB_ProjectileAlt : PB_Projectile abstract
 					}
                     Destructible.ProjectileHitPlane(self, SECPART_Ceiling);
 					ExplodeMissile (NULL, NULL);
+					OnExplode(EType_Geometry);
 					return;
 				}
 				CheckPortalTransition();
@@ -157,5 +162,20 @@ class PB_ProjectileAlt : PB_Projectile abstract
 				}
 			}
 		}
+	}
+	
+	Default {
+		-NOEXTREMEDEATH
+		-RIPPER
+		+NOGRAVITY
+		Gravity 1.0;
+		Renderstyle "Normal";
+		Scale 1.0;
+	}
+	States {
+		XDeath:
+		Crash:
+			TNT1 A 0 A_Jump(256, "Death");
+			Stop;
 	}
 }
