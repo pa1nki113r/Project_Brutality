@@ -1464,6 +1464,28 @@ class PB_Hud_ZS : BaseStatusBar
 			}
 
 		}
+		
+		//zmove speedometer
+		let speedometer = CVar.GetCvar("pb_speedometer", cplayer).GetInt();
+		if(speedometer) {
+			if(plr && PlayerInGame[consoleplayer]) {
+				double unitscale;
+				switch(speedometer) {
+				default:
+				case 1:
+					unitscale = 10; //doom
+					break;
+				case 2:
+					unitscale = 32; //quake
+					break;
+				case 3:
+					unitscale = 655360; //srb2
+					break;
+				}
+				
+				PBHud_DrawString(mBoldFont, String.format("XY: %i Z: %i", plr.vel.xy.Length() * unitscale, abs(plr.vel.z) * unitscale), (0, 120), DI_TEXT_ALIGN_CENTER|DI_SCREEN_CENTER_TOP, Font.CR_WHITE);
+			}
+		}
 	}
 
 	bool PB_WeaponUsesPBAmmoType()
