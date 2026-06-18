@@ -1420,50 +1420,18 @@ Class UltPlasma_Ball : Plasma_Ball
 	}
 }
 
-//not sure if these are even used
-Class PlasmaBall75 : Plasma_Ball
+Class EnemyPlasmaBall : Plasma_Ball
 {
 	default
 	{
-		SeeSound "PLSM9";
-	}
-}
-
-Class PlasmaBall76: Plasma_Ball
-{
-	default
-	{
-		SeeSound "PLSULT";
-	}
-}
-Class PlasmaBall65: Plasma_Ball
-{
-	default
-	{
-		SeeSound "PLSM4";
-	}
-}
-
-
-Class EnemyPlasmaBall : PlasmaBall75
-{
-	default
-	{
-		DamageFunction random(10,15);
-		//Damage(random(10,15));
-		DamageType "Plasma";
+		PB_Projectile.BaseDamage 13;
 		Speed 40;
+		SeeSound "PLSM9";
 		//Species "NotMarines";
 		-THRUACTORS;
 		-THRUSPECIES;
 		-MTHRUSPECIES;
 		+THRUGHOST;
-	}
-	States 
-	{
-		Spawn:
-			DB19 ABC 2 BRIGHT Light("PLASMABALLSMALL");
-			Loop;
 	}
 }
 
