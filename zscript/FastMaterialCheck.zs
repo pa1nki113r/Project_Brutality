@@ -48,7 +48,7 @@ class PB_Materialsys : StaticEventHandler
 		// [gng] previously the check matched the first few characters of the 
 		// string, the map lookup cannot do this. it has to trim the characters
 		// one by one to find the proper material, this is still faster
-		while( texName.CodePointCount() >= 4 )
+		while( texName.CodePointCount() >= 3 )
 		{
 			let [ result, exists ] = seh.texToMatKeyMap.CheckValue( texName );
 
