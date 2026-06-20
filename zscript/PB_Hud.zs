@@ -134,7 +134,7 @@ class PB_Hud_ZS : BaseStatusBar
 	override void Init()
 	{
 		Super.Init();
-		SetSize(0, 480, 360);
+		SetSize(0, 320, 540);
 		
 		mDefaultFont = HUDFont.Create("PBFONT");
 		mBoldFont = HUDFont.Create("PBBOLD");
