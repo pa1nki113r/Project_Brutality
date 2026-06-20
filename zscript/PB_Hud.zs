@@ -99,8 +99,8 @@ class PB_Hud_ZS : BaseStatusBar
     int tickRandSeed;
 
 	//CVars
-	int16 hudXMargin, hudYMargin, playerMsgPrint, bottomMiddlePart;
-	bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks, showtutorials;
+	int16 hudXMargin, hudYMargin, playerMsgPrint, bottomMiddlePart, screenblocks;
+	bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks, showtutorials, altHUDEnabled;
 	float playerAlpha, playerBoxAlpha, messageSize, bloodDropsAlpha, glassCracksAlpha, visorScale, visorOffsets;
 
 	bool centerNotify;
@@ -207,6 +207,9 @@ class PB_Hud_ZS : BaseStatusBar
         bottomMiddlePart = CVar.GetCVar("pb_visormiddlepartbottom", CPlayer).GetInt();
 
         showtutorials = CVar.GetCVar("pb_showtutorials", CPlayer).GetBool();
+		//zdoom cvars
+		altHUDEnabled = CVar.GetCvar("hud_althud", CPlayer).GetBool();
+		screenblocks = CVar.GetCvar("screenblocks", CPlayer).GetInt();
 	}
 
 	override void Draw(int state, double TicFrac)
@@ -242,7 +245,7 @@ class PB_Hud_ZS : BaseStatusBar
         interpolatedOfs = ofsOldFrame * (1. - ticfrac) + ofsCurrentFrame * ticfrac;
         interpolatedSway = swayOldFrame * (1. - ticfrac) + swayCurrentFrame * ticfrac;
 		
-		if(hudState != HUD_None)
+		if(hudState != HUD_None && (screenblocks < 11 || screenblocks < 12 && !altHUDEnabled))
 		{
 			BeginHUD();
 			DrawFullScreenStuff();
