@@ -10,26 +10,29 @@ class PB_FlamethrowerUpgrade : PB_UpgradeItem
 	}
 	
 	override bool TryPickup(in out Actor toucher) {
-		if(!toucher.FindInventory("PB_FLamethrower") && !toucher.FindInventory("FlamerUpgraded") && toucher.CountInv("PB_Fuel") < toucher.GetAmmoCapacity("PB_Fuel")) {
-			toucher.GiveInventory("PB_Flamethrower", 1);
-			return true;
+		if(toucher.FindInventory("PB_Flamethrower") && toucher.FindInventory("FlamerUpgraded") && toucher.CountInv("PB_Fuel") == toucher.GetAmmoCapacity("PB_Fuel")) {
+			return false;
 		}
-		return false;
-	}
-	
-	override void AttachToOwner(Actor other) {
-		let weap = PB_Weapon(FindInventory("PB_Flamethrower"));
-		if(weap) {
-			weap.showSecondary = false;
-		}
-		owner.SetInventory("FlamerUpgraded", 1);
-		owner.SetInventory("FlamerTankNotInserted", 1);
+		return super.TryPickup(toucher);
 	}
 	
 	States
 	{
 		Spawn:
 			FSPW B -1;
+			Stop;
+		Pickup:
+			TNT1 A 0 {
+				A_GiveInventory("PB_Flamethrower");
+				let weap = PB_Weapon(FindInventory("PB_Flamethrower"));
+				if(weap) {
+					weap.showSecondary = false;
+				}
+				if(!FindInventory("FlamerUpgraded")) {
+					A_SetInventory("FlamerUpgraded",1);
+					A_SetInventory("FlamerTankNotInserted",1);
+				}
+			}
 			Stop;
 	}
 }
