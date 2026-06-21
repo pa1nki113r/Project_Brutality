@@ -1281,7 +1281,7 @@ Class M1_HeatWave : Actor
 		Speed 25;
 		Radius 12;
 		Height 12;
-		Damage 10;
+		DamageFunction 45;
 		Decal "none";
 		damagetype "Plasma";
 		RenderStyle "Add";
