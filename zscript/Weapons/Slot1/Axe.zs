@@ -146,12 +146,11 @@ class PB_Axe : PB_WeaponBase
     action void Axe_SwingAttack()
     {
         if(invoker.OwnerHasBerserk()) {
-            A_Saw("", "", 30, "AxePuffs", 0, 120, 0,16);
-            A_FireCustomMissile("AxeAttack", 0, 0, 0, 0);
-            A_FireCustomMissile("AxeAttack", 0, 0, 0, 0);
+            A_Saw("", "", 123, "AxePuffs", SF_NORANDOM, 120, 0,16);
+            A_FireCustomMissile("SuperAxeAttack", 0, 0, 0, 0);
         }
         else {
-            A_Saw("", "", 15, "AxePuffs", 0, 120, 0,16);
+            A_Saw("", "", 70, "AxePuffs", SF_NORANDOM, 120, 0,16);
             A_FireCustomMissile("AxeAttack", 0, 0, 0, 0);
         }
     }
@@ -435,6 +434,12 @@ class AxeAttack : PB_ProjectileAlt
     }
 }
 
+class SuperAxeAttack : AxeAttack {
+	Default {
+		PB_Projectile.BaseDamage 91;
+	}
+}
+
 class ThrownAxe : PB_UpgradeItem
 {
     Default
@@ -443,7 +448,7 @@ class ThrownAxe : PB_UpgradeItem
         Height 8;
         Speed 24;
         Fastspeed 64;
-        Damage 120;
+        DamageFunction 540;
         +MISSILE;
         Scale 0.7;
         Gravity 0.25;
