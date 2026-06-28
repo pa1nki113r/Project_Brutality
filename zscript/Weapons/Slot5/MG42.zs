@@ -99,7 +99,7 @@ class PB_MG42 : PB_WeaponBase
 				}
 				else {
 					A_FlashOverlay();
-					A_Overlay(BELT_OVERLAY_ADS,"BeltFlash");
+					A_Overlay(BELT_OVERLAY,"BeltFlash");
 				}
 				
 				// Overheat
