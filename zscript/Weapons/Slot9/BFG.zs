@@ -101,7 +101,7 @@ class PB_BFG9000 : PB_WeaponBase
 
                 case 3:
                 // PB_FireBullets("PB_SuperBFGBall",1,0,0,0,0);
-                A_FireCustomMissile("PB_SuperBFGBall");
+                A_FireProjectile("PB_SuperBFGBall", spawnheight:-12);
                 A_TakeInventory(invoker.ammo1.getClassName(), AMMO_TAKE_GREEN, TIF_NOTAKEINFINITE);
                 A_ZoomFactor(0.98, ZOOM_INSTANT);
                 A_GunFlash();
@@ -194,7 +194,7 @@ class PB_BFG9000 : PB_WeaponBase
                 A_StopSound(CHAN_BODY);
 				A_StartSound("weapons/bh_secondary", CHAN_WEAPON);
                 // PB_FireBullets("BlackHole_GravityBomb",1,0,0,0,0);
-				A_FireCustomMissile("BlackHole_GravityBomb",0,1,0,0);
+				A_FireProjectile("BlackHole_GravityBomb", spawnheight:-8);
 				A_TakeInventory(invoker.ammo1.getClassName(), AMMO_TAKE_PURPLE_ALT, TIF_NOTAKEINFINITE);
 				A_GunFlash();
                 break;
@@ -697,8 +697,8 @@ class BlackHole_GravityBomb : actor //PB_ProjectileAlt //actor
         // Gravity 0;
         DamageFunction 675;
         Projectile;
-        Radius 16;
-        Height 16;
+        Radius 12;
+        Height 20;
         Speed 40;
         RenderStyle "Normal";
         Scale 0.12;
@@ -714,6 +714,7 @@ class BlackHole_GravityBomb : actor //PB_ProjectileAlt //actor
         +SQUAREPIXELS;
         +NODAMAGETHRUST;
         +EXTREMEDEATH;
+		+ROLLCENTER
         Species "Marines";
     }
 
