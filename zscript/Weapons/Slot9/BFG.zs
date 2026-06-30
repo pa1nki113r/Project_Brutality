@@ -695,7 +695,7 @@ class BlackHole_GravityBomb : actor //PB_ProjectileAlt //actor
         // +PB_PROJECTILE.NOCRITICALS;
         // -RIPPER;
         // Gravity 0;
-        Damage 150;
+        DamageFunction 675;
         Projectile;
         Radius 16;
         Height 16;
