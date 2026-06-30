@@ -443,6 +443,7 @@ class AxeAttack : PB_ProjectileAlt
 class SuperAxeAttack : AxeAttack {
 	Default {
 		PB_Projectile.BaseDamage 91;
+		PainType "ExtremePunches";
 	}
 }
 
