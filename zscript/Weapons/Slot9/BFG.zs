@@ -714,6 +714,7 @@ class BlackHole_GravityBomb : actor //PB_ProjectileAlt //actor
         +SQUAREPIXELS;
         +NODAMAGETHRUST;
         +EXTREMEDEATH;
+		+FORCEXYBILLBOARD
 		+ROLLCENTER
         Species "Marines";
     }
