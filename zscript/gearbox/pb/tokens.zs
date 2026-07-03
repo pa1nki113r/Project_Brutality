@@ -738,7 +738,7 @@ Class PB_RocketLauncherWheel : wheelinfocontainer
 			
 		PB_SpecialWheel_Mode rocket_standard = new ("PB_SpecialWheel_Mode");
 		rocket_standard.img = "graphics/pywheel/rocket_standard.png";
-		rocket_standard.Alias = "$PB_RL_WHEEL_NORMAL";
+		rocket_standard.Alias = "$PB_RL_WHEEL_DUMBFIRE";
 		rocket_standard.tokentogive = "RocketLauncher_Standard";
 		rocket_standard.scalex = iconscale.x;
 		rocket_standard.scaley = iconscale.y;

@@ -808,7 +808,7 @@ Class PB_FragGrenade : Actor
 		Radius 2;
 		Height 2;
 		speed 44;
-		Damage 30;
+		DamageFunction 135;
 		DamageType "Explosive";
 		+MISSILE;
 		+BLOODSPLATTER;
@@ -1255,7 +1255,7 @@ Class PB_AcidGrenade : PB_FragGrenade
 {
 	default
 	{
-		Damage 15;
+		DamageFunction 70;
 		DamageType "Disintegrate";
 		Decal "Scorch";
 		DeathSound "Daedabus/impact";

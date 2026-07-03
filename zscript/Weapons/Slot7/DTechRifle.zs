@@ -649,58 +649,6 @@ class PB_DTechRifle : PB_WeaponBase
 }
 
 //////////////////////////// PROJECTILES/OTHERS ////////////////////////////////////////////////////////////////////////////////////
-class Hellbullet : PB_ProjectileAlt
-{
-    Default
-    {
-        PB_Projectile.BaseDamage 54;
-        +PB_PROJECTILE.NOCRITICALS
-        +FORCEXYBILLBOARD
-        +SQUAREPIXELS
-        +BLOODSPLATTER
-        +NOEXTREMEDEATH
-        damagetype "fire";
-        radius 2;
-        height 1;
-        //alpha 0.8
-        scale .3;
-        speed 130;
-        Decal "Scorch";
-        Deathsound "Weapons/Demontech/Crash";
-    }
-
-    States
-    {
-        Spawn:
-            PBAL L 1 BRIGHT ;
-            TNT1 A 0 A_SpawnItemEx("DTechTrailSpark", random(5,-5), random(5,-5), random(5,-5), 0, 0, 0, 0, 128, 0);
-            PBAL M 1 BRIGHT ;
-            Loop;
-
-        Xdeath:
-            TNT1 A 0; //A_CustomMissile ("Flametrails", 0, 0, random (0, 180), 2, random (0, 360))
-            TNT1 A 0 A_SpawnItem("HellRifle_Puff",0);
-            TNT1 A 0 A_Jump(128, 2);
-            TNT1 A 0 A_SpawnItem("DTechBurningPiece",0);
-            //TNT1 AAA 0 A_SpawnItemEx("ExplosionParticleVerySlow", random(-8, 8), random(-8, 8), random(-2,2), 0, 0, 0, 0, 128, 0)
-            TNT1 AAA 0 A_SpawnItemEx("DTechTrailSpark", random(-8, 8), random(-8, 8), random(-2,2), 0, 0, 0, 0, 128, 0);
-            TNT1 A 4;
-            TNT2 AAA 3 A_CustomMissile ("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160));
-            Stop;
-
-        Death:
-            TNT1 A 0 A_SpawnItem("HellRifle_Puff2",0);
-            TNT1 A 0 A_Jump(128, 2);
-            TNT1 A 0 A_SpawnItem("DTechBurningPiece2",0);
-            TNT1 AAA 0 A_SpawnItemEx("ExplosionParticleVerySlow", random(-8, 8), random(-8, 8), random(-2,2), 0, 0, 0, 0, 128, 0);
-            //TNT1 AA 0 A_SpawnItemEx("BurningEmberParticlesFloating_Bigger", random(19,-19), random(19,-19), random(4,-4), 0, 0, 0, 0, 128, 0)
-            TNT1 AAA 0 A_SpawnItemEx("DTechTrailSpark", random(-8, 8), random(-8, 8), random(-2,2), 0, 0, 0, 0, 128, 0);
-            TNT1 A 4;
-            TNT2 AAAAA 4 A_CustomMissile ("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160));
-            Stop;
-    }
-}
-
 class DTechTrailSpark : actor
 {
     Default {
@@ -721,53 +669,6 @@ class DTechTrailSpark : actor
 }
 	
 //GreenPlasma_Puff
-
-class Hellbullet2 : PB_ProjectileAlt
-{
-    Default {
-    PB_Projectile.BaseDamage 60;
-    +PB_PROJECTILE.NOCRITICALS
-	+FORCEXYBILLBOARD
-	+SQUAREPIXELS
-	+BLOODSPLATTER
-	+NOEXTREMEDEATH
-	damagetype "Disintegrate";
-	radius 2;
-	height 1;
-	renderstyle "ADD";
-	//alpha 0.7;
-	scale .19;
-	speed 100;
-	Decal "Scorch";
-	Deathsound "Weapons/Demontech/Crash";
-  }
-	states
-	{
-	Spawn:
-		TNT1 AA 0 NODELAY A_SpawnItem("GreenFlareSmall",0);
-		DB57 AB 1 BRIGHT Light("CausticProjectile");
-		TNT1 A 0 A_CustomMissile ("GreenTracerSmall", 0, 0, random (0, 360), 2, random (0, 360));
-		TNT1 A 0 A_SpawnItemEx("GreenTrailSparks", random(5,-5), random(5,-5), random(5,-5), 0, 0, 0, 0, 128, 0);
-		DB57 C 1 BRIGHT;
-		Loop;
-	Xdeath:
-		TNT1 A 0 A_SpawnItem("GreenPlasma_Puff_Medium",0);
-		TNT1 A 0 A_CustomMissile ("PlasmaParticleSpawner", 0, 0, random (0, 180), 2, random (0, 360));
-		TNT1 A 4;
-		//TNT2 AAA 3 A_CustomMissile ("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160));
-		
-		Stop;
-
-	Death:
-		TNT1 A 0 A_SpawnItem("GreenPlasma_Puff_Medium",0);
-		TNT1 A 0 A_CustomMissile ("PlasmaParticleSpawner", 0, 0, random (0, 180), 2, random (0, 360));
-		TNT1 A 4	;
-		//TNT2 AAAAA 4 A_CustomMissile ("PlasmaSmoke", 1, 0, random (0, 360), 2, random (0, 160));
-		Stop;
-	}
-}
-
-
 
 class DemonSoulHeal : CustomInventory //23167
 {

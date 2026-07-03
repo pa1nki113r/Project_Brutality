@@ -101,7 +101,7 @@ class PB_BFG9000 : PB_WeaponBase
 
                 case 3:
                 // PB_FireBullets("PB_SuperBFGBall",1,0,0,0,0);
-                A_FireCustomMissile("PB_SuperBFGBall");
+                A_FireProjectile("PB_SuperBFGBall", spawnheight:-12);
                 A_TakeInventory(invoker.ammo1.getClassName(), AMMO_TAKE_GREEN, TIF_NOTAKEINFINITE);
                 A_ZoomFactor(0.98, ZOOM_INSTANT);
                 A_GunFlash();
@@ -194,7 +194,7 @@ class PB_BFG9000 : PB_WeaponBase
                 A_StopSound(CHAN_BODY);
 				A_StartSound("weapons/bh_secondary", CHAN_WEAPON);
                 // PB_FireBullets("BlackHole_GravityBomb",1,0,0,0,0);
-				A_FireCustomMissile("BlackHole_GravityBomb",0,1,0,0);
+				A_FireProjectile("BlackHole_GravityBomb", spawnheight:-8);
 				A_TakeInventory(invoker.ammo1.getClassName(), AMMO_TAKE_PURPLE_ALT, TIF_NOTAKEINFINITE);
 				A_GunFlash();
                 break;
@@ -695,10 +695,10 @@ class BlackHole_GravityBomb : actor //PB_ProjectileAlt //actor
         // +PB_PROJECTILE.NOCRITICALS;
         // -RIPPER;
         // Gravity 0;
-        Damage 150;
+        DamageFunction 675;
         Projectile;
-        Radius 16;
-        Height 16;
+        Radius 12;
+        Height 20;
         Speed 40;
         RenderStyle "Normal";
         Scale 0.12;
@@ -714,6 +714,8 @@ class BlackHole_GravityBomb : actor //PB_ProjectileAlt //actor
         +SQUAREPIXELS;
         +NODAMAGETHRUST;
         +EXTREMEDEATH;
+		+FORCEXYBILLBOARD
+		+ROLLCENTER
         Species "Marines";
     }
 
@@ -723,33 +725,38 @@ class BlackHole_GravityBomb : actor //PB_ProjectileAlt //actor
 			TNT1 A 0 NoDelay A_StartSound("PLSBULB", CHAN_5, CHANF_LOOPING);
 		Fly:
 			031G ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 bright Light("BlackholeBallSmall"){
-				A_SpawnItemEx("PurpleTrailSparksSmall", 0, 0, 0, 0, 0, 0, 0, 128);
-				A_SetRoll(roll-10);
+				A_SpawnItemEx("PurpleTrailSparksSmall", 0, 0, 10, 0, 0, 0, 0, 128);
+				A_SetRoll(roll-5);
 			}	
 			032G ABCD 1 bright Light("BlackholeBallSmall"){
-				A_SpawnItemEx("PurpleTrailSparksSmall", 0, 0, 0, 0, 0, 0, 0, 128);
-				A_SetRoll(roll-10);
+				A_SpawnItemEx("PurpleTrailSparksSmall", 0, 0, 10, 0, 0, 0, 0, 128);
+				A_SetRoll(roll-5);
 			}  
 			Loop;
 		Death:
 			TNT1 A 0
 			{ 
-				A_SpawnItem("TinyBlackHoleSingularity");
+				A_SpawnItemEx("TinyBlackHoleSingularity", zofs:10);
 				A_RadiusThrust(-5000,800, RTF_NOIMPACTDAMAGE);
 				A_StopSound(CHAN_5);
 				A_StartSound("DSPBCN", CHAN_AUTO);
-				A_CustomMissile ("PurplePlasmaFire", 0, 0, random (0, 360), 2, random (0, 360));
-				A_CustomMissile ("PurpleShockWave", 0, 0, random (0, 360), 2, random (0, 360));
-				A_CustomMissile ("PurpleShockWave_Flat", 0, 0, random (0, 360), 2, random (0, 360));
+				A_CustomMissile ("PurplePlasmaFire", 10, 0, random (0, 360), 2, random (0, 360));
+				A_CustomMissile ("PurpleShockWave", 10, 0, random (0, 360), 2, random (0, 360));
+				A_CustomMissile ("PurpleShockWave_Flat", 10, 0, random (0, 360), 2, random (0, 360));
 			}
-			TNT1 AAAAA 0 A_CustomMissile ("PurplePlasmaParticle", 0, 0, random (0, 360), 2, random (0, 360));
+			TNT1 AAAAA 0 A_CustomMissile ("PurplePlasmaParticle", 110, 0, random (0, 360), 2, random (0, 360));
 			031G ABCDEFGHIJK 1 BRIGHT Light("BlackholeBallSmall"){
 				A_SetScale(Scale.X-0.01, Scale.Y-0.01);
-				A_RadiusThrust(-10,800,0);
+				A_RadiusThrust(-10, 800, RTF_NOIMPACTDAMAGE);
 			}
-			TNT1 A 0 A_Explode(220, 120, 0, 0, 120);
 			031G ABCDEFGHIJK 1 BRIGHT Light("BlackholeBallSmall") ;
-	        TNT1 A 1 Light("BlackholeBallSmall") {A_Blast (BF_ONLYVISIBLETHINGS,80,800,25);} //Push away even harder.
+			TNT1 A 0 {
+				A_Explode(220, 120, 0, 0, 120);
+				A_RadiusThrust(8000, 800, RTF_NOIMPACTDAMAGE);
+				A_CustomMissile ("PurplePlasmaFire", 10, 0, random (0, 360), 2, random (0, 360));
+				A_CustomMissile ("PurpleShockWave2", 10, 0, random (0, 360), 2, random (0, 360));
+				A_CustomMissile ("PurpleShockWave_Flat2", 10, 0, random (0, 360), 2, random (0, 360));
+			}
 			Stop;
     }
 }
@@ -778,6 +785,30 @@ class PurpleShockWave : actor
 }
 
 class PurpleShockWave_Flat : PurpleShockWave
+{
+    Default
+    {
+	    +FLATSPRITE;
+    }
+}
+
+class PurpleShockWave2 : PurpleShockWave
+{
+    Default
+    {
+        Alpha 1.0;
+		Scale 5.0;
+    }
+	
+    States 
+	{ 
+		Spawn:
+			SH0K ABCDEFGHIJKLMNOPQR 1 BRIGHT A_FadeOut(0.1);
+			Stop;
+	}
+}
+
+class PurpleShockWave_Flat2 : PurpleShockWave2
 {
     Default
     {

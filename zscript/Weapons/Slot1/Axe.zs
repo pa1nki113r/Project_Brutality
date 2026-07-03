@@ -146,29 +146,34 @@ class PB_Axe : PB_WeaponBase
     action void Axe_SwingAttack()
     {
         if(invoker.OwnerHasBerserk()) {
-            A_Saw("", "", 30, "AxePuffs", 0, 120, 0,16);
-            A_FireCustomMissile("AxeAttack", 0, 0, 0, 0);
-            A_FireCustomMissile("AxeAttack", 0, 0, 0, 0);
+            A_Saw("", "", 123, "AxePuffs", SF_NORANDOM, 120, 0,16);
+            A_FireCustomMissile("SuperAxeAttack", 0, 0, 0, 0);
         }
         else {
-            A_Saw("", "", 15, "AxePuffs", 0, 120, 0,16);
+            A_Saw("", "", 70, "AxePuffs", SF_NORANDOM, 120, 0,16);
             A_FireCustomMissile("AxeAttack", 0, 0, 0, 0);
         }
     }
 
     action void Axe_Throw()
     {
-        string axe = "ThrownAxe";
-        if(PB_IsVisorBlood())
-        {
-            switch(PB_GetVisorBlood())
-            {
-                case REDBLOODVISOR:     axe = "ThrownAxe_Red";      break;
-                case GREENBLOODVISOR:   axe = "ThrownAxe_Green";    break;
-                case BLUEBLOODVISOR:    axe = "ThrownAxe_Blue";     break;
-            }
-        }
-        A_FireCustomMissile(axe,0,0,0,0);
+        let axe = PB_ThrownAxe(A_FireProjectile("PB_ThrownAxe"));
+		if(axe) {
+			if(PB_IsVisorBlood()) {
+				switch(PB_GetVisorBlood()) {
+				case REDBLOODVISOR:
+					axe.bloodstain = 1;
+					break;
+				case BLUEBLOODVISOR:
+					axe.bloodstain = 2;
+					break;
+				case GREENBLOODVISOR:
+					axe.bloodstain = 3;
+					break;
+				}
+			}
+			axe.berserked = FindInventory("PB_PowerStrength");
+		}
     }
 
     action void Axe_ChangeModeSprite(
@@ -435,100 +440,85 @@ class AxeAttack : PB_ProjectileAlt
     }
 }
 
-class ThrownAxe : PB_UpgradeItem
-{
-    Default
-    {
-        Radius 6;
-        Height 8;
-        Speed 24;
-        Fastspeed 64;
-        Damage 120;
-        +MISSILE;
-        Scale 0.7;
-        Gravity 0.25;
-        DamageType "Cut";
-        Decal "None";
-    }
-
-    States
-    {
-        Spawn:
-            VAX0 A 0;
-            AXE0 A 0 {If(GetCvar("V5_MODELS")==1){A_SetSpawnSprite("VAX0");}}
-        ActualSpawn:
-            "####" BC 2;
-        Fly:
-            "####" DEFGHIJKLMNOPQBC 2;
-            Loop;
-        Death:
-            TNT1 A 0 A_SpawnItem ("Sparks", 0);
-            TNT1 A 0 A_PlaySound("AXEWALL", 6);
-            TNT1 A 0 A_ALertMonsters(400);
-            TNT1 AAAAAAA 0 A_CustomMissile ("SparkX", 2, 0, random (0, 360), 2, random (30, 170));
-            TNT1 AAAA 0 A_CustomMissile ("HitSpark", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-            TNT1 AAAA 0 A_CustomMissile ("HitSpark22", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-            TNT1 AAAA 0 A_CustomMissile ("HitSpark23", 2, 0, frandom(0,1)*frandom (0, 360), 2, frandom(0,1)*frandom (30, 360));
-            TNT1 A 0 A_SpawnItem("PB_Axe", -3);
-            TNT1 A 3;
-            Stop;
-        XDeath:
-        Melee:
-        Crash:
-            TNT1 A 0;
-            PUFF A 0 A_PlaySound("AXEHIT", 3);
-            TNT1 A 0 A_PlaySound("Machete/Yum", 6);
-            TNT1 A 0 A_SpawnItemEx ("PLOFT2",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
-            TNT1 A 0 A_SpawnItem("PB_Axe");
-            TNT1 A 10;
-            Stop;
-    }
+class SuperAxeAttack : AxeAttack {
+	Default {
+		PB_Projectile.BaseDamage 91;
+		PainType "ExtremePunches";
+	}
 }
 
-class ThrownAxe_Red : ThrownAxe
-{
-    Default
-    {
-	    Decal "BrutalBloodSuper";
-    }
-
-    States
-    {
-        Spawn:
-            VAX1 A 0;
-            AXE1 A 0 {If( GetCvar( "V5_MODELS" ) == 1){A_SetSpawnSprite("VAX1");}}
-            Goto ActualSpawn;
-    }
-}
-
-class ThrownAxe_Blue : ThrownAxe
-{
-    Default
-    {
-	    Decal "BlueBloodSplat";
-    }
-
-    States
-    {
-        Spawn:
-            VAX2 A 0;
-            AXE2 A 0 {If( GetCvar( "V5_MODELS" ) == 1){A_SetSpawnSprite("VAX2");}}
-            Goto ActualSpawn;
-    }
-}
-
-class ThrownAxe_Green : ThrownAxe
-{
-    Default
-    {
-	    Decal "GreenBloodSplat";
-    }
-
-    States
-    {
-        Spawn:
-            VAX3 A 0;
-            AXE3 A 0 {If( GetCvar( "V5_MODELS" ) == 1){A_SetSpawnSprite("VAX3");}}
-            Goto ActualSpawn;
-    }
+class PB_ThrownAxe : PB_ProjectileAlt {
+	Default {
+		Radius 6;
+		Height 8;
+		Speed 24;
+		PB_Projectile.BaseDamage 270;
+		PB_Projectile.RipperCount 2;
+		Scale 0.7;
+		Gravity 0.25;
+		DamageType "Cut";
+		Decal "None";
+		+PB_Projectile.OMNIDIRECTIONAL
+		-NOGRAVITY
+	}
+	
+	int bloodstain;
+	bool berserked;
+	
+	override void PostBeginPlay() {
+		super.PostBeginPlay();
+		if(berserked) {
+			vel *= 1.5;
+			bRIPPER = true;
+			truedamage = 472;
+		}
+	}
+	
+	States
+	{
+	Spawn:
+		AXE0 A 0 NoDelay {
+			sprite = GetSpriteIndex("AXE"..bloodstain);
+			if(V5_MODELS) sprite = GetSpriteIndex("VAX"..bloodstain);
+			if(berserked) return resolvestate("FlyBerserked");
+			return resolvestate(null);
+		}
+	Fly:
+		#### BCDEFGHIJKLMNOPQ 2;
+		Loop;
+	FlyBerserked:
+		#### BCDEFGHIJKLMNOPQ 1;
+		Loop;
+	Death:
+		TNT1 A 0 {
+			A_SpawnItem("Sparks", 0);
+			A_StartSound("AXEWALL", 6);
+			A_AlertMonsters(400);
+			for(int i = 0; i < 4; i++) {
+				A_CustomMissile ("SparkX", 2, 0, random (0, 360), 2, random (30, 170));
+				A_CustomMissile ("SparkX", 2, 0, random (0, 360), 2, random (30, 170));
+				A_CustomMissile ("HitSpark", 2, 0, frandom(0, 1) * frandom (0, 360), 2, frandom(0, 1) * frandom (30, 360));
+				A_CustomMissile ("HitSpark22", 2, 0, frandom(0, 1) * frandom (0, 360), 2, frandom(0, 1) * frandom (30, 360));
+				A_CustomMissile ("HitSpark23", 2, 0, frandom(0, 1) * frandom (0, 360), 2, frandom(0, 1) * frandom (30, 360));
+			}
+			A_SpawnItemEx("PB_Axe");
+		}
+		Stop;
+	XDeath:
+		TNT1 A 0 {
+			A_StartSound("AXEHIT", 3);
+			A_StartSound("Machete/Yum", 6);
+			A_SpawnItemEx("PLOFT2");
+			A_SpawnItemEx("PB_Axe");
+		}
+		Stop;
+	CacheSprites:
+		VAX0 A 0;
+		VAX1 A 0;
+		VAX2 A 0;
+		VAX3 A 0;
+		AXE1 A 0;
+		AXE2 A 0;
+		AXE3 A 0;
+	}
 }

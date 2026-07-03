@@ -1779,39 +1779,41 @@ class PlayerPawnBase : PlayerPawn
 		PlayerInfo plr = player;
 		
 		if(plr && !waiting && (!dashJumped || !JumpSoundCooler) && (plr.cmd.buttons & BT_USER3) && dashCharge >= DASH_MAX_CHARGE / 2 && dashtics == 0 && !FindInventory("IsSlideKicking")) {
-			sector sss = floorsector;
-			if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
-				A_StartSound("Daedabus/impact", 32);
-				return;
+			if(CheckNotPredicting()) {
+				sector sss = floorsector;
+				if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
+					A_StartSound("Daedabus/impact", 32);
+					return;
+				}
+				// [gng] thanks to kodi and lewisk3, analog compatible dash direction
+				dashDir = DeltaAngle(atan2(plr.cmd.sidemove, plr.cmd.forwardmove), angle);
+				
+				if(DashCharge < DASH_MAX_CHARGE) { 
+					waiting = true; 
+					dashCharge = 0; 
+				}
+				
+				if(!FindInventory("PB_PowerSpeed")) {
+					dashCharge = max(0, dashCharge - DASH_MAX_CHARGE / 2);
+				}
+				
+				dashSpeed = 50;
+				dashTics = 10;
+				
+				EventHandler.SendInterfaceEvent(PlayerNumber(), "PB_DashWhatchamacallit");
+				A_StartSound("player/dash", 69, CHANF_OVERLAP);
+				
+				if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 1, CVar.GetCvar("pb_helpflags", Player))) {
+					Array<String> pbDashTips;
+					pbDashTips.Push("$PB_DASH_TIP_1");
+					pbDashTips.Push("$PB_DASH_TIP_2");
+					pbDashTips.Push("$PB_DASH_TIP_3");
+					pbDashTips.Push("$PB_DASH_TIP_4");
+					PB_HelpNotificationsHandler.PB_SendTipArray(pbDashTips, "pb_helpflags", 1 << 1);
+				}
+				SetInventory("PlayerDashed", 1);
+				A_QuakeEx(2, 2, 2, dashTics, 0, 1, "", QF_SCALEDOWN, rollintensity:0.2);
 			}
-			// [gng] thanks to kodi and lewisk3, analog compatible dash direction
-			dashDir = DeltaAngle(atan2(plr.cmd.sidemove, plr.cmd.forwardmove), angle);
-			
-			if(DashCharge < DASH_MAX_CHARGE) { 
-				waiting = true; 
-				dashCharge = 0; 
-			}
-			
-			if(!FindInventory("PB_PowerSpeed")) {
-				dashCharge = max(0, dashCharge - DASH_MAX_CHARGE / 2);
-			}
-			
-			dashSpeed = 50;
-			dashTics = 10;
-			
-			EventHandler.SendInterfaceEvent(PlayerNumber(), "PB_DashWhatchamacallit");
-			A_StartSound("player/dash", 69, CHANF_OVERLAP);
-			
-			if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 1, CVar.GetCvar("pb_helpflags", Player))) {
-				Array<String> pbDashTips;
-				pbDashTips.Push("$PB_DASH_TIP_1");
-				pbDashTips.Push("$PB_DASH_TIP_2");
-				pbDashTips.Push("$PB_DASH_TIP_3");
-				pbDashTips.Push("$PB_DASH_TIP_4");
-				PB_HelpNotificationsHandler.PB_SendTipArray(pbDashTips, "pb_helpflags", 1 << 1);
-			}
-			SetInventory("PlayerDashed", 1);
-			A_QuakeEx(2, 2, 2, dashTics, 0, 1, "", QF_SCALEDOWN, rollintensity:0.2);
 		}
 		
 		if(FindInventory("ExecutionToken")) {
@@ -1820,53 +1822,52 @@ class PlayerPawnBase : PlayerPawn
 			SetInventory("PlayerDashed", 0);
 		}
 		
-		double airControlBuffer = level.aircontrol;
-		if(dashTics > 0) {
-			dashTics--;
-			
-			if(dashTics == 3) {
-				dashSpeed *= 0.4;
-				SetInventory("PlayerDashed", 0);
-			}
-			VelFromAngle(DashSpeed, DashDir );
-			
-			vel.z = 0;
-			
-			level.airControl = 0.25;
-		}
-		
-		if(plr && plr.onGround) {
-			dJump = true;
-			airTics = 0;
-			level.airControl = airControlBuffer;
-		}
-		else {
-			airTics++;
-		}	
-			
-		// [gng] recharge the dash
-		if(dashCharge < DASH_MAX_CHARGE) {
-			if(FindInventory("PB_PowerSpeed")) {
-				dashCharge = DASH_MAX_CHARGE;
-			}
-			dashCharge++;
-			
-			if(dashCharge == DASH_MAX_CHARGE && !plr.onGround) 
-				dashCharge = DASH_MAX_CHARGE - 1;
+        if(CheckNotPredicting())  {
+			double airControlBuffer = level.aircontrol;
+			if(dashTics > 0) {
+				dashTics--;
 				
-			if(dashCharge == DASH_MAX_CHARGE) {
-				waiting = false;
-				if (gamestate != GS_TITLELEVEL) // Just don't play this on TitleMaps it's unnecessary.
-					A_StartSound("player/dashready", 69, CHANF_OVERLAP);
+				if(dashTics == 3) {
+					dashSpeed *= 0.4;
+					SetInventory("PlayerDashed", 0);
+				}
+				VelFromAngle(DashSpeed, DashDir );
+				
+				vel.z = 0;
+				
+				level.airControl = 0.25;
 			}
-		}
-		
-		if(dashtics < 0) {
-			dashtics++;
-		}
-		
-        if(CheckNotPredicting())
-        {
+			
+			if(plr && plr.onGround) {
+				dJump = true;
+				airTics = 0;
+				level.airControl = airControlBuffer;
+			}
+			else {
+				airTics++;
+			}	
+				
+			// [gng] recharge the dash
+			if(dashCharge < DASH_MAX_CHARGE) {
+				if(FindInventory("PB_PowerSpeed")) {
+					dashCharge = DASH_MAX_CHARGE;
+				}
+				dashCharge++;
+				
+				if(dashCharge == DASH_MAX_CHARGE && !plr.onGround) 
+					dashCharge = DASH_MAX_CHARGE - 1;
+					
+				if(dashCharge == DASH_MAX_CHARGE) {
+					waiting = false;
+					if (gamestate != GS_TITLELEVEL) // Just don't play this on TitleMaps it's unnecessary.
+						A_StartSound("player/dashready", 69, CHANF_OVERLAP);
+				}
+			}
+			
+			if(dashtics < 0) {
+				dashtics++;
+			}
+			
             if(m_MuzzleFlashTimer > 0)
             {        
                 m_MuzzleFlashTimer--;
@@ -1985,46 +1986,6 @@ class PlayerPawnBase : PlayerPawn
 					tankdeathcounter = 0;
 					A_Die();
 				}
-			}
-		}
-	}
-}
-
-
-//////////////////////////////////////
-// EventHandlers					//
-//////////////////////////////////////
-
-//Edit of a SpeedOMeter from Gutawer
-Class SpeedoMeterHandler : EventHandler
-{
-	override void renderOverlay(RenderEvent e)
-	{
-		if(CVar.GetCvar("zm_speedometer", players[consoleplayer]).GetInt())
-		{
-			Actor mo = players[consoleplayer].mo;
-			if(mo != NULL && PlayerInGame[consoleplayer])
-			{
-				let scalevec = statusbar.GetHUDScale();
-				Vector2 scaler = (1 / scalevec.x, 1 / scalevec.y);
-				Vector2 screenSize = (Screen.GetWidth() * scaler.x, Screen.GetHeight() * scaler.y);
-			
-				double unitscale;
-				switch(CVar.GetCvar("zm_speedometer", players[consoleplayer]).GetInt()) {
-				default:
-				case 1:
-					unitscale = 10; //doom
-					break;
-				case 2:
-					unitscale = 32; //quake
-					break;
-				case 3:
-					unitscale = 655360; //srb2
-					break;
-				}
-				Vector2 drawPos = (-4 * (screenSize.x / 320), 106 * (screenSize.y / 200));
-				Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y, String.format("%i", mo.Vel.XY.Length() * unitscale), DTA_HUDRules, true);
-				Screen.drawText(CONFONT, Font.CR_WHITE, drawPos.x, drawPos.y + (screenSize.y / 50), String.format("%i", mo.Vel.z * unitscale), DTA_HUDRules, true);
 			}
 		}
 	}

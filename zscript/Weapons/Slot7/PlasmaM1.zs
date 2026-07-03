@@ -1201,79 +1201,6 @@ Class PlasmaGauntlet : Actor
 	}
 }
 
-Class Plasma_Ball : PB_ProjectileAlt
-{
-	default
-	{
-		Radius 10;
-		Height 2;
-		Speed 60;
-		PB_Projectile.BaseDamage 44;
-		+PB_PROJECTILE.NOCRITICALS
-		DamageType "Plasma";
-		Decal "SmallerScorch";
-		Projectile;
-		+BLOODLESSIMPACT;
-		+FORCEXYBILLBOARD;
-		+SQUAREPIXELS;
-		
-		renderstyle "Add";
-		Scale 0.19;
-		DeathSound "weapons/plasma/explode";
-		//SeeSound "PLSM9";
-		SeeSound "None";
-		Obituary "$OB_MPPLASMARIFLE";
-	}
-	States
-	{
-		Spawn:
-			DB19 ABC 1 BRIGHT Light("PLASMABALLSMALL");
-			Loop;
-
-		Xdeath:
-			TNT1 A 0 A_SpawnItem("Plasma_Puff", 0);
-			TNT1 A 0 A_SpawnProjectile("BluePlasmaFire", 0, 0, random(0, 360), 2, random(0, 360));
-			TNT1 AAAA 0 A_SpawnProjectile("RailGunTrailSpark", 0, 0, random(0, 360), 2, random(0, 360));
-			TNT1 A 5;
-			TNT2 AAA 9 SpawnPlasmaSmoke();//A_SpawnProjectile("PlasmaSmoke", 1, 0, random(0, 360), 2, -random(0, 160));
-			Stop;
-
-		Death:
-			TNT1 A 0 A_SpawnItem("Plasma_Puff", 0);
-			TNT1 B 1; //A_Explode(6,50,1)
-			TNT1 A 0 A_SpawnItemEx("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
-			TNT1 A 0 A_SpawnItemEx("DetectCeilCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
-			TNT1 A 0 A_SpawnProjectile("BluePlasmaFire", 0, 0, random(0, 360), 2, random(0, 360));
-			TNT1 AAA 0 A_SpawnProjectile("BluePlasmaParticle", 0, 0, random(0, 360), 2, random(0, 360));
-			TNT1 B 4;
-			TNT2 AAAAAA 9 SpawnPlasmaSmoke();//A_SpawnProjectile("PlasmaSmoke", 1, 0, random(0, 360), 2, -random(0, 160));
-			Stop;
-	}
-	
-	void SpawnPlasmaSmoke()
-	{
-		FSpawnParticleParams Plsmk;
-		Plsmk.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random(0, 25)).."0");
-		Plsmk.Style = STYLE_TRANSLUCENT;
-		Plsmk.Color1 = "404040";
-		vector3 vls =(frandom(-0.3,0.3),frandom(-0.3,0.3),frandom(0.2,0.4));
-		if(pos.z >= ceilingz - 2)
-			vls.z *= -1;
-		Plsmk.vel = vls;
-		//Plsmk.accel = -(vls * 0.02);
-		Plsmk.Flags = SPF_ROLL;
-		Plsmk.StartRoll = random(0,360);
-		Plsmk.RollVel = random(-4,4);
-		Plsmk.StartAlpha = 1.0;
-		Plsmk.FadeStep = 0.080;
-		Plsmk.Size = random(50,74);
-		Plsmk.SizeStep = random(2,4);
-		Plsmk.Lifetime = 12; 
-		Plsmk.Pos = pos;
-		Level.SpawnParticle(Plsmk);
-	}
-}
-
 Class M1_HeatWave : Actor
 {
 	default
@@ -1281,7 +1208,7 @@ Class M1_HeatWave : Actor
 		Speed 25;
 		Radius 12;
 		Height 12;
-		Damage 10;
+		DamageFunction 45;
 		Decal "none";
 		damagetype "Plasma";
 		RenderStyle "Add";
@@ -1402,84 +1329,6 @@ Class HeatBlastEffect3 : HeatBlastEffect1
 			 loop;
 	}
 }
-
-Class UltPlasma_Ball : Plasma_Ball
-{
-	states
-	{
-		Death:
-			TNT1 A 0 A_SpawnItem("Plasma_Puff", 0);
-			TNT1 B 1 A_Explode(4,50,0);
-			TNT1 A 0 A_SpawnItemEx("DetectFloorCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
-			TNT1 A 0 A_SpawnItemEx("DetectCeilCraterSmall",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
-			TNT1 A 0 A_SpawnProjectile("BluePlasmaFire", 0, 0, random(0, 360), 2, random(0, 360));
-			TNT1 AAA 0 A_SpawnProjectile("BluePlasmaParticle", 0, 0, random(0, 360), 2, random(0, 360));
-			TNT1 B 4;
-			TNT2 AAAAAA 9 A_SpawnProjectile("PlasmaSmoke", 1, 0, random(0, 360), 2, random(0, 160));
-			Stop;
-	}
-}
-
-//not sure if these are even used
-Class PlasmaBall75 : Plasma_Ball
-{
-	default
-	{
-		SeeSound "PLSM9";
-	}
-}
-
-Class PlasmaBall76: Plasma_Ball
-{
-	default
-	{
-		SeeSound "PLSULT";
-	}
-}
-Class PlasmaBall65: Plasma_Ball
-{
-	default
-	{
-		SeeSound "PLSM4";
-	}
-}
-
-
-Class EnemyPlasmaBall : PlasmaBall75
-{
-	default
-	{
-		DamageFunction random(10,15);
-		//Damage(random(10,15));
-		DamageType "Plasma";
-		Speed 40;
-		//Species "NotMarines";
-		-THRUACTORS;
-		-THRUSPECIES;
-		-MTHRUSPECIES;
-		+THRUGHOST;
-	}
-	States 
-	{
-		Spawn:
-			DB19 ABC 2 BRIGHT Light("PLASMABALLSMALL");
-			Loop;
-	}
-}
-
-
-Class ZombiePlasma : EnemyPlasmaBall
-{
-	default
-	{
-		Radius 8;
-		Height 2;
-		DamageFunction random(5,7);
-		//Damage(random(5,7));
-		Scale 0.18;
-	}
-}
-
 
 /*
 Class PB_M1PlasmaPickup : PB_UpgradeItem

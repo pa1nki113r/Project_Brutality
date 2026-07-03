@@ -81,7 +81,7 @@ class PB_MG42 : PB_WeaponBase
 	action void MG42_Fire(int tic)
 	{
 		bool ads = PB_GetZoom();
-		bool overheating = getBarrelIsOverheating();
+		bool overheated = getBarrelHasOverheated();
 		
 		switch(tic)
 		{
@@ -99,11 +99,11 @@ class PB_MG42 : PB_WeaponBase
 				}
 				else {
 					A_FlashOverlay();
-					A_Overlay(BELT_OVERLAY_ADS,"BeltFlash");
+					A_Overlay(BELT_OVERLAY,"BeltFlash");
 				}
 				
 				// Overheat
-				PB_ModifyOverheat(overheating ? 15 : 5);
+				PB_ModifyOverheat(overheated ? 15 : 5);
 				
 				// Take Ammo
 				A_TakeInventory(invoker.ammo1.getClassName(), ammoTake, TIF_NOTAKEINFINITE);
@@ -114,7 +114,7 @@ class PB_MG42 : PB_WeaponBase
 			case 1:
 				// Bullet spread
 				double spread;
-				if(overheating)				 spread = 7;
+				if(overheated)				 spread = 7;
 				else if(PB_GetOverheat() > 300) spread = 1.0 + (PB_GetOverheat() / 100.0);
 				else							spread = 4;
 				PB_FireBullets("PB_792x57mm", 1, spread, 0, 0, spread);
@@ -140,14 +140,14 @@ class PB_MG42 : PB_WeaponBase
 	action state MG42_FireStart(bool zoomed = false)
 	{
 		if(!zoomed) {
-			if(getbarrelHasOverheated())							return ResolveState("BarrelChange");
+			if(getbarrelIsOverheating())							return ResolveState("BarrelChange");
 			if(PB_GetZoom())										return ResolveState("Fire2");
 			if(invoker.ammo1.amount >= 1 && PB_GetOverheat() < 500) return ResolveState("FireNormal");
 			else if(PB_GetOverheat() == 500)						return ResolveState("Overheat");
 			else													A_StartSound("weapons/empty", 0);	return ResolveState("Ready");
 		}
 		else {
-			if(getbarrelHasOverheated())							return ResolveState("UnzoomBarrelChange");
+			if(getbarrelIsOverheating())							return ResolveState("UnzoomBarrelChange");
 			if(invoker.ammo1.amount >= 1 && PB_GetOverheat() < 500) return ResolveState("FireADS");
 			else if(PB_GetOverheat() == 500)						return ResolveState("UnzoomOverheat");
 			else													A_StartSound("weapons/empty", 0); return ResolveState("Ready2");
@@ -334,6 +334,15 @@ class PB_MG42 : PB_WeaponBase
 				else return A_DoPBWeaponAction();
 			}
 			Loop;
+	Cooling:
+		TNT1 A 8;
+		TNT1 A 4 {
+			PB_ModifyOverheat(-5);
+			if(PB_GetOverheat() < 300) {
+				setbarrelIsOverheating(false);
+			}
+		}
+		Wait;
 
 //////////////////////////// FIRE ////////////////////////////////////////////////////////////////////////////////////
 		Fire:

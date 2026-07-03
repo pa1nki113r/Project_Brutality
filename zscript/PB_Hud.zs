@@ -99,8 +99,8 @@ class PB_Hud_ZS : BaseStatusBar
     int tickRandSeed;
 
 	//CVars
-	int16 hudXMargin, hudYMargin, playerMsgPrint, bottomMiddlePart;
-	bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks, showtutorials;
+	int16 hudXMargin, hudYMargin, playerMsgPrint, bottomMiddlePart, screenblocks;
+	bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks, showtutorials, altHUDEnabled;
 	float playerAlpha, playerBoxAlpha, messageSize, bloodDropsAlpha, glassCracksAlpha, visorScale, visorOffsets;
 
 	bool centerNotify;
@@ -207,6 +207,9 @@ class PB_Hud_ZS : BaseStatusBar
         bottomMiddlePart = CVar.GetCVar("pb_visormiddlepartbottom", CPlayer).GetInt();
 
         showtutorials = CVar.GetCVar("pb_showtutorials", CPlayer).GetBool();
+		//zdoom cvars
+		altHUDEnabled = CVar.GetCvar("hud_althud", CPlayer).GetBool();
+		screenblocks = CVar.GetCvar("screenblocks", CPlayer).GetInt();
 	}
 
 	override void Draw(int state, double TicFrac)
@@ -242,7 +245,7 @@ class PB_Hud_ZS : BaseStatusBar
         interpolatedOfs = ofsOldFrame * (1. - ticfrac) + ofsCurrentFrame * ticfrac;
         interpolatedSway = swayOldFrame * (1. - ticfrac) + swayCurrentFrame * ticfrac;
 		
-		if(hudState != HUD_None)
+		if(hudState != HUD_None && (screenblocks < 11 || screenblocks < 12 && !altHUDEnabled))
 		{
 			BeginHUD();
 			DrawFullScreenStuff();
@@ -1250,13 +1253,13 @@ class PB_Hud_ZS : BaseStatusBar
 				/*PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge, 17.5, (252, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);
 				PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge - 17.5, 17.5, (261, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);*/
 				if(CheckInventory("PB_PowerSpeed")) {
-					PBHud_DrawImage("DASHHUD3", (251, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_LEFT);
-					PBHud_DrawImage("DASHHUD3", (275, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_RIGHT);
+					PBHud_DrawImage("DASHHUD3", (241, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_LEFT);
+					PBHud_DrawImage("DASHHUD3", (265, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_RIGHT);
 					dashIndAlpha = 5.0;
 				}
 				else {
-					PBHud_DrawImage(Dasher.DashCharge >= 17.5 ? "DASHHUD2" : "DASHHUD1", (251 - 9 * dashScale2, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_LEFT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale1, 1 + dashScale1));
-					PBHud_DrawImage(Dasher.DashCharge >= 35 ? "DASHHUD2" : "DASHHUD1", (275 + 9 * dashScale1, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_RIGHT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale2, 1 + dashScale2));
+					PBHud_DrawImage(Dasher.DashCharge >= 17.5 ? "DASHHUD2" : "DASHHUD1", (241 - 9 * dashScale2, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_LEFT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale1, 1 + dashScale1));
+					PBHud_DrawImage(Dasher.DashCharge >= 35 ? "DASHHUD2" : "DASHHUD1", (265 + 9 * dashScale1, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_RIGHT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale2, 1 + dashScale2));
 					
 					if(Dasher.DashCharge != 35 && dashIndAlpha < 1) {
 						dashIndAlpha = 5.0;
@@ -1463,6 +1466,28 @@ class PB_Hud_ZS : BaseStatusBar
 				DrawInventoryBar(InvBar, invBarPos, 7, DI_SCREEN_CENTER_BOTTOM, HX_SHADOW);
 			}
 
+		}
+		
+		//zmove speedometer
+		let speedometer = CVar.GetCvar("pb_speedometer", cplayer).GetInt();
+		if(speedometer) {
+			if(plr && PlayerInGame[consoleplayer]) {
+				double unitscale;
+				switch(speedometer) {
+				default:
+				case 1:
+					unitscale = 10; //doom
+					break;
+				case 2:
+					unitscale = 32; //quake
+					break;
+				case 3:
+					unitscale = 655360; //srb2
+					break;
+				}
+				
+				PBHud_DrawString(mBoldFont, String.format("XY: %i Z: %i", plr.vel.xy.Length() * unitscale, abs(plr.vel.z) * unitscale), (0, 120), DI_TEXT_ALIGN_CENTER|DI_SCREEN_CENTER_TOP, Font.CR_WHITE);
+			}
 		}
 	}
 
