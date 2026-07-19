@@ -16,11 +16,16 @@ class PBMP_CoopTestHandler : EventHandler
 	int networkEventCount;
 	int netgameTrueCount;
 	int gearboxEventCount;
+	int impactRngProbe;
 	ui int probeStage;
 
 	override void WorldLoaded(WorldEvent e)
 	{
 		Console.Printf("PBMPSTART map=%s netgame=%d multiplayer=%d", level.MapName, netgame, multiplayer);
+		Console.Printf("PBMPVISUAL player=%d localgore=%.2f hidebloodmist=%d",
+			consoleplayer,
+			CVar.GetCVar("pb_localgoremult", players[consoleplayer]).GetFloat(),
+			CVar.GetCVar("pb_hidebloodmist", players[consoleplayer]).GetBool());
 	}
 
 	override void UiTick()
@@ -84,6 +89,20 @@ class PBMP_CoopTestHandler : EventHandler
 					pawn.vel.x = 24.0 * direction;
 					pawn.vel.y = 12.0 * direction;
 				}
+			}
+		}
+
+		// Put each camera on a different side of the 1024-unit impact-detail
+		// threshold. This used to make peers consume a different number of calls
+		// from random[impacts]. SetOrigin is deterministic and runs on every peer.
+		if (scenario >= 4 && level.maptime == 70 && PlayerInGame[0] && players[0].mo)
+		{
+			vector3 origin = players[0].mo.pos;
+			for (int playerNum = 0; playerNum < MAXPLAYERS; playerNum++)
+			{
+				if (!PlayerInGame[playerNum] || !players[playerNum].mo) continue;
+				players[playerNum].mo.SetOrigin(origin + (playerNum * 1536.0, 0.0, 0.0), false);
+				players[playerNum].mo.vel = (0.0, 0.0, 0.0);
 			}
 		}
 
@@ -160,7 +179,49 @@ class PBMP_CoopTestHandler : EventHandler
 				level.maptime, diagnosticBullets, diagnosticMarks, diagnosticMask);
 		}
 
+		// A synchronized burst of impact and blood actors. Their high-volume
+		// particles and mist are local VisualThinkers; the following named-RNG
+		// sample remains a synchronized canary for accidental cosmetic RNG use.
+		if (scenario >= 4 && (level.maptime == 105 || level.maptime == 175 || level.maptime == 350))
+		{
+			Actor anchor = players[0].mo;
+			Actor bloodTarget;
+			ThinkerIterator targetIt = ThinkerIterator.Create("Actor");
+			Actor candidate;
+			while (candidate = Actor(targetIt.Next()))
+			{
+				if (candidate.bIsMonster)
+				{
+					bloodTarget = candidate;
+					break;
+				}
+			}
+
+			if (anchor)
+			{
+				for (int burst = 0; burst < 16; burst++)
+				{
+					Actor.Spawn("PB_BulletImpact", anchor.pos + (64.0, burst - 8.0, 32.0), NO_REPLACE);
+				}
+				for (int gore = 0; gore < 8; gore++)
+				{
+					PB_GunshotBlood blood = PB_GunshotBlood(Actor.Spawn("PB_GunshotBlood",
+						anchor.pos + (48.0, gore - 4.0, 32.0), NO_REPLACE));
+					if (!blood) continue;
+					blood.target = bloodTarget ? bloodTarget : anchor;
+					blood.sourceIsProjectile = true;
+					blood.projectileDamage = 80;
+					blood.targetRadius = 20;
+					blood.angToTarget = 0;
+				}
+			}
+		}
+
 		if (level.maptime % 35 != 0) return;
+		if (scenario >= 4)
+		{
+			impactRngProbe = random[impacts](0, 1000000);
+		}
 
 		int liveMonsters;
 		int monsterHealth;
@@ -189,9 +250,9 @@ class PBMP_CoopTestHandler : EventHandler
 			}
 		}
 
-		Console.Printf("PBMPCHK tic=%d monsters=%d monsterhp=%d whizbullets=%d whizmarks=%d whizmask=%d events=%d netgametrue=%d gearbox=%d",
+		Console.Printf("PBMPCHK tic=%d monsters=%d monsterhp=%d whizbullets=%d whizmarks=%d whizmask=%d events=%d netgametrue=%d gearbox=%d impactrng=%d",
 			level.maptime, liveMonsters, monsterHealth, whizBullets, whizMarks, whizMask,
-			networkEventCount, netgameTrueCount, gearboxEventCount);
+			networkEventCount, netgameTrueCount, gearboxEventCount, impactRngProbe);
 
 		for (int i = 0; i < MAXPLAYERS; i++)
 		{

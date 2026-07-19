@@ -12,6 +12,8 @@ The scenarios add deterministic play-scope stress after the clients join:
 - `Combat` adds movement, repeated PB monster damage/death, Gearbox give/take
   netevents, and PB projectile whiz probes.
 - `DashCombat` adds short high-velocity bursts to the combat workload.
+- `GoreImpact` separates peer cameras across the impact-detail threshold, then
+  creates repeated blood and impact bursts while fingerprinting `random[impacts]`.
 
 The whiz probe fingerprints both the count and player identities stored on each
 projectile, so the historical `players[consoleplayer]` desync is observable.
@@ -32,6 +34,12 @@ Run a three-player idle baseline:
 
 ```powershell
 .\tools\mp\Run-CoopSimulation.ps1 -Clients 3 -Scenario Idle -DurationSeconds 20 -Map MAP02
+```
+
+Run the adversarial local-gore test with different visual settings per peer:
+
+```powershell
+.\tools\mp\Run-CoopSimulation.ps1 -Clients 3 -Scenario GoreImpact -AsymmetricLocalGore -DurationSeconds 30 -Map MAP01
 ```
 
 Each run is written below `tools/mp/runs/`. A run is failed when an engine exits

@@ -3,7 +3,7 @@ param(
     [ValidateRange(2, 4)]
     [int] $Clients = 2,
 
-    [ValidateSet('Idle', 'Movement', 'Combat', 'DashCombat')]
+    [ValidateSet('Idle', 'Movement', 'Combat', 'DashCombat', 'GoreImpact')]
     [string] $Scenario = 'DashCombat',
 
     [ValidateRange(5, 600)]
@@ -22,7 +22,9 @@ param(
 
     [int] $Port = 0,
 
-    [switch] $KeepProcesses
+    [switch] $KeepProcesses,
+
+    [switch] $AsymmetricLocalGore
 )
 
 $ErrorActionPreference = 'Stop'
@@ -113,6 +115,7 @@ try {
         'Movement' { 1 }
         'Combat' { 2 }
         'DashCombat' { 3 }
+        'GoreImpact' { 4 }
     }
     $warpArguments = if ($Map -match '^MAP(\d\d)$') {
         @([string] ([int] $Matches[1]))
@@ -124,11 +127,22 @@ try {
         @($Map)
     }
     $hostArgs = @('-host', [string] $Clients, '-port', [string] $Port, '-warp') + $warpArguments + @('-skill', '3', '+pbmp_scenario', [string] $scenarioNumber)
+    if ($AsymmetricLocalGore) {
+        $hostArgs += @('+pb_localgoremult', '2.0', '+pb_hidebloodmist', '0')
+    }
     $started.Add((New-UZDoomProcess -Name 'host' -Arguments $hostArgs))
     Start-Sleep -Milliseconds 1200
 
     for ($index = 1; $index -lt $Clients; $index++) {
         $joinArgs = @('-join', '127.0.0.1', '-port', [string] $Port)
+        if ($AsymmetricLocalGore) {
+            if (($index % 2) -eq 1) {
+                $joinArgs += @('+pb_localgoremult', '0.0', '+pb_hidebloodmist', '1')
+            }
+            else {
+                $joinArgs += @('+pb_localgoremult', '0.5', '+pb_hidebloodmist', '0')
+            }
+        }
         $started.Add((New-UZDoomProcess -Name "client$index" -Arguments $joinArgs))
         Start-Sleep -Milliseconds 350
     }
@@ -194,6 +208,7 @@ $results = foreach ($instance in $started) {
     $checkpoints = [regex]::Matches($logText, '(?m)^PBMPCHK .+$') | ForEach-Object Value
     $players = [regex]::Matches($logText, '(?m)^PBMPPLAYER .+$') | ForEach-Object Value
     $whizDiagnostics = [regex]::Matches($logText, '(?m)^PBMPWHIZ .+$') | ForEach-Object Value
+    $visualDiagnostics = [regex]::Matches($logText, '(?m)^PBMPVISUAL .+$') | ForEach-Object Value
     $fingerprintsByInstance[$instance.Name] = @($checkpoints) + @($players) + @($whizDiagnostics)
     $errors = [regex]::Matches($logText, "(?im)^.*(?:$errorPattern).*$") | ForEach-Object Value
     [pscustomobject]@{
@@ -202,6 +217,7 @@ $results = foreach ($instance in $started) {
         Checkpoints = $checkpoints.Count
         PlayerSnapshots = $players.Count
         WhizDiagnostics = $whizDiagnostics.Count
+        VisualDiagnostics = $visualDiagnostics.Count
         Errors = $errors.Count
         Log = $instance.LogPath
     }
