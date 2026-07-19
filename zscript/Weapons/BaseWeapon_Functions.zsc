@@ -263,7 +263,7 @@ extend class PB_WeaponBase
 	//maybe constants would be better for this
 	action bool,int isHoldingBarrel()
 	{
-		if(findinventory("GrabbedBarrel"))
+		if(FindInventory("PB_BarrelToken") && invoker.hasBarrel)
 			return true,1;
 		if(findinventory("GrabbedFlameBarrel"))
 			return true,2;
@@ -275,34 +275,22 @@ extend class PB_WeaponBase
 	
 	override state GetAtkState(bool hold)
 	{
-		if(owner.findinventory("GrabbedBarrel"))
+		if(owner.FindInventory("PB_BarrelToken") && hasBarrel)
 			return resolvestate("ThrowBarrel");
-		if(owner.findinventory("GrabbedFlameBarrel"))
-			return resolvestate("ThrowFlameBarrel");
-		if(owner.findinventory("GrabbedIceBarrel"))
-			return resolvestate("ThrowIceBarrel");
 		return super.GetAtkState(hold);
 	}
 	
 	override state GetAltAtkState(bool hold)
 	{
-		if(owner.findinventory("GrabbedBarrel"))
+		if(owner.FindInventory("PB_BarrelToken") && hasBarrel)
 			return resolvestate("PlaceBarrel");
-		if(owner.findinventory("GrabbedFlameBarrel"))
-			return resolvestate("PlaceFlameBarrel");
-		if(owner.findinventory("GrabbedIceBarrel"))
-			return resolvestate("PlaceIceBarrel");
 		return super.GetAltAtkState(hold);
 	}
 	
 	override state GetDownState()
 	{
-		if(owner.findinventory("GrabbedBarrel"))
+		if(owner.FindInventory("PB_BarrelToken") && hasBarrel)
 			return resolvestate("PlaceBarrel");
-		if(owner.findinventory("GrabbedFlameBarrel"))
-			return resolvestate("PlaceFlameBarrel");
-		if(owner.findinventory("GrabbedIceBarrel"))
-			return resolvestate("PlaceIceBarrel");
 		return super.GetDownState();
 	}
 	
@@ -376,7 +364,7 @@ extend class PB_WeaponBase
 
             bool notPlayer = multiplayer && player != players[consoleplayer];
 
-			A_StartSound("weapons/atmo/"..tmpTailSound, notPlayer ? 19 + (i * 4) : CHAN_AUTO, volume: vol * 0.5, pitch: sndPitch);
+			A_StartSound("weapons/atmo/"..tmpTailSound, 19 + (i * 4), volume: vol * 0.5, pitch: sndPitch);
 
 			// multiplayer thing
 			if(notPlayer)
@@ -2527,7 +2515,7 @@ action int getReadyFlags(int weapflags, bool noReload)
 			"Steady", "QuickPunch", //"LedgeClimb",
 			"DoKick", "Taunt", "Salute", "Salute",
 			"UseEquipment", "SwitchEquipment", "DualWieldBaby",
-			"NoDualWield", "WeaponSpecial", "ReadyBarrel", "ReadyIceBarrel",
+			"NoDualWield", "WeaponSpecial", "RaiseBarrel", "ReadyIceBarrel",
 			"ReadyFlameBarrel", "ThrowBarrel", "ThrowIceBarrel", 
 			"ThrowFlameBarrel", "IdleBarrel", "IdleIceBarrel", 
 			"IdleFlameBarrel"
@@ -2550,17 +2538,9 @@ action int getReadyFlags(int weapflags, bool noReload)
 			else if (ResolveState("NoDualWield")) return ResolveState("NoDualWield");
 			else return ResolveState("WeaponSpecial");
 		}
-		if (CountInv("HasBarrel")>=1) 
+		if (FindInventory("PB_BarrelToken") && !invoker.hasBarrel) 
 		{
-			return ResolveState("ReadyBarrel");
-		}
-		if (CountInv("HasFlameBarrel")>=1) 
-		{
-			return ResolveState("ReadyFlameBarrel");
-		}
-		if (CountInv("HasIceBarrel")>=1) 
-		{
-			return ResolveState("ReadyIceBarrel");
+			return ResolveState("RaiseBarrel");
 		}
 		if (CountInv("Unloading")>=1 && !(pbFlags & PB_NOUNLOAD) && ResolveState("Unload") && ((!PB_GetMagUnloaded() || !PB_GetChamberEmpty()) || (A_CheckAkimbo() && (!PB_GetMagUnloaded(true) || !PB_GetChamberEmpty(true)))))
 		{
@@ -2773,20 +2753,9 @@ action int getReadyFlags(int weapflags, bool noReload)
 			WeaponScaleX = 1.2; //counter act 20% stretch (THE INTENDED PB VISUALS)
 		else
 			WeaponScaleX = 1.0; //garbo bullshit 4:3 forced rendering, will need to see about enabling this automatically if on 4:3 resolution
-		if(owner.FindInventory("HasBarrel")) {
-			owner.SetInventory("HasBarrel",0);
-			owner.SetInventory("GrabbedBarrel",1);
-			owner.player.SetPSprite(PSP_WEAPON,resolvestate("ReadyBarrel"));
-		}
-		if(owner.FindInventory("HasFlameBarrel")) {
-			owner.SetInventory("HasFlameBarrel",0);
-			owner.SetInventory("GrabbedFlameBarrel",1);
-			owner.player.SetPSprite(PSP_WEAPON,resolvestate("ReadyFlameBarrel"));
-		}
-		if(owner.FindInventory("HasIceBarrel")) {
-			owner.SetInventory("HasIceBarrel",0);
-			owner.SetInventory("GrabbedIceBarrel",1);
-			owner.player.SetPSprite(PSP_WEAPON,resolvestate("ReadyIceBarrel"));
+		if(owner.FindInventory("PB_BarrelToken") && !hasBarrel) {
+			hasBarrel = true;
+			owner.player.SetPSprite(PSP_WEAPON,resolvestate("RaiseBarrel"));
 		}
 		
 		if((overheat > 0 || leftOverheat > 0) && overheatCoolingRate > 0 && owner.player.ReadyWeapon != self && level.time % overheatCoolingRate == 0) {
