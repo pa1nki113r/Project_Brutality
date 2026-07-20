@@ -32,10 +32,10 @@ class PB_SMG : PB_WeaponBase
 {
     Default
     {
-        //$Category Project Brutality - Weapons
+		//$Title Submachine Gun
+        //$Category Project Brutality/Weapons
 	    //$Sprite ATFLA0
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
-        // SpawnID 9200
         Inventory.MaxAmount 2;
         Weapon.AmmoGive1 20;
         Weapon.AmmoType1 "PB_LowCalMag";

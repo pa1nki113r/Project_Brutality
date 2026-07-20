@@ -2,12 +2,10 @@ class PB_MG42 : PB_WeaponBase
 {
 	Default
 	{
-		//$Title MG-42
-		//$Category Project Brutality - Weapons
+		//$Title MG 42
+		//$Category Project Brutality/Weapons
 		//$Sprite HBUSD0
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
-		// Game Doom
-		// SpawnID 9400
 		Weapon.AmmoType "PB_HighCalMag";
 		Weapon.AmmoGive 30;
 		// Weapon.AmmoUse 0

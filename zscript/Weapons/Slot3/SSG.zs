@@ -24,11 +24,10 @@ class PB_SSG : PB_WeaponBase
 {
     Default
     {
-        //$Title Double Barreled Shotgun
-        //$Category Project Brutality - Weapons
+        //$Title Double-Barrel Shotgun
+        //$Category Project Brutality/Weapons
         //$Sprite SGN3A0
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
-        // Game Doom
         Weapon.Kickback 50;
         weapon.slotpriority 0.25;
         Weapon.SelectionOrder 400;

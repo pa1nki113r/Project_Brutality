@@ -18,10 +18,10 @@ Class PB_CryoRifleMag : PB_WeaponAmmo
 // The Actual Weapon
 class PB_CryoRifle : PB_WeaponBase {
 	Default {
-		//$Category Project Brutality - Weapons
+		//$Title Cryo Rifle
+		//$Category Project Brutality/Weapons
 		//$Sprite FRPKA0
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
-		// SpawnID 9700
 		Weapon.SelectionOrder 100;
 		Weapon.AmmoGive1 40;
 		Weapon.AmmoType1 "PB_Cell";

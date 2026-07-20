@@ -2,6 +2,9 @@ class PB_Deagle : PB_WeaponBase
 {
 	default
 	{
+		//$Title Martian Raptor Automag
+		//$Category Project Brutality/Weapons
+		//$Sprite D4E0Z0
 		weapon.slotnumber 2;
 		weapon.ammotype1 "PB_LowCalMag";
 		weapon.ammogive1 20;	

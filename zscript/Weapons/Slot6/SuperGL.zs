@@ -2,12 +2,9 @@ Class PB_SuperGL : PB_WeaponBase
 {
 	default
 	{
-		//$Title Automatic Grenade Launcher
-		//$Category Project Brutality - Weapons
+		//$Title Grenade Launcher
+		//$Category Project Brutality/Weapons
 		//$Sprite SGL0Z0
-		//SpawnID 9520;
-		//Game Doom
-		//SpawnID 29;
 		weapon.slotnumber 6;
 		Speed 20;
 		Damage 20;

@@ -17,6 +17,9 @@ class PB_DTechRifle : PB_WeaponBase
 {
     Default
     {
+		//$Title Demon-tech Rifle
+		//$Category Project Brutality/Weapons
+		//$Sprite HRPUA0
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
         Weapon.SelectionOrder 400;
         Weapon.AmmoType1 "PB_DTech";

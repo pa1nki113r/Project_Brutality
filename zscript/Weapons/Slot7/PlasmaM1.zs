@@ -2,7 +2,8 @@ Class PB_M1Plasma : PB_WeaponBase
 {
 	default
 	{
-		//$Category Project Brutality - Weapons
+		//$Title Plasma Rifle
+		//$Category Project Brutality/Weapons
 		//$Sprite PL4SA0
 		weapon.slotnumber 7;							
 		weapon.ammotype1 "PB_Cell";	

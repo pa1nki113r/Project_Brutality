@@ -2,9 +2,9 @@ Class PB_Revolver : PB_WeaponBase
 {
 	default
 	{
-		//$Category Project Brutality - Weapons
+		//$Title Magnum Revolver
+		//$Category Project Brutality/Weapons
 		//$Sprite RVICA0
-		//SpawnID 9210;
 		weapon.slotnumber 2;							
 		weapon.ammotype1 "PB_LowCalMag";
 		weapon.ammogive1 20;	

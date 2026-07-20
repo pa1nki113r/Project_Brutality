@@ -2,10 +2,9 @@ Class PB_Shotgun : PB_WeaponBase
 {
 	default
 	{
-		//$Title Pump Action Shotgun
-		//$Category Project Brutality - Weapons
+		//$Title Pump Shotgun
+		//$Category Project Brutality/Weapons
 		//$Sprite SHTCA0
-		//SpawnID 9300;
 		Weapon.SelectionOrder 1300;
 		weapon.slotnumber 3;							
 		weapon.ammotype1 "PB_Shell";
@@ -1383,11 +1382,9 @@ Class PB_SGMagazine: PB_UpgradeItem
 {
 	default
 	{
-		//$Title Shotgun Magazine Upgrade
-		//$Category Project Brutality - Weapon Upgrades
+		//$Title Pump Shotgun Magazine
+		//$Category Project Brutality/Weapons/Upgrades
 		//$Sprite 9SMUA0
-		//SpawnID 9310
-		//Game "Doom";
 		Height 24;
 		-INVENTORY.ALWAYSPICKUP
 		-COUNTITEM

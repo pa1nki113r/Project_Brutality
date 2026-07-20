@@ -24,11 +24,10 @@ class PB_MP40 : PB_WeaponBase
 {
     Default
     {
-        //$Title MP-40
-        //$Category Project Brutality - Weapons
+        //$Title MP 40
+        //$Category Project Brutality/Weapons
         //$Sprite AMP4A0
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
-        // SpawnID 9200
         Weapon.AmmoGive1 20;
         Weapon.AmmoType1 "PB_LowCalMag";
         Weapon.AmmoType2 "PB_MP40Mag";

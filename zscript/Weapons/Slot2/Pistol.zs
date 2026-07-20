@@ -29,10 +29,10 @@ class PB_Pistol : PB_WeaponBase
 {
     Default
     {
-        //$Category Project Brutality - Weapons
+		//$Title Pistol
+        //$Category Project Brutality/Weapons
         //$Sprite DEGTA0
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
-        // SpawnID 9220
         Weapon.AmmoGive1 20;
         Weapon.AmmoType1 "PB_LowCalMag";
         Weapon.AmmoType2 "PB_PistolMag";
