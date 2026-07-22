@@ -105,14 +105,14 @@ class PB_BarrelBase : Actor {
 		Level.SpawnParticle(SMKBCK);
 	}
 	
-	void SpawnCryoSmoke(double startAlpha, int lifetime, double fadeStep, double smokeVel, double smokeAccel)
+	void SpawnCryoSmoke(double startAlpha, int lifetime, double fadeStep, double smokeVelXY, double smokeVelZ, double smokeAccel)
 	{
 		FSpawnParticleParams SMKBCK;
 		SMKBCK.Texture = TexMan.CheckForTexture("SMK2A0");
 		SMKBCK.Color1 = "A0FFFF";
 		SMKBCK.Style = STYLE_Shaded;
 		SMKBCK.Flags = SPF_ROLL;
-		SMKBCK.Vel = (frandom(-smokeVel, smokeVel), frandom(-smokeVel, smokeVel), frandom(-smokeVel, smokeVel));
+		SMKBCK.Vel = (frandom(-smokeVelXY, smokeVelXY), frandom(-smokeVelXY, smokeVelXY), frandom(-smokeVelZ, smokeVelZ));
 		SMKBCK.Accel = SMKBCK.Vel * smokeAccel;
 		SMKBCK.Startroll = random(0,360);
 		SMKBCK.StartAlpha = startAlpha;
@@ -139,7 +139,7 @@ class PB_BarrelBase : Actor {
 		BFR1 A 4 SpawnSmoke();
 		Loop;
 	SpawnFrozen:
-		BIR1 A 6 SpawnCryoSmoke(0.5, 50, 0.01, 1.0, 0);
+		BIR1 A 6 SpawnCryoSmoke(0.5, 50, 0.01, 1.0, 0.5, 0);
 		Loop;
 	Pain:
 		TNT1 A 0 {
@@ -261,7 +261,7 @@ class PB_BarrelBase : Actor {
 				A_SpawnItemEx ("RandomLargeIcecrystal",random(8, -8), random(8, -8),random(1,30));
 			}
 			for(int i = 0; i < 30; i++) {
-				SpawnCryoSmoke(0.8, 20, 0.04, 10.0, -0.06);
+				SpawnCryoSmoke(0.8, 20, 0.04, 10.0, 10.0, -0.06);
 			}
 		}
 		Stop;
@@ -449,8 +449,8 @@ class PB_BarrelFire : Actor {
 	
 	override void Tick() {
 		let barrel = PB_BarrelBase(master);
-		if(barrel && barrel.barrelType == PB_BarrelBase.TYPE_BURNING) {
-			SetOrigin((barrel.pos.xy, barrel.pos.z + PB_BarrelBase.FLAME_OFFSET), true);
+		if(barrel && barrel.barrelType == PB_BarrelBase.TYPE_BURNING || master && master is "PB_DecorativeBurningBarrel") {
+			SetOrigin((master.pos.xy, master.pos.z + PB_BarrelBase.FLAME_OFFSET), true);
 		}
 		else Destroy();
 		super.Tick();
@@ -475,8 +475,8 @@ class PB_BarrelSparks : Actor {
 	
 	override void Tick() {
 		let barrel = PB_BarrelBase(master);
-		if(barrel && barrel.barrelType == PB_BarrelBase.TYPE_BURNING) {
-			SetOrigin((barrel.pos.xy, barrel.pos.z + PB_BarrelBase.FLAME_OFFSET), true);
+		if(barrel && barrel.barrelType == PB_BarrelBase.TYPE_BURNING || master && master is "PB_DecorativeBurningBarrel") {
+			SetOrigin((master.pos.xy, master.pos.z + PB_BarrelBase.FLAME_OFFSET), true);
 		}
 		else Destroy();
 		super.Tick();
@@ -487,5 +487,44 @@ class PB_BarrelSparks : Actor {
         SPFN ABCDEFGHIJKLMNOPQRSTUVWXYZ 1;
 		SPFM ABCDEFG 1;
 		Loop;
+	}
+}
+
+class PB_DecorativeBurningBarrel : Actor {
+	Default {
+		Radius 16;
+		Height 32;
+		+SOLID
+	}
+	
+	const FLAME_OFFSET = 32;
+	
+	void SpawnSmoke()
+	{
+		FSpawnParticleParams SMKBCK;
+		SMKBCK.Texture = TexMan.CheckForTexture("SMK1K0");
+		SMKBCK.Color1 = "FFFFFF";
+		SMKBCK.Style = STYLE_TRANSLUCENT;
+		SMKBCK.Flags = SPF_ROLL;
+		SMKBCK.Vel = (0,0,frandom(1.25,3.0));
+		SMKBCK.Startroll = random(0,360);
+		SMKBCK.RollVel = random(-10,10);
+		SMKBCK.StartAlpha = 0.5;
+		SMKBCK.Lifetime = random(32,42); 
+		SMKBCK.FadeStep = SMKBCK.StartAlpha / SMKBCK.Lifetime;
+		SMKBCK.Size = random(45,58);
+		SMKBCK.SizeStep = 1;
+		SMKBCK.Pos = self.vec3offset(random(-7,7),random(-7,7),random(48,62));
+		Level.SpawnParticle(SMKBCK);
+	}
+	
+	States {
+	Spawn:
+		BFR1 B 0 NoDelay {
+			A_SpawnItemEx("PB_BarrelFire", zofs:PB_BarrelBase.FLAME_OFFSET, flags:SXF_SETMASTER);
+			A_SpawnItemEx("PB_BarrelSparks", zofs:PB_BarrelBase.FLAME_OFFSET, flags:SXF_SETMASTER);
+		}
+		BFR1 B 4 SpawnSmoke();
+		Wait;
 	}
 }
