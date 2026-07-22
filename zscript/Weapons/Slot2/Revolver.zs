@@ -162,9 +162,11 @@ Class PB_Revolver : PB_WeaponBase
 			R4V1 C 1 {
 					A_ZoomFactor(1.0);
 					PB_WeaponRecoil(-1.15,-0.26);
+				if(JustPressed(BT_ATTACK))
+					return resolvestate("FanFire");
+				return resolvestate(null);
 				}
-			R4V1 DEF 1;
-			R4V1 GH 1 A_jumpif(JustPressed(BT_ATTACK),"FanFire");
+			R4V1 DEFGH 1 A_jumpif(JustPressed(BT_ATTACK),"FanFire");
 			R1V1 EE 1 {
 				if(JustPressed(BT_ATTACK))
 					return resolvestate("FanFire");
@@ -205,16 +207,16 @@ Class PB_Revolver : PB_WeaponBase
 					PB_LowAmmoSoundWarning("revolver");
 					PB_TakeAmmo("PB_RevolverMag",1,0);
 					A_ZoomFactor(0.96);
-					PB_WeaponRecoil(-1.15,-0.35);
+					PB_WeaponRecoil(-1.9, -1.8);
 				}
 			R5V1 B 1 BRIGHT {
 					A_ZoomFactor(0.98);
-					PB_WeaponRecoil(-1.15,-0.35);
+					PB_WeaponRecoil(-1.9, -1.8);
 				}
 			R5V1 C 1 {
 					A_ZoomFactor(1.0);
 					A_StartSound("Weapons/Revolver/Click1",10);
-					PB_WeaponRecoil(-1.15,-0.35);
+					PB_WeaponRecoil(-1.9, -1.8);
 				}
 			R5V1 DEFG 1;
 			TNT1 A 0 A_ZoomFactor(1.0);
@@ -238,16 +240,16 @@ Class PB_Revolver : PB_WeaponBase
 					PB_LowAmmoSoundWarning("revolver");
 					PB_TakeAmmo("PB_RevolverMag",1,0);
 					A_ZoomFactor(0.96);
-					PB_WeaponRecoil(-1.2,-0.36);
+					PB_WeaponRecoil(-1.9, -1.8);
 				}
 			R5V1 J 1 BRIGHT {
 					A_ZoomFactor(0.98);
-					PB_WeaponRecoil(-1.2,-0.36);
+					PB_WeaponRecoil(-1.9, -1.8);
 				}
 			R5V1 K 1 {
 					A_ZoomFactor(1.0);
 					A_StartSound("Weapons/Revolver/Click1",10);
-					PB_WeaponRecoil(-1.2,-0.36);
+					PB_WeaponRecoil(-1.9, -1.8);
 				}
 			R5V1 LMNO 1;
 			TNT1 A 0 PB_ReFire("AltFan_Hold");
@@ -749,7 +751,7 @@ Class PB_Revolver : PB_WeaponBase
 						return resolvestate(null);
 					}
 				}
-				if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && firemodecvar > 2){
+				if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && firemodecvar < 2){
 					if(CountInv("PB_RevolverMag") > 0)
 						return resolvestate("FireRight_Overlay");
 					else 

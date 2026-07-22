@@ -119,7 +119,7 @@ class PB_SMG : PB_WeaponBase
                 if(ads) SMG_SetSprite("A1F3",silenced:"A1S3");
 				A_StartSound("ZSpecOps/MGun", CHAN_Weapon, CHANF_DEFAULT, sil ? 0.15 : 1.0, ATTN_NORM, frandom(0.93, 1.07));
                 PB_FireOffset();
-                PB_FireBullets("PB_9x19mmSubsonic", 1, 2, 0, 0, 2);
+                PB_FireBullets("PB_9x19mmSubsonic", 1, 0.1, 0, 0, 0.1);
                 PB_SpawnCasing("EmptyBrassPistol", xOfs, 3, vertOfs, frandom(-3,3), frandom(2,7), frandom(1,2), true, true);
                 PB_LowAmmoSoundWarning("smg");
                 PB_TakeAmmo(invoker.ammo2.getClassName(), 1);
@@ -192,7 +192,7 @@ class PB_SMG : PB_WeaponBase
                     SMG_SetSprite("A2F1", unloaded: "A2FU", leftMag: isLeft);
                 }
                 A_StartSound("ZSpecOps/MGun", CHAN_Weapon, CHANF_DEFAULT, sil ? 0.15 : 1, ATTN_NORM, frandom(0.93, 1.07));
-                PB_FireBullets("PB_9x19mmSubsonic", 1, 2, 0, 0, 2);
+                PB_FireBullets("PB_9x19mmSubsonic", 1, 0.1, 0, 0, 0.1);
                 PB_SpawnCasing("EmptyBrassPistol", 20, horOfs, vertOfs, frandom(-3,3), frandom(2,7), frandom(1,2), true, true);
                 if(isLeft)
                 {

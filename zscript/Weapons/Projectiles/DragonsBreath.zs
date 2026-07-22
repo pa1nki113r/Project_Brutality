@@ -4,11 +4,11 @@ Class PB_DragonsBreathTracer : PB_Projectile
 	{
 		PB_Projectile.BaseDamage 14;
 		PB_Projectile.RipperCount 0;
+		PB_Projectile.SpeedFPS 287;
 		Damagetype "Shotgun";
 		PoisonDamageType "Fire";
 		PoisonDamage 2;
 		+ADDITIVEPOISONDURATION;
-		speed 80;
 	}
 	States
 	{
