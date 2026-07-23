@@ -1678,7 +1678,7 @@ class BFGSmallSphere : Actor
         Height 8;
         Speed 40;
         FastSpeed 50;
-        // +PROJECTILE;
+        Projectile;
         +FORCEXYBILLBOARD;
         -THRUGHOST;
         Damage 30;
