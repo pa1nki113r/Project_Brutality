@@ -267,34 +267,33 @@ class PB_Pistol : PB_WeaponBase
 
             case 2: case 3:
                 if(tic == 2) A_ZoomFactor(1.0);
-                if(isLeft) setSilencerSprites(silencedLeft: "DL3F");
-                else       setSilencerSprites(silencedRight: "DR3F");
-                PB_WeaponRecoil(recoilX, recoilY);
+                if(isLeft) {
+                    setSilencerSprites(silencedLeft: "DL3F");
+                    A_SetFiringLeftWeapon(2);
+                }
+                else {
+                    setSilencerSprites(silencedRight: "DR3F");
+                    A_SetFiringRightWeapon(2);
+                }
                 break;
 
             case 4: // DualFiring flag + clear firing state
-                if(isLeft)
-                {
+                if(isLeft) {
                     setSilencerSprites(silencedLeft: "DL3F");
-                    if(invoker.ammoleft.amount <= 0 || invoker.ammo2.amount > 0)
-                        A_GiveInventory("DualFiring", 1);
-                    A_SetFiringLeftWeapon(false);
                 }
-                else
-                {
+                else {
                     setSilencerSprites(silencedRight: "DR3F");
-                    if(invoker.ammoleft.amount > 0 || invoker.ammo2.amount <= 0)
-                        A_TakeInventory("DualFiring", 1);
-                    A_SetFiringRightWeapon(false);
                 }
                 break;
 
             case 5: // DualFireReload check, reset burst
                 setBurstCount(0, isLeft ? true : false);
-                if(isLeft && invoker.ammo2.amount <= 0)
-                    A_GiveInventory("DualFireReload", 1);
-                else if(!isLeft && invoker.ammoleft.amount <= 0)
-                    A_GiveInventory("DualFireReload", 1);
+                if(isLeft) {
+                    A_SetFiringLeftWeapon(false);
+                }
+                else {
+                    A_SetFiringRightWeapon(false);
+                }
                 break;
         }
     }
@@ -532,7 +531,7 @@ class PB_Pistol : PB_WeaponBase
             Goto FinishDeselect;
 
         DualWieldDeselect:
-            DEGG DCBA 1 setSilencerSprites("D2GT");
+            D2GS DCBA 1 setSilencerSprites("D2GT");
         FinishDeselect:
             TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower();
             Wait;
@@ -698,14 +697,13 @@ class PB_Pistol : PB_WeaponBase
             D2RF A 1 BRIGHT Pistol_FireOverlay(1, false);
             D2RF B 1 BRIGHT Pistol_FireOverlay(2, false);
             D2RF C 1        Pistol_FireOverlay(3, false);
-            D2RF D 1        Pistol_FireOverlay(4, false);
 		    TNT1 A 0 A_JumpIf(getBurstCount() < 3 && getBurstFire() && !PB_GetChamberEmpty(), "BurstRight_Overlay");
+            D2RF D 1        Pistol_FireOverlay(4, false);
+            TNT1 A 0  Pistol_FireOverlay(5, false);
             D2GR AAAAA 1 {
                 setSilencerSprites(silencedRight: "D33R");
-                return PB_DualRefire(false);
+                return A_RefireRight();
             }
-            TNT1 A 0  Pistol_FireOverlay(5, false);
-            D2GR AA 1 setSilencerSprites(silencedRight: "D33R");
             Goto IdleRight_Overlay;
 
         FireLeft_Overlay:
@@ -714,14 +712,13 @@ class PB_Pistol : PB_WeaponBase
             D2LF A 1 BRIGHT Pistol_FireOverlay(1, true);
             D2LF B 1 BRIGHT Pistol_FireOverlay(2, true);
             D2LF C 1        Pistol_FireOverlay(3, true);
-            D2LF D 1        Pistol_FireOverlay(4, true);
 		    TNT1 A 0 A_JumpIf(getBurstCount(true) < 3 && getBurstFire() && !PB_GetChamberEmpty(true), "BurstLeft_Overlay");
+            D2LF D 1        Pistol_FireOverlay(4, true);
+            TNT1 A 0  Pistol_FireOverlay(5, true);
             D2GL AAAAA 1 {
                 setSilencerSprites(silencedLeft:"D33L");
-                return PB_DualRefire(true);
+                return A_RefireLeft();
             }
-            D2GL AA 1 setSilencerSprites(silencedLeft:"D33L");
-            TNT1 A 0  Pistol_FireOverlay(5, true);
             Goto IdleLeft_Overlay;
 
 //////////////////////////// ALTFIRE ////////////////////////////////////////////////////////////////////////////////////

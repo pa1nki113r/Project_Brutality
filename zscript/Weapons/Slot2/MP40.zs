@@ -131,8 +131,14 @@ class PB_MP40 : PB_WeaponBase
                 PB_IncrementHeat(1, isLeft);
 
                 // Set up flashes
-                if(isLeft) A_FlashOverlay(LEFT_FLASH_LAYER, "LeftFlashVariation");
-                else A_FlashOverlay(RIGHT_FLASH_LAYER, "RightFlashVariation");
+                if(isLeft) {
+					A_FlashOverlay(LEFT_FLASH_LAYER, "LeftFlashVariation");
+					A_SetFiringLeftWeapon(true);
+				}
+                else {
+					A_FlashOverlay(RIGHT_FLASH_LAYER, "RightFlashVariation");
+					A_SetFiringRightWeapon(true);
+				}
 
                 // Start firing the weapon
                 A_AlertMonsters();
@@ -160,27 +166,18 @@ class PB_MP40 : PB_WeaponBase
 
             case 2:
                 A_ZoomFactor(0.99);
-                if(isLeft) {
-                    if(invoker.ammoleft.amount <= 0 || invoker.ammo1.amount > 0)
-                        A_GiveInventory("DualFiring", 1);
-                }
-                else {
-                    if(invoker.ammoleft.amount > 0 || invoker.ammo1.amount <= 0)
-                        A_TakeInventory("DualFiring", 1);
-                }
                 PB_WeaponRecoil(-1.05, recoilY);
                 break;
 
             case 3:
                 A_ZoomFactor(1.0);
                 PB_WeaponRecoil(-1.05, recoilY);
-                break;
-
-            case 4:
-                if(isLeft && invoker.ammoleft.amount <= 0)
-                    A_GiveInventory("DualFireReload", 1);
-                else if(!isLeft && invoker.ammo1.amount <= 0)
-                    A_GiveInventory("DualFireReload", 1);
+                if(isLeft) {
+					A_SetFiringLeftWeapon(false);
+                }
+                else {
+					A_SetFiringRightWeapon(false);
+                }
                 break;
         }
     }
@@ -339,7 +336,6 @@ class PB_MP40 : PB_WeaponBase
             MP21 C 1        MP40_FireOverlay(2, isLeft:true);
             MP21 D 1        MP40_FireOverlay(3, isLeft:true);
             MP21 E 1;
-            TNT1 A 0        MP40_FireOverlay(4, isLeft:true);
             Goto IdleLeft_Overlay;
 
         FireRight_Overlay:
@@ -347,7 +343,6 @@ class PB_MP40 : PB_WeaponBase
             MP22 C 1        MP40_FireOverlay(2, isLeft:false);
             MP22 D 1        MP40_FireOverlay(3, isLeft:false);
             MP22 E 1;
-            TNT1 A 0        MP40_FireOverlay(4, isLeft:false);
             Goto IdleRight_Overlay;
 
         Fire:

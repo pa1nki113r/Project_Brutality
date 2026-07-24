@@ -920,23 +920,17 @@ Class PB_M1Plasma : PB_WeaponBase
 					PB_TakeAmmo("PB_M1PlasmaLeftMag",1,0,0,true);
 					PB_WeaponRecoil(-1.4,+0.8);
 					A_Overlay(60,"AmmoCounterLeftDW.Firing");
-					A_Overlay(-4,"MuzzleFlashDual");
-					A_OverlayFlags(-4,PSPF_RENDERSTYLE,true);
-					A_OverlayRenderStyle(-4,STYLE_Add);
-					A_OverlayFlags(-4,PSPF_FLIP|PSPF_MIRROR,1);
+					A_FlashOverlay(LEFT_FLASH_LAYER, "MuzzleFlashDual");
+					A_OverlayFlags(LEFT_FLASH_LAYER, PSPF_FLIP|PSPF_MIRROR,1);
+					A_SetFiringLeftWeapon(true);
 				}
 			DPR2 B 1 BRIGHT {
 					A_ZoomFactor(0.99);
-					if(CountInv("PB_M1PlasmaLeftMag")<=0 || CountInv("PB_M1PlasmaMag")>0 )
-						A_GiveInventory("DualFiring",1);
+					A_SetFiringLeftWeapon(false);
 					PB_WeaponRecoil(-1.4,+0.8);
 				}
 			DPR2 C 1 A_ZoomFactor(1.0);
 			P1SG A 0 A_Overlay(60, "AmmoCounterLeftDW");
-			TNT1 A 0 {
-				if(CountInv("PB_M1PlasmaLeftMag")<=0)
-					A_GiveInventory("DualFireReload",1);
-			}
 			Goto IdleLeft_Overlay;
 			
 		
@@ -952,22 +946,16 @@ Class PB_M1Plasma : PB_WeaponBase
 					PB_TakeAmmo("PB_M1PlasmaMag",1,0);
 					PB_WeaponRecoil(-1.4,-0.8);
 					A_Overlay(63,"AmmoCounterRightDW.Firing");
-					A_Overlay(-5,"MuzzleFlashDual");
-					A_OverlayFlags(-5,PSPF_RENDERSTYLE,true);
-					A_OverlayRenderStyle(-5,STYLE_Add);
+					A_FlashOverlay(RIGHT_FLASH_LAYER, "MuzzleFlashDual");
+					A_SetFiringRightWeapon(true);
 				}
 			DPR1 B 1 BRIGHT {
 					A_ZoomFactor(0.99);
-					if(CountInv("PB_M1PlasmaLeftMag")>0 || CountInv("PB_M1PlasmaMag")<=0 )
-						A_TakeInventory("DualFiring",1);
+					A_SetFiringRightWeapon(false);
 					PB_WeaponRecoil(-1.4,-0.8);
 				}
 			DPR1 C 1 A_ZoomFactor(1.0);
 			P1SG A 0 A_Overlay(63, "AmmoCounterRightDW");
-			TNT1 A 0 {
-				if(CountInv("PB_M1PlasmaMag")<=0)
-					A_GiveInventory("DualFireReload",1);
-			}
 			Goto IdleRight_Overlay;
 		
 		
