@@ -28,7 +28,7 @@ class PlayerPawnBase : PlayerPawn
 	
 	const CMD_MAXVALUE			= 12800; //maximum value of the sidemove/forwardmove vars
 	
-	double dashDir, dashSpeed;
+	double dashDir, dashSpeed, airControlBuffer;
 	int dashTics, dashCharge, airTics;
 	bool dJump, waiting;
 	
@@ -943,6 +943,9 @@ class PlayerPawnBase : PlayerPawn
 		if(dashJumped) {
 			Vel.XY *= 0.95;
 		}
+		else if(dashtics > 0) {
+			Vel.XY *= 1 - MOVEMENT_FRICTION / 10.f;
+		}
 		else {
 			Vel.XY = min(Vel.XY.Length(), MaxGroundSpeed) * SafeUnit2(Vel.XY);
 		}
@@ -1822,8 +1825,8 @@ class PlayerPawnBase : PlayerPawn
 			SetInventory("PlayerDashed", 0);
 		}
 		
-        if(CheckNotPredicting())  {
-			double airControlBuffer = level.aircontrol;
+		if(CheckNotPredicting())  {
+			if(!airControlBuffer) airControlBuffer = level.aircontrol;
 			if(dashTics > 0) {
 				dashTics--;
 				
@@ -1831,9 +1834,10 @@ class PlayerPawnBase : PlayerPawn
 					dashSpeed *= 0.4;
 					SetInventory("PlayerDashed", 0);
 				}
-				VelFromAngle(DashSpeed, DashDir );
 				
-				vel.z = 0;
+				VelFromAngle(DashSpeed, DashDir);
+				
+				if(dashTics > 3) vel.z = 0;
 				
 				level.airControl = 0.25;
 			}
@@ -1842,10 +1846,11 @@ class PlayerPawnBase : PlayerPawn
 				dJump = true;
 				airTics = 0;
 				level.airControl = airControlBuffer;
+				airControlBuffer = 0.0;
 			}
 			else {
 				airTics++;
-			}	
+			}
 				
 			// [gng] recharge the dash
 			if(dashCharge < DASH_MAX_CHARGE) {
