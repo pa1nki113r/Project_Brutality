@@ -739,7 +739,7 @@ class PB_Deagle : PB_WeaponBase
 			D3E0 E 1 A_ZoomFactor(1.25);
 			D3E0 FG 1;
 			D3E0 H 1 {
-				if (JustPressed(BT_ATTACK) && PressingAltfire() || !Cvar.GetCvar("pb_toggle_aim_hold",player).getbool())
+				if (JustPressed(BT_ATTACK) && (PressingAltfire() || !Cvar.GetCvar("pb_toggle_aim_hold",player).getbool()))
 					return resolvestate("Fire2");
 				return resolvestate(null);
 			}
