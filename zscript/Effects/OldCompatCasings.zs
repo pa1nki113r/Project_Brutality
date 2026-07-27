@@ -21,7 +21,7 @@ Class SMGCasingSpawner : Actor
 		override void BeginPlay(void)
 	{
 		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
+		NashGoreStatics.QueueCasings(self);
 		Super.BeginPlay();
 	}
 	Default
@@ -44,7 +44,7 @@ Class RifleCaseSpawn : Actor
 		override void BeginPlay(void)
 	{
 		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
+		NashGoreStatics.QueueCasings(self);
 		Super.BeginPlay();
 	}
 	Default
@@ -67,7 +67,7 @@ Class Mp40CaseSpawn : Actor
 	override void BeginPlay(void)
 	{
 		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
+		NashGoreStatics.QueueCasings(self);
 		Super.BeginPlay();
 	}
 
@@ -104,7 +104,7 @@ Class MastermindCaseSpawn : Actor
 		override void BeginPlay(void)
 	{
 		ChangeStatNum(STAT_PB_BULLETS);
-		NashGoreStatics.QueueCasings();
+		NashGoreStatics.QueueCasings(self);
 		Super.BeginPlay();
 	}
   Default

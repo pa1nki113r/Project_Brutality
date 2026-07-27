@@ -30,6 +30,44 @@
 //
 //===========================================================================
 
+// [gng] not QUITE a ring buffer, but close
+class PB_UroborosBuffer {
+  Array<Actor> buffer;
+  int tail, maxsize, size;
+
+  static PB_UroborosBuffer Init(int maxsize) {
+    let o = PB_UroborosBuffer(new("PB_UroborosBuffer"));
+    if(o) {
+      o.maxsize = maxsize;
+      o.buffer.Reserve(maxsize);
+    }
+
+    return o;
+  }
+
+  bool IsFull() {
+    return size == maxsize;
+  }
+
+  Actor GetTail() {
+    return buffer[tail];
+  }
+
+  void Insert(Actor what) {
+    buffer[tail] = what;
+    tail = (tail + 1) % maxsize;
+    
+    if(size < maxsize) 
+      ++size;
+  }
+
+  void Clean() {
+    size = tail = 0;
+    buffer.Clear();
+    buffer.Reserve(maxsize);
+  }
+}
+
 class NashGoreHandler : EventHandler
 {
 	int maxgore;
@@ -37,6 +75,11 @@ class NashGoreHandler : EventHandler
 	bool cheapCasings;
 
 	Array<String> bloodTypes;
+	
+	PB_UroborosBuffer casingBuf;
+	PB_UroborosBuffer goreBuf;
+	PB_UroborosBuffer smokeBuf;
+	PB_UroborosBuffer dropBuf;
 
 	//===========================================================================
 	//
@@ -65,18 +108,39 @@ class NashGoreHandler : EventHandler
 	//
 	//===========================================================================
 
+  void PB_UpdateQueuesNShit() {
+    maxgore = nashgore_maxgore;
+	  maxcasings = nashgore_maxcasings;
+ 		cheapCasings = pb_cheapcasings;
+
+ 		if(casingbuf) { foreach(i : casingBuf.buffer) { if(i) i.Destroy(); } }
+ 		if(gorebuf) { foreach(i : goreBuf.buffer) { if(i) i.Destroy(); } }
+ 		if(smokebuf) { foreach(i : smokeBuf.buffer) { if(i) i.Destroy(); } }
+ 		if(dropbuf) { foreach(i : dropBuf.buffer) { if(i) i.Destroy(); } }
+ 		
+	  casingBuf = PB_UroborosBuffer.Init(maxcasings);
+	  goreBuf = PB_UroborosBuffer.Init(maxgore);
+	  smokeBuf = PB_UroborosBuffer.Init(50);
+	  dropBuf = PB_UroborosBuffer.Init(ceil(maxgore * 0.1));
+  }
+
 	override void WorldLoaded(WorldEvent e)
 	{
+	  PB_UpdateQueuesNShit();	  
 		BuildBloodTypes();
 	}
 
-	override void WorldTick(void)
-	{
-		// update queues
-		maxgore = nashgore_maxgore;
-		maxcasings = nashgore_maxcasings;
-		cheapCasings = pb_cheapcasings;
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	void PB_AddToUroborosBuffer(Actor what, PB_UroborosBuffer where) {
+	  if(where.IsFull() && where.GetTail()) where.GetTail().Destroy();
+	  where.Insert(what);
 	}
+
 
 	//===========================================================================
 	//
