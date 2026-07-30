@@ -1,9 +1,11 @@
 class PB_DTech : PB_Ammo replaces demonpickup
 {
+	int ownAP;
+	
 	Default
 	{
 		Scale 0.15;
-		Tag "Demonic Energy";
+		Tag "$PB_DTECH_TAG";
 		Inventory.Amount 10;
 		Inventory.MaxAmount 300;
 		Inventory.PickupSound "demonsoulpickup";
@@ -16,31 +18,45 @@ class PB_DTech : PB_Ammo replaces demonpickup
 		+INVENTORY.ALWAYSPICKUP
 	}
 	
-	override void DoPickupSpecial(actor toucher)
-	{
-		toucher.GiveInventory("PB_DemonAPBonus",1);
-		Super.DoPickupSpecial(toucher);
+	override bool TryPickup (in out Actor other) {
+		if(super.TryPickup(other)) {
+			ownAP = clamp(500 - other.CountInv("BasicArmor"), 0, 2);
+			other.GiveInventory("PB_DemonAPBonus",1);
+			return true;
+		}
+		return false;
 	}
-	override string PickupMessage()
-	{
-		if(!res) return "Demon Energy (+2 HP)";
-		return Super.PickupMessage();
+	
+	override string PickupMessage() {
+		return string.format(StringTable.Localize("$PB_DTECH_PICKUP"), res, ownAP);
 	}
 }
 
 class PB_DTechLarge : PB_DTech replaces demonpickup2
 {
+	int ownHP;
+	
+	
 	Default
 	{
 		Scale 0.25;
 		Inventory.Amount 20;
 	}
 	
-	override void DoPickupSpecial(actor toucher)
+	override bool TryPickup (in out Actor other) {
+		if(super.TryPickup(other)) {
+			ownHP = other.health;
+			other.GiveBody(2, 500);
+			return true;
+		}
+		return false;
+	}
+	
+	override string PickupMessage()
 	{
-		toucher.GiveInventory("PB_DemonAPBonus",1);
-		toucher.GiveInventory("PB_DemonHPBonus",2);
-		Super.DoPickupSpecial(toucher);
+		string msg = StringTable.Localize("$PB_DTECH_PICKUP_LARGE");
+		if(ownHP < 25) msg = StringTable.Localize("$PB_DTECH_PICKUP_LARGE_LOW");
+		return string.format(msg, res, clamp(500 - ownHP, 0, 2), ownAP);
 	}
 }
 
@@ -75,7 +91,7 @@ Class PB_LeechPickup : PB_Ammo
 		//$Category Project Brutality/Weapons/Equipment
 		//$Sprite FLSPA0
 		Scale 0.35;
-		Tag "Leech Grenade";
+		Tag "$PB_LEECH_TAG";
 		Inventory.PickupSound "SiphonGrowl";
 		PB_Ammo.AmmoType "leechnade";
 		Inventory.Amount 1;
@@ -84,7 +100,7 @@ Class PB_LeechPickup : PB_Ammo
 	
 	override string PickupMessage()
 	{
-		return "What the hell is this thing..?";
+		return "$PB_LEECH_PICKUP";
 	}
 	
 	override void AttachToOwner(actor other)

@@ -806,7 +806,7 @@ class FragGrenCard : equipmentCard
 {
 	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ownedtokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
 	{
-		tags.push("Frag Grenade");
+		tags.push("$PB_FRAGGRENADE_TAG");
 		tokens.push("WW_FragGrenadeSelected");
 		ownedtokens.push("PB_GrenadeToken");
 		ammotypes.push("PB_GrenadeAmmo");
@@ -820,7 +820,7 @@ class ShouldCanCard : equipmentCard
 {
 	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ownedtokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
 	{
-		tags.push("Quick Launcher");
+		tags.push("$PB_QUICKLAUNCHER_TAG");
 		tokens.push("WW_RevGunSelected");
 		ownedtokens.push("PB_QuickLauncherToken");
 		ammotypes.push("PB_QuickLauncherAmmo");
@@ -834,7 +834,7 @@ class ProxMinCard : equipmentCard
 {
 	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ownedtokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
 	{
-		tags.push("Proximity Mine");
+		tags.push("$PB_PROXMINE_TAG");
 		tokens.push("WW_ProximityMineSelected");
 		ownedtokens.push("PB_ProxMineToken");
 		ammotypes.push("PB_ProxMineAmmo");
@@ -848,7 +848,7 @@ Class StunGrenCard : equipmentCard
 {
 	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ownedtokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
 	{
-		tags.push("Stun Grenade");
+		tags.push("$PB_STUNGRENADE_TAG");
 		tokens.push("WW_StunGrenadeSelected");
 		ownedtokens.push("PB_StunGrenadeToken");
 		ammotypes.push("PB_StunGrenadeAmmo");
@@ -862,7 +862,7 @@ Class LeechCard : equipmentCard
 {
 	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ownedtokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
 	{
-		tags.push("Leech");
+		tags.push("$PB_LEECH_TAG");
 		tokens.push("WW_LeechSelected");
 		ownedtokens.push("PB_LeechToken");
 		ammotypes.push("PB_DTech");
