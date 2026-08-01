@@ -1,6 +1,6 @@
 class PB_DTech : PB_Ammo replaces demonpickup
 {
-	int ownAP;
+	int ownAP, ownHP;
 	
 	Default
 	{
@@ -9,7 +9,7 @@ class PB_DTech : PB_Ammo replaces demonpickup
 		Inventory.Amount 10;
 		Inventory.MaxAmount 300;
 		Inventory.PickupSound "demonsoulpickup";
-		Ammo.BackpackAmount 60;
+		Ammo.BackpackAmount 10;
 		Ammo.BackpackMaxAmount 666;
 		PB_Ammo.ammotype "dtech";
 		PB_Ammo.HUDGraphics "BARBACZ1", "BARBACZ2", "BARBACZ3", "BARBACZ4", "ABAR7", "AMMOIC7", "PB_DTech";
@@ -19,12 +19,10 @@ class PB_DTech : PB_Ammo replaces demonpickup
 	}
 	
 	override bool TryPickup (in out Actor other) {
-		if(super.TryPickup(other)) {
-			ownAP = clamp(500 - other.CountInv("BasicArmor"), 0, 2);
-			other.GiveInventory("PB_DemonAPBonus",1);
-			return true;
-		}
-		return false;
+		ownHP = other.health;
+		ownAP = clamp(500 - other.CountInv("BasicArmor"), 0, 2 * G_SkillPropertyFloat(SKILLP_ArmorFactor));
+		other.GiveInventory("PB_DemonAPBonus",1);
+		return super.TryPickup(other);
 	}
 	
 	override string PickupMessage() {
@@ -34,9 +32,6 @@ class PB_DTech : PB_Ammo replaces demonpickup
 
 class PB_DTechLarge : PB_DTech replaces demonpickup2
 {
-	int ownHP;
-	
-	
 	Default
 	{
 		Scale 0.25;
@@ -44,19 +39,15 @@ class PB_DTechLarge : PB_DTech replaces demonpickup2
 	}
 	
 	override bool TryPickup (in out Actor other) {
-		if(super.TryPickup(other)) {
-			ownHP = other.health;
-			other.GiveBody(2, 500);
-			return true;
-		}
-		return false;
+		other.GiveBody(2, 500);
+		return super.TryPickup(other);
 	}
 	
 	override string PickupMessage()
 	{
 		string msg = StringTable.Localize("$PB_DTECH_PICKUP_LARGE");
 		if(ownHP < 25) msg = StringTable.Localize("$PB_DTECH_PICKUP_LARGE_LOW");
-		return string.format(msg, res, clamp(500 - ownHP, 0, 2), ownAP);
+		return string.format(msg, res, clamp(500 - ownHP, 0, 2 * G_SkillPropertyFloat(SKILLP_HealthFactor)), ownAP);
 	}
 }
 
