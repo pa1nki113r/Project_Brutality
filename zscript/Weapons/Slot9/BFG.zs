@@ -1446,7 +1446,7 @@ class BFGTrailParticle : Actor
     }
 }
 
-class SuperBFGExtra : BFGExtra replaces BFGExtra
+class SuperBFGExtra : BFGExtra
 {
     Default
     {
