@@ -862,6 +862,8 @@ class PB_SMG : PB_WeaponBase
             A2F1 F 1 SMG_FireOverlay(3,true);
 		    TNT1 A 0 A_JumpIf(getBurstCount(true) < 3 && getBurstFire() && !PB_GetChamberEmpty(true), "BurstLeft_Overlay");
             TNT1 A 0 SMG_FireOverlay(4,true);
+			TNT1 A 0 A_JumpIf(!getBurstFire(), "IdleLeft_Overlay");
+			A2FL AAAAA 1 A_RefireLeft();
             Goto IdleLeft_Overlay;
 
         FireRight_Overlay:
@@ -875,6 +877,8 @@ class PB_SMG : PB_WeaponBase
             A2F1 C 1 SMG_FireOverlay(3,false);
 		    TNT1 A 0 A_JumpIf(getBurstCount() < 3 && getBurstFire() && !PB_GetChamberEmpty(), "BurstRight_Overlay");
             TNT1 A 0 SMG_FireOverlay(4,false);
+			TNT1 A 0 A_JumpIf(!getBurstFire(), "IdleRight_Overlay");
+			A2FR AAAAA 1 A_RefireRight();
             Goto IdleRight_Overlay;
 
 //////////////////////////// ALTFIRE ////////////////////////////////////////////////////////////////////////////////////
