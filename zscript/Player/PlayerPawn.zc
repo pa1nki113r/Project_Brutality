@@ -207,7 +207,13 @@ class PlayerPawnBase : PlayerPawn
 		Super.PlayerThink();
 
 		bool wasOnGround = player.onGround;
-		Player.OnGround = (Pos.Z <= FloorZ) || bONMOBJ || bMBFBOUNCER || (Player.Cheats & CF_NOCLIP2); // Moved after super call, otherwise it doesn't register.
+		//[nV] zdoom checks the flag bONMOBJ to see if the player is standing on an actor.
+		//however, this will return true when the player is touching an actor from below.
+		//instead we use this function, which is more reliable.
+		bool notOnActor;
+		actor actorOn;
+		[notOnActor, actorOn] = TestMobjZ();
+		Player.OnGround = (Pos.Z <= FloorZ) || !notOnActor || bMBFBOUNCER || (Player.Cheats & CF_NOCLIP2); // Moved after super call, otherwise it doesn't register.
 
         if(Player.OnGround) coyoteTime = 3;
         else if(coyoteTime > 0) coyoteTime--;
@@ -1276,6 +1282,10 @@ class PlayerPawnBase : PlayerPawn
 		{
 			return;
 		}
+		
+		//do another check to see if a solid actor is blocking the way.
+		LineTrace(0, 16, -90, TRF_SOLIDACTORS, height, data:LedgeTrace);
+		if(LedgeTrace.HitType == TRACE_HitActor) return;
 		
 		//Check if the candidate ledge can suffice
 		if(LedgeCandidate > Pos.Z + Height * 0.6f && LedgeCandidate <= Pos.Z + Height * 1.2f)
