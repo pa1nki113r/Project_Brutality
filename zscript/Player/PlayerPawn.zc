@@ -28,7 +28,7 @@ class PlayerPawnBase : PlayerPawn
 	
 	const CMD_MAXVALUE			= 12800; //maximum value of the sidemove/forwardmove vars
 	
-	double dashDir, dashSpeed, airControlBuffer;
+	double dashDir, dashAng, dashPitch, dashSpeed, airControlBuffer;
 	int dashTics, dashCharge, airTics;
 	bool dJump, waiting;
 	
@@ -759,14 +759,14 @@ class PlayerPawnBase : PlayerPawn
 		{
 			grunted = false;
 			// Why should this number vary by gravity?
-			if (self.Vel.Z < -self.player.mo.GruntSpeed)
+			if (self.Vel.Z < -self.player.mo.GruntSpeed && (waterlevel < 3 || dashTics < 1))
 			{
 				A_StartSound("*grunt", CHAN_AUTO);
 				A_StartSound("pb/player/hitfloor", CHAN_AUTO);
 				grunted = true;
 			}
 			bool isliquid = (pos.Z <= floorz) && GetFloorTerrain().IsLiquid;
-			if (onmobj != NULL || !isliquid)
+			if ((onmobj != NULL || !isliquid) && (waterlevel < 3 || dashTics < 1))
 			{
 				if (!grunted)
 				{
@@ -1236,10 +1236,9 @@ class PlayerPawnBase : PlayerPawn
 	{
 		ZMPlayer = self.player;
 		
-		if(
-			WaterLevel > 2 || CountInv("GrabbedIceBarrel") > 0 || CountInv("GrabbedFlameBarrel") > 0 || CountInv("GrabbedBarrel") > 0 ||
-			CountInv("HasIceBarrel") > 0 || CountInv("HasFlameBarrel") > 0 || CountInv("HasBarrel") > 0
-		) { return; }
+		if(WaterLevel > 2 || FindInventory("PB_BarrelToken")) {
+			return;
+		}
 		
 		//Already ledge grabbing, no clipping, moving away from where you are looking, ceiling already too low for sure
 		if((pos.z <= floorz) || LedgeCheck || LedgeGrabbed || (ZMPlayer.Cheats & CF_NOCLIP2) || Vel.XY dot AngleToVector(Angle) <= 0 || CeilingZ <= Pos.Z + Height * 1.6f) { return; }
@@ -1798,6 +1797,8 @@ class PlayerPawnBase : PlayerPawn
 				}
 				// [gng] thanks to kodi and lewisk3, analog compatible dash direction
 				dashDir = DeltaAngle(atan2(plr.cmd.sidemove, plr.cmd.forwardmove), angle);
+				dashAng = angle;
+				dashPitch = pitch;
 				
 				if(DashCharge < DASH_MAX_CHARGE) { 
 					waiting = true; 
@@ -1843,9 +1844,10 @@ class PlayerPawnBase : PlayerPawn
 					SetInventory("PlayerDashed", 0);
 				}
 				
-				VelFromAngle(DashSpeed, DashDir);
+				if(waterlevel == 3) Vel3DFromAngle(DashSpeed, DashDir, dashPitch * cos(dashDir - dashAng));
+				else VelFromAngle(DashSpeed, DashDir);
 				
-				if(dashTics > 3) vel.z = 0;
+				if(dashTics > 3 && waterlevel < 3) vel.z = 0;
 				
 				level.airControl = 0.25;
 			}
