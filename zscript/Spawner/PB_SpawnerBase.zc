@@ -58,27 +58,27 @@ enum MonsterSpawnFilters
 	DisableDNImpVariants				= 1 << 0,
 	DisablePB_InfectedImp				= 1 << 1,
 	DisablePB_DarkImps					= 1 << 2,
-	//DisablePB_							= 1 << 3,
+//	DisablePB_							= 1 << 3,
 	
 	DisablePB_MeanDemon					= 1 << 0,
 	DisablePB_MechDemon					= 1 << 1,
-	//DisablePB_							= 1 << 2,
+//	DisablePB_							= 1 << 2,
 	
 	DisablePB_VoidSpectre				= 1 << 0,
-	//DisablePB_							= 1 << 1,
-	//DisablePB_							= 1 << 2,
+//	DisablePB_							= 1 << 1,
+//	DisablePB_							= 1 << 2,
 	
 	DisablePB_Phantasm					= 1 << 0,
-	//DisablePB_							= 1 << 1,
-	//DisablePB_							= 1 << 2,
+//	DisablePB_							= 1 << 1,
+//	DisablePB_							= 1 << 2,
 	
 	DisablePB_InfernalCaco				= 1 << 0,
 	DisablePB_Afrit						= 1 << 1,
-	//DisablePB_							= 1 << 2,
+//	DisablePB_							= 1 << 2,
 	
 	DisablePB_CyberKnight				= 1 << 0,
 	DisablePB_CyberPaladin				= 1 << 1,
-	//DisablePB_							= 1 << 2,
+//	DisablePB_							= 1 << 2,
 	
 	DisablePB_CyberBaron				= 1 << 0,
 	DisablePB_Infernus					= 1 << 1,
@@ -89,41 +89,31 @@ enum MonsterSpawnFilters
 	DisablePB_EliteArachnotron			= 1 << 2,
 	
 	DisablePB_SufferingElemental		= 1 << 0,
-	//DisablePB_							= 1 << 1,
-	//DisablePB_							= 1 << 2,
+//	DisablePB_							= 1 << 1,
+//	DisablePB_							= 1 << 2,
 	
 	DisablePB_BeamRev					= 1 << 0,
 	DisablePB_Draugr					= 1 << 1,
-	//DisablePB_							= 1 << 2,
+//	DisablePB_							= 1 << 2,
 	
 	DisablePB_Daedabus					= 1 << 0,
 	DisablePB_Volcabus					= 1 << 1,
-	//DisablePB_							= 1 << 2,
+//	DisablePB_							= 1 << 2,
 	
 	DisablePB_Hellion					= 1 << 0,
-	//DisablePB_							= 1 << 1,
-	//DisablePB_							= 1 << 2,
+//	DisablePB_							= 1 << 1,
+//	DisablePB_							= 1 << 2,
 	
 	DisablePB_Demolisher				= 1 << 0,
 	DisablePB_Juggernaut				= 1 << 1,
-	//DisablePB_							= 1 << 2,
+//	DisablePB_							= 1 << 2,
 	
 	DisablePB_Annihilator				= 1 << 0,
-	//DisablePB_							= 1 << 1,
-	//DisablePB_							= 1 << 2,
+//	DisablePB_							= 1 << 1,
+//	DisablePB_							= 1 << 2,
 }
 
 // Spawning Related Tokens
-
-Class SpawnwSSG : Inventory {default{inventory.maxamount 1;}}
-Class NoSpawnQuadSG : Inventory {default{inventory.maxamount 1;}}
-Class NoSpawn : Inventory {default{inventory.maxamount 1;}}
-Class CheckCvarSSG : Inventory {default{inventory.maxamount 1;}}
-Class CvarChecked : Inventory {default{inventory.maxamount 1;}}
-Class NoSpawnASGUpgrade : Inventory {default{inventory.maxamount 1;}}
-Class NeedSpawning : Inventory {default{inventory.maxamount 1;}}
-Class PlayerHasCaughtup : Inventory {default{inventory.maxamount 1;}}
-
 //Chainsaw Spawner
 Class PlayerHasChainsawPermanent : Inventory {default{inventory.maxamount 1;+inventory.UNDROPPABLE;}}
 Class PlayerHasFLMTPermanent : Inventory {default{inventory.maxamount 1;+inventory.UNDROPPABLE;}}
@@ -185,14 +175,16 @@ Class PB_SpawnerBase : Actor
 	}
 	
 	enum Spawn_Tiers {
-		Tier_Chaotic	=		663,
-		Tier_Dynamic 	=		666,
-		Tier_1 			=		667,
-		Tier_2 			= 		668,
-		Tier_3 			=		669,
-		Tier_4 			= 		670,
-		Tier_Tiered 	= 		671,
-		Tier_Death 		= 		672
+		Tier_Chaotic	=	663,
+		Tier_Legacy		=	664,
+		Tier_LegacyAlt	=	665,
+		Tier_Dynamic 	=	666,
+		Tier_1 			=	667,
+		Tier_2 			=	668,
+		Tier_3 			=	669,
+		Tier_4 			=	670,
+		Tier_Tiered 	=	671,
+		Tier_Death 		=	672
 	}
 	
 	//
@@ -200,58 +192,48 @@ Class PB_SpawnerBase : Actor
 	//	
 	//
 	state DoSpawnLogic()
-	{
-		Stats = PB_GlobalStats.Get();
+	{Stats = PB_GlobalStats.Get();
 		
-		int Count = Stats.Counters[PB_GlobalStats.Counter_LevelsCompleted];
+		int level = Stats.Counters[PB_GlobalStats.Counter_LevelsCompleted];
+		int spawnbal = clamp(SpawnBalance, Tier_Chaotic, Tier_Death);;
+		double tierBreak = (levelsToPlay / 4);
 		
-		int spawnbal = Tier_Dynamic;
-		int lvtp = (levelsToPlay / 4);
-		
-		if(SpawnBalance == Tier_Chaotic)
-			spawnbal = Tier_Chaotic;
-		else
-			spawnbal = clamp(SpawnBalance,Tier_Dynamic,Tier_Death);
-		
-		statelabel st = "CHAOTICRANDOM";
-		switch(spawnbal)
-		{
-			case Tier_Chaotic:	st = "CHAOTICRANDOM";	break;
-			case Tier_1:		st = "Tier1";			break;
-			case Tier_2:		st = "Tier2";			break;
-			case Tier_3:		st = "Tier3";			break;
-			case Tier_4:		st = "Tier4";			break;
-			case Tier_Death:	st = "Death";			break;
+		string st = "Tier1";
+		int currentTier = clamp(ceil(level/tierBreak), 1, 4);
+		double modCount = level % tierBreak / tierBreak;
+		int upgradeChance;
+		if(level > tierBreak && level < tierBreak * 4)
+			upgradeChance = clamp((modCount / 0.5) * 256, 0, 256);
+		switch(spawnbal) {
+			case Tier_Chaotic:	st = "Tier"..random(1, 4);	break;
+			case Tier_1:		st = "Tier1";				break;
+			case Tier_2:		st = "Tier2";				break;
+			case Tier_3:		st = "Tier3";				break;
+			case Tier_4:		st = "Tier4";				break;
+			case Tier_Death:	st = "Death";				break;
 			
-			case Tier_Tiered:
-				if(Count <= lvtp)						{st = "Tier1";}
-				else if(Count <= (lvtp * 2))			{st = "Tier2";}
-				else if(Count <= (lvtp * 3))			{st = "Tier3";}
-				else if(Count > (lvtp * 3))				{st = "Tier4";}
+			case Tier_Tiered:	st = "Tier"..currentTier;	break;
+			
+			case Tier_Legacy:
+				for(int i = currentTier; i > 1; i--) {
+					if(random(0, 3) > 0 || currentTier == 1) break;
+					currentTier--;
+				}
+				if(!(upgradeChance == 0.0 || random(0, 255) < upgradeChance))
+					currentTier--;
+				st = "Tier"..currentTier;
 				break;
-				
+			
+			case Tier_LegacyAlt:	st = "Tier"..random(1, currentTier); break;
+			
 			case Tier_Dynamic:
-				if(Count < (lvtp))						{st = "Tier1";}
-				else if(Count == (lvtp))				{st = "T2Random64";}
-				else if(Count == ((lvtp) + 1))			{st = "T2Random128";}
-				else if(Count == ((lvtp) + 2))			{st = "T2Random192";}
-					
-				else if(Count < ((lvtp) * 2))			{st = "Tier2";}
-				else if(Count == ((lvtp) * 2))			{st = "T3Random64";}
-				else if(Count == (((lvtp) * 2) + 1))	{st = "T3Random128";}
-				else if(Count == (((lvtp) * 2) + 2))	{st = "T3Random192";}
-					
-				else if(Count < ((lvtp) * 3))			{st = "Tier3";}
-				else if(Count == ((lvtp) * 3))			{st = "T4Random64";}
-				else if(Count == (((lvtp) * 3) + 1))	{st = "T4Random128";}
-				else if(Count == (((lvtp) * 3) + 2))	{st = "T4Random192";}
-				
-				else if(Count > (((lvtp) * 3) + 2))		{st = "Tier4";}
+				if(!(upgradeChance == 0.0 || random(0, 255) < upgradeChance))
+					currentTier--;
+				st = "Tier"..currentTier;
 				break;
 		}
-		
-		//console.printf("Running Spawn logic! Count is: "..Count..", spawn balance is: "..spawnbal..", State label jump: "..st);
-		return self.resolvestate(st);
+		//console.printf("spawn rule: %d, current map: %d, upgrade chance: %d%%, state: "..st, spawnbal, level, upgradeChance / 2.56);
+		return self.FindStateByString(st);
 	}
 	
 	actor PB_SpawnerSpawn(name spawner)
@@ -355,42 +337,9 @@ Class PB_SpawnerBase : Actor
 	States
 	{
 		Spawn:
-			TNT1 A 0;
-		StartChoose:
-			TNT1 A 0;
-			TNT1 A 0 DoSpawnLogic();
+			TNT1 A 0 NoDelay DoSpawnLogic();
 			TNT1 A 1;
 			stop;
-		T2Random64:
-			TNT1 A 0 A_Jump(64,"Tier2");
-			TNT1 A 0 A_Jump(256,"Tier1");
-		T2Random128:
-			TNT1 A 0 A_Jump(128,"Tier2");
-			TNT1 A 0 A_Jump(256,"Tier1");
-		T2Random192:
-			TNT1 A 0 A_Jump(192,"Tier2");
-			TNT1 A 0 A_Jump(256,"Tier1");
-		T3Random64:
-			TNT1 A 0 A_Jump(64,"Tier3");
-			TNT1 A 0 A_Jump(256,"Tier2");
-		T3Random128:
-			TNT1 A 0 A_Jump(128,"Tier3");
-			TNT1 A 0 A_Jump(256,"Tier2");
-		T3Random192:
-			TNT1 A 0 A_Jump(192,"Tier3");
-			TNT1 A 0 A_Jump(256,"Tier2");
-		T4Random64:
-			TNT1 A 0 A_Jump(64,"Tier4");
-			TNT1 A 0 A_Jump(256,"Tier3");
-		T4Random128:
-			TNT1 A 0 A_Jump(128,"Tier4");
-			TNT1 A 0 A_Jump(256,"Tier3");
-		T4Random192:
-			TNT1 A 0 A_Jump(192,"Tier4");
-			TNT1 A 0 A_Jump(256,"Tier3");
-		CHAOTICRANDOM:
-			TNT1 A 0 A_Jump(256, "Tier4","Tier3", "Tier2", "Tier1");
-			Stop;
 		Tier4:
 		Tier3:
 		Tier2:
@@ -400,43 +349,6 @@ Class PB_SpawnerBase : Actor
 		Death:
 			TNT1 A 1;
 			goto spawn;
-	}
-}
-
-CLASS droppedbase:CustomInventory
-{
-default
-{
-	Radius 8;
-	Height 10;
-	Scale 0.5;
-	gravity 1;
-	Decal "none";
-	//+MOVEWITHSECTOR;
-	+DONTGIB;
-	//+NOTELEPORT;
-	+FLOORCLIP;
-	Inventory.PickupMessage "";
-	Inventory.PickupSound "";
-	+NOTIMEFREEZE;
-}
-	States
-	{
-	Spawn:
-		//TNT1 AA 1
-		TNT1 AA 0;
-	Spawn2:	
-		TNT1 A 0;
-		Stop;
-	Pickup:
-		TNT1 A 0;
-		Stop;
-	Pickup2:
-		TNT1 A 0;
-		Stop;
-	Death:
-		TNT1 A 0;
-		Stop;
 	}
 }
 
