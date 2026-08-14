@@ -37,6 +37,7 @@ class PB_GunFireSmoke: PB_LightActor
     {
         ChangeStatNum(STAT_PB_SMOKE);
         Super.BeginPlay();
+        NashGoreStatics.QueueSmoke(self);
 
         blowSpeed = 1.02;
         fadeSpeed = 1.0;
@@ -526,7 +527,7 @@ class MarineMuzzle1 : PB_LightActor
 					1.02,
 					0.9
 				);
-				NashGoreStatics.QueueSmoke();
+				
 			}
 			Stop;
 	}

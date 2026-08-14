@@ -32,10 +32,10 @@ class PB_SMG : PB_WeaponBase
 {
     Default
     {
-        //$Category Project Brutality - Weapons
+		//$Title Submachine Gun
+        //$Category Project Brutality/Weapons
 	    //$Sprite ATFLA0
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
-        // SpawnID 9200
         Inventory.MaxAmount 2;
         Weapon.AmmoGive1 20;
         Weapon.AmmoType1 "PB_LowCalMag";
@@ -49,6 +49,7 @@ class PB_SMG : PB_WeaponBase
         PB_WeaponBase.UsesWheel 1;
         PB_WeaponBase.WheelInfo "PB_SMGWheel";
         PB_WeaponBase.TailPitch 1.2;
+		PB_WeaponBase.Downgrade "PB_Pistol";
         FloatBobStrength 0.5;
         Scale 0.4;
         // PB_WeaponBase.BarrelAttachmentPoint (6, 0, 0), (6, 0, 0)
@@ -119,7 +120,7 @@ class PB_SMG : PB_WeaponBase
                 if(ads) SMG_SetSprite("A1F3",silenced:"A1S3");
 				A_StartSound("ZSpecOps/MGun", CHAN_Weapon, CHANF_DEFAULT, sil ? 0.15 : 1.0, ATTN_NORM, frandom(0.93, 1.07));
                 PB_FireOffset();
-                PB_FireBullets("PB_9x19mmSubsonic", 1, 2, 0, 0, 2);
+                PB_FireBullets("PB_9x19mmSubsonic", 1, 0.1, 0, 0, 0.1);
                 PB_SpawnCasing("EmptyBrassPistol", xOfs, 3, vertOfs, frandom(-3,3), frandom(2,7), frandom(1,2), true, true);
                 PB_LowAmmoSoundWarning("smg");
                 PB_TakeAmmo(invoker.ammo2.getClassName(), 1);
@@ -192,16 +193,18 @@ class PB_SMG : PB_WeaponBase
                     SMG_SetSprite("A2F1", unloaded: "A2FU", leftMag: isLeft);
                 }
                 A_StartSound("ZSpecOps/MGun", CHAN_Weapon, CHANF_DEFAULT, sil ? 0.15 : 1, ATTN_NORM, frandom(0.93, 1.07));
-                PB_FireBullets("PB_9x19mmSubsonic", 1, 2, 0, 0, 2);
+                PB_FireBullets("PB_9x19mmSubsonic", 1, 0.1, 0, 0, 0.1);
                 PB_SpawnCasing("EmptyBrassPistol", 20, horOfs, vertOfs, frandom(-3,3), frandom(2,7), frandom(1,2), true, true);
                 if(isLeft)
                 {
+					A_SetFiringLeftWeapon(true);
                     PB_LowAmmoSoundWarning("smg", invoker.ammoleft.getClassName());
                     PB_TakeAmmo(invoker.ammoleft.getClassName(), 1, 1, 0, true);
                     invoker.smgBurstCountLeft++;
                 }
                 else
                 {
+					A_SetFiringRightWeapon(true);
                     PB_LowAmmoSoundWarning("smg");
                     PB_TakeAmmo(invoker.ammo2.getClassName());
                     invoker.smgBurstCount++;
@@ -217,12 +220,10 @@ class PB_SMG : PB_WeaponBase
             case 2:
                 A_ZoomFactor(0.99);
                 if(isLeft) {
-                    if(invoker.ammoleft.amount <= 0 || invoker.ammo2.amount > 0)
-                        A_GiveInventory("DualFiring", 1);
+					A_SetFiringLeftWeapon(false);
                 }
                 else {
-                    if(invoker.ammoleft.amount > 0 || invoker.ammo2.amount <= 0)
-                        A_TakeInventory("DualFiring", 1);
+					A_SetFiringRightWeapon(false);
                 }
                 PB_WeaponRecoil(recoilX, recoilY);
                 SMG_SetSprite("A2F1", silenced: "A2S1", unloaded: "A2FU", silUnloaded: "A2SU", leftMag: isLeft);
@@ -236,12 +237,10 @@ class PB_SMG : PB_WeaponBase
             case 4: // DualFireReload + burst reset
                 if(isLeft)
                 {
-                    if(invoker.ammoleft.amount <= 0) A_GiveInventory("DualFireReload", 1);
                     setBurstCount(0, true);
                 }
                 else
                 {
-                    if(invoker.ammo2.amount <= 0) A_GiveInventory("DualFireReload", 1);
                     setBurstCount(0, false);
                 }
                 break;
@@ -863,6 +862,8 @@ class PB_SMG : PB_WeaponBase
             A2F1 F 1 SMG_FireOverlay(3,true);
 		    TNT1 A 0 A_JumpIf(getBurstCount(true) < 3 && getBurstFire() && !PB_GetChamberEmpty(true), "BurstLeft_Overlay");
             TNT1 A 0 SMG_FireOverlay(4,true);
+			TNT1 A 0 A_JumpIf(!getBurstFire(), "IdleLeft_Overlay");
+			A2FL AAAAA 1 A_RefireLeft();
             Goto IdleLeft_Overlay;
 
         FireRight_Overlay:
@@ -876,6 +877,8 @@ class PB_SMG : PB_WeaponBase
             A2F1 C 1 SMG_FireOverlay(3,false);
 		    TNT1 A 0 A_JumpIf(getBurstCount() < 3 && getBurstFire() && !PB_GetChamberEmpty(), "BurstRight_Overlay");
             TNT1 A 0 SMG_FireOverlay(4,false);
+			TNT1 A 0 A_JumpIf(!getBurstFire(), "IdleRight_Overlay");
+			A2FR AAAAA 1 A_RefireRight();
             Goto IdleRight_Overlay;
 
 //////////////////////////// ALTFIRE ////////////////////////////////////////////////////////////////////////////////////
@@ -1501,7 +1504,9 @@ class PB_SMG : PB_WeaponBase
                 A4F1 DDEFG 1 PB_SetRoll(roll-0.4);
                 A4F1 HIJKL 1 PB_SetRoll(roll+0.4);
                 A4F1 LMN 1;
-                A4F1 OOP 1 PB_SetRoll(roll+0.5);
+                A4F1 OO 1 PB_SetRoll(roll+0.5);
+                TNT1 A 0 A_StartSound("weapons/smg_in", CHAN_AUTO);
+				R4F1 P 1 PB_SetRoll(roll+0.5);
             ReloadLeftContinue:
                 TNT1 A 0 {
                     A_PlaySoundEx("Ironsights", "Auto");

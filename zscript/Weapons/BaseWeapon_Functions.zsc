@@ -182,7 +182,7 @@ extend class PB_WeaponBase
 	{
 		A_weaponoffset(0,32);
 		if(upSnd)
-			A_startsound(upSnd,32);	//play the select sound if defined
+			A_startsound(upSnd,34);	//play the select sound if defined
 		
 		A_setroll(0);
 		A_zoomfactor(1.0);
@@ -239,6 +239,7 @@ extend class PB_WeaponBase
 		else
 		{
 			A_SetInventory("DualFireReload",0);
+			A_SetInventory("DualFiring", 0);
 			A_SetInventory("Zoomed",0);
 			A_ZoomFactor(1.0);
 			A_SetCrosshair(-1);
@@ -263,7 +264,7 @@ extend class PB_WeaponBase
 	//maybe constants would be better for this
 	action bool,int isHoldingBarrel()
 	{
-		if(findinventory("GrabbedBarrel"))
+		if(FindInventory("PB_BarrelToken") && invoker.hasBarrel)
 			return true,1;
 		if(findinventory("GrabbedFlameBarrel"))
 			return true,2;
@@ -275,34 +276,22 @@ extend class PB_WeaponBase
 	
 	override state GetAtkState(bool hold)
 	{
-		if(owner.findinventory("GrabbedBarrel"))
+		if(owner.FindInventory("PB_BarrelToken") && hasBarrel)
 			return resolvestate("ThrowBarrel");
-		if(owner.findinventory("GrabbedFlameBarrel"))
-			return resolvestate("ThrowFlameBarrel");
-		if(owner.findinventory("GrabbedIceBarrel"))
-			return resolvestate("ThrowIceBarrel");
 		return super.GetAtkState(hold);
 	}
 	
 	override state GetAltAtkState(bool hold)
 	{
-		if(owner.findinventory("GrabbedBarrel"))
+		if(owner.FindInventory("PB_BarrelToken") && hasBarrel)
 			return resolvestate("PlaceBarrel");
-		if(owner.findinventory("GrabbedFlameBarrel"))
-			return resolvestate("PlaceFlameBarrel");
-		if(owner.findinventory("GrabbedIceBarrel"))
-			return resolvestate("PlaceIceBarrel");
 		return super.GetAltAtkState(hold);
 	}
 	
 	override state GetDownState()
 	{
-		if(owner.findinventory("GrabbedBarrel"))
+		if(owner.FindInventory("PB_BarrelToken") && hasBarrel)
 			return resolvestate("PlaceBarrel");
-		if(owner.findinventory("GrabbedFlameBarrel"))
-			return resolvestate("PlaceFlameBarrel");
-		if(owner.findinventory("GrabbedIceBarrel"))
-			return resolvestate("PlaceIceBarrel");
 		return super.GetDownState();
 	}
 	
@@ -376,7 +365,7 @@ extend class PB_WeaponBase
 
             bool notPlayer = multiplayer && player != players[consoleplayer];
 
-			A_StartSound("weapons/atmo/"..tmpTailSound, notPlayer ? 19 + (i * 4) : CHAN_AUTO, volume: vol * 0.5, pitch: sndPitch);
+			A_StartSound("weapons/atmo/"..tmpTailSound, 19 + (i * 4), volume: vol * 0.5, pitch: sndPitch);
 
 			// multiplayer thing
 			if(notPlayer)
@@ -738,7 +727,7 @@ extend class PB_WeaponBase
 			1.2,
 			1.2
 		);
-		NashGoreStatics.QueueSmoke();
+		
 	}
 
 	Action bool PB_GunSmoke_Prologue(in out double d1, in out double d2, in out double d3, string SActor)
@@ -887,7 +876,7 @@ extend class PB_WeaponBase
 			0.9
 		);
 
-		NashGoreStatics.QueueSmoke();
+		
 	}
 	
 	// 5 actors
@@ -1001,7 +990,7 @@ extend class PB_WeaponBase
             tmpsmk.scale.y *= 1.3 / randScale;
         }
 
-		NashGoreStatics.QueueSmoke();
+		
 	}
 
 	// 7 actors
@@ -1120,7 +1109,7 @@ extend class PB_WeaponBase
 			1.2
 		);
 
-		NashGoreStatics.QueueSmoke();
+		
 	}
 
 	Action void PB_GunSmoke_CompensatorHDMR(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
@@ -1215,7 +1204,7 @@ extend class PB_WeaponBase
 			1.02
 		);
 
-		NashGoreStatics.QueueSmoke();
+		
 	}
 
 	Action void PB_GunSmoke_Launcher(double d1 = 0, double d2 = 0 , double d3 = 0, string SActor = "PB_GunFireSmoke")
@@ -1274,6 +1263,13 @@ extend class PB_WeaponBase
 		{
 			A_SetRoll(rollangle, SPF_INTERPOLATE);
 		}
+	}
+
+	//[nV] convenient wrapper for executions, respects, and other animations to control the camera.
+	action void PB_RotateCamera(double addAngle = 0.0, double addPitch = 0.0, double addRoll = 0.0) {
+		angle += addAngle;
+		pitch += addPitch;
+		roll += addRoll;
 	}
 
 	override void Tick()
@@ -1396,6 +1392,23 @@ extend class PB_WeaponBase
 	}
 		
 //////////////////////////// EXECUTIONS START ////////////////////////////////////////////////////////////////////////////////////
+	action StateLabel PB_ExecuteFast() {
+		StateLabel result;
+		int selector = (random(1,4));
+		FLineTraceData RemoteRay;
+		bool wallcheck = LineTrace(
+			angle,
+			120,
+			pitch,
+			TRF_THRUACTORS,
+			offsetz: height-12,
+			data: RemoteRay
+		);
+		
+		result = "Execution_Fast";
+		return result;
+	}
+	
 	action StateLabel PB_ExecuteGeneric() {
 		StateLabel result;
 		int selector = (random(1,4));
@@ -1592,7 +1605,7 @@ extend class PB_WeaponBase
 				
 			default:
 // 				A_Print("Execution Failed");
-				return PB_ExecuteGeneric();
+				return (monster.FindState("Execution") || monster.FindState("Death.Execution")) ? PB_ExecuteGeneric() : PB_ExecuteFast();
 		}
 	}
 	
@@ -1852,7 +1865,7 @@ extend class PB_WeaponBase
 		CasingCount = 6 - CountInv(AmmoSide);
 		for(CasingCount > 0; CasingCount--;)
 		{
-			A_FireProjectile("EmptyBrassMagnum",frandom(-5,5),0,0,-30);
+			A_FireProjectile("EmptyBrassMagnum",frandom(-5,5),0,0,-30,pitch:frandom(-5,5));
 		}
 	}
 	
@@ -2250,22 +2263,26 @@ extend class PB_WeaponBase
 	}*/
 	
 	//Special Modes
-	action bool A_IsFiringLeftWeapon()
+	//[nV] these two variables can be one of three states, and are necessary to make single-button dual wielding feel smooth
+	//0/false = not firing this weapon, always allow the other weapon to fire
+	//2 = firing this weapon, don't allow the other weapon to fire unless it's refiring
+	//1/true = firing this weapon, don't allow the other weapon to fire
+	action int A_IsFiringLeftWeapon()
 	{
 		return invoker.FiringLeftWeapon;
 	}
 	
-	action void A_SetFiringLeftWeapon(bool type)
+	action void A_SetFiringLeftWeapon(int type)
 	{
 		invoker.FiringLeftWeapon = type;
 	}
 	
-	action bool A_IsFiringRightWeapon()
+	action int A_IsFiringRightWeapon()
 	{
 		return invoker.FiringRightWeapon;
 	}
 	
-	action void A_SetFiringRightWeapon(bool type)
+	action void A_SetFiringRightWeapon(int type)
 	{
 		invoker.FiringRightWeapon = type;
 	}
@@ -2527,7 +2544,7 @@ action int getReadyFlags(int weapflags, bool noReload)
 			"Steady", "QuickPunch", //"LedgeClimb",
 			"DoKick", "Taunt", "Salute", "Salute",
 			"UseEquipment", "SwitchEquipment", "DualWieldBaby",
-			"NoDualWield", "WeaponSpecial", "ReadyBarrel", "ReadyIceBarrel",
+			"NoDualWield", "WeaponSpecial", "RaiseBarrel", "ReadyIceBarrel",
 			"ReadyFlameBarrel", "ThrowBarrel", "ThrowIceBarrel", 
 			"ThrowFlameBarrel", "IdleBarrel", "IdleIceBarrel", 
 			"IdleFlameBarrel"
@@ -2537,11 +2554,10 @@ action int getReadyFlags(int weapflags, bool noReload)
 			return ResolveState("Steady");
 		}
 		
-		if((PressingFire() || PressingAltfire() && CVar.GetCVar("SingleDualFire", player).GetInt() != 0) && !(A_IsFiringLeftWeapon() || A_IsFiringRightWeapon())){
-			if(CountInv("DualFireReload") >= 2){
-				A_TakeInventory("DualFireReload",2);
-				return ResolveState("Reload");
-			}
+		if((PressingFire() || PressingAltfire()) && CountInv("DualFireReload") >= 2 && !(A_IsFiringLeftWeapon() || A_IsFiringRightWeapon())){
+			A_TakeInventory("DualFireReload",2);
+			A_StartSound("weapons/empty", 10, CHANF_OVERLAP);
+			return ResolveState("Reload");
 		}
 		
 		if (CountInv("GoWeaponSpecialAbility")>=1 && !pbFlags & PB_NOWEAPONSPECIAL)
@@ -2550,17 +2566,9 @@ action int getReadyFlags(int weapflags, bool noReload)
 			else if (ResolveState("NoDualWield")) return ResolveState("NoDualWield");
 			else return ResolveState("WeaponSpecial");
 		}
-		if (CountInv("HasBarrel")>=1) 
+		if (FindInventory("PB_BarrelToken") && !invoker.hasBarrel) 
 		{
-			return ResolveState("ReadyBarrel");
-		}
-		if (CountInv("HasFlameBarrel")>=1) 
-		{
-			return ResolveState("ReadyFlameBarrel");
-		}
-		if (CountInv("HasIceBarrel")>=1) 
-		{
-			return ResolveState("ReadyIceBarrel");
+			return ResolveState("RaiseBarrel");
 		}
 		if (CountInv("Unloading")>=1 && !(pbFlags & PB_NOUNLOAD) && ResolveState("Unload") && ((!PB_GetMagUnloaded() || !PB_GetChamberEmpty()) || (A_CheckAkimbo() && (!PB_GetMagUnloaded(true) || !PB_GetChamberEmpty(true)))))
 		{
@@ -2667,91 +2675,84 @@ action int getReadyFlags(int weapflags, bool noReload)
 	action state A_DoPBLeftAction(int minammo = 1)
 	{
 		int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
-		if(CountInv(invoker.ammotypeleft) >= minammo && !PB_GetChamberEmpty(true))
-		{
-			switch(firemodecvar)
-			{
-				case 0:
-					if(PressingFire() && !A_IsFiringRightWeapon() && CountInv("DualFiring") == 0)
-						return resolvestate("FireLeft_Overlay");
-					break;
-				case 1:
-					if(PressingFire() && !A_IsFiringLeftWeapon())
-						return resolvestate("FireLeft_Overlay");
-					break;
-				case 2:
-					if(PressingAltFire() && !A_IsFiringLeftWeapon())
-						return resolvestate("FireLeft_Overlay");
-					break;
+		bool shouldFire = (
+			firemodecvar == 0 && PressingFire() && !A_IsFiringRightWeapon() && CountInv("DualFiring") == 0 ||
+			firemodecvar == 0 && PressingAltFire() ||
+			firemodecvar == 1 && PressingFire() ||
+			firemodecvar == 2 && PressingAltFire()
+		);
+		if(shouldFire) {
+			if(!(firemodecvar == 0 && PressingAltFire())) A_SetInventory("DualFiring", 1);
+			if(CountInv(invoker.ammotypeleft) >= minAmmo && !PB_GetChamberEmpty(true)) {
+				return resolvestate("FireLeft_Overlay");
 			}
-		}
-		else
-		{
-			switch(firemodecvar)
-			{
-				case 0:
-					if(JustPressed(BT_ATTACK) && !A_IsFiringRightWeapon() && CountInv("DualFiring") == 0)
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-					break;
-				case 1:
-					if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon())
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-					break;
-				case 2:
-					if(JustPressed(BT_ALTATTACK) && !A_IsFiringLeftWeapon())
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-					break;
+			else if(firemodecvar != 2 ? JustPressed(BT_ATTACK) : JustPressed(BT_ALTATTACK)) {
+				A_StartSound("weapons/empty", 10, CHANF_OVERLAP);
 			}
-			if(!PB_GetChamberEmpty() && CountInv(invoker.ammotype2) >= minammo)
-				A_SetInventory("DualFiring",1);
 		}
 		return resolvestate(null);
 	}
-		
+	
 	action state A_DoPBRightAction(int minammo = 1)
 	{
 		int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
-		if(CountInv(invoker.ammotype2) >= minammo && !PB_GetChamberEmpty())
-		{
-			switch(firemodecvar)
-			{
-				case 0:
-					if(PressingFire() && !A_IsFiringLeftWeapon() && CountInv("DualFiring") == 1)
-						return resolvestate("FireRight_Overlay");
-					break;
-				case 1:
-					if(PressingAltFire() && !A_IsFiringRightWeapon())
-						return resolvestate("FireRight_Overlay");
-					break;
-				case 2:
-					if(PressingFire() && !A_IsFiringRightWeapon())
-						return resolvestate("FireRight_Overlay");
-					break;
+		bool shouldFire = (
+			firemodecvar == 0 && PressingFire() && !A_IsFiringLeftWeapon() && CountInv("DualFiring") == 1 ||
+			firemodecvar == 0 && PressingAltFire() ||
+			firemodecvar == 1 && PressingAltFire() ||
+			firemodecvar == 2 && PressingFire()
+		);
+		if(shouldFire) {
+			if(!(firemodecvar == 0 && PressingAltFire())) A_SetInventory("DualFiring", 0);
+			if(CountInv(invoker.ammotype2) >= minAmmo && !PB_GetChamberEmpty()) {
+				return resolvestate("FireRight_Overlay");
 			}
-		}
-		else
-		{
-			switch(firemodecvar)
-			{
-				case 0:
-					if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon() && CountInv("DualFiring") == 1)
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-					break;
-				case 1:
-					if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon())
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-					break;
-				case 2:
-					if(JustPressed(BT_ATTACK) && !A_IsFiringRightWeapon())
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-					break;
+			else if(firemodecvar != 1 ? JustPressed(BT_ATTACK) : JustPressed(BT_ALTATTACK)) {
+				A_StartSound("weapons/empty", 10, CHANF_OVERLAP);
 			}
-			if(!PB_GetChamberEmpty(true) && CountInv(invoker.ammotypeleft) >= minammo)
-				A_SetInventory("DualFiring",0);
 		}
 		return resolvestate(null);
 	}
-		
+	
+	action state A_RefireLeft(int minAmmo = 1) {
+		int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
+		bool shouldFire = (
+			firemodecvar == 0 && JustPressed(BT_ATTACK) && A_IsFiringRightWeapon() != 1 && CountInv("DualFiring") == 0 ||
+			firemodecvar == 0 && JustPressed(BT_ALTATTACK) ||
+			firemodecvar == 1 && JustPressed(BT_ATTACK) ||
+			firemodecvar == 2 && JustPressed(BT_ALTATTACK)
+		);
+		if(shouldFire) {
+			if(!(firemodecvar == 0 && JustPressed(BT_ALTATTACK))) A_SetInventory("DualFiring", 1);
+			if(CountInv(invoker.ammotypeleft) >= minAmmo && !PB_GetChamberEmpty(true)) {
+				return resolvestate("FireLeft_Overlay");
+			}
+			else {
+				A_StartSound("weapons/empty", 10, CHANF_OVERLAP);
+			}
+		}
+		return resolvestate(Null);
+	}
+	
+	action state A_RefireRight(int minAmmo = 1) {
+		int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
+		bool shouldFire = (
+			firemodecvar == 0 && JustPressed(BT_ATTACK) && A_IsFiringLeftWeapon() != 1 && CountInv("DualFiring") == 1 ||
+			firemodecvar == 0 && JustPressed(BT_ALTATTACK) ||
+			firemodecvar == 1 && JustPressed(BT_ALTATTACK) ||
+			firemodecvar == 2 && JustPressed(BT_ATTACK)
+		);
+		if(shouldFire) {
+			if(!(firemodecvar == 0 && JustPressed(BT_ALTATTACK))) A_SetInventory("DualFiring", 0);
+			if(CountInv(invoker.ammotype2) >= minAmmo && !PB_GetChamberEmpty()) {
+				return resolvestate("FireRight_Overlay");
+			}
+			else {
+				A_StartSound("weapons/empty", 10, CHANF_OVERLAP);
+			}
+		}
+		return resolvestate(null);
+	}
 	
 	action void PB_HandleCrosshair(int num)
 	{
@@ -2773,20 +2774,9 @@ action int getReadyFlags(int weapflags, bool noReload)
 			WeaponScaleX = 1.2; //counter act 20% stretch (THE INTENDED PB VISUALS)
 		else
 			WeaponScaleX = 1.0; //garbo bullshit 4:3 forced rendering, will need to see about enabling this automatically if on 4:3 resolution
-		if(owner.FindInventory("HasBarrel")) {
-			owner.SetInventory("HasBarrel",0);
-			owner.SetInventory("GrabbedBarrel",1);
-			owner.player.SetPSprite(PSP_WEAPON,resolvestate("ReadyBarrel"));
-		}
-		if(owner.FindInventory("HasFlameBarrel")) {
-			owner.SetInventory("HasFlameBarrel",0);
-			owner.SetInventory("GrabbedFlameBarrel",1);
-			owner.player.SetPSprite(PSP_WEAPON,resolvestate("ReadyFlameBarrel"));
-		}
-		if(owner.FindInventory("HasIceBarrel")) {
-			owner.SetInventory("HasIceBarrel",0);
-			owner.SetInventory("GrabbedIceBarrel",1);
-			owner.player.SetPSprite(PSP_WEAPON,resolvestate("ReadyIceBarrel"));
+		if(owner.FindInventory("PB_BarrelToken") && !hasBarrel) {
+			hasBarrel = true;
+			owner.player.SetPSprite(PSP_WEAPON,resolvestate("RaiseBarrel"));
 		}
 		
 		if((overheat > 0 || leftOverheat > 0) && overheatCoolingRate > 0 && owner.player.ReadyWeapon != self && level.time % overheatCoolingRate == 0) {

@@ -28,7 +28,7 @@ class PlayerPawnBase : PlayerPawn
 	
 	const CMD_MAXVALUE			= 12800; //maximum value of the sidemove/forwardmove vars
 	
-	double dashDir, dashSpeed;
+	double dashDir, dashAng, dashPitch, dashSpeed, airControlBuffer;
 	int dashTics, dashCharge, airTics;
 	bool dJump, waiting;
 	
@@ -207,7 +207,13 @@ class PlayerPawnBase : PlayerPawn
 		Super.PlayerThink();
 
 		bool wasOnGround = player.onGround;
-		Player.OnGround = (Pos.Z <= FloorZ) || bONMOBJ || bMBFBOUNCER || (Player.Cheats & CF_NOCLIP2); // Moved after super call, otherwise it doesn't register.
+		//[nV] zdoom checks the flag bONMOBJ to see if the player is standing on an actor.
+		//however, this will return true when the player is touching an actor from below.
+		//instead we use this function, which is more reliable.
+		bool notOnActor;
+		actor actorOn;
+		[notOnActor, actorOn] = TestMobjZ();
+		Player.OnGround = (Pos.Z <= FloorZ) || !notOnActor || bMBFBOUNCER || (Player.Cheats & CF_NOCLIP2); // Moved after super call, otherwise it doesn't register.
 
         if(Player.OnGround) coyoteTime = 3;
         else if(coyoteTime > 0) coyoteTime--;
@@ -510,11 +516,11 @@ class PlayerPawnBase : PlayerPawn
 			
 			/////////////////////////////////////////
 			//Actual Movement selection
-			if(LedgeCheck && CheckNotPredicting())
+			if(!pb_disable_ledge_grab && LedgeCheck && CheckNotPredicting())
 			{
 				LedgeReach();
 			}
-			else if(LedgeGrabbed && CheckNotPredicting())
+			else if(!pb_disable_ledge_grab && LedgeGrabbed && CheckNotPredicting())
 			{
 				LedgeGrab();
 			}
@@ -522,7 +528,7 @@ class PlayerPawnBase : PlayerPawn
 			{
 				DoomWaterMove();
 				
-				if(CheckNotPredicting()) 
+				if(!pb_disable_ledge_grab && CheckNotPredicting()) 
 				{ 
 					LedgeGrabInitiator(); 
 				}
@@ -682,7 +688,7 @@ class PlayerPawnBase : PlayerPawn
 			sector sss=floorsector;
 			if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement && CheckNotPredicting()) {
 				if(!JumpSoundCooler)
-					A_StartSound("Daedabus/impact", 32);
+					A_StartSound("Daedabus/impact", CHAN_AUTO);
 					JumpSoundCooler = 4;
 				return;
 			}
@@ -703,7 +709,7 @@ class PlayerPawnBase : PlayerPawn
 					SetOrigin((pos.x, pos.y, pos.z + 1), true);
 					dashTics = 0;
 					SetInventory("PlayerDashed", 0);
-					A_StartSound("JMPBOOT", 33);
+					A_StartSound("JMPBOOT", CHAN_AUTO);
 					JumpVelZ *= 1.5;
 					VelFromAngle(JumpVelZ * 6.5, DashDir);
 					dashJumped = true;
@@ -716,8 +722,8 @@ class PlayerPawnBase : PlayerPawn
 				
 				if(CheckNotPredicting() && !JumpSoundCooler)
 				{
-					A_StartSound("pb/player/jump", 31);
-					A_StartSound("*jump", 32);
+					A_StartSound("pb/player/jump", CHAN_AUTO);
+					A_StartSound("*jump", CHAN_AUTO);
 					JumpSoundCooler = 4;
 				}
 				
@@ -736,7 +742,7 @@ class PlayerPawnBase : PlayerPawn
 				bOnMobj = false;
 				ZMJumpTics = True;
 				
-				if(CheckNotPredicting()) { A_StartSound("JMPBOOT", 32); }
+				if(CheckNotPredicting()) { A_StartSound("JMPBOOT", CHAN_AUTO); }
 				
 				CanDoubleJump = False;
 				SetInventory("PlayerDashed", 0);
@@ -759,14 +765,14 @@ class PlayerPawnBase : PlayerPawn
 		{
 			grunted = false;
 			// Why should this number vary by gravity?
-			if (self.Vel.Z < -self.player.mo.GruntSpeed)
+			if (self.Vel.Z < -self.player.mo.GruntSpeed && waterlevel < 3)
 			{
-				A_StartSound("*grunt", CHAN_VOICE);
+				A_StartSound("*grunt", CHAN_AUTO);
 				A_StartSound("pb/player/hitfloor", CHAN_AUTO);
 				grunted = true;
 			}
 			bool isliquid = (pos.Z <= floorz) && GetFloorTerrain().IsLiquid;
-			if (onmobj != NULL || !isliquid)
+			if ((onmobj != NULL || !isliquid) && waterlevel < 3)
 			{
 				if (!grunted)
 				{
@@ -855,7 +861,7 @@ class PlayerPawnBase : PlayerPawn
 		if(!Player.OnGround)
 		{
 			DoomAirMove();
-			LedgeGrabInitiator();
+			if(!pb_disable_ledge_grab) LedgeGrabInitiator();
 		}
 		else
 		{
@@ -942,6 +948,9 @@ class PlayerPawnBase : PlayerPawn
 		//Limiter
 		if(dashJumped) {
 			Vel.XY *= 0.95;
+		}
+		else if(dashtics > 0) {
+			Vel.XY *= 1 - MOVEMENT_FRICTION / 10.f;
 		}
 		else {
 			Vel.XY = min(Vel.XY.Length(), MaxGroundSpeed) * SafeUnit2(Vel.XY);
@@ -1233,10 +1242,9 @@ class PlayerPawnBase : PlayerPawn
 	{
 		ZMPlayer = self.player;
 		
-		if(
-			WaterLevel > 2 || CountInv("GrabbedIceBarrel") > 0 || CountInv("GrabbedFlameBarrel") > 0 || CountInv("GrabbedBarrel") > 0 ||
-			CountInv("HasIceBarrel") > 0 || CountInv("HasFlameBarrel") > 0 || CountInv("HasBarrel") > 0
-		) { return; }
+		if(WaterLevel > 2 || FindInventory("PB_BarrelToken")) {
+			return;
+		}
 		
 		//Already ledge grabbing, no clipping, moving away from where you are looking, ceiling already too low for sure
 		if((pos.z <= floorz) || LedgeCheck || LedgeGrabbed || (ZMPlayer.Cheats & CF_NOCLIP2) || Vel.XY dot AngleToVector(Angle) <= 0 || CeilingZ <= Pos.Z + Height * 1.6f) { return; }
@@ -1274,6 +1282,10 @@ class PlayerPawnBase : PlayerPawn
 		{
 			return;
 		}
+		
+		//do another check to see if a solid actor is blocking the way.
+		LineTrace(0, 16, -90, TRF_SOLIDACTORS, height, data:LedgeTrace);
+		if(LedgeTrace.HitType == TRACE_HitActor) return;
 		
 		//Check if the candidate ledge can suffice
 		if(LedgeCandidate > Pos.Z + Height * 0.6f && LedgeCandidate <= Pos.Z + Height * 1.2f)
@@ -1360,7 +1372,7 @@ class PlayerPawnBase : PlayerPawn
 			if(LedgeTime >= 35) { return; }
 			LedgeGrabbed = LedgeTime = LedgeHeight = LedgeHeightMin = LedgeHeightMax = FrameTime = 0;
 			Vel = Vel.Length() ? (5.f * AngleToVector(LedgeAngle), -3) : (0, 0, 0); //push player forward and downward
-			A_StartSound("pb/player/land", 32);
+			A_StartSound("pb/player/land", CHAN_AUTO);
 		}
 		else
 		{
@@ -1753,6 +1765,14 @@ class PlayerPawnBase : PlayerPawn
 		A_TakeInventory("CameraRunner",1);
 		Super.Die(source, inflictor, dmgflags);
 	}
+	
+	override void PostTeleport(Vector3 destpos, double destangle, int flags) {
+		vel.xy *= 0;
+		dashtics = -reactiontime;
+		SetInventory("PlayerDashed", 0);
+		super.PostTeleport(destpos, destangle, flags);
+	}
+	
 	override void PostBeginPlay()
 	{
 		Super.PostBeginPlay();
@@ -1782,11 +1802,13 @@ class PlayerPawnBase : PlayerPawn
 			if(CheckNotPredicting()) {
 				sector sss = floorsector;
 				if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
-					A_StartSound("Daedabus/impact", 32);
+					if(!(player.oldbuttons & BT_USER3)) A_StartSound("Daedabus/impact", CHAN_AUTO);
 					return;
 				}
 				// [gng] thanks to kodi and lewisk3, analog compatible dash direction
 				dashDir = DeltaAngle(atan2(plr.cmd.sidemove, plr.cmd.forwardmove), angle);
+				dashAng = angle;
+				dashPitch = pitch;
 				
 				if(DashCharge < DASH_MAX_CHARGE) { 
 					waiting = true; 
@@ -1822,8 +1844,8 @@ class PlayerPawnBase : PlayerPawn
 			SetInventory("PlayerDashed", 0);
 		}
 		
-        if(CheckNotPredicting())  {
-			double airControlBuffer = level.aircontrol;
+		if(CheckNotPredicting())  {
+			if(!airControlBuffer) airControlBuffer = level.aircontrol;
 			if(dashTics > 0) {
 				dashTics--;
 				
@@ -1831,9 +1853,11 @@ class PlayerPawnBase : PlayerPawn
 					dashSpeed *= 0.4;
 					SetInventory("PlayerDashed", 0);
 				}
-				VelFromAngle(DashSpeed, DashDir );
 				
-				vel.z = 0;
+				if(waterlevel == 3) Vel3DFromAngle(DashSpeed, DashDir, dashPitch * cos(dashDir - dashAng));
+				else VelFromAngle(DashSpeed, DashDir);
+				
+				if(dashTics > 3 && waterlevel < 3) vel.z = 0;
 				
 				level.airControl = 0.25;
 			}
@@ -1842,10 +1866,11 @@ class PlayerPawnBase : PlayerPawn
 				dJump = true;
 				airTics = 0;
 				level.airControl = airControlBuffer;
+				airControlBuffer = 0.0;
 			}
 			else {
 				airTics++;
-			}	
+			}
 				
 			// [gng] recharge the dash
 			if(dashCharge < DASH_MAX_CHARGE) {
@@ -1854,7 +1879,7 @@ class PlayerPawnBase : PlayerPawn
 				}
 				dashCharge++;
 				
-				if(dashCharge == DASH_MAX_CHARGE && !plr.onGround) 
+				if(dashCharge == DASH_MAX_CHARGE && !plr.onGround && waterlevel < 3) 
 					dashCharge = DASH_MAX_CHARGE - 1;
 					
 				if(dashCharge == DASH_MAX_CHARGE) {

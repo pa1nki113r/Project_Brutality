@@ -5,10 +5,10 @@ class PB_BFG9000 : PB_WeaponBase
 {
     Default
     {
-        //$Category Project Brutality - Weapons
+		//$Title BFG-9000
+        //$Category Project Brutality/Weapons
         //$Sprite 097GA0
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
-        // SpawnID 9800;
         Weapon.AmmoGive1 40;
         PB_WeaponBase.OffsetRecoilX 1.9;
         PB_WeaponBase.OffsetRecoilY 1.6;
@@ -1446,7 +1446,7 @@ class BFGTrailParticle : Actor
     }
 }
 
-class SuperBFGExtra : BFGExtra replaces BFGExtra
+class SuperBFGExtra : BFGExtra
 {
     Default
     {
@@ -1678,7 +1678,7 @@ class BFGSmallSphere : Actor
         Height 8;
         Speed 40;
         FastSpeed 50;
-        // +PROJECTILE;
+        Projectile;
         +FORCEXYBILLBOARD;
         -THRUGHOST;
         Damage 30;

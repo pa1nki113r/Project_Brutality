@@ -3,7 +3,7 @@ class PB_Axe : PB_WeaponBase
     Default
     {
         //$Title Fire Axe
-        //$Category Project Brutality - Weapons
+        //$Category Project Brutality/Weapons
         //$Sprite AXE0A0
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
         damagetype "Saw";

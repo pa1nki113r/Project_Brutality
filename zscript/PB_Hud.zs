@@ -1244,7 +1244,7 @@ class PB_Hud_ZS : BaseStatusBar
 			PBHud_DrawString(mBoldFont, Formatnumber(svpr), (89.8, -41), DI_TEXT_ALIGN_CENTER, Font.CR_WHITE, scale: (0.8, 0.8));
 			
 			//Healthbar
-			if(GetAirTime() < 700)
+			if(GetAirTime() < 699)
 				PBHud_DrawString(mBoldFont, "O²: "..(Formatnumber(((GetAirTime() / 7.0) * 100.0) / 100.0)).."%", (190, -90), DI_TEXT_ALIGN_LEFT, cachedFontColors[HUDBLUEBAR]);
 
 			PBHud_DrawImage(inPain ? "BARBCK1L" : "BARBACK1", (73, -49), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);

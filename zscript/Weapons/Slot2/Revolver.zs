@@ -2,9 +2,9 @@ Class PB_Revolver : PB_WeaponBase
 {
 	default
 	{
-		//$Category Project Brutality - Weapons
+		//$Title Magnum Revolver
+		//$Category Project Brutality/Weapons
 		//$Sprite RVICA0
-		//SpawnID 9210;
 		weapon.slotnumber 2;							
 		weapon.ammotype1 "PB_LowCalMag";
 		weapon.ammogive1 20;	
@@ -44,7 +44,7 @@ Class PB_Revolver : PB_WeaponBase
 		WeaponRespect:
 			TNT1 A 0 {
 				A_SetInventory("PB_LockScreenTilt",1);
-				A_StartSound("REVOUP",10,CHANF_OVERLAP);
+				A_StartSound("REVOUP", 34); //if it's not on this channel it'll combine with the select sound and be too loud
 				A_SetCrosshair(-1);
 				}
 			R2V1 ABCDEFGHIJ 1{
@@ -162,9 +162,11 @@ Class PB_Revolver : PB_WeaponBase
 			R4V1 C 1 {
 					A_ZoomFactor(1.0);
 					PB_WeaponRecoil(-1.15,-0.26);
+				if(JustPressed(BT_ATTACK))
+					return resolvestate("FanFire");
+				return resolvestate(null);
 				}
-			R4V1 DEF 1;
-			R4V1 GH 1 A_jumpif(JustPressed(BT_ATTACK),"FanFire");
+			R4V1 DEFGH 1 A_jumpif(JustPressed(BT_ATTACK),"FanFire");
 			R1V1 EE 1 {
 				if(JustPressed(BT_ATTACK))
 					return resolvestate("FanFire");
@@ -205,16 +207,16 @@ Class PB_Revolver : PB_WeaponBase
 					PB_LowAmmoSoundWarning("revolver");
 					PB_TakeAmmo("PB_RevolverMag",1,0);
 					A_ZoomFactor(0.96);
-					PB_WeaponRecoil(-1.15,-0.35);
+					PB_WeaponRecoil(-1.9, -1.8);
 				}
 			R5V1 B 1 BRIGHT {
 					A_ZoomFactor(0.98);
-					PB_WeaponRecoil(-1.15,-0.35);
+					PB_WeaponRecoil(-1.9, -1.8);
 				}
 			R5V1 C 1 {
 					A_ZoomFactor(1.0);
 					A_StartSound("Weapons/Revolver/Click1",10);
-					PB_WeaponRecoil(-1.15,-0.35);
+					PB_WeaponRecoil(-1.9, -1.8);
 				}
 			R5V1 DEFG 1;
 			TNT1 A 0 A_ZoomFactor(1.0);
@@ -238,16 +240,16 @@ Class PB_Revolver : PB_WeaponBase
 					PB_LowAmmoSoundWarning("revolver");
 					PB_TakeAmmo("PB_RevolverMag",1,0);
 					A_ZoomFactor(0.96);
-					PB_WeaponRecoil(-1.2,-0.36);
+					PB_WeaponRecoil(-1.9, -1.8);
 				}
 			R5V1 J 1 BRIGHT {
 					A_ZoomFactor(0.98);
-					PB_WeaponRecoil(-1.2,-0.36);
+					PB_WeaponRecoil(-1.9, -1.8);
 				}
 			R5V1 K 1 {
 					A_ZoomFactor(1.0);
 					A_StartSound("Weapons/Revolver/Click1",10);
-					PB_WeaponRecoil(-1.2,-0.36);
+					PB_WeaponRecoil(-1.9, -1.8);
 				}
 			R5V1 LMNO 1;
 			TNT1 A 0 PB_ReFire("AltFan_Hold");
@@ -645,9 +647,7 @@ Class PB_Revolver : PB_WeaponBase
 			Stop;
 		FireLeft_Overlay:
 			41V1 A 1 BRIGHT {
-				A_Overlay(-5, "MuzzleFlashLeft", true);
-				A_OverlayFlags(-5,PSPF_RENDERSTYLE,true);
-				A_OverlayRenderStyle(-5,STYLE_Add);
+				A_FlashOverlay(LEFT_FLASH_LAYER, "MuzzleFlashLeft");
 				A_FireProjectile("PB_500SW", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 				PB_GunSmoke(5,0,0);
                 PB_MuzzleFlashEffects(5, 0, 0);
@@ -668,50 +668,16 @@ Class PB_Revolver : PB_WeaponBase
 			}
 			41V1 C 1 PB_WeaponRecoil(-1.9,+1.8);
 			41V1 D 1;
-			41V1 E 1 {
-				A_SetFiringLeftWeapon(False);
-				if(CountInv("PB_RevolverLeftMag")<=0 || CountInv("PB_RevolverMag")>0 )
-					A_GiveInventory("DualFiring",1);
-			}
+			41V1 E 1 A_SetFiringLeftWeapon(False);
 			41V1 F 1;
-			41V1 GGG 1 {
-				int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
-				if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && firemodecvar == 2){
-					if(CountInv("PB_RevolverLeftMag") > 0)
-						return resolvestate("FireLeft_Overlay");
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(Null);
-					}
-				}
-				if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon())
-				{
-					if(CountInv("PB_RevolverLeftMag") > 0)
-					{
-						return resolvestate("FireLeft_Overlay");
-					}
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(null);
-					}
-				}
-				return resolvestate(Null);
-			}
-			TNT1 A 0 {
-				if(CountInv("PB_RevolverLeftMag")<=0)
-					A_GiveInventory("DualFireReload",1);
-			}
+			41V1 GGGGG 1 A_RefireLeft();
 			Goto IdleLeft_Overlay;
 		MuzzleFlashRight:
 			41VM CD 1 Bright A_GunFlash();
 			Stop;
 		FireRight_Overlay:
 			41V1 I 1 BRIGHT {
-				A_Overlay(-6, "MuzzleFlashRight", true);
-				A_OverlayFlags(-6,PSPF_RENDERSTYLE,true);
-				A_OverlayRenderStyle(-6,STYLE_Add);
+				A_FlashOverlay(RIGHT_FLASH_LAYER, "MuzzleFlashRight");
 				A_FireProjectile("PB_500SW", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 				PB_GunSmoke(-5,0,0);
                 PB_MuzzleFlashEffects(-5, 0, 0);
@@ -732,38 +698,9 @@ Class PB_Revolver : PB_WeaponBase
 			}
 			41V1 K 1 PB_WeaponRecoil(-1.9,-1.8);
 			41V1 L 1;
-			41V1 M 1 {
-				A_SetFiringRightWeapon(False);
-				if(CountInv("PB_RevolverLeftMag")>0 || CountInv("PB_RevolverMag")<=0 )
-					A_TakeInventory("DualFiring",1);
-			}
+			41V1 M 1 A_SetFiringRightWeapon(False);
 			41V1 N 1;
-			41V1 OOO 1 {
-				int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
-				if(JustPressed(BT_ATTACK) && !A_IsFiringRightWeapon() && firemodecvar == 2){
-					if(CountInv("PB_RevolverMag") > 0)
-						return resolvestate("FireRight_Overlay");
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(null);
-					}
-				}
-				if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && firemodecvar > 2){
-					if(CountInv("PB_RevolverMag") > 0)
-						return resolvestate("FireRight_Overlay");
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(null);
-					}
-				}
-				return resolvestate(null);
-			}
-			TNT1 A 0 {
-				if(CountInv("PB_RevolverMag")<=0)
-					A_GiveInventory("DualFireReload",1);
-			}
+			41V1 OOOOO 1 A_RefireRight();
 			Goto IdleRight_Overlay;
 		
 		NoAmmoDualWield:

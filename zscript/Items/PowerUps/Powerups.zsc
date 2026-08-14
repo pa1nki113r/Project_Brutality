@@ -3,7 +3,11 @@ class PB_Invul : PB_Inventory //replaces invulnerabilitysphere
 {
 	Default
 	{
-		Inventory.PickupMessage "Invulnerability Sphere";
+		//$Title Invulnerability Sphere
+		//$Category Project Brutality/Powerups
+		//$Sprite P1NVA0
+		Tag "$PB_INVULN_TAG";
+		Inventory.PickupMessage "$PB_INVULN_PICKUP";
 		Inventory.PickupSound "INVUL";
 		+FLOATBOB
 		floatbobstrength .4;
@@ -75,8 +79,12 @@ class PB_RadSuit : PB_Inventory //replaces radsuit
 {
 	Default
 	{
+		//$Title Hazmat Suit
+		//$Category Project Brutality/Powerups
+		//$Sprite SU1TA0
 		Height 46;
-		Inventory.PickupMessage "Radiation Suit";
+		Tag "$PB_RADSUIT_TAG";
+		Inventory.PickupMessage "$PB_RADSUIT_PICKUP";
 		Inventory.PickupSound "misc/radsuit_PickUp";
 		-BRIGHT
 		-COUNTITEM
@@ -155,8 +163,12 @@ class PB_BlurSphere : PB_Inventory //replaces blursphere
 {
 	Default
 	{
+		//$Title Partial Invisibility
+		//$Category Project Brutality/Powerups
+		//$Sprite P1N5A0
 		RenderStyle "Translucent";
-		Inventory.PickupMessage "Partial Invisibility";
+		Tag "$PB_BLURSPHERE_TAG";
+		Inventory.PickupMessage "$PB_BLURSPHERE_PICKUP";
 		Inventory.PickupSound "INVISIBL";
 		+FLOATBOB
 		floatbobstrength .4;
@@ -210,8 +222,12 @@ class PB_Infrared : PB_Inventory //replaces infrared
 {
 	Default
 	{
+		//$Title Night Vision Goggles
+		//$Category Project Brutality/Powerups
+		//$Sprite PV1SA0
 		-BRIGHT
-		Inventory.PickupMessage "Night Vision Goggles";
+		Tag "$PB_INFRARED_TAG";
+		Inventory.PickupMessage "$PB_INFRARED_PICKUP";
 		Inventory.PickupSound "RA1IF1";
 		//Scale .3;
 	}
@@ -281,44 +297,35 @@ class PB_PowerLightAmp : PowerTorch
 }
 
 //Soulsphere & Megasphere
-class PB_Soulsphere : PB_Inventory //replaces soulsphere
+class PB_Soulsphere : PB_Health //replaces soulsphere
 {
-	int ownrhp;
-	
 	Default
 	{
-		Inventory.PickupMessage "Soulsphere";
+		//$Title Soulsphere
+		//$Category Project Brutality/Powerups
+		//$Sprite SOU1A0
+		Tag "$PB_SOULSPHERE_TAG";
 		Inventory.PickupSound "SSPH";
+		Inventory.Amount 100;
+		Inventory.MaxAmount 200;
+		Inventory.PickupMessage "$PB_SOULSPHERE_PICKUP";
+		Health.LowMessage 25, "$PB_SOULSPHERE_PICKUP_LOW";
+		+INVENTORY.ALWAYSPICKUP
 		+FLOATBOB
+		+SQUAREPIXELS
+		+COUNTITEM
 		floatbobstrength .4;
+		Scale 1.2;
 		//Scale .22;
 	}
 
-	override bool Use(bool pickup)
-	{
-		owner.A_SetBlend("Blue",0.75,16);
-		owner.GiveBody(100,200);
-		if(pb_newmugshot) owner.A_SetMugshotState("SoulsphereGrin");
-		return true;
+	override bool TryPickup (in out Actor other) {
+		other.A_SetBlend("Blue",0.75,16);
+		if(other.player && CVar.GetCVar("pb_newmugshot", other.player).GetBool())
+			other.A_SetMugshotState("SoulsphereGrin");
+		return super.TryPickup(other);
 	}
 	
-	override void Touch(actor toucher)
-	{
-		ownrhp = toucher.health;
-		super.Touch(toucher);
-	}
-	
-	override string PickupMessage()
-	{
-		return string.format(String.Format(ownrhp < 25 ? "Soulsphere (+%u much needed HP)" : "Soulsphere (+%u HP)",clamp(min(100, 200 - ownrhp), 0, 100)));
-	}
-	
-	override void PostBeginPlay()
-	{
-		Super.PostBeginPlay();
-		scale.x *= 1.2;
-	}
-
 	States
 	{
 	Spawn:
@@ -329,28 +336,37 @@ class PB_Soulsphere : PB_Inventory //replaces soulsphere
 
 class PB_Megasphere : PB_Inventory //replaces megasphere
 {
+	int ownHP, ownAP;
+	
 	Default
 	{
-		Inventory.PickupMessage "Megasphere (200 HP/AP)";
+		//$Title Megasphere
+		//$Category Project Brutality/Powerups
+		//$Sprite MEG4A0
+		Tag "$PB_MEGASPHERE_TAG";
+		Inventory.PickupMessage "$PB_MEGASPHERE_PICKUP";
 		Inventory.PickupSound "MEGASPH";
 		+FLOATBOB
+		+SQUAREPIXELS
 		floatbobstrength .4;
+		Scale 1.2;
 		//Scale .22;
 	}
 
 	override bool Use(bool pickup)
 	{
 		owner.A_SetBlend("White",0.75,16);
-		owner.A_GiveInventory("PB_BlueArmor");
-		owner.GiveBody(200,200);
+		ownHP = clamp(200 - owner.health, 0, 200);
+		ownAP = clamp(200 - owner.CountInv("BasicArmor"), 0, 200);
+		owner.GiveBody(200, 200);
+		owner.A_GiveInventory("PB_MegasphereBlueArmor");
 		if(pb_newmugshot) owner.A_SetMugshotState("MegasphereGrin");
 		return true;
 	}
 	
-	override void PostBeginPlay()
-	{
-		Super.PostBeginPlay();
-		scale.x *= 1.2;
+	override string PickupMessage(){
+		string msg = string.format(StringTable.Localize(Super.PickupMessage()), ownHP, ownAP);
+		return msg;
 	}
 
 	States
@@ -361,16 +377,29 @@ class PB_Megasphere : PB_Inventory //replaces megasphere
 	}
 }
 
+class PB_MegasphereBlueArmor : BasicArmorPickup {
+	Default	{
+		Tag "$PB_BLUEARMOR_TAG";
+		Armor.SavePercent 70;
+		Armor.SaveAmount 200;
+		Inventory.Icon "4RM2A0";
+	}
+}
+
 //Berserk and AllMap
 class PB_PowerStrength : PowerStrength { Default { Powerup.Color "000000",0; } }
 
 class PB_Berserk : PB_Inventory //replaces Berserk
 {
-	int ownrhp;
+	int ownHP;
 	
 	Default
 	{
+		//$Title Berserk
+		//$Category Project Brutality/Powerups
+		//$Sprite PST1A0
 		-BRIGHT
+		Tag "$PB_BERSERK_TAG";
 		Inventory.PickupSound "BERSPKUP";
 		//Scale .3;
 	}
@@ -385,21 +414,17 @@ class PB_Berserk : PB_Inventory //replaces Berserk
 			PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 6);
 		}
 		owner.A_GiveInventory("PB_PowerStrength");
+		ownHP = owner.health;
 		owner.GiveBody(100,0);
 		owner.A_SetBlend("Red",0.75,16);
 		if(pb_newmugshot) owner.A_SetMugshotState("BerserkGrin");
 		return true;
 	}
 
-	override void Touch(actor toucher)
-	{
-		ownrhp = toucher.health;
-		super.Touch(toucher);
-	}
-	
-	override string PickupMessage()
-	{
-		return string.format(ownrhp < 25 ? "Berserk Pack (+%u much needed HP)" : "Berserk Pack (+%u HP)",max(0,100 - ownrhp));
+	override string PickupMessage() {
+		string msg = StringTable.Localize("$PB_BERSERK_PICKUP");
+		if(ownHP < 25) msg = StringTable.Localize("$PB_BERSERK_PICKUP_LOW");
+		return string.format(msg, max(0, 100 - ownHP));
 	}
 	
 	States
@@ -415,6 +440,11 @@ class PB_AllMap : AllMap //replaces AllMap
 	mixin PB_BetterPickupSound;
 	Default 
 	{ 
+		//$Title Computer Area Map
+		//$Category Project Brutality/Powerups
+		//$Sprite PMA1A0
+		Tag "$PB_ALLMAP_TAG";
+		Inventory.PickupMessage "$PB_ALLMAP_PICKUP";
 		Inventory.PickupSound "misc/map_PickUp"; 
 		//Scale .31;
 	}
@@ -431,9 +461,11 @@ class PB_Doomsphere : PB_Inventory
 {
 	Default
 	{
-		//$Title Doomsphere
-		//$Category Powerups
-		Inventory.PickupMessage "Quad Damage";
+		//$Title Quad Damage
+		//$Category Project Brutality/Powerups
+		//$Sprite QDMGA0
+		Tag "$PB_QUAD_TAG";
+		Inventory.PickupMessage "$PB_QUAD_PICKUP";
 		Inventory.PickupSound "DDMGPU";
 		-COUNTITEM
 		+FLOATBOB
@@ -505,9 +537,11 @@ class PB_Haste : PB_Inventory
 {
 	Default
 	{
-		//$Title Hastesphere
-		//$Category Powerups
-		Inventory.PickupMessage "Haste";
+		//$Title Haste
+		//$Category Project Brutality/Powerups
+		//$Sprite HASTA0
+		Tag "$PB_HASTE_TAG";
+		Inventory.PickupMessage "$PB_HASTE_PICKUP";
 		Inventory.PickupSound "DEM";
 		renderstyle "add";
 		-COUNTITEM

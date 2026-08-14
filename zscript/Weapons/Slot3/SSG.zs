@@ -24,11 +24,10 @@ class PB_SSG : PB_WeaponBase
 {
     Default
     {
-        //$Title Double Barreled Shotgun
-        //$Category Project Brutality - Weapons
+        //$Title Double-Barrel Shotgun
+        //$Category Project Brutality/Weapons
         //$Sprite SGN3A0
 //////////////////////////// WEAPON DATA ////////////////////////////////////////////////////////////////////////////////////
-        // Game Doom
         Weapon.Kickback 50;
         weapon.slotpriority 0.25;
         Weapon.SelectionOrder 400;
@@ -395,7 +394,7 @@ class PB_SSG : PB_WeaponBase
             SHT3 A 1 {
                 PB_CoolDownBarrel(2, 0, 3);
                 PB_CoolDownBarrel(-2, 0, 3);
-                if (PressingFire() && invoker.AmmoLeft.amount > 0 ){
+                if (PressingFire() && invoker.ammo2.amount > 0 ){
                         return ResolveState("Fire");
                 }
                 return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
@@ -458,7 +457,7 @@ class PB_SSG : PB_WeaponBase
         
         Fire:
             TNT1 A 0 SSG_FireNormal(0);
-            TNT1 A 0 PB_JumpIfNoAmmo("AltFire2",2,true,true,"");
+            TNT1 A 0 PB_JumpIfNoAmmo("AltFire",2,true,true,"");
             SHO9 A 1 BRIGHT SSG_FireNormal(1);
             SHO9 B 1 BRIGHT SSG_FireNormal(2);
             SHO8 C 1        SSG_FireNormal(3);

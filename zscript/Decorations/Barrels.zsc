@@ -1,0 +1,671 @@
+//[nV] this allows reusing barrel features without massive amounts of code duplication across many actors
+mixin class PB_BarrelMixin {
+	enum barrelTypes {
+		TYPE_EXPLOSIVE,
+		TYPE_BURNING,
+		TYPE_FROZEN
+	}
+	
+	const FLAME_OFFSET = 32;
+	
+	int barrelType;
+	bool bloodstained, holes, cut, dented, drained;
+	bool electricDeath;
+	
+	void SetTypeSprite(string explosive, string burning, string frozen) {
+		switch(barrelType) {
+		case TYPE_EXPLOSIVE:
+			sprite = GetSpriteIndex(explosive);
+			break;
+		case TYPE_BURNING:
+			sprite = GetSpriteIndex(burning);
+			break;
+		case TYPE_FROZEN:
+			sprite = GetSpriteIndex(frozen);
+			break;
+		}
+	}
+	
+	void SpawnShrapnel(double xofs = 0, double yofs = 0, double zofs = 0, double xvel = 0, double yvel = 0, double zvel = 0, double angle = 0, int flags = 0) {
+		bool b;
+		actor a;
+		[b, a] = A_SpawnItemEx("PB_BarrelShrapnel", xofs, yofs, zofs, xvel, yvel, zvel, angle, flags);
+		let shrapnel = PB_BarrelShrapnel(a);
+		if(shrapnel) shrapnel.barrelType = barrelType;
+	}
+	
+	void SpawnSmoke()
+	{
+		FSpawnParticleParams SMKBCK;
+		SMKBCK.Texture = TexMan.CheckForTexture("SMK1K0");
+		SMKBCK.Color1 = "FFFFFF";
+		SMKBCK.Style = STYLE_TRANSLUCENT;
+		SMKBCK.Flags = SPF_ROLL;
+		SMKBCK.Vel = (0,0,frandom(1.25,3.0));
+		SMKBCK.Startroll = random(0,360);
+		SMKBCK.RollVel = random(-10,10);
+		SMKBCK.StartAlpha = 0.5;
+		SMKBCK.Lifetime = random(32,42); 
+		SMKBCK.FadeStep = SMKBCK.StartAlpha / SMKBCK.Lifetime;
+		SMKBCK.Size = random(45,58);
+		SMKBCK.SizeStep = 1;
+		SMKBCK.Pos = self.vec3offset(random(-7,7),random(-7,7),random(48,62));
+		Level.SpawnParticle(SMKBCK);
+	}
+	
+	void SpawnCryoSmoke(double startAlpha, int lifetime, double fadeStep, double smokeVelXY, double smokeVelZ, double smokeAccel)
+	{
+		FSpawnParticleParams SMKBCK;
+		SMKBCK.Texture = TexMan.CheckForTexture("SMK2A0");
+		SMKBCK.Color1 = "A0FFFF";
+		SMKBCK.Style = STYLE_Shaded;
+		SMKBCK.Flags = SPF_ROLL;
+		SMKBCK.Vel = (frandom(-smokeVelXY, smokeVelXY), frandom(-smokeVelXY, smokeVelXY), frandom(-smokeVelZ, smokeVelZ));
+		SMKBCK.Accel = SMKBCK.Vel * smokeAccel;
+		SMKBCK.Startroll = random(0,360);
+		SMKBCK.StartAlpha = startAlpha;
+		SMKBCK.Lifetime = lifetime;
+		SMKBCK.FadeStep = fadeStep;
+		SMKBCK.Size = random(77,115);
+		SMKBCK.Pos = self.vec3offset(frandom(-2.0, 2.0), frandom(-2.0, 2.0), frandom(3.0, 7.0));
+		Level.SpawnParticle(SMKBCK);
+	}
+	
+	void ExplosiveDeath() {
+		A_Explode(128, 128, damagetype:"ExplosiveImpact");
+		A_Explode(128, 192, XF_THRUSTLESS, damagetype:"ExplosiveImpact");
+		A_Stop();
+		A_AlertMonsters();
+		A_StartSound("Nukage/Explosion");
+		A_StartSound("FAREXPL", 3);
+		A_SpawnItemEx("NewBarrelExploFX", 15, 0, 20);
+		A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15));
+		A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35));
+		A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35));
+		for(int i = 0; i < 3; i++) {
+			SpawnShrapnel(0, 0, 5, random (8, -8), random (8, -8), random (6, 10), 0, SXF_SETMASTER);
+		}
+		A_SpawnProjectile("PBExplosionparticles3", 64, 0, random (0, 360), 2, random (-40, -90));
+		A_SpawnProjectile("FireworkSFXType2", 64, 0, random (0, 360), 2, random (8, -8));
+		A_SpawnProjectile("Shrapnel", 64, 0, random (0, 360), 2, random (8, -8));
+	}
+	
+	void BurningDeath() {
+		A_Explode(128, 128, damagetype:"FireExplosion");
+		A_Stop();
+		A_AlertMonsters();
+		A_StartSound("EXPLFI");
+		A_StartSound("FAREXPL", 3);
+		A_SpawnItemEx ("DetectFloorCrater",0,0,0);
+		A_SpawnItemEx ("DetectCeilCrater",0,0,0);
+		A_SpawnItemEx ("IncendiaryGrenadeFX", 0, 0, 0);
+		A_CustomMissile ("BarrelFireSpawner", 8, 0, random (0, 360), 2, random (40, 65));
+		A_CustomMissile ("BarrelFireSpawner", 8, 0, random (0, 360), 2, random (40, 65));
+		A_CustomMissile ("BarrelFireSpawner", 8, 0, random (0, 360), 2, random (40, 65));
+		A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
+		A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
+		A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
+		A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
+		A_CustomMissile ("FireballExplosionFlamesBig", 6, 0, random (0, 360), 2, random (0, 360));
+		A_CustomMissile ("FireballExplosionFlamesBig", 6, 0, random (0, 360), 2, random (0, 360));
+		for(int i = 0; i < 10; i++) {
+			A_CustomMissile ("FT_GroundFireSpawner", 12, 0, random (0, 360), 2, random (50, 130));
+		}
+		for(int i = 0; i < 3; i++) {
+			SpawnShrapnel(0, 0, 5, random (8, -8), random (8, -8), random (6, 10), 0, SXF_SETMASTER);
+		}
+	}
+	
+	void FrozenDeath() {
+		A_Explode(96, 320, damagetype:"IceExplosion");
+		A_Stop();
+		A_AlertMonsters();
+		A_StartSound("EXPLIC");
+		A_StartSound("FAREXPL", 3);
+		Radius_Quake (2, 24, 0, 15, 0);
+		A_SpawnItemEx("IceExplosionImpact", random(-2,2), random(-2,2), random(-2,2), 0, 0, 0, random(1,360), SXF_NOCHECKPOSITION);
+		for(int i = 0; i < 3; i++) {
+			A_SpawnItemEx("CryoSmoke", 0, 0, 0, random(8, -8)*0.1, 0, random(8, -8)*0.1, random(1,360), SXF_NOCHECKPOSITION);
+			A_SpawnItemEx("CryoSmoke2", 0, 0, 0, random(8, -8)*0.04, 0, random(8, -8)*0.04, random(1,360), SXF_NOCHECKPOSITION,64);
+			A_SpawnItemEx ("RandomSmallIcecrystal",random(8, -8), random(8, -8),random(1,10));
+			A_SpawnItemEx ("RandomSmallIcecrystal",random(8, -8), random(8, -8),random(1,10));
+			A_SpawnItemEx ("RandomSmallIcecrystal",random(8, -8), random(8, -8),random(1,10));
+			A_SpawnItemEx ("RandomMediumIcecrystal",random(8, -8), random(8, -8),random(1,20));
+			A_SpawnItemEx ("RandomMediumIcecrystal",random(8, -8), random(8, -8),random(1,20));
+			A_SpawnItemEx ("RandomMediumIcecrystal",random(8, -8), random(8, -8),random(1,20));
+			A_SpawnItemEx ("RandomMediumIcecrystal",random(8, -8), random(8, -8),random(1,20));
+			A_SpawnItemEx ("RandomMediumIcecrystal",random(8, -8), random(8, -8),random(1,45));
+			A_SpawnItemEx ("RandomLargeIcecrystal",random(8, -8), random(8, -8),random(1,30));
+			A_SpawnItemEx ("RandomLargeIcecrystal",random(8, -8), random(8, -8),random(1,30));
+		}
+		for(int i = 0; i < 30; i++) {
+			SpawnCryoSmoke(0.8, 20, 0.04, 20.0, 20.0, -0.06);
+		}
+		for(int i = 0; i < 3; i++) {
+			SpawnShrapnel(0, 0, 5, random (8, -8), random (8, -8), random (6, 10), 0, SXF_SETMASTER);
+		}
+	}
+}
+	
+
+class PB_BarrelBase : Actor {
+	Default {
+		Health 30;
+		Radius 10;
+		Height 32;
+		PainChance 255;
+		BloodType "PB_BulletImpactSheetMetal";
+		+SOLID
+		+SHOOTABLE
+		+NOBLOODDECALS
+		+ACTIVATEMCROSS
+		+DONTGIB
+		+NOICEDEATH
+	}
+	
+	mixin PB_BarrelMixin;
+	
+	override bool Used (Actor user) {
+		if(health < 1) return false;
+		user.SetInventory("PB_BarrelToken", 1);
+		let token = PB_BarrelToken(user.FindInventory("PB_BarrelToken"));
+		if(token) {
+			token.barrelType = barrelType;
+			token.bloodstained = bloodstained;
+			token.holes = holes;
+			token.cut = cut;
+			token.dented = dented;
+			token.drained = drained;
+		}
+		Destroy();
+		return true;
+	}
+	
+	override int TakeSpecialDamage(Actor inflictor, Actor source, int damage, Name damagetype) {
+		if(damagetype == "Disintegrate") {
+			if(barrelType != TYPE_EXPLOSIVE) {
+				A_StartSound("IceMelt");
+				barrelType = TYPE_EXPLOSIVE;
+				SetStateLabel("Spawn");
+			}
+			return 0;
+		}
+		if(damagetype == "Fire" || damagetype == "Burn" || damagetype == "Flames") {
+			if(barrelType != TYPE_BURNING) {
+				if(barrelType == TYPE_FROZEN) A_StartSound("IceMelt");
+				A_StartSound("barrel/flameon");
+				barrelType = TYPE_BURNING;
+				SetStateLabel("Spawn");
+			}
+			return 0;
+		}
+		if(damagetype == "Ice" || damagetype == "Freeze" || damagetype == "Frost") {
+			if(barrelType != TYPE_FROZEN) {
+				A_StartSound("weapons/CryoRifle/freezeobject");
+				barrelType = TYPE_FROZEN;
+				SetStateLabel("Spawn");
+			}
+			return 0;
+		}
+		return super.TakeSpecialDamage(inflictor, source, damage, damagetype);
+	}
+	
+	state BarrelJump(statelabel explosive, statelabel burning, statelabel frozen) {
+		switch(barrelType) {
+		case TYPE_EXPLOSIVE:
+			return resolvestate(explosive);
+			break;
+		case TYPE_BURNING:
+			return resolvestate(burning);
+			break;
+		case TYPE_FROZEN:
+			return resolvestate(frozen);
+			break;
+		}
+		return resolvestate(null);
+	}
+	
+	void SpawnRemains(class<Actor> type = "PB_DeadBarrel", int zofs = 0, int xvel = 0) {
+		bool s;
+		actor r;
+		[s, r] = A_SpawnItemEx(type, zofs:zofs, xvel);
+		let remains = PB_DeadBarrel(r);
+		if(remains) remains.barrelType = barrelType;
+	}
+	
+	void SetDamagedSprite(string holes, string cut, string dented, string bloodstained) {
+		if(self.holes) sprite = GetSpriteIndex(holes);
+		if(self.cut) sprite = GetSpriteIndex(cut);
+		if(self.dented) sprite = GetSpriteIndex(dented);
+		if(self.bloodstained) sprite = GetSpriteIndex(bloodstained);
+	}
+	
+	States {
+	Spawn:
+		BA11 A 0 NoDelay {
+			if(cut && !drained) return resolvestate("Pain.Cut");
+			if(cut && drained) return resolvestate("DrainedCut");
+			if(holes && !drained) return resolvestate("Pain");
+			if(holes && drained) return resolvestate("DrainedHoles");
+			if(barrelType == TYPE_BURNING) {
+				A_SpawnItemEx("PB_BarrelFire", zofs:PB_BarrelBase.FLAME_OFFSET, flags:SXF_SETMASTER);
+				A_SpawnItemEx("PB_BarrelSparks", zofs:PB_BarrelBase.FLAME_OFFSET, flags:SXF_SETMASTER);
+			}
+			return BarrelJump("SpawnExplosive", "SpawnBurning", "SpawnFrozen");
+		}
+	SpawnExplosive:
+		BA11 ABCDEFGHIJKLM 3 SetDamagedSprite("BAR2", "BAR3", "BAR4", "BAR5");
+		Loop;
+	SpawnBurning:
+		BFR1 A 4 {
+			SpawnSmoke();
+			SetDamagedSprite("BFR2", "BFR3", "BFR4", "BFR5");
+		}
+		Loop;
+	SpawnFrozen:
+		BIR1 A 6 {
+			SpawnCryoSmoke(0.5, 50, 0.01, 1.0, 0.5, 0);
+			SetDamagedSprite("BIR2", "BIR3", "BIR4", "BIR5");
+		}
+		Loop;
+	DrainedCut:
+		BAR3 B -1 {
+			if(barrelType == TYPE_EXPLOSIVE) frame = 13;
+			SetTypeSprite("BAR3", "BFR3", "BIR3");
+		}
+		Stop;
+	DrainedHoles:
+		BAR2 B -1 {
+			if(barrelType == TYPE_EXPLOSIVE) frame = 10;
+			SetTypeSprite("BAR2", "BFR2", "BIR2");
+		}
+		Stop;
+	Pain:
+		TNT1 A 0 {
+			if(holes && drained || cut || dented) return resolvestate("Spawn");
+			holes = true;
+			return BarrelJump("DrainHoles", "SpawnBurning", "SpawnFrozen");
+		}
+	DrainHoles:
+		BAR2 A 38;
+		BAR2 BCDEFGH 12;
+		TNT1 A 0 {
+			A_SpawnItemEx("GrowingNukagePool");
+			drained = true;
+		}
+		BAR2 IJ 12;
+		Goto DrainedHoles;
+	Pain.Saw:
+	Pain.Cut:
+		TNT1 A 0 {
+			if(cut && drained || holes || dented) return resolvestate("Spawn");
+			cut = true;
+			return BarrelJump("DrainCut", "SpawnBurning", "SpawnFrozen");
+		}
+	DrainCut:
+		BAR3 A 34;
+		BAR3 B 4;
+		BAR3 CDEFG 2;
+		TNT1 A 0 {
+			A_SpawnItemEx("GrowingNukagePool");
+			drained = true;
+		}
+		BAR3 HIJKLLMMN 2;
+		Goto DrainedCut;
+	Pain.Kick:
+	Pain.Melee:
+	Pain.ExtremePunches:
+		TNT1 A 0 {
+			if(dented && drained || cut || holes) return resolvestate("Spawn");
+			dented = true;
+			A_StartSound("barrel/pain");
+			return BarrelJump("SpawnExplosive", "SpawnBurning", "SpawnFrozen");
+		}
+		Goto Spawn;
+	KnockedOverBurning:
+		TNT1 A 0 {
+			A_FaceTarget();
+			A_StartSound("barrel/flameon");
+			for(int i = 0; i < 5; i++) {
+				A_CustomMissile ("Flames", 24, 0, random (150, 210), 2, random (0, 40));
+			}
+			for(int i = 0; i < 11; i++) {
+				A_CustomMissile ("BarrelFireSpawner", 12, 0, random (150, 210), 2, random (0, 40));
+				A_CustomMissile ("BarrelFireSpawner", 24, 0, random (150, 210), 2, random (0, 40));
+				A_CustomMissile ("BarrelFireSpawner", 24, 0, random (150, 210), 2, random (0, 40));
+			}
+			SpawnRemains("PB_KickedBarrel", 15, -8);
+		}
+		Stop;
+	Death.Kick:
+	Death.ExtremePunches:
+		TNT1 A 0 BarrelJump("Death", "KnockedOverBurning", "Death");
+		Goto Death;
+	Death.Plasma:
+	Death.Electric:
+		TNT1 A 0 {
+			electricDeath = true;
+		}
+	DeathDrained:
+		TNT1 A 0 {
+			A_Stop();
+			A_StartSound("barrel/pain");
+			for(int i = 0; i < 3; i++)
+				SpawnShrapnel(zofs:5, random(5, -5), random(5, -5), random(5, 8));
+			SpawnRemains();
+		}
+		Stop;
+	Death:
+		TNT1 A 0 {
+			A_StartSound("barrel/pain");
+			if(drained) return resolvestate("DeathDrained");
+			return BarrelJump("DeathExplosive", "DeathBurning", "DeathFrozen");
+		}
+	DeathExplosive:
+		BBLA A 9;
+		BBLA B 3 {
+			if(electricDeath) A_SpawnItemEx("PB_StunGrenadeExplosion", zofs:10);
+		}
+		BBLA C 3;
+		TNT1 A 0 {
+			ExplosiveDeath();
+			SpawnRemains();
+		}
+		Stop;
+	DeathBurning:
+		BFEX A 9;
+		BFEX B 3 {
+			if(electricDeath) A_SpawnItemEx("PB_StunGrenadeExplosion", zofs:10);
+		}
+		BFEX C 3;
+		TNT1 A 0 {
+			BurningDeath();
+			SpawnRemains();
+		}
+		Stop;
+	DeathFrozen:
+		BBLA D 9;
+		BBLA E 3 {
+			if(electricDeath) A_SpawnItemEx("PB_StunGrenadeExplosion", zofs:10);
+		}
+		BBLA F 3;
+		TNT1 A 0 {
+			FrozenDeath();
+			SpawnRemains();
+		}
+		Stop;
+	CacheSprites:
+		BFR2 A 0;
+		BIR2 A 0;
+		BFR3 A 0;
+		BIR3 A 0;
+		BAR4 A 0;
+		BFR4 A 0;
+		BIR4 A 0;
+		BAR5 A 0;
+		BFR5 A 0;
+		BIR5 A 0;
+	}
+}
+
+class PB_ExplosiveBarrel : PB_BarrelBase {
+	override void PostBeginPlay() {
+		barrelType = TYPE_EXPLOSIVE;
+		super.PostBeginPlay();
+	}
+}
+
+class PB_BurningBarrel : PB_BarrelBase {
+	override void PostBeginPlay() {
+		barrelType = TYPE_BURNING;
+		super.PostBeginPlay();
+	}
+}
+
+class PB_FrozenBarrel : PB_BarrelBase {
+	Default {
+		//$Title Frozen Barrel
+		//$Category Project Brutality/Decorations
+		//$Sprite BIR1A0
+	}
+	
+	override void PostBeginPlay() {
+		barrelType = TYPE_FROZEN;
+		super.PostBeginPlay();
+	}
+}
+
+class PB_DeadBarrel : Actor{
+	Default {
+		Health 1;
+		Height 8;
+		Radius 10;
+		DamageFactor "ExplosiveImpact", 0;
+		DamageFactor "FireExplosion", 0;
+		DamageFactor "IceExplosion", 0;
+		DamageFactor "Fire", 0;
+		+SHOOTABLE
+		+NOBLOOD
+	}
+	
+	mixin PB_BarrelMixin;
+	
+	States
+	{
+	Spawn:
+		BARP D -1 NoDelay {
+			SetTypeSprite("BARP", "BFRP", "BIRP");
+			frame = random(3,4);
+		}
+		Stop;
+	Death:
+		TNT1 A 0 {
+			A_StartSound("barrel/pain");
+			for(int i = 0; i < 3; i++)
+				SpawnShrapnel(zofs:5, random(5, -5), random(5, -5), random(5, 8));
+		}
+		Stop;
+	CacheSprites:
+		BFRP A 0;
+		BIRP A 0;
+	}
+}
+
+class PB_KickedBarrel : PB_DeadBarrel {
+	Default {
+		Health 20;
+		Height 20;
+		Radius 16;
+		+NODAMAGE
+	}
+	States {
+	Spawn:
+		BFR9 B 2;
+		BFR9 B -1 {bNODAMAGE = false;}
+		Stop;
+	CacheSprites:
+		BFR9 A 0;
+		BIR9 A 0;
+	}
+}
+
+class PB_BarrelShrapnel : Actor {
+	Default {
+		Radius 2;
+		Height 2;
+		Speed 8;
+		Mass 1;
+		Gravity 0.9;
+		Mass 15;
+		Scale 0.5;
+		BounceType "Doom";
+		BounceFactor 0.4;
+		BounceCount 4;
+		+MISSILE
+		+NOBLOCKMAP
+		+NOTELEPORT
+		+MOVEWITHSECTOR
+		+THRUACTORS
+		+DONTSPLASH
+		+FLOORCLIP
+	}
+	
+	mixin PB_BarrelMixin;
+	
+	States {
+	Spawn:
+		BARP A 1 NoDelay {
+			SetTypeSprite("BARP", "BFRP", "BIRP");
+			frame = random(0, 2);
+		}
+	Spinning:
+		#### # 1 A_SetRoll(roll+22.5);
+		Loop;
+	Death:
+		#### # 300;
+		#### # 2 A_FadeOut(0.1);
+		Wait;
+	}
+}
+
+class PB_ThrownBarrel : Actor {
+	Default {
+		Radius 12;
+		Height 24;
+		Speed 22;
+		Damage 55;
+		Health 10;
+		Gravity 0.5;
+		Scale 1.0;
+		DamageType "ExplosiveImpact";
+		BloodType "PB_BulletImpactSheetMetal";
+		+MISSILE
+		+SHOOTABLE
+		+FORCEXYBILLBOARD
+		+ROLLSPRITE
+		+ROLLCENTER
+		+NOBLOODDECALS
+	}
+	
+	mixin PB_BarrelMixin;
+	
+	States {
+	Spawn:
+		BAR1 A 1 {
+			SetTypeSprite("BAR1", "BFR1", "BIR1");
+			A_SetRoll(roll+22.5);
+		}
+		Loop;
+	Death:
+		TNT1 A 0 {
+			switch(barrelType) {
+			case TYPE_EXPLOSIVE:
+				ExplosiveDeath();
+				break;
+			case TYPE_BURNING:
+				BurningDeath();
+				break;
+			case TYPE_FROZEN:
+				FrozenDeath();
+				break;
+			}
+		}
+		Stop;
+	}
+}
+
+class PB_BarrelToken : Inventory {
+	Default {
+		Inventory.MaxAmount 1;
+	}
+
+	mixin PB_BarrelMixin;
+}
+
+class BarrelFire : Actor {
+	Default {
+		RenderStyle "Add";
+		Scale 0.25;
+		+NOINTERACTION
+		+BRIGHT
+	}
+	States {
+	Spawn:
+		X053 ABCDEFGHIJKLMNOPQRSTU 1 NoDelay A_AttachLightDef('FlamethrowerLight', 'BarrelFire');
+		Stop;
+	}
+}
+
+class PB_BarrelFire : Actor {
+	Default {
+		Radius 0;
+		Height 0;
+		Scale 0.5;
+		RenderStyle "Add";
+		+NOINTERACTION
+		+BRIGHT
+	}
+	
+	override void Tick() {
+		let barrel = PB_BarrelBase(master);
+		if(barrel && barrel.barrelType == PB_BarrelBase.TYPE_BURNING || master && master is "PB_DecorativeBurningBarrel") {
+			SetOrigin((master.pos.xy, master.pos.z + PB_BarrelBase.FLAME_OFFSET), true);
+		}
+		else Destroy();
+		super.Tick();
+	}
+	
+	States {
+	Spawn:
+		FLME ABCDEFGHIJKLMN 1;
+		Loop;
+	}
+}
+
+class BarrelTopFire2 : PB_BarrelFire {}
+
+class PB_BarrelSparks : Actor {
+	Default {
+		Radius 0;
+		Height 0;
+		RenderStyle "Add";
+		+NOINTERACTION
+		+BRIGHT
+	}
+	
+	override void Tick() {
+		let barrel = PB_BarrelBase(master);
+		if(barrel && barrel.barrelType == PB_BarrelBase.TYPE_BURNING || master && master is "PB_DecorativeBurningBarrel") {
+			SetOrigin((master.pos.xy, master.pos.z + PB_BarrelBase.FLAME_OFFSET), true);
+		}
+		else Destroy();
+		super.Tick();
+	}
+	
+	States {
+	Spawn:
+        SPFN ABCDEFGHIJKLMNOPQRSTUVWXYZ 1;
+		SPFM ABCDEFG 1;
+		Loop;
+	}
+}
+
+class PB_DecorativeBurningBarrel : Actor {
+	Default {
+		Radius 16;
+		Height 32;
+		+SOLID
+	}
+	
+	mixin PB_BarrelMixin;
+	
+	States {
+	Spawn:
+		BFR1 B 0 NoDelay {
+			A_SpawnItemEx("PB_BarrelFire", zofs:FLAME_OFFSET, flags:SXF_SETMASTER);
+			A_SpawnItemEx("PB_BarrelSparks", zofs:FLAME_OFFSET, flags:SXF_SETMASTER);
+		}
+		BFR1 B 4 SpawnSmoke();
+		Wait;
+	}
+}

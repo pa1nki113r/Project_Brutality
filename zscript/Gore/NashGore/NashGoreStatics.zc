@@ -120,168 +120,49 @@ class NashGoreStatics play
 	//
 	//===========================================================================
 
-	static void QueueGore(void)
+	static void QueueGore(Actor self)
 	{
 		let eh = NashGoreHandler(NashGoreHandler.Find("NashGoreHandler"));
 		if (eh)
-		{
-			// get max gore count
-			int countmax = eh.maxgore;
-
-			// count current amount of gore objects
-			ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_NashGore_Gore);
-			Actor mo;
-			int count;
-			while (mo = Actor(it.Next()))
-			{
-				count++;
-			}
-
-			// clean up excessive gore
-			while (count > countmax)
-			{
-				// destroy the first one it can find
-				it.Reinit();
-				if (mo = Actor(it.Next()))
-				{		
-					/*bool valid = (
-						mo is "Actor" ||
-						mo is "NashGoreStickyGibsCeiling" ||
-						mo is "NashGoreStickyGibs" ||
-						mo is "NashGoreGibs" ||
-						mo is "NashGoreBloodPlane" ||
-						mo is "NashGoreIceChunk" ||
-						mo is "NashGoreSquishyGibs" ||
-						mo is "PB_GibBase" ||
-						mo is "PB_LimbBase" ||
-						mo is "PB_XDeath1" ||
-						mo is "PB_XDeath2" ||
-						mo is "PB_XDeathOrgan1" ||
-						mo is "PB_XDeathBurnedMeat" ||
-						mo is "FlyingGibBase" ||
-						mo is "PB_XDeathArm1" ||
-						mo is "PB_SmallBrainPiece" ||
-						mo is "PB_Brains4" ||
-						mo is "PB_Brains6" ||
-						mo is "PB_Brains7" ||
-						mo is "PB_BrainsImpHeadPiece" ||
-						mo is "PB_XDeathZombieManHead" ||
-						mo is "PB_XDeathZombieManHead" ||
-						mo is "PB_Teeth"
-					);*/
-
-					//if (valid) {
-						mo.Destroy();
-						//Console.Printf("Cleaning Gibs");
-					//}
-					count--;
-				}
-			}
-		}
+			eh.PB_AddToUroborosBuffer(self, eh.goreBuf);
 	}
 
-    static void QueueDroplet(void)
+    static void QueueDroplet(Actor self)
 	{
 		let eh = NashGoreHandler(NashGoreHandler.Find("NashGoreHandler"));
 		if (eh)
-		{
-			// get max gore count
-			int countmax = ceil(eh.maxgore * 0.1);
-
-			// count current amount of gore objects
-			ThinkerIterator it = ThinkerIterator.Create("PB_BloodSpotTiny", STAT_PB_DROPLETS);
-			Actor mo;
-			int count;
-			while (mo = Actor(it.Next()))
-			{
-				count++;
-			}
-
-			// clean up excessive gore
-			while (count > countmax)
-			{
-				// destroy the first one it can find
-				it.Reinit();
-				if (mo = Actor(it.Next()))
-				{		
-                    mo.Destroy();
-					count--;
-				}
-			}
-		}
+			eh.PB_AddToUroborosBuffer(self, eh.dropBuf);
 	}
 	
-	static void QueueCasings(void)
+	static void QueueCasings(Actor self)
 	{
 		let eh = NashGoreHandler(NashGoreHandler.Find("NashGoreHandler"));
 		if (eh)
-		{
-			// get max casings count
-			int countmax = eh.maxcasings;
-
-			// count current amount of casings objects
-			ThinkerIterator it = ThinkerIterator.Create("PB_CasingBase", STAT_PB_BULLETS);
-			Actor mo;
-			int count;
-			while (mo = Actor(it.Next()))
-			{
-				count++;
-			}
-
-			// clean up excessive casings
-			while (count > countmax)
-			{
-				// destroy the first one it can find
-				it.Reinit();
-				if (mo = Actor(it.Next()))
-				{
-					//if (valid) {
-						mo.Destroy();
-					//}
-					count--;
-				}
-			}
-		}
+			eh.PB_AddToUroborosBuffer(self, eh.casingBuf);
 	}
 
-	static void QueueSmoke(void)
+	static void QueueSmoke(Actor self)
 	{
-		// count current amount of smoke objects
-		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_PB_SMOKE);
-		Actor mo;
-		int count;
-		while (mo = Actor(it.Next()))
-		{
-			count++;
-		}
-
-		// clean up excessive smoke
-		while (count > 50)
-		{
-			// destroy the first one it can find
-			it.Reinit();
-			if(mo = Actor(it.Next()))
-			{
-				if(mo is "PB_GunFireSmoke") {
-					mo.Destroy();
-					count--;
-				}
-			}
-		}
+	  let eh = NashGoreHandler(NashGoreHandler.Find("NashGoreHandler"));
+		if (eh)
+			eh.PB_AddToUroborosBuffer(self, eh.smokeBuf);
 	}
 
     // [gng] if the player is full autoing you want to clear the old smoke right 
     // as the new smoke is created, so it doesn't block your view
     static void ClearPlayerSmoke(void)
 	{
-		// count current amount of smoke objects
-		ThinkerIterator it = ThinkerIterator.Create("PB_GunFireSmoke", STAT_PB_SMOKE);
-		Actor mo;
-		while (mo = Actor(it.Next()))
-		{
-            if(mo.GetAge() < 6 && mo.master && mo.master is 'PlayerPawn' && !(mo is 'PB_CasingEjectionSmoke'))
-			    mo.Destroy();
-		}
+	  let eh = NashGoreHandler(NashGoreHandler.Find("NashGoreHandler"));
+	  if (eh) {
+	    for(int i = 0; i < eh.smokeBuf.buffer.Size(); i++)
+	    {
+	      let mo = eh.smokeBuf.buffer[i];
+	      if(mo && mo.GetAge() < 6 && mo.master && mo.master is 'PlayerPawn' && !(mo is 'PB_CasingEjectionSmoke')) {
+	        mo.Destroy();
+	        eh.smokeBuf.buffer[i] = NULL;
+	      }
+	    }
+	  }
 	}
 
 	//===========================================================================
@@ -292,22 +173,10 @@ class NashGoreStatics play
 
 	static void ClearGore(void)
 	{
-		ThinkerIterator it = ThinkerIterator.Create("Actor", STAT_NashGore_Gore);
-		ThinkerIterator pb = ThinkerIterator.Create("Actor", STAT_PB_BULLETS);
-		ThinkerIterator sm = ThinkerIterator.Create("Actor", STAT_PB_DROPLETS);
-		Actor mo;
-		while (mo = Actor(it.Next()))
-		{
-			mo.Destroy();
-		}
-		while (mo = Actor(pb.Next()))
-		{
-			mo.Destroy();
-		}
-		while (mo = Actor(sm.Next()))
-		{
-			mo.Destroy();
-		}
+		let eh = NashGoreHandler(NashGoreHandler.Find("NashGoreHandler"));
+	  if (eh) {
+	    eh.PB_UpdateQueuesNShit();
+	  }
 		
 		// clear wall decals by finding a sprayable line and spamming it with an empty decal :^)
 		// this workaround will have to do because of the lack of access to impact decals in ZScript

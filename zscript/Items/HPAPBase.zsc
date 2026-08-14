@@ -14,12 +14,7 @@ class PB_Health : Health abstract
 		return Super.TryPickup(toucher);
 	}
 	override string PickupMessage(){
-		msg = Super.PickupMessage();
-		if( msg.IndexOf("(+%a HP)") != -1 || msg.IndexOf("(+%a much needed HP)") != -1 ){
-			msg.Replace("%a", String.Format("%d", res));
-		}else{
-			string.format("%s (+%d HP)",msg,res);
-		}
+		msg = string.format(StringTable.Localize(Super.PickupMessage()), res);
 		return msg;
 	}
 }
@@ -27,6 +22,7 @@ class PB_Health : Health abstract
 class PB_Armor : BasicArmorPickup abstract
 {
 	mixin PB_BetterPickupSound;
+	int ownAP;
 	
 	Default
 	{
@@ -43,6 +39,7 @@ class PB_Armor : BasicArmorPickup abstract
         let curArmor = BasicArmor(toucher.FindInventory("BasicArmor"));
         if(curArmor)
         {
+			ownAP = toucher.CountInv("BasicArmor");
             int newDefense = SaveAmount * (self.SavePercent / 100.f);
             int curDefense = toucher.CountInv("BasicArmor") * curArmor.SavePercent;
 
@@ -69,6 +66,11 @@ class PB_Armor : BasicArmorPickup abstract
 
         return Super.TryPickup(toucher);
     }
+	
+	override string PickupMessage(){
+		string msg = string.format(StringTable.Localize(Super.PickupMessage()), clamp(SaveAmount - ownAP, 0, SaveAmount));
+		return msg;
+	}
 }
 
 class PB_Armor2 : BasicArmorBonus abstract
@@ -96,12 +98,7 @@ class PB_Armor2 : BasicArmorBonus abstract
 		return Super.TryPickup(toucher);
 	}
 	override string PickupMessage(){
-		msg = Super.PickupMessage();
-		if( msg.IndexOf("(+%a AP)") != -1 ){
-			msg.Replace("%a", String.Format("%d", res));
-		}else{
-			string.format("%s (+%d AP)",msg,res);
-		}
+		msg = string.format(StringTable.Localize(Super.PickupMessage()), res);
 		return msg;
 	}
 }
