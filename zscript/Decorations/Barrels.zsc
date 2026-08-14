@@ -82,9 +82,9 @@ mixin class PB_BarrelMixin {
 		A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15));
 		A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35));
 		A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35));
-		A_SpawnItemEx("BarrelShrapnel1", 0, 0, 5, random (8, -8), random (8, -8), random (6, 10), 0, SXF_SETMASTER);
-		A_SpawnItemEx("BarrelShrapnel2", 0, 0, 5, random (8, -8), random (8, -8), random (6, 10), 0, SXF_SETMASTER);
-		A_SpawnItemEx("BarrelShrapnel3", 0, 0, 5, random (8, -8), random (8, -8), random (6, 10), 0, SXF_SETMASTER);
+		for(int i = 0; i < 3; i++) {
+			SpawnShrapnel(0, 0, 5, random (8, -8), random (8, -8), random (6, 10), 0, SXF_SETMASTER);
+		}
 		A_SpawnProjectile("PBExplosionparticles3", 64, 0, random (0, 360), 2, random (-40, -90));
 		A_SpawnProjectile("FireworkSFXType2", 64, 0, random (0, 360), 2, random (8, -8));
 		A_SpawnProjectile("Shrapnel", 64, 0, random (0, 360), 2, random (8, -8));
@@ -102,17 +102,18 @@ mixin class PB_BarrelMixin {
 		A_CustomMissile ("BarrelFireSpawner", 8, 0, random (0, 360), 2, random (40, 65));
 		A_CustomMissile ("BarrelFireSpawner", 8, 0, random (0, 360), 2, random (40, 65));
 		A_CustomMissile ("BarrelFireSpawner", 8, 0, random (0, 360), 2, random (40, 65));
-		for(int i = 0; i < 10; i++)
+		A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
+		A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
+		A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
+		A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
+		A_CustomMissile ("FireballExplosionFlamesBig", 6, 0, random (0, 360), 2, random (0, 360));
+		A_CustomMissile ("FireballExplosionFlamesBig", 6, 0, random (0, 360), 2, random (0, 360));
+		for(int i = 0; i < 10; i++) {
 			A_CustomMissile ("FT_GroundFireSpawner", 12, 0, random (0, 360), 2, random (50, 130));
-		A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
-		A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
-		A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
-		A_CustomMissile ("FireworkSFXType2", 64, 0, random (0, 360), 2, random (30, 60));
-		A_CustomMissile ("FireballExplosionFlamesBig", 6, 0, random (0, 360), 2, random (0, 360));
-		A_CustomMissile ("FireballExplosionFlamesBig", 6, 0, random (0, 360), 2, random (0, 360));
-		A_SpawnItemEx("BarrelShrapnel1", 0, 0, 5, random (8, -8), random (8, -8), random (6, 10), 0, SXF_SETMASTER);
-		A_SpawnItemEx("BarrelShrapnel2", 0, 0, 5, random (8, -8), random (8, -8), random (6, 10), 0, SXF_SETMASTER);
-		A_SpawnItemEx("BarrelShrapnel3", 0, 0, 5, random (8, -8), random (8, -8), random (6, 10), 0, SXF_SETMASTER);
+		}
+		for(int i = 0; i < 3; i++) {
+			SpawnShrapnel(0, 0, 5, random (8, -8), random (8, -8), random (6, 10), 0, SXF_SETMASTER);
+		}
 	}
 	
 	void FrozenDeath() {
@@ -139,6 +140,9 @@ mixin class PB_BarrelMixin {
 		}
 		for(int i = 0; i < 30; i++) {
 			SpawnCryoSmoke(0.8, 20, 0.04, 20.0, 20.0, -0.06);
+		}
+		for(int i = 0; i < 3; i++) {
+			SpawnShrapnel(0, 0, 5, random (8, -8), random (8, -8), random (6, 10), 0, SXF_SETMASTER);
 		}
 	}
 }
@@ -278,6 +282,7 @@ class PB_BarrelBase : Actor {
 		Stop;
 	Pain:
 		TNT1 A 0 {
+			if(holes && drained || cut || dented) return resolvestate("Spawn");
 			holes = true;
 			return BarrelJump("DrainHoles", "SpawnBurning", "SpawnFrozen");
 		}
@@ -293,6 +298,7 @@ class PB_BarrelBase : Actor {
 	Pain.Saw:
 	Pain.Cut:
 		TNT1 A 0 {
+			if(cut && drained || holes || dented) return resolvestate("Spawn");
 			cut = true;
 			return BarrelJump("DrainCut", "SpawnBurning", "SpawnFrozen");
 		}
@@ -310,6 +316,7 @@ class PB_BarrelBase : Actor {
 	Pain.Melee:
 	Pain.ExtremePunches:
 		TNT1 A 0 {
+			if(dented && drained || cut || holes) return resolvestate("Spawn");
 			dented = true;
 			A_StartSound("barrel/pain");
 			return BarrelJump("SpawnExplosive", "SpawnBurning", "SpawnFrozen");
@@ -327,10 +334,11 @@ class PB_BarrelBase : Actor {
 				A_CustomMissile ("BarrelFireSpawner", 24, 0, random (150, 210), 2, random (0, 40));
 				A_CustomMissile ("BarrelFireSpawner", 24, 0, random (150, 210), 2, random (0, 40));
 			}
-			SpawnRemains("PB_KickedBarrel", 15, -5);
+			SpawnRemains("PB_KickedBarrel", 15, -8);
 		}
 		Stop;
 	Death.Kick:
+	Death.ExtremePunches:
 		TNT1 A 0 BarrelJump("Death", "KnockedOverBurning", "Death");
 		Goto Death;
 	Death.Plasma:
@@ -387,6 +395,8 @@ class PB_BarrelBase : Actor {
 		}
 		Stop;
 	CacheSprites:
+		BFR2 A 0;
+		BIR2 A 0;
 		BFR3 A 0;
 		BIR3 A 0;
 		BAR4 A 0;
