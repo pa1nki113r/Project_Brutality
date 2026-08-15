@@ -146,11 +146,11 @@ class PB_Axe : PB_WeaponBase
     action void Axe_SwingAttack()
     {
         if(invoker.OwnerHasBerserk()) {
-            A_Saw("", "", 123, "AxePuffs", SF_NORANDOM, 120, 0,16);
+            A_Saw("", "", 0, "AxePuffs", SF_NORANDOM, 120, 0,16);
             A_FireCustomMissile("SuperAxeAttack", 0, 0, 0, 0);
         }
         else {
-            A_Saw("", "", 70, "AxePuffs", SF_NORANDOM, 120, 0,16);
+            A_Saw("", "", 0, "AxePuffs", SF_NORANDOM, 120, 0,16);
             A_FireCustomMissile("AxeAttack", 0, 0, 0, 0);
         }
     }
@@ -392,10 +392,11 @@ class AxeAttack : PB_ProjectileAlt
         +NOGRAVITY;
         -NOEXTREMEDEATH;
         -NODAMAGETHRUST;
+		+PB_Projectile.NOCRITICALS
         -RIPPER;
         RenderStyle "Add";
         Alpha 0.6;
-        PB_Projectile.BaseDamage 52;
+        PB_Projectile.BaseDamage 80;
         PB_Projectile.HeadSizeMultiplier 1.25;
         Speed 30;
         SeeSound "none";
@@ -442,7 +443,7 @@ class AxeAttack : PB_ProjectileAlt
 
 class SuperAxeAttack : AxeAttack {
 	Default {
-		PB_Projectile.BaseDamage 91;
+		PB_Projectile.BaseDamage 140;
 		PainType "ExtremePunches";
 	}
 }
