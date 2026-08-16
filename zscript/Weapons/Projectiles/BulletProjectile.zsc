@@ -38,6 +38,11 @@ class PB_Projectile : FastProjectile abstract
 
 	virtual int Handle_MissileHit(Actor victim)
 	{
+		bool cantRip = (bRIPPER && (victim.bBOSS && bNOBOSSRIP || victim.bDONTRIP || victim.riplevelmin > ripperlevel || victim.riplevelmax > 0 && victim.riplevelmax < ripperlevel));
+		
+		if(target && (target.bDONTHARMSPECIES && victim.GetSpecies() == target.GetSpecies() || target.bDONTHARMCLASS && victim.GetClassName() == target.GetClassName()))
+			return cantRip ? 0 : -1;
+		
 		int scaledDamage = truedamage;
 		name dmgType = damageType;
 		if(!bNOCRITICALS) [scaledDamage, dmgType] = GetLimbDamage(truedamage, damageType, pos, victim, target, self.bOMNIDIRECTIONAL, headSizeMul);
@@ -71,15 +76,7 @@ class PB_Projectile : FastProjectile abstract
 		OnHitActor(target, dmgType);
 		
 		// [gng] prevent missile from ripping through or getting stuck on bosses
-		if (bRIPPER && (victim.bBOSS && bNOBOSSRIP || victim.bDONTRIP || victim.riplevelmin > ripperlevel || victim.riplevelmax > 0 && victim.riplevelmax < ripperlevel))		
-		{
-			// OnExplode (FindExplosionType(BlockingMobj));
-			// ExplodeMissile(BlockingLine, BlockingMobj);
-			// console.printf("penis");
-			return 0;
-		}
-		
-		return -1;
+		return cantRip ? 0 : -1;
 	}
 	
 	override int SpecialMissileHit(Actor victim)
