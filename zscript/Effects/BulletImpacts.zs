@@ -30,7 +30,9 @@ Class PB_BaseBulletImpact : BulletPuff abstract
 
 	uint8 hitWhat;
 	float wallNormal, reflectAngle;
-	float distfromplayer;
+	// This is deliberately local-view state. Anything conditionally executed from
+	// it must use cosmetic RNG (cRNG) and may only create particles/VisualThinkers.
+	transient float distfromplayer;
     vector2 hitAngles;
 
 	bool noDistant, smallCal;
@@ -75,16 +77,16 @@ Class PB_BaseBulletImpact : BulletPuff abstract
 	void HitFeedback()
 	{
 		FSpawnParticleParams MAINPUF;
-		string f = String.Format("%c", int("A") + random[impacts](0,7));
+		string f = String.Format("%c", int("A") + crandom(0,7));
 		MAINPUF.Texture = TexMan.CheckForTexture("IPF2"..f..0);
 		MAINPUF.Style = STYLE_ADD;
 		MAINPUF.Color1 = "FFFFFF";
 		MAINPUF.Flags = SPF_FULLBRIGHT|SPF_ROLL;
-		MAINPUF.StartRoll = random[impacts](0,360);
+		MAINPUF.StartRoll = crandom(0,360);
 		MAINPUF.StartAlpha = 1.0;
 		MAINPUF.FadeStep = 0;
-		MAINPUF.Size = random[impacts](10,32) * (Distance3D(players[consoleplayer].camera) / 500.f);
-		MAINPUF.SizeStep = random[impacts](2,4);
+		MAINPUF.Size = crandom(10,32) * (Distance3D(players[consoleplayer].camera) / 500.f);
+		MAINPUF.SizeStep = crandom(2,4);
 		MAINPUF.Lifetime = 4; 
 		MAINPUF.Pos = pos;
 		Level.SpawnParticle(MAINPUF);
@@ -176,18 +178,18 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 		Spawn:
 		Puff:
 			TNT1 A 0 NoDelay {
-				A_StartSound("bulletimpact", pitch: frandom[impacts](0.9, 1.1));
+				A_StartSound("bulletimpact", pitch: cfrandom(0.9, 1.1));
 
                 if(distfromplayer < DISTANT_THRESHOLD)
                 {
-                    let smk = PB_SummonSmokeThinker("PB_WallDebris", smkVel: PB_Math.VecFromAngles(angle, pitch, frandom[impacts](2, 4)));
+                    let smk = PB_SummonSmokeThinker("PB_WallDebris", smkVel: PB_Math.VecFromAngles(angle, pitch, cfrandom(2, 4)));
                     if(smk) smk.scolor = color1;
 
                     if(!smallCal)
                     {
 						SpawnMainPuff2();
 						// SpawnPuffSmoke();
-                        int spallCount = randompick[impacts](0, 0, 0, random[impacts](0, 4));
+                        int spallCount = crandompick(0, 0, 0, crandom(0, 4));
 
                         for(int i = 0; i < spallCount; i++)
                     	    BulletSpall(hitWhat);
@@ -195,14 +197,14 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 
                     SpawnDust();
 
-                    if(randompick[impacts](0, 0, 1))
+                    if(crandompick(0, 0, 1))
 					{
                     	A_StartSound("ricochet/hit");
 					}
 					SpawnMainPuff3();
 					SpawnMainPuff3();
 
-					/*int cloudCount = random[impacts]pick(0, 0, 0, 0, 0, 0, 1, 2, 3);
+					/*int cloudCount = crandompick(0, 0, 0, 0, 0, 0, 1, 2, 3);
 					for(int i = 0; i < cloudCount; i++)
 						SpawnMainPuffSecondary();*/
                 }
@@ -219,7 +221,7 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 
 				Pitch += 90;
 				
-				roll = random[impacts](0, 360);
+				roll = crandom(0, 360);
 			}
         FlatPuff:
             TNT1 A 0 A_Jump(256, random(0, 5));
@@ -229,7 +231,7 @@ Class PB_BulletImpact : PB_BaseBulletImpact
             }
         	Stop;
 		Melee:
-			TNT1 AAA 0 SpawnPuffSmoke();//A_SpawnProjectile ("OldschoolRocketSmokeTrail2", 0, 0, random[impacts] (0, 360), 2, random[impacts] (0, 360));
+			TNT1 AAA 0 SpawnPuffSmoke();//A_SpawnProjectile ("OldschoolRocketSmokeTrail2", 0, 0, crandom (0, 360), 2, crandom (0, 360));
 			stop;
 	}
 	
@@ -237,11 +239,11 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 	void SpawnMainPuff()
 	{
 		FSpawnParticleParams PUFSPRK;
-		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");
+		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + crandom(0, 25)).."0");
 		PUFSPRK.Color1 = color1;
 		PUFSPRK.Style = STYLE_TRANSLUCENT;
 		PUFSPRK.Flags = SPF_ROLL | SPF_REPLACE;
-		vector3 vls = (0.7, frandom[impacts](-0.5,0.5), frandom[impacts](-0.5,0.5));
+		vector3 vls = (0.7, cfrandom(-0.5,0.5), cfrandom(-0.5,0.5));
 		if(hitWhat == 1)
 		{
 			vls = (RotateVector((vls.x, vls.y), wallNormal), vls.z);
@@ -251,14 +253,14 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 			vls = (vls.z, vls.y, vls.x);
 		}
 		PUFSPRK.Vel = (0, 0, 0);
-		PUFSPRK.Startroll = random[impacts](0, 359);
-		PUFSPRK.RollVel = frandom[impacts](-3, 3);
+		PUFSPRK.Startroll = crandom(0, 359);
+		PUFSPRK.RollVel = cfrandom(-3, 3);
 		PUFSPRK.StartAlpha = smallCal ? 0.6 : 0.4;
-		PUFSPRK.Size = random[impacts](25, 35);
+		PUFSPRK.Size = crandom(25, 35);
 		PUFSPRK.SizeStep = smallCal ? 2 : 1;
-		PUFSPRK.Lifetime = random[impacts](35,105); 
+		PUFSPRK.Lifetime = crandom(35,105);
 		PUFSPRK.RollAcc = -PUFSPRK.RollVel / double(PUFSPRK.Lifetime);
-		PUFSPRK.accel = (-vls / double(PUFSPRK.Lifetime)) + (0, 0, smallCal ? frandom[impacts](0, -0.05) : frandom[impacts](-0.05, -0.1));
+		PUFSPRK.accel = (-vls / double(PUFSPRK.Lifetime)) + (0, 0, smallCal ? cfrandom(0, -0.05) : cfrandom(-0.05, -0.1));
 			
 		PUFSPRK.FadeStep = -1;
 		PUFSPRK.Pos = pos + vls * (PUFSPRK.Size * 0.3);
@@ -268,12 +270,12 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 	void SpawnMainPuff3()
 	{
 		FSpawnParticleParams PUFSPRK;
-		PUFSPRK.Texture = TexMan.CheckForTexture("XS13"..String.Format("%c", 97 + random[impacts](0, 25)).."0");
+		PUFSPRK.Texture = TexMan.CheckForTexture("XS13"..String.Format("%c", 97 + crandom(0, 25)).."0");
 		PUFSPRK.Color1 = color3;
 		PUFSPRK.Style = STYLE_TRANSLUCENT;
 		PUFSPRK.Flags = SPF_ROLL | SPF_REPLACE;
-		PUFSPRK.Size = smallCal ? random[impacts](15,30) : random[impacts](40, 50);
-		vector3 vls = (frandom[impacts](1, PUFSPRK.Size * 0.2), frandom[impacts](-24,24), frandom[impacts](-24,24));
+		PUFSPRK.Size = smallCal ? crandom(15,30) : crandom(40, 50);
+		vector3 vls = (cfrandom(1, PUFSPRK.Size * 0.2), cfrandom(-24,24), cfrandom(-24,24));
 		if(hitWhat == 1)
 		{
 			vls = (RotateVector((vls.x, vls.y), wallNormal), vls.z);
@@ -282,14 +284,14 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 		{
 			vls = (vls.z, vls.y, vls.x);
 		}
-		PUFSPRK.Vel = (0, frandom[impacts](-1, 1), 0);
-		PUFSPRK.Startroll = random[impacts](0, 359);
-		PUFSPRK.RollVel = frandom[impacts](-3, 3);
+		PUFSPRK.Vel = (0, cfrandom(-1, 1), 0);
+		PUFSPRK.Startroll = crandom(0, 359);
+		PUFSPRK.RollVel = cfrandom(-3, 3);
 		PUFSPRK.StartAlpha = smallCal ? 0.25 : 0.4;
 		PUFSPRK.SizeStep = smallCal ? 2 : 1;
-		PUFSPRK.Lifetime = random[impacts](15,55); 
+		PUFSPRK.Lifetime = crandom(15,55);
 		PUFSPRK.RollAcc = -PUFSPRK.RollVel / double(PUFSPRK.Lifetime);
-		PUFSPRK.accel = (0, 0, frandom[impacts](0, -0.2));
+		PUFSPRK.accel = (0, 0, cfrandom(0, -0.2));
 			
 		PUFSPRK.FadeStep = -1;
 		PUFSPRK.Pos = pos + vls;
@@ -299,10 +301,10 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 	void SpawnMainPuff2()
 	{
 		FSpawnParticleParams PUFSPRK;
-		double angOfs = frandom[impacts](0, 359);
+		double angOfs = cfrandom(0, 359);
 		for(int i = 0; i < 3; i++)
 		{
-			PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");
+			PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + crandom(0, 25)).."0");
 			PUFSPRK.Color1 = color2;
 			PUFSPRK.Style = STYLE_TRANSLUCENT;
 			PUFSPRK.Flags = SPF_ROLL | SPF_REPLACE;
@@ -317,10 +319,10 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 				vls = (vls.z, vls.y, vls.x);
 			}
 			PUFSPRK.Vel = (0, 0, 0);
-			PUFSPRK.Startroll = random[impacts](0, 359);
+			PUFSPRK.Startroll = crandom(0, 359);
 			PUFSPRK.StartAlpha = default.Alpha;
 			PUFSPRK.SizeStep = 2;
-			PUFSPRK.Lifetime = random[impacts](15,70); 
+			PUFSPRK.Lifetime = crandom(15,70);
 			PUFSPRK.accel = (0, 0,-0.05);
 				
 			PUFSPRK.FadeStep = -1;
@@ -332,20 +334,20 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 	void SpawnMainPuffSecondary()
 	{
 		FSpawnParticleParams PUFSPRK;
-		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");
-		PUFSPRK.Color1 = randompick[impacts](0, 1) ? color3 : color2;
+		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + crandom(0, 25)).."0");
+		PUFSPRK.Color1 = crandompick(0, 1) ? color3 : color2;
 		PUFSPRK.Style = STYLE_TRANSLUCENT;
 		PUFSPRK.Flags = SPF_ROLL | SPF_REPLACE;
 		
-		PUFSPRK.Startroll = random[impacts](0, 359);
-		PUFSPRK.RollVel = frandom[impacts](-2, 2);
-		PUFSPRK.StartAlpha = frandom[impacts](0.2, 0.45);
-		PUFSPRK.Size = random[impacts](26, 100);
+		PUFSPRK.Startroll = crandom(0, 359);
+		PUFSPRK.RollVel = cfrandom(-2, 2);
+		PUFSPRK.StartAlpha = cfrandom(0.2, 0.45);
+		PUFSPRK.Size = crandom(26, 100);
 		PUFSPRK.SizeStep = 2;
-		PUFSPRK.Lifetime = random[impacts](250, 450); 
+		PUFSPRK.Lifetime = crandom(250, 450);
 		PUFSPRK.RollAcc = -PUFSPRK.RollVel / double(PUFSPRK.Lifetime);
 
-		vector3 vls = (PUFSPRK.Size * 0.35, frandom[impacts](-30, 30), frandom[impacts](-30, 30));
+		vector3 vls = (PUFSPRK.Size * 0.35, cfrandom(-30, 30), cfrandom(-30, 30));
 
 		if(hitWhat == 1)
 		{
@@ -372,34 +374,34 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 	
 	void SpawnDust()
 	{
-		int sparkcount = random[impacts](6,20);
+		int sparkcount = crandom(6,20);
 		for(int i = 0; i < sparkcount; i++)
 		{
 			FSpawnParticleParams PUFSPRK;
-			string f = String.Format("%c", int("A") + random[impacts](0,3));
+			string f = String.Format("%c", int("A") + crandom(0,3));
 			PUFSPRK.Texture = TexMan.CheckForTexture("DUST"..f..0);
 			PUFSPRK.Color1 = color2;
 			PUFSPRK.Style = STYLE_TRANSLUCENT;
 			PUFSPRK.Flags = SPF_ROLL;
 			vector3 vls;
 			if(hitWhat == 1)
-				vls = (RotateVector(((frandom[impacts](1, 6)), frandom[impacts](-5,5)), wallNormal), frandom[impacts](-5,5));
+				vls = (RotateVector(((cfrandom(1, 6)), cfrandom(-5,5)), wallNormal), cfrandom(-5,5));
 			else
-				vls = (random[impacts](-5,5),random[impacts](-5,5),random[impacts](-1,9));
+				vls = (crandom(-5,5),crandom(-5,5),crandom(-1,9));
 
 			PUFSPRK.Vel = vls;
-			PUFSPRK.accel = (0,0,frandom[impacts](-1.75,-0.75));
-			PUFSPRK.Startroll = randompick[impacts](0,90,180,270,360);
+			PUFSPRK.accel = (0,0,cfrandom(-1.75,-0.75));
+			PUFSPRK.Startroll = crandompick(0,90,180,270,360);
 			PUFSPRK.RollVel = 0;
 			PUFSPRK.StartAlpha = 1.0;
 			PUFSPRK.FadeStep = 0.075;
-			PUFSPRK.Size = random[impacts](4,6);
+			PUFSPRK.Size = crandom(4,6);
 			PUFSPRK.SizeStep = 0;
-			PUFSPRK.Lifetime = random[impacts](12,18); 
+			PUFSPRK.Lifetime = crandom(12,18);
 			if(hitWhat == 1)
-				PUFSPRK.Pos = pos + (RotateVector((frandom[impacts](0, 6), frandom[impacts](-5,5)), wallNormal), frandom[impacts](-5,5));
+				PUFSPRK.Pos = pos + (RotateVector((cfrandom(0, 6), cfrandom(-5,5)), wallNormal), cfrandom(-5,5));
 			else
-				PUFSPRK.Pos = pos + (frandom[impacts](-5,5), frandom[impacts](-5,5), frandom[impacts](0,6));
+				PUFSPRK.Pos = pos + (cfrandom(-5,5), cfrandom(-5,5), cfrandom(0,6));
 				
 			Level.SpawnParticle(PUFSPRK);
 		}
@@ -407,13 +409,13 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 
 	void SpawnPuffSmoke()
 	{
-		double mag = !smallCal ? frandom[impacts](3, 4) : 2;
-		vector2 vvels = (frandom[impacts](-1, 1), frandom[impacts](-1, 1));
+		double mag = !smallCal ? cfrandom(3, 4) : 2;
+		vector2 vvels = (cfrandom(-1, 1), cfrandom(-1, 1));
 		int count = !smallCal ? 4 : 2;
 
 		for(int i = 0; i < count; i++) {
 			FSpawnParticleParams PUFSMK;
-			PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");//("SMK2A0"); //SMk3G0
+			PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + crandom(0, 25)).."0");//("SMK2A0"); //SMk3G0
 			PUFSMK.Style = STYLE_TRANSLUCENT;
 			PUFSMK.Color1 = color2;
 			vector3 vls, accl, posOfs;
@@ -444,7 +446,7 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 			}
 			else
 			{
-				vls = (frandom[impacts](-1,1), frandom[impacts](-1,1), 0);
+				vls = (cfrandom(-1,1), cfrandom(-1,1), 0);
 				accl = -(vls.xy * 0.07, (0.1 * i));
 			}
 			PUFSMK.vel = vls * (i / double(count));
@@ -453,11 +455,11 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 				PUFSMK.accel += (-0.05, 0.1, 0.05);
 				
 			PUFSMK.Flags = SPF_ROLL;
-			PUFSMK.StartRoll = random[impacts](0,360);
-			PUFSMK.RollVel = random[impacts](-4,4);
+			PUFSMK.StartRoll = crandom(0,360);
+			PUFSMK.RollVel = crandom(-4,4);
 			PUFSMK.StartAlpha = default.Alpha;
 			PUFSMK.FadeStep = -1;
-			PUFSMK.SizeStep = random[impacts](1,5);
+			PUFSMK.SizeStep = crandom(1,5);
 			PUFSMK.Lifetime = 13; 
 			PUFSMK.Pos = pos + posOfs;
 			Level.SpawnParticle(PUFSMK);
@@ -470,31 +472,31 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 		vector2 ofs = RotateVector((5, 0), wallNormal);
 		
 		if(dq == 1)
-			LineTrace(wallNormal + 90, 60, random[impacts](0, 360), TRF_ABSOFFSET, offsetforward: ofs.x, ofs.y, lt);
+			LineTrace(wallNormal + 90, 60, crandom(0, 360), TRF_ABSOFFSET, offsetforward: ofs.x, ofs.y, lt);
 		else if(dq == 2)
-			LineTrace(random[impacts](0, 360), 60, -3, TRF_ABSOFFSET, offsetforward: ofs.x, ofs.y, lt);
+			LineTrace(crandom(0, 360), 60, -3, TRF_ABSOFFSET, offsetforward: ofs.x, ofs.y, lt);
 		else if(dq == 2)
-			LineTrace(random[impacts](0, 360), 60, 3, TRF_ABSOFFSET, offsetforward: ofs.x, ofs.y, lt);
+			LineTrace(crandom(0, 360), 60, 3, TRF_ABSOFFSET, offsetforward: ofs.x, ofs.y, lt);
 
 		if(lt.HitType == TRACE_HitNone)
 			return;
 		
 		FSpawnParticleParams PUFSMK;
-		PUFSMK.Texture = TexMan.CheckForTexture(String.Format("X103%c0", 97 + random[impacts](0, 25)));//("SMK2A0"); //SMk3G0
+		PUFSMK.Texture = TexMan.CheckForTexture(String.Format("X103%c0", 97 + crandom(0, 25)));//("SMK2A0"); //SMk3G0
 		PUFSMK.Style = STYLE_TRANSLUCENT;
 		PUFSMK.Color1 = color1;
 		PUFSMK.Flags = SPF_ROLL;
-		PUFSMK.Vel = (0, 0, frandom[impacts](-1, 1));
+		PUFSMK.Vel = (0, 0, cfrandom(-1, 1));
 		PUFSMK.accel = (0, 0, -0.1);
 		if(CeilingPic == SkyFlatNum)
 			PUFSMK.accel += (-0.05, 0.1, 0.05);
-		PUFSMK.Startroll = random[impacts](0, 359);
-		PUFSMK.RollVel = frandom[impacts](1, 2);
-		PUFSMK.StartAlpha = frandom[impacts](0.4, 0.6);
+		PUFSMK.Startroll = crandom(0, 359);
+		PUFSMK.RollVel = cfrandom(1, 2);
+		PUFSMK.StartAlpha = cfrandom(0.4, 0.6);
 		PUFSMK.FadeStep = -1;
-		PUFSMK.Size = random[impacts](20,50);
+		PUFSMK.Size = crandom(20,50);
 		PUFSMK.SizeStep = 4;
-		PUFSMK.Lifetime = random[impacts](2,5) * 35; 
+		PUFSMK.Lifetime = crandom(2,5) * 35;
 		PUFSMK.Pos = lt.HitLocation;
 		Level.SpawnParticle(PUFSMK);
 	}
@@ -512,8 +514,8 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 		Spawn:
 		Puff:
 			TNT1 A 0 NoDelay {
-				A_StartSound("bulletimpact/wood", pitch: frandom[impacts](0.9, 1.1));
-                if(random[impacts](0, 100) < 25) A_StartSound("ricochet/hit");
+				A_StartSound("bulletimpact/wood", pitch: cfrandom(0.9, 1.1));
+                if(crandom(0, 100) < 25) A_StartSound("ricochet/hit");
 
                 if(distfromplayer < DISTANT_THRESHOLD)
                 {
@@ -525,7 +527,7 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
             //TNT1 A 2 Light("BulletPuffLight");
             Stop;
 		Melee:
-			TNT1 AAA 0 SpawnPuffSmoke();//A_SpawnProjectile ("OldschoolRocketSmokeTrail2", 0, 0, random[impacts] (0, 360), 2, random[impacts] (0, 360));
+			TNT1 AAA 0 SpawnPuffSmoke();//A_SpawnProjectile ("OldschoolRocketSmokeTrail2", 0, 0, crandom (0, 360), 2, crandom (0, 360));
 			stop;
 	}
 	
@@ -533,7 +535,7 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 	void SpawnMainPuff()
 	{
 		FSpawnParticleParams PUFSPRK;
-		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");
+		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + crandom(0, 25)).."0");
 		PUFSPRK.Color1 = "40291a";
 		PUFSPRK.Style = STYLE_TRANSLUCENT;
 		PUFSPRK.Flags = SPF_ROLL;
@@ -547,28 +549,28 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 			vls = (0,0,0.5);
 		}
 		PUFSPRK.Vel = vls;
-		PUFSPRK.accel = (0,0,frandom[impacts](-0.1, 0.1));
+		PUFSPRK.accel = (0,0,cfrandom(-0.1, 0.1));
 		if(CeilingPic == SkyFlatNum)
 			PUFSPRK.accel += (-0.05, 0.1, 0.05);
 
-		PUFSPRK.Startroll = random[impacts](0, 359);
-		PUFSPRK.RollVel = frandom[impacts](1, 2);
+		PUFSPRK.Startroll = crandom(0, 359);
+		PUFSPRK.RollVel = cfrandom(1, 2);
 		PUFSPRK.StartAlpha = 0.7;
 		PUFSPRK.FadeStep = -1;
-		PUFSPRK.Size = random[impacts](40,45);
+		PUFSPRK.Size = crandom(40,45);
 		PUFSPRK.SizeStep = 0.5;
-		PUFSPRK.Lifetime = random[impacts](24,35); 
+		PUFSPRK.Lifetime = crandom(24,35);
 		PUFSPRK.Pos = pos;
 		Level.SpawnParticle(PUFSPRK);
 	}
 	
 	void SpawnSplinters()
 	{
-		int sparkcount = random[impacts](8,10);
+		int sparkcount = crandom(8,10);
 		for(int i = 0; i < sparkcount; i++)
 		{
 			FSpawnParticleParams PUFSPRK;
-			string f = String.Format("%c", int("A") + random[impacts](0,3));
+			string f = String.Format("%c", int("A") + crandom(0,3));
 			PUFSPRK.Texture = TexMan.CheckForTexture("WOOD"..f..0);
 			PUFSPRK.Color1 = "FFFFFF";
 			PUFSPRK.Style = STYLE_TRANSLUCENT;
@@ -576,21 +578,21 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 			vector3 vls;
 			if(hitWhat == 1)
 			{
-				vls = (RotateVector(((frandom[impacts](1, 3) * (i * 0.5)), frandom[impacts](-2,2)), wallNormal), frandom[impacts](-2,2));
+				vls = (RotateVector(((cfrandom(1, 3) * (i * 0.5)), cfrandom(-2,2)), wallNormal), cfrandom(-2,2));
 			}
 			else
 			{
-				vls = (random[impacts](-5,5),random[impacts](-5,5),random[impacts](-2,9));
+				vls = (crandom(-5,5),crandom(-5,5),crandom(-2,9));
 			}
 			PUFSPRK.Vel = vls;
 			PUFSPRK.accel = (0,0,-0.5);
-			PUFSPRK.Startroll = random[impacts](0, 359);
+			PUFSPRK.Startroll = crandom(0, 359);
 			PUFSPRK.RollVel = 2;
 			PUFSPRK.StartAlpha = 1.0;
 			PUFSPRK.FadeStep = 0.075;
-			PUFSPRK.Size = random[impacts](4,6);
+			PUFSPRK.Size = crandom(4,6);
 			PUFSPRK.SizeStep = 0;
-			PUFSPRK.Lifetime = random[impacts](12,18); 
+			PUFSPRK.Lifetime = crandom(12,18);
 			PUFSPRK.Pos = pos;
 			Level.SpawnParticle(PUFSPRK);
 		}
@@ -600,18 +602,18 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 	{
 		for(int i = 0; i < 3; i++) {
 			FSpawnParticleParams PUFSMK;
-			PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");//("SMK2A0"); //SMk3G0
+			PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + crandom(0, 25)).."0");//("SMK2A0"); //SMk3G0
 			PUFSMK.Style = STYLE_TRANSLUCENT;
 			PUFSMK.Color1 = "40291a";
 			vector3 vls, accl;
 			if(hitWhat == 1)
 			{
-				vls = (RotateVector(((frandom[impacts](0, 6) * (i * 0.5)), frandom[impacts](-1,1)), wallNormal), frandom[impacts](-3,2));
+				vls = (RotateVector(((cfrandom(0, 6) * (i * 0.5)), cfrandom(-1,1)), wallNormal), cfrandom(-3,2));
 				accl = -(vls.xy * 0.07, (0.1 * i));
 			} 
 			else if(hitWhat >= 2)
 			{
-				vls.xy = (frandom[impacts](-2,2), frandom[impacts](-2,2));
+				vls.xy = (cfrandom(-2,2), cfrandom(-2,2));
 				vls.z = 4 * (i * 0.5);
                 accl = -(0, 0, (0.3 * i));
 
@@ -623,7 +625,7 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 			}
 			else
 			{
-				vls = (frandom[impacts](-1,1), frandom[impacts](-1,1), 0);
+				vls = (cfrandom(-1,1), cfrandom(-1,1), 0);
 				accl = -(vls.xy * 0.07, (0.1 * i));
 			}
 			PUFSMK.vel = vls;
@@ -632,12 +634,12 @@ Class PB_BulletImpactWood : PB_BaseBulletImpact
 				PUFSMK.accel += (-0.05, 0.1, 0.05);
 
 			PUFSMK.Flags = SPF_ROLL;
-			PUFSMK.StartRoll = random[impacts](0,360);
-			PUFSMK.RollVel = random[impacts](-4,4);
+			PUFSMK.StartRoll = crandom(0,360);
+			PUFSMK.RollVel = crandom(-4,4);
 			PUFSMK.StartAlpha = 1.0;
 			PUFSMK.FadeStep = 0.1;
-			PUFSMK.Size = random[impacts](28,32);
-			PUFSMK.SizeStep = random[impacts](1,3);
+			PUFSMK.Size = crandom(28,32);
+			PUFSMK.SizeStep = crandom(1,3);
 			PUFSMK.Lifetime = 10; 
 			vector2 posofs = RotateVector((5, 0), wallNormal);
 			PUFSMK.Pos = vec3Offset(posofs.x, posofs.y, 0);
@@ -667,8 +669,8 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
 			}
 		Puff:
 			TNT1 A 0 {
-                A_StartSound("bulletimpact/metal/a", pitch: frandom[impacts](0.9, 1.1));
-                if(random[impacts](0, 100) < 25) A_StartSound("ricochet/hit");
+                A_StartSound("bulletimpact/metal/a", pitch: cfrandom(0.9, 1.1));
+                if(crandom(0, 100) < 25) A_StartSound("ricochet/hit");
 
                 if(distfromplayer < DISTANT_THRESHOLD)
                 {
@@ -683,7 +685,7 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
 			TNT1 A 2 Light("BulletPuffLight");
 			stop;
 		Melee:
-			TNT1 AAA 0 SpawnPuffSmoke();//A_SpawnProjectile ("OldschoolRocketSmokeTrail2", 0, 0, random[impacts] (0, 360), 2, random[impacts] (0, 360));
+			TNT1 AAA 0 SpawnPuffSmoke();//A_SpawnProjectile ("OldschoolRocketSmokeTrail2", 0, 0, crandom (0, 360), 2, crandom (0, 360));
 			stop;
 	}
 	
@@ -691,16 +693,16 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
 	void SpawnMainPuff()
 	{
 		FSpawnParticleParams MAINPUF;
-		string f = String.Format("%c", int("A") + random[impacts](0,7));
+		string f = String.Format("%c", int("A") + crandom(0,7));
 		MAINPUF.Texture = TexMan.CheckForTexture("IPF2"..f..0);
 		MAINPUF.Style = STYLE_ADD;
 		MAINPUF.Color1 = "FFFFFF";
 		MAINPUF.Flags = SPF_FULLBRIGHT|SPF_ROLL;
-		MAINPUF.StartRoll = random[impacts](0,360);
+		MAINPUF.StartRoll = crandom(0,360);
 		MAINPUF.StartAlpha = 1.0;
 		MAINPUF.FadeStep = 0;
-		MAINPUF.Size = random[impacts](25,28);
-		MAINPUF.SizeStep = random[impacts](2,4);
+		MAINPUF.Size = crandom(25,28);
+		MAINPUF.SizeStep = crandom(2,4);
 		MAINPUF.Lifetime = 4; 
 		MAINPUF.Pos = pos;
 		Level.SpawnParticle(MAINPUF);
@@ -708,7 +710,7 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
 
     void SpawnPuffSpark()
 	{
-        int sparkcount = random[impacts](3,5);
+        int sparkcount = crandom(3,5);
         for(int i = 0; i < sparkcount; i++)
         {
             FSpawnParticleParams PUFSPRK;
@@ -719,21 +721,21 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
             vector3 vls;
 			if(hitWhat == 1)
 			{
-				vls = (RotateVector(((frandom[impacts](2, 7) * (i * 0.5)), frandom[impacts](-6,6)), wallNormal), frandom[impacts](-2,2));
+				vls = (RotateVector(((cfrandom(2, 7) * (i * 0.5)), cfrandom(-6,6)), wallNormal), cfrandom(-2,2));
 			}
 			else
 			{
-				vls = (random[impacts](-5,5),random[impacts](-5,5),random[impacts](-2,9));
+				vls = (crandom(-5,5),crandom(-5,5),crandom(-2,9));
 			}
             PUFSPRK.Vel = vls;
-            PUFSPRK.accel = (-(vls.xy * 0.075),-0.2) + (frandom[impacts](-0.25, 0.25), frandom[impacts](-0.25,0.25), frandom[impacts](-0.2,0.1));
-            PUFSPRK.Startroll = random[impacts](0,359);
+            PUFSPRK.accel = (-(vls.xy * 0.075),-0.2) + (cfrandom(-0.25, 0.25), cfrandom(-0.25,0.25), cfrandom(-0.2,0.1));
+            PUFSPRK.Startroll = crandom(0,359);
             PUFSPRK.RollVel = 0;
             PUFSPRK.StartAlpha = 1.0;
             PUFSPRK.FadeStep = 0.075;
-            PUFSPRK.Size = random[impacts](6,8);
+            PUFSPRK.Size = crandom(6,8);
             PUFSPRK.SizeStep = -0.5;
-            PUFSPRK.Lifetime = random[impacts](12,18); 
+            PUFSPRK.Lifetime = crandom(12,18);
             PUFSPRK.Pos = pos;
             Level.SpawnParticle(PUFSPRK);
         }
@@ -741,11 +743,11 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
 
     void SpawnPuffShrapnel()
 	{
-        if(randompick[impacts](0, 0, 0, 0, 1))
+        if(crandompick(0, 0, 0, 0, 1))
             return;
 
         FSpawnParticleParams PUFSHRP;
-        string f = String.Format("%c", int("A") + random[impacts](0,7));
+        string f = String.Format("%c", int("A") + crandom(0,7));
         PUFSHRP.Texture = TexMan.CheckForTexture("JNK3"..f..0);
         PUFSHRP.Color1 = "FFFFFF";
         PUFSHRP.Style = STYLE_TRANSLUCENT;
@@ -753,19 +755,19 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
         vector3 vls;
         if(hitWhat == 1)
         {
-            vls = (RotateVector(((frandom[impacts](5, 7)), frandom[impacts](-4,4)), wallNormal), frandom[impacts](-4,4));
+            vls = (RotateVector(((cfrandom(5, 7)), cfrandom(-4,4)), wallNormal), cfrandom(-4,4));
         }
         else
         {
-            vls = (random[impacts](-5,5),random[impacts](-5,5),random[impacts](-2,9));
+            vls = (crandom(-5,5),crandom(-5,5),crandom(-2,9));
         }
         PUFSHRP.Vel = vls;
         PUFSHRP.accel = (-(vls.xy * 0.05),-1);
-        PUFSHRP.Startroll = random[impacts](0, 359);
+        PUFSHRP.Startroll = crandom(0, 359);
         PUFSHRP.RollVel = 1.5;
         PUFSHRP.StartAlpha = 1.0;
         PUFSHRP.FadeStep = -1;
-        PUFSHRP.Size = random[impacts](4,8);
+        PUFSHRP.Size = crandom(4,8);
         PUFSHRP.SizeStep = 0;
         PUFSHRP.Lifetime = 24; 
         PUFSHRP.Pos = pos;
@@ -774,13 +776,13 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
 	
 	void SpawnPuffSmoke()
 	{
-		double mag = frandom[impacts](4, 5);
-		vector2 vvels = (frandom[impacts](-1, 1), frandom[impacts](-1, 1));
+		double mag = cfrandom(4, 5);
+		vector2 vvels = (cfrandom(-1, 1), cfrandom(-1, 1));
 		int count = !smallCal ? 4 : 2;
 
 		for(int i = 0; i < count; i++) {
 			FSpawnParticleParams PUFSMK;
-			PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");//("SMK2A0"); //SMk3G0
+			PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + crandom(0, 25)).."0");//("SMK2A0"); //SMk3G0
 			PUFSMK.Style = STYLE_TRANSLUCENT;
 			PUFSMK.Color1 = "6e6e6e";
 			vector3 vls, accl, posOfs;
@@ -810,7 +812,7 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
 			}
 			else
 			{
-				vls = (frandom[impacts](-1,1), frandom[impacts](-1,1), 0);
+				vls = (cfrandom(-1,1), cfrandom(-1,1), 0);
 				accl = -(vls.xy * 0.07, (0.1 * i));
 			}
 			PUFSMK.vel = vls * (i / double(count));
@@ -819,12 +821,12 @@ Class PB_BulletImpactMetal : PB_BaseBulletImpact
 				PUFSMK.accel += (-0.05, 0.1, 0.05);
 				
 			PUFSMK.Flags = SPF_ROLL;
-			PUFSMK.StartRoll = random[impacts](0,360);
-			PUFSMK.RollVel = random[impacts](-4,4);
+			PUFSMK.StartRoll = crandom(0,360);
+			PUFSMK.RollVel = crandom(-4,4);
 			PUFSMK.StartAlpha = 0.6;
 			PUFSMK.FadeStep = -1;
 			PUFSMK.Size = 12 * ((1 + i * 0.3) * 2);
-			PUFSMK.SizeStep = random[impacts](1,3);
+			PUFSMK.SizeStep = crandom(1,3);
 			PUFSMK.Lifetime = 13; 
 			PUFSMK.Pos = pos + posOfs;
 			Level.SpawnParticle(PUFSMK);
@@ -840,8 +842,8 @@ Class PB_BulletImpactSheetMetal : PB_BulletImpactMetal
         Spawn:
 		Puff:
 			TNT1 A 0 NoDelay {
-                A_StartSound("bulletimpact/metal/b", pitch: frandom[impacts](0.9, 1.1));
-                if(random[impacts](0, 100) < 25) A_StartSound("ricochet/hit");
+                A_StartSound("bulletimpact/metal/b", pitch: cfrandom(0.9, 1.1));
+                if(crandom(0, 100) < 25) A_StartSound("ricochet/hit");
 
                 if(distfromplayer < DISTANT_THRESHOLD)
                 {
@@ -872,8 +874,8 @@ Class PB_BulletImpactDirt : PB_BaseBulletImpact
 		Spawn:
 		Puff:
 			TNT1 A 0 NoDelay {
-				A_StartSound("bulletimpact/wood", pitch: frandom[impacts](0.9, 1.1));
-                if(random[impacts](0, 100) < 25) A_StartSound("ricochet/hit");
+				A_StartSound("bulletimpact/wood", pitch: cfrandom(0.9, 1.1));
+                if(crandom(0, 100) < 25) A_StartSound("ricochet/hit");
 
                 if(distfromplayer < DISTANT_THRESHOLD)
                 {
@@ -885,7 +887,7 @@ Class PB_BulletImpactDirt : PB_BaseBulletImpact
             //DCHR ABCDEFGHIJKMNOP 1;
             Stop;
 		Melee:
-			TNT1 AAA 0 SpawnPuffSmoke();//A_SpawnProjectile ("OldschoolRocketSmokeTrail2", 0, 0, random[impacts] (0, 360), 2, random[impacts] (0, 360));
+			TNT1 AAA 0 SpawnPuffSmoke();//A_SpawnProjectile ("OldschoolRocketSmokeTrail2", 0, 0, crandom (0, 360), 2, crandom (0, 360));
 			stop;
 	}
 	
@@ -907,28 +909,28 @@ Class PB_BulletImpactDirt : PB_BaseBulletImpact
 			vls = (0,0,2);
 		}
 		PUFSPRK.Vel = vls;
-		PUFSPRK.accel = (0,0,frandom[impacts](-0.1, 0.1));
+		PUFSPRK.accel = (0,0,cfrandom(-0.1, 0.1));
 		if(CeilingPic == SkyFlatNum)
 			PUFSPRK.accel += (-0.05, 0.1, 0.05);
 
-		PUFSPRK.Startroll = random[impacts](0, 359);
+		PUFSPRK.Startroll = crandom(0, 359);
 		PUFSPRK.RollVel = 5;
 		PUFSPRK.StartAlpha = 1.0;
 		PUFSPRK.FadeStep = -1;
-		PUFSPRK.Size = random[impacts](30,75);
+		PUFSPRK.Size = crandom(30,75);
 		PUFSPRK.SizeStep = 6;
-		PUFSPRK.Lifetime = random[impacts](4,7); 
+		PUFSPRK.Lifetime = crandom(4,7);
 		PUFSPRK.Pos = pos;
 		Level.SpawnParticle(PUFSPRK);
 	}
 	
 	void SpawnSplinters()
 	{
-		int sparkcount = random[impacts](8,10);
+		int sparkcount = crandom(8,10);
 		for(int i = 0; i < sparkcount; i++)
 		{
 			FSpawnParticleParams PUFSPRK;
-			string f = String.Format("%c", int("A") + random[impacts](0,3));
+			string f = String.Format("%c", int("A") + crandom(0,3));
 			PUFSPRK.Texture = TexMan.CheckForTexture("DUST"..f..0);
 			PUFSPRK.Color1 = "865627";
 			PUFSPRK.Style = STYLE_TRANSLUCENT;
@@ -936,21 +938,21 @@ Class PB_BulletImpactDirt : PB_BaseBulletImpact
 			vector3 vls;
 			if(hitWhat == 1)
 			{
-				vls = (RotateVector(((frandom[impacts](1, 3) * (i * 0.5)), frandom[impacts](-2,2)), wallNormal), frandom[impacts](-2,2));
+				vls = (RotateVector(((cfrandom(1, 3) * (i * 0.5)), cfrandom(-2,2)), wallNormal), cfrandom(-2,2));
 			}
 			else
 			{
-				vls = (random[impacts](-5,5),random[impacts](-5,5),random[impacts](-2,9));
+				vls = (crandom(-5,5),crandom(-5,5),crandom(-2,9));
 			}
 			PUFSPRK.Vel = vls;
 			PUFSPRK.accel = (0,0,-2);
-			PUFSPRK.Startroll = random[impacts](0, 359);
+			PUFSPRK.Startroll = crandom(0, 359);
 			PUFSPRK.RollVel = 2;
 			PUFSPRK.StartAlpha = 1.0;
 			PUFSPRK.FadeStep = 0.075;
-			PUFSPRK.Size = random[impacts](4,6);
+			PUFSPRK.Size = crandom(4,6);
 			PUFSPRK.SizeStep = 0;
-			PUFSPRK.Lifetime = random[impacts](12,18); 
+			PUFSPRK.Lifetime = crandom(12,18);
 			PUFSPRK.Pos = pos;
 			Level.SpawnParticle(PUFSPRK);
 		}
@@ -960,18 +962,18 @@ Class PB_BulletImpactDirt : PB_BaseBulletImpact
 	{
 		for(int i = 0; i < 3; i++) {
 			FSpawnParticleParams PUFSMK;
-			PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");//("SMK2A0"); //SMk3G0
+			PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + crandom(0, 25)).."0");//("SMK2A0"); //SMk3G0
 			PUFSMK.Style = STYLE_TRANSLUCENT;
 			PUFSMK.Color1 = "865627";
 			vector3 vls, accl;
 			if(hitWhat == 1)
 			{
-				vls = (RotateVector(((frandom[impacts](5, 7) * (i * 0.5)), frandom[impacts](-1,1)), wallNormal), frandom[impacts](-3,2));
+				vls = (RotateVector(((cfrandom(5, 7) * (i * 0.5)), cfrandom(-1,1)), wallNormal), cfrandom(-3,2));
 				accl = -(vls.xy * 0.07, 0);
 			} 
 			else if(hitWhat >= 2)
 			{
-				vls.xy = (frandom[impacts](-2,2), frandom[impacts](-2,2));
+				vls.xy = (cfrandom(-2,2), cfrandom(-2,2));
 				vls.z = 7 * (i * 0.5);
                 accl = -(0, 0, (0.3 * i));
 
@@ -983,7 +985,7 @@ Class PB_BulletImpactDirt : PB_BaseBulletImpact
 			}
 			else
 			{
-				vls = (frandom[impacts](-1,1), frandom[impacts](-1,1), 0);
+				vls = (cfrandom(-1,1), cfrandom(-1,1), 0);
 				accl = -(vls.xy * 0.07, (0.1 * i));
 			}
 			PUFSMK.vel = vls;
@@ -991,11 +993,11 @@ Class PB_BulletImpactDirt : PB_BaseBulletImpact
 			if(CeilingPic == SkyFlatNum)
 				PUFSMK.accel += (-0.05, 0.1, 0.05);
 			PUFSMK.Flags = SPF_ROLL;
-			PUFSMK.StartRoll = random[impacts](0,360);
-			PUFSMK.RollVel = random[impacts](-4,4);
+			PUFSMK.StartRoll = crandom(0,360);
+			PUFSMK.RollVel = crandom(-4,4);
 			PUFSMK.StartAlpha = 1.0;
 			PUFSMK.FadeStep = -1;
-			PUFSMK.Size = random[impacts](28,32);
+			PUFSMK.Size = crandom(28,32);
 			PUFSMK.SizeStep = 3;
 			PUFSMK.Lifetime = 10; 
 			vector2 posofs = RotateVector((5, 0), angle);
@@ -1025,8 +1027,8 @@ Class PB_BulletImpactWater : PB_BaseBulletImpact
 		Spawn:
 		Puff:
 			TNT1 A 0 NoDelay {
-				A_StartSound("bulletimpact/water", pitch: frandom[impacts](0.9, 1.1));
-                if(random[impacts](0, 100) < 25) A_StartSound("ricochet/hit");
+				A_StartSound("bulletimpact/water", pitch: cfrandom(0.9, 1.1));
+                if(crandom(0, 100) < 25) A_StartSound("ricochet/hit");
 
                 if(distfromplayer < DISTANT_THRESHOLD)
                 {
@@ -1037,7 +1039,7 @@ Class PB_BulletImpactWater : PB_BaseBulletImpact
 			}
             Stop;
 		Melee:
-			TNT1 AAA 0 SpawnPuffSmoke();//A_SpawnProjectile ("OldschoolRocketSmokeTrail2", 0, 0, random[impacts] (0, 360), 2, random[impacts] (0, 360));
+			TNT1 AAA 0 SpawnPuffSmoke();//A_SpawnProjectile ("OldschoolRocketSmokeTrail2", 0, 0, crandom (0, 360), 2, crandom (0, 360));
 			stop;
 	}
 	
@@ -1045,7 +1047,7 @@ Class PB_BulletImpactWater : PB_BaseBulletImpact
 	void SpawnMainPuff()
 	{
 		FSpawnParticleParams PUFSPRK;
-		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");
+		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + crandom(0, 25)).."0");
 		PUFSPRK.Color1 = matTintColor;
 		PUFSPRK.Style = STYLE_ADD;
 		PUFSPRK.Flags = SPF_ROLL;
@@ -1059,25 +1061,25 @@ Class PB_BulletImpactWater : PB_BaseBulletImpact
 			vls = (0,0,4);
 		}
 		PUFSPRK.Vel = vls;
-		PUFSPRK.accel = (0,0,frandom[impacts](-0.1, 0.1));
-		PUFSPRK.Startroll = random[impacts](0, 359);
-		PUFSPRK.RollVel = frandom[impacts](1, 2);
+		PUFSPRK.accel = (0,0,cfrandom(-0.1, 0.1));
+		PUFSPRK.Startroll = crandom(0, 359);
+		PUFSPRK.RollVel = cfrandom(1, 2);
 		PUFSPRK.StartAlpha = 0.7;
 		PUFSPRK.FadeStep = -1;
-		PUFSPRK.Size = random[impacts](10,30);
+		PUFSPRK.Size = crandom(10,30);
 		PUFSPRK.SizeStep = 6;
-		PUFSPRK.Lifetime = random[impacts](6,8); 
+		PUFSPRK.Lifetime = crandom(6,8);
 		PUFSPRK.Pos = pos;
 		Level.SpawnParticle(PUFSPRK);
 	}
 	
 	void SpawnDust()
 	{
-		int sparkcount = random[impacts](7,9);
+		int sparkcount = crandom(7,9);
 		for(int i = 0; i < sparkcount; i++)
 		{
 			FSpawnParticleParams PUFSPRK;
-			string f = String.Format("%c", int("A") + random[impacts](0,3));
+			string f = String.Format("%c", int("A") + crandom(0,3));
 			PUFSPRK.Texture = TexMan.CheckForTexture("LIQU"..f..0);
 			PUFSPRK.Color1 = matTintColor;
 			PUFSPRK.Style = STYLE_ADD;
@@ -1085,22 +1087,22 @@ Class PB_BulletImpactWater : PB_BaseBulletImpact
 			vector3 vls;
 			if(hitWhat == 1)
 			{
-				vls = (RotateVector(((frandom[impacts](3, 4) * (i * 0.5)), frandom[impacts](-5,5)), wallNormal), frandom[impacts](-2,3));
+				vls = (RotateVector(((cfrandom(3, 4) * (i * 0.5)), cfrandom(-5,5)), wallNormal), cfrandom(-2,3));
 			}
 			else
 			{
-				vls = (random[impacts](-5,5),random[impacts](-5,5),random[impacts](2,9));
+				vls = (crandom(-5,5),crandom(-5,5),crandom(2,9));
 			}
 			PUFSPRK.Vel = vls;
-			PUFSPRK.accel = (0,0,frandom[impacts](-1.75,-0.75));
-			PUFSPRK.Startroll = randompick[impacts](0,90,180,270,360);
+			PUFSPRK.accel = (0,0,cfrandom(-1.75,-0.75));
+			PUFSPRK.Startroll = crandompick(0,90,180,270,360);
 			PUFSPRK.RollVel = 0;
 			PUFSPRK.StartAlpha = 1.0;
 			PUFSPRK.FadeStep = 0.075;
-			PUFSPRK.Size = random[impacts](4,6);
+			PUFSPRK.Size = crandom(4,6);
 			PUFSPRK.SizeStep = 3;
-			PUFSPRK.Lifetime = random[impacts](12,18); 
-			PUFSPRK.Pos = pos + (RotateVector((frandom[impacts](-5, 5), frandom[impacts](-5, 5)), wallNormal), frandom[impacts](-3,3));
+			PUFSPRK.Lifetime = crandom(12,18);
+			PUFSPRK.Pos = pos + (RotateVector((cfrandom(-5, 5), cfrandom(-5, 5)), wallNormal), cfrandom(-3,3));
 			Level.SpawnParticle(PUFSPRK);
 		}
 	}
@@ -1109,18 +1111,18 @@ Class PB_BulletImpactWater : PB_BaseBulletImpact
 	{
 		for(int i = 0; i < 4; i++) {
 			FSpawnParticleParams PUFSMK;
-			PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");//("SMK2A0"); //SMk3G0
+			PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + crandom(0, 25)).."0");//("SMK2A0"); //SMk3G0
 			PUFSMK.Style = STYLE_ADD;
 			PUFSMK.Color1 = matTintColor;
 			vector3 vls, accl;
 			if(hitWhat == 1)
 			{
-				vls = (RotateVector((0, frandom[impacts](-5,5)), wallNormal), frandom[impacts](-5,5));
+				vls = (RotateVector((0, cfrandom(-5,5)), wallNormal), cfrandom(-5,5));
 				accl = -(vls.xy * 0.07, (0.1 * i));
 			} 
 			else if(hitWhat >= 2)
 			{
-				vls.xy = (frandom[impacts](-2,2), frandom[impacts](-2,2));
+				vls.xy = (cfrandom(-2,2), cfrandom(-2,2));
 				vls.z = 4 * (i * 0.5);
                 accl = -(0, 0, (0.3 * i));
 
@@ -1132,20 +1134,20 @@ Class PB_BulletImpactWater : PB_BaseBulletImpact
 			}
 			else
 			{
-				vls = (frandom[impacts](-5,5), frandom[impacts](-5,5), 0);
+				vls = (cfrandom(-5,5), cfrandom(-5,5), 0);
 				accl = -(vls.xy * 0.07, (0.1 * i));
 			}
 			PUFSMK.vel = vls;
 			PUFSMK.accel = accl;
 			PUFSMK.Flags = SPF_ROLL;
-			PUFSMK.StartRoll = random[impacts](0,360);
-			PUFSMK.RollVel = random[impacts](-4,4);
+			PUFSMK.StartRoll = crandom(0,360);
+			PUFSMK.RollVel = crandom(-4,4);
 			PUFSMK.StartAlpha = 0.8;
 			PUFSMK.FadeStep = -1;
-			PUFSMK.Size = random[impacts](28,32);
+			PUFSMK.Size = crandom(28,32);
 			PUFSMK.SizeStep = 5;
 			PUFSMK.Lifetime = 10; 
-			vector2 posofs = RotateVector((frandom[impacts](-10, 10), frandom[impacts](-10, 10)), angle);
+			vector2 posofs = RotateVector((cfrandom(-10, 10), cfrandom(-10, 10)), angle);
 			PUFSMK.Pos = vec3Offset(posofs.x, posofs.y, 0);
 			Level.SpawnParticle(PUFSMK);
 		}
@@ -1159,7 +1161,7 @@ Class PB_NoBloodPuff : PB_BaseBulletImpact
 		Spawn:
 		Puff:
 			TNT1 A 0 NoDelay {
-				A_StartSound("bulletimpact", pitch: frandom[impacts](0.9, 1.1));
+				A_StartSound("bulletimpact", pitch: cfrandom(0.9, 1.1));
 
                 if(distfromplayer < DISTANT_THRESHOLD)
                 {
@@ -1179,18 +1181,18 @@ Class PB_NoBloodPuff : PB_BaseBulletImpact
 	void SpawnMainPuff()
 	{
 		FSpawnParticleParams PUFSPRK;
-		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");
+		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + crandom(0, 25)).."0");
 		PUFSPRK.Color1 = "FFFFFF";
 		PUFSPRK.Style = STYLE_TRANSLUCENT;
 		PUFSPRK.Flags = SPF_ROLL | SPF_REPLACE;
-		vector3 vls = (frandom[impacts](-1.0, 1.0), frandom[impacts](-1.0, 1.0), frandom[impacts](-1.0, 1.0));
+		vector3 vls = (cfrandom(-1.0, 1.0), cfrandom(-1.0, 1.0), cfrandom(-1.0, 1.0));
 		PUFSPRK.Vel = vls;
-		PUFSPRK.Startroll = random[impacts](0, 359);
-		PUFSPRK.RollVel = frandom[impacts](-10, 10);
+		PUFSPRK.Startroll = crandom(0, 359);
+		PUFSPRK.RollVel = cfrandom(-10, 10);
 		PUFSPRK.StartAlpha = 0.6;
-		PUFSPRK.Size = random[impacts](20,30);
+		PUFSPRK.Size = crandom(20,30);
 		PUFSPRK.SizeStep = 1;
-		PUFSPRK.Lifetime = random[impacts](25,35); 
+		PUFSPRK.Lifetime = crandom(25,35);
 		PUFSPRK.RollAcc = 0;
 		
 		PUFSPRK.accel = (0, 0,-0.05) - (vls * (1.0 / double(PUFSPRK.Lifetime)));

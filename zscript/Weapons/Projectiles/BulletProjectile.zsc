@@ -389,58 +389,55 @@ class PB_Projectile : FastProjectile abstract
 	// crytek plz dont sue
 	void PB_HandleWhizby()
 	{
-		PB_PlayerPrawn plr = PB_PlayerPrawn(players[consoleplayer].camera);
-        
-        if(!plr) 
-            return;
+		if (!target) return;
 
-		if(!target || plr == target)
-			return;
-		
-		if(alreadyWhizzedBy.Find(plr) != alreadyWhizzedBy.Size())		
-			return;
-
-		vector3 soundPosition;
-		vector3 cPlayerPos = plr.pos;
-		cPlayerPos.z = plr.player.ViewZ;
-
-		double distanceSq = PointInLineSquared(cPlayerPos, oldpos, pos, soundPosition.x, soundPosition.y, soundPosition.z);
-
-		if (distanceSq < WHIZ_PLRDIST_LIMIT)
+		// Whiz bookkeeping is actor state, so it must be identical on every peer.
+		// The old code examined only players[consoleplayer].camera and therefore
+		// pushed a different pawn into this array on each co-op client.
+		for (int playerNum = 0; playerNum < MAXPLAYERS; playerNum++)
 		{
-			string playerDist;
-			if(distanceSq > WHIZ_PLRDIST_FAR)
-				playerDist = "far";
-			else if(distanceSq > WHIZ_PLRDIST_MED)
-				playerDist = "med";
-			else
-				playerDist = "near";
+			if (!PlayerInGame[playerNum]) continue;
 
-			string whizdist;
-			if(distanceTraveled > WHIZ_DIST_FAR)
-				whizDist = "far";
-			else if(distanceTraveled > WHIZ_DIST_MED)
-				whizDist = "med";
-			else
-				whizDist = "near";
-				
-			vector3 soundDir = (soundPosition - oldpos);
-			vector3 dir = (pos - oldpos);
-			double bulletDist = dir.LengthSquared();
+			PB_PlayerPrawn plr = PB_PlayerPrawn(players[playerNum].mo);
+			if (!plr || plr == target) continue;
+			if (alreadyWhizzedBy.Find(plr) != alreadyWhizzedBy.Size()) continue;
+
+			vector3 soundPosition;
+			vector3 playerPos = plr.pos;
+			playerPos.z = plr.player.ViewZ;
+			double distanceSq = PointInLineSquared(playerPos, oldpos, pos,
+				soundPosition.x, soundPosition.y, soundPosition.z);
+			if (distanceSq >= WHIZ_PLRDIST_LIMIT) continue;
+
+			vector3 soundDir = soundPosition - oldpos;
+			vector3 dir = pos - oldpos;
 			double dotProduct = dir dot soundDir;
-			
-			if(dotProduct > 0.0 && dotProduct < bulletDist)	
+			if (dotProduct <= 0.0 || dotProduct >= dir.LengthSquared()) continue;
+
+			// This mutation now happens for every qualifying player on every peer.
+			alreadyWhizzedBy.Push(plr);
+			if (playerNum == consoleplayer)
 			{
+				string playerDist;
+				if (distanceSq > WHIZ_PLRDIST_FAR) playerDist = "far";
+				else if (distanceSq > WHIZ_PLRDIST_MED) playerDist = "med";
+				else playerDist = "near";
+
+				string whizDist;
+				if (distanceTraveled > WHIZ_DIST_FAR) whizDist = "far";
+				else if (distanceTraveled > WHIZ_DIST_MED) whizDist = "med";
+				else whizDist = "near";
+
 				sound whizSound = "whiz/"..whizDist.."/"..playerDist.."/in";
-
-				if(bWHIZCRACK) 
-					A_StartSound("bulletcrack/"..playerDist, CHAN_AUTO);
-				else {
-					if(CVar.GetCVar("pb_altwhiz", plr.Player).GetBool()) A_StartSound("whiz/alt/in", CHAN_AUTO, pitch: cfrandom(0.9, 1.1));
-                    else A_StartSound(whizsound, CHAN_AUTO, pitch: cfrandom(0.9, 1.1));
-                }
-
-				alreadyWhizzedBy.Push(plr);
+				if(bWHIZCRACK)
+					A_StartSound("bulletcrack/"..playerDist, CHAN_AUTO, CHANF_LOCAL);
+				else
+				{
+					if(CVar.GetCVar("pb_altwhiz", plr.Player).GetBool())
+						A_StartSound("whiz/alt/in", CHAN_AUTO, CHANF_LOCAL, pitch: cfrandom(0.9, 1.1));
+					else
+						A_StartSound(whizsound, CHAN_AUTO, CHANF_LOCAL, pitch: cfrandom(0.9, 1.1));
+				}
 			}
 		}
 	}

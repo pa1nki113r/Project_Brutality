@@ -232,7 +232,11 @@ class gb_EventHandler : EventHandler
   override
   void networkProcess(ConsoleEvent event)
   {
-    if (players[consolePlayer].mo == NULL) return;
+    // NetworkProcess runs once on every peer. Checking consolePlayer here made
+    // delivery depend on each peer's local pawn and could drop the same event
+    // on only part of a co-op game during joins, respawns, or transitions.
+    if (event.player < 0 || event.player >= MAXPLAYERS) return;
+    if (!PlayerInGame[event.player] || players[event.player].mo == NULL) return;
 
     int input = mNeteventProcessor.process(event);
 
@@ -261,7 +265,7 @@ class gb_EventHandler : EventHandler
     if      (mActivity.isWeapons())   mWeaponMenu.fill(viewModel);
     else if (mActivity.isInventory()) mInventoryMenu.fill(viewModel);
 	else if (mActivity.isSpecials())  mspecialsmenu.fill(viewModel);
-	else if (mActivity.isEquipment()) mEquipmenu.fill(viewModel);
+	else if (mActivity.isEquipment()) mEquipmenu.fill(viewModel, event.camera);
 
     verifyViewModel(viewModel);
 
