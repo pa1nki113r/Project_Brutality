@@ -30,8 +30,9 @@
 //
 //===========================================================================
 
-// [gng] not QUITE a ring buffer, but close
-class PB_UroborosBuffer {
+// [gng] not QUITE a ring buffer, but close. please use this when creating
+// effects that are limited, like particles, it's much faster.
+class PB_UroborosBuffer play {
   Array<Actor> buffer;
   int tail, maxsize, size;
 
@@ -49,11 +50,34 @@ class PB_UroborosBuffer {
     return size == maxsize;
   }
 
+  // [gng] "tail" in this case means the oldest element
   Actor GetTail() {
+    if(maxsize <= 0)
+          return NULL;
+          
     return buffer[tail];
   }
 
-  void Insert(Actor what) {
+  /* [gng] insert a new element, or if the buffer is full, replace the oldest
+     element
+
+     e.g.: when the buffer is full and inserting a new element
+     1 < tail   >    4 < new
+     2          >    2 < tail
+     3 < new    >    3 */
+  void Insert(Actor what, bool destroyOld = true) {
+    if(maxsize <= 0)
+    {
+      // [gng] so queues with a size of 0 don't act like unlimited queues
+      if(what)
+        what.Destroy();
+      
+      return;
+    }
+
+    if(destroyOld && IsFull() && GetTail())
+      GetTail().Destroy();
+    
     buffer[tail] = what;
     tail = (tail + 1) % maxsize;
     
@@ -63,6 +87,10 @@ class PB_UroborosBuffer {
 
   void Clean() {
     size = tail = 0;
+    foreach(el : buffer) { 
+      if(el) 
+        el.Destroy(); 
+    }
     buffer.Clear();
     buffer.Reserve(maxsize);
   }
@@ -75,11 +103,12 @@ class NashGoreHandler : EventHandler
 	bool cheapCasings;
 
 	Array<String> bloodTypes;
-	
+
 	PB_UroborosBuffer casingBuf;
 	PB_UroborosBuffer goreBuf;
 	PB_UroborosBuffer smokeBuf;
 	PB_UroborosBuffer dropBuf;
+  bool createdBuffers;	
 
 	//===========================================================================
 	//
@@ -113,15 +142,18 @@ class NashGoreHandler : EventHandler
 	  maxcasings = nashgore_maxcasings;
  		cheapCasings = pb_cheapcasings;
 
- 		if(casingbuf) { foreach(i : casingBuf.buffer) { if(i) i.Destroy(); } }
- 		if(gorebuf) { foreach(i : goreBuf.buffer) { if(i) i.Destroy(); } }
- 		if(smokebuf) { foreach(i : smokeBuf.buffer) { if(i) i.Destroy(); } }
- 		if(dropbuf) { foreach(i : dropBuf.buffer) { if(i) i.Destroy(); } }
+ 		if(createdBuffers) {
+ 		  casingbuf.Clean();
+ 		  gorebuf.Clean();
+ 		  smokebuf.Clean();
+ 		  dropbuf.Clean();
+    }
  		
 	  casingBuf = PB_UroborosBuffer.Init(maxcasings);
 	  goreBuf = PB_UroborosBuffer.Init(maxgore);
 	  smokeBuf = PB_UroborosBuffer.Init(50);
 	  dropBuf = PB_UroborosBuffer.Init(ceil(maxgore * 0.1));
+	  createdBuffers = true;
   }
 
 	override void WorldLoaded(WorldEvent e)
@@ -137,8 +169,7 @@ class NashGoreHandler : EventHandler
 	//===========================================================================
 
 	void PB_AddToUroborosBuffer(Actor what, PB_UroborosBuffer where) {
-	  if(where.IsFull() && where.GetTail()) where.GetTail().Destroy();
-	  where.Insert(what);
+    where.Insert(what);
 	}
 
 
