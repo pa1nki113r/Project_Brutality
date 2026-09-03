@@ -64,7 +64,7 @@ class gb_WheelView
               , bool showPointer
               , int  innerIndex
               , int  outerIndex
-              ) const
+              ) unsafe(const)
   {
     mScaleFactor = mScreen.getScaleFactor();
     mCenter      = mScreen.getWheelCenter();
