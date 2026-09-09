@@ -1,6 +1,3 @@
-// Tokens
-class HasIncendiaryWeapon : Inventory {Default{Inventory.MaxAmount 1;}}
-
 // Ammo Class
 Class PB_DTechRifleMag : PB_WeaponAmmo
 {
