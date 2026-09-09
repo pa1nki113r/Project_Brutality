@@ -274,14 +274,19 @@ class PB_Minigun : PB_Weapon
     }
 
     // Firing Functions
-    action void Minigun_StartFire()
+    action void Minigun_StartFire(bool altFire = false)
     {
         A_WeaponOffset(0,32);
         A_SetRoll(0);
         PB_HandleCrosshair(75);
         A_SetInventory("PB_LockScreenTilt",0);
-        if(Minigun_GetMode() == CHAINGUN_MODE) 
-            A_StartSound("weapons/minigun/chaingunmode/spinup", CHAN_5);
+        if(Minigun_GetMode() == CHAINGUN_MODE)
+		{
+			if(altFire)
+				A_StartSound("DTHDLRST", CHAN_5);
+			else
+				A_StartSound("weapons/minigun/chaingunmode/spinup", CHAN_5);
+		}
         else 
             A_StartSound("CHAINSTA", CHAN_5);
     }
@@ -374,7 +379,7 @@ class PB_Minigun : PB_Weapon
         }
     }
 
-    action state Minigun_ChaingunSpinDown()
+    action state Minigun_ChaingunSpinDown(bool alt = false)
     {
         Minigun_SetSprite("UCHG");
         A_Overlay(AMMO_METER_LAYER,"AmmoMeterOverlay");
@@ -384,6 +389,7 @@ class PB_Minigun : PB_Weapon
             A_FireCustomMissile("SmokeSpawner11",0,0,0,0);
             
         A_Overlay(GLOW_LAYER,"Glow");
+		if(alt) return resolvestate(null);
         return A_DoPBWeaponAction();
     }
 
@@ -503,44 +509,31 @@ class PB_Minigun : PB_Weapon
         }
     }
 
-    action void Minigun_AltChaingun(int tic)
+    action state Minigun_AltChaingun()
     {
-        name spriteToUse = tic == 3 || tic == 6 || tic == 7 ? "UCHG" : "UCHF";
+		if(CountInv("PB_HighCalMag") < 3) return resolvestate("AltEmptySpin");
+        name spriteToUse = "UCHF";
         Minigun_SetSprite(spriteToUse);
         A_Overlay(AMMO_METER_LAYER,"AmmoMeterOverlay");
         A_Overlay(GLOW_LAYER,"Glow");
+        A_FlashOverlay(MUZZLE_FLASH_LAYER);
+		if(level.Time % 2 == 0) A_OverlayFlags(MUZZLE_FLASH_LAYER,PSPF_FLIP|PSPF_MIRROR,true);
 
-        switch(tic)
-        {
-            case 1: case 4:
-                PB_FireOffset();
-                A_StartSound("weapons/minigun/chaingunmode/fire", CHAN_WEAPON, CHANF_OVERLAP);
-                A_TakeInventory(invoker.ammo1.getClassName(), 1, TIF_NOTAKEINFINITE);
-                PB_FireBullets("PB_556x45mmAP", 1, 1, 0, 0, 1);
-                PB_GunSmoke_Basic(0,0,2);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
-                PB_DynamicTail("lmg", "lmg");
-                A_AlertMonsters();
-                A_FlashOverlay(MUZZLE_FLASH_LAYER);
-                PB_SpawnCasing("PB_EmptyBrass", 19,-13,24,0,-frandom(3,6),frandom(-1,1), false);
-                if(tic == 4)
-                    PB_SpawnCasing("LMGBeltLink", 19,-13,24,0,-frandom(1,2),frandom(-3,3), false);
-                invoker.internalheat++;
-                break;
-
-            case 2: case 5:
-                A_OverlayOffset(AMMO_METER_LAYER,-0.5,0.5);
-                A_FlashOverlay(MUZZLE_FLASH_LAYER);
-                PB_WeaponRecoil(-0.4,frandom(1.2, -1.2));
-                break;
-
-            case 3: case 6:
-                break;
-
-            case 7:
-                if (invoker.ammo1.amount > 0 ) 
-                    A_Overlay(AMMO_BELT_IDLE_LAYER,"AmmoBeltIdle");
-                break;
-        }
+		A_TakeInventory(invoker.ammo1.getClassName(), 3, TIF_NOTAKEINFINITE);
+		PB_FireBullets("PB_556x45mmAP", 1, 3, 0, 0, 3);
+		PB_FireBullets("PB_556x45mmAP", 1, 3, 0, 0, 3);
+		PB_FireBullets("PB_556x45mmAP", 1, 3, 0, 0, 3);
+		PB_GunSmoke_Basic(0,0,2);//A_FireCustomMissile("GunFireSmoke", 0, 0, 0, 0, 0, 0);
+		PB_DynamicTail("lmg", "lmg");
+		A_AlertMonsters();
+		PB_SpawnCasing("PB_EmptyBrass", 19,-13,24,0,-frandom(3,6),frandom(-1,1), false);
+		PB_SpawnCasing("PB_EmptyBrass", 19,-13,24,0,-frandom(3,6),frandom(-1,1), false);
+		PB_SpawnCasing("PB_EmptyBrass", 19,-13,24,0,-frandom(3,6),frandom(-1,1), false);
+		PB_SpawnCasing("LMGBeltLink", 19,-13,24,0,-frandom(1,2),frandom(-3,3), false);
+		PB_SpawnCasing("LMGBeltLink", 19,-13,24,0,-frandom(1,2),frandom(-3,3), false);
+		PB_FireOffset();
+		invoker.internalheat++;
+		return resolvestate(null);
     }
 
 //////////////////////////// STATES ////////////////////////////////////////////////////////////////////////////////////
@@ -749,6 +742,20 @@ class PB_Minigun : PB_Weapon
                 CHAG GGGH 1 Minigun_ChaingunSpinDown();
                 CHAG HH 1 Minigun_ChaingunSpinDown();
                 goto RealReady;
+            SpinDown_AltChaingun:
+            //Stop firing chaingun
+                TNT1 A 0 {
+                    A_ClearOverlays(AMMO_BELT_IDLE_LAYER,AMMO_BELT_IDLE_LAYER);
+                    A_StopSound(CHAN_5);
+                    A_StopSound(CHAN_WEAPON);
+                    A_StartSound("DTHDLRSP", CHAN_5, CHANF_OVERLAP);
+                }
+                CHAG AABB 1 Minigun_ChaingunSpinDown(true);
+                CHAG CCDD 1 Minigun_ChaingunSpinDown(true);
+                CHAG EEFFF 1 Minigun_ChaingunSpinDown(true);
+                CHAG GGGH 1 Minigun_ChaingunSpinDown(true);
+                CHAG HH 1 Minigun_ChaingunSpinDown(true);
+                goto RealReady;
 
             EmptySpin_DeathDealer:
                 TNT1 A 0 {
@@ -816,7 +823,7 @@ class PB_Minigun : PB_Weapon
 //////////////////////////// ALTFIRE ////////////////////////////////////////////////////////////////////////////////////
             Altfire:
                 TNT1 A 0 A_JumpIf(Minigun_GetMode() == TRIPLE_MODE, "ReadyToFire_DeathDealer");
-                TNT1 A 0 Minigun_StartFire();
+                TNT1 A 0 Minigun_StartFire(true);
                 UCHG ABCDEFGH 0;
                 UCHF ABCDEFG 0;
                 CHAG ABCDEFGH 1 {
@@ -857,22 +864,27 @@ class PB_Minigun : PB_Weapon
                     A_SetRoll(0);
                     PB_HandleCrosshair(75);
                     A_SetInventory("PB_LockScreenTilt",0);
-                    A_StartSound("weapons/minigun/chaingunmode/spin", CHAN_5, CHANF_LOOPING);
-                    A_Overlay(AMMO_BELT_IDLE_LAYER,"AmmoBeltChaingun");
+                    A_StartSound("DTHDRSN", CHAN_5, CHANF_LOOPING);
                 }
             AltHold_Chaingun:
-                TNT1 A 0 PB_jumpIfNoAmmo("AltEmptySpin",1,false,false);
-                CHAF A 1 BRIGHT Minigun_AltChaingun(1);
-                CHAF B 1 BRIGHT Minigun_AltChaingun(2);
-                CHAG CD 1 Minigun_AltChaingun(3);
-                TNT1 A 0 PB_jumpIfNoAmmo("AltEmptySpin",1,false,false);
-                //CHAG C 1
-                CHAF E 1 BRIGHT Minigun_AltChaingun(4);
-                CHAF F 1 BRIGHT Minigun_AltChaingun(5);
-                CHAG GH 1 Minigun_AltChaingun(6);
-                CHAG ABCDEFGH 1 Minigun_AltChaingun(7);
-                TNT1 A 0 PB_ReFire("Altfire_Chaingun");
-                Goto SpinDown_Chaingun;
+				TNT1 A 0 {
+					A_StartSound("8HAINFIR", CHAN_WEAPON, CHANF_LOOPING);
+                    A_Overlay(AMMO_BELT_IDLE_LAYER,"AmmoBeltAnimation");
+				}
+                CHAF ABCDEFGH 1 BRIGHT Minigun_AltChaingun();
+			AltSpin:
+				TNT1 A 0 {
+					A_StopSound(CHAN_WEAPON);
+                    A_ClearOverlays(AMMO_BELT_IDLE_LAYER,AMMO_BELT_IDLE_LAYER);
+                    if (invoker.ammo1.amount > 0 ) 
+                        A_Overlay(AMMO_BELT_IDLE_LAYER,"AmmoBeltIdle");
+				}
+				CHAG ABCDEFGABCDEFG 1 {
+					A_Overlay(AMMO_METER_LAYER,"AmmoMeterOverlay");
+					A_Overlay(GLOW_LAYER,"Glow");
+				}
+				TNT1 A 0 PB_ReFire("AltHold_Chaingun");
+				Goto SpinDown_AltChaingun;
 
             EmptySpin:
                 TNT1 A 0 {
