@@ -512,8 +512,7 @@ class PB_Minigun : PB_Weapon
     action state Minigun_AltChaingun()
     {
 		if(CountInv("PB_HighCalMag") < 3) return resolvestate("AltEmptySpin");
-        name spriteToUse = "UCHF";
-        Minigun_SetSprite(spriteToUse);
+        Minigun_SetSprite("UCHF");
         A_Overlay(AMMO_METER_LAYER,"AmmoMeterOverlay");
         A_Overlay(GLOW_LAYER,"Glow");
         A_FlashOverlay(MUZZLE_FLASH_LAYER);
@@ -532,6 +531,7 @@ class PB_Minigun : PB_Weapon
 		PB_SpawnCasing("LMGBeltLink", 19,-13,24,0,-frandom(1,2),frandom(-3,3), false);
 		PB_SpawnCasing("LMGBeltLink", 19,-13,24,0,-frandom(1,2),frandom(-3,3), false);
 		PB_FireOffset();
+        PB_WeaponRecoil(-0.8,frandom(2.4, -2.4));
 		invoker.internalheat++;
 		return resolvestate(null);
     }
@@ -882,6 +882,7 @@ class PB_Minigun : PB_Weapon
 				CHAG ABCDEFGABCDEFG 1 {
 					A_Overlay(AMMO_METER_LAYER,"AmmoMeterOverlay");
 					A_Overlay(GLOW_LAYER,"Glow");
+					 Minigun_SetSprite("UCHG");
 				}
 				TNT1 A 0 PB_ReFire("AltHold_Chaingun");
 				Goto SpinDown_AltChaingun;
