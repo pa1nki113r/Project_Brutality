@@ -3,9 +3,6 @@ class SelectSilencedSMG : Inventory {Default{Inventory.MaxAmount 1;}}
 class SelectDualWieldSMG : Inventory {Default{Inventory.MaxAmount 1;}}
 class SelectBurstFireSMG : Inventory {Default{Inventory.MaxAmount 1;}}
 
-// Why is this even needed?
-class KeepLaserDeactivated : Inventory {Default{Inventory.MaxAmount 1;}}
-
 // Ammo Class
 Class PB_SMGMag : PB_WeaponAmmo
 {

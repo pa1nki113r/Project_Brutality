@@ -1138,7 +1138,10 @@ class PlayerPawnBase : PlayerPawn
 			A_StopSound(32);
 			return;
 		}
-		else if(Player.CrouchFactor == 1 && CSlideStartTime) // reallow attempting to slide after player stands back up
+		else if (CSlideStartTime < -1) {
+			CSlideStartTime++;
+		}
+		else if(Player.CrouchFactor == 1 && CSlideStartTime == -1) // reallow attempting to slide after player stands back up
 		{
 			CSlideStartTime = 0;
 			return;
@@ -1149,7 +1152,7 @@ class PlayerPawnBase : PlayerPawn
 			Int BT=cmd.buttons;
 			
 			bool ct = CVar.GetCVar("pb_bd_slide", Player).GetBool();
-			if(Player.CrouchFactor != 1 && !CSlideStartTime && (!ct && BT & BT_RUN || ct && BT & BT_USER4) && CheckNotPredicting())
+			if(Player.CrouchFactor != 1 && CSlideStartTime == 0 && (!ct && BT & BT_RUN || ct && BT & BT_USER4) && CheckNotPredicting())
 			{
 				sector sss=floorsector;
 				if(A_CheckFloor("null") && sss.damagetype == "Slime" && !pb_hazardmovement) {
@@ -1164,13 +1167,15 @@ class PlayerPawnBase : PlayerPawn
 					if(DirTrace.Distance < Radius * 2) { return; }
 					
 					CanCSlide = True;
+					CSlideStartTime = Level.MapTime;
 					A_StartSound("SlideKick/Start",32);
 					A_GiveInventory("CanSlideKick");
 					MaximumSlideSpeed = CSLIDE_STRENGTH * MaxGroundSpeed;
 					Vel.XY = MaximumSlideSpeed * AngleToVector(SlideAngle);
 				}
-				
-				CSlideStartTime = Level.MapTime;
+				else {
+					CSlideStartTime = -1;
+				}
 			}
 		}
 	}
@@ -1210,7 +1215,10 @@ class PlayerPawnBase : PlayerPawn
 		//Fun is over
 		if(WaterLevel >= 2 || bNOGRAVITY || MaximumSlideSpeed <= MaxGroundSpeed)
 		{
-			CSlideStartTime = 1;
+			if(Level.MapTime > CSlideStartTime + CSLIDE_DURATION)
+				CSlideStartTime = -1;
+			else
+				CSlideStartTime = -15;
 			CanCSlide = False;
 			A_StartSound("SlideKick/Stop", 32);
 			A_TakeInventory("CanSlideKick");
@@ -1227,7 +1235,10 @@ class PlayerPawnBase : PlayerPawn
 		//Only stop if the first hit anything or second hit an actor
 		if(DirTraceGeometry.Distance < 100.f || (DirTraceActor.Distance < 100.f && DirTraceActor.HitType == TRACE_HitActor) || player.crouchdir == 1)
 		{
-			CSlideStartTime = 1;
+			if(Level.MapTime > CSlideStartTime + CSLIDE_DURATION)
+				CSlideStartTime = -1;
+			else
+				CSlideStartTime = -15;
 			CanCSlide = False;
 			A_StartSound("SlideKick/Stop", 32);
 			A_TakeInventory("CanSlideKick");
