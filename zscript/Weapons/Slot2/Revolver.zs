@@ -218,10 +218,12 @@ Class PB_Revolver : PB_WeaponBase
 					A_StartSound("Weapons/Revolver/Click1",10);
 					PB_WeaponRecoil(-1.9, -1.8);
 				}
-			R5V1 DEFG 1;
-			TNT1 A 0 A_ZoomFactor(1.0);
-			TNT1 A 0 PB_ReFire("AltFan_Hold");
-			R5V1 UVWX 1;
+			R5V1 DEFGUVWX 1
+			{
+				if(JustPressed(BT_ATTACK))
+					return resolvestate("AltFan_Hold");
+				return resolvestate(null);
+			}
 			Goto Ready3;
 		AltFan_Hold:
 			TNT1 A 0 A_WeaponOffset(0,32);
@@ -251,9 +253,12 @@ Class PB_Revolver : PB_WeaponBase
 					A_StartSound("Weapons/Revolver/Click1",10);
 					PB_WeaponRecoil(-1.9, -1.8);
 				}
-			R5V1 LMNO 1;
-			TNT1 A 0 PB_ReFire("AltFan_Hold");
-			R5V1 UVWX 1;
+			R5V1 LMNOUVWX 1
+			{
+				if(JustPressed(BT_ATTACK))
+					return resolvestate("AltFan_Hold");
+				return resolvestate(null);
+			}
 			Goto Ready3;
 		
 		NoAmmo:
