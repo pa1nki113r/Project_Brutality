@@ -58,12 +58,6 @@ class PB_GunshotBlood : NashGoreBlood replaces BloodSplatter
 	//
 	//===========================================================================
 
-    static const Class<Actor> PuffImpactActors[] = {
-        "PB_BloodCloud2",
-        "PB_BloodCloud3",
-        "PB_BloodCloud4"
-    };
-
     action Actor PB_SpawnBloodActor(class<Actor> bloodActor, bool translate = false, double rotAngle = 0, vector3 squibVel = (0, 0, 0), bool scaleWithDmg = false, vector3 squibOfs = (0, 0, 0))
     {
 		vector3 ofr = squibOfs;
@@ -105,6 +99,45 @@ class PB_GunshotBlood : NashGoreBlood replaces BloodSplatter
         return mo;
     }
 
+    action PB_LocalBloodVisual PB_SpawnBloodVisual(int visualType, double rotAngle = 0, vector3 visualVel = (0, 0, 0), bool scaleWithDmg = false, vector3 visualOfs = (0, 0, 0), bool side = false, bool flip = false)
+    {
+		// These choices are intentionally local. They only control VisualThinkers,
+		// never actors or synchronized RNG/state.
+		if (CVar.GetCVar("pb_localgoremult", players[consoleplayer]).GetFloat() <= 0.0)
+			return null;
+		if (target && target == players[consoleplayer].camera)
+			return null;
+		if (visualType != PB_LG_SQUIB && CVar.GetCVar("pb_hidebloodmist", players[consoleplayer]).GetBool())
+			return null;
+
+		double alphaScale = 1.0;
+		double sizeScale = 1.0;
+		if (scaleWithDmg)
+		{
+			if (invoker.dmgScalar < 1)
+				alphaScale = invoker.dmgScalar;
+			else
+				sizeScale = invoker.dmgScalar;
+		}
+
+		Color shade = 0xFFFF0000;
+		let col = uint(self.translation);
+		if (col == 524294) shade = 0xFF00FF00;
+		if (col == 524290) shade = 0xFF0000FF;
+		if (col == 524289) shade = 0xFF006400;
+
+		return PB_LocalBloodVisual.SpawnBloodVisual(
+			visualType,
+			Vec3Offset(visualOfs.X, visualOfs.Y, visualOfs.Z),
+			(RotateVector(visualVel.XY, rotAngle), visualVel.Z),
+			self.translation,
+			shade,
+			alphaScale,
+			sizeScale,
+			side,
+			flip);
+	}
+
 	States
 	{
 	Spawn:
@@ -135,19 +168,17 @@ class PB_GunshotBlood : NashGoreBlood replaces BloodSplatter
             
             //console.printf("ste: %p %s %i %i", self, self.GetClassName(), self.sourceIsProjectile, self.projectileDamage);
 
-            PB_BloodSquib spawnedImpact;
-            Actor spawnedImpact2;
-            
-            spawnedImpact = PB_BloodSquib(PB_SpawnBloodActor("PB_BloodSquib", true, angToTarget, (frandom(1, 2), frandom(-0.5, 0.5), 0), false, (RotateVector((targetRadius * 1.3, 0), angle), 0)));
+            PB_LocalBloodVisual spawnedImpact;
+            PB_LocalBloodVisual spawnedImpact2;
+            bool sideImpact;
+            bool flipImpact;
 
             if(sourceIsProjectile)
             {
                 if(abs(normalizedDAng) < 125) {
-                    spawnedImpact.sideSquib = true;
-                    if(spawnedImpact) spawnedImpact.bSPRITEFLIP = normalizedDAng < 0;
+                    sideImpact = true;
+                    flipImpact = normalizedDAng < 0;
                 }
-                else
-                    spawnedImpact.sideSquib = false;
 
                 // dmgScalar = 0.5 + (0.5 * PB_Math.LinearMap( -(cos(180 * clamp(projectileDamage / 165.f, 0, 1)) - 1) / 2.f, 0.0, 1.0, 1, 2.0 ));
                 dmgScalar = 0.5 + (0.5 * clamp(PB_Math.LinearMap(projectileDamage, 22, 165, 1.0, 2.0), 0.5, 2.0));
@@ -156,24 +187,34 @@ class PB_GunshotBlood : NashGoreBlood replaces BloodSplatter
 
                 if(isBloodExplosionGenerator)
                 {
-                    PB_SpawnBloodActor("PB_BloodExplosion", false);
+                    PB_SpawnBloodVisual(PB_LG_EXPLOSION);
                     Destroy();
                     return;
                 }
 
-                if(!smallCal) PB_SpawnBloodActor("PB_BloodCloud", false, scaleWithDmg: true, squibOfs: (RotateVector((targetRadius * 0.6, 0), angle), 0));
+                if(!smallCal) PB_SpawnBloodVisual(PB_LG_CLOUD, scaleWithDmg: true, visualOfs: (RotateVector((targetRadius * 0.6, 0), angle), 0));
                 
-                if(smallCal || random[rnd_SpawnBloodCloud](0, 256) >= chanceMod) {
-                    spawnedImpact2 = PB_SpawnBloodActor(PuffImpactActors[random[rnd_SpawnBloodCloud](0, 2)], false, scaleWithDmg: true, (RotateVector((targetRadius, 0), angle), 0));
-                    if(spawnedImpact && spawnedImpact2) spawnedImpact2.tracer = spawnedImpact;
+                if(smallCal || crandom(0, 256) >= chanceMod) {
+                    spawnedImpact2 = PB_SpawnBloodVisual(PB_LG_CLOUD2 + crandom(0, 2), scaleWithDmg: true, visualOfs: (RotateVector((targetRadius, 0), angle), 0));
                 }
-                if(!smallCal && random[rnd_SpawnBloodCloud](0, 256) >= chanceMod) PB_SpawnBloodActor(PuffImpactActors[random[rnd_SpawnBloodCloud](0, 2)], false, scaleWithDmg: true);                
+                if(!smallCal && crandom(0, 256) >= chanceMod) PB_SpawnBloodVisual(PB_LG_CLOUD2 + crandom(0, 2), scaleWithDmg: true);
             }
 
-            let[amt, cmul] = NashGoreStatics.GetAmountMult(nashgore_bloodmult, chanceMod);
-			for (int i = 0; i < amt * 2; i++)
+			spawnedImpact = PB_SpawnBloodVisual(PB_LG_SQUIB, angToTarget,
+				(cfrandom(1, 2), cfrandom(-0.5, 0.5), 0), false,
+				(RotateVector((targetRadius * 1.3, 0), angle), 0), sideImpact, flipImpact);
+			if (spawnedImpact && spawnedImpact2)
 			{
-                PB_SpawnBloodActor("PB_BloodSquib", true, angToTarget - 180, (frandom(0.5, 3), frandom(-0.5, 0.5), frandom(0, 1)));
+				spawnedImpact2.Roll = spawnedImpact.Roll;
+				spawnedImpact2.VisualThinkerFlags = (spawnedImpact2.VisualThinkerFlags & ~4) | (spawnedImpact.VisualThinkerFlags & 4);
+			}
+
+            let[amt, cmul] = NashGoreStatics.GetAmountMult(nashgore_bloodmult, chanceMod);
+			double localMult = max(0.0, CVar.GetCVar("pb_localgoremult", players[consoleplayer]).GetFloat());
+			int localAmount = round(amt * 2 * localMult);
+			for (int i = 0; i < localAmount; i++)
+			{
+                PB_SpawnBloodVisual(PB_LG_SQUIB, angToTarget - 180, (cfrandom(0.5, 3), cfrandom(-0.5, 0.5), cfrandom(0, 1)));
             }
 
             PB_SpawnBloodActor("PB_LocationalBloodSplat", true, angToTarget - 180, (frandom(0, 4), frandom(-2, 2), 0));
