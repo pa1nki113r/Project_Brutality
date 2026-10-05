@@ -244,10 +244,10 @@ class PB_Hud_ZS : BaseStatusBar
 
         interpolatedOfs = ofsOldFrame * (1. - ticfrac) + ofsCurrentFrame * ticfrac;
         interpolatedSway = swayOldFrame * (1. - ticfrac) + swayCurrentFrame * ticfrac;
-		
+		BeginHUD();
+		DrawVisorStuff();
 		if(hudState != HUD_None && (screenblocks < 11 || screenblocks < 12 && !altHUDEnabled))
 		{
-			BeginHUD();
 			DrawFullScreenStuff();
             if(showtutorials) DrawTooltip();
 		}
@@ -1079,8 +1079,7 @@ class PB_Hud_ZS : BaseStatusBar
 	//		   HUD LOGIC			//
 	////////////////////////////////////
 	
-	void DrawFullScreenStuff()
-	{
+	void DrawVisorStuff() {
         plr = PlayerPawn(CPlayer.mo);
 		
 		if(plr) {
@@ -1186,7 +1185,6 @@ class PB_Hud_ZS : BaseStatusBar
                     }
                 }
 			}
-
             if(diedTic > 0 && level.MapTime >= diedTic + 17)
             {
                 if(visorOff) 
@@ -1210,8 +1208,15 @@ class PB_Hud_ZS : BaseStatusBar
                 ClearClipRect();
 
                 return;
-            }                
-            
+            }
+		}
+	}
+	
+	void DrawFullScreenStuff()
+	{
+        plr = PlayerPawn(CPlayer.mo);
+		
+		if(plr) {
 			PBHUD_DrawMessages();
 
             if(magnificationIndScale > 0)
