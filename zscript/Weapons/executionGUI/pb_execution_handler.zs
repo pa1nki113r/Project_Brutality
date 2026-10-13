@@ -105,7 +105,7 @@ class pb_ExecutionHandler : EventHandler
 		
 		PlayerPawn player = players[consolePlayer].mo;
 		
-		if(targetCurrentHealth < 1 || monster.bDORMANT) {
+		if(targetCurrentHealth < 1 || monster.bDORMANT || monster.bFRIENDLY) {
 			return false;
 		}
 		
