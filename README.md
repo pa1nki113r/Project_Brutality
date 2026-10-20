@@ -19,6 +19,29 @@ You will need the latest version of [UZDoom](https://zdoom.org/downloads "UZDoom
 
 When loading more than just PB, It is highly recommended you use a Front-end Launcher, such as [ZDL](https://github.com/lcferrum/qzdl/releases "A rather simple, yet extremely flexible launcher"), [DoomRunner](https://github.com/Youda008/DoomRunner/releases "If you want something that is just as flexible or newer than ZDL") or [SSGL](https://github.com/FreaKzero/ssgl-doom-launcher/releases/tag/v2.0.0-devpreview.24 "First timer, casual player, a Doomsday Engine launcher fan, or just want something with more personality?")
 
+### Playing multiplayer
+
+You can use the following arguments to host a game:
+```
+-host -config mp.ini +fov 100 +dmflags 2097152 +dmflags2 268435456 +dmflags3 55
+```
+
+You can also use DoomRunner or qZDL's multiplayer functionality to host/join the game, but it is important to set the FOV and DMFLAGS values the same way as above (in extra cmd line arguments).
+
+Clients can use these arguments to join:
+```
+-join <IP or domain of hosting player> +fov 100 -config mp.ini
+```
+
+A few important notes below:
+
+- Due to PB's complex code which uses obscure engine features, it is recommended to use a fresh configuration file.
+- To avoid desyncing, all players will need to agree on a common FOV before launching the game. 100 is a commonly accepted value for FPS games.
+- The multiplayer support is NOT perfect, desyncs are possible even if the release is well-tested, please report all desyncs on GitHub or Discord. Describe what you were doing before the desync happened
+- Make 100% SURE all players are using the exact same files (same hash), in the same order, on the same build of UZDoom. Crossplay (across Windows, Linux and Android) is safe.
+- Make sure to set your nickname/color in player settings and "callsign" under PB multiplayer settings, so everyone is easy to distinguish. This information is used heavily in PB multiplayer.
+- Deathmatch is supported but not heavily tested. For fairness, dashing is disabled and player speed is decreased.
+
 ## Feedback and Bug Reporting
 
 While we would love to hear your opinions and ideas, Issues are reserved for bug reports only. Please make sure that the bug is with the mod itself and not due to any add-ons. The team is not responsible for any addons. Even if the add-on is made by a member of the dev team, it is not our resposibility to fix it, but instead is up to the add-on's creator on whether or not they fix it. Also make sure the issue has not already been posted.
