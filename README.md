@@ -23,14 +23,14 @@ When loading more than just PB, It is highly recommended you use a Front-end Lau
 
 You can use the following arguments to host a game:
 ```
--host -config mp.ini +fov 100 +dmflags 2097152 +dmflags2 268435456 +dmflags3 55
+-host <number of players> -config pb-mp.ini +fov <FOV> +dmflags 2097152 +dmflags2 268435456 +dmflags3 55
 ```
 
 You can also use DoomRunner or qZDL's multiplayer functionality to host/join the game, but it is important to set the FOV and DMFLAGS values the same way as above (in extra cmd line arguments).
 
 Clients can use these arguments to join:
 ```
--join <IP or domain of hosting player> +fov 100 -config mp.ini
+-join <IP or domain of hosting player> +fov <FOV> -config pb-mp.ini
 ```
 
 A few important notes below:
