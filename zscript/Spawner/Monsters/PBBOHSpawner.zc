@@ -1,47 +1,22 @@
-Class PBBOHSpawner : PB_SpawnerBase //replaces BaronOfHell
+Class PBBOHSpawner : PB_SpawnerBase
 {
-	default
-	{
-		+LOOKALLAROUND;
-		scale 0.45;
-		-SHOOTABLE;
-		-COUNTKILL; 
-		-SOLID;
-		+NOTIMEFREEZE;
-		//CANPUSHWALLS;
-		//-CANUSEWALLS;
-		//-ACTIVATEMCROSS;
-		//-CANPASS;
-		//-ISMONSTER;
-		//+NODAMAGE;
-		//-NOMENU;
-		Species "BOHspawner";
-	}
 	States
 	{
+		Death:
+			TNT1 A 0 PB_SpawnerSpawn("PB_BaronSpawner_DW");
+			Stop;
 		Tier4:
-		SpawnBelphegor:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_BaronSpawner_T4");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_BaronSpawner_T4");
 			Stop;
 		Tier3:
-		SpawnInfernus:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_BaronSpawner_T3");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_BaronSpawner_T3");
 			Stop;
 		Tier2:
-		SpawnCyberBaron:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_BaronSpawner_T2");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_BaronSpawner_T2");
 			Stop;
 		Tier1:
-		SpawnBaron:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_BaronSpawner_T1");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_BaronSpawner_T1");
 			Stop;
-		Death:
-			TNT1 A 0;
-			Goto Spawn;
 	}
 }
 
@@ -49,33 +24,25 @@ Class PB_BaronSpawner_T1 : PB_MonsterSpawner
 {
 	default
 	{
-		dropitem "PB_Baron1",255,1;
+		PBRandomSpawner.SpawnOverride "pb_baronofhell_override";
+		dropitem "PB_Baron",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
-	{
-		if(pb_baronofhell_override != "Disabled") {
-				toSpawn = pb_baronofhell_override;
-				return;
-		}
-	}
-	
-	
 }
 
 Class PB_BaronSpawner_T2 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_BaronSpawner_T1";
+		PBRandomSpawner.SpawnOverride "pb_baronofhell_override";
 		dropitem "PB_CyberBaron",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_baronofhell_override != "Disabled") {
-				toSpawn = pb_baronofhell_override;
-				return;
-		}
-		if(pb_NoCyberBaron && toSpawn == "PB_CyberBaron")
-			toSpawn = "PB_Baron1";
+		if(toSpawn == "PB_CyberBaron" && pb_baronofhell_filter & DisablePB_CyberBaron)
+			return false;
+		return true;
 	}
 }
 
@@ -83,19 +50,16 @@ Class PB_BaronSpawner_T3 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_BaronSpawner_T2";
+		PBRandomSpawner.SpawnOverride "pb_baronofhell_override";
 		dropitem "PB_Infernus",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_baronofhell_override != "Disabled") {
-				toSpawn = pb_baronofhell_override;
-				return;
-		}
-		if(pb_NoInfernus && toSpawn == "PB_Infernus")
-			toSpawn = "PB_CyberBaron";
-			
-		if(pb_NoCyberBaron && toSpawn == "PB_CyberBaron")
-			toSpawn = "PB_Baron1";
+		if(toSpawn == "PB_Infernus" && pb_baronofhell_filter & DisablePB_Infernus)
+			return false;
+		return true;
 	}
 }
 
@@ -103,21 +67,38 @@ Class PB_BaronSpawner_T4 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_BaronSpawner_T3";
+		PBRandomSpawner.SpawnOverride "pb_baronofhell_override";
 		dropitem "PB_Belphegor",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_baronofhell_override != "Disabled") {
-				toSpawn = pb_baronofhell_override;
-				return;
-		}
-		if(pb_NoBelphegor && toSpawn == "PB_Belphegor")
-			toSpawn = "PB_Archvile";
-			
-		if(pb_NoInfernus && toSpawn == "PB_Infernus")
-			toSpawn = "PB_CyberBaron";
-			
-		if(pb_NoCyberBaron && toSpawn == "PB_CyberBaron")
-			toSpawn = "PB_Baron1";
+		if(toSpawn == "PB_Belphegor" && pb_baronofhell_filter & DisablePB_Belphegor)
+			return false;
+		return true;
+	}
+}
+
+Class PB_BaronSpawner_DW : PB_MonsterSpawner
+{
+	default
+	{
+		PBRandomSpawner.SpawnOverride "pb_baronofhell_override";
+		dropitem "PB_Baron",255,42;
+		dropitem "PB_CyberBaron",255,10;
+		dropitem "PB_Infernus",255,27;
+		dropitem "PB_Belphegor",255,21;
+	}
+	
+	override bool HandleSpawnExceptions(name toSpawn)
+	{
+		if(toSpawn == "PB_CyberBaron" && pb_baronofhell_filter & DisablePB_CyberBaron)
+			return false;
+		if(toSpawn == "PB_Infernus" && pb_baronofhell_filter & DisablePB_Infernus)
+			return false;
+		if(toSpawn == "PB_Belphegor" && pb_baronofhell_filter & DisablePB_Belphegor)
+			return false;
+		return true;
 	}
 }

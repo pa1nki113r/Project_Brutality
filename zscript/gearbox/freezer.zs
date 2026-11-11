@@ -126,6 +126,8 @@ class gb_Freezer play
   {
     if (mWasPlayerFrozen) gb_Sender.sendFreezePlayerEvent(mCheats, mVelocity, mGravity);
     mWasPlayerFrozen = false;
+	players[consoleplayer].minpitch = -90;
+	players[consoleplayer].maxpitch = 90;
 
     if(multiplayer) return;
 

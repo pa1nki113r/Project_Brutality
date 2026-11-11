@@ -94,11 +94,6 @@ ACTOR PSeq4 : Inventory
 Inventory.MaxAmount 1
 }
 
-ACTOR PhantasmFatality : Inventory
-{
-Inventory.MaxAmount 1
-}
-
 ACTOR ArachnoGun_Plasma
 {
 	Radius 6
@@ -143,10 +138,7 @@ ACTOR ArachnoGun_Plasma
 		Stop
 	}
 }
-ACTOR RespectFists : Inventory
-{
-Inventory.MaxAmount 1
-}
+
 // --------------------------------------------------------------------------
 //
 // Melee Weapons
@@ -164,13 +156,12 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 	+WEAPON.MELEEWEAPON
 	+WEAPON.NOALERT
 	+WEAPON.NOAUTOAIM
-	//+WEAPON.NOAUTOFIRE
+	-WEAPON.NOAUTOFIRE
 	+WEAPON.CHEATNOTWEAPON
 	+INVENTORY.UNDROPPABLE
 	+INVENTORY.UNTOSSABLE
-	Tag "Bare Hands"
+	Tag "$PB_FIST_TAG"
 	inventory.AltHUDIcon "KUKRA0"
-	PB_WeaponBase.respectItem "RespectFists"
 	States
 	{
 		
@@ -182,22 +173,12 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 				A_TakeInventory("Grabbing_A_Ledge", 1);
 				A_TakeInventory("UseEquipment", 1);
 				A_TakeInventory("ToggleEquipment", 1);
-				A_TakeInventory("Taunting", 1);
-				A_TakeInventory("Salute1", 1);
-				A_TakeInventory("Salute2", 1);
 				A_TakeInventory("Kicking", 1);
 			}	
 		Goto ReadyFists
 
 	Reload:
-	WeaponSpecial:
-		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "IdleBarrel")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "IdleFlameBarrel")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "IdleIceBarrel")
 		TNT1 A 0 A_TakeInventory("Punching", 1)
-		TNT1 A 0 A_JumpIfInventory("LostSoulFatality",1,"KillLS")
-		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
-		TNT1 A 0 A_JumpIfInventory("PB_PowerStrength",1,"SelectFatalityModes")
 		PUNS E 2
 		PUNS F 2 A_PlaySoundEx("KNUCKLED", "Auto")
 		PUNS GFEK 2
@@ -206,13 +187,14 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		TNT1 A 0 A_TakeInventory("GoWeaponSpecialAbility", 1)
 		Goto ReadyFists
 
-	SelectFatalityModes:
-		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
+	WeaponSpecial:
+		TNT1 A 0 A_TakeInventory("GoWeaponSpecialAbility", 1)
+		TNT1 A 0 A_JumpIfInventory("PB_PowerStrength",1,1)
+		Goto ReadyFists
 		TNT1 A 0 A_JumpIfInventory("NoFatality", 1, "FatalityOn")
 		Goto FatalityOff
 	FatalityOn:
-		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
-		TNT1 A 0 A_Print("Auto Execute: On")
+		TNT1 A 0 A_Print("$PB_FIST_EXECUTEON")
 		PUNS E 2
 		TNT1 A 0 A_PlaySoundEx("KNUCKLED", "Auto")
 		PUNS FGF 2 A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0) 
@@ -224,8 +206,7 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		TNT1 A 0 A_TakeInventory("NoFatality", 1)
 		Goto ReadyFists
 	FatalityOff:
-		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
-		TNT1 A 0 A_Print("Auto Execute: Off")
+		TNT1 A 0 A_Print("$PB_FIST_EXECUTEOFF")
 		
 		P1NR ABCDEFFGGHIJKKLMMNOPQRSTUVWX 0
 		P2NR ABCDEFFGGHIJKKLMMNOPQRSTUVWX 0
@@ -260,18 +241,16 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 
 	Ready:
 		////////////////// Check if player is performing a fatality
-		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
 		TNT1 A 0 PB_RespectIfNeeded
  		TNT1 A 0 A_JumpIfInventory("ShotgunguyHead",1,"ReadyShotgunguyHead")
-		TNT1 A 0 A_JumpIfInventory("LostSoulFatality",1,"ReadySoul")
-		TNT1 A 0 A_JumpIfInventory("PhantasmFatality",1, "ReadyPhantasm")
 	WeaponRespect:
 		TNT1 A 0 {
-			A_SetInventory("PB_LockScreenTilt",1);
 			A_PlaySoundEx("weapons/fists_up", "Auto");
 			A_SetCrosshair(-1);
 		}
-		P9NS EFGHITUVW 1 A_DoPBWeaponAction
+		P9NS EF 1 A_DoPBWeaponAction
+		TNT1 A 0 A_PlaySoundEx("weapons/fists_smash", "Auto")
+		P9NS GHITUVW 1 A_DoPBWeaponAction
 		P0NG A 1 A_DoPBWeaponAction
 		PUNS E 2 A_DoPBWeaponAction
 		TNT1 A 0 A_PlaySoundEx("KNUCKLED", "Auto")
@@ -282,18 +261,14 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		//Play raising animation
 	SelectAnimation:
 		TNT1 A 0 A_PlaySoundEx("weapons/fists_up", "Auto")
-		P9NS EFGHITUVW 1 
+		P9NS EF 1
+		TNT1 A 0 A_PlaySoundEx("weapons/fists_smash", "Auto")
+		P9NS GH 1 
+		P9NS ITUVW 1 A_WeaponReady(WRF_NOFIRE)
 	ReadyFists:
-		TNT1 A 0 {
-			if(CountInv("GoFatality") >= 1) {
-				SetPlayerProperty(0,1,0);
-			}	
-			else {
-				SetPlayerProperty(0,0,0);
-			}
-		}
+		TNT1 A 0 SetPlayerProperty(0,0,0)
 		TNTT A 0 A_JumpIfInventory("Kicking", 1, "Ready3")
-		TNT1 A 0 A_Overlay(-10, "FirstPersonLegsStand")
+		TNT1 A 0 A_LegOverlay(-1000, "FirstPersonLegsStand")
 	Ready3:
 		TNT1 A 0 A_SetRoll(0)
 		TNT1 A 0 {
@@ -303,7 +278,6 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 			PB_SetUsingEquipment(false);
 			PB_SetExecutingEnemy(false);
 		}
-		TNT1 A 0 A_SetInventory("PB_LockScreenTilt",0)
 		P1NG ABCDEFGHIJKLMNOPQRS 0
 		P2NG ABCDEFGHIJKLMNOPQRS 0
 		P3NG ABCDEFGHIJKLMNOPQRS 0
@@ -312,14 +286,16 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		TNT1 A 0 A_SetInventory("PSeq3", 0)
 		TNT1 A 0 A_SetInventory("PSeq4", 0)
 	ReadyFistsLoop:
-		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
  		TNT1 A 0 A_JumpIfInventory("ShotgunguyHead",1,"ReadyShotgunguyHead")
-		TNT1 A 0 A_JumpIfInventory("LostSoulFatality",1,"ReadySoul")
-		TNT1 A 0 A_JumpIfInventory("PhantasmFatality",1, "ReadyPhantasm")
 		P0NG ABCDEFGHIJKLMNOPQRSRQPONMLKJIHGFEDCBA 1 {
 			if (CountInv("PowerBloodOnVisor") >= 1 ) { A_SetWeaponSprite("P1NG"); }
 			if (CountInv("PowerBlueBloodOnVisor") >= 1 ) { A_SetWeaponSprite("P2NG");}
 			if (CountInv("PowerGreenBloodOnVisor") >= 1 ) { A_SetWeaponSprite("P3NG");}
+			if(CountInv("PB_PowerStrength") == 0) {
+				A_SetInventory("CantWeaponSpecial",1);
+				A_Takeinventory("GoWeaponSpecialAbility",1);
+			}
+			else {A_SetInventory("CantWeaponSpecial",0);}
 			return A_DoPBWeaponAction;
 			}
 		loop
@@ -327,54 +303,17 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 	ReadyShotgunguyHEad:
 		PTG1 B 1 A_DoPBWeaponAction
 		loop
-	
-	LostSoulHandFireOverlay:
-			TNT1 A 5 {
-				A_FireCustomMissile("LostSoulOnHandFireSpawner",40,0,0,5);
-				if (CountInv("LostSoulFatality") < 1) { return state("LostSoulHandFireOverlayEnd"); }
-				return state("");
-			}
-			Loop
-	LostSoulHandFireOverlayEnd:
-			TNT1 A 0
-			Stop
-			
-	ReadySoul:
-		TNT1 A 0 A_Overlay(-3, "LostSoulHandFireOverlay")
-		THEA AAAABBBBAAAABBBBCCCCDDDDCCCCDDDD 1 BRIGHT A_DoPBWeaponAction
-		loop
-	
-	PhantasmHandFireOverlay:
-			TNT1 A 5 {
-				A_FireCustomMissile("PhantasmOnHandFireSpawner",40,0,0,5);
-				if (CountInv("PhantasmFatality") < 1) { return state("PhantasmHandFireOverlayEnd"); }
-				return state("");
-			}
-			loop
-	PhantasmHandFireOverlayEnd:
-			TNT1 A 0
-			Stop
-	ReadyPhantasm:
-		TNT1 A 0 A_Overlay(-3, "PhantasmHandFireOverlay")
-		TH3A AAAABBBBAAAABBBBCCCCDDDDCCCCDDDD 1 BRIGHT A_DoPBWeaponAction
-		loop
-		
 	Deselect:
-		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			A_SetCrosshair(-1);
-			A_SetInventory("PB_LockScreenTilt",0);
 		}
 		TNT1 A 0 PB_ResetVisorBloodTokens
 		TNT1 A 0 A_SetInventory("DoPunch",0)
-		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
-		TNT1 A 0 A_SetInventory("FistsSelected",0)
 		
 		PUNS HIJ 1
+		TNT1 A 1
 		TNT1 AAAAAAAAAAAAAAAAAA 0 A_Lower
 		Wait
 	GrabObject:
@@ -390,8 +329,6 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 			A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
 			A_FireCustomMissile("ShakeYourAss", 0, 0, 0, 0);
 			A_FireCustomMissile("LSOHK",40,0,0,5);
-			A_SetInventory("LostSoulFatality",0);
-			A_SetInventory("PhantasmFatality",0);
 			A_SetInventory("GoWeaponSpecialAbility",0);
 		} 
 		Goto Ready
@@ -401,18 +338,12 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			A_SetCrosshair(-1);
-			A_SetInventory("PB_LockScreenTilt",0);
 		}
 		Goto SelectFirstPersonLegs
 		SelectContinue:
 		
 		//Load bloody fist frames into memory
 		TNT1 A 0 PB_ResetVisorBloodTokens
-		TNT1 A 0 PB_ResetBarrelTokens
-		
-		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
-		TNT1 A 0 A_SetInventory("Reloading", 0) //Prevent accidentally switching to smash/fatality mode
-		TNT1 A 0 PB_WeapTokenSwitch("FistsSelected")
 		////////////////// Check if player is performing a fatality\\\\
 		TNT1 A 0
 		////////////////////
@@ -423,18 +354,11 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 	
 	//Who needs multiple states for the same conditions anyway, its almost 2020!
 	Fire: //Left Handed Punches
-		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "ThrowBarrel")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "ThrowFlameBarrel")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "ThrowIceBarrel")
 		TNT1 A 0 {
-// 			A_GiveInventory("PB_LockScreenTilt",1);
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			A_SetCrosshair(-1);
-			if(CountInv("NoFatality") == 0) {
-				return PB_Execute();
-			}
-			return state("");
+			if(CountInv("NoFatality") == 0 && CountInv("PB_PowerStrength") == 1) {PB_Execute();}
 		}
 		
 		//Combo Checker
@@ -498,9 +422,9 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerBlueBloodOnVisor") >= 1) { A_SetWeaponSprite("P3NJ");}
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerGreenBloodOnVisor") >= 1) { A_SetWeaponSprite("P4NJ");}
 			A_SetRoll(roll-0.5);
-			A_WeaponReady(WRF_NOPRIMARY);
 				//if (JustPressed(BT_USER4) || JustReleased(BT_USER4)) { return state("SideKickRight"); }
 				if (PressingUser4() || JustReleased(BT_USER4)) { return state("SideKickRight"); }
+			A_WeaponReady(WRF_NOPRIMARY);
 				return state("");
 			}
 		TNT1 A 0 A_SetRoll(0)
@@ -677,8 +601,8 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerBloodOnVisor") >= 1) { A_SetWeaponSprite("P2NL");}
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerBlueBloodOnVisor") >= 1) { A_SetWeaponSprite("P3NL");}
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerGreenBloodOnVisor") >= 1) { A_SetWeaponSprite("P4NL");}
-				A_WeaponReady(WRF_NOPRIMARY);
 				if (PressingUser4() || JustReleased(BT_USER4)) { return state("SideKickRight"); }
+				A_WeaponReady(WRF_NOPRIMARY);
 				return state("");
 			}
 		TNT1 A 0 A_SetRoll(0)
@@ -766,31 +690,24 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerBloodOnVisor") >= 1) { A_SetWeaponSprite("P2NM");}
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerBlueBloodOnVisor") >= 1) { A_SetWeaponSprite("P3NM");}
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerGreenBloodOnVisor") >= 1) { A_SetWeaponSprite("P4NM");}
+				if (PressingUser4() || JustReleased(BT_USER4)) { A_LegOverlay(PSP_WEAPON,"ThrustKick"); }
 				A_WeaponReady(WRF_NOPRIMARY);
-				if (PressingUser4() || JustReleased(BT_USER4)) { return state("ThrustKick"); }
-				return state("");
 		}
 		Goto ReadyFists
 		
 	AltFire: //Right Handed Punches
-		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "PlaceBarrel")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "PlaceFlameBarrel")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "PlaceIceBarrel")
 		TNT1 A 0 {
 			A_WeaponOffset(0,32);
 			A_SetRoll(0);
 			A_SetCrosshair(-1);
-			if(CountInv("NoFatality") == 0) {
-				return PB_Execute();
-			}
-			return state("");
+			if(CountInv("NoFatality") == 0 && CountInv("PB_PowerStrength") == 1) {PB_Execute();}
 		}
 		
 		
 		//Combo Checker
 		TNT1 A 0 {
-				if (CountInv("PSeq4") >= 1 ) { return state("RightBackHand"); }
-				if (CountInv("PSeq3") >= 1 ) { return state("RightHook"); }
+				if (CountInv("PSeq4") >= 1 ) { return state("RightHook"); }
+				if (CountInv("PSeq3") >= 1 ) { return state("RightBackHand"); }
 				if (CountInv("PSeq2") >= 1 ) { return state("RightUpperCut"); }
 				if (CountInv("PSeq1") >= 2 ) { return state("RightHook"); }
 				return state("");
@@ -842,7 +759,6 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerBlueBloodOnVisor") >= 1) { A_SetWeaponSprite("P3NN");}
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerGreenBloodOnVisor") >= 1) { A_SetWeaponSprite("P4NN");}
 			}
-		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
 		P1NA FGH 1 {
 			if (CountInv("PowerBloodOnVisor") >= 1 ) { A_SetWeaponSprite("P2NA");}
 			if (CountInv("PowerBlueBloodOnVisor") >= 1 ) { A_SetWeaponSprite("P3NA");}
@@ -852,8 +768,8 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerBlueBloodOnVisor") >= 1) { A_SetWeaponSprite("P3NN");}
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerGreenBloodOnVisor") >= 1) { A_SetWeaponSprite("P4NN");}
 				A_SetRoll(roll+0.5);
-				A_WeaponReady(WRF_NOSECONDARY);
 				if (PressingUser4() || JustReleased(BT_USER4)) { return state("SideKickLeft"); }
+				A_WeaponReady(WRF_NOSECONDARY);
 				return state("");
 			}
 		Goto ReadyFists
@@ -1043,8 +959,8 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerBloodOnVisor") >= 1) { A_SetWeaponSprite("P2NP");}
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerBlueBloodOnVisor") >= 1) { A_SetWeaponSprite("P3NP");}
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerGreenBloodOnVisor") >= 1) { A_SetWeaponSprite("P4NP");}
-				A_WeaponReady(WRF_NOSECONDARY);
 				if (PressingUser4() || JustReleased(BT_USER4)) { return state("SideKickLeft"); }
+				A_WeaponReady(WRF_NOSECONDARY);
 				return state("");
 			}
 		TNT1 A 0 A_SetRoll(0)
@@ -1129,9 +1045,8 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerBloodOnVisor") >= 1) { A_SetWeaponSprite("P2NQ");}
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerBlueBloodOnVisor") >= 1) { A_SetWeaponSprite("P3NQ");}
 			if (CountInv("PB_PowerStrength") >= 1 & CountInv("PowerGreenBloodOnVisor") >= 1) { A_SetWeaponSprite("P4NQ");}
+				if (PressingUser4() || JustReleased(BT_USER4)) { A_LegOverlay(PSP_WEAPON,"ThrustKick"); }
 				A_WeaponReady(WRF_NOPRIMARY);
-				if (PressingUser4() || JustReleased(BT_USER4)) { return state("ThrustKick"); }
-				return state("");
 		}
 		Goto ReadyFists
 
@@ -1141,11 +1056,10 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		TNT1 A 0 A_SetInventory("Kicking", 1)
 		TNT1 A 0 {
 			A_SetRoll(0);
-			A_Overlay(-10, "FirstPersonLegsKickLeft");
+			A_LegOverlay(-1000, "FirstPersonLegsKickLeft");
 			A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, true);
 			A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, true);
 		}
-		TNT1 A 0 A_SetInventory("PB_LockScreenTilt",1)
 		TNT1 A 0 A_Overlay(3, "FlashKickingCombo")
 		TNT1 A 0 A_SetInventory("PSeq1",0)
 		TNT1 A 0 A_SetInventory("PSeq2",0)
@@ -1175,11 +1089,10 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		TNT1 A 0 A_SetInventory("Kicking", 1)
 		TNT1 A 0 {
 			A_SetRoll(0);
-			A_Overlay(-10, "FirstPersonLegsKickRight");
+			A_LegOverlay(-1000, "FirstPersonLegsKickRight");
 			A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, true);
 			A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, true);
 		}
-		TNT1 A 0 A_SetInventory("PB_LockScreenTilt",1)
 		TNT1 A 0 A_Overlay(3, "FlashKickingCombo")
 		TNT1 A 0 A_SetInventory("PSeq1",0)
 		TNT1 A 0 A_SetInventory("PSeq2",0)
@@ -1209,11 +1122,10 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		TNT1 A 0 A_SetInventory("Kicking", 1)
 		TNT1 A 0 {
 			A_SetRoll(0);
-			A_Overlay(-10, "FirstPersonLegsKickLeft");
+			A_LegOverlay(-1000, "FirstPersonLegsKickLeft");
 			A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, true);
 			A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, true);
 		}
-		TNT1 A 0 A_SetInventory("PB_LockScreenTilt",1)
 		TNT1 A 0 A_Overlay(3, "FlashKickingCombo")
 		TNT1 A 0 A_SetInventory("PSeq1",0)
 		TNT1 A 0 A_SetInventory("PSeq2",0)
@@ -1245,11 +1157,10 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		TNT1 A 0 A_SetInventory("Kicking", 1)
 		TNT1 A 0 {
 			A_SetRoll(0);
-			A_Overlay(-10, "FirstPersonLegsKickRight");
+			A_LegOverlay(-1000, "FirstPersonLegsKickRight");
 			A_OverlayFlags(1,PSPF_PLAYERTRANSLATED, true);
 			A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, true);
 		}
-		TNT1 A 0 A_SetInventory("PB_LockScreenTilt",1)
 		TNT1 A 0 A_Overlay(3, "FlashKickingCombo")
 		TNT1 A 0 A_SetInventory("PSeq1",0)
 		TNT1 A 0 A_SetInventory("PSeq2",0)
@@ -1278,20 +1189,17 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		
 	
 	ThrustKick:
-		TNT1 A 0 A_JumpIfInventory("Kicking", 1, "ReadyFists")
 		TNT1 A 0 {
+			if(CountInv("Kicking") == 1) {A_Overlay(PSP_WEAPON,"ReadyFists");}
 			A_SetInventory("Kicking",1);
-			//A_Giveinventory("PB_LockScreenTilt",1);
-			A_Overlay(-10, "FirstPersonLegsKickRight");
+			A_LegOverlay(-1000, "FirstPersonLegsKickRight");
 			A_SetInventory("Zoomed",0);
-			A_SetInventory("ADSmode",0);
 			A_ZoomFactor(1.0);
 		}
-		TNT1 A 0 A_JumpIfInventory("GoFatality", 1, "Steady")
 		NULL A 0 A_JumpIfInventory("CanSlideKick", 1, "SlideKick")
 		NULL A 0 A_JumpIf (velZ != 0, "AirKickCombo")
 		TNT1 A 0 {
-			A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, true);
+			A_OverlayFlags(-8,PSPF_PLAYERTRANSLATED, true);
 			A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, true);
 			A_Overlay(3, "FlashKickingCombo");
 		}
@@ -1365,14 +1273,14 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 			A_SetPitch(-1.25 + pitch, SPF_INTERPOLATE);
 		}
 		TNT1 A 0 {
-			A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, false);
-			A_Overlay(-10, "FirstPersonLegsStand");
+			A_OverlayFlags(-8,PSPF_PLAYERTRANSLATED, false);
+			A_LegOverlay(-1000, "FirstPersonLegsStand");
 			SetPlayerProperty(0,0,0);
-		//	A_Takeinventory("PB_LockScreenTilt",1);
 			A_SetInventory("Kicking",0);
 			PB_SetUsingKick(false);
+			A_Overlay(PSP_WEAPON,"ReadyFists");
 		}
-		Goto ReadyFists
+		Stop
 		
 	AirKickCombo:
 		TNT1 A 0 {
@@ -1384,7 +1292,7 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 			}
 			A_OverlayOffset(PSP_WEAPON, 0, 32);
 			A_ZoomFactor(0.95);
-			A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, true);
+			A_OverlayFlags(-8,PSPF_PLAYERTRANSLATED, true);
 			A_OverlayFlags(PSP_WEAPON,PSPF_PLAYERTRANSLATED, true);
 		}
 		AKCK A 1 A_SetRoll(roll-2, SPF_INTERPOLATE)
@@ -1409,13 +1317,13 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		TNT1 A 1 A_SetRoll(roll+2, SPF_INTERPOLATE)
 		TNT1 A 0 {
 			A_ZoomFactor(1.0);
-			A_SetInventory("PB_LockScreenTilt",0);
-			A_OverlayFlags(-999,PSPF_PLAYERTRANSLATED, false);
+			A_OverlayFlags(-8,PSPF_PLAYERTRANSLATED, false);
 			PB_SetUsingKick(false);
-			A_Overlay(-10, "FirstPersonLegsStand");
+			A_LegOverlay(-1000, "FirstPersonLegsStand");
 			A_SetInventory("Kicking",0);
+			A_Overlay(PSP_WEAPON,"ReadyFists");
 		}
-		Goto ReadyFists
+		Stop
 		
 	
 	FlashKickingCombo:
@@ -1427,7 +1335,7 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		{
 // 			A_OverlayOffset(3, 0, 0);
 			if (PB_MeleeKickInterruptCheck()) { 
-				A_Overlay(-10, "FirstPersonLegsStand");
+				A_LegOverlay(-1000, "FirstPersonLegsStand");
 				A_SetInventory("Kicking",0);
 				PB_SetUsingKick(false);
 				return state("FlashInterrupt"); 
@@ -1439,13 +1347,7 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		TNT1 A 1
 		Stop
 	FlashAirKicking:
-		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelAirKicking")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelAirKicking")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelAirKicking")	
 	FlashKicking:
-		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelKicking")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelKicking")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelKicking")
 		P8NA A 0 A_JumpIfInventory("PowerGreenBloodOnVisor",1, 4)
 		P7NA A 0 A_JumpIfInventory("PowerBlueBloodOnVisor",1, 3)
 		P6NA A 0 A_JumpIfInventory("PowerBloodOnVisor",1, 2)
@@ -1459,19 +1361,15 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		Goto Ready3
 		
 	FlashPunching:
-		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelPunching")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelPunching")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelPunching")
-		TNT1 A 14
-		Stop
+		PUNS I 1
+		TNT1 A 10
+		PUNS JIH 1
+		Goto Ready3
 	
 		
 		
 		
 	FlashSlideKicking:
-		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKicking")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKicking")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKicking")
 		P4NS A 0 A_JumpIfInventory("PowerGreenBloodOnVisor",1, 4)
 		P3NS A 0 A_JumpIfInventory("PowerBlueBloodOnVisor",1, 3)
 		P2NS A 0 A_JumpIfInventory("PowerBloodOnVisor",1, 2)
@@ -1479,9 +1377,6 @@ ACTOR PB_Fists : PB_Weapon Replaces Fist
 		"####" ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE)
 		Goto Ready3
 	FlashSlideKickingStop:
-		TNT1 A 0 A_JumpIfInventory ("GrabbedBarrel", 1, "FlashBarrelSlideKickingStop")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedFlameBarrel", 1, "FlashBarrelSlideKickingStop")
-		TNT1 A 0 A_JumpIfInventory ("GrabbedIceBarrel", 1, "FlashBarrelSlideKickingStop")
 		P4NS A 0 A_JumpIfInventory("PowerGreenBloodOnVisor",1, 4)
 		P3NS A 0 A_JumpIfInventory("PowerBlueBloodOnVisor",1, 3)
 		P2NS A 0 A_JumpIfInventory("PowerBloodOnVisor",1, 2)
@@ -1586,7 +1481,7 @@ ACTOR KickAttack: FastProjectile
 	+NOGRAVITY
 	RenderStyle Add
 	Alpha 0.6
-	Damage (random(38,42))
+	Damage (40)
 	Speed 30
 	//HitObituary "$OB_IMPHIT"
 	SeeSound "none"
@@ -1608,7 +1503,7 @@ ACTOR KickAttack: FastProjectile
 			EXPL AAAAAA 0 A_CustomMissile ("MeleeSmoke", 0, 0, random (0, 360), 2, random (0, 360))
 			TNT1 A 0 A_GiveToTarget("KickHasHit", 1)
 			TNT1 A 0 A_GiveToTarget("KickHasHitAnObject", 1)
-			TNT1 A 0 Radius_Quake (2, 6, 0, 5, 0)//(intensity, duration, damrad, tremrad, tid)
+			TNT1 A 0 A_Quake(2,6,0,320,"")
 			TNT1 A 10
 			Stop
 			TNT1 A 0 A_CheckFloor(2)
@@ -1617,7 +1512,7 @@ ACTOR KickAttack: FastProjectile
 			EXPL AAAAAA 0 A_CustomMissile ("MeleeSmoke", 0, 0, random (0, 360), 2, random (0, 360))
 			TNT1 A 0 A_GiveToTarget("KickHasHit", 1)
 			TNT1 A 0 A_GiveToTarget("KickHasHitAnObject", 1)
-			TNT1 A 0 Radius_Quake (2, 6, 0, 5, 0)//(intensity, duration, damrad, tremrad, tid)
+			TNT1 A 0 A_Quake(2,6,0,320,"")
 			TNT1 A 10
 			Stop
 		
@@ -1628,12 +1523,12 @@ ACTOR KickAttack: FastProjectile
 			TNT1 A 0 A_GiveToTarget("KickHasHit", 1)
 			TNT1 A 0 A_GiveToTarget("KickHasHitAnObject", 1)
 			TNT1 A 0 A_JumpIfInTargetInventory("IsSlideKicking", 1, 4)
-			TNT1 A 0 Radius_Quake (2, 6, 0, 5, 0)//(intensity, duration, damrad, tremrad, tid)
+			TNT1 A 0 A_Quake(2,6,0,320,"")
 			TNT1 A 10
 			Stop
 			TNT1 AAA 0 
 			TNT1 A 0 A_GiveToTarget("KickHasHitAnObject", 1)
-			TNT1 A 0 Radius_Quake (2, 6, 0, 5, 0)//(intensity, duration, damrad, tremrad, tid)
+			TNT1 A 0 A_Quake(2,6,0,320,"")
 			TNT1 A 10
 			Stop
 			
@@ -1645,7 +1540,7 @@ ACTOR KickAttack: FastProjectile
 			TNT1 A 0
 			TNT1 A 0 A_SpawnItemEx ("PLOFT2",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0)
 			EXPL AAAAAA 0 A_CustomMissile ("MeleeSmoke", 0, 0, random (0, 360), 2, random (0, 360))
-			TNT1 A 0 Radius_Quake (2, 6, 0, 5, 0)//(intensity, duration, damrad, tremrad, tid)
+			TNT1 A 0 A_Quake(2,6,0,320,"")
 			TNT1 A 0 A_JumpIfInTargetInventory("IsSlideKicking", 1, 2)
 			TNT1 A 0 A_Explode(10, 40, 0)
 			TNT1 AA 5
@@ -1674,7 +1569,7 @@ ACTOR KickAttackLow: KickAttack
 
 ACTOR SuperKickAttack: KickAttack
 {
-	Damage (random(64,70))
+	Damage (70)
 	-NOEXTREMEDEATH
 	DamageType ExtremePunches
 }
@@ -1720,7 +1615,7 @@ ACTOR AirKickAttack: KickAttack
 {
 	Radius 12
 	Height 32
-	Damage (random(54,62))
+	Damage (60)
 }
 
 ACTOR SuperAirKickAttack: KickAttack
@@ -1729,7 +1624,7 @@ ACTOR SuperAirKickAttack: KickAttack
 	Height 32
 	-NOEXTREMEDEATH
 	DamageType Extremepunches
-	Damage (random(92,110))
+	Damage (105)
 		States
 	{
 	Death:
@@ -1743,10 +1638,20 @@ ACTOR SuperAirKickAttack: KickAttack
 	}
 }
 
+ACTOR DropKickAttack: SuperAirKickAttack
+{
+	Damage (100)
+}
+
+ACTOR SuperDropKickAttack: SuperAirKickAttack
+{
+	Damage (175)
+}
+
 ACTOR MeleeStrike1: KickAttack
 {
 DamageType Melee
-Damage (random(13,18))
+Damage (16)
 Speed 22
 States
 {
@@ -1765,14 +1670,14 @@ States
 
 ACTOR MeleeStrike2: MeleeStrike1
 {
-Damage (random(24,32))
+Damage (28)
 Speed 22
 }
 
 
 ACTOR MeleeStrike1Smash: MeleeStrike1
 {
-Damage 30
+Damage (135)
 DamageType Extremepunches
 +FORCEPAIN
 }
@@ -1780,7 +1685,7 @@ DamageType Extremepunches
 
 ACTOR MeleeStrike2Smash: MeleeStrike1
 {
-Damage 32
+Damage (160)
 Speed 22
 DamageType Extremepunches
 +FORCEPAIN
@@ -1788,7 +1693,7 @@ DamageType Extremepunches
 
 ACTOR MeleeStrikeSuperHook: MeleeStrike1
 {
-Damage 80
+Damage (480)
 DamageType ExtremePunches
 +FORCEPAIN
 }
@@ -1954,7 +1859,7 @@ ACTOR KnifeSwing : FastProjectile
 	+BLOODSPLATTER
 	+ForcePain
 	+NOGRAVITY
-	Damage 11
+	Damage (50)
 	Speed 45
 	ProjectileKickBack 100
 	Obituary "%o was sliced-n-diced by %k"
@@ -1988,7 +1893,7 @@ ACTOR SuperKnifeSwing : KnifeSwing
 {
 	Radius 3
 	Height 1
-	Damage 25
+	Damage (88)
 	Speed 55
 	ProjectileKickBack 100
 }

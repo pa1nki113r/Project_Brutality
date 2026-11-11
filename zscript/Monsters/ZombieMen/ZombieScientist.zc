@@ -2,8 +2,8 @@ Class PB_ZombieScientist : PB_Monster
 {
 	Default
 	{
-		//$Title Zombie Scientist
-		//$Category Project Brutality - Monsters/Former Humans/Zombiemen
+		//$Title Former Scientist [Axe]
+		//$Category Project Brutality/Monsters/Former Humans
 		//$Sprite SCZAB1
 		Monster;
 		Radius 16;
@@ -49,7 +49,7 @@ Class PB_ZombieScientist : PB_Monster
 		damagefactor "Tear", 0.25;
 		damagefactor "Head", 0.6;
 		DropItem "PB_Stimpack", 22;
-		Obituary "%o has been sliced apart by a zombie labworker.";
+		Obituary "$OB_PB_FORMERSCIENTIST";
 		+FLOORCLIP;
 		+SLIDESONWALLS;
 		+DOHARMSPECIES;
@@ -113,14 +113,10 @@ Class PB_ZombieScientist : PB_Monster
 			
 		
 		Spawn:
-			SCZA A 1;
-			TNT1 A 0 A_GiveInventory("SKLabGuy", 1);
-		Stand:
 			SCZA A 10 A_Look();
 			Loop;
 		See:
 			TNT1 A 0 {
-				A_TakeInventory("SKLabGuy", 1);
 				EnemyLastSighted = Level.MapTime;
 			}
 		SeeContinue:
@@ -133,7 +129,6 @@ Class PB_ZombieScientist : PB_Monster
 		LookAround:
 			TNT1 A 0 A_ClearTarget();
 			TNT1 A 0 A_TakeInventory("Wandering", 71);
-			TNT1 A 0 A_GiveInventory("SKLabGuy", 1);
 			TNT1 A 0 A_Jump(200, 2);
 			TNT1 A 0 A_StartSound("monsters/zombie/searching", CHAN_AUTO);
 			SCZA AA 10 A_Look();
@@ -310,7 +305,7 @@ Class PB_ZombieScientist : PB_Monster
 				//bMISSILEMORE = true;
 				//bMISSILEEVENMORE = true;
 				MissileChanceMult = 0.0625;
-				A_StartSound("grunt/sight");
+				A_StartSound("pb/monsters/grunt/sight");
 				A_FaceTarget();
 				A_GiveInventory("Enraged", 1);
 				}
@@ -364,17 +359,17 @@ Class PB_ZombieScientist : PB_Monster
 		DiveLeft:
 			SCZA A 1 A_FaceTarget();
 			SCZA A 1 A_SetAngle(angle*256/360+90, SPF_INTERPOLATE);
-			//POSS A 1 A_SetAngle(angle*256/360+192, SPF_INTERPOLATE);
+			//POS1 A 1 A_SetAngle(angle*256/360+192, SPF_INTERPOLATE);
 			Goto DivingBegin;
 		DiveRight:
 			SCZA A 1 A_FaceTarget();
 			SCZA A 1 A_SetAngle(angle*256/360-90, SPF_INTERPOLATE);
-		//	POSS A 1 A_SetAngle(angle*256/360+64, SPF_INTERPOLATE);
+		//	POS1 A 1 A_SetAngle(angle*256/360+64, SPF_INTERPOLATE);
 			Goto DivingBegin;
 		DiveBack:
 			SCZA A 1 A_FaceTarget();
 			SCZA A 1 A_SetAngle(angle*256/360-180, SPF_INTERPOLATE);
-			//POSS A 1 A_SetAngle(angle*256/360+128, SPF_INTERPOLATE);
+			//POS1 A 1 A_SetAngle(angle*256/360+128, SPF_INTERPOLATE);
 			Goto DivingBegin;
 		DiveFront:
 			SCZA A 1 A_FaceTarget();
@@ -565,10 +560,6 @@ Class PB_ZombieScientist : PB_Monster
 		Death.HeadHitbox:
 		Death.Head:
 			TNT1 A 0 A_FaceTarget();
-			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
-			TNT1 A 0 A_JumpIfInTargetInventory("HasPlasmaWeapon", 1, "Death.Plasma");
-			TNT1 A 0 A_JumpIfInTargetInventory("HasCutingWeapon", 1, "Death.Decapitate");
-			TNT1 A 0 A_JumpIfInTargetInventory("RandomHeadExploder", 1, "HeadExplode");
 			TNT1 A 0 A_JumpIfHealthLower(-100, "HeavyHead");
 			TNT1 A 0 A_JumpIfHealthLower(-60, "HeadExplode");
 		HeadMinor:
@@ -879,18 +870,6 @@ Class PB_ZombieScientist : PB_Monster
 			FS14 G 1 A_SpawnItem("DeadLabguyFS14G");
 			Stop;
 			
-		Death.fire:
-		Death.FireExplosion:
-		Death.Flames:
-		Death.Burn:
-			TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
-			TNT1 A 1 {
-				A_ScreamAndUnblock();
-				A_DropItem("PB_Axe",1);
-				A_SpawnItemEx("BurningLabGuy",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION);
-			}
-			Stop;
-		  
 		Death.Disintegrate:
 			TNT1 A 0 A_Scream();
 			TNT1 A 0 A_NoBlocking();
@@ -967,6 +946,10 @@ Class PB_ZombieScientist : PB_Monster
 				}
 			Stop;
 			
+		Death.fire:
+		Death.FireExplosion:
+		Death.Flames:
+		Death.Burn:
 		Death.Incinerate:
 			TNT1 A 0 {
 				A_Stop();
@@ -1343,8 +1326,6 @@ Class PB_ZombieScientist : PB_Monster
 		Stop;
 		
 	XDeath:
-		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate");
-		TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG");
 		TNT1 A 0 { 
 			NashGoreGibs.SpawnGibs(self);
 			A_SpawnProjectile ("PB_XDeath1", 42, 0, random (0, 290), CMF_AIMDIRECTION|CMF_ABSOLUTEPITCH|CMF_OFFSETPITCH|CMF_BADPITCH|CMF_SAVEPITCH, random (10, 60));
@@ -1364,7 +1345,7 @@ Class PB_ZombieScientist : PB_Monster
 		Stop;
 		
 		Raise:
-			POSS KJIH 5;
+			POS1 KJIH 5;
 			Goto See;
 
 		Death.Ice:
@@ -1378,34 +1359,6 @@ Class PB_ZombieScientist : PB_Monster
 			}
 			Stop;
 		
-		Death.Fatality:
-				TNT1 A 0 A_Pain();
-				TNT1 A 0 A_NoBlocking();
-				TNT1 A 0 A_JumpIfIntargetInventory("FistsSelected", 1, 1);
-				Goto Death.ExplosiveImpact;
-				TNT1 A 0 A_GiveToTarget("GoFatality", 1);
-				TNT1 A 0 A_Jump(256,"Death.Fatality1", "Death.Fatality2", "Death.Fatality3");
-				Goto Death.Fatality1;
-
-		Death.Fatality1:
-			TNT1 A 0 A_GiveToTarget("LabGuyToken1", 1);
-			Stop;
-		Death.Fatality2:
-			TNT1 A 0 A_GiveToTarget("LabGuyToken2", 1);
-			Stop;
-		Death.Fatality3:
-			TNT1 A 0 A_GiveToTarget("LabGuyToken3", 1);
-			Stop;
-			
-		Death.HelperMarineFatallity:
-			TNT1 A 1 {
-				A_Pain();
-				A_NoBlocking();
-				A_GiveToTarget("LabGuyToken3", 1);
-			}
-			Stop;
-			
-			
 		 Crush:
 		 Death.Crush:
 		 Death.Crusher:
@@ -1426,7 +1379,7 @@ Class PB_ZombieScientist : PB_Monster
 		 Death.Stomp:
 		//	TNT1 A 0 A_Scream();
 			TNT1 A 0 A_NoBlocking();
-			//POSS IJK 2;
+			//POS1 IJK 2;
 			TNT1 A 1 A_XScream();
 			TNT1 A 0 {
 				NashGoreGibs.SpawnGibs(self);

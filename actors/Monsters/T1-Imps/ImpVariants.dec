@@ -1,18 +1,19 @@
 
 //Dickhead imp
-Actor DNImpVariant3 : PB_Imp //Replaces DoomImp
+Actor DNImpVariant3 : PB_LegacyImp //Replaces DoomImp
 {
-	//$Title Imp (Variant 3)
+	//$Title Greater Imp
 	//$Category Project Brutality - Monsters/Imps
 	//$Sprite TRO4A1
-    Health 65
+    Health 110
 	Species "Imp"
     Speed 6
 	SpawnID 1410
     PainChance 200
     MONSTER 
     +FLOORCLIP
-    Obituary "%o got imped."
+    Obituary "$OB_PB_IMP"
+	Tag "$FN_PB_GREATERIMP"
     States
     {
 	Execution:
@@ -41,34 +42,9 @@ Actor DNImpVariant3 : PB_Imp //Replaces DoomImp
 		TNT1 A 1 A_SpawnItemEx ("DNImpVariant3ShrinkFX7", 0, 0, 5, 0, 0)
 		TNT1 A 1 A_SpawnItemEx ("LilDNImpVariant3", 1)
 		stop
-		
-	ReplaceVanilla:
-		TNT1 A 0 A_ChangeFlag("THRUACTORS", 1)
-		TNT1 A 0 A_ChangeFlag("COUNTKILL", 0)
-		TNT1 A 0 A_SpawnItemEx ("Vanilla_DNImpVariant3",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION |SXF_TRANSFERSPECIAL| SXF_TRANSFERAMBUSHFLAG ,0)
-		Stop
-	
     Spawn:
-		TROO A 0
-		
-		TNT1 A 1 //ACS_NamedExecuteAlways("CeilingClimbingImps", 0)//Check for CVARs
-		
-		TNT1 A 0 A_JumpIf(waterlevel == 2, "Swim")
-		TNT1 A 0 A_JumpIf(waterlevel == 3, "Swim")
-        TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
-		Goto Stand
-		
-	Stand:	
-        TNT1 A 0
-		TNT1 A 0
-		TNT1 A 0 A_CheckSight("Stand2")
-		TRO4 BB 10 A_Look
+		TRO4 B 10 A_Look
 		Loop
-		
-	Stand2:
-		TRO4 BB 11 A_Look
-		Goto Stand
-		
 	Idle:
 	LookingForPlayer:
 	    TNT1 A 0
@@ -142,8 +118,7 @@ Actor DNImpVariant3 : PB_Imp //Replaces DoomImp
 	ForgetTarget:
 	TNT1 A 0 A_ClearTarget
 	TNT1 A 0 A_TakeInventory("EnemyMemory", 25)
-	TNT1 A 0 A_GiveInventory("LookingForPlayer", 1)
-	Goto Stand
+	Goto Spawn
 	
 	See:
 		//TNT1 A 0 A_JumpIf(MomZ < 0, "FallingAfterImpact")// funny thing I tried, better not implement
@@ -201,7 +176,7 @@ Actor DNImpVariant3 : PB_Imp //Replaces DoomImp
 	  
     Melee:
 		TNT1 A 0 A_FaceTarget
-		TNT1 A 0 A_PlaySound("imp/sight",6)
+		TNT1 A 0 A_PlaySound("pb/monsters/imp/sight",6)
         1M42 ABCD 4 A_Recoil (-1) 
 		1M42 A 5 A_FaceTarget
 		TNT1 A 0 A_JumpIfCloser(60, "Melee2")
@@ -212,10 +187,10 @@ Actor DNImpVariant3 : PB_Imp //Replaces DoomImp
         TNT1 A 0 A_GiveInventory ("IsJumping")
 		TNT1 A 0 A_PlaySound("weapons/fistwhoosh")
         TNT1 A 0 A_FaceTarget
-        1M42 E 4 A_CustomMeleeAttack(10, "imp/melee", "", "ImpFatalityMarine", 1) //A_CustomMissile("ImpAttack2",10,0,0,0)
+        1M42 E 4 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "ImpFatalityMarine", 1) //A_CustomMissile("ImpAttack2",10,0,0,0)
         TNT1 A 0 A_TakeInventory ("IsJumping")
         TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
-		1M42 A 4 A_CustomMeleeAttack(10, "imp/melee", "", "ImpFatalityMarine", 1) //A_CustomMissile("ImpAttack2",10,0,0,0)
+		1M42 A 4 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "ImpFatalityMarine", 1) //A_CustomMissile("ImpAttack2",10,0,0,0)
         TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
 		Goto SeeContinue
 		
@@ -223,7 +198,7 @@ Actor DNImpVariant3 : PB_Imp //Replaces DoomImp
 	    TNT1 D 0
         TRO4 EF 4 A_FaceTarget
 		TNT1 D 0
-        TRO4 G 4 A_CustomMeleeAttack(10, "imp/melee", "", "Rip") //A_CustomMissile("ImpAttack",10,0,0,0)
+        TRO4 G 4 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "Rip") //A_CustomMissile("ImpAttack",10,0,0,0)
 		TNT1 D 0
         TRO4 GE 4
 		Goto SeeContinue
@@ -525,17 +500,49 @@ Actor DNImpVariant3 : PB_Imp //Replaces DoomImp
 		T4D4 F -1
 		stop
 		
-	 Death.fire:
+    Death.fire:
+	Death.FireExplosion:
 	Death.Flames:
 	Death.Burn:
-		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
-		TNT1 A 0 A_ChangeFlag("CEILINGHUGGER", 0)
-		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate")
-		TNT1 A 0 A_Scream
+	Death.Incinerate:
+		TNT1 A 0
+		TNT1 A 0 A_Stop
+        TNT1 A 0 A_Playsound("MELT")
         TNT1 A 0 A_NoBlocking
-		TNT1 A 1 A_SpawnItemEx("BurningImpBig",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION)
-        Stop
-	
+        TNT1 AAAAAA 0 A_SpawnProjectile("ExplosionParticleHeavy", 32, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 360))
+		TNT1 AAAAAA 0 A_SpawnProjectile("ExplosionParticleVeryFast", 32, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 360))
+        TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,32,0,0,0,0,SXF_NOCHECKPOSITION,0)
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece", random (-15, 15), random (-15, 15))
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece2", random (-35, 35), random (-35, 35))
+		TNT1 A 0 A_SpawnItemEx("TinyBurningPiece3", random (-45, 45), random (-45, 35))
+		TNT1 AAAAAAAAAAAA 0 A_SpawnProjectile("Ashes1", 28, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 180))
+		TNT1 AAAAAAAAAAAA 0 A_SpawnProjectile("Ashes2", 40, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 180))
+		TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),32,0,0,0,0,SXF_NOCHECKPOSITION  ,0)
+		T6SB AAAAA 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile("BurningEmberParticlesFloating_Bigger", 36, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
+		TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),28,0,0,0,0,SXF_NOCHECKPOSITION  ,0)
+		T6SB BBBBB 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile("BurningEmberParticlesFloating_Bigger", 32, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
+		TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),24,0,0,0,0,SXF_NOCHECKPOSITION  ,0)
+		T6SB CCCCC 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile("BurningEmberParticlesFloating_Bigger", 28, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
+        TNT1 A 0 A_Playsound("SZZLL", 3)
+		TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),20,0,0,0,0,SXF_NOCHECKPOSITION  ,0)
+		T6SB DDDDD 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile("BurningEmberParticlesFloating_Bigger", 20, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
+		TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),16,0,0,0,0,SXF_NOCHECKPOSITION  ,0)
+		T6SB EEEEE 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile("BurningEmberParticlesFloating_Bigger", 12, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
+		TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),12,0,0,0,0,SXF_NOCHECKPOSITION  ,0)
+		T6SB FFFFF 1 BRIGHT Light("IncinerationGlow") A_SpawnProjectile("BurningEmberParticlesFloating_Bigger", 10, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
+		TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0)
+		TNT1 A 0 A_SpawnItem("BarrelExplosionSmokeColumn")
+		T6SB GGGG 2 BRIGHT Light("IncinerationGlow")
+		TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0)
+		T6SB HHIIHHIIHHIIHHII 2 BRIGHT Light("IncinerationGlow") A_SpawnProjectile("PlasmaSmoke", 14, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
+		TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0)
+		T6SB HHIIHHIIHHIIHHII 2 Light("IncinerationGlow") A_SpawnProjectile("PlasmaSmoke", 14, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
+		TNT1 A 0 A_SpawnItemEx ("RealisticFireSparks1",random(-2,2),random(-2,2),8,0,0,0,0,SXF_NOCHECKPOSITION  ,0)
+		T6SB HHIIHHIIHHIIHHII 2
+		T6SB JJJJJJJ 12 A_SpawnProjectile("PlasmaSmoke", 14, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
+		T6SB J -1
+		Stop
+		
 	Death.Leg:
 		TNT1 A 0
 		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
@@ -682,7 +689,7 @@ ACTOR DyingImpVar31 : SwitchableDecoration
 	Radius 16
 	Height 32
 	Health 50
-	PainSound "imp/pain"
+	PainSound "pb/monsters/imp/pain"
 	PainChance 255
 	Mass 0x7FFFFFFF
 	+SHOOTABLE
@@ -869,7 +876,7 @@ ACTOR DyingImpVar32 : SwitchableDecoration
 	Radius 16
 	Height 22
 	Health 60
-	PainSound "imp/pain"
+	PainSound "pb/monsters/imp/pain"
 	PainChance 255
 	Mass 999999
 	+SHOOTABLE
@@ -1143,7 +1150,7 @@ ACTOR DyingImpVar3NoLeg : SwitchableDecoration
 	Radius 16
 	Height 32
 	Health 50
-	PainSound "imp/pain"
+	PainSound "pb/monsters/imp/pain"
 	PainChance 255
 	Mass 999999
 	-SOLID
@@ -1204,7 +1211,7 @@ ACTOR DyingImpVar3NoLeg : SwitchableDecoration
 		Goto Colapse
 		
 	Death:
-		TNT1 A 0 A_PlaySound("imp/death")
+		TNT1 A 0 A_PlaySound("pb/monsters/imp/death")
 		T4DA G 8
 		TNT1 A 0 A_SpawnItem ("DeadImp_NoLeg", 5)
 		Stop
@@ -1223,7 +1230,7 @@ ACTOR DyingImpVar3NoArm : SwitchableDecoration
 	Radius 16
 	Height 32
 	Health 50
-	PainSound "imp/pain"
+	PainSound "pb/monsters/imp/pain"
 	PainChance 255
 	Mass 0x7FFFFFFF
 	-SOLID
@@ -1377,26 +1384,3 @@ ACTOR ImpVar3BrutalizedWithNoLeg
 		TNT1 A 0 A_SpawnItem ("ThisImpGotDestroyed")
 		Stop
 }}
-
-///////////////////////////======VANILLA======//////////////////////////////////
-
-
-Actor Vanilla_DNImpVariant3 : DNImpVariant3
-{
-	States
-	{
-		Spawn:
-		TNT1 A 0 ACS_NamedExecuteAlways("CeilingClimbingImps", 0)//Check for CVARs
-		TNT1 A 0 A_JumpIf(waterlevel == 2, "Swim")
-		TNT1 A 0 A_JumpIf(waterlevel == 3, "Swim")
-        TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
-		Stand:
-		TROO A 0 A_CheckSight("Spawn2")
-        TNT1 A 0
-		TRO4 B 10 A_Look
-		TROO A 0 A_CheckSight("Spawn2")
-        TNT1 A 0
-		TRO4 B 10 A_Look
-		Loop
-	}
-}

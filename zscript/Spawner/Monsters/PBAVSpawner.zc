@@ -1,45 +1,22 @@
-Class PBArchVileSpawner : PB_SpawnerBase //replaces ArchVile
+Class PBArchVileSpawner : PB_SpawnerBase
 {
-	default
-	{
-		+LOOKALLAROUND;
-		scale 0.45;
-		-SHOOTABLE;
-		-COUNTKILL; 
-		-SOLID;
-		+NOTIMEFREEZE;
-		//CANPUSHWALLS;
-		//-CANUSEWALLS;
-		//-ACTIVATEMCROSS;
-		//-CANPASS;
-		//-ISMONSTER;
-		//+NODAMAGE;
-		//-NOMENU;
-		Species "AVspawner";
-	}
 	States
 	{
+		Death:
+			TNT1 A 0 PB_SpawnerSpawn("PB_ArchiSpawner_DW");
+			Stop;
 		Tier4:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_ArchiSpawner_T4");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_ArchiSpawner_T4");
 			Stop;
 		Tier3:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_ArchiSpawner_T3");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_ArchiSpawner_T3");
 			Stop;
 		Tier2:
-		SpawnHellion:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_ArchiSpawner_T2");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_ArchiSpawner_T2");
 			Stop;
 		Tier1:
-		SpawnArchvile:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_ArchiSpawner_T1");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_ArchiSpawner_T1");
 			Stop;
-		Death:
-			TNT1 A 0;
-			Goto Spawn;
 	}
 }
 
@@ -47,32 +24,25 @@ Class PB_ArchiSpawner_T1 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.SpawnOverride "pb_archvile_override";
 		dropitem "PB_Archvile",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
-	{
-		if(pb_archvile_override != "Disabled") {
-			toSpawn = pb_archvile_override;
-			return;
-		}
-	}
-	
 }
 
 Class PB_ArchiSpawner_T2 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_ArchiSpawner_T1";
+		PBRandomSpawner.SpawnOverride "pb_archvile_override";
 		dropitem "PB_Hellion",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_archvile_override != "Disabled") {
-			toSpawn = pb_archvile_override;
-			return;
-		}
-		if(pb_NoHellion && toSpawn == "PB_Hellion")
-			toSpawn = "PB_Archvile";
+		if(toSpawn == "PB_Hellion" && pb_archvile_filter & DisablePB_Hellion)
+			return false;
+		return true;
 	}
 }
 
@@ -80,16 +50,16 @@ Class PB_ArchiSpawner_T3 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_ArchiSpawner_T2";
+		PBRandomSpawner.SpawnOverride "pb_archvile_override";
 		dropitem "PB_Hellion",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_archvile_override != "Disabled") {
-			toSpawn = pb_archvile_override;
-			return;
-		}
-		if(pb_NoHellion && toSpawn == "PB_Hellion")
-			toSpawn = "PB_Archvile";
+		if(toSpawn == "PB_Hellion" && pb_archvile_filter & DisablePB_Hellion)
+			return false;
+		return true;
 	}
 }
 
@@ -97,15 +67,32 @@ Class PB_ArchiSpawner_T4 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_ArchiSpawner_T3";
+		PBRandomSpawner.SpawnOverride "pb_archvile_override";
 		dropitem "PB_Hellion",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_archvile_override != "Disabled") {
-			toSpawn = pb_archvile_override;
-			return;
-		}
-		if(pb_NoHellion && toSpawn == "PB_Hellion")
-			toSpawn = "PB_Archvile";
+		if(toSpawn == "PB_Hellion" && pb_archvile_filter & DisablePB_Hellion)
+			return false;
+		return true;
+	}
+}
+
+Class PB_ArchiSpawner_DW : PB_MonsterSpawner
+{
+	default
+	{
+		PBRandomSpawner.SpawnOverride "pb_archvile_override";
+		dropitem "PB_Archvile",255,1;
+		dropitem "PB_Hellion",255,3;
+	}
+	
+	override bool HandleSpawnExceptions(name toSpawn)
+	{
+		if(toSpawn == "PB_Hellion" && pb_archvile_filter & DisablePB_Hellion)
+			return false;
+		return true;
 	}
 }

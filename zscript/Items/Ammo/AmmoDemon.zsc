@@ -1,33 +1,34 @@
-class PB_DTech : PB_Ammo replaces demonpickup
+class PB_DTech : PB_Ammo
 {
+	int ownAP, ownHP;
+	
 	Default
 	{
-		//$Title Demonic Energy
-		//$Category Project Brutality - Ammunition
-		//$Sprite MDHPA0
 		Scale 0.15;
-		RenderStyle "Add";
-		Tag "Demon Energy";
+		Tag "$PB_DTECH_TAG";
 		Inventory.Amount 10;
 		Inventory.MaxAmount 300;
 		Inventory.PickupSound "demonsoulpickup";
-		Ammo.BackpackAmount 60;
+		Ammo.BackpackAmount 10;
 		Ammo.BackpackMaxAmount 666;
 		PB_Ammo.ammotype "dtech";
+		PB_Ammo.HUDGraphics "BARBACZ1", "BARBACZ2", "BARBACZ3", "BARBACZ4", "ABAR7", "AMMOIC7", "PB_DTech";
 		+FLOATBOB
 		floatbobstrength .4;
 		+INVENTORY.ALWAYSPICKUP
 	}
-	
-	override void DoPickupSpecial(actor toucher)
-	{
-		toucher.GiveInventory("PB_DemonAPBonus",1);
-		Super.DoPickupSpecial(toucher);
+}
+
+class PB_DTechSmall : PB_DTech replaces demonpickup
+{
+	override bool TryPickup (in out Actor other) {
+		ownAP = clamp(500 - other.CountInv("BasicArmor"), 0, 2 * G_SkillPropertyFloat(SKILLP_ArmorFactor));
+		other.GiveInventory("PB_DemonAPBonus",1);
+		return super.TryPickup(other);
 	}
-	override string PickupMessage()
-	{
-		if(!res) return "";
-		return Super.PickupMessage();
+	
+	override string PickupMessage() {
+		return string.format(StringTable.Localize("$PB_DTECH_PICKUP"), res, ownAP);
 	}
 }
 
@@ -35,16 +36,82 @@ class PB_DTechLarge : PB_DTech replaces demonpickup2
 {
 	Default
 	{
-		//$Title Large Demonic Energy
-		//$Category Project Brutality - Ammunition
 		Scale 0.25;
 		Inventory.Amount 20;
 	}
 	
-	override void DoPickupSpecial(actor toucher)
+	override bool TryPickup (in out Actor other) {
+		ownHP = other.health;
+		ownAP = clamp(500 - other.CountInv("BasicArmor"), 0, 2 * G_SkillPropertyFloat(SKILLP_ArmorFactor));
+		other.GiveBody(2, 500);
+		other.GiveInventory("PB_DemonAPBonus",1);
+		return super.TryPickup(other);
+	}
+	
+	override string PickupMessage()
 	{
-		toucher.GiveInventory("PB_DemonAPBonus",1);
-		toucher.GiveInventory("PB_DemonHPBonus",2);
-		Super.DoPickupSpecial(toucher);
+		string msg = StringTable.Localize("$PB_DTECH_PICKUP_LARGE");
+		if(ownHP < 25) msg = StringTable.Localize("$PB_DTECH_PICKUP_LARGE_LOW");
+		return string.format(msg, res, clamp(500 - ownHP, 0, 2 * G_SkillPropertyFloat(SKILLP_HealthFactor)), ownAP);
 	}
 }
+
+class PB_PermaDTech : PB_DTechSmall
+{
+	Default
+	{
+		//$Title Demonic Energy
+		//$Category Project Brutality/Ammunition
+		//$Sprite DB61A0
+		PB_Ammo.ammotype "permadtech";
+	}
+}
+
+class PB_PermaDTechLarge : PB_DTechLarge
+{
+	Default
+	{
+		//$Title Large Demonic Energy
+		//$Category Project Brutality/Ammunition
+		//$Sprite DB61A0
+		PB_Ammo.ammotype "permadtech";
+	}
+}
+
+// Leech Grenade
+Class PB_LeechPickup : PB_Ammo 
+{
+	Default
+	{
+		//$Title Leech
+		//$Category Project Brutality/Weapons/Equipment
+		//$Sprite FLSPA0
+		Scale 0.35;
+		Tag "$PB_LEECH_TAG";
+		Inventory.PickupSound "SiphonGrowl";
+		PB_Ammo.AmmoType "leechnade";
+		Inventory.Amount 1;
+		Ammo.BackpackAmount 0;
+	}
+	
+	override string PickupMessage()
+	{
+		return "$PB_LEECH_PICKUP";
+	}
+	
+	override void AttachToOwner(actor other)
+	{
+		if(amount > 0)
+		{
+			other.GiveInventory("PB_LeechToken",1);
+			other.GiveInventory("PB_DTech",20);
+			Super.AttachToOwner(other);
+		}
+		else
+		{
+			Destroy();
+		}
+	}
+}
+
+class PB_LeechToken : PB_EquipToken {}

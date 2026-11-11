@@ -9,21 +9,6 @@ ACTOR IsOnCeiling : Inventory
 Inventory.MaxAmount 1
 }
 
-ACTOR SKImp3 : Inventory
-{
-Inventory.MaxAmount 1
-}
-
-ACTOR SKImp2 : Inventory
-{
-Inventory.MaxAmount 1
-}
-
-ACTOR SKImp1 : Inventory
-{
-Inventory.MaxAmount 1
-}
-
 ACTOR TargetIsABrownImp : Inventory
 {
 Inventory.MaxAmount 1
@@ -102,7 +87,7 @@ ACTOR MonsterTargetCheckFaster: FastProjectile
 	}
 }
 
-ACTOR PB_Imp: PB_Monster //Replaces DoomImp
+ACTOR PB_LegacyImp : PB_Monster //Replaces DoomImp
 //ACTOR Imp Replaces DoomImp
 {
 	//$Title Imp
@@ -139,12 +124,13 @@ ACTOR PB_Imp: PB_Monster //Replaces DoomImp
 damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood", 0.0
     damagefactor "Shrapnel", 0.3
 	+FLOORCLIP
-	SeeSound "imp/sight"
-	PainSound "imp/pain"
-	DeathSound "imp/death"
-	ActiveSound "imp/active"
+	SeeSound "pb/monsters/imp/sight"
+	PainSound "pb/monsters/imp/pain"
+	DeathSound "pb/monsters/imp/death"
+	ActiveSound "pb/monsters/imp/active"
     damagefactor "Kick", 0.5
     damagefactor "SSG", 5.0
+	damagefactor "Cut", 0.75
 	damagefactor "explosiveimpact", 2.0
 	MaxStepHeight 24
 	MaxDropOffHeight 32
@@ -182,29 +168,19 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 	  Goto AvoidLeft
 	  
 	  AvoidLeft:
-	     TROO E 1 A_FaceTarget
+	     TRO1 E 1 A_FaceTarget
 		 TNT1 A 0 ThrustThingZ(0,30,0,1)
 	    TNT1 A 0 ThrustThing(angle*256/360+192, 10, 0, 0)
-        TROO NNNOOO 2 A_FaceTarget
+        TRO1 NNNOOO 2 A_FaceTarget
         Goto Missile+26
 	AvoidRight:
-	    TROO E 1 A_FaceTarget
+	    TRO1 E 1 A_FaceTarget
 		TNT1 A 0 ThrustThingZ(0,30,0,1)
 	    TNT1 A 0 ThrustThing(angle*256/360+64, 10, 0, 0)
-        TROO NNNOOO 2 A_FaceTarget
+        TRO1 NNNOOO 2 A_FaceTarget
         Goto Missile+26
-	
-	ReplaceVanilla:
-		TNT1 A 0 A_ChangeFlag("THRUACTORS", 1)
-		TNT1 A 0 A_ChangeFlag("COUNTKILL", 0)
-		TNT1 A 0 A_SpawnItemEx ("Vanilla_Imp",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION |SXF_TRANSFERSPECIAL| SXF_TRANSFERAMBUSHFLAG ,0)
-		Stop
-	
 	Spawn:
 		TROO A 1
-		
-		TROO A 0 //ACS_NamedExecuteAlways("CeilingClimbingImps", 0)//Check for CVARs
-		TNT1 A 0 A_GiveInventory("SKImp", 1)
 		TNT1 A 0 A_JumpIf(waterlevel == 2, "Swim")
 		TNT1 A 0 A_JumpIf(waterlevel == 3, "Swim")
         TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
@@ -221,8 +197,6 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		
 	Idle:
 	LookingForPlayer:
-	    TNT1 A 0 A_GiveInventory("SKImp", 1)
-	    TNT1 A 0 
 		TROO B 10 A_Look
         TNT1 A 0 
 		TROS B 10 A_Look
@@ -297,7 +271,6 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 	ForgetTarget:
 	TNT1 A 0 A_ClearTarget
 	TNT1 A 0 A_TakeInventory("EnemyMemory", 25)
-	TNT1 A 0 A_GiveInventory("LookingForPlayer", 1)
 	Goto Stand
 	
 	See:
@@ -320,8 +293,6 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0 
 		TNT1 A 0 
 		TROO AA 2 A_Chase
-        TNT1 A 0 A_TakeInventory("SKImp", 1)
-		
 		TNT1 A 0 
 		TNT1 A 0 
 		TROO BB 2 A_Chase
@@ -349,7 +320,7 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 	TNT1 A 0 A_JumpIf(CallACS("GetActorZDist") <= 120, 2)
 	TNT1 AAA 0
 	TNT1 A 0 A_JumpIf(CallACS("IsThisSky") == 1, "SeeContinue")
-	TNT1 A 0 A_PlaySound("imp/sight",6)
+	TNT1 A 0 A_PlaySound("pb/monsters/imp/sight",6)
 	1M40 A 6
 	TNT1 A 0 A_GiveInventory ("IsJumping")
 	TNT1 A 0 ThrustThingZ(0,50,0,1)
@@ -394,7 +365,6 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		2M40 II 2 A_Chase("CeilingPounce", "CeilingMissile")
 		TNT1 A 0 A_JumpIf(momz != 0, "CeilingPounce")
 		TNT1 A 0 A_PlaySound("flesh/step",4)
-        TNT1 A 0 A_TakeInventory("SKImp", 1)
 		//ContinueCeilingCrawl2:
 		TNT1 A 0 
 		TNT1 A 0 
@@ -514,10 +484,10 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0 A_Recoil (-18)
 		TNT1 A 0 A_FaceTarget
 		TNT1 A 0 A_PlaySound("weapons/fistwhoosh")
-		TNT1 A 0 A_CustomMeleeAttack(10, "imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
+		TNT1 A 0 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
 		2M40 CDEFG 4 A_FaceTarget
-		TNT1 A 0 A_CustomMeleeAttack(10, "imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
-		1M40 EEE 1 A_CustomMeleeAttack(10, "imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
+		TNT1 A 0 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
+		1M40 EEE 1 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
 		TNT1 A 0 A_TakeInventory ("IsJumping")
 		
 		TNT1 A 0 A_Jump(24, 3)
@@ -543,9 +513,6 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0 
 		TROO AA 2 A_Chase
 		TNT1 A 0 A_PlaySound("flesh/step",4)
-        TNT1 A 0 A_TakeInventory("SKImp", 1)
-		
-		
 		TNT1 A 0 
 		TNT1 A 0 
 		TROO BB 2 A_Chase
@@ -575,11 +542,10 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 	Melee:
 		TNT1 A 0 A_Jump(132, "Melee3")
 		TNT1 A 0 A_FaceTarget
-		TNT1 A 0 A_PlaySound("imp/sight",6)
+		TNT1 A 0 A_PlaySound("pb/monsters/imp/sight",6)
         1M40 ABCD 4 A_Recoil (-1) 
 		1M40 A 5 A_FaceTarget
 		TNT1 A 0 A_JumpIfCloser(60, "Melee2")
-		TNT1 A 0 A_TakeInventory("SKImp", 1)
         TNT1 A 0 ThrustThingZ(0,30,0,1)
         TNT1 A 0 A_FaceTarget
         TNT1 A 0 A_Recoil (-10)
@@ -587,19 +553,17 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
         TNT1 A 0 A_GiveInventory ("IsJumping")
 		TNT1 A 0 A_PlaySound("weapons/fistwhoosh")
         TNT1 A 0 A_FaceTarget
-        1M40 E 4 A_CustomMeleeAttack(10, "imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
+        1M40 E 4 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
         TNT1 A 0 A_TakeInventory ("IsJumping")
         TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
-		1M40 A 4 A_CustomMeleeAttack(10, "imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
+		1M40 A 4 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
         TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
 		Goto SeeContinue
 
 	Melee2:
 	    TNT1 D 0 
         TROO EF 4 A_FaceTarget
-		TNT1 A 0 A_TakeInventory("SKImp", 1)
-		TNT1 D 0 
-        TROO G 4 A_CustomMeleeAttack(10, "imp/melee", "", "Rip") //A_CustomMissile("ImpAttack",10,0,0,0)
+        TROO G 4 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "Rip") //A_CustomMissile("ImpAttack",10,0,0,0)
 		TNT1 D 0 
         TROO FE 4
 		Goto SeeContinue
@@ -611,7 +575,6 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0 A_JumpIfCloser(50, "Melee2")
 		TNT1 A 0 
 		TROT CD 4 
-		TNT1 A 0 A_TakeInventory("SKImp", 1)
         TNT1 A 0 ThrustThingZ(0,25,0,1)
         TNT1 A 0 A_FaceTarget
 		
@@ -623,11 +586,11 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0 A_PlaySound("weapons/fistwhoosh")
         TNT1 A 0 A_FaceTarget
         TROT F 6 
-		TNT1 A 0 A_CustomMeleeAttack(10, "imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
+		TNT1 A 0 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
         TNT1 A 0 A_TakeInventory ("IsJumping")
         TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
 		TROT G 1
-		TROT GG 2 A_CustomMeleeAttack(10, "imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
+		TROT GG 2 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
 		TROT G 1
 		TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
 		TROT HHH 2 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
@@ -636,10 +599,6 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 	Missile:
 		TNT1 A 0 A_JumpIfInventory("IsOnCeiling", 1, "CeilingMissile")
         TNT1 A 0 A_JumpIfCloser(150, "Melee")
-
-		TNT1 A 0 A_TakeInventory("SKImp", 1)
-		TNT1 D 0 
-		TNT1 A 0 
 		TNT1 A 0 A_JumpIfCloser(1200, 3)
 		TNT1 A 0 A_CustomMissile("MonsterTargetCheck", 34, 0, 0, 0) 
 		TNT1 A 0 A_CustomMissile("MonsterTargetCheckFaster", 34, 0, 0, 0) 
@@ -711,37 +670,8 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0
 	    TNT1 A 1 A_Pain
 		TNT1 A 0 A_NoBlocking
-        TNT1 A 0 A_GiveToTarget("ImpFatality3", 1)
 		TNT1 A 0 A_GiveToTarget("ImpFatality", 1)
         Stop	
-		
-	Death.Fatality:
-		TNT1 A 0 A_Pain
-        TNT1 A 0 A_NoBlocking
-		TNT1 A 0 A_JumpIfIntargetInventory("FistsSelected", 1, 1)
-		Goto Death.ExplosiveImpact
-		TNT1 A 0 A_GiveToTarget("GoFatality", 1)
-		TNT1 A 0 A_Jump(255, "Death.Fatality1", "Death.Fatality1", "Death.Fatality2", "Death.Fatality2", "Death.Fatality3", "Death.Fatality3", "Death.Fatality4", "Death.Fatality5")
-		Goto Death.Fatality1
- 
-        Death.Fatality1:
-        TNT1 A 0 A_GiveToTarget("ImpFatality", 1)
-        Stop
-		Death.Fatality2:
-        TNT1 A 0 A_GiveToTarget("ImpFatality2", 1)
-		Stop
-		Death.Fatality3:
-		Death.BHFT:
-        TNT1 A 0 A_GiveToTarget("ImpFatality3", 1)
-		Stop
-		Death.Fatality4:
-		TNT1 A 0 A_GiveToTarget("ImpFatality4", 1)
-		Stop
-		Death.Fatality5:
-		TNT1 A 0 A_GiveToTarget("ImpFatality5", 1)
-		Stop
-		
-	
 	Pain.Melee:
 		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
 		TNT1 A 0 A_ChangeFlag("THRUSPECIES", 0)
@@ -760,9 +690,6 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0 A_ChangeFlag("CEILINGHUGGER", 0)
 		TNT1 A 0 A_JumpIfInventory("IsOnCeiling", 1, "PainCanFallFromCeiling")
 		TNT1 A 0 A_JumpIfInventory("IsDown", 1, "Pain.IsDown")
-		TNT1 D 0 
-		TNT1 A 0 
-		TNT1 A 0 A_TakeInventory("SKImp", 1)
 		TROO H 3
 		TROO H 3 A_Pain
 		Goto SeeContinue
@@ -834,8 +761,6 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0 A_ChangeFlag("THRUSPECIES", 0)
 		TNT1 A 0 A_ChangeFlag("CEILINGHUGGER", 0)
 		TNT1 A 0 A_JumpIfInventory("IsOnCeiling", 1, "PainCanFallFromCeiling")
-		TNT1 D 0 
-		TNT1 A 0 A_TakeInventory("SKImp", 1)
 		TROO H 6
 		TROO H 6 A_Pain
 		Goto SeeContinue
@@ -849,7 +774,6 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0 A_ChangeFlag("CEILINGHUGGER", 0)
 	         TNT1 A 0 A_Pain
 		 TNT1 A 0 A_JumpIfInventory ("IsDown", 1, "Pain")
-		 		    TNT1 A 0 A_TakeInventory("SKImp", 1)
          TNT1 A 0 A_GiveInventory("IsDown", 1)
         TNT1 A 0 ThrustThingZ(0,40,0,1)
          IZD4 KL 8
@@ -941,7 +865,6 @@ damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood
 		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
 		TNT1 A 0 A_ChangeFlag("THRUSPECIES", 0)
 		TNT1 A 0 A_ChangeFlag("CEILINGHUGGER", 0)
-		TNT1 A 0 A_TakeInventory("SKImp", 1)
 		TNT1 D 0 
 		TROO H 1
 		TROO H 1 A_Pain
@@ -1096,7 +1019,6 @@ Death.MinorLeg:
 		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
 		TNT1 A 0 A_ChangeFlag("THRUSPECIES", 0)
 		TNT1 A 0 A_ChangeFlag("CEILINGHUGGER", 0)
-		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate")
 		TNT1 A 0 A_Scream
         TNT1 A 0 A_NoBlocking
 		TNT1 A 1 A_SpawnItemEx("BurningImpRunning",0,0,0,0,0,0,0,288)
@@ -1271,11 +1193,7 @@ Death.MinorLeg:
 		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
 		TNT1 A 0 A_ChangeFlag("THRUSPECIES", 0)
 		TNT1 A 0 A_ChangeFlag("CEILINGHUGGER", 0)
-		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate")
-	    TNT1 A 0 A_JumpIfInTargetInventory("HasPlasmaWeapon", 1, "Death.Plasma")
-		TNT1 A 0 A_JumpIfInTargetInventory("HasCutingWeapon", 1, "Death.Decaptate")
 		TNT1 A 0 A_JumpIfHealthLower(-50, "Death.HeadExplode")
-		TNT1 A 0 A_JumpIfInTargetInventory("RandomHeadExploder", 1, "HeadExploder")
 		Goto Death.HeadMinor
 		
 	Death.HeadMinor:
@@ -1790,12 +1708,11 @@ DeathNoGuts2:
 		
 	Death.Explosive:
 		TNT1 A 1 A_FaceTarget
-		TNT1 A 1 A_JumpIfInTargetInventory("RocketLauncherSelected", 1, "RocketMan")
+		//TNT1 A 1 A_JumpIfInTargetInventory("RocketLauncherSelected", 1, "RocketMan")
 	XDeath:
 		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
 		TNT1 A 0 A_ChangeFlag("THRUSPECIES", 0)
 		TNT1 A 0 A_ChangeFlag("CEILINGHUGGER", 0)
-		TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG")
 		TNT1 A 0 A_XScream
 		TNT1 A 0 A_NoBlocking
 		TNT1 A 0 A_FaceTarget
@@ -2046,7 +1963,7 @@ Goto See
 // 		TNT1 A 4 BRIGHT
 // 		Stop
 // 	Death:
-//         TNT1 A 0 A_PlaySound("imp/melee")
+//         TNT1 A 0 A_PlaySound("pb/monsters/imp/melee")
 // 		TNT1 A 0 BRIGHT
 // 		Stop
 // 	}
@@ -2201,7 +2118,7 @@ TNT1 A 0 A_UnSetInvulnerable
 
 
 
-Actor DeadImp1: CurbstompedMarine Replaces DeadDoomImp
+Actor DeadImp1: CurbstompedMarine
 {
     Radius 12
     Height 12
@@ -2714,7 +2631,7 @@ ACTOR RocketImpVictim
 	Spawn:
 	    T0KT AB 4 Bright A_FaceTarget 
 		TNT1 A 0 A_PlaySound("weapons/rocketloop",6,1,1)
-		TNT1 A 0 A_PlaySound("imp/pain",7,2,1)
+		TNT1 A 0 A_PlaySound("pb/monsters/imp/pain",7,2,1)
 		TNT1 A 0 A_SpawnItem("RocketFlare",-20,0)
 		TNT1 A 0 A_SpawnProjectile("PB_FlyingBlood", 32, 0, random (170, 190), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40))
 		TNT1 AA 0 A_SpawnProjectile("PB_FlyingBloodFaster", 32, 0, random (170, 190), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40))
@@ -3424,7 +3341,7 @@ States{Spawn:
 			A_Recoil(10);
 		}
 		
-		TNT1 A 0 A_StartSound("imp/pain", CHAN_AUTO)
+		TNT1 A 0 A_StartSound("pb/monsters/imp/pain", CHAN_AUTO)
 		TNT1 A 0 A_JumpIf(velx != 0 || vely != 0, "LayDown")
 		TNT1 A 0 A_Jump(64, "JustHangThere")
 		
@@ -3451,7 +3368,7 @@ States{Spawn:
 			A_Recoil(10);
 		}
 		
-		TNT1 A 0 A_StartSound("imp/pain", CHAN_AUTO)
+		TNT1 A 0 A_StartSound("pb/monsters/imp/pain", CHAN_AUTO)
 		TNT1 A 0 A_JumpIf(velx != 0 || vely != 0, "LayDown")
 		TNT1 A 0 A_Jump(64, "JustHangThere")
 		PIN6 E 4 {
@@ -3477,7 +3394,7 @@ States{Spawn:
 		}
 		
 		TNT1 A 0 A_JumpIf(velx != 0 || vely != 0, "LayDown")
-		TNT1 A 0 A_StartSound("imp/pain", CHAN_AUTO)
+		TNT1 A 0 A_StartSound("pb/monsters/imp/pain", CHAN_AUTO)
 		TNT1 A 0 A_Jump(64, "JustHangThere")
 		PIN6 E 4 {
 			A_SpawnProjectile("PB_BloodMist", 24, random(-2,2), random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40));
@@ -3502,7 +3419,7 @@ States{Spawn:
 		}
 		
 		TNT1 A 0 A_JumpIf(velx != 0 || vely != 0, "LayDown")
-		TNT1 A 0 A_StartSound("imp/pain", CHAN_AUTO)
+		TNT1 A 0 A_StartSound("pb/monsters/imp/pain", CHAN_AUTO)
 		TNT1 A 0 A_Jump(64, "JustHangThere")
 		PIN6 E 4 {
 			A_SpawnProjectile("PB_BloodMist", 24, random(-2,2), random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40));
@@ -3532,7 +3449,7 @@ States{Spawn:
 		
 		
 		
-		TNT1 A 0 A_StartSound("imp/death", CHAN_AUTO)
+		TNT1 A 0 A_StartSound("pb/monsters/imp/death", CHAN_AUTO)
 		TNT1 A 0 A_SetScale(1.0,1.0)
 		TNT1 A 0 A_Jump(36, "SlideDown")
 	JustHangThere:
@@ -3547,30 +3464,30 @@ States{Spawn:
         Loop
 		
 	Suffer:
-		TNT1 A 0 A_StartSound("imp/pain", CHAN_AUTO)
+		TNT1 A 0 A_StartSound("pb/monsters/imp/pain", CHAN_AUTO)
 		PIN6 ABCDCBABCDCB 4 {
 			A_SpawnProjectile("PB_BloodMistSmall", 25, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (10, 40));
 			A_SpawnProjectile("PB_SquirtingBloodTrail", 28, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40));
 		}
-		TNT1 A 0 A_StartSound("imp/pain", CHAN_AUTO)
+		TNT1 A 0 A_StartSound("pb/monsters/imp/pain", CHAN_AUTO)
 		TNT1 A 0 A_JumpIf(velx != 0 || vely != 0, "LayDown")
 		PIN6 ABCDCBABCDCB 4 {
 			A_SpawnProjectile("PB_BloodMistSmall", 25, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (10, 40));
 			A_SpawnProjectile("PB_SquirtingBloodTrail", 28, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40));
 		}
-		TNT1 A 0 A_StartSound("imp/pain", CHAN_AUTO)
+		TNT1 A 0 A_StartSound("pb/monsters/imp/pain", CHAN_AUTO)
 		TNT1 A 0 A_JumpIf(velx != 0 || vely != 0, "LayDown")
 		PIN6 ABCDCBABCDCB 4 {
 			A_SpawnProjectile("PB_BloodMistSmall", 25, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (10, 40));
 			A_SpawnProjectile("PB_SquirtingBloodTrail", 28, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40));
 		}
-		TNT1 A 0 A_StartSound("imp/pain", CHAN_AUTO)
+		TNT1 A 0 A_StartSound("pb/monsters/imp/pain", CHAN_AUTO)
 		TNT1 A 0 A_JumpIf(velx != 0 || vely != 0, "LayDown")
 		PIN6 ABCDCBABCDCB 4 {
 			A_SpawnProjectile("PB_BloodMistSmall", 25, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (10, 40));
 			A_SpawnProjectile("PB_SquirtingBloodTrail", 28, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40));
 		}
-		TNT1 A 0 A_StartSound("imp/death", CHAN_AUTO)
+		TNT1 A 0 A_StartSound("pb/monsters/imp/death", CHAN_AUTO)
 		Goto JustHangThere
 	
 	SlideDown:
@@ -3741,22 +3658,6 @@ Actor PinnedImpTorso_Hanging: ZombiemanTorso
 	}
 }
 
-
-///////////////////////////======VANILLA======//////////////////////////////////
-
-Actor Vanilla_Imp : PB_Imp
-{
-	States
-	{
-		Spawn:
-		TNT1 A 0 A_GiveInventory("SKImp", 1)
-		TNT1 A 0 A_JumpIf(waterlevel == 2, "Swim")
-		TNT1 A 0 A_JumpIf(waterlevel == 3, "Swim")
-        TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
-		Goto Stand
-	}
-}
-
 Actor PB_DoomImpBall_Spawn
 {
 	RenderStyle Add
@@ -3775,7 +3676,7 @@ Actor PB_DoomImpBall_Spawn
 	}
 }
 
-Actor PB_DoomImpBall Replaces DoomImpBall
+Actor PB_DoomImpBall
 {
 	DamageType "Burn"
 	Radius 8

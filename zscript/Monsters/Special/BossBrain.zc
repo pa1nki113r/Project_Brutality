@@ -1,45 +1,22 @@
-Class PB_BossBrain : PB_Monster replaces BossBrain
+Class PB_BossBrain : Actor
 {
 	Default
 	{
 		Radius 16;
 		Height 16;
 		Mass 100;
-		PainSound "monsters/zombie/pain";
-		DeathSound "monsters/zombie/death";
-		Health 3000;
+		PainSound "brain/pain";
+		DeathSound "brain/death";
+		Health 500;
 		PainChance 255;
-		PainChance "Avoid", 64;
-		PainChance "Head", 255;
-		PainChance "Kick", 255;
-		PainChance "ExtremePunches", 255;
-		PainChance "Melee", 255;
-		PainChance "Taunt", 255;
-		PainChance "MonsterKnocked", 255;
-		PainChance "ExplosiveImpact", 255;
-		PainChance "Trample", 255;
-		PainChance "Stun", 255;
-		PainChance "Siphon", 255;
-		damagefactor "Crush", 5.0;
-		damagefactor "Avoid", 1.0;
 		damagefactor "GibRemoving", 0.0;
 		damagefactor "DontCallTheBaron", 0.0;
 		damagefactor "Blood", 0.0; damagefactor "BlueBlood", 0.0; damagefactor "GreenBlood", 0.0;
-		damagefactor "Kick", 0.4;
-		damagefactor "Shrapnel", 0.4;
+		damagefactor "Shrapnel", 0.0;
 		damagefactor "killme", 0.0;
-		damagefactor "Taunt", 1.0;
-		damagefactor "ExplosiveImpact", 2.2;
-		damagefactor "Explosive", 2.2;
 		DamageFactor "CauseObjectsToSplash", 0.0;
-		damagefactor "SSG", 50.0;
-		damagefactor "Shotgun", 1.2;
-		damagefactor "Saw", 0.5;
-		damagefactor "Cut", 0.75;
-		damagefactor "Tear", 0.25;
 		damagefactor "TeleportRemover", 0.0;
-		damagefactor "Execution", 1000.0;
-		DamageFactor "TeleportRemover", 0.0;
+		DamageFactor "Railgun", 0.0;
 		
 		+SOLID;
 		+SHOOTABLE;
@@ -47,48 +24,43 @@ Class PB_BossBrain : PB_Monster replaces BossBrain
 		+OLDRADIUSDMG;
 		+DONTTHRUST;
 		
-		-COUNTKILL
-		-CANPUSHWALLS
-		-CANUSEWALLS
-		-CANPASS
-		-ACTIVATEMCROSS
-		-ISMONSTER
-		-NODAMAGE
-		
 		Species "Icon Of Sin";
 	}
-		
-	override void PostBeginPlay()
-	{
-		Super.PostBeginPlay(); // call the super function for virtual functions so we don't break shit if GZdoom update.
-		HitBoxSpawned = False;
-		DamageTimer = 0;
-	}
-	
-	override void Tick()
-	{
-		Super.Tick();
-	}
-	
-	int DamageTimer;
 	
 	States
 	{
 		Spawn:
-			BBRN A 1;
+			BBR1 A 1;
 			Loop;
 		Pain:
-			BBRN A 35 A_BrainPain();
+			BBR1 A 36 A_BrainPain();
 			Goto Spawn;
 		Death:
-			BBRN A 100
-			{
-				A_BrainScream();
-				PB_EverythingDies();
-			}
-			BBRN AAA 10;
-			BBRN A -1 A_BrainDie;
+			BBR1 A 100 PB_BrainScream();
+			BBR1 AA 10;
+			BBR1 A -1 A_BrainDie();
 			Stop;
+	}
+	
+	void PB_BrainScream()
+	{
+		for (double x = -196; x < +320; x += 8)
+		{
+			// (1 / 512.) is actually what the original value of 128 did, even though it probably meant 128 map units.
+			PB_BrainExplode(Vec2OffsetZ(x, -320, (1 / 512.) + random[BrainExplode](0, 255) * 2));
+		}
+		A_StartSound("brain/death", CHAN_VOICE, CHANF_DEFAULT, 1., ATTN_NONE);
+		PB_EverythingDies();
+	}
+	
+	private static void PB_BrainExplode(vector3 pos)
+	{
+		Actor boom = Actor.Spawn("PB_BrainExploder", pos);
+		if (boom)
+		{
+			boom.tics -= random[BrainScream](0, 120);
+			if (boom.tics < 1) boom.tics = 1;
+		}
 	}
 	
 	void PB_EverythingDies()
@@ -110,5 +82,43 @@ Class PB_BossBrain : PB_Monster replaces BossBrain
 				a.DamageMobj(self,self,a.Health,"IOS",DMG_FORCED|DMG_THRUSTLESS);
 			}
 		}
+	}
+}
+
+class PB_BrainExploder : Actor
+{
+	Default
+	{
+		+NOINTERACTION;
+		Gravity 0.00;
+	}
+	States
+	{
+		Spawn:
+			TNT1 A 120;
+			TNT1 A 0 {
+				A_StopSound(CHAN_BODY);
+				A_StartSound("Explosion", CHAN_AUTO,CHANF_OVERLAP);
+				A_StartSound("FAREXPL", CHAN_AUTO,CHANF_OVERLAP);
+				Radius_Quake(3, 8, 0, 15, 0);
+				A_SpawnItemEx("DetectFloorCrater");
+				A_SpawnItemEx("DetectCeilCrater");
+				A_SpawnItemEx("ExplosionFlareSpawner");
+				A_SpawnItemEx("NewRocketExploFX");
+				A_SpawnItemEx("WhiteShockwave");
+				A_SpawnProjectile("ExplosionSmokeFast22", 0, 0, random (0, 360), CMF_AIMDIRECTION, random (0, -360));
+				A_SpawnProjectile("ExplosionSmokeFast22", 0, 0, random (0, 360), CMF_AIMDIRECTION, random (0, -360));
+				A_SpawnProjectile("ExplosionSmokeFast22", 0, 0, random (0, 360), CMF_AIMDIRECTION, random (0, -360));
+				A_SpawnProjectile("MediumExplosionFlames", 0, 0, random (0, 360), CMF_AIMDIRECTION, random (0, -360));
+				A_SpawnProjectile("MediumExplosionFlames", 0, 0, random (0, 360), CMF_AIMDIRECTION, random (0, -360));
+				A_SpawnProjectile("MediumExplosionFlames", 0, 0, random (0, 360), CMF_AIMDIRECTION, random (0, -360));
+				A_SpawnProjectile("PBExplosionparticles", 0, 0, random (0, 360), CMF_AIMDIRECTION, random (-40, -90));
+				A_SpawnProjectile("PBExplosionparticles", 0, 0, random (0, 360), CMF_AIMDIRECTION, random (-40, -90));
+				A_SpawnProjectile("PBExplosionparticles2", 0, 0, random (0, 360), CMF_AIMDIRECTION, random (-40, -90));
+				A_SpawnProjectile("PBExplosionparticles2", 0, 0, random (0, 360), CMF_AIMDIRECTION, random (-40, -90));
+				A_SpawnProjectile("PBExplosionparticles3", 10, 0, random (0, 360), CMF_AIMDIRECTION, random (-40, -90));
+			}
+			TNT1 A 25;
+			Stop;
 	}
 }

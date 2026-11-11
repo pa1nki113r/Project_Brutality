@@ -28,6 +28,10 @@ Severin Meyer
 
 Lewisk3
 -Messages base
+
+nemesisVampy
+-2026 HUD touchup code
+-Improved equipment wheel
 */
 
 class PB_Hud_ZS : BaseStatusBar
@@ -48,6 +52,8 @@ class PB_Hud_ZS : BaseStatusBar
 	DynamicValueInterpolator mAmmo1Interpolator;
 	DynamicValueInterpolator mAmmo2Interpolator;
 	DynamicValueInterpolator mAmmoLeftInterpolator;
+	DynamicValueInterpolator mOverheatInterpolator;
+	DynamicValueInterpolator mOverheatLeftInterpolator;
 	PB_DynamicDoubleInterpolator mSwayInterpolator;
 	PB_DynamicDoubleInterpolator mPitchInterpolator;
 	PB_DynamicDoubleInterpolator mFOffsetInterpolator;
@@ -65,7 +71,7 @@ class PB_Hud_ZS : BaseStatusBar
     double interpolatedOfs;
     double ofsOldFrame, ofsCurrentFrame;
 
-	int m32to0, m64to0;
+	int8 m32to0, m64to0;
 	double m0to1Float;
 	bool hasPutOnHelmet, hasCompletedHelmetSequence;
 	bool deathFadeDone, playerWasDead, visorOff;
@@ -85,20 +91,46 @@ class PB_Hud_ZS : BaseStatusBar
     float wipePrgOldFrame, wiperWarningIndScale;
     int16 dirtyScreenTimer; 
     int16 screenFXCount;
-	DEDashJump Dasher;
+	PlayerPawnBase Dasher;
+    PB_FPP_Holder flPointer;
 	
 	Weapon oldWeapon;
 
     int tickRandSeed;
 
 	//CVars
-	int16 hudXMargin, hudYMargin, playerMsgPrint;
-	bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks, bottomMiddlePart, showtutorials;
+	int16 hudXMargin, hudYMargin, playerMsgPrint, bottomMiddlePart, screenblocks;
+	bool hudDynamicsCvar, showVisor, showVisorGlass, showLevelStats, lowresfont, curmaxammolist, hideunusedtypes, showList, customPBMugshot, showBloodDrops, showGlassCracks, showtutorials, altHUDEnabled;
 	float playerAlpha, playerBoxAlpha, messageSize, bloodDropsAlpha, glassCracksAlpha, visorScale, visorOffsets;
 
 	bool centerNotify;
   
+    //cached stuff and player variables
+    int Health, Armor;
+    Weapon weap;
+    PB_WeaponBase pbWeap;
+
+    color flsectorlightcolor;
+    double sectorlightlevel;
+    float berserkBeat;
+
+    PlayerPawn plr;
+
+    Ammo Primary, Secondary, Left;
+
+    int intAmmo1, intAmmo2, intAmmoLeft, intHealth, intArmor, maxArmor, maxHealth;
+
+    Array<int> cachedFontColors;
 	
+    enum ECachedFontColors {
+        HUDBLUEBAR,
+        HUDGREENBAR2,
+        FUELAMMO,
+        DTECHAMMO
+    };
+
+    String levelStats[4];
+
 	override void Init()
 	{
 		Super.Init();
@@ -118,11 +150,19 @@ class PB_Hud_ZS : BaseStatusBar
 		mAmmo2Interpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
 		mAmmoLeftInterpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
 		
+		mOverheatInterpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
+		mOverheatLeftInterpolator = DynamicValueInterpolator.Create(0, 0.25, 1, 64);
+		
 		mSwayInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.3, 0, 32);
 		mPitchInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.3, 0, 32);
 		mFOffsetInterpolator = PB_DynamicDoubleInterpolator.Create(0, 0.3, 0, 64);
 
 		InvBar = InventoryBarState.Create();
+
+        cachedFontColors.Push(Font.FindFontColor("HUDBLUEBAR"));
+        cachedFontColors.Push(Font.FindFontColor("HUDGREENBAR2"));
+        cachedFontColors.Push(Font.FindFontColor("PB_Fuel"));
+        cachedFontColors.Push(Font.FindFontColor("PB_DTech"));
 	}
 	
 	void GatherCvars()
@@ -164,9 +204,12 @@ class PB_Hud_ZS : BaseStatusBar
         visorScale = CVar.GetCVar("pb_visorscale", CPlayer).GetFloat();
         visorOffsets = CVar.GetCVar("pb_visorofsx", CPlayer).GetFloat();
 
-        bottomMiddlePart = CVar.GetCVar("pb_visormiddlepartbottom", CPlayer).GetFloat();
+        bottomMiddlePart = CVar.GetCVar("pb_visormiddlepartbottom", CPlayer).GetInt();
 
         showtutorials = CVar.GetCVar("pb_showtutorials", CPlayer).GetBool();
+		//zdoom cvars
+		altHUDEnabled = CVar.GetCvar("hud_althud", CPlayer).GetBool();
+		screenblocks = CVar.GetCvar("screenblocks", CPlayer).GetInt();
 	}
 
 	override void Draw(int state, double TicFrac)
@@ -201,10 +244,9 @@ class PB_Hud_ZS : BaseStatusBar
 
         interpolatedOfs = ofsOldFrame * (1. - ticfrac) + ofsCurrentFrame * ticfrac;
         interpolatedSway = swayOldFrame * (1. - ticfrac) + swayCurrentFrame * ticfrac;
-		
-		if(hudState != HUD_None)
+		BeginHUD();
+		if(DrawVisorStuff() && hudState != HUD_None && (screenblocks < 11 || screenblocks < 12 && !altHUDEnabled))
 		{
-			BeginHUD();
 			DrawFullScreenStuff();
             if(showtutorials) DrawTooltip();
 		}
@@ -229,6 +271,8 @@ class PB_Hud_ZS : BaseStatusBar
 		mAmmo1Interpolator.Reset(0);
 		mAmmo2Interpolator.Reset(0);
 		mAmmoLeftInterpolator.Reset(0);
+		mOverheatInterpolator.Reset(0);
+		mOverheatLeftInterpolator.Reset(0);
 		mSwayInterpolator.Reset(0);
 		mPitchInterpolator.Reset(0);
 		mFOffsetInterpolator.Reset(0);
@@ -236,17 +280,21 @@ class PB_Hud_ZS : BaseStatusBar
 
 	override void Tick()
 	{
+        if(!plr) plr = PlayerPawn(CPlayer.mo);
 		Super.Tick();
 
         if(interference > 0 && gametic % 2) tickRandSeed = crandom(0, 2147483648);
 
-        if(CPlayer.Health <= 0) 
+        Health = CPlayer.Health;
+        Armor = GetAmount("BasicArmor");
+
+        if(Health <= 0) 
         {
             DeathSequence(true);
             PlayerWasDead = true;
         }
         
-        if(CPlayer.Health >= 1 && PlayerWasDead) 
+        if(Health >= 1 && PlayerWasDead) 
         {
             DeathSequence(false);
             PlayerWasDead = false;
@@ -326,7 +374,6 @@ class PB_Hud_ZS : BaseStatusBar
 			From32to0Slow();	
 		}
 		
-		Dasher = DEDashJump(CPlayer.mo.FindInventory("DEDashJump"));
 		if(Dasher)
 		{
 			//console.printf("%i %i", oldDashCharge, Dasher.DashCharge);
@@ -342,8 +389,10 @@ class PB_Hud_ZS : BaseStatusBar
 				dashScale2 -= 0.02;
 			oldDashCharge = Dasher.DashCharge;
 		}
+        else if(plr)
+            Dasher = PlayerPawnBase(plr);
 
-		if(CPlayer.Health <= 25)
+		if(Health <= 25)
 		{
 			inPain = true;
 			healthFontCol = Font.CR_RED;
@@ -351,8 +400,16 @@ class PB_Hud_ZS : BaseStatusBar
 		else
 		{
 			inPain = false;
-			healthFontCol = Font.FindFontColor("HUDBLUEBAR");
+			healthFontCol = cachedFontColors[HUDBLUEBAR];
 		}
+
+        if(showLevelStats)
+        {
+            levelStats[0] = Level.TimeFormatted();
+            levelStats[1] = String.Format("%i / %i", Level.killed_monsters, Level.total_monsters);
+            levelStats[2] = String.Format("%i / %i", Level.found_items, Level.total_items);
+            levelStats[3] = String.Format("%i / %i", Level.found_secrets, Level.total_secrets);
+        }
 
 		dashIndAlpha -= 0.2;
 		flashlightBatteryAlpha -= 0.2;
@@ -360,24 +417,48 @@ class PB_Hud_ZS : BaseStatusBar
 		if(hudDynamics && !automapactive)
 			CalculateSway();
 		
-		Ammo Primary, Secondary;
+        weap = CPlayer.ReadyWeapon;
+		pbWeap = PB_WeaponBase(weap);
+
 		[Primary, Secondary] = GetCurrentAmmo();
+		if(pbWeap) Left = Ammo(plr.FindInventory(pbWeap.AmmoTypeLeft));
 	
-		//console.printf("%s", CPlayer.ReadyWeapon.GetClassName());
+		//console.printf("%s", weap.GetClassName());
+
+        if(CheckInventory("PB_PowerStrength"))
+		{
+            double gameTicRadians = gameTic * 11.4592;
+			berserkBeat = 0.1 * ((((sin(gameTicRadians) ** 13) * sin((gameTicRadians) + 85.944)) / 0.2096) + (sin(gameTicRadians - 286.48) ** 16) * 0.2);
+        }
 		
-		if(oldweapon && (oldWeapon != CPlayer.ReadyWeapon))
+		if(oldweapon && (oldWeapon != weap))
 		{
 			if(Primary)
 				mAmmo1Interpolator.Reset(Primary.Amount); 
 			
 			if(Secondary) 
 				mAmmo2Interpolator.Reset(Secondary.Amount);
-				
-			mAmmoLeftInterpolator.Reset(0);
+			
+			if(Left)
+				mAmmoLeftInterpolator.Reset(Left.Amount);
+			mOverheatInterpolator.Reset(0);
+			mOverheatLeftInterpolator.Reset(0);
 		}
 
+        if(plr)
+        {
+            sectorlightlevel = plr.cursector.lightlevel / 255.0;
+            color slcol = plr.cursector.colormap.lightcolor;
+            
+            // [gng] i have heard that the color function is expensive, so i avoid running it if there's no need to.
+            if(slcol != 16777215)
+                flsectorlightcolor = Color(255, slcol.r, slcol.g, slcol.b);
+            else
+                flsectorlightcolor = 0xffffffff;
+        }
+
 		if(m0to1Float > 0.99) {
-			mHealthInterpolator.Update(CPlayer.Health);
+			mHealthInterpolator.Update(Health);
 			mArmorInterpolator.Update(GetAmount("BasicArmor"));
 			mSwayInterpolator.Update(mSway);
 			mPitchInterpolator.Update(mPitch);
@@ -389,14 +470,13 @@ class PB_Hud_ZS : BaseStatusBar
 			if(Secondary)
 				mAmmo2Interpolator.Update(Secondary.Amount); 
 			
-			if(leftAmmoAmount)
-			{
-				if(leftAmmoAmount != oldLeftAmmoAmount) 
-					mAmmoLeftInterpolator.Reset(GetAmount(leftAmmoAmount));
+			if(Left)
+				mAmmoLeftInterpolator.Update(Left.Amount); 
 			
-				mAmmoLeftInterpolator.Update(GetAmount(leftAmmoAmount));
-				
-				oldLeftAmmoAmount = leftAmmoAmount;
+			if(pbWeap && pbWeap.maxOverheat > 0)
+			{
+				mOverheatInterpolator.Update(pbWeap.overheat);
+				mOverheatLeftInterpolator.Update(pbWeap.leftOverheat);
 			}
 		}
 
@@ -412,7 +492,17 @@ class PB_Hud_ZS : BaseStatusBar
             swayCurrentFrame = (IntMSway, IntMPitch);
 		}
 		
-		oldWeapon = CPlayer.ReadyWeapon;
+        IntHealth = mHealthInterpolator.GetValue();
+        MaxHealth = plr.GetMaxHealth();
+
+        IntArmor = mArmorInterpolator.GetValue();
+        MaxArmor = GetMaxAmount("BasicArmor");
+
+        IntAmmo1 = mAmmo1Interpolator.GetValue();
+		IntAmmo2 = mAmmo2Interpolator.GetValue();
+        IntAmmoLeft = mAmmoLeftInterpolator.GetValue();
+
+		oldWeapon = weap;
 	}
 
 	void From32to0Slow() {
@@ -523,42 +613,42 @@ class PB_Hud_ZS : BaseStatusBar
 	
 	void CalculateSway() {
 		//Limit so it only counts when the player strafes.
-		vector3 strafedir = (cos(CPlayer.mo.angle + 90), sin(CPlayer.mo.angle + 90), 0);
-		double strafeSpeed = CPlayer.mo.vel dot strafedir;
+		vector3 strafedir = (cos(plr.angle + 90), sin(plr.angle + 90), 0);
+		double strafeSpeed = plr.vel dot strafedir;
 		
 		//Calculate offsets.
-		double intSway = CPlayer.mo.angle - mOldAngles + Actor.Normalize180((strafeSpeed * 0.35));
-		double intPitch = CPlayer.mo.pitch - mOldPitch - (CPlayer.mo.vel.z * 0.35);
+		double intSway = plr.angle - mOldAngles + Actor.Normalize180((strafeSpeed * 0.35));
+		double intPitch = plr.pitch - mOldPitch - (plr.vel.z * 0.35);
 		
 		//The same concept as the comment above, but forwards.
-		vector3 forwarddir = (cos(CPlayer.mo.angle + 180), sin(CPlayer.mo.angle + 180), 0);
-		double forwardOffset = CPlayer.mo.vel dot forwarddir;
+		vector3 forwarddir = (cos(plr.angle + 180), sin(plr.angle + 180), 0);
+		double forwardOffset = plr.vel dot forwarddir;
 
 		//Detect if the player is on the ground and the old Z velocity is 8, if true, play the fall animation.
-		bool onGround = CPlayer.mo.pos.Z <= CPlayer.mo.floorz;
+		bool onGround = plr.pos.Z <= plr.floorz;
 		if(mOldZVel < -8 && onGround)
 		{
 			mFallOfs = clamp((mOldZVel * 0.50), 0, -9);
 		}
 		
 		//Pointer to the PB player class.
-		let PB_Player = PlayerPawnBase(CPlayer.mo);
+		let PB_Player = PlayerPawnBase(plr);
 
 		//Limit and add variables.
 		if(PB_Player)
 		{
-			mSway = clamp(intSway + (PB_Player.XBob * 0.5) - CPlayer.mo.Roll, -8, 8);
-			mPitch = clamp(intPitch + mFallOfs - (PB_Player.YBob * 0.5) + CPlayer.mo.Roll, -8, 8);
+			mSway = clamp(intSway + (PB_Player.XBob * 0.5) - plr.Roll, -8, 8);
+			mPitch = clamp(intPitch + mFallOfs - (PB_Player.YBob * 0.5) + plr.Roll, -8, 8);
 		}
 
 		//Collect old information.
-		mOldAngles = CPlayer.mo.angle;
-		mOldPitch = CPlayer.mo.pitch;
-		mOldZVel = CPlayer.mo.vel.z;
+		mOldAngles = plr.angle;
+		mOldPitch = plr.pitch;
+		mOldZVel = plr.vel.z;
 
 		//Calculate forward velocity.
 		mForwardOffset = clamp((Actor.Normalize180(forwardOffset) * 0.35), -8, 8);
-		mForwardOffset += (CPlayer.mo.player.fov - CPlayer.mo.player.DesiredFov) * 0.5;
+		mForwardOffset += (plr.player.fov - plr.player.DesiredFov) * 0.5;
 		
 		//Return the falling animation slowly.
 		if(mFallOfs < 0.0) {
@@ -727,7 +817,7 @@ class PB_Hud_ZS : BaseStatusBar
 		{
 			mugflags = MugShot.ANIMATEDGODMODE | MugShot.XDEATHFACE | MugShot.CUSTOM;
 				
-			if(cplayer.mo.FindInventory("PowerInvisibility",true) || cplayer.mo.bSHADOW)
+			if(plr.FindInventory("PowerInvisibility",true) || plr.bSHADOW)
 				mug = isInvulnerable() ? "SGI" : "SCI";
 			else 
 				mug = isInvulnerable() ? "SGD" : "SFC";
@@ -737,8 +827,14 @@ class PB_Hud_ZS : BaseStatusBar
 			mugflags = MugShot.STANDARD; 
 			mug = "STF"; 
 		}
-			
-		PBHud_DrawTexture(GetMugShot(5, mugflags, mug), (25, -65), DI_ITEM_OFFSETS | DI_SCREEN_LEFT_BOTTOM, scale: (1.25, 1.25));
+		if(CVar.GetCVar("hud_aspectscale",cplayer).GetBool() && CVar.GetCVar("hud_oldscale",cplayer).GetBool() && CVar.GetCVar("hud_scale",cplayer).GetInt() > -1 || customPBMugshot)
+		{
+			PBHud_DrawTexture(GetMugShot(5, mugflags, mug), (24.5, -65.5), DI_ITEM_OFFSETS | DI_SCREEN_LEFT_BOTTOM, scale: (1.25, 1.25));
+		}
+		else
+		{
+			PBHud_DrawTexture(GetMugShot(5, mugflags, mug), (23.5, -69.75), DI_ITEM_OFFSETS | DI_SCREEN_LEFT_BOTTOM, scale: (1.25, 1.5));
+		}
 	}
 	
 	////////////////////////////////////
@@ -747,17 +843,17 @@ class PB_Hud_ZS : BaseStatusBar
 	
 	static const String PB_AmmoTypes[] =
 	{
-		"AMMOIC2, PB_LowCalMag, Tan, Ammo",
-		"AMMOIC3, PB_Shell, Orange, Ammo",
-		"AMMOIC1, PB_HighCalMag, Yellow, Ammo",
-		"AMMOIC4, PB_RocketAmmo, Red, Ammo",
-		"AMMOIC5, PB_Cell, Purple, Ammo",
-		"AMMOIC6, PB_Fuel, Orange, Ammo",
-		"AMMOIC7, PB_DTech, DarkRed, Ammo",
+		"AMMOIC2S, PB_LowCalMag, Tan, Ammo",
+		"AMMOIC3S, PB_Shell, Orange, Ammo",
+		"AMMOIC1S, PB_HighCalMag, Yellow, Ammo",
+		"AMMOIC4S, PB_RocketAmmo, Red, Ammo",
+		"AMMOIC5S, PB_Cell, Purple, Ammo",
+		"AMMOIC6S, PB_Fuel, PB_Fuel, Ammo",
+		"AMMOIC7S, PB_DTech, PB_DTech, Ammo",
 		"ALISTGRN, PB_GrenadeAmmo, Green, Equipment",
-		"ALISTSTN, PB_StunGrenadeAmmo, Cyan, Equipment",
 		"ALISTREV, PB_QuickLauncherAmmo, LightBlue, Equipment",
-		"ALISTMIN, PB_ProxMineAmmo, Purple, Equipment"
+		"ALISTMIN, PB_ProxMineAmmo, Purple, Equipment",
+		"ALISTSTN, PB_StunGrenadeAmmo, Cyan, Equipment"
 	};
 	
 	void PB_AmmoListDrawer(vector2 initialpos, int step = 12) 
@@ -770,7 +866,7 @@ class PB_Hud_ZS : BaseStatusBar
 			
 			if(hideunusedtypes)
 			{
-				for(let i = CPlayer.mo.inv; i != null; i = i.inv)
+				for(let i = plr.inv; i != null; i = i.inv)
 				{
 					if(ammoTypeArray[3] == "Ammo")
 					{
@@ -794,7 +890,7 @@ class PB_Hud_ZS : BaseStatusBar
 				continue; 
 			
 			//console.printf("%s %s %s", ammoTypeArray[0], ammoTypeArray[1], ammoTypeArray[2]);
-			PBHud_DrawImage(ammoTypeArray[0], initialpos + (-12, -20), DI_SCREEN_RIGHT_BOTTOM, 1, (14, 12));
+			PBHud_DrawImage(ammoTypeArray[0], initialpos + (-12, -20), DI_SCREEN_RIGHT_BOTTOM, 1, (17, 13));
 			PBHud_DrawString(mBoldFont, curmaxammolist ? FormatNumber(GetAmount(ammoTypeArray[1])).."/"..FormatNumber(GetMaxAmount(ammoTypeArray[1])) : FormatNumber(GetAmount(ammoTypeArray[1])), initialpos + (-25, -33), DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT, Font.FindFontColor(ammoTypeArray[2]), scale: (0.8, 0.8));
 			initialpos.y -= step;
 		}
@@ -804,27 +900,37 @@ class PB_Hud_ZS : BaseStatusBar
 	//		   AMMO HUD			 //
 	////////////////////////////////////
 	
-	void DrawAmmoBar(string lowerBG, string upperBG, string barBorder, string currentBar, string reserveBar, string ammoIcon, int fontTranslation = 0)
+	void DrawAmmoBar(string lowerBG, string upperBG, string dualBG, string emptyBG, string currentBar, string ammoIcon, int fontTranslation = 0, bool drawNumbers = true, bool drawPrimary = true, bool drawSecondary = true, bool drawDual = true, bool drawIcon = true)
 	{
-		if(CPlayer.ReadyWeapon)
+		if(pbWeap)
 		{
-			int IntAmmo1 = mAmmo1Interpolator.GetValue();
-			int IntAmmo2 = mAmmo2Interpolator.GetValue();
-			
-			Ammo Primary, Secondary;
-			[Primary, Secondary] = GetCurrentAmmo();
-
 			//Backgrounds
-			PBHud_DrawImage(lowerBG, (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-			if(Secondary) { PBHud_DrawImage(upperBG, (-73, -50), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha); }
-			//Bars
-			if(Secondary) { PBHud_DrawBar(currentBar, "BGBARL", IntAmmo2, Secondary.MaxAmount, (-112, -51), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM); }
-			PBHud_DrawBar(reserveBar, "BGBARL", IntAmmo1, Primary.MaxAmount, (-112, -30), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-			//Numbers
-			if(Secondary) { PBHud_DrawString(mDefaultFont, Formatnumber(Secondary.Amount), (-207, -69), DI_TEXT_ALIGN_RIGHT, fontTranslation); }
-			PBHud_DrawString(mDefaultFont, Formatnumber(Primary.Amount), (-207, -48), DI_TEXT_ALIGN_RIGHT, fontTranslation);
+			if(drawPrimary && Primary) {				
+                PBHud_DrawImage(lowerBG, (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
+                PBHud_DrawBar(currentBar, "BGBARL", IntAmmo1, Primary.MaxAmount, (-122, -32), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
+                if(drawNumbers) 
+                    PBHud_DrawString(mDefaultFont, string.format(pbWeap.primaryFormat, Primary.Amount / pbWeap.primaryDivisor), (-216, -48.75), DI_TEXT_ALIGN_RIGHT, fontTranslation);
+            }
+			if(drawSecondary && Secondary) {
+                PBHud_DrawImage(upperBG, (-73, -49), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
+                PBHud_DrawBar(pbWeap.magUnloaded ? "ABARX" : currentBar, "BGBARL", IntAmmo2, Secondary.MaxAmount, (-111, -52), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
+                if(drawNumbers) 
+                    PBHud_DrawString(mDefaultFont, string.format(pbWeap.secondaryFormat, Secondary.Amount / pbWeap.secondaryDivisor), (-205, -68.75), DI_TEXT_ALIGN_RIGHT, pbWeap.magUnloaded ? Font.CR_DARKGRAY : fontTranslation);
+            }
+			else if(drawPrimary && Primary) {
+                PBHud_DrawImage(emptyBG, (-73, -49), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
+			}
+
+			if(drawDual && Left && pbWeap.akimboMode) {
+                PBHud_DrawImage(dualBG, (-92, -69), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
+			    PBHud_DrawBar(pbWeap.leftMagUnloaded ? "ABARX" : currentBar, "BGBARL", IntAmmoLeft, Left.MaxAmount, (-101, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
+                if(drawNumbers) 
+                    PBHud_DrawString(mDefaultFont, string.format(pbWeap.leftFormat, Left.Amount / pbWeap.leftDivisor), (-194, -88.75), DI_TEXT_ALIGN_RIGHT, pbWeap.leftMagUnloaded ? Font.CR_DARKGRAY : fontTranslation);
+            }
+				
 			//Icon
-			PBHud_DrawImage(ammoIcon, (-77, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
+			if(drawIcon)
+                PBHud_DrawImage(ammoIcon, (-76, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (28, 23));
 		}
 	}
 
@@ -851,7 +957,7 @@ class PB_Hud_ZS : BaseStatusBar
 		keyamount = 0;
 		string keyactorname;
 
-		for(let i = CPlayer.mo.inv; i != null; i = i.inv)
+		for(let i = plr.inv; i != null; i = i.inv)
 		{
 			if(i is "Key")
 			{
@@ -921,7 +1027,7 @@ class PB_Hud_ZS : BaseStatusBar
 		bool invalidPower;
 		int fontCol;
 		
-		for(let i = CPlayer.mo.inv; i != null; i = i.inv)
+		for(let i = plr.inv; i != null; i = i.inv)
 		{
 			let power = Powerup(i);
 			
@@ -972,36 +1078,16 @@ class PB_Hud_ZS : BaseStatusBar
 	//		   HUD LOGIC			//
 	////////////////////////////////////
 	
-	void DrawFullScreenStuff()
-	{
-		let plr = PlayerPawn(CPlayer.mo);
+	bool DrawVisorStuff() {
+        plr = PlayerPawn(CPlayer.mo);
 		
 		if(plr) {
 			////////////////////////////////////
 			//		  HEALTH HUD			//
-			////////////////////////////////////
-			
-			//Get player stats (health, armor)
-			int Health = CPlayer.Health;
-			int IntHealth = mHealthInterpolator.GetValue();
-			int MaxHealth = CPlayer.mo.GetMaxHealth();
-
-			int Armor = GetAmount("BasicArmor");
-			int IntArmor = mArmorInterpolator.GetValue();
-			int MaxArmor = GetMaxAmount("BasicArmor");
+			////////////////////////////////////			
 
 			//WARNING: vile
 			if(!CheckInventory("sae_extcam") && !automapactive) {
-                double sectorlightlevel = cplayer.mo.cursector.lightlevel / 255.0;
-                color slcol = cplayer.mo.cursector.colormap.lightcolor;
-                
-                // [gng] i have heard that the color function is expensive, so i avoid running it if there's no need to.
-                color flsectorlightcolor;
-                if(slcol != 16777215)
-                    flsectorlightcolor = Color(255, slcol.r, slcol.g, slcol.b);
-                else
-                    flsectorlightcolor = 0xffffffff;
-
                 /*vector2 posbuffer = (Screen.GetWidth() / 2.f, Screen.GetHeight() / 2.f);
                 vector2 hudscale = GetHUDScale();
                 posbuffer.x /= hudscale.x;
@@ -1035,6 +1121,11 @@ class PB_Hud_ZS : BaseStatusBar
                     vector2 topOffsetsGlass = topOffsets + ((left ? -6 : 6), -6);
                     vector2 bottomOffsetsGlass = bottomOffsets + ((left ? -6 : 6), 6);
 
+					if(GetAmount("PB_PowerLightAmp") == 1)
+						PBHud_DrawImageManualAlpha("NIGHTVIS", (topOffsets.x, 0), visorFlags | DI_ITEM_VCENTER | DI_SCREEN_VCENTER, max(0.5,sin(level.MapTime * 2)), scale: (0.3, 0.3), parallax: 1.5, parallax2: 1.5);
+					if(GetAmount("PB_PowerIronFeet") == 1)
+						PBHud_DrawImageManualAlpha("RADSUIT", (topOffsets.x, 0), visorFlags | DI_ITEM_VCENTER | DI_SCREEN_VCENTER, 0.5 + abs(sin(level.MapTime)), scale: (0.3, 0.3), parallax: 1.0, parallax2: 1.0);
+
                     if(showVisorGlass) {
                         if(m0to1Float < 1.0) {
                             PBHud_DrawImageManualAlpha("HUDTPOF2", topOffsetsGlass, visorFlags | DI_ITEM_TOP | DI_SCREEN_TOP, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);  
@@ -1066,13 +1157,13 @@ class PB_Hud_ZS : BaseStatusBar
 
                 if(showVisorGlass)
                 {
-                    if(bottomMiddlePart) 
+                    if(bottomMiddlePart == 1 || bottomMiddlePart == 2) 
                     {    
                         if(m0to1Float < 1.0)
                             PBHud_DrawImageManualAlpha("HUDMIOF2", (0, 50 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);  
                         PBHud_DrawImageManualAlpha("HUDMIDD2", (0, 50 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, clamp(m0to1Float * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);
                     }
-                    else
+                    if(bottomMiddlePart == 0 || bottomMiddlePart == 2)
                     {
                         if(m0to1Float < 1.0)
                             PBHud_DrawImageManualAlpha("HUDMIOF2", (0, -50 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, clamp((1 - m0to1Float) * playerAlpha, 0.0, playerAlpha), scale: (visorScale, visorScale), 0.6, 0.75);  
@@ -1081,23 +1172,22 @@ class PB_Hud_ZS : BaseStatusBar
                 }
 
                 if(showVisor) {     
-                    if(bottomMiddlePart) 
+                    if(bottomMiddlePart == 1 || bottomMiddlePart == 2) 
                     {
                         PBHud_DrawImageManualAlpha("HUDMDARK", (0, 44 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, 1, scale: (visorScale, visorScale), col: flsectorlightcolor); 
                         PBHud_DrawImageManualAlpha("HUDMIDOF", (0, 44 + visorOffsets + m32to0), DI_ITEM_BOTTOM | DI_SCREEN_CENTER_BOTTOM | DI_MIRRORY, sectorlightlevel, scale: (visorScale, visorScale), col: flsectorlightcolor);   
                     }
-                    else
+                    if(bottomMiddlePart == 0 || bottomMiddlePart == 2)
                     {
                         PBHud_DrawImageManualAlpha("HUDMDARK", (0, -44 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, 1, scale: (visorScale, visorScale), col: flsectorlightcolor); 
                         PBHud_DrawImageManualAlpha("HUDMIDOF", (0, -44 - visorOffsets - m32to0), DI_ITEM_TOP | DI_SCREEN_CENTER_TOP, sectorlightlevel, scale: (visorScale, visorScale), col: flsectorlightcolor);   
                     }
                 }
 			}
-
             if(diedTic > 0 && level.MapTime >= diedTic + 17)
             {
                 if(visorOff) 
-                    return;
+                    return false;
 
                 int onDeathTic = level.MapTime - (diedTic + 18);
                 Vector2 hudscale = GetHUDScale();
@@ -1115,106 +1205,118 @@ class PB_Hud_ZS : BaseStatusBar
                     }
                 }
                 ClearClipRect();
-            }
 
-            if(diedTic > 0)
-                return;
-            
+                return false;
+            }			
+		}
+
+		return true;
+	}
+	
+	void DrawFullScreenStuff()
+	{
+        plr = PlayerPawn(CPlayer.mo);
+		
+		if(plr) {
 			PBHUD_DrawMessages();
 
             if(magnificationIndScale > 0)
                 PBHud_DrawString(mBoldFont, String.Format("%.2fx", cplayer.DesiredFov / cplayer.fov), (0, -32), DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_CENTER | DI_ITEM_CENTER, alpha: 0.5, scale: (1.25 + (1 - magnificationIndScale), clamp(magnificationIndScale, 0, 1)));
 
             if(wiperWarningIndScale > 0) 
-                PBHud_DrawString(mBoldFont, String.Format("AUTOMATIC WIPER ENGAGED", screenWiperPrg * 100), (0, -64), DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_CENTER | DI_ITEM_CENTER, alpha: 0.5, scale: ((1.25 + (1 - wiperWarningIndScale)) * 0.75, clamp(wiperWarningIndScale, 0, 1) * 0.75));
+                PBHud_DrawString(mBoldFont, "AUTOMATIC WIPER ENGAGED", (0, -64), DI_SCREEN_CENTER_BOTTOM | DI_TEXT_ALIGN_CENTER | DI_ITEM_CENTER, alpha: 0.5, scale: ((1.25 + (1 - wiperWarningIndScale)) * 0.75, clamp(wiperWarningIndScale, 0, 1) * 0.75));
 
-			//Healthbar
-			if(GetAirTime() < 700)
-				PBHud_DrawString(mBoldFont, "O²: "..(Formatnumber(((GetAirTime() / 7.0) * 100.0) / 100.0)).."%", (190, -90), DI_TEXT_ALIGN_LEFT, Font.FindFontColor('HUDBLUEBAR'));
-
-			PBHud_DrawImage(inPain ? "BARBCK1L" : "BARBACK1", (73, -50), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
-			
-			if(dasher) {
-				/*PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge, 17.5, (252, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);
-				PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge - 17.5, 17.5, (261, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);*/
-			   
-				PBHud_DrawImage(Dasher.DashCharge >= 17.5 ? "DASHHUD2" : "DASHHUD1", (251 - 9 * dashScale2, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_LEFT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale1, 1 + dashScale1));
-				PBHud_DrawImage(Dasher.DashCharge >= 35 ? "DASHHUD2" : "DASHHUD1", (275 + 9 * dashScale1, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_RIGHT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale2, 1 + dashScale2));
-				
-				if(Dasher.DashCharge != 35 && dashIndAlpha < 1)
-					dashIndAlpha = 5.0;
-			}
-			
-			PBHud_DrawBar(inPain ? "HOBAR" : "HPBAR", "BGBARL", IntHealth, min(MaxHealth, 100), (112, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
-			
-			if(Health > 100)
-				PBHud_DrawBar("HLBAR", "BGBARL", IntHealth - 100, min(MaxHealth, 200), (112, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
-			
-			PBHud_DrawString(mDefaultFont, Formatnumber(Health), (205, -69), DI_TEXT_ALIGN_LEFT, healthFontCol);
-				
 			//Armorbar
 			PBHud_DrawImage("BARBACK2", (72, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
 			
-			// health indicator is here because sometimes it overlaps the armor bar
-			if(CheckInventory("PB_PowerStrength"))
-			{
-				// the stupid fucking berserk indicator that i spent too much time on
-				double gameTicRadians = gameTic * 11.4592;
-				double berserkBeat = 0.1 * ((((sin(gameTicRadians) ** 13) * sin((gameTicRadians) + 85.944)) / 0.2096) + (sin(gameTicRadians - 286.48) ** 16) * 0.2);
-				
-				PBHud_DrawImage("BZRKHUD",  (92, -62), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_CENTER, scale: (0.6 + berserkBeat, 0.6 + berserkBeat));
-			}
-
-			if(Health > 100)
-				PBHud_DrawImage("OVERHUD", (92, -62), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_CENTER, scale: (0.5, 0.5));
-			else
-				PBHud_DrawImage(inPain ? "LHLTHHUD" : "HLTHHUD", (92, -62), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_CENTER, scale: (0.5, 0.5));
-			
-			PBHud_DrawBar("APBAR", "BGBARL", IntArmor, min(MaxArmor, 100), (112, -30), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+			PBHud_DrawBar("APBAR", "BGBARL", IntArmor, min(MaxArmor, 100), (122, -32), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
 			
 			if(Armor > 100)
-				PBHud_DrawBar("AOBAR", "BGBARL", IntArmor - 100, min(MaxArmor, 100), (112, -30), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+				PBHud_DrawBar("AOBAR", "BGBARL", IntArmor - 100, min(MaxArmor, 100), (122, -32), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
 			
-			PBHud_DrawString(mDefaultFont, FormatNumber(Armor), (205, -48), DI_TEXT_ALIGN_LEFT, Font.FindFontColor('HUDGREENBAR2') );
+			PBHud_DrawString(mDefaultFont, FormatNumber(Armor), (214, -48.75), DI_TEXT_ALIGN_LEFT, cachedFontColors[HUDGREENBAR2] );
 			
 			int svpr = GetArmorSavePercent();
 
 			if(svpr >= 0 && svpr < 32)
-				PBHud_DrawImage("ARMRHUD1", (81, -24), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1, box: (20, 21));
+				PBHud_DrawImage("ARMRHUD1", (78, -20), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1);
 			else if(svpr >= 32 && svpr < 39)
-				PBHud_DrawImage("ARMRHUD2", (81, -24), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1, box: (20, 21));
+				PBHud_DrawImage("ARMRHUD2", (78, -20), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1);
 			else if(svpr >= 39 && svpr < 70)
-				PBHud_DrawImage("ARMRHUD3", (81, -24), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1, box: (20, 21));
+				PBHud_DrawImage("ARMRHUD3", (78, -20), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1);
 			else if(svpr >= 70)
-				PBHud_DrawImage("ARMRHUD4", (81, -24), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1, box: (20, 21));
+				PBHud_DrawImage("ARMRHUD4", (78, -20), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, 1);
 			
 			PBHud_DrawString(mBoldFont, Formatnumber(svpr), (89.8, -41), DI_TEXT_ALIGN_CENTER, Font.CR_WHITE, scale: (0.8, 0.8));
 			
-			PB_FPP_Holder flPointer = PB_FPP_Holder(CPlayer.mo.FindInventory("PB_FPP_Holder"));
+			//Healthbar
+			if(GetAirTime() < 699)
+				PBHud_DrawString(mBoldFont, "O²: "..(Formatnumber(((GetAirTime() / 7.0) * 100.0) / 100.0)).."%", (190, -90), DI_TEXT_ALIGN_LEFT, cachedFontColors[HUDBLUEBAR]);
+
+			PBHud_DrawImage(inPain ? "BARBCK1L" : "BARBACK1", (73, -49), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
 			
+			if(dasher) {
+				/*PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge, 17.5, (252, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);
+				PBHud_DrawBar("DASHHUD2", "DASHHUD1", Dasher.DashCharge - 17.5, 17.5, (261, -51), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, clamp(dashIndAlpha, 0.0, 1.0), slanted: false);*/
+				if(CheckInventory("PB_PowerSpeed")) {
+					PBHud_DrawImage("DASHHUD3", (241, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_LEFT);
+					PBHud_DrawImage("DASHHUD3", (265, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_RIGHT);
+					dashIndAlpha = 5.0;
+				}
+				else {
+					PBHud_DrawImage(Dasher.DashCharge >= 17.5 ? "DASHHUD2" : "DASHHUD1", (241 - 9 * dashScale2, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_LEFT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale1, 1 + dashScale1));
+					PBHud_DrawImage(Dasher.DashCharge >= 35 ? "DASHHUD2" : "DASHHUD1", (265 + 9 * dashScale1, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_VCENTER | DI_ITEM_RIGHT, clamp(dashIndAlpha, 0.0, 1.0), scale: (1 + dashScale2, 1 + dashScale2));
+					
+					if(Dasher.DashCharge != 35 && dashIndAlpha < 1) {
+						dashIndAlpha = 5.0;
+					}
+				}
+			}
+			
+			PBHud_DrawBar(inPain ? "HOBAR" : "HPBAR", "BGBARL", IntHealth, min(MaxHealth, 100), (111, -52), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+			
+			if(Health > 100)
+				PBHud_DrawBar("HLBAR", "BGBARL", IntHealth - 100, min(MaxHealth, 200), (112, -52), 0, 0, DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM);
+			
+			PBHud_DrawString(mDefaultFont, Formatnumber(Health), (203, -68.75), DI_TEXT_ALIGN_LEFT, healthFontCol);
+				
+			// health indicator is here because sometimes it overlaps the armor bar
+			if(CheckInventory("PB_PowerStrength"))
+			{
+				// the stupid fucking berserk indicator that i spent too much time on
+				PBHud_DrawImage("BZRKHUD",  (91, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_CENTER, scale: (1.0 + berserkBeat, 1.0 + berserkBeat));
+			}
+			
+			if(Health > 100)
+				PBHud_DrawImage("OVERHUD", (91, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_CENTER);
+			else
+				PBHud_DrawImage(inPain ? "LHLTHHUD" : "HLTHHUD", (91, -60), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_CENTER);
+
 			if(flPointer)
 			{
-				PBHud_DrawImage(flPointer.flOutOfBatteryPenalty ? "FLSHBATL" : "FLSHBATT", (103, -12), DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, playerBoxAlpha * clamp(flashlightBatteryAlpha, 0.0, 1.0));
-				PBHud_DrawBar(flPointer.flOutOfBatteryPenalty ? "FLSHBBAL" : "FLSHBBAR", "FLSHBBRG", flPointer.flashlightCharge, flPointer.flashlightChargeMax, (122, -15), 0, 0, DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, clamp(flashlightBatteryAlpha, 0.0, 1.0), slanted: false);
+				PBHud_DrawImage(flPointer.flOutOfBatteryPenalty ? "FLSHBATL" : "FLSHBATT", (105, -13), DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, playerBoxAlpha * clamp(flashlightBatteryAlpha, 0.0, 1.0));
+				PBHud_DrawBar(flPointer.flOutOfBatteryPenalty ? "FLSHBBAL" : "FLSHBBAR", "FLSHBBRG", flPointer.flashlightCharge, flPointer.flashlightChargeMax, (122, -16), 0, 0, DI_ITEM_LEFT_BOTTOM | DI_SCREEN_LEFT_BOTTOM, clamp(flashlightBatteryAlpha, 0.0, 1.0), slanted: false);
 				
 				if((flPointer.flashlightCharge < flPointer.flashlightChargeMax && flashlightBatteryAlpha < 1) || flPointer.on)
 					flashlightBatteryAlpha = 10.0;
 			}
+            else
+                flpointer = PB_FPP_Holder(plr.FindInventory("PB_FPP_Holder"));
 			
 			//Mugshot
             if(!multiplayer)
-			    PBHud_DrawImage("EQUPBO", (16, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
+			    PBHud_DrawImage("EQUPBO", (15, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha);
             else
             {
                 Color pcol = PB_Math.PB_DesaturateColor(CPlayer.GetDisplayColor());
-                PBHud_DrawImage("EQUPBOMP", (16, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha, col: pcol);
+                PBHud_DrawImage("EQUPBOMP", (15, -17), DI_SCREEN_LEFT_BOTTOM | DI_ITEM_LEFT_BOTTOM, playerBoxAlpha, col: pcol);
             }
 			
 			PBHud_DrawSpecialMugshot();
             
             if(multiplayer) {
-                int plrNum = PlayerPawn(CPlayer.mo).PlayerNumber();
-                PBHud_DrawString(mBoldFont, String.Format("P%i %s %s", plrnum + 1, CPlayer.GetUserName(), (net_arbitrator == plrnum) ? "(Arbitrator)" : "(Client)"), (16, -13), DI_SCREEN_LEFT_BOTTOM, Font.CR_UNTRANSLATED, alpha: 0.25);
+                int plrNum = plr.PlayerNumber();
+                PBHud_DrawString(mBoldFont, String.Format("P%i | %s %s", plrnum + 1, CPlayer.GetUserName(), (net_arbitrator == plrnum) ? "(Arbitrator)" : "(Client)"), (16, -95), DI_SCREEN_LEFT_BOTTOM, Font.CR_UNTRANSLATED, alpha: 0.25);
 
                 int ofs;
                 for(int i = 0; i < players.Size(); i++)
@@ -1252,20 +1354,20 @@ class PB_Hud_ZS : BaseStatusBar
 				PBHud_DrawImage("LEVLSTAT", (15, 17), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, playerBoxAlpha, scale: (1.2, 1.0));
 
 				//time
-				PBHud_DrawImage("1TIME", (26, 26), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (0.2, 0.2));
-				PBHud_DrawString(mBoldFont, Level.TimeFormatted(), (35, 25), 0, Font.CR_YELLOW, scale: (0.6, 0.6));
+				PBHud_DrawImage("1TIME", (25, 25), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP);
+				PBHud_DrawString(mBoldFont, levelStats[0], (37, 27), 0, Font.CR_YELLOW, scale: (0.6, 0.6));
 				
 				//kills
-				PBHud_DrawImage("1KILLS", (26, 36), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (0.2, 0.2));
-				PBHud_DrawString(mBoldFont, FormatNumber(Level.killed_monsters,0,5).." / "..FormatNumber(Level.total_monsters,0,5), (35, 35), 0, Font.CR_WHITE, scale: (0.6, 0.6));
+				PBHud_DrawImage("1KILLS", (25, 36), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP);
+				PBHud_DrawString(mBoldFont, levelStats[1], (37, 38), 0, Font.CR_WHITE, scale: (0.6, 0.6));
 				
 				//items
-				PBHud_DrawImage("1ITEMS", (26, 46), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (0.2, 0.2));
-				PBHud_DrawString(mBoldFont, FormatNumber(Level.found_items,0,5).." / "..FormatNumber(Level.total_items,0,5), (35, 45), 0, Font.CR_GREEN, scale: (0.6, 0.6));
+				PBHud_DrawImage("1ITEMS", (25, 47), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP);
+				PBHud_DrawString(mBoldFont, levelStats[2], (37, 49), 0, Font.CR_GREEN, scale: (0.6, 0.6));
 				
 				//secrets
-				PBHud_DrawImage("1SECRET", (26, 56), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP, scale: (0.2, 0.2));
-				PBHud_DrawString(mBoldFont, FormatNumber(Level.found_secrets,0,5).." / "..FormatNumber(Level.total_secrets,0,5), (35, 55), 0, Font.CR_PURPLE, scale: (0.6, 0.6));
+				PBHud_DrawImage("1SECRET", (25, 58), DI_SCREEN_LEFT_TOP | DI_ITEM_LEFT_TOP);
+				PBHud_DrawString(mBoldFont, levelStats[3], (37, 60), 0, Font.CR_PURPLE, scale: (0.6, 0.6));
 			}
 			
 			//DrawMessagesInArray();
@@ -1274,361 +1376,59 @@ class PB_Hud_ZS : BaseStatusBar
 			//		 AMMOBAR HUD			//
 			////////////////////////////////////
 			
-			if(CPlayer.ReadyWeapon)
-			{   
-				//Equipment
-				PBHud_DrawImage("EQUPBO", (-15, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-				
-				if(CheckInventory("FragGrenadeSelected")) {
-					PBHud_DrawImage("HFRAGY", (-24, -23), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, scale: (1.25, 1.25));
-					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_GrenadeAmmo")), (-38, -37), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED, scale: (0.8, 0.8));
-				}
-				else if(CheckInventory("ProximityMineSelected")) {
-					PBHud_DrawImage("HMINEY", (-24, -23), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, scale: (1.25, 1.25));
-					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_ProxMineAmmo")), (-38, -37), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED, scale: (0.8, 0.8));
-				}
-				else if(CheckInventory("StunGrenadeSelected")) {
-					PBHud_DrawImage("HSTUNY", (-24, -23), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, scale: (1.25, 1.25));
-					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_StunGrenadeAmmo")), (-38, -37), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED, scale: (0.8, 0.8));
-				}
-				else if(CheckInventory("RevGunSelected")) {
-					PBHud_DrawImage("HREVCY", (-24, -23), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, scale: (1.25, 1.25));
-					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_QuickLauncherAmmo")), (-38, -37), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED, scale: (0.8, 0.8));
-				}
-				else if(CheckInventory("LeechSelected")) {
-					PBHud_DrawImage("HLECHY", (-24, -23), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, scale: (1.25, 1.25));
-					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_DTech")), (-38, -37), DI_TEXT_ALIGN_RIGHT, Font.CR_UNTRANSLATED, scale: (0.8, 0.8));
-				}
-				
+			if(weap && !CheckWeaponSelected("LedgeGrabWeapon") && !CheckWeaponSelected("PB_TauntWeapon"))
+			{
 				//Ammo bars
 				if(showList)
 					PB_AmmoListDrawer((-10, -60));
-
-				//Specials and Dual Wields
-				int IntAmmoLeft = mAmmoLeftInterpolator.GetValue();
-				//console.PrintF("%i %s", IntAmmoLeft, leftAmmoAmount);
 				
-				let PB_Weap = PB_WeaponBase(CPlayer.ReadyWeapon);
-
-				if(PB_Weap && PB_Weap.GunBraced == true)
+				if(pbWeap && pbWeap.GunBraced == true)
 					PBHud_DrawImage("BRACICON", (-82, -50), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
 				
-				//handles dual wielding ammo
-				if(PB_Weap && PB_Weap.DualWieldToken && CheckInventory(PB_Weap.DualWieldToken) && PB_Weap.AmmoTypeLeft){
-					leftAmmoAmount = PB_Weap.AmmoTypeLeft.GetClassName();
-					if(WeaponUsesAmmoType("PB_HighCalMag")){
-						PBHud_DrawImage("BARBACY3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						PBHud_DrawBar("ABAR1", "BGBARL", IntAmmoLeft, GetMaxAmount(PB_Weap.AmmoTypeLeft), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount(PB_Weap.AmmoTypeLeft)), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
-					}
-					else if(WeaponUsesAmmoType("PB_LowCalMag")){
-						PBHud_DrawImage("BARBACT3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						PBHud_DrawBar("ABAR2", "BGBARL", IntAmmoLeft, GetMaxAmount(PB_Weap.AmmoTypeLeft), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount(PB_Weap.AmmoTypeLeft)), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
-					}
-					else if(WeaponUsesAmmoType("PB_Shell")){
-						PBHud_DrawImage("BARBACO3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						PBHud_DrawBar("ABAR3", "BGBARL", IntAmmoLeft, GetMaxAmount(PB_Weap.AmmoTypeLeft), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount(PB_Weap.AmmoTypeLeft)), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
-					}
-					else if(WeaponUsesAmmoType("PB_RocketAmmo")){
-						PBHud_DrawImage("BARBACR3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						PBHud_DrawBar("ABAR4", "BGBARL", IntAmmoLeft, GetMaxAmount(PB_Weap.AmmoTypeLeft), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount(PB_Weap.AmmoTypeLeft)), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_RED);
-					}
-					else if(WeaponUsesAmmoType("PB_Cell")){
-						PBHud_DrawImage("BARBACP3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						PBHud_DrawBar("ABAR5", "BGBARL", IntAmmoLeft, GetMaxAmount(PB_Weap.AmmoTypeLeft), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount(PB_Weap.AmmoTypeLeft)), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_PURPLE);
-					}
-					else if(WeaponUsesAmmoType("PB_DTech")){
-						PBHud_DrawImage("BARBACZ3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						PBHud_DrawBar("ABAR7", "BGBARL", IntAmmoLeft, GetMaxAmount(PB_Weap.AmmoTypeLeft), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount(PB_Weap.AmmoTypeLeft)), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_DARKRED);
-					}
-					else{
-						PBHud_DrawImage("BARBACC3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						PBHud_DrawBar("ABAR8", "BGBARL", IntAmmoLeft, GetMaxAmount(PB_Weap.AmmoTypeLeft), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount(PB_Weap.AmmoTypeLeft)), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_CYAN);
-					}
+                if(Primary && Primary is "PB_Ammo")
+                {
+					let reserveType = PB_Ammo(Primary);
+					int fontColor = font.FindFontColor(reserveType.fontTranslation);
+					weaponBarAccent = fontColor;
+					DrawAmmoBar(reserveType.lowerBG, reserveType.upperBG, reserveType.dualBG, reserveType.emptyBG, reserveType.currentBar, reserveType.ammoIcon, fontColor, true, pbWeap.showPrimary, pbWeap.showSecondary, pbWeap.showLeft);
+                }
+				else
+				{
+					weaponBarAccent = Font.CR_UNTRANSLATED;
 				}
-				//handles other exceptions
-				switch(CPlayer.ReadyWeapon.GetClassName())
+				if(pbWeap && pbWeap.maxOverheat > 0)
+				{
+					int heat = mOverheatInterpolator.GetValue();
+					int lheat = mOverheatLeftInterpolator.GetValue();
+						PBHud_DrawBar("ABAR45", "BGBARL", heat, pbWeap.maxOverheat, (Secondary ? -117 : -128, Secondary ? -51 : -31), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM,slanted:false);
+						PBHud_DrawBar("ABAR44", "BGBARL", heat, pbWeap.maxOverheat, (Secondary ? -116 : -127, Secondary ? -53 : -33), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM,slanted:false);
+						PBHud_DrawString(mDefaultFont, String.Format("%u°C",pbWeap.Overheat), (Secondary ? -118 : -129, Secondary ? -65 : -45), DI_TEXT_ALIGN_RIGHT, Font.CR_RED, scale:(0.5,0.5));
+						if(pbWeap.akimboMode)
+						{
+							PBHud_DrawBar("ABAR45", "BGBARL", lheat, pbWeap.maxOverheat, (-106, -71), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM,slanted:false);
+							PBHud_DrawBar("ABAR44", "BGBARL", lheat, pbWeap.maxOverheat, (-105,  -73), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM,slanted:false);
+							PBHud_DrawString(mDefaultFont, String.Format("%u°C", pbWeap.leftOverheat), (-108, -85.5), DI_TEXT_ALIGN_RIGHT, Font.CR_RED, scale:(0.5,0.5));
+						}
+				}
+				
+				switch(weap.GetClassName())
 				{
 					case 'PB_DMR':
-						if(CheckInventory("HDMRGrenadeMode") && !CheckInventory("DualWieldingDMRs"))
+						if(CheckInventory("HDMRGrenadeMode") && !pbWeap.akimboMode)
 						{
-							leftAmmoAmount = "PB_RocketAmmo";
-
-							//Underbarrel Grenade Ammo
-							PBHud_DrawImage("BARBACR3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR4", "BGBARL", IntAmmoLeft, GetMaxAmount("PB_RocketAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("PB_RocketAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_RED);
+							PBHud_DrawImage("BARBACR3", (-92, -69), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
+							PBHud_DrawBar("ABAR4", "BGBARL", GetAmount("PB_RocketAmmo"), GetMaxAmount("PB_RocketAmmo"), (-101, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
+							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("PB_RocketAmmo")), (-194, -88.75), DI_TEXT_ALIGN_RIGHT, Font.CR_RED);
 						}
-						break;
-					default:
-						break;
-				}
-						/*
-						if(CheckInventory("DualWieldingDMRs"))
-						{
-							leftAmmoAmount = "LeftDMRAmmo";
-							
-							//Left Rifle Ammo
-							PBHud_DrawImage("BARBACY3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR1", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftDMRAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftDMRAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
-						}
-						*/
-						/*
-					case 'PB_Carbine':
-						if(CheckInventory("DualWieldingCarbines"))
-						{
-							leftAmmoAmount = "LeftXRifleAmmo";
-							
-							PBHud_DrawImage("BARBACY3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR1", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftXRifleAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftXRifleAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
-						}
-						break;
-					case 'PB_Pistol':
-						if(CheckInventory("DualWieldingPistols"))
-						{
-							leftAmmoAmount = "SecondaryPistolAmmo";
-
-							PBHud_DrawImage("BARBACT3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR2", "BGBARL", IntAmmoLeft, GetMaxAmount("SecondaryPistolAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("SecondaryPistolAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
-						}
-						break;
-					case 'PB_Revolver':
-						if(CheckInventory("DualWieldingRevolver"))
-						{
-							leftAmmoAmount = "LeftRevolverAmmo";
-							
-							PBHud_DrawImage("BARBACT3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR2", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftRevolverAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftRevolverAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
-						}
-						break;
-					case 'PB_SMG':
-						if(CheckInventory("DualWieldingSMGs"))
-						{
-							leftAmmoAmount = "LeftSMGAmmo";
-							
-							PBHud_DrawImage("BARBACT3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR2", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftSMGAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftSMGAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
-						}
-						break;
-					case 'PB_Deagle':
-						if(CheckInventory("DualWieldingDeagles"))
-						{
-							leftAmmoAmount = "LeftDeagleAmmo";
-							
-							PBHud_DrawImage("BARBACT3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR2", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftDeagleAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftDeagleAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
-						}
-						break;
-					case 'PB_MP40':
-						if(CheckInventory("DualWieldingMP40"))
-						{
-							leftAmmoAmount = "LeftMP40Ammo";
-							
-							PBHud_DrawImage("BARBACT3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR2", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftMP40Ammo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftMP40Ammo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
-						}
-						break;
-					case 'PB_SSG':
-						if(CheckInventory("DualWieldingSSG"))
-						{
-							leftAmmoAmount = "LeftSSGAmmo";
-							
-							PBHud_DrawImage("BARBACO3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR3", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftSSGAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftSSGAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
-						}
-						break;
-					case 'PB_AutoShotgun':
-						if(CheckInventory("DualWieldingAutoshotguns"))
-						{
-							leftAmmoAmount = "LeftASGAmmo";
-							
-							PBHud_DrawImage("BARBACO3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR3", "BGBARL", GetAmount("LeftASGAmmo"), GetMaxAmount("LeftASGAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftASGAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
-						}
-						break;
-					case 'PB_QuadSG':
-						if(CheckInventory("QuadAkimboMode"))
-						{
-							leftAmmoAmount = "LeftQSSGAmmoCounter";
-							
-							PBHud_DrawImage("BARBACO3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR3", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftQSSGAmmoCounter"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftQSSGAmmoCounter")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
-						}
-						break;
-					case 'PB_M1Plasma':
-						if(CheckInventory("DualWieldingPlasma"))
-						{
-							leftAmmoAmount = "LeftPlasmaAmmo";
-							
-							PBHud_DrawImage("BARBACP3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR5", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftPlasmaAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftPlasmaAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_PURPLE);
-						}
-						break;
-					case 'PB_M2Plasma':
-						if(CheckInventory("DualWieldingM2Plasma"))
-						{
-							leftAmmoAmount = "LeftM2PlasmaAmmo";
-
-							PBHud_DrawImage("BARBACP3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-							PBHud_DrawBar("ABAR5", "BGBARL", IntAmmoLeft, GetMaxAmount("LeftM2PlasmaAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-							PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("LeftM2PlasmaAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_PURPLE);
-						}
-						break;
-					*/
-					
-					
-//					 case 'PB_CryoRifle':
-//						 if(CheckInventory("CryoRiflePistolToken"))
-//						 {
-//							 leftAmmoAmount = "PrimaryPistolAmmo";
-							
-//							 PBHud_DrawImage("BARBACT3", (-90, -71), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-							
-//							 PBHud_DrawBar("ABAR2", "BGBARL", IntAmmoLeft, GetMaxAmount("PrimaryPistolAmmo"), (-100, -72), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-//							 PBHud_DrawString(mDefaultFont, Formatnumber(GetAmount("PrimaryPistolAmmo")), (-207, -90), DI_TEXT_ALIGN_RIGHT, Font.CR_TAN);
-//						 }
-//						 break;
-				
-				if(WeaponUsesAmmoType("PB_LowCalMag"))
-				{
-					weaponBarAccent = Font.CR_TAN;
-					DrawAmmoBar("BARBACT1", "BARBACT2", "BAMBAR2", "ABAR2", "ABAR2", "AMMOIC2", Font.CR_TAN);
-				}
-				else if(WeaponUsesAmmoType("PB_HighCalMag") && !(CheckWeaponSelected("PB_MG42")))
-				{
-					weaponBarAccent = Font.CR_YELLOW;
-					DrawAmmoBar("BARBACY1", "BARBACY2", "BAMBAR1", "ABAR1", "ABAR1", "AMMOIC1", Font.CR_YELLOW);
-				}
-				else if(WeaponUsesAmmoType("PB_Shell"))
-				{
-					weaponBarAccent = Font.CR_ORANGE;
-					DrawAmmoBar("BARBACO1", "BARBACO2", "BAMBAR3", "ABAR3", "ABAR3", "AMMOIC3", Font.CR_ORANGE);
-				}
-				else if(WeaponUsesAmmoType("PB_RocketAmmo"))
-				{
-					weaponBarAccent = Font.CR_RED;
-					DrawAmmoBar("BARBACR1", "BARBACR2", "BAMBAR4", "ABAR4", "ABAR4", "AMMOIC4", Font.CR_RED);
-				}
-				else if(WeaponUsesAmmoType("PB_Cell"))
-				{
-					weaponBarAccent = Font.CR_PURPLE;
-					DrawAmmoBar("BARBACP1", "BARBACP2", "BAMBAR5", "ABAR5", "ABAR5", "AMMOIC5", Font.CR_PURPLE);
-				}
-				else if(WeaponUsesAmmoType("PB_Fuel") && !(CheckWeaponSelected("PB_Chainsaw") || CheckWeaponSelected("PB_Flamethrower")))
-				{
-					weaponBarAccent = Font.CR_ORANGE;
-					DrawAmmoBar("BARBACD1", "BARBACD2", "BAMBAR6", "ABAR6", "ABAR6", "AMMOIC6", Font.CR_ORANGE);
-				}
-				else if(WeaponUsesAmmoType("PB_DTech") && !(CheckWeaponSelected("PB_Unmaker")))
-				{
-					weaponBarAccent = Font.CR_DARKRED;
-					DrawAmmoBar("BARBACZ1", "BARBACZ2", "BAMBAR7", "ABAR7", "ABAR7", "AMMOIC7", Font.CR_DARKRED);
-				}
-				else if(WeaponUsesPBAmmoType1() && !CheckWeaponSelected("PB_Unmaker") && !CheckWeaponSelected("PB_Chainsaw") && !CheckWeaponSelected("PB_Flamethrower") && !CheckWeaponSelected("PB_MG42") && !CheckWeaponSelected("PB_TauntWeapon") ){
-					weaponBarAccent = Font.CR_CYAN;
-					DrawAmmoBar("BARBACC1", "BARBACC2", "BAMBAR8", "ABAR8", "ABAR8", "AMMOIC8", Font.CR_CYAN);
-				}
-					//PB_Ammo
-					//DrawAmmoBar(string lowerBG, string upperBG, string barBorder, string currentBar, string reserveBar, string ammoIcon, int fontTranslation = 0)
-				
-				//Special weapons
-				
-				Ammo Primary, Secondary;
-				[Primary, Secondary] = GetCurrentAmmo();
-				
-				
-				if((Primary || Secondary) && CPlayer.ReadyWeapon)
-				{
-					PBHud_DrawString(mDefaultFont, CPlayer.ReadyWeapon.GetTag(), (-110, -22), DI_ITEM_RIGHT_BOTTOM | DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT, weaponBarAccent, scale: (0.5, 0.5));
-				}
-				
-				switch(CPlayer.ReadyWeapon.GetClassName())
-				{
-					case 'PB_Unmaker':
-						PBHud_DrawImage("BARBACZ1", (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						PBHud_DrawImage("BARBACZ2", (-73, -50), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						//Bars
-						PBHud_DrawBar("ABAR7", "BGBARL", Secondary.Amount, Secondary.MaxAmount, (-112, -51), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						PBHud_DrawBar("ABAR7", "BGBARL", Primary.Amount, Primary.MaxAmount, (-112, -30), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						//Numbers
-						PBHud_DrawString(mDefaultFont, "SOULS", (-207, -69), DI_TEXT_ALIGN_RIGHT, Font.CR_DARKRED);
-						PBHud_DrawString(mDefaultFont, Formatnumber(Primary.Amount), (-207, -48), DI_TEXT_ALIGN_RIGHT, Font.CR_DARKRED);
-						//Icon
-						PBHud_DrawImage("AMMOIC7", (-77, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
-						weaponBarAccent = Font.CR_DARKRED;
 						break;
 					case 'PB_Chainsaw':
-						PBHud_DrawImage("BARBACD1", (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						PBHud_DrawBar("ABAR6", "BGBARL", Primary.Amount, Primary.MaxAmount, (-112, -30), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						//Numbers
-						PBHud_DrawString(mDefaultFont, Formatnumber(Primary.Amount), (-207, -48), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
-						//Icon
-						PBHud_DrawImage("AMMOIC6", (-77, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
-
 						if(CheckInventory("ChainsawResourceGather"))
 						{
-							PBHud_DrawImage("CHAINHL", (-90, -50), DI_SCREEN_RIGHT_BOTTOM, 1, (32, 32));
+							PBHud_DrawImage("CHAINHL", (-90, -44), DI_SCREEN_RIGHT_BOTTOM, 1, (32, 32));
 						}
-						weaponBarAccent = Font.CR_ORANGE;
-						break;
-					case 'PB_MG42':
-						PBHud_DrawImage("BARBACY1", (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						PBHud_DrawImage("BARBACR2", (-73, -50), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						//Bars
-						PBHud_DrawBar("ABAR4", "BGBARL", Secondary.Amount, Secondary.MaxAmount, (-112, -51), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						PBHud_DrawBar("ABAR1", "BGBARL", Primary.Amount, Primary.MaxAmount, (-112, -30), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						//Numbers
-						PBHud_DrawString(mDefaultFont, "HEAT", (-207, -69), DI_TEXT_ALIGN_RIGHT, Font.CR_RED);
-						PBHud_DrawString(mDefaultFont, Formatnumber(Primary.Amount), (-207, -48), DI_TEXT_ALIGN_RIGHT, Font.CR_YELLOW);
-						//Icon
-						PBHud_DrawImage("AMMOIC1", (-77, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
-						weaponBarAccent = Font.CR_YELLOW;
-						break;
-					case 'PB_Flamethrower':
-						PBHud_DrawImage("BARBACD1", (-72, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
-						if(!CheckInventory("FlamerUpgraded")) { PBHud_DrawImage("BARBACD2", (-73, -50), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha); }
-						//Bars
-						if(!CheckInventory("FlamerUpgraded")) { PBHud_DrawBar("ABAR6", "BGBARL", Secondary.Amount, Secondary.MaxAmount, (-112, -51), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM); }
-						PBHud_DrawBar("ABAR6", "BGBARL", Primary.Amount, Primary.MaxAmount, (-112, -30), 0, 1, DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM);
-						//Numbers
-						if(!CheckInventory("FlamerUpgraded")) { PBHud_DrawString(mDefaultFont, FormatNumber(Secondary.Amount), (-207, -69), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE); }
-						PBHud_DrawString(mDefaultFont, Formatnumber(Primary.Amount), (-207, -48), DI_TEXT_ALIGN_RIGHT, Font.CR_ORANGE);
-						//Icon
-						PBHud_DrawImage("AMMOIC6", (-77, -24), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, 1, (27, 19));
-						weaponBarAccent = Font.CR_ORANGE;
 						break;
 					case 'PB_Axe':
-						int AxeCount = CPlayer.mo.CountInv("PB_Axe");
+						int AxeCount = plr.CountInv("PB_Axe");
 						
 						for (AxeCount > 0; AxeCount--;)
 						{
@@ -1636,9 +1436,35 @@ class PB_Hud_ZS : BaseStatusBar
 						}
 						break;
 				}
+				
+				PBHud_DrawString(mDefaultFont, weap.GetTag(), (-110, -24), DI_SCREEN_RIGHT_BOTTOM | DI_TEXT_ALIGN_RIGHT, weaponBarAccent, scale: (0.5, 0.5));
+				
+				//Equipment
+				PBHud_DrawImage("EQUPBO", (-15, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
+				
+				if(CheckInventory("FragGrenadeSelected")) {
+					PBHud_DrawImage("ALISTGRN", (-46, -45), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_CENTER, scale: (0.8, 0.8));
+					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_GrenadeAmmo")), (-47, -33), DI_TEXT_ALIGN_CENTER, Font.CR_GREEN, scale: (0.8, 0.8));
+				}
+				else if(CheckInventory("ProximityMineSelected")) {
+					PBHud_DrawImage("ALISTMIN", (-46, -45), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_CENTER, scale: (0.8, 0.8));
+					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_ProxMineAmmo")), (-47, -33), DI_TEXT_ALIGN_CENTER, Font.CR_PURPLE, scale: (0.8, 0.8));
+				}
+				else if(CheckInventory("StunGrenadeSelected")) {
+					PBHud_DrawImage("ALISTSTN", (-46, -45), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_CENTER, scale: (0.8, 0.8));
+					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_StunGrenadeAmmo")), (-47, -33), DI_TEXT_ALIGN_CENTER, Font.CR_CYAN, scale: (0.8, 0.8));
+				}
+				else if(CheckInventory("RevGunSelected")) {
+					PBHud_DrawImage("ALISTREV", (-46, -45), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_CENTER, scale: (0.8, 0.8));
+					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_QuickLauncherAmmo")), (-47, -33), DI_TEXT_ALIGN_CENTER, Font.CR_LIGHTBLUE, scale: (0.8, 0.8));
+				}
+				else if(CheckInventory("LeechSelected")) {
+					PBHud_DrawImage("ALISTLCH", (-46, -45), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_CENTER, scale: (0.8, 0.8));
+					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_DTech")), (-47, -33), DI_TEXT_ALIGN_CENTER, cachedFontColors[DTECHAMMO], scale: (0.8, 0.8));
+				}
 			}
 
-			if (health > 0 && isInventoryBarVisible()) //Placeholder for now, at least it works(?)
+			if (Health > 0 && isInventoryBarVisible()) //Placeholder for now, at least it works(?)
 			{
 				Vector2 invBarPos = (0, 0);
 				SetSway(invBarPos.x, invBarPos.y, 0, 0.75, 0.25);
@@ -1647,19 +1473,49 @@ class PB_Hud_ZS : BaseStatusBar
 			}
 
 		}
+		
+		//zmove speedometer
+		let speedometer = CVar.GetCvar("pb_speedometer", cplayer).GetInt();
+		if(speedometer) {
+			if(plr && PlayerInGame[consoleplayer]) {
+				double unitscale;
+				switch(speedometer) {
+				default:
+				case 1:
+					unitscale = 10; //doom
+					break;
+				case 2:
+					unitscale = 32; //quake
+					break;
+				case 3:
+					unitscale = 655360; //srb2
+					break;
+				}
+				
+				PBHud_DrawString(mBoldFont, String.format("XY: %i Z: %i", plr.vel.xy.Length() * unitscale, abs(plr.vel.z) * unitscale), (0, 120), DI_TEXT_ALIGN_CENTER|DI_SCREEN_CENTER_TOP, Font.CR_WHITE);
+			}
+		}
 	}
-	bool WeaponUsesPBAmmoType(){return WeaponUsesPBAmmoType1() || WeaponUsesPBAmmoType2();}
-	bool WeaponUsesPBAmmoType1(){
-		if (CPlayer == null) return false;
-		let w = CPlayer.ReadyWeapon;
-		if (w == NULL || w.AmmoType1 == NULL) return false;
-		return (w.AmmoType1 is "PB_Ammo");
+
+	bool PB_WeaponUsesPBAmmoType()
+    {
+        return PB_WeaponUsesPBAmmoType1() || PB_WeaponUsesPBAmmoType2();
+    }
+
+	bool PB_WeaponUsesPBAmmoType1()
+    {
+		if (!weap || !weap.AmmoType1) 
+            return false;
+
+		return (weap.AmmoType1 is "PB_Ammo");
 	}
-	bool WeaponUsesPBAmmoType2(){
-		if (CPlayer == null) return false;
-		let w = CPlayer.ReadyWeapon;
-		if (w == NULL || w.AmmoType2 == NULL) return false;
-		return (w.AmmoType2 is "PB_Ammo");
+
+	bool PB_WeaponUsesPBAmmoType2()
+    {
+		if (!weap || !weap.AmmoType2) 
+            return false;
+
+		return (weap.AmmoType2 is "PB_Ammo");
 	}
 }
 

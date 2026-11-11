@@ -48,6 +48,7 @@ class gb_NeteventProcessor play
                                                                  );
     else if (args[0] == "gb_reset_custom_order") return InputResetCustomOrder;
 	else if (args[0] == "gb_give_item")	mChanger.giveItem(player,args[1]);
+	else if (args[0] == "gb_take_item")	mChanger.takeItem(player,args[1]);
 
     return InputNothing;
   }

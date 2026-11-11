@@ -1,5 +1,25 @@
 class PB_Math abstract
 {
+    clearscope static Color PB_MultiplyColors(Color baseColor, Color mixColor)
+    {
+        int desat_r = baseColor.r * (mixColor.r / 255.f);
+        int desat_g = baseColor.g * (mixColor.g / 255.f);
+        int desat_b = baseColor.b * (mixColor.b / 255.f);
+        
+        // return le color
+        return Color(255, desat_r, desat_g, desat_b);
+    }
+    
+    clearscope static Color PB_BlendColors(Color baseColor, Color mixColor)
+    {
+        int desat_r = (baseColor.r + mixColor.r) / 2;
+        int desat_g = (baseColor.g + mixColor.g) / 2;
+        int desat_b = (baseColor.b + mixColor.b) / 2;
+        
+        // return le color
+        return Color(255, desat_r, desat_g, desat_b);
+    }
+    
     clearscope static Color PB_DesaturateColor(Color baseColor, double desaturate = 0.0, double brightness = 1.0)
     {
         // [gng] convert the color to luma
@@ -88,9 +108,10 @@ class PB_Math abstract
 	
 	//[inkoalawetrust] Written by Agent_Ash, makes the Val ranging from O_Min to O_Man be crushed down to the range of N_Min and N_Max.
 	//Useful for example for compressing distances to a range of 0 to 1.0.
-	ClearScope Static Double LinearMap (Double Val, Double O_Min, Double O_Max, Double N_Min, Double N_Max) 
+	ClearScope Static Double LinearMap (Double Val, Double O_Min, Double O_Max, Double N_Min, Double N_Max, bool clamp = false) 
 	{
-		Return (Val - O_Min) * (N_Max - N_Min) / (O_Max - O_Min) + N_Min;
+        double val = (Val - O_Min) * (N_Max - N_Min) / (O_Max - O_Min) + N_Min;
+		Return clamp ? clamp(val, N_Min, N_Max) : val;
 	}
 	
 	//CREDIT: RicardoLuis0
@@ -197,8 +218,8 @@ mixin class PB_PowerupTimer
 }
 
 mixin class PB_RandomZombieNameHandler
-{	
-    static const String PB_ZombiemanFirstNames[] =
+{
+    static const String PB_ZombiemanFirstNames_M[] =
 	{
         "John",
 		"Jeff",
@@ -228,6 +249,12 @@ mixin class PB_RandomZombieNameHandler
 		"Walter",
 		"Samuel"
     };
+	
+    static const String PB_ZombiemanFirstNames_F[] =
+	{
+		"Placeholder1",
+		"Placeholder2"
+	};
     
     static const String PB_ZombiemanLastNames[] =
     {
@@ -316,10 +343,17 @@ mixin class PB_RandomZombieNameHandler
 		RANK_CULTIST,
 		RANK_DOKTOR,
 	}
+	
+	Enum EFormerHumanNames
+	{
+		NAME_MASC,
+		NAME_FEM,
+		NAME_BOTH
+	}
     
     //put in monster's PostBeginPlay() virtual
-    void PickRandomName(EFormerHumanRanks rankType = RANK_MILITARY) //0 civvie, 1 military, 2 cultists, 3 DOKTOR (that is turning off my pain inhibitors)
-    {
+    void PickRandomName(EFormerHumanRanks rankType = RANK_MILITARY, EFormerHumanNames nameType = NAME_MASC) //0 civvie, 1 military, 2 cultists, 3 DOKTOR (that is turning off my pain inhibitors).
+    {																										//don't use female names yet (because there aren't any)
 		string mRank;
 		switch(rankType)
 		{
@@ -338,10 +372,146 @@ mixin class PB_RandomZombieNameHandler
 				break;
 		}
 		
-        string mFirstName = PB_ZombiemanFirstNames[random[PBRandomName](0, PB_ZombiemanFirstNames.Size() - 1)];
+        string mFirstName;
+		switch(nameType)
+		{
+			case NAME_MASC:
+				mFirstName = PB_ZombiemanFirstNames_M[random[PBRandomName](0, PB_ZombiemanFirstNames_M.Size() - 1)];
+				break;
+			case NAME_FEM:
+				mFirstName = PB_ZombiemanFirstNames_F[random[PBRandomName](0, PB_ZombiemanFirstNames_F.Size() - 1)];
+				break;
+			case NAME_BOTH:
+				mFirstName = random(0, 1) == 1 ?
+				PB_ZombiemanFirstNames_F[random[PBRandomName](0, PB_ZombiemanFirstNames_F.Size() - 1)] :
+				PB_ZombiemanFirstNames_M[random[PBRandomName](0, PB_ZombiemanFirstNames_M.Size() - 1)];
+				break;
+		}
         string mLastName = PB_ZombiemanLastNames[random[PBRandomName](0, PB_ZombiemanLastNames.Size() -1 )];
         
     
         SetTag(mRank.." "..mFirstName.." "..string.Format("%c", random[PBRandomName]("A", "Z"))..". "..mLastName);
     }
+}
+
+//[nV] i'm losing my fucking mind what the fuck is wrong with this game
+mixin class PB_SpawnGore
+{
+	action bool, Actor A_SpawnGoreProjectile(class<Actor> missile, double spawnheight = 32, double spawnofs_xy = 0, double angle = 0, int flags = 0, double pitch = 0, int ptr = AAPTR_TARGET, bool trans = false) 
+	{
+		bool spn;
+		actor bld;
+		[spn, bld] = A_SpawnItemEx(missile,0,spawnofs_xy,spawnHeight);
+		if(bld)
+		{
+			bld.CopyBloodColor(self);
+			bld.Vel3DFromAngle(bld.speed,angle,flags & CMF_BADPITCH ? -pitch : pitch);
+			bld.angle = angle;
+			if(trans) bld.translation = bld.bloodtranslation;
+			return true, bld;
+		}
+		return false, null;
+	}
+
+	action bool, Actor A_SpawnGoreItemEx(class<Actor> missile, double xofs = 0, double yofs = 0, double zofs = 0, double xvel = 0, double yvel = 0, double zvel = 0, double angle = 0, int flags = 0, int failchance = 0, int tid = 0, bool trans = false) 
+	{
+		bool spn;
+		actor bld;
+		[spn, bld] = A_SpawnItemEx(missile,xofs,yofs,zofs,xvel,yvel,zvel,angle,flags,failchance,tid);
+		if(bld)
+		{
+			bld.CopyBloodColor(self);
+			if(trans) bld.translation = bld.bloodtranslation;
+			return true, bld;
+		}
+		return false, null;
+	}
+}
+
+mixin class PB_LocationalDamage {
+	action int, name GetLimbDamage(int baseDamage, name damageType, vector3 hitPos, Actor victim, Actor inflictor, bool omnidirectional = false, double headSizeMul = 1.0) {
+		int scaledDamage = baseDamage;
+		name dmgType = damageType;
+		double ang;
+		
+		ang = AbsAngle(victim.angle, atan2(victim.pos.y - hitPos.y, victim.pos.x - hitPos.x));
+		
+		let ptrPBMon = PB_Monster(victim);
+		double headPos, torsoPos, dickPos, legPos;
+		double headMult, torsoMult, lowerTorsoMult, armMult, dickMult, legMult;
+		bool noHead, noArm, noLeg, noDick;
+		if(ptrPBMon) {
+			headPos = ptrPBMon.posHeadHB;
+			torsoPos = ptrPBMon.posTorsoHB;
+			dickPos = ptrPBMon.posDickHB;
+			legPos = ptrPBMon.posLegHB;
+			
+			headMult = ptrPBMon.dmgHeadMult;
+			torsoMult = ptrPBMon.dmgTorsoMult;
+			lowerTorsoMult = ptrPBMon.dmgLowTorsoMult;
+			armMult = ptrPBMon.dmgArmMult;
+			dickMult = ptrPBMon.dmgDickMult;
+			legMult = ptrPBMon.dmgLegMult;
+			
+			noHead = ptrPBMon.ignoreHeadDamage;
+			noArm = ptrPBMon.ignoreArmDamage || omnidirectional;
+			noLeg = ptrPBMon.ignoreLegDamage;
+			noDick = ptrPBMon.ignoreDickDamage;
+		}
+		else {
+			headPos = 0.80;
+			torsoPos = 0.65;
+			dickPos = 0.38;
+			legPos = 0.40;
+			
+			headMult = 2.0;
+			torsoMult = 1.5;
+			lowerTorsoMult = 1.0;
+			armMult = 0.8;
+			dickMult = 1.25;
+			legMult = 0.7;
+			
+			noArm = omnidirectional;
+		}
+		
+		double victimZ = victim.pos.z;
+		double victimHeight = victim.ProjectilePassHeight > victim.Height ? victim.ProjectilePassHeight : victim.Height;
+		
+		if (hitPos.Z > victimZ + victimHeight * torsoPos) {
+			if (hitPos.Z > victimZ + victimHeight * headPos / headSizeMul) {
+				if(!noHead) {
+					dmgtype = "Head";
+					scaledDamage *= headMult;
+				}
+			}
+			else if (!noArm && ang > 64 && ang < 128) {
+				dmgtype = "Arm";
+				scaledDamage *= armMult;
+			}
+			else {
+				scaledDamage *= torsoMult;
+			}
+		}
+		else if (hitPos.Z < victimZ + victimHeight * legPos) {
+			if (!noDick && hitPos.Z > victimZ + victimHeight * dickPos) {
+				dmgtype = "Dick";
+				scaledDamage *= dickMult;
+			}
+			else if(!noLeg) {
+				dmgtype = "Leg";
+				scaledDamage *= legMult;
+			}
+		}
+		else if (!noArm && ang > 64 && ang < 128) {
+			dmgtype = "Arm";
+			scaledDamage *= armMult;
+		}
+		else {
+			scaledDamage *= lowerTorsoMult;
+		}
+		
+		scaledDamage = victim.GetModifiedDamage(dmgType, scaledDamage, true, self, inflictor);
+		//console.printf("dmg %u ang %.1f @ %.1f %.1f %.1f | victim @ %.1f height %.1f | type "..dmgtype, scaledDamage, ang, hitPos.x, hitPos.y, hitPos.z, victimZ, victimHeight);
+		return scaledDamage, dmgType;
+	}
 }

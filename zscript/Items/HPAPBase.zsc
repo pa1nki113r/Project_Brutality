@@ -10,17 +10,11 @@ class PB_Health : Health abstract
 			cap = Max(MaxAmount,toucher.GetMaxHealth(true));
 			ca = toucher.health;
 		}
-		res = cap-ca;
-		if(res>=aa){ res = aa;}
+		res = clamp(cap-ca, 0, aa);
 		return Super.TryPickup(toucher);
 	}
 	override string PickupMessage(){
-		msg = Super.PickupMessage();
-		if( msg.IndexOf("(+%a HP)") != -1 ){
-			msg.Replace("%a", String.Format("%d", res));
-		}else{
-			string.format("%s (+%d HP)",msg,res);
-		}
+		msg = string.format(StringTable.Localize(Super.PickupMessage()), res);
 		return msg;
 	}
 }
@@ -28,6 +22,7 @@ class PB_Health : Health abstract
 class PB_Armor : BasicArmorPickup abstract
 {
 	mixin PB_BetterPickupSound;
+	int ownAP;
 	
 	Default
 	{
@@ -44,6 +39,7 @@ class PB_Armor : BasicArmorPickup abstract
         let curArmor = BasicArmor(toucher.FindInventory("BasicArmor"));
         if(curArmor)
         {
+			ownAP = toucher.CountInv("BasicArmor");
             int newDefense = SaveAmount * (self.SavePercent / 100.f);
             int curDefense = toucher.CountInv("BasicArmor") * curArmor.SavePercent;
 
@@ -55,9 +51,9 @@ class PB_Armor : BasicArmorPickup abstract
                 if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 5, CVar.GetCvar("pb_helpflags", toucher.Player)))
                 {
                     Array<String> pbTipsBuf;
-                    pbTipsBuf.Push("You have attempted to pick up armor you don't need.");
-                    pbTipsBuf.Push("When your armor\'s effectiveness is lower than that of the new armor, it will be picked up automatically.");
-                    pbTipsBuf.Push("Else, you can press the USE key to pick it up manually.");
+                    pbTipsBuf.Push("$PB_ARMOR_TIP_1");
+                    pbTipsBuf.Push("$PB_ARMOR_TIP_2");
+                    pbTipsBuf.Push("$PB_ARMOR_TIP_3");
                     PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 5);
                 }
 
@@ -70,6 +66,11 @@ class PB_Armor : BasicArmorPickup abstract
 
         return Super.TryPickup(toucher);
     }
+	
+	override string PickupMessage(){
+		string msg = string.format(StringTable.Localize(Super.PickupMessage()), clamp(SaveAmount - ownAP, 0, SaveAmount));
+		return msg;
+	}
 }
 
 class PB_Armor2 : BasicArmorBonus abstract
@@ -97,12 +98,7 @@ class PB_Armor2 : BasicArmorBonus abstract
 		return Super.TryPickup(toucher);
 	}
 	override string PickupMessage(){
-		msg = Super.PickupMessage();
-		if( msg.IndexOf("(+%a AP)") != -1 ){
-			msg.Replace("%a", String.Format("%d", res));
-		}else{
-			string.format("%s (+%d AP)",msg,res);
-		}
+		msg = string.format(StringTable.Localize(Super.PickupMessage()), res);
 		return msg;
 	}
 }

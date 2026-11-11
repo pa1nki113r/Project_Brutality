@@ -41,10 +41,12 @@ class PB_GibBase : Actor
 		BloodType "NashGoreBlood", "NashGoreBlood", "NashGoreBlood";
 	}
 	
+	mixin PB_SpawnGore;
+	
 	override void BeginPlay(void)
 	{
 		ChangeStatNum(STAT_NashGore_Gore);
-		NashGoreStatics.QueueGore();
+		NashGoreStatics.QueueGore(self);
 		NashGoreStatics.RandomXFlip(self);
 		Super.BeginPlay();
 	}
@@ -134,7 +136,7 @@ class PB_TinyGibBase : PB_GibBase
 		Mass 1;
 		gravity 0.5;
 		Scale 0.8;
-		Decal "BloodSplat";
+		//Decal "BloodSplat";
 		+MOVEWITHSECTOR;
 		//+CLIENTSIDEONLY;
 		+NOBLOCKMAP;
@@ -237,18 +239,18 @@ class PB_XDeath1 : PB_GibBase
 		damagetype "Blood";
 		SeeSound "misc/xdeath4";
 		DeathSound "misc/xdeath1";
-		Decal "BloodSplat";
+		//Decal "BloodSplat";
 	}
 
     States
     {
 		Spawn:
 			TNT1 A 0 A_JumpIf(waterlevel > 1, "Underwater");
-			BLOD A 4 A_SpawnItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
+			BLOD A 4 A_SpawnGoreItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
 			Loop;
 		Death:
-			TNT1 A 0 A_SpawnItemEx("PB_BloodSpot", flags: NGORE_BLOOD_FLAGS);
-			
+			TNT1 A 0 A_SpawnGoreItemEx("PB_BloodSpot", flags: NGORE_BLOOD_FLAGS);
+			TNT1 A 0 A_SprayDecal("BloodSplat",16,useBloodColor:true);
 			XDT1 EF 3;			
 			XDT1 GHIJKL 3;
 			
@@ -256,9 +258,9 @@ class PB_XDeath1 : PB_GibBase
 		 Underwater:
 		 Splash:
 			TNT1 A 0 ThrustThingZ (0,35,1,0);
-			XDT1 AB 3 A_SpawnItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
+			XDT1 AB 3 A_SpawnGoreItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
 			TNT1 A 0 ThrustThingZ (0,35,1,0);
-			XDT1 CD 3 A_SpawnItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
+			XDT1 CD 3 A_SpawnGoreItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
 			Loop;
 			
 		IsOverLiquid:
@@ -266,6 +268,22 @@ class PB_XDeath1 : PB_GibBase
 			TNT1 A 1 A_SpawnItem ("WaterBloodSpot", 5);
 			Stop;
     }
+	
+	override void PostBeginPlay(void)
+	{
+        if(int(self.Translation) == 0)
+        {
+            if(target) CopyBloodColor(target);
+            else if(master) CopyBloodColor(master);
+            else if(tracer) CopyBloodColor(tracer);
+
+            // this means you found a new translation so set it
+            if(int(bloodtranslation) != 0) 
+                self.Translation = bloodtranslation;
+        }
+		
+		Super.PostBeginPlay();
+	}
 }
 
 
@@ -284,10 +302,11 @@ class PB_XDeath2: PB_XDeath1
     {
     Spawn:
 	    TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
-        XME1 ABCD 3 A_SpawnItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
+        XME1 ABCD 3 A_SpawnGoreItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
         Loop;
     Death:
-        TNT1 AAAAAAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 180), PB_GORE_PROJECTILE_FLAGS, random (0, 180));
+        TNT1 AAAAAAA 0 A_SpawnGoreProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 180), PB_GORE_PROJECTILE_FLAGS, random (0, 180));
+		TNT1 A 0 A_SprayDecal("BloodSplat",16,useBloodColor:true);
 	    TNT1 A 0 {
 			A_CheckFloor("SpawnFloor");
 			//A_SpawnItemEx ("DetectCeilBloodSimplerLarge",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
@@ -298,10 +317,10 @@ class PB_XDeath2: PB_XDeath1
 			class<Actor> cls;
 			if (nashgore_bloodtype == 0)		cls = "PB_BloodSpot";
 			else if (nashgore_bloodtype == 1)	cls = "NashGoreBloodSpotClassic";
-			A_SpawnItemEx(cls, flags: (NashGoreBloodBase.BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 150);
+			A_SpawnGoreItemEx(cls, flags: (NashGoreBloodBase.BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 150);
 		}
 		XME1 EEEEEEEEEE 1 {
-			A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
+			A_SpawnGoreItemEx("NashGoreBloodFloorSplashSpawner",
 				0, 0, 0,
 				frandom(-4.0, 4.0), frandom(-4.0, 4.0), frandom(1.0, 4.0),
 				frandom(0, 360), NGORE_BLOOD_FLAGS, 175);
@@ -333,25 +352,23 @@ class PB_XDeath3: PB_XDeath2
     {
     Spawn:
 	    TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
-        XME2 ABCD 3 A_SpawnItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
+        XME2 ABCD 3 A_SpawnGoreItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
         Loop;
     Death:
-        TNT1 AAAAAAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 180), PB_GORE_PROJECTILE_FLAGS, random (0, 180));
-	    TNT1 A 0 {
-			A_CheckFloor("SpawnFloor");
-			//A_SpawnItemEx ("DetectCeilBloodSimplerLarge",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
-			A_SpawnItemEx ("PB_DetectCeilXDeath2",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
-		}
+        TNT1 AAAAAAA 0 A_SpawnGoreProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 180), PB_GORE_PROJECTILE_FLAGS, random (0, 180));
+		TNT1 A 0 A_SprayDecal("BloodSplat",16,useBloodColor:true);
+		TNT1 A 0 A_CheckFloor("SpawnFloor");
+	    TNT1 A 0 A_SpawnGoreItemEx ("PB_DetectCeilXDeath2",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 		Stop;
 	SpawnFloor:
 		XME2 E 0 {
 			class<Actor> cls;
 			if (nashgore_bloodtype == 0)		cls = "PB_BloodSpot";
 			else if (nashgore_bloodtype == 1)	cls = "NashGoreBloodSpotClassic";
-			A_SpawnItemEx(cls, flags: (NashGoreBloodBase.BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 150);
+			A_SpawnGoreItemEx(cls, flags: (NashGoreBloodBase.BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 150);
 		}
 		XME2 EEEEEEEEEE 1 {
-			A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
+			A_SpawnGoreItemEx("NashGoreBloodFloorSplashSpawner",
 				0, 0, 0,
 				frandom(-4.0, 4.0), frandom(-4.0, 4.0), frandom(1.0, 4.0),
 				frandom(0, 360), NGORE_BLOOD_FLAGS, 175);
@@ -385,10 +402,11 @@ class PB_XDeath4: PB_XDeath2
     {
 		Spawn:
 			TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
-			XME3 ABCDEFGH 3 A_SpawnItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
+			XME3 ABCDEFGH 3 A_SpawnGoreItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
 			Loop;
 		Death:
-			TNT1 A 0 A_SpawnItemEX("NashGoreBloodSpot",flags: NashGoreBloodBase.BLOOD_FLAGS );
+			TNT1 A 0 A_SprayDecal("BloodSplat",16,useBloodColor:true);
+			TNT1 A 0 A_SpawnGoreItemEx("NashGoreBloodSpot",flags: NashGoreBloodBase.BLOOD_FLAGS );
 			TNT1 A 0 A_Jump(255, "Death1", "Death2");
 			GOto Death1;
 		
@@ -409,10 +427,11 @@ class PB_XDeath5: PB_XDeath4
     {
 		Spawn:
 			TNT1 A 0 A_JumpIf(waterlevel > 1, "Splash");
-			XME5 ABCD 3 A_SpawnItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
+			XME5 ABCD 3 A_SpawnGoreItemEx("NashGoreClassicBloodTrail", flags: NGORE_BLOOD_FLAGS);
 			Loop;
 		Death:
-			TNT1 A 0 A_SpawnItemEX("NashGoreBloodSpot",flags: NashGoreBloodBase.BLOOD_FLAGS );
+			TNT1 A 0 A_SprayDecal("BloodSplat",16,useBloodColor:true);
+			TNT1 A 0 A_SpawnGoreItemEx("NashGoreBloodSpot",flags: NashGoreBloodBase.BLOOD_FLAGS );
 			XME5 E -1;
 			Stop;
     }
@@ -641,7 +660,7 @@ class PB_XDeathBurnedMeat : Actor
 	override void BeginPlay(void)
 	{
 		ChangeStatNum(STAT_NashGore_Gore);
-		NashGoreStatics.QueueGore();
+		NashGoreStatics.QueueGore(self);
 		NashGoreStatics.RandomXFlip(self);
 		Super.BeginPlay();
 	}
@@ -801,7 +820,7 @@ class PB_XDeathArm1 : FlyingGibBase
 	override void BeginPlay(void)
 	{
 		ChangeStatNum(STAT_NashGore_Gore);
-		NashGoreStatics.QueueGore();
+		NashGoreStatics.QueueGore(self);
 		NashGoreStatics.RandomXFlip(self);
 		Super.BeginPlay();
 	}
@@ -2927,7 +2946,6 @@ Class PB_Intestine : PB_TinyGibBase
 		+RollSprite;
 		-EXPLODEONWATER;
 		DeathSound "misc/xdeath2";
-		Decal "BloodSplat";
 		Scale 0.8;
 	}
     States
@@ -2950,6 +2968,7 @@ Class PB_Intestine : PB_TinyGibBase
 			
 	
 		Death:
+			"####" "#" 0 A_SprayDecal("BloodSplat",16,useBloodColor:true);
 			"####" "#" 0 A_JumpIf(waterlevel > 1, "Water");
 			"####" "#" 2 A_CheckFloor("Rest");
 			Loop;
@@ -3344,7 +3363,7 @@ Class PB_Gib_HalfPlasmaZombie2: PB_GibBase
 	override void BeginPlay(void)
 	{
 		ChangeStatNum(STAT_NashGore_Gore);
-		NashGoreStatics.QueueGore();
+		NashGoreStatics.QueueGore(self);
 		//NashGoreStatics.RandomXFlip(self);
 		Super.BeginPlay();
 	}
@@ -3743,6 +3762,8 @@ Class PB_RipHelmetZombieMan : PB_RipZombieMan
 
 Class PB_DetectCeilXDeath2 : Actor
 {
+	mixin PB_SpawnGore;
+	
 	Default
 	{
 		scale 0.4;
@@ -3769,10 +3790,10 @@ Class PB_DetectCeilXDeath2 : Actor
 		Spawn:
 			TNT1 A 0 ThrustThingZ(0,25,0,1);
 			TNT1 A 2;
-			TNT1 A 0 A_SpawnItem("PB_SmearingXDeath2", 0, -25);
+			TNT1 A 0 A_SpawnGoreItemEx("PB_SmearingXDeath2",0,0,-25,trans:true);
 			Stop;
 		Death:
-			TNT1 A 0 A_SpawnProjectile ("PB_CeilXDeath2Checker", -15, 0, 90, 2, 90);
+			TNT1 A 0 A_SpawnGoreProjectile ("PB_CeilXDeath2Checker", -15, 0, 90, 2, 90);
 			Stop;
     }
 }
@@ -3824,10 +3845,10 @@ class PB_SmearingXDeath2 : PB_GibBase
 			Goto Death;
 		
 		Death:
-			TNT1 A 0 A_SpawnItem("PB_XDeath2NoStick");
+			TNT1 A 0 A_SpawnGoreItemEx("PB_XDeath2NoStick");
 			Stop;
 		Rest:
-			XME1 E 3 A_SpawnItem("PB_BloodSpot",0,0,0,1);
+			XME1 E 3 A_SpawnGoreItemEx("PB_BloodSpot");
 			XME1 E -1;
 			Stop;
     }
@@ -3906,7 +3927,7 @@ Class PB_CeilXDeath2Checker: PB_GibBase
 			BLOD A 0;
 			stop;
 		Death:
-			TNT1 A 1 A_SpawnItem("PB_CeilXDeath2",0,0,0,1);
+			TNT1 A 1 A_SpawnGoreItemEx("PB_CeilXDeath2",trans:true);
 			TNT1 A 5;
 			stop;
 		Xdeath:
@@ -3949,7 +3970,7 @@ class PB_CeilXDeath2: PB_GibBase
 			Goto Fall;
 
 		Fall:
-			TNT1 A 0 A_SpawnItem("PB_XDeath2NoStick");
+			TNT1 A 0 A_SpawnGoreItemEx("PB_XDeath2NoStick",trans:true);
 			stop;
 		Splash:
 			BLOD A 0;
@@ -3980,8 +4001,8 @@ Class PB_XDeath2NoStick: PB_XDeath1
 			XME1 H 3;
 			Loop;
 		Death:
-			TNT1 AAAAAAA 0 A_SpawnProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 180), PB_GORE_PROJECTILE_FLAGS, random (0, 180));
-			XME1 E 1 A_SpawnItem("PB_BloodSpot",0,0,0,1);
+			TNT1 AAAAAAA 0 A_SpawnGoreProjectile ("NashGoreClassicBloodTrail", 0, 0, random (0, 180), PB_GORE_PROJECTILE_FLAGS, random (0, 180));
+			XME1 E 1 A_SpawnGoreItemEx("PB_BloodSpot");
 			XME1 E -1;
 			Stop;
     }

@@ -1,52 +1,28 @@
-Class PBZombieManSpawner : PB_SpawnerBase //replaces ZombieMan
+Class PBZombieManSpawner : PB_SpawnerBase
 {
-	default
-	{
-		+LOOKALLAROUND;
-		scale 0.45;
-		-SHOOTABLE;
-		-COUNTKILL;
-		-SOLID;
-		+NOTIMEFREEZE;
-		//CANPUSHWALLS;
-		//-CANUSEWALLS;
-		//-ACTIVATEMCROSS;
-		//-CANPASS;
-		//-ISMONSTER;
-		//+NODAMAGE;
-		//-NOMENU;
-		Species "ZombiemanSpawner";
-	}
 	States
 	{
+		Death:
 		Tier4:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_ZombieSpawner_T4");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_ZombieSpawner_T4");
 			Stop;
 		Tier3:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_ZombieSpawner_T3");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_ZombieSpawner_T3");
 			Stop;
 		Tier2:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_ZombieSpawner_T2");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_ZombieSpawner_T2");
 			Stop;
 		Tier1:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_ZombieSpawner_T1");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_ZombieSpawner_T1");
 			Stop;
-		
-		Death:
-			 TNT1 A 0;
-			Goto Spawn;
 	}
 }
-
 
 Class PB_ZombieSpawner_T1 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.SpawnOverride "pb_zombieman_override";
 		dropitem "PB_PistolZombieman1",255,1;
 		dropitem "PB_HelmetZombieman",255,1;
 		dropitem "PB_PistolZombieman2",255,1;
@@ -54,22 +30,20 @@ Class PB_ZombieSpawner_T1 : PB_MonsterSpawner
 		dropitem "PB_ZombieScientistChainsaw",255,1;
 		dropitem "PB_ZombieMan",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_zombieman_override != "Disabled") {
-				toSpawn = pb_zombieman_override;
-				return;
-		}
-		
-		if(pb_NoZombieScientist && (toSpawn == "PB_ZombieScientist" || toSpawn == "PB_ZombieScientistChainsaw"))
-			toSpawn = "PB_PistolZombieman2";
-			
-		if(pb_NoPistolZman && (toSpawn == "PB_PistolZombieman1" || toSpawn == "PB_PistolZombieman2"))
-			toSpawn = "PB_HelmetZombieman";
-			
-		if(pb_NoHelmetZman && toSpawn == "PB_HelmetZombieman")
-			toSpawn = "PB_ZombieMan";
-		
+		if(toSpawn == "PB_HelmetZombieman" && pb_zombieman_filter & DisablePB_HelmetZombieman)
+			return false;
+		if(toSpawn == "PB_PistolZombieman1" && pb_zombieman_filter & DisablePB_PistolZombieman1)
+			return false;
+		if(toSpawn == "PB_PistolZombieman2" && pb_zombieman_filter & DisablePB_PistolZombieman2)
+			return false;
+		if(toSpawn == "PB_ZombieScientist" && pb_zombieman_filter & DisablePB_ZombieScientist)
+			return false;
+		if(toSpawn == "PB_ZombieScientistChainsaw" && pb_zombieman_filter & DisablePB_ZombieScientistChainsaw)
+			return false;
+		return true;
 	}
 }
 
@@ -78,6 +52,8 @@ Class PB_ZombieSpawner_T2 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_ZombieSpawner_T1";
+		PBRandomSpawner.SpawnOverride "pb_zombieman_override";
 		dropitem "PB_PistolZombieman1",255,1;
 		dropitem "PB_HelmetZombieman",255,1;
 		dropitem "PB_PistolZombieman2",255,1;
@@ -87,24 +63,21 @@ Class PB_ZombieSpawner_T2 : PB_MonsterSpawner
 		dropitem "PB_CarbineZombieman",255,1;
 	}
 	
-	override void HandleSpawnExeptions(in out name toSpawn)
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_zombieman_override != "Disabled") {
-				toSpawn = pb_zombieman_override;
-				return;
-		}
-		if(pb_NoCarbineZombie && toSpawn == "PB_CarbineZombieman")
-			toSpawn = "PB_ZombieScientistChainsaw";
-			
-		if(pb_NoZombieScientist && (toSpawn == "PB_ZombieScientist" || toSpawn == "PB_ZombieScientistChainsaw"))
-			toSpawn = "PB_PistolZombieman2";
-			
-		if(pb_NoPistolZman && (toSpawn == "PB_PistolZombieman1" || toSpawn == "PB_PistolZombieman2"))
-			toSpawn = "PB_HelmetZombieman";
-			
-		if(pb_NoHelmetZman && toSpawn == "PB_HelmetZombieman")
-			toSpawn = "PB_ZombieMan";
-		
+		if(toSpawn == "PB_HelmetZombieman" && pb_zombieman_filter & DisablePB_HelmetZombieman)
+			return false;
+		if(toSpawn == "PB_PistolZombieman1" && pb_zombieman_filter & DisablePB_PistolZombieman1)
+			return false;
+		if(toSpawn == "PB_PistolZombieman2" && pb_zombieman_filter & DisablePB_PistolZombieman2)
+			return false;
+		if(toSpawn == "PB_ZombieScientist" && pb_zombieman_filter & DisablePB_ZombieScientist)
+			return false;
+		if(toSpawn == "PB_ZombieScientistChainsaw" && pb_zombieman_filter & DisablePB_ZombieScientistChainsaw)
+			return false;
+		if(toSpawn == "PB_CarbineZombieman" && pb_zombieman_filter & DisablePB_CarbineZombieman)
+			return false;
+		return true;
 	}
 }
 
@@ -113,6 +86,8 @@ Class PB_ZombieSpawner_T3 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_ZombieSpawner_T2";
+		PBRandomSpawner.SpawnOverride "pb_zombieman_override";
 		dropitem "PB_PistolZombieman1",255,1;
 		dropitem "PB_HelmetZombieman",255,1;
 		dropitem "PB_PistolZombieman2",255,1;
@@ -123,28 +98,23 @@ Class PB_ZombieSpawner_T3 : PB_MonsterSpawner
 		dropitem "PB_ZSpecOps",255,1;
 	}
 	
-	override void HandleSpawnExeptions(in out name toSpawn)
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_zombieman_override != "Disabled") {
-				toSpawn = pb_zombieman_override;
-				return;
-		}
-		
-		if(pb_NoZSpecOps && toSpawn == "PB_ZSpecOps")
-			toSpawn = "PB_CarbineZombieman";
-			
-		if(pb_NoCarbineZombie && toSpawn == "PB_CarbineZombieman")
-			toSpawn = "PB_ZombieScientistChainsaw";
-			
-		if(pb_NoZombieScientist && (toSpawn == "PB_ZombieScientist" || toSpawn == "PB_ZombieScientistChainsaw"))
-			toSpawn = "PB_PistolZombieman2";
-			
-		if(pb_NoPistolZman && (toSpawn == "PB_PistolZombieman1" || toSpawn == "PB_PistolZombieman2"))
-			toSpawn = "PB_HelmetZombieman";
-			
-		if(pb_NoHelmetZman && toSpawn == "PB_HelmetZombieman")
-			toSpawn = "PB_ZombieMan";
-		
+		if(toSpawn == "PB_HelmetZombieman" && pb_zombieman_filter & DisablePB_HelmetZombieman)
+			return false;
+		if(toSpawn == "PB_PistolZombieman1" && pb_zombieman_filter & DisablePB_PistolZombieman1)
+			return false;
+		if(toSpawn == "PB_PistolZombieman2" && pb_zombieman_filter & DisablePB_PistolZombieman2)
+			return false;
+		if(toSpawn == "PB_ZombieScientist" && pb_zombieman_filter & DisablePB_ZombieScientist)
+			return false;
+		if(toSpawn == "PB_ZombieScientistChainsaw" && pb_zombieman_filter & DisablePB_ZombieScientistChainsaw)
+			return false;
+		if(toSpawn == "PB_CarbineZombieman" && pb_zombieman_filter & DisablePB_CarbineZombieman)
+			return false;
+		if(toSpawn == "PB_ZSpecOps" && pb_zombieman_filter & DisablePB_ZSpecOps)
+			return false;
+		return true;
 	}
 }
 
@@ -153,6 +123,8 @@ Class PB_ZombieSpawner_T4 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_ZombieSpawner_T3";
+		PBRandomSpawner.SpawnOverride "pb_zombieman_override";
 		dropitem "PB_PistolZombieman1",255,1;
 		dropitem "PB_HelmetZombieman",255,1;
 		dropitem "PB_PistolZombieman2",255,1;
@@ -164,28 +136,24 @@ Class PB_ZombieSpawner_T4 : PB_MonsterSpawner
 		dropitem "PB_PlasmaZombie",255,1;
 	}
 	
-	override void HandleSpawnExeptions(in out name toSpawn)
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_zombieman_override != "Disabled") {
-				toSpawn = pb_zombieman_override;
-				return;
-		}
-		if(pb_NoPlasmaZombie && toSpawn == "PB_PlasmaZombie")
-			toSpawn = "PB_ZSpecOps";
-		
-		if(pb_NoZSpecOps && toSpawn == "PB_ZSpecOps")
-			toSpawn = "PB_CarbineZombieman";
-			
-		if(pb_NoCarbineZombie && toSpawn == "PB_CarbineZombieman")
-			toSpawn = "PB_ZombieScientistChainsaw";
-			
-		if(pb_NoZombieScientist && (toSpawn == "PB_ZombieScientist" || toSpawn == "PB_ZombieScientistChainsaw"))
-			toSpawn = "PB_PistolZombieman2";
-			
-		if(pb_NoPistolZman && (toSpawn == "PB_PistolZombieman1" || toSpawn == "PB_PistolZombieman2"))
-			toSpawn = "PB_HelmetZombieman";
-			
-		if(pb_NoHelmetZman && toSpawn == "PB_HelmetZombieman")
-			toSpawn = "PB_ZombieMan";
+		if(toSpawn == "PB_HelmetZombieman" && pb_zombieman_filter & DisablePB_HelmetZombieman)
+			return false;
+		if(toSpawn == "PB_PistolZombieman1" && pb_zombieman_filter & DisablePB_PistolZombieman1)
+			return false;
+		if(toSpawn == "PB_PistolZombieman2" && pb_zombieman_filter & DisablePB_PistolZombieman2)
+			return false;
+		if(toSpawn == "PB_ZombieScientist" && pb_zombieman_filter & DisablePB_ZombieScientist)
+			return false;
+		if(toSpawn == "PB_ZombieScientistChainsaw" && pb_zombieman_filter & DisablePB_ZombieScientistChainsaw)
+			return false;
+		if(toSpawn == "PB_CarbineZombieman" && pb_zombieman_filter & DisablePB_CarbineZombieman)
+			return false;
+		if(toSpawn == "PB_ZSpecOps" && pb_zombieman_filter & DisablePB_ZSpecOps)
+			return false;
+		if(toSpawn == "PB_PlasmaZombie" && pb_zombieman_filter & DisablePB_PlasmaZombie)
+			return false;
+		return true;
 	}
 }

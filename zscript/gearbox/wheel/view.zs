@@ -64,7 +64,7 @@ class gb_WheelView
               , bool showPointer
               , int  innerIndex
               , int  outerIndex
-              ) const
+              ) unsafe(const)
   {
     mScaleFactor = mScreen.getScaleFactor();
     mCenter      = mScreen.getWheelCenter();
@@ -423,7 +423,7 @@ class gb_WheelView
   {
     if (gb_Ammo.isValid(viewModel.quantity1[weaponIndex], viewModel.maxQuantity1[weaponIndex]))
     {
-      int margin = int(10 * mScaleFactor);
+      int margin = int(5 * mScaleFactor);
       int radius = mScreen.getScaledScreenHeight() / 4 - margin;
       int nColoredPips, nTotalPips;
       [nColoredPips, nTotalPips] = makePipsNumbers( viewModel.quantity1   [weaponIndex]
@@ -611,7 +611,6 @@ class gb_WheelView
                       , DTA_DestWidth    , int(size.x)
                       , DTA_DestHeight   , int(size.y)
 					  //,DTA_LegacyRenderStyle, STYLE_ADD
-					  , DTA_TranslationIndex, Translation.GetID('reddenwep') 
                       );
   }
   
@@ -640,7 +639,7 @@ class gb_WheelView
 
   const UNDEFINED_INDEX = -1;
 
-  const MAX_N_PIPS = 10;
+  const MAX_N_PIPS = 12;
 
   const PIPS_GAP  = 1.2;
   const PIPS_STEP = 1.5;

@@ -1,46 +1,22 @@
-Class PBMancubusSpawner : PB_SpawnerBase //replaces Fatso
+Class PBMancubusSpawner : PB_SpawnerBase
 {
-	default
-	{
-		+LOOKALLAROUND;
-		scale 0.45;
-		-SHOOTABLE;
-		-COUNTKILL; 
-		-SOLID;
-		+NOTIMEFREEZE;
-		//CANPUSHWALLS;
-		//-CANUSEWALLS;
-		//-ACTIVATEMCROSS;
-		//-CANPASS;
-		//-ISMONSTER;
-		//+NODAMAGE;
-		//-NOMENU;
-		Species "FMspawner";
-	}
 	States
 	{
+		Death:
+			TNT1 A 0 PB_SpawnerSpawn("PB_MancubiSpawner_DW");
+			Stop;
 		Tier4:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_MancubiSpawner_T4");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_MancubiSpawner_T4");
 			Stop;
 		Tier3:
-		SpawnVolcabus:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_MancubiSpawner_T3");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_MancubiSpawner_T3");
 			Stop;
 		Tier2:
-		SpawnDaedabus:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_MancubiSpawner_T2");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_MancubiSpawner_T2");
 			Stop;
 		Tier1:
-		SpawnMancubus:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_MancubiSpawner_T1");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_MancubiSpawner_T1");
 			Stop;
-		Death:
-			TNT1 A 0;
-			Goto Spawn;
 	}
 }
 
@@ -48,33 +24,25 @@ Class PB_MancubiSpawner_T1 : PB_MonsterSpawner
 {
 	default
 	{
-		dropitem "PB_Mancubus1",255,1;
+		PBRandomSpawner.SpawnOverride "pb_mancubus_override";
+		dropitem "PB_Mancubus",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
-	{
-		if(pb_mancubus_override != "Disabled") {
-				toSpawn = pb_mancubus_override;
-				return;
-		}
-	}
-	
-	
 }
 
 Class PB_MancubiSpawner_T2 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_MancubiSpawner_T1";
+		PBRandomSpawner.SpawnOverride "pb_mancubus_override";
 		dropitem "PB_Daedabus",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_mancubus_override != "Disabled") {
-				toSpawn = pb_mancubus_override;
-				return;
-		}
-		if(pb_NoDaedabus && toSpawn == "PB_Daedabus")
-			toSpawn = "PB_Mancubus1";
+		if(toSpawn == "PB_Daedabus" && pb_mancubus_filter & DisablePB_Daedabus)
+			return false;
+		return true;
 	}
 }
 
@@ -82,19 +50,16 @@ Class PB_MancubiSpawner_T3 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_MancubiSpawner_T2";
+		PBRandomSpawner.SpawnOverride "pb_mancubus_override";
 		dropitem "PB_Volcabus",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_mancubus_override != "Disabled") {
-				toSpawn = pb_mancubus_override;
-				return;
-		}
-		if(pb_NoVolcabus && toSpawn == "PB_Volcabus")
-			toSpawn = "PB_Daedabus";
-			
-		if(pb_NoDaedabus && toSpawn == "PB_Daedabus")
-			toSpawn = "PB_Mancubus1";
+		if(toSpawn == "PB_Volcabus" && pb_mancubus_filter & DisablePB_Volcabus)
+			return false;
+		return true;
 	}
 }
 
@@ -102,18 +67,35 @@ Class PB_MancubiSpawner_T4 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_MancubiSpawner_T3";
+		PBRandomSpawner.SpawnOverride "pb_mancubus_override";
 		dropitem "PB_Volcabus",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_mancubus_override != "Disabled") {
-				toSpawn = pb_mancubus_override;
-				return;
-		}
-		if(pb_NoVolcabus && toSpawn == "PB_Volcabus")
-			toSpawn = "PB_Daedabus";
-			
-		if(pb_NoDaedabus && toSpawn == "PB_Daedabus")
-			toSpawn = "PB_Mancubus1";
+		if(toSpawn == "PB_Volcabus" && pb_mancubus_filter & DisablePB_Volcabus)
+			return false;
+		return true;
+	}
+}
+
+Class PB_MancubiSpawner_DW : PB_MonsterSpawner
+{
+	default
+	{
+		PBRandomSpawner.SpawnOverride "pb_mancubus_override";
+		dropitem "PB_Mancubus",255,38;
+		dropitem "PB_Daedabus",255,28;
+		dropitem "PB_Volcabus",255,34;
+	}
+	
+	override bool HandleSpawnExceptions(name toSpawn)
+	{
+		if(toSpawn == "PB_Daedabus" && pb_mancubus_filter & DisablePB_Daedabus)
+			return false;
+		if(toSpawn == "PB_Volcabus" && pb_mancubus_filter & DisablePB_Volcabus)
+			return false;
+		return true;
 	}
 }

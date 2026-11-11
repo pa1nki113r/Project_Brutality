@@ -26,6 +26,8 @@ Class PB_BaseBulletImpact : BulletPuff abstract
 		-RANDOMIZE;
 	}
 
+    color matTintColor;
+
 	uint8 hitWhat;
 	float wallNormal, reflectAngle;
 	float distfromplayer;
@@ -161,6 +163,13 @@ Class PB_BulletImpact : PB_BaseBulletImpact
 		Alpha 0.6;
 		RenderStyle "Shaded";
 	}
+
+    override void PostBeginPlay() {
+        Super.PostBeginPlay();
+        color1 = PB_Math.PB_MultiplyColors(color1, matTintColor);
+        color2 = PB_Math.PB_MultiplyColors(color2, matTintColor);
+        color3 = PB_Math.PB_MultiplyColors(color3, matTintColor);
+    }
 	
 	states
 	{
@@ -1006,12 +1015,8 @@ Class PB_BulletImpactBrownRock : PB_BulletImpact
 
 Class PB_BulletImpactWater : PB_BaseBulletImpact
 {
-	color waterColor;
-    property WaterColor: waterColor;
-
     Default
     {
-        PB_BulletImpactWater.WaterColor "FFFFFF";
         PB_BaseBulletImpact.NoDistantImpact true;
     }
 
@@ -1041,7 +1046,7 @@ Class PB_BulletImpactWater : PB_BaseBulletImpact
 	{
 		FSpawnParticleParams PUFSPRK;
 		PUFSPRK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");
-		PUFSPRK.Color1 = waterColor;
+		PUFSPRK.Color1 = matTintColor;
 		PUFSPRK.Style = STYLE_ADD;
 		PUFSPRK.Flags = SPF_ROLL;
 		vector3 vls;
@@ -1074,7 +1079,7 @@ Class PB_BulletImpactWater : PB_BaseBulletImpact
 			FSpawnParticleParams PUFSPRK;
 			string f = String.Format("%c", int("A") + random[impacts](0,3));
 			PUFSPRK.Texture = TexMan.CheckForTexture("LIQU"..f..0);
-			PUFSPRK.Color1 = waterColor;
+			PUFSPRK.Color1 = matTintColor;
 			PUFSPRK.Style = STYLE_ADD;
 			PUFSPRK.Flags = SPF_ROLL;
 			vector3 vls;
@@ -1106,7 +1111,7 @@ Class PB_BulletImpactWater : PB_BaseBulletImpact
 			FSpawnParticleParams PUFSMK;
 			PUFSMK.Texture = TexMan.CheckForTexture("X103"..String.Format("%c", 97 + random[impacts](0, 25)).."0");//("SMK2A0"); //SMk3G0
 			PUFSMK.Style = STYLE_ADD;
-			PUFSMK.Color1 = waterColor;
+			PUFSMK.Color1 = matTintColor;
 			vector3 vls, accl;
 			if(hitWhat == 1)
 			{
@@ -1145,27 +1150,6 @@ Class PB_BulletImpactWater : PB_BaseBulletImpact
 			Level.SpawnParticle(PUFSMK);
 		}
 	}
-}
-
-class PB_BulletImpactBlood : PB_BulletImpactWater
-{
-    Default {
-        PB_BulletImpactWater.WaterColor "FF0000";
-    }
-}
-
-class PB_BulletImpactSlime : PB_BulletImpactWater
-{
-    Default {
-        PB_BulletImpactWater.WaterColor "533f1f";
-    }
-}
-
-class PB_BulletImpactNukage : PB_BulletImpactWater
-{
-    Default {
-        PB_BulletImpactWater.WaterColor "3f832f";
-    }
 }
 
 Class PB_NoBloodPuff : PB_BaseBulletImpact

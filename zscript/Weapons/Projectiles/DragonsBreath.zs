@@ -4,11 +4,11 @@ Class PB_DragonsBreathTracer : PB_Projectile
 	{
 		PB_Projectile.BaseDamage 14;
 		PB_Projectile.RipperCount 0;
+		PB_Projectile.SpeedFPS 287;
 		Damagetype "Shotgun";
 		PoisonDamageType "Fire";
 		PoisonDamage 2;
 		+ADDITIVEPOISONDURATION;
-		speed 80;
 	}
 	States
 	{
@@ -212,10 +212,10 @@ Class PB_DragonBreath : Actor
 				EXPL A 0 A_SpawnItemEx ("ExplosionParticleSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 				//EXPL AAAAAAAAAAA 0 A_SpawnProjectile("ShotgunParticles", 6, 0, random (0, 360), 2, random (0, 90));//ShotgunParticles
 				TNT1 A 0 A_Jump(76, 2, 3,4);
-				TNT1 A 0 A_SpawnItemEx("DragonsBreathPiece1", random (-15, 15), random (-15, 15));
+				TNT1 A 0 A_SpawnItemEx("DragonsBreathPiece", random (-15, 15), random (-15, 15));
 				TNT1 A 0 A_Spawnprojectile ("FireworkSFXType2", 0, 0, random (0, 360), 2, random (-60, -30));
-				TNT1 A 0 A_SpawnItemEx("DragonsBreathPiece2", random (-35, 35), random (-35, 35));
-				TNT1 A 0 A_SpawnItemEx("DragonsBreathPiece3", random (-45, 45), random (-45, 35));
+				TNT1 A 0 A_SpawnItemEx("DragonsBreathPiece", random (-35, 35), random (-35, 35));
+				TNT1 A 0 A_SpawnItemEx("DragonsBreathPiece", random (-45, 45), random (-45, 35));
 				TNT1 AAAAAAAAAAA 0 A_Spawnprojectile("SparkX", 2, 0, random (0, 360), 2, random (0, 360));
 				TNT1 A 0 A_SpawnItemEx ("PB_BulletPuff",0,0,-5,0,0,0,0,SXF_NOCHECKPOSITION,0);
 				Stop;

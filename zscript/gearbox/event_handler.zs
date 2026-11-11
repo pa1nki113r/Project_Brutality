@@ -384,6 +384,7 @@ class gb_EventHandler : EventHandler
 
     mWeaponMenu.setSelectedWeapon(gb_WeaponWatcher.current());
     mSounds.playOpen();
+	if(mOptions.getViewType() == VIEW_TYPE_WHEEL) gb_Sender.sendGiveItemEvent("PlayerWheelOpen");
     mActivity.openWeapons();
   }
 
@@ -397,6 +398,7 @@ class gb_EventHandler : EventHandler
     }
 
     mSounds.playOpen();
+	if(mOptions.getViewType() == VIEW_TYPE_WHEEL) gb_Sender.sendGiveItemEvent("PlayerWheelOpen");
     mActivity.openInventory();
   }
   
@@ -418,6 +420,7 @@ class gb_EventHandler : EventHandler
 	}
 	
 	mSounds.playOpen();
+	gb_Sender.sendGiveItemEvent("PlayerWheelOpen");
 	mActivity.openSpecials();
   }
   
@@ -430,12 +433,14 @@ class gb_EventHandler : EventHandler
 	}
 	
 	mSounds.playOpen();
+	gb_Sender.sendGiveItemEvent("PlayerWheelOpen");
 	mActivity.openEquipment();
   }
 
 	private clearscope void close()
 	{
-		mSounds.playClose();
+		if(mActivity.isWeapons() || mActivity.isSpecials() || mActivity.isEquipment() || mActivity.isInventory()) mSounds.playClose();
+		gb_Sender.sendTakeItemEvent("PlayerWheelOpen");
 		mActivity.close();
 	}
   

@@ -15,25 +15,6 @@ class OptionMenuItemOption_PBVP : OptionMenuItemOption
 		return self;
 	}
 	
-	override int Draw(OptionMenuDescriptor desc, int y, int indent, bool selected)
-	{
-		if (mCenter)
-		{
-			indent = (screen.GetWidth() / 2);
-		}
-		//If(!isGrayed()){
-		drawLabel(indent, y, selected? OptionMenuSettings.mFontColorSelection : OptionMenuSettings.mFontColor, isGrayed());
-		//}
-
-		int Selection = GetSelection();
-		String text = StringTable.Localize(OptionValues.GetText(mValues, Selection));
-		if (text.Length() == 0) text = "Unknown";
-		//if(!isGrayed()){
-		drawValue(indent, y, OptionMenuSettings.mFontColorValue, text, isGrayed());
-		//}
-		return indent;
-	}
-	
 	override bool isGrayed()
 	{
 		if ( (mGraycheck && mGrayCheck.GetInt() == 0) || (mGraycheck2 && mGrayCheck2.GetInt() == 0) || (mGraycheck3 && mGrayCheck3.GetInt() == 0)  )
@@ -43,37 +24,32 @@ class OptionMenuItemOption_PBVP : OptionMenuItemOption
 	}
 }
 
-class OptionMenuItemNumberField_PBVP : OptionMenuItemNumberField
+class OptionMenuItemSlider_PBVP : OptionMenuItemSlider
 {
-	CVar mCVar2;
 	CVar mGrayCheck2;
-	float mMinimum;
-	float mMaximum;
-	float mStep;
+	CVar mGrayCheck3;
 
-	OptionMenuItemNumberField Init(String label, Name command, Float minimum = 0, Float maximum = 100, Float step = 1, CVar graycheck = null, CVar graycheck2 = null)
+	OptionMenuItemSlider Init(
+		String label,
+		Name command,
+		double min,
+		double max,
+		double step,
+		int showval = 1,
+		CVar graycheck = null,
+		CVar graycheck2 = null,
+		CVar graycheck3 = null
+	)
 	{
-		Super.Init(label, command, minimum, maximum, step, graycheck);
-		mMinimum = min(minimum, maximum);
-		mMaximum = max(minimum, maximum);
-		mStep = max(1, step);
-		mCVar2 = CVar.FindCVar(mAction);
+		Super.Init(label, command, min, max, step, showval, graycheck);
 		mGrayCheck2 = graycheck2;
+		mGrayCheck3 = graycheck3;
 		return self;
 	}
-	override int Draw (OptionMenuDescriptor d, int y, int indent, bool selected)
+	
+	override bool IsGrayed()
 	{
-		bool grayed = (mGrayCheck != null && !mGrayCheck.GetInt()) || (mGrayCheck2 != null && !mGrayCheck2.GetInt());
-		//if (!grayed){// hide option if feature is off
-		drawLabel(indent, y, selected ? OptionMenuSettings.mFontColorSelection : OptionMenuSettings.mFontColor, grayed);
-		drawValue(indent, y, OptionMenuSettings.mFontColorValue, Represent(), grayed);
-		//}
-		return indent;
-	}
-
-	virtual bool PB_isGrayed()
-	{
-		if ( (mGraycheck && mGrayCheck.GetInt() == 0) || (mGraycheck2 && mGrayCheck2.GetInt() == 0)  )
+		if ( (mGraycheck && mGrayCheck.GetInt() == 0) || (mGraycheck2 && mGrayCheck2.GetInt() == 0) || (mGraycheck3 && mGrayCheck3.GetInt() == 0)  )
 			return true;
 		else
 			return false;
@@ -81,7 +57,7 @@ class OptionMenuItemNumberField_PBVP : OptionMenuItemNumberField
 
 	override bool Selectable()
 	{
-		return !PB_isGrayed();
+		return !IsGrayed();
 	}
 }
 

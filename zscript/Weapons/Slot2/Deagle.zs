@@ -2,27 +2,26 @@ class PB_Deagle : PB_WeaponBase
 {
 	default
 	{
+		//$Title Martian Raptor Automag
+		//$Category Project Brutality/Weapons
+		//$Sprite D4E0Z0
 		weapon.slotnumber 2;
 		weapon.ammotype1 "PB_LowCalMag";
-		weapon.ammogive1 8;	
-		weapon.ammotype2 "DeagleAmmo";
+		weapon.ammogive1 20;	
+		weapon.ammotype2 "PB_DeagleMag";
 		weapon.slotpriority 1;
 		PB_WeaponBase.ReserveToMagAmmoFactor 2;
-		PB_WeaponBase.AmmoTypeLeft "LeftDeagleAmmo";
+		PB_WeaponBase.AmmoTypeLeft "PB_DeagleLeftMag";
 		Inventory.MaxAmount 2;
-		PB_WeaponBase.unloadertoken "DeagleHasUnloaded";
-		PB_WeaponBase.respectItem "RespectDeagle";
-		PB_WeaponBase.DualWieldToken "DualWieldingDeagles";	
 		Inventory.PickupSound "weapons/deagle/equip";
-		inventory.pickupmessage "UAC-H54 Martian Raptor .50 (Slot 2, Upgrade)";
+		inventory.pickupmessage "$PB_DEAGLE_PICKUP";
 		Obituary "%o was popped by %k's .50 Caliber Hand Cannon.";
 		Inventory.AltHUDIcon "D4E0Z0";
 		PB_WeaponBase.TailPitch 0.6;
+		PB_WeaponBase.Downgrade "PB_Revolver";
 		+weapon.CHEATNOTWEAPON;
-		+weapon.noalert;
-		+weapon.noautofire;
 		Scale 0.48;
-		Tag "UAC-H54 Martian Raptor .50";
+		Tag "$PB_DEAGLE_TAG";
 		FloatBobStrength 0.5;
 	}
 	
@@ -36,10 +35,7 @@ class PB_Deagle : PB_WeaponBase
 			loop;
 		
 		WeaponRespect:
-			TNT1 A 0 {
-				A_SetInventory("PB_LockScreenTilt",1);
-				A_SetCrosshair(-1);
-				}
+			TNT1 A 0 A_SetCrosshair(-1);
 			D4E1 ABCDEEE 1 A_DoPBWeaponAction();
 			D4E1 FGHIJK 1 A_DoPBWeaponAction();
 			TNT1 A 0 A_Startsound("weapons/smg_magfly1",18,CHANF_OVERLAP );
@@ -64,13 +60,11 @@ class PB_Deagle : PB_WeaponBase
 			D4E2 B 1 { A_DoPBWeaponAction(); A_weaponoffset(0,32,WOF_interpolate);}
 			TNT1 A 0 A_Startsound("weapons/deagle/swapfol",18,CHANF_OVERLAP);
 			D4E2 CDEFG 1 A_DoPBWeaponAction();
-			TNT1 A 0 PB_HandleCrosshair(42);
-			goto ready3;
+			TNT1 A 0 PB_HandleCrosshair(32);
+			goto Ready;
 			
 		Select:
 			TNT1 A 0 PB_WeaponRaise("weapons/deagle/equip");
-			TNT1 A 0 PB_WeapTokenSwitch("DeagleSelected");
-			TNT1 A 0 A_SetInventory("RandomHeadExploder",1);	//little test
 			TNT1 A 0 PB_TakeIfUpgrade("PB_Revolver");
 			TNT1 A 0 PB_RespectIfNeeded();
 		SelectContinue:
@@ -81,19 +75,21 @@ class PB_Deagle : PB_WeaponBase
 			goto ready;
 		
 		Deselect:
-			TNT1 A 0 A_ClearOverlays(10,11);
-			TNT1 A 0 PB_jumpIfHasBarrel("PlaceBarrel","PlaceFlameBarrel","PlaceIceBarrel");
+			TNT1 A 0 {
+				A_ClearOverlays(10,11);
+				A_zoomfactor(1.0);
+				A_SetInventory("Zoomed",0);
+			}
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DeselectAnimationDualWield");
 			D4E0 DCBA 1 PB_SetSpriteIfUnload("D4U0");
 			TNT1 A 0 A_lower(120);
 			wait;
-		
+		Ready3:
 		Ready:
 			TNT1 A 0 A_WeaponOffset(0,32);
-			TNT1 A 0 PB_HandleCrosshair(42);
-		Ready3:
+			TNT1 A 0 PB_HandleCrosshair(32);
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReadyDualWield");
-			TNT1 A 0 A_jumpif(invoker.ammo2.amount < 1,"ReadyUnloaded");
+			TNT1 A 0 A_JumpIf(PB_GetChamberEmpty(),"ReadyUnloaded");
 			D4E0 E 1 {
 				PB_CoolDownBarrel(0, 0, 3);
 				return A_DoPBWeaponAction();
@@ -102,7 +98,7 @@ class PB_Deagle : PB_WeaponBase
 		ReadyUnloaded:
 		Ready4:	//man i hate this
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReadyDualWield");
-			TNT1 A 0 A_jumpif(invoker.ammo2.amount > 0,"Ready3");
+			TNT1 A 0 A_JumpIf(!PB_GetChamberEmpty(),"Ready");
 			D1E0 A 1 {
 				PB_CoolDownBarrel(0, 0, 3);
 				return A_DoPBWeaponAction();
@@ -113,19 +109,23 @@ class PB_Deagle : PB_WeaponBase
 		// Main Attacks states
 		////////////////////////////////////////////////////////////////////////
 		
+		MuzzleFlash:
+			D2EM AB 1 Bright A_GunFlash();
+			Stop;
 		Fire:
-			TNT1 A 0 PB_jumpIfHasBarrel("ThrowBarrel","ThrowFlameBarrel","ThrowIceBarrel");
+			TNT1 A 0 A_JumpIfInventory("Zoomed",1,"Fire2");
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				A_SetRoll(0);
-				PB_HandleCrosshair(42);
-				A_SetInventory("PB_LockScreenTilt",0);
+				PB_HandleCrosshair(32);
 			}
-			TNT1 A 0 A_JumpIfInventory("Zoomed",1,"Fire2");
-			TNT1 A 0 PB_jumpIfNoAmmo("Reload",1);
-			D2E0 A 1 BRIGHT {	
-					A_StartSound("weapons/deagle/fire", 0, CHANF_OVERLAP, 1.0);
-					A_StartSound("weapons/deagle/afire", 0, CHANF_OVERLAP, 0.70);
+			TNT1 A 0 PB_jumpIfNoAmmo();
+			D2E0 A 1 BRIGHT {
+					A_StartSound("weapons/deagle/fire", CHAN_WEAPON, volume:1.0);
+					A_StartSound("weapons/deagle/afire", 2, volume:0.70);
+					A_Overlay(-5, "MuzzleFlash", true);
+					A_OverlayFlags(-5,PSPF_RENDERSTYLE,true);
+					A_OverlayRenderStyle(-5,STYLE_Add);
 					PB_DynamicTail("shotgun", "pistol_mag");
 					PB_LowAmmoSoundWarning("pistol");
 					A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
@@ -135,33 +135,41 @@ class PB_Deagle : PB_WeaponBase
                     PB_MuzzleFlashEffects(0,5,5);
 					A_FireProjectile("YellowFlareSpawn",0,0,0,0);
 					PB_SpawnCasing("EmptyBrassDeagle",30,0,31,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
-					A_Takeinventory("DeagleAmmo",1);
+					PB_TakeAmmo("PB_DeagleMag",1);
 					A_ZoomFactor(0.96);
-					PB_WeaponRecoil(-1.15,-0.36);	//-1.15, -0.26
+					PB_WeaponRecoil(-1.725,-0.39);	//-1.15, -0.26
 				}
-			D2E0 B 1 BRIGHT PB_WeaponRecoil(-1.15,-0.56);
-			D2E0 CD 1 A_ZoomFactor(0.98);
-			TNT1 A 0 A_jumpif(invoker.ammo2.amount < 1,"EndFireNoAmmo");
+			D2E0 B 1 BRIGHT {
+				PB_WeaponRecoil(-1.725,-0.39);
+				A_ZoomFactor(0.98);
+			}
+			D2E0 C 1 A_ZoomFactor(0.99);
+			D2E0 D 1 A_ZoomFactor(1.0);
+			TNT1 A 0 A_jumpif(PB_GetChamberEmpty(),"EndFireNoAmmo");
 			D2E0 E 1;
-			D2E0 FG 1 A_ZoomFactor(1.0);
+			D2E0 FG 1 {
+				if (JustPressed(BT_ATTACK))
+					return resolvestate("Fire");
+				return resolvestate(null);
+			}
 			D4E0 EEEE 1 {
 				if (JustPressed(BT_ATTACK))
 					return resolvestate("Fire");
 				return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY);
 			}
 			TNT1 A 0 PB_Refire();
-			Goto Ready3;
+			Goto Ready;
 		
 		EndFireNoAmmo:
 			D2E2 E 1;
-			D2E2 FG 1 A_ZoomFactor(1.0);
+			D2E2 FG 1;
 			D1E0 AAAA 1 {
 				if (JustPressed(BT_ATTACK))
 					return resolvestate("Fire");
 				return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOPRIMARY);
 			}
 			TNT1 A 0 PB_Refire();
-			Goto Ready3;
+			Goto Ready;
 			
 		////////////////////////////////////////////////////////////////////////
 		// Weapon Special things 
@@ -169,28 +177,24 @@ class PB_Deagle : PB_WeaponBase
 		
 		WeaponSpecial:
 			TNT1 A 0 A_setinventory("GoWeaponSpecialAbility",0);
-			TNT1 A 0 PB_jumpIfHasBarrel("IdleBarrel","IdleFlameBarrel","IdleIceBarrel");
 			TNT1 A 0 {
 				A_SetInventory("GoWeaponSpecialAbility",0);
 				A_SetInventory("Zoomed",0);
-				A_SetInventory("ADSmode",0);
-				A_SetInventory("PB_LockScreenTilt",1);
 				A_WeaponOffset(0,32);
-				PB_HandleCrosshair(42);
+				PB_HandleCrosshair(32);
 				A_ZoomFactor(1.0);
 				A_ClearOverlays(10,11);
 				}
 			TNT1 A 0 A_jumpif(A_CheckAkimbo(),"StopDualWield");
 			TNT1 A 0 A_JumpIfInventory(invoker.getclassname(), 2,"SwitchToDualWield");
-			TNT1 A 0 A_Print("You need two Deagles to dual wield!");
-			Goto Ready3;
+			TNT1 A 0 A_Print("$PB_DEAGLE_NOAKIMBO");
+			Goto Ready;
 		SwitchToDualWield:
 			TNT1 A 0 A_SetInventory("CantDoAction", 1);
 			TNT1 A 0 {
 				A_SetAkimbo(True);
 				A_Startsound("Ironsights",15,CHANF_OVERLAP);
 				//A_Startsound("weapons/deagle/equip",10,CHANF_OVERLAP);
-				A_SetInventory(invoker.DualWieldToken,1); 
 			}
 			D6E2 A 1 PB_SetDualSpriteIfUnload("D6E3","D6E4","D6E5");
 			D6E2 BCD 1 {
@@ -209,7 +213,6 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 {
 				A_SetAkimbo(False);
 				A_Startsound("Ironsights",15,CHANF_OVERLAP);
-				A_SetInventory(invoker.DualWieldToken,0);
 				A_ClearOverlays(10,11);
 				//A_Startsound("weapons/deagle/equip",10,CHANF_OVERLAP);
 			}
@@ -217,13 +220,13 @@ class PB_Deagle : PB_WeaponBase
 				PB_SetDualSpriteIfUnload("D6E3","D6E4","D6E5");
 				A_Setroll(roll + 0.5, SPF_INTERPOLATE);
 			}
-			D6E2 DCBA 1 {
+			D6E2 DCB 1 {
 				PB_SetDualSpriteIfUnload("D6E3","D6E4","D6E5");
 				A_Setroll(roll - 0.5, SPF_INTERPOLATE);
 			}
 			D6E2 A 1 PB_SetDualSpriteIfUnload("D6E3","D6E4","D6E5");
 			TNT1 A 0 A_SetInventory("CantDoAction", 0);
-			Goto Ready3;
+			Goto Ready;
 		
 		////////////////////////////////////////////////////////////////////////
 		// Reload / Unload
@@ -241,39 +244,31 @@ class PB_Deagle : PB_WeaponBase
 			goto ready;
 		
 		Reload:
-			TNT1 A 0 {
-				A_SetInventory("Zoomed",0);
-				A_ZoomFactor(1.0);
-				A_WeaponOffset(0,32);
-				A_SetCrosshair(-1);
-			}
-			TNT1 A 0 PB_jumpIfHasBarrel("IdleBarrel","IdleFlameBarrel","IdleIceBarrel");
-			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "ReloadDualWield");
-			TNT1 A 0 PB_checkReload("EmptyReload","Ready","NoAmmo",8,2);
-			TNT1 A 0 {
-				A_setinventory(invoker.UnloaderToken,0);
-				A_ZoomFactor(1.0);
-				A_SetCrosshair(-1);
-				A_SetInventory("ADSmode",0);
-				A_SetInventory("Zoomed",0);
-				A_SetInventory("PB_LockScreenTilt",1);
-				A_Startsound("Ironsights",16,CHANF_OVERLAP);
-				A_ClearOverlays(10,11);
-				}
-
-			D0E0 ABCDEFGHIJKLMNOPQ 1;
+			TNT1 A 0 A_JumpIf(A_CheckAkimbo(),"ReloadDualWield");
+			TNT1 A 0 PB_CheckReload(null,"EmptyReload","Rechamber","Ready","Ready",8,2);
+			TNT1 A 0 A_Startsound("Ironsights",16,CHANF_OVERLAP);
+			D0E0 ABCDEFGHIJKLMN 1;
+			TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(),"ContinueReload");
+			D0E0 OPQ 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/magrelease",18,CHANF_OVERLAP);
 			D0E0 RS 2;
-			TNT1 A 0 A_Startsound("weapons/deagle/magout",18,CHANF_OVERLAP);
-			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
+			TNT1 A 0 {
+				A_Startsound("weapons/deagle/magout",18,CHANF_OVERLAP);
+				A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
+				PB_SetMagUnloaded(true);
+			}
 			D0E0 TUVW 1;
 			D0E0 X 1;
 			D0E0 XX 1 A_weaponoffset(-0.95,0.75,WOF_ADD);
 			D0E0 X 1 A_weaponoffset(-0.75,0.75,WOF_ADD);
+		ContinueReload:
 			D0E0 X 1 A_weaponoffset(-0.2,0.2,WOF_ADD);
 			D0E0 Y 1 A_weaponoffset(1.525,-1.125,WOF_ADD);
-			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",8,2);
-			TNT1 A 0 A_SetInventory("DeagleHasUnloaded",0);
+			TNT1 A 0 {
+				PB_AmmoIntoMag("PB_DeagleMag","PB_LowCalMag",8,2);
+				PB_SetMagUnloaded(false);
+				PB_SetMagEmpty(false);
+			}
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",11,CHANF_OVERLAP);
 			D0E0 Z 1 A_weaponoffset(1.725,-1.325,WOF_ADD);
 			TNT1 A 0 A_Weaponoffset(0,32,WOF_interpolate);
@@ -284,357 +279,381 @@ class PB_Deagle : PB_WeaponBase
 			D0E1 DEFG 1;
 			TNT1 A 0 A_Startsound("Ironsights",13,CHANF_OVERLAP);
 			D0E1 HIJKL 1;
+			TNT1 A 0 PB_SetReloading(false);
 			goto ready;
-		
 		EmptyReload:
+			TNT1 A 0 A_Startsound("Ironsights",16,CHANF_OVERLAP);
 			D1E0 ABCDE 1;
 			TNT1 A 0 A_Startsound("weapons/smg_magfly1",11,CHANF_OVERLAP);
 			D1E0 FGHIJKLM 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/CatchF",19,CHANF_OVERLAP);
 			D1E0 NOPQ 1;
-			TNT1 A 0 A_JumpIfInventory("DeagleHasUnloaded",1,18);
+			TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(),"ContinueReloadEmpty");
 			TNT1 A 0 A_Startsound("weapons/deagle/MagRelease",0,CHANF_OVERLAP);
 			D1E0 R 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/magout",13,CHANF_OVERLAP);
 			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
 			TNT1 A 0 {
-				if(!findinventory(invoker.UnloaderToken))
-					PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,-2,-2,false); //only drop mags if wasnt unloaded already
+				PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,-2,-2,false);
+				PB_SetMagUnloaded(true);
 			}
 			D1E0 ST 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/MagToss",0,CHANF_OVERLAP);
 			D1E0 UVWXYZ 1;
 			D1E1 ABCD 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/CatchF",0,CHANF_OVERLAP,0.5);
+		ContinueReloadEmpty:
 			D1E1 EFG 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/magin",0,CHANF_OVERLAP);
-			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
-			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",7,2);
+			TNT1 A 0 {
+				PB_AmmoIntoMag("PB_DeagleMag","PB_LowCalMag",7,2);
+				PB_SetMagUnloaded(false);
+				PB_SetMagEmpty(false);
+			}
 			D1E1 HIJKLMNOPQ 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/RotateFol",0,CHANF_OVERLAP);
-			D1E1 RSTUVWXYZ 1;
+			D1E1 RS 1;
+		Rechamber:
+			D1E1 TUVWXYZ 1;
 			D1E2 A 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/click1",14,CHANF_OVERLAP);
-			D1E2 BC 1;
-			D1E2 D 1;
-			D1E2 D 1 A_weaponoffset(-0.5,0.2,WOF_ADD);
-			D1E2 D 1 A_weaponoffset(-0.5,0.2,WOF_ADD);
-			D1E2 D 1 A_weaponoffset(-0.5,0.2,WOF_ADD);
-			D1E2 D 1 A_weaponoffset(0.75,-0.3,WOF_ADD);
-			D1E2 D 1 A_weaponoffset(0.75,-0.3,WOF_ADD);
+			D1E2 BCD 1;
+			D1E2 DDD 1 A_weaponoffset(-0.5,0.2,WOF_ADD);
+			D1E2 DD 1 A_weaponoffset(0.75,-0.3,WOF_ADD);
 			D1E2 E 1 A_weaponoffset(0,32,WOF_interpolate);
 			TNT1 A 0 A_Startsound("weapons/deagle/click2",15,CHANF_OVERLAP);
 			D1E2 FFGH 1;
-			TNT1 A 0 A_Startsound("Ironsights",0,CHANF_OVERLAP);
+			TNT1 A 0 {
+				A_Startsound("Ironsights",0,CHANF_OVERLAP);
+				PB_SetChamberEmpty(false);
+			}
 			D1E2 IJKL 1;
+			TNT1 A 0 PB_SetReloading(false);
 			goto ready;
-		
+		ReloadDualFromUnload:
+			DR42 STUV 1 PB_SetDualSpriteIfUnload("DR14","DR20","DR00");
+			
 		ReloadDualWield:
+			TNT1 A 0 PB_CheckReload(null,null,"StartRechamberRight","StartReloadLeft","Ready",8,2);
+			TNT1 A 0 A_JumpIf(countinv(invoker.ammotypeleft) == 8 || ((PB_GetMagUnloaded(true) || PB_GetChamberEmpty(true) && !PB_GetMagEmpty(true)) && countinv(invoker.ammotype2) < 8),"StartReloadRight");
+			TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(),"StartReloadLeft");
 			TNT1 A 0 {
-				int am1 = countinv(invoker.ammotype1);
-				int am2 = countinv(invoker.ammotype2);
-				int tr = countinv("LeftDeagleAmmo");
-				
-				if(am1 < 2)
-					return resolvestate("NoAmmoDual");	// some futureproofing
-				
-				if(tr >= 8 && am2 >= 8)
-					return resolvestate("Ready");
-				
-				//A_setinventory(invoker.UnloaderToken,0);
-				A_setinventory("DualFireReload",0);
-				return resolvestate(null);
+				A_Overlay(10,"ReloadLeftDown_Overlay");
+				A_Overlay(11,"StartReloadRight_Overlay");
 			}
-			TNT1 A 0 A_ClearOverlays(10,11);
-			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") < 1 || countinv(invoker.ammotype2) < 1,"EmptyDualReload");
-			DR30 ABCDE 1;
+			TNT1 A 5;
 			TNT1 A 0 A_Startsound("Ironsights", 23,CHANF_OVERLAP);
-			DR30 FGHIJ 1;
-			TNT1 A 0 A_jumpif(countinv(invoker.ammotype2) >= 8,"OnlyReloadLeft");
-			
-		//partial but both
-			DR34 ABCDE 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/magout",22,CHANF_OVERLAP);
-			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
-			DR34 F 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR34 GHIJKL 1;
-		PartialReloadRight:
-			//right
-			DR32 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",8,2);
-			TNT1 A 0 A_Startsound("weapons/deagle/magin",21,CHANF_OVERLAP);
-			DR32 FGHIJ 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR32 KLMNO 1;
-			TNT1 A 1;
-			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") < 8 && countinv(invoker.ammotype1) > 1,"ToPartialLeft");
-			goto FinishDualReload;
-			
-		ToPartialLeft:
-			DR35 ABCD 1;
-			goto PartialReloadLeft;
-		PartialReloadLeft:
-			//left
-			DR31 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("LeftDeagleAmmo","PB_LowCalMag",8,2);
-			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
-			TNT1 A 0 A_Startsound("weapons/deagle/magin",22,CHANF_OVERLAP);
-			DR31 FGHIJ 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR31 KLMNO 1;
-			TNT1 A 1;
-			
-			DR37 ABC 1;
-			goto ready;
-		
-		OnlyReloadLeft:
-			TNT1 A 0 A_Startsound("Ironsights", 23,CHANF_OVERLAP);
-			DR33 ABCDE 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/magout",25,CHANF_OVERLAP);
-			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
-			DR33 F 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR33 GHIJKL 1;
-			DR31 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("LeftDeagleAmmo","PB_LowCalMag",8,2);
-			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
-			TNT1 A 0 A_Startsound("weapons/deagle/magin",14,CHANF_OVERLAP);
-			DR31 FGHIJ 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR31 KLMNO 1;
-			TNT1 A 1;
-			
-			DR37 ABC 1;
-			goto ready;
-		
-		ToPartialRight:
-			DR36 ABCD 1;
-			goto PartialReloadRightFromLeft;
-		
-		PartialReloadRightFromLeft:
-			//right
-			DR32 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",8,2);
-			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
-			TNT1 A 0 A_Startsound("weapons/deagle/magin",16,CHANF_OVERLAP);
-			DR32 FGHIJ 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR32 KLMNO 1;
-			TNT1 A 1;
-			goto FinishDualReload;
-			
-		EmptyDualReload:
+			TNT1 A 2;
+			TNT1 A 0 A_JumpIf(PB_GetMagUnloaded() && PB_GetMagUnloaded(true),"ReloadDualFromUnload");
+			TNT1 A 8;
 			TNT1 A 0 {
-				int lda = countinv("LeftDeagleAmmo");
-				int rda = countinv(invoker.ammotype2);
-				if((lda <= 0 && (rda <= 0 || findinventory(invoker.unloadertoken)) )) //|| findinventory(invoker.unloadertoken))
-					return resolvestate(null);
-				//A_setinventory(invoker.UnloaderToken,0);
-				A_setinventory("DualFireReload",0);
-				if(lda <= 0)
-					return resolvestate("OnlyLeftEmpty");
-				
-				if(rda <= 0 || findinventory(invoker.unloadertoken))
-					return resolvestate("OnlyRightEmpty");
-				
-				return resolvestate(null);
-			}
-			DR00 ABCDE 1;
-			TNT1 A 0 A_Startsound("Ironsights", 23,CHANF_OVERLAP);
-			DR00 FGHIJKL 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/magout",17,CHANF_OVERLAP);
-			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
-			TNT1 A 0 {
-				if(!findinventory(invoker.UnloaderToken))
-				{
+				if(PB_GetMagEmpty())
 					PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,-2,-2,false);
+				if(PB_GetMagEmpty(true))
 					PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
-				}
+				PB_SetMagUnloaded(true);
+				PB_SetMagUnloaded(true,true);
+				A_Startsound("weapons/deagle/magout",22,CHANF_OVERLAP);
+				A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
 			}
-			DR00 MNOP 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR00 QRSTUV 1;
-			//Insert Right w/left empty
-			DR01 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",7,2);
-			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
-			TNT1 A 0 A_Startsound("weapons/deagle/magin",16,CHANF_OVERLAP);
-			DR01 FGHIJ 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR01 KLMNO 1;
 			TNT1 A 1;
-			//Rechamber Right w/left empty
-			DR02 ABCDE 1;
+			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
+			TNT1 A 2;
+			Goto ReloadRightFromUnload;
+		StartReloadLeft_Overlay:
+			DR30 ABCDE 1 PB_SetSpriteIfUnload("DR10",true);
+			DR30 FG 1 PB_SetSpriteIfUnload("DR10",true);
+			DR30 HIJ 1 PB_SetSpriteIfUnload("DR10",true);
+			DR33 KLMNO 1 PB_SetSpriteIfUnload("DR10",true);
+			DR33 P 1 PB_SetSpriteIfUnload("DR10",true);
+			DR33 QR 1 PB_SetSpriteIfUnload("DR10",true);
+		ReloadLeftFromUnload_Overlay:
+			DR33 STUV 1 PB_SetSpriteIfUnload("DR10",true);
+			Stop;
+		ReloadLeftDown_Overlay:
+			DR30 ABCDE 1 PB_SetSpriteIfUnload("DR10",true);
+			DR30 FG 1 PB_SetSpriteIfUnload("DR10",true);
+			DR30 HIJ 1 PB_SetSpriteIfUnload("DR10",true);
+			DR41 KLMNO 1 PB_SetSpriteIfUnload("DR00",true);
+			DR41 P 1 PB_SetSpriteIfUnload("DR00",true);
+			DR41 QR 1 PB_SetSpriteIfUnload("DR00",true);
+			DR41 STU 1 PB_SetSpriteIfUnload("DR00",true);
+			Stop;
+		StartReloadRight_Overlay:
+			DR40 ABCDE 1 PB_SetSpriteIfUnload("DR20");
+			DR40 FG 1 PB_SetSpriteIfUnload("DR20");
+			DR40 HIJ 1 PB_SetSpriteIfUnload("DR20");
+			DR34 KLMNO 1 PB_SetSpriteIfUnload("DR20");
+			DR34 P 1 PB_SetSpriteIfUnload("DR20");
+			DR34 QR 1 PB_SetSpriteIfUnload("DR20");
+		ReloadRightFromUnload_Overlay:
+			DR34 STUV 1 PB_SetSpriteIfUnload("DR20");
+			Stop;
+		ReloadLeftUp_Overlay:
+			DR35 ABCD 1 PB_SetSpriteIfUnload("DR24",true);
+			Stop;
+		ReloadLeftDown2_Overlay:
+			DR35 DCBA 1 PB_SetSpriteIfUnload("DR24",true);
+			Stop;
+		ReloadRightDown2_Overlay:
+			DR36 DCBA 1 PB_SetSpriteIfUnload("DR14");
+			Stop;
+		ReloadRightUp_Overlay:
+			DR36 ABCD 1 PB_SetSpriteIfUnload("DR14");
+			Stop;
+		SelectLeft_Overlay:
+			DR37 ABC 1 PB_SetSpriteIfUnload("DR13",true);
+			Stop;
+		SelectRight_Overlay:
+			DR38 ABC 1 PB_SetSpriteIfUnload("DR23");
+			Stop;
+		DeselectLeft_Overlay:
+			DR37 CBA 1 PB_SetSpriteIfUnload("DR13",true);
+			Stop;
+		DeselectRight_Overlay:
+			DR38 CBA 1 PB_SetSpriteIfUnload("DR23");
+			Stop;
+		ReloadRightFromLeft:
+			TNT1 A 0 {
+				A_Overlay(10,"ReloadLeftDown2_Overlay");
+			}
+			TNT1 A 4;
+			TNT1 A 2;
+			TNT1 A 0 {
+				A_Overlay(11,"ReloadRightUp_Overlay");
+			}
+			Goto ReloadRightFromUnload;
+		StartReloadRight:
+			TNT1 A 0 {
+				A_Overlay(10,"DeselectLeft_Overlay");
+				A_Overlay(11,"StartReloadRight_Overlay");
+			}
+			TNT1 A 5;
+			TNT1 A 0 A_Startsound("Ironsights", 23,CHANF_OVERLAP);
+			TNT1 A 2;
+			TNT1 A 0 {
+				if(PB_GetMagUnloaded()) {
+					A_Overlay(11,"ReloadRightFromUnload_Overlay");
+					return resolvestate("ReloadRightFromUnload");
+				}
+				return resolvestate(null);
+			}
+			TNT1 A 8;
+			TNT1 A 0 {
+				if(PB_GetMagEmpty())
+					PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,-2,-2,false);
+				PB_SetMagUnloaded(true);
+				A_Startsound("weapons/deagle/magout",22,CHANF_OVERLAP);
+				A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
+			}
+			TNT1 A 1;
+			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
+			TNT1 A 2;
+		ReloadRightFromUnload:
+			TNT1 A 4;
+			DR32 ABCDE 1 PB_SetDualSpriteIfUnload("DR15","DR21","DR01");
+			TNT1 A 0 {
+				if(PB_GetChamberEmpty())
+					PB_AmmoIntoMag("PB_DeagleMag","PB_LowCalMag",7,2);
+				else
+					PB_AmmoIntoMag("PB_DeagleMag","PB_LowCalMag",8,2);
+				PB_SetMagUnloaded(false);
+				PB_SetMagEmpty(false);
+			}
+			TNT1 A 0 A_Startsound("weapons/deagle/magin",21,CHANF_OVERLAP);
+			DR32 FGHIJ 1 PB_SetDualSpriteIfUnload("DR15","DR21","DR01");
+			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
+			DR32 KLMNO 1 PB_SetDualSpriteIfUnload("DR15","DR21","DR01");
+			TNT1 A 2;
+			TNT1 A 0 A_JumpIf(PB_GetChamberEmpty(),"RechamberRight");
+			TNT1 A 0 A_JumpIf(countinv("PB_DeagleLeftMag") == 8 || countinv(invoker.ammotype1) < 2,"FinishDualReload");
+			TNT1 A 0 A_JumpIf(!PB_GetMagUnloaded(true) && PB_GetChamberEmpty(true) && !PB_GetMagEmpty(true),"RechamberLeft");
+		ReloadLeftFromRight:
+			TNT1 A 0 {
+				A_Overlay(10,"ReloadLeftUp_Overlay");
+			}
+			TNT1 A 4;
+			Goto ReloadLeft;
+		StartReloadLeft:
+			TNT1 A 0 PB_CheckReload(null,null,"StartRechamberLeft","Ready","Ready",8,2,true);
+			TNT1 A 0 {
+				A_Overlay(10,"DeselectRight_Overlay");
+				A_Overlay(11,"StartReloadLeft_Overlay");
+			}
+			TNT1 A 5;
+			TNT1 A 0 A_Startsound("Ironsights", 23,CHANF_OVERLAP);
+			TNT1 A 2;
+			TNT1 A 0 {
+				if(PB_GetMagUnloaded(true)) {
+					A_ClearOverlays(10,11);
+					A_Overlay(10,"ReloadLeftFromUnload_Overlay");
+					return resolvestate("ReloadLeftFromUnload");
+				}
+				return resolvestate(null);
+			}
+			TNT1 A 8;
+			TNT1 A 0 {
+				if(PB_GetMagEmpty(true))
+					PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
+				PB_SetMagUnloaded(true,true);
+				A_Startsound("weapons/deagle/magout",22,CHANF_OVERLAP);
+				A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
+			}
+			TNT1 A 1;
+			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
+			TNT1 A 2;
+		ReloadLeftFromUnload:
+			TNT1 A 4;
+			TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(),"ReloadRightFromLeft");
+		ReloadLeft:
+			DR31 ABCDE 1 PB_SetSpriteIfUnload("DR11",true);
+			TNT1 A 0 {
+				if(PB_GetChamberEmpty(true))
+					PB_AmmoIntoMag("PB_DeagleLeftMag","PB_LowCalMag",7,2);
+				else
+					PB_AmmoIntoMag("PB_DeagleLeftMag","PB_LowCalMag",8,2);
+				PB_SetMagUnloaded(false,true);
+				PB_SetMagEmpty(false,true);
+			}
+			TNT1 A 0 A_Startsound("weapons/deagle/magin",22,CHANF_OVERLAP);
+			DR31 FGHIJ 1 PB_SetSpriteIfUnload("DR11",true);
+			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
+			DR31 KLMNO 1 PB_SetSpriteIfUnload("DR11",true);
+			TNT1 A 2;
+			TNT1 A 0 A_JumpIf(PB_GetChamberEmpty(true),"RechamberLeft");
+		FinishDualReload:
+			TNT1 A 0 {
+				A_Overlay(10,"SelectLeft_Overlay");
+				A_Overlay(11,"SelectRight_Overlay");
+			}
+			TNT1 A 3;
+			TNT1 A 0 PB_SetReloading(false);
+			goto ready;
+		StartRechamberRight:
+			TNT1 A 0 {
+				A_Overlay(10,"DeselectLeft_Overlay");
+				A_Overlay(11,"DeselectRight_Overlay");
+			}
+			TNT1 A 3;
+			TNT1 A 4;
+		RechamberRight:
+			DR02 ABCDE 1 PB_SetDualSpriteIfUnload("DR02","DR22","DR02");
 			TNT1 A 0 A_Startsound("weapons/deagle/click1",18,CHANF_OVERLAP);
-			DR02 FGHIJ 1;
+			DR02 FGHIJ 1 PB_SetDualSpriteIfUnload("DR02","DR22","DR02");
 			TNT1 A 0 A_Startsound("weapons/deagle/click2",17,CHANF_OVERLAP);
+			TNT1 A 0 PB_SetChamberEmpty(false);
 			DR02 K 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR02 LMNOP 1;
-			TNT1 A 1;
-			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") >= 8 || countinv(invoker.ammotype1) < 2,"FinishDualReload");
-			
-			//raise left w/right reloaded
-			DR24 ABCD 1;
-			//insert left w/right reloaded
-			DR11 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("LeftDeagleAmmo","PB_LowCalMag",7,2);
-			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
-			TNT1 A 0 A_Startsound("weapons/deagle/magin",19,CHANF_OVERLAP);
-			DR11 FGHIJ 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR11 KLMNO 1;
-			TNT1 A 1;
-			//rechamber left w/ right reloaded
+			DR02 LMNOP 1 PB_SetDualSpriteIfUnload("DR02","DR22","DR02");
+			TNT1 A 2;
+			TNT1 A 0 A_jumpif(countinv("PB_DeagleLeftMag") == 8 || countinv(invoker.ammotype1) < 2,"FinishDualReload");
+			TNT1 A 0 A_JumpIf(!PB_GetMagUnloaded(true) && PB_GetChamberEmpty(true) && !PB_GetMagEmpty(true),"RechamberLeft");
+			Goto ReloadLeftFromRight;
+		RechamberLeft:
 			DR12 ABCDE 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/click1",20,CHANF_OVERLAP);
 			DR12 FGHIJ 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/click2",18,CHANF_OVERLAP);
+			TNT1 A 0 PB_SetChamberEmpty(false,true);
 			DR12 K 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
 			DR12 LMNOP 1;
-			TNT1 A 1;
-			
-			DR37 ABC 1;
-			goto ready;
-			
-			
-		OnlyLeftEmpty:
-			//start left empty w/right not empty
-			DR10 ABCDE 1;
-			TNT1 A 0 A_Startsound("Ironsights", 23,CHANF_OVERLAP);
-			DR10 FGHIJKL 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/magout",17,CHANF_OVERLAP);
-			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
-			//TNT1 A 0 A_fireprojectile("EmptyDeagleMag",5,0,-12,-4);
-			TNT1 A 0 {
-				if(!findinventory(invoker.UnloaderToken))
-					PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
-					//A_fireprojectile("EmptyDeagleMag",5,0,-12,-4);
-			}
-			DR10 MNOP 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR10 QRSTUV 1;
-			
-			//insert left w/right reloaded
-			DR11 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("LeftDeagleAmmo","PB_LowCalMag",7,2);
-			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
-			TNT1 A 0 A_Startsound("weapons/deagle/magin",16,CHANF_OVERLAP);
-			DR11 FGHIJ 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR11 KLMNO 1;
-			TNT1 A 1;
-			
-			//rechamber left w/ right reloaded
-			DR12 ABCDE 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/click1",21,CHANF_OVERLAP);
-			DR12 FGHIJ 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/click2",20,CHANF_OVERLAP);
-			DR12 K 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR12 LMNOP 1;
-			TNT1 A 1;
-			TNT1 A 0 A_jumpif(countinv("DeagleAmmo") >= 8 || countinv(invoker.ammotype1) < 2,"FinishDualReload");
-			goto ToPartialRight;
-			//DR36 ABCD 1;
-			
-		OnlyRightEmpty:
-			DR20 ABCDE 1;
-			TNT1 A 0 A_Startsound("Ironsights", 23,CHANF_OVERLAP);
-			DR20 FGHIJKL 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/magout",20,CHANF_OVERLAP);
-			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
-			//TNT1 A 0 A_fireprojectile("EmptyDeagleMag",5,0,12,-4);
-			TNT1 A 0 {
-				if(!findinventory(invoker.UnloaderToken))
-					PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,-2,-2,false);
-					//A_fireprojectile("EmptyDeagleMag",5,0,12,-4);
-			}
-			DR20 MNOP 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR20 QRSTUV 1;
-			
-			//insert right w/left reloaded
-			DR21 ABCDE 1;
-			TNT1 A 0 PB_AmmoIntoMag("DeagleAmmo","PB_LowCalMag",7,2);
-			TNT1 A 0 A_setinventory(invoker.UnloaderToken,0);
-			TNT1 A 0 A_Startsound("weapons/deagle/magin",19,CHANF_OVERLAP);
-			DR21 FGHIJ 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR21 KLMNO 1;
-			TNT1 A 1;
-			
-			//rechamber right w/ left reloaded
-			DR22 ABCDE 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/click1",18,CHANF_OVERLAP);
-			DR22 FGHIJ 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/click2",17,CHANF_OVERLAP);
-			DR22 K 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/SwapF",29,CHANF_OVERLAP);
-			DR22 LMNOP 1;
-			TNT1 A 1;
-			TNT1 A 0 A_jumpif(countinv("LeftDeagleAmmo") >= 8 || countinv(invoker.ammotype1) < 2,"FinishDualReload");
-			goto ToPartialLeft;
-		
-		FinishDualReload:
-			DR37 ABC 1;
-			goto ready;
-			
+			TNT1 A 0 PB_SetChamberEmpty(false,true);
+			TNT1 A 2;
+			goto FinishDualReload;
 		Unload:
-			TNT1 A 0 A_ClearOverlays(10,11);
-			TNT1 A 0 A_setinventory("Unloading",0);
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(), "DualUnload");
-			TNT1 A 0 A_Jumpif(countinv(invoker.UnloaderToken) > 0 || countinv(invoker.ammotype2) < 1,"Ready3");
+			TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(),"Ready");
 			D0E0 ABCDEFGHIJ 1;
 			D0E0 KLMM 1;
 			D2E1 ABCD 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/magout",16,CHANF_OVERLAP);
 			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
-			TNT1 A 0 PB_UnloadMag("DeagleAmmo","PB_LowCalMag",2);
-			TNT1 A 0 A_giveinventory(invoker.UnloaderToken,1);
+			TNT1 A 0 {
+				PB_UnloadMag("PB_DeagleMag","PB_LowCalMag",2,goal:1);
+				PB_UnloadMag("PB_DeagleMag","PB_LowCalMag",2,1,2,0,"PB_DeagleRound");
+				PB_SetMagEmpty(true); PB_SetMagUnloaded(true); PB_SetChamberEmpty(true);
+			}
 			D2E1 E 1;
 			TNT1 A 0 A_Startsound("weapons/deagle/click2",22,CHANF_OVERLAP);
 			D2E1 FGHIJK 1;
 			D1E0 HGFEDCBA 1;
-			goto ready3;
-		
+			TNT1 A 0 PB_SetReloading(false);
+			goto ready;
+		EndUnloadLeft_Overlay:
+			DR10 FEDCBA 1;
+			Stop;
+		EndUnloadRight_Overlay:
+			DR20 FEDCBA 1;
+			Stop;
+		NoUnloadRight_Overlay:
+			D6E0 I 21 {if(PB_GetChamberEmpty()) A_SetWeaponFrame(9);}
+			Stop;
+		NoUnloadLeft_Overlay:
+			D6E1 I 21 {if(PB_GetChamberEmpty(true)) A_SetWeaponFrame(9);}
+			Stop;
 		DualUnload:
-			//TNT1 A 0 A_Jumpif(countinv(invoker.UnloaderToken) > 0 || (countinv(invoker.ammotype2) < 1 && countinv("LeftDeagleAmmo") < 1),"Ready3");
-			TNT1 A 0 A_Jumpif((countinv(invoker.ammotype2) < 1 && countinv("LeftDeagleAmmo") < 1),"Ready3");
-			DR30 ABCDEFGHIJ 1 PB_SetDualSpriteIfUnload("DR10","DR20","DR00");
-			DR34 ABCDE 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/magout",21,CHANF_OVERLAP);
-			TNT1 A 0 A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
-			DR34 F 1;
-			TNT1 A 0 A_Startsound("weapons/deagle/click2",19,CHANF_OVERLAP);
-			TNT1 A 0 PB_UnloadMag("DeagleAmmo","PB_LowCalMag",2);
-			TNT1 A 0 PB_UnloadMag("LeftDeagleAmmo","PB_LowCalMag",2);
-			TNT1 A 0 A_giveinventory(invoker.UnloaderToken,1);
-			//DR00 H 1;
-			DR00 GFEDCBA 1;
-			goto ready3;
-		
+			TNT1 A 0 {
+				if(PB_GetMagUnloaded()) {
+					A_Overlay(10,"StartReloadLeft_Overlay");
+					A_Overlay(11,"NoUnloadRight_Overlay");
+				}
+				else if(PB_GetMagUnloaded(true)) {
+					A_Overlay(10,"NoUnloadLeft_Overlay");
+					A_Overlay(11,"StartReloadRight_Overlay");
+				}
+				else {
+					A_Overlay(10,"StartReloadLeft_Overlay");
+					A_Overlay(11,"StartReloadRight_Overlay");
+				}
+			}
+			TNT1 A 5;
+			TNT1 A 0 A_Startsound("Ironsights", 23,CHANF_OVERLAP);
+			TNT1 A 2;
+			TNT1 A 8;
+			TNT1 A 0 {
+				if(!PB_GetMagUnloaded(true)) {
+					if(PB_GetMagEmpty(true))
+						PB_SpawnCasing("EmptyDeagleMag",30,-12,16,1,2,-2,false);
+					PB_UnloadMag("PB_DeagleLeftMag","PB_LowCalMag",2,goal:1);
+					PB_UnloadMag("PB_DeagleLeftMag","PB_LowCalMag",2,1,2,0,"PB_DeagleRound");
+					PB_SetMagEmpty(true,true); PB_SetMagUnloaded(true,true); PB_SetChamberEmpty(true,true);
+					A_Overlay(10,"EndUnloadLeft_Overlay");
+				}
+				if(!PB_GetMagUnloaded()) {
+					if(PB_GetMagEmpty())
+						PB_SpawnCasing("EmptyDeagleMag",30,12,16,1,-2,-2,false);
+					PB_UnloadMag("PB_DeagleMag","PB_LowCalMag",2,goal:1);
+					PB_UnloadMag("PB_DeagleMag","PB_LowCalMag",2,1,2,0,"PB_DeagleRound");
+					PB_SetMagEmpty(true); PB_SetMagUnloaded(true); PB_SetChamberEmpty(true);
+					A_Overlay(11,"EndUnloadRight_Overlay");
+				}
+				A_Startsound("weapons/deagle/magout",22,CHANF_OVERLAP);
+				A_Startsound("PSRLOUT",24,CHANF_OVERLAP);
+			}
+			TNT1 A 1;
+			TNT1 A 0 A_Startsound("weapons/deagle/click2",22,CHANF_OVERLAP);
+			TNT1 A 5;
+			TNT1 A 0 PB_SetReloading(false);
+			Goto Ready;
+			
 		////////////////////////////////////////////////////////////////////////
 		// ADS things
 		////////////////////////////////////////////////////////////////////////
 		
 		AltFire:
-			TNT1 A 0 PB_jumpIfHasBarrel("PlaceBarrel","PlaceFlameBarrel","PlaceIceBarrel");
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				A_SetRoll(0);
-				A_SetInventory("PB_LockScreenTilt",0);
 			}
 			TNT1 A 0 A_jumpif(countinv("zoomed") > 0,"zoomout");
-			TNT1 A 0 A_jumpif(invoker.ammo2.amount < 1 || findinventory(invoker.unloadertoken),"Ready");
+			TNT1 A 0 A_jumpif(PB_GetChamberEmpty(),"Ready");
 		//zoomIn:
 			TNT1 A 0 {
 				 A_WeaponOffset(0,32);
 				 A_StartSound("IronSights", 13,CHANF_OVERLAP);
 				 A_SetInventory("Zoomed",1);
-				 A_ZoomFactor(1.3);
+				 A_ZoomFactor(1.25);
 				 A_SetCrosshair(-1);
 			}
 			D3E1 ABCDE 1;
@@ -643,16 +662,13 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 {
 				A_SetInventory("Zoomed",0);
 				A_ZoomFactor(1.0);
-				PB_HandleCrosshair(42);
 			}
 			D3E1 EDCBA 1;
-			Goto Ready3;
+			TNT1 A 0 PB_HandleCrosshair(32);
+			Goto Ready;
 		
 		Ready2:
-			TNT1 A 0 {
-				A_SetRoll(0);
-				A_SetInventory("PB_LockScreenTilt",0);
-			}
+			TNT1 A 0 A_SetRoll(0);
 		ReadyToFire2:	//ads ready loop
 			D3E0 A 1
 			{		
@@ -678,6 +694,9 @@ class PB_Deagle : PB_WeaponBase
 			}
 			Loop;
 		
+		MuzzleFlash2:
+			D3EM AB 1 Bright A_GunFlash();
+			Stop;
 			Fire2:
 			TNT1 A 0 {
 					A_WeaponOffset(0,32);
@@ -685,8 +704,8 @@ class PB_Deagle : PB_WeaponBase
 			TNT1 A 0 PB_jumpIfNoAmmo("Reload",1);
 			D3E0 B 1 BRIGHT {	
 					PB_IncrementHeat();
-					A_StartSound("weapons/deagle/fire", 0, CHANF_OVERLAP, 1.0);
-					A_StartSound("weapons/deagle/afire", 0, CHANF_OVERLAP, 0.70);
+					A_StartSound("weapons/deagle/fire", CHAN_WEAPON, volume:1.0);
+					A_StartSound("weapons/deagle/afire", 2, volume:0.70);
 					PB_DynamicTail("shotgun", "pistol_mag");
 					PB_LowAmmoSoundWarning("pistol");
 					A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,0,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
@@ -696,13 +715,22 @@ class PB_Deagle : PB_WeaponBase
 					PB_IncrementHeat(2);
 					A_FireProjectile("YellowFlareSpawn",0,0,0,0);
 					PB_SpawnCasing("EmptyBrassDeagle",26,0,38,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
-					A_Takeinventory("DeagleAmmo",1);
-					A_ZoomFactor(1.19);
-					PB_WeaponRecoil(-0.90,-0.25);
+					PB_TakeAmmo("PB_DeagleMag",1);
+					A_ZoomFactor(1.20);
+					PB_WeaponRecoil(-1.725,-0.39);
+					A_Overlay(-5, "MuzzleFlash2", true);
+					A_OverlayFlags(-5,PSPF_RENDERSTYLE,true);
+					A_OverlayRenderStyle(-5,STYLE_Add);
 				}
-			D3E0 C 1 BRIGHT PB_WeaponRecoil(-0.90,-0.25);
-			D3E0 DEF 1 A_ZoomFactor(1.2);
-			D3E0 GH 1 A_ZoomFactor(1.18);
+			D3E0 C 1 BRIGHT PB_WeaponRecoil(-1.725,-0.39);
+			D3E0 D 1 A_ZoomFactor(1.23);
+			D3E0 E 1 A_ZoomFactor(1.25);
+			D3E0 F 1;
+			D3E0 GH 1 {
+				if (JustPressed(BT_ATTACK) && (PressingAltfire() || !Cvar.GetCvar("pb_toggle_aim_hold",player).getbool()))
+					return resolvestate("Fire2");
+				return resolvestate(null);
+			}
 			D3E0 AAAAA 1 {
 				A_SetInventory("CantDoAction",0);
 				 
@@ -735,326 +763,120 @@ class PB_Deagle : PB_WeaponBase
 		
 		SelectAnimationDualWield:
 			TNT1 A 1;
-			DR37 ABC 1 {
-				bool rg = invoker.ammo2.amount < 1;
-				bool lg = countinv("LeftDeagleAmmo") < 1;
-				if(rg && lg)
-					A_SetOverlaySprite(overlayID(),"DR03");
-				else if(rg)
-					A_SetOverlaySprite(overlayID(),"DR23");
-				else if(lg)
-					A_SetOverlaySprite(overlayID(),"DR13");
+			TNT1 A 0 {
+				A_Overlay(10,"SelectLeft_Overlay");
+				A_Overlay(11,"SelectRight_Overlay");
 			}
+			TNT1 A 3;
 			goto ReadyDualWield;
 		
 		DeselectAnimationDualWield:
-			DR37 CBA 1 {
-				bool rg = invoker.ammo2.amount < 1;
-				bool lg = countinv("LeftDeagleAmmo") < 1;
-				if(rg && lg)
-					A_SetOverlaySprite(overlayID(),"DR03");
-				else if(rg)
-					A_SetOverlaySprite(overlayID(),"DR23");
-				else if(lg)
-					A_SetOverlaySprite(overlayID(),"DR13");
+			TNT1 A 0 {
+				A_Overlay(10,"DeselectLeft_Overlay");
+				A_Overlay(11,"DeselectRight_Overlay");
 			}
-			TNT1 A 1 A_Lower(120);
+			TNT1 A 4;
+			TNT1 A 0 A_Lower(120);
 			wait;
 		
 		ReadyDualWield:
-			TNT1 A 0 {
-					//set the overlays for the sides and other things needed, like
-					A_SetRoll(0);
-					PB_HandleCrosshair(42);
-					A_SetInventory("PB_LockScreenTilt",0);
-					A_SetFiringRightWeapon(False);
-					A_SetFiringLeftWeapon(False);
-					A_overlay(10,"IdleLeft_Overlay",false);
-					A_overlay(11,"IdleRight_Overlay",false);
-				}
+			TNT1 A 0 PB_SetupDualWield(crosshair:32);
 		ReadyToFireDualWield:
-			TNT1 A 1 {
-				if(CountInv("PB_LowCalMag")>0)
-				{
-					if(CountInv("LeftDeagleAmmo")<=0 || CountInv("DeagleAmmo")<=0)
-					{
-						if(CountInv("LeftDeagleAmmo")<=0 && CountInv("DeagleAmmo")<=0)
-							A_SetInventory("DualFireReload",2);
-						else
-							A_SetInventory("DualFireReload",1);
-					}
-				}
-				
-				if(!PB_CanDualWield())
-					return resolvestate("StopDualWield");
-				
-				return A_DoPBWeaponAction(WRF_ALLOWRELOAD|WRF_NOFIRE);
-			}
+			TNT1 A 1 A_DoPBDualAction(2);
 			Loop;
 		
 		IdleLeft_Overlay:
 			D6E1 I 1 {
 				PB_CoolDownBarrel(15, 0, 6);
-				if(countinv("LeftDeagleAmmo") < 1)
+				if(PB_GetChamberEmpty(true))
 					A_SetWeaponFrame(9);	//A0B1C2D3E4F5G6H7I8J9
-					
-				if(CountInv("LeftDeagleAmmo")<=0 && CountInv("DeagleAmmo")>0)
-					A_GiveInventory("DualFiring",1);
-				int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
-				if((PressingAltFire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringLeftWeapon() && firemodecvar == 2)
-				{
-						if(CountInv("LeftDeagleAmmo") > 0)
-							return resolvestate("FireLeft_Overlay");
-						else 
-						{
-							A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-							return resolvestate(null);
-						}
-				}
-				if(CountInv("DualFiring")==0 || (CountInv("DualFiring")==0 && CountInv("DeagleAmmo")<=0) || firemodecvar == 1)
-				{
-					if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && firemodecvar < 2)
-					{
-						if(CountInv("LeftDeagleAmmo") > 0)
-							return resolvestate("FireLeft_Overlay");
-						else 
-						{
-							A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-							return resolvestate(null);
-						}
-					}
-				}
-				return resolvestate(null);
+				return A_DoPBLeftAction();
 			}
 			Loop;
 			
 		IdleRight_Overlay:
 			D6E0 I 1 {
 				PB_CoolDownBarrel(-15, 0, 6);
-				if(countinv("DeagleAmmo") < 1)
+				if(PB_GetChamberEmpty())
 					A_SetWeaponFrame(9);	//A0B1C2D3E4F5G6H7I8J9
-				
-				if(CountInv("LeftDeagleAmmo")>0 && CountInv("DeagleAmmo")<=0)
-					A_TakeInventory("DualFiring",1);
-				int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
-				if(CountInv("DualFiring")==1 || (CountInv("DualFiring")==1 && CountInv("LeftDeagleAmmo")<=0))
-				{
-					if((PressingFire() || JustPressed(BT_ATTACK)) && !A_IsFiringLeftWeapon() && firemodecvar==0)
-					{
-						if(CountInv("DeagleAmmo") > 0)
-							return resolvestate("FireRight_Overlay");
-						else 
-						{
-							A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-							return resolvestate(null);
-						}
-					}
-				}
-				if((PressingAltfire() || JustPressed(BT_ALTATTACK)) && !A_IsFiringRightWeapon() && firemodecvar==1){
-					if(CountInv("DeagleAmmo") > 0)
-						return resolvestate("FireRight_Overlay");
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(null);
-					}
-				}
-				if((Pressingfire() || JustPressed(BT_ATTACK)) && !A_IsFiringRightWeapon() && firemodecvar==2){
-					if(CountInv("DeagleAmmo") > 0)
-						return resolvestate("FireRight_Overlay");
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(null);
-					}
-				}
-				return resolvestate(null);
+				return A_DoPBRightAction();
 			}
 			Loop;
 		
+		MuzzleFlashLeft:
+			D6EM CD 1 Bright A_GunFlash();
+			Stop;
 		FireLeft_Overlay:
 			D6E1 A 1 BRIGHT {	
+				A_SetFiringLeftWeapon(true);
 				PB_IncrementHeat(2, true);
-				A_SetFiringLeftWeapon(True);
 				A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,-6,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 				PB_GunSmoke_Deagle(15,0,6);
                 PB_MuzzleFlashEffects(15,0,6);
 				PB_SpawnCasing("EmptyBrassDeagle",26,-12,38,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
-				A_StartSound("weapons/deagle/fire", 0, CHANF_OVERLAP, 1.0);
-				A_StartSound("weapons/deagle/afire", 0, CHANF_OVERLAP, 0.70);
+				A_StartSound("weapons/deagle/fire", CHAN_WEAPON, volume:1.0);
+				A_StartSound("weapons/deagle/afire", 2, volume:0.70);
 				PB_DynamicTail("shotgun", "pistol_mag");
-				PB_LowAmmoSoundWarning("pistol", "LeftDeagleAmmo");
-				A_Takeinventory("LeftDeagleAmmo",1);
+				PB_LowAmmoSoundWarning("pistol", "PB_DeagleLeftMag");
+				PB_TakeAmmo("PB_DeagleLeftMag",1,1,0,true);
 				A_AlertMonsters();
 				A_ZoomFactor(0.985);
-				PB_WeaponRecoil(-1.92,+1.8);
+				PB_WeaponRecoil(-2.85, 2.7);
+				A_FlashOverlay(LEFT_FLASH_LAYER, "MuzzleFlashLeft");
 			}
 			D6E1 B 1 bright {
-				A_ZoomFactor(1.0);
-				PB_WeaponRecoil(-1.92,+2.0);
+				PB_WeaponRecoil(-2.85, 2.7);
+				A_SetFiringLeftWeapon(2);
 			}
-			D6E1 C 1 {
-				A_SetFiringLeftWeapon(False);
-				if(CountInv("LeftDeagleAmmo")<=0 || CountInv("DeagleAmmo")>0 ){
-					A_GiveInventory("DualFiring",1);
-				}
-			}
-			TNT1 A 0 A_jumpif(CountInv("LeftDeagleAmmo") < 1,"EndFireNoAmmoLeft");
-			D6E1 DEFGH 1;
-			D6E1 II 1 {
-				//refire for dual wield
-				int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
-				if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && firemodecvar == 2){
-					if(CountInv("LeftDeagleAmmo") > 0)
-						return resolvestate("FireLeft_Overlay");
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(Null);
-					}
-				}
-				if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon())
-				{
-					if(CountInv("LeftDeagleAmmo") > 0)
-					{
-						return resolvestate("FireLeft_Overlay");
-					}
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(null);
-					}
-				}
-				return resolvestate(Null);
-			}
-			TNT1 A 0 {
-				if(CountInv("LeftDeagleAmmo")<=0)
-					A_GiveInventory("DualFireReload",1);
-			}
+			D6E1 C 1 A_ZoomFactor(1.0);
+			TNT1 A 0 A_JumpIf(PB_GetChamberEmpty(true),"EndFireNoAmmoLeft");
+			D6E1 D 1;
+			D6E1 E 1 A_SetFiringLeftWeapon(False);
+			D6E1 FGHIII 1 A_RefireLeft();
 			Goto IdleLeft_Overlay;
 		
 		EndFireNoAmmoLeft:
-			D6E7 ABCDEF 1;
-			D6E1 JJ 1 {
-				//refire for dual wield
-				int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
-				if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && firemodecvar == 2){
-					if(CountInv("LeftDeagleAmmo") > 0)
-						return resolvestate("FireLeft_Overlay");
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(Null);
-					}
-				}
-				if(JustPressed(BT_ATTACK) && !A_IsFiringLeftWeapon())
-				{
-					if(CountInv("LeftDeagleAmmo") > 0)
-					{
-						return resolvestate("FireLeft_Overlay");
-					}
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(null);
-					}
-				}
-				return resolvestate(Null);
-			}
-			TNT1 A 0 {
-				if(CountInv("LeftDeagleAmmo")<=0)
-					A_GiveInventory("DualFireReload",1);
-			}
+			D6E7 A 1;
+			D6E7 B 1 A_SetFiringLeftWeapon(false);
+			D6E7 CDEF 1;
 			Goto IdleLeft_Overlay;
 	
+		MuzzleFlashRight:
+			D6EM AB 1 Bright A_GunFlash();
+			Stop;
 		FireRight_Overlay:
 			D6E0 A 1 BRIGHT {
-					PB_IncrementHeat(2);	
-					A_SetFiringRightWeapon(True);
+					A_SetFiringRightWeapon(true);
+					PB_IncrementHeat(2);
 					A_FireProjectile("PB_50AE", frandom(-0.1,0.1),0,6,0, FPF_NOAUTOAIM, frandom(-0.1,0.1));
 					PB_GunSmoke_Deagle(-15,0,6);
                     PB_MuzzleFlashEffects(-15,0,6);
 					PB_SpawnCasing("EmptyBrassDeagle",26,25,38,-frandom(1, 2),Frandom(2,6),Frandom(3,6));
-					A_StartSound("weapons/deagle/fire", 0, CHANF_OVERLAP, 1.0);
-					A_StartSound("weapons/deagle/afire", 0, CHANF_OVERLAP, 0.70);
+					A_StartSound("weapons/deagle/fire", CHAN_WEAPON, volume:1.0);
+					A_StartSound("weapons/deagle/afire", 2, volume:0.70);
 					PB_DynamicTail("shotgun", "pistol_mag");
 					PB_LowAmmoSoundWarning("pistol");
 					A_ZoomFactor(0.985);
-					A_Takeinventory("DeagleAmmo",1);
+					PB_TakeAmmo("PB_DeagleMag",1);
 					A_AlertMonsters();
-					A_SetFiringRightWeapon(True);
-					PB_WeaponRecoil(-1.92,-1.8);
+					PB_WeaponRecoil(-2.85, -2.7);
+					A_FlashOverlay(RIGHT_FLASH_LAYER, "MuzzleFlashRight");
 				}
 			D6E0 B 1 BRIGHT {
-				A_ZoomFactor(1.0);
-				PB_WeaponRecoil(-1.92,-2.0);
-				}
-			D6E0 C 1 {
-				A_SetFiringRightWeapon(False);
-				if(CountInv("LeftDeagleAmmo")>0 || CountInv("DeagleAmmo")<=0 ){
-					A_TakeInventory("DualFiring",1);
-				}
+				PB_WeaponRecoil(-2.85, -2.7);
+				A_SetFiringRightWeapon(2);
 			}
-			TNT1 A 0 A_jumpif(invoker.ammo2.amount < 1,"EndFireNoAmmoRight");
-			D6E0 DEFGH 1;
-			D6E0 II 1 {
-				//refire for dual wield
-				int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
-				if(JustPressed(BT_ATTACK) && !A_IsFiringRightWeapon() && firemodecvar == 2){
-					if(CountInv("DeagleAmmo") > 0)
-						return resolvestate("FireRight_Overlay");
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(null);
-					}
-				}
-				if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && firemodecvar > 2){
-					if(CountInv("DeagleAmmo") > 0)
-						return resolvestate("FireRight_Overlay");
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(null);
-					}
-				}
-				return resolvestate(null);
-			}
-			TNT1 A 0 {
-				if(CountInv("DeagleAmmo")<=0)
-					A_GiveInventory("DualFireReload",1);
-			}
+			D6E0 C 1 A_ZoomFactor(1.0);
+			TNT1 A 0 A_JumpIf(PB_GetChamberEmpty(),"EndFireNoAmmoRight");
+			D6E0 D 1;
+			D6E0 E 1 A_SetFiringRightWeapon(false);
+			D6E0 FGHIII 1 A_RefireRight();
 			Goto IdleRight_Overlay;
 		
 		EndFireNoAmmoRight:
-			D6E6 ABCDEF 1;
-			D6E0 JJ 1 {
-				//refire for dual wield
-				int firemodecvar = Cvar.GetCvar("SingleDualFire",player).GetInt();
-				if(JustPressed(BT_ATTACK) && !A_IsFiringRightWeapon() && firemodecvar == 2){
-					if(CountInv("DeagleAmmo") > 0)
-						return resolvestate("FireRight_Overlay");
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(null);
-					}
-				}
-				if(JustPressed(BT_ALTATTACK) && !A_IsFiringRightWeapon() && firemodecvar > 2){
-					if(CountInv("DeagleAmmo") > 0)
-						return resolvestate("FireRight_Overlay");
-					else 
-					{
-						A_StartSound("weapons/empty", 10,CHANF_OVERLAP);
-						return resolvestate(null);
-					}
-				}
-				return resolvestate(null);
-			}
-			TNT1 A 0 {
-				if(CountInv("DeagleAmmo")<=0)
-					A_GiveInventory("DualFireReload",1);
-			}
+			D6E6 A 1;
+			D6E6 B 1 A_SetFiringRightWeapon(false);
+			D6E6 CDEF 1;
 			Goto IdleRight_Overlay;
 		
 		
@@ -1063,137 +885,96 @@ class PB_Deagle : PB_WeaponBase
 		////////////////////////////////////////////////////////////////////////
 		
 		LoadSprites:
-			D8E1 A 0;
-			D5E1 A 0;
-			D7E1 A 0;
-			DR03 A 0;
-			DR13 A 0;
-			DR23 A 0;
 			D4U0 A 0;
+			D5E1 A 0;
 			D6E2 A 0;
 			D6E3 A 0;
 			D6E4 A 0;
 			D6E5 A 0;
-			DR10 A 0;
-			DR20 A 0;
+			D7E1 A 0;
+			D7E2 A 0;
+			D7E3 A 0;
+			D8E1 A 0;
 			DR00 A 0;
+			DR01 A 0;
+			DR03 A 0;
+			DR10 A 0;
+			DR11 A 0;
+			DR13 A 0;
+			DR14 A 0;
+			DR15 A 0;
+			DR20 A 0;
+			DR21 A 0;
+			DR22 A 0;
+			DR23 A 0;
+			DR24 A 0;
 			stop;
 			
 		FlashPunching:
-			TNT1 A 0 A_ClearOverlays(10,11);
-			TNT1 A 0 PB_jumpIfHasBarrel("FlashBarrelPunching","FlashBarrelPunching","FlashBarrelPunching");
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(),"FlashPunchingDual");
-			D8E0 ABCDEFGGFEDCBA 1 {
-				if(invoker.ammo2.amount < 1)
-					A_SetOverlaySprite(overlayID(),"D8E1");
-			}
-			stop;
-		
+			D8E0 ABCDEFGGFEDCBA 1 PB_SetSpriteIfUnload("D8E1");
+			Goto Ready3;
 		FlashPunchingDual:
+			TNT1 A 0 A_ClearOverlays(10,11);
 			TNT1 ABCDEFGGFEDCBA 1;
-			//D7E0 ABCDEFGGFEDCBA 1;
-			stop;
-		
+			Goto Ready3;
 		FlashKicking:
-			TNT1 A 0 A_ClearOverlays(10,11);
-			TNT1 A 0 PB_jumpIfHasBarrel("FlashBarrelKicking","FlashBarrelKicking","FlashBarrelKicking");
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(),"FlashKickingDual");
-			TNT1 A 0 A_jumpif(invoker.ammo2.amount < 1 || findinventory(invoker.unloadertoken),"FlashKickingUnload");
-			D5E0 ABCDEFGGGFEDCBA 1;
-			goto ready3;
-			
-		FlashKickingUnload:
-			D5E1 ABCDEFGGGFEDCBA 1;
-			goto ready3;
-			
+			D5E0 ABCDEFGGGFEDCBA 1 PB_SetSpriteIfUnload("D5E1");
+			goto Ready;
 		FlashKickingDual:
-			D7E0 ABCDEFGGGFEDCBA 1 {
-				if(invoker.ammo2.amount < 1)
-					A_SetOverlaySprite(overlayID(),"D7E1");
-			}
-			goto ready3;
-			
+			TNT1 A 0 A_ClearOverlays(10,11);
+			D7E0 ABCDEFGGGFEDCBA 1 PB_SetDualSpriteIfUnload("D7E2","D7E3","D7E1");
+			goto Ready;
 		FlashAirKicking:
-			TNT1 A 0 A_ClearOverlays(10,11);
-			TNT1 A 0 PB_jumpIfHasBarrel("FlashBarrelAirKicking","FlashBarrelAirKicking","FlashBarrelAirKicking");
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(),"FlashAirKickingDual");
-			TNT1 A 0 A_jumpif(invoker.ammo2.amount < 1,"FlashAirKickingUnload");
-			D5E0 ABCDEFGGGGFEDCBA 1;
-			goto ready3;
-		
-		FlashAirKickingUnload:
-			D5E1 ABCDEFGGGGFEDCBA 1;
-			goto ready3;
-		
+			D5E0 ABCDEFGGGGFEDCBA 1 PB_SetSpriteIfUnload("D5E1");
+			goto Ready;
 		FlashAirKickingDual:
-			D7E0 ABCDEFGGGGFEDCBA 1 {
-				if(invoker.ammo2.amount < 1)
-					A_SetOverlaySprite(overlayID(),"D7E1");
-			}
-			goto ready3;
-			
+			TNT1 A 0 A_ClearOverlays(10,11);
+			D7E0 ABCDEFGGGGFEDCBA 1 PB_SetDualSpriteIfUnload("D7E2","D7E3","D7E1");
+			goto Ready;
 		FlashSlideKicking:
-			TNT1 A 0 A_ClearOverlays(10,11);
-			TNT1 A 0 PB_jumpIfHasBarrel("FlashBarrelSlideKicking","FlashBarrelSlideKicking","FlashBarrelSlideKicking");
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(),"FlashSlideKickingDual");
-			TNT1 A 0 A_jumpif(invoker.ammo2.amount < 1,"FlashSlideKickingUnload");
-			D5E0 ABCDEFGGGGGGGGGGGGGGGFEDCBA 1;
-			goto ready3;
-			
-		FlashSlideKickingUnload:
-			D5E1 ABCDEFGGGGGGGGGGGGGGGFEDCBA 1;
-			goto ready3;
-			
+			D5E0 ABCDEFGGGGGGGGGGGGGGGFEDCBA 1 PB_SetSpriteIfUnload("D5E1");
+			goto Ready;
 		FlashSlideKickingDual:
-			D7E0 ABCDEFGGGGGGGGGGGGGGGFEDCBA 1 {
-				if(invoker.ammo2.amount < 1)
-					A_SetOverlaySprite(overlayID(),"D7E1");
-			}
-			goto ready3;
-			
-		FlashSlideKickingStop:
 			TNT1 A 0 A_ClearOverlays(10,11);
-			TNT1 A 0 PB_jumpIfHasBarrel("FlashBarrelSlideKickingStop","FlashBarrelSlideKickingStop","FlashBarrelSlideKicking");
+			D7E0 ABCDEFGGGGGGGGGGGGGGGFEDCBA 1 PB_SetDualSpriteIfUnload("D7E2","D7E3","D7E1");
+			goto Ready;
+		FlashSlideKickingStop:
 			TNT1 A 0 A_JumpIf(A_CheckAkimbo(),"FlashSlideKickingStopDual");
-			TNT1 A 0 A_jumpif(invoker.ammo2.amount < 1,"FlashSlideKickingStopUnload");
-			D5E0 GFEDCBA 1;
-			goto ready3;
-		
-		FlashSlideKickingStopUnload:
-			D5E1 GFEDCBA 1;
-			goto ready3;
-		
+			D5E0 GFEDCBA 1 PB_SetSpriteIfUnload("D5E1");
+			goto Ready;
 		FlashSlideKickingStopDual:
-			D7E0 GFEDCBA 1 {
-				if(invoker.ammo2.amount < 1)
-					A_SetOverlaySprite(overlayID(),"D7E1");
-			}
-			goto ready3;
+			TNT1 A 0 A_ClearOverlays(10,11);
+			D7E0 GFEDCBA 1 PB_SetDualSpriteIfUnload("D7E2","D7E3","D7E1");
+			goto Ready;
 	}
 	
 	
-	action void PB_SetSpriteIfUnload(string sp)
+	action void PB_SetSpriteIfUnload(string sp,bool dual = false)
 	{
-		if(invoker.ammo2.amount < 1 || findinventory(invoker.unloadertoken))
+		if(PB_GetChamberEmpty(dual))
 			A_setoverlaysprite(overlayID(),sp);
 	}
 	
 	Action void PB_SetDualSpriteIfUnload(string leftuUnl,string rightUnl,string unloaded)
 	{
-		bool rightunloaded = (invoker.ammo2.amount < 1 || findinventory(invoker.unloadertoken));
-		bool leftunloaded = (countinv("LeftDeagleAmmo") < 1);
+		bool rightunloaded = (PB_GetChamberEmpty());
+		bool leftunloaded = (PB_GetChamberEmpty(true));
 		if(rightunloaded && leftunloaded)
 		{
 			A_setoverlaysprite(overlayID(),unloaded);
 			return;
 		}
-		if(rightunloaded)
+		else if(rightunloaded)
 		{
 			A_setoverlaysprite(overlayID(),rightUnl);
 			return;
 		}
 		
-		if(leftunloaded)
+		else if(leftunloaded)
 		{
 			A_setoverlaysprite(overlayID(),leftuUnl);
 			return;
@@ -1203,7 +984,7 @@ class PB_Deagle : PB_WeaponBase
 }
 
 
-Class DeagleAmmo : PB_WeaponAmmo
+Class PB_DeagleMag : PB_WeaponAmmo
 {
 	default
 	{
@@ -1216,7 +997,7 @@ Class DeagleAmmo : PB_WeaponAmmo
 	}
 }
 
-Class LeftDeagleAmmo : PB_WeaponAmmo
+Class PB_DeagleLeftMag : PB_WeaponAmmo
 {
    default
 	{
@@ -1226,31 +1007,6 @@ Class LeftDeagleAmmo : PB_WeaponAmmo
 		Ammo.BackpackMaxAmount 8;
 		+INVENTORY.IGNORESKILL;
 		Inventory.Icon "D4E0Z0";
-	}
-}
-
-Class DeagleHasUnloaded: Inventory
-{
-	default
-	{
-		Inventory.maxamount 1;
-	}
-}
-
-
-Class RespectDeagle : Inventory
-{
-	default
-	{
-		Inventory.maxamount 1;
-	}
-}
-
-Class DualWieldingDeagles: Inventory
-{
-	default
-	{
-		Inventory.maxamount 1;
 	}
 }
 

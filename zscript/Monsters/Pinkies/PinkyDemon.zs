@@ -17,8 +17,8 @@ class PB_Demon : PB_Monster
 		DeathSound "demon/death";
 		ActiveSound "demon/active";
         DamageType "Eat";
-		Obituary "$OB_DEMONHIT";
-		Tag "$FN_DEMON";
+		Obituary "$OB_PB_DEMONHIT";
+		Tag "$FN_PB_DEMON";
         MaxStepHeight 32;
 	    MaxDropOffHeight 32;
         //BLoodType "NashGoreBlood";

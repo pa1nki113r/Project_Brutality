@@ -30,6 +30,72 @@
 //
 //===========================================================================
 
+// [gng] not QUITE a ring buffer, but close. please use this when creating
+// effects that are limited, like particles, it's much faster.
+class PB_UroborosBuffer play {
+  Array<Actor> buffer;
+  int tail, maxsize, size;
+
+  static PB_UroborosBuffer Init(int maxsize) {
+    let o = PB_UroborosBuffer(new("PB_UroborosBuffer"));
+    if(o) {
+      o.maxsize = maxsize;
+      o.buffer.Reserve(maxsize);
+    }
+
+    return o;
+  }
+
+  bool IsFull() {
+    return size == maxsize;
+  }
+
+  // [gng] "tail" in this case means the oldest element
+  Actor GetTail() {
+    if(maxsize <= 0)
+          return NULL;
+          
+    return buffer[tail];
+  }
+
+  /* [gng] insert a new element, or if the buffer is full, replace the oldest
+     element
+
+     e.g.: when the buffer is full and inserting a new element
+     1 < tail   >    4 < new
+     2          >    2 < tail
+     3 < new    >    3 */
+  void Insert(Actor what, bool destroyOld = true) {
+    if(maxsize <= 0)
+    {
+      // [gng] so queues with a size of 0 don't act like unlimited queues
+      if(what)
+        what.Destroy();
+      
+      return;
+    }
+
+    if(destroyOld && IsFull() && GetTail())
+      GetTail().Destroy();
+    
+    buffer[tail] = what;
+    tail = (tail + 1) % maxsize;
+    
+    if(size < maxsize) 
+      ++size;
+  }
+
+  void Clean() {
+    size = tail = 0;
+    foreach(el : buffer) { 
+      if(el) 
+        el.Destroy(); 
+    }
+    buffer.Clear();
+    buffer.Reserve(maxsize);
+  }
+}
+
 class NashGoreHandler : EventHandler
 {
 	int maxgore;
@@ -37,6 +103,12 @@ class NashGoreHandler : EventHandler
 	bool cheapCasings;
 
 	Array<String> bloodTypes;
+
+	PB_UroborosBuffer casingBuf;
+	PB_UroborosBuffer goreBuf;
+	PB_UroborosBuffer smokeBuf;
+	PB_UroborosBuffer dropBuf;
+  bool createdBuffers;	
 
 	//===========================================================================
 	//
@@ -65,18 +137,41 @@ class NashGoreHandler : EventHandler
 	//
 	//===========================================================================
 
+  void PB_UpdateQueuesNShit() {
+    maxgore = nashgore_maxgore;
+	  maxcasings = nashgore_maxcasings;
+ 		cheapCasings = pb_cheapcasings;
+
+ 		if(createdBuffers) {
+ 		  casingbuf.Clean();
+ 		  gorebuf.Clean();
+ 		  smokebuf.Clean();
+ 		  dropbuf.Clean();
+    }
+ 		
+	  casingBuf = PB_UroborosBuffer.Init(maxcasings);
+	  goreBuf = PB_UroborosBuffer.Init(maxgore);
+	  smokeBuf = PB_UroborosBuffer.Init(50);
+	  dropBuf = PB_UroborosBuffer.Init(ceil(maxgore * 0.1));
+	  createdBuffers = true;
+  }
+
 	override void WorldLoaded(WorldEvent e)
 	{
+	  PB_UpdateQueuesNShit();	  
 		BuildBloodTypes();
 	}
 
-	override void WorldTick(void)
-	{
-		// update queues
-		maxgore = nashgore_maxgore;
-		maxcasings = nashgore_maxcasings;
-		cheapCasings = pb_cheapcasings;
+	//===========================================================================
+	//
+	//
+	//
+	//===========================================================================
+
+	void PB_AddToUroborosBuffer(Actor what, PB_UroborosBuffer where) {
+    where.Insert(what);
 	}
+
 
 	//===========================================================================
 	//

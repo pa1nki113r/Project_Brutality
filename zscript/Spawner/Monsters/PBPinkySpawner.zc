@@ -1,46 +1,22 @@
-Class PBPinkySpawner : PB_SpawnerBase //replaces Demon
+Class PBPinkySpawner : PB_SpawnerBase
 {
-	default
-	{
-		+LOOKALLAROUND;
-		scale 0.45;
-		-SHOOTABLE;
-		-COUNTKILL; 
-		-SOLID;
-		+NOTIMEFREEZE;
-		//CANPUSHWALLS;
-		//-CANUSEWALLS;
-		//-ACTIVATEMCROSS;
-		//-CANPASS;
-		//-ISMONSTER;
-		//+NODAMAGE;
-		//-NOMENU;
-		Species "pinkySpawner";
-	}
 	States
 	{
+		Death:
+			TNT1 A 0 PB_SpawnerSpawn("PB_PinkySpawner_DW");
+			Stop;
 		Tier4:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_PinkySpawner_T4");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_PinkySpawner_T4");
 			Stop;
 		Tier3:
-		SpawnMechPinky:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_PinkySpawner_T3");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_PinkySpawner_T3");
 			Stop;
 		Tier2:
-		SpawnBloodDemon:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_PinkySpawner_T2");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_PinkySpawner_T2");
 			Stop;
 		Tier1:
-		SpawnPinky:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_PinkySpawner_T1");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
-			Stop;	
-		Death:
-			TNT1 A 0;
-			Goto Spawn;
+			TNT1 A 0 PB_SpawnerSpawn("PB_PinkySpawner_T1");
+			Stop;
 	}
 }
 
@@ -48,39 +24,25 @@ Class PB_PinkySpawner_T1 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.SpawnOverride "pb_pinky_override";
 		dropitem "PB_Demon",255,1;
 	}
-	
-	override void HandleSpawnExeptions(in out name toSpawn)
-	{
-		if(pb_pinky_override != "Disabled") {
-				toSpawn = pb_pinky_override;
-				return;
-		}
-		if(pb_NoMechDemon && toSpawn == "PB_MechDemon")
-			toSpawn = "PB_MeanDemon";
-			
-		if(pb_NoBloodDemon && toSpawn == "PB_MeanDemon")
-			toSpawn = "PB_Demon";
-		
-	}
-	
 }
 
 Class PB_PinkySpawner_T2 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_PinkySpawner_T1";
+		PBRandomSpawner.SpawnOverride "pb_pinky_override";
 		dropitem "PB_MeanDemon",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_pinky_override != "Disabled") {
-				toSpawn = pb_pinky_override;
-				return;
-		}
-		if(pb_NoBloodDemon && toSpawn == "PB_MeanDemon")
-			toSpawn = "PB_Demon";
+		if(toSpawn == "PB_MeanDemon" && pb_pinky_filter & DisablePB_MeanDemon)
+			return false;
+		return true;
 	}
 }
 
@@ -88,20 +50,16 @@ Class PB_PinkySpawner_T3 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_PinkySpawner_T2";
+		PBRandomSpawner.SpawnOverride "pb_pinky_override";
 		dropitem "PB_MechDemon",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_pinky_override != "Disabled") {
-				toSpawn = pb_pinky_override;
-				return;
-		}
-		if(pb_NoMechDemon && toSpawn == "PB_MechDemon")
-			toSpawn = "PB_MeanDemon";
-			
-		if(pb_NoBloodDemon && toSpawn == "PB_MeanDemon")
-			toSpawn = "PB_Demon";
-		
+		if(toSpawn == "PB_MechDemon" && pb_pinky_filter & DisablePB_MechDemon)
+			return false;
+		return true;
 	}
 }
 
@@ -109,19 +67,35 @@ Class PB_PinkySpawner_T4 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_PinkySpawner_T3";
+		PBRandomSpawner.SpawnOverride "pb_pinky_override";
 		dropitem "PB_MechDemon",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_pinky_override != "Disabled") {
-				toSpawn = pb_pinky_override;
-				return;
-		}
-		if(pb_NoMechDemon && toSpawn == "PB_MechDemon")
-			toSpawn = "PB_MeanDemon";
-			
-		if(pb_NoBloodDemon && toSpawn == "PB_MeanDemon")
-			toSpawn = "PB_Demon";
-		
+		if(toSpawn == "PB_MechDemon" && pb_pinky_filter & DisablePB_MechDemon)
+			return false;
+		return true;
+	}
+}
+
+Class PB_PinkySpawner_DW : PB_MonsterSpawner
+{
+	default
+	{
+		PBRandomSpawner.SpawnOverride "pb_pinky_override";
+		dropitem "PB_Demon",255,42;
+		dropitem "PB_MeanDemon",255,23;
+		dropitem "PB_MechDemon",255,35;
+	}
+	
+	override bool HandleSpawnExceptions(name toSpawn)
+	{
+		if(toSpawn == "PB_MeanDemon" && pb_pinky_filter & DisablePB_MeanDemon)
+			return false;
+		if(toSpawn == "PB_MechDemon" && pb_pinky_filter & DisablePB_MechDemon)
+			return false;
+		return true;
 	}
 }

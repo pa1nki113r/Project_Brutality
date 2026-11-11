@@ -1,47 +1,22 @@
-Class PBArachnotronSpawner : PB_SpawnerBase //replaces Arachnotron
+Class PBArachnotronSpawner : PB_SpawnerBase
 {
-	default
-	{
-		+LOOKALLAROUND;
-		scale 0.45;
-		-SHOOTABLE;
-		-COUNTKILL; 
-		-SOLID;
-		+NOTIMEFREEZE;
-		//CANPUSHWALLS;
-		//-CANUSEWALLS;
-		//-ACTIVATEMCROSS;
-		//-CANPASS;
-		//-ISMONSTER;
-		//+NODAMAGE;
-		//-NOMENU;
-		Species "Spiderspawner";
-	}
 	States
 	{
+		Death:
+			TNT1 A 0 PB_SpawnerSpawn("PB_Arachspawner_DW");
+			Stop;
 		Tier4:
-		SpawnEliteArachnotron:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_Arachspawner_T4");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_Arachspawner_T4");
 			Stop;
 		Tier3:
-		SpawnArachnophyte:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_Arachspawner_T3");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_Arachspawner_T3");
 			Stop;
 		Tier2:
-		SpawnInfernalArachnotron:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_Arachspawner_T2");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_Arachspawner_T2");
 			Stop;
 		Tier1:
-		SpawnArachnotron:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_Arachspawner_T1");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_Arachspawner_T1");
 			Stop;
-		Death:
-			TNT1 A 0;
-			Goto Spawn;
 	}
 }
 
@@ -49,17 +24,8 @@ Class PB_Arachspawner_T1 : PB_MonsterSpawner
 {
     default
     {
-        dropitem "PB_Arachnotron1Buffed",255,1;
-    }
-    override void HandleSpawnExeptions(in out name toSpawn)
-    {
-        if(pb_arachnotron_override != "Disabled") {
-            toSpawn = pb_arachnotron_override;
-            return;
-        }
-        if (toSpawn == "PB_Arachnotron1Buffed" && pb_NoBuffArachnotron) {
-            toSpawn = "PB_Arachnotron1";
-        }
+		PBRandomSpawner.SpawnOverride "pb_arachnotron_override";
+        dropitem "PB_Arachnotron",255,1;
     }
 }
 
@@ -67,70 +33,72 @@ Class PB_Arachspawner_T2 : PB_MonsterSpawner
 {
     default
     {
+		PBRandomSpawner.Fallback "PB_Arachspawner_T1";
+		PBRandomSpawner.SpawnOverride "pb_arachnotron_override";
         dropitem "PB_InfernalArachnotron",255,1;
     }
-    override void HandleSpawnExeptions(in out name toSpawn)
-    {
-        if(pb_arachnotron_override != "Disabled") {
-            toSpawn = pb_arachnotron_override;
-            return;
-        }
-        if (toSpawn == "PB_InfernalArachnotron" && pb_NoInfernoArachnotron) {
-            toSpawn = "PB_Arachnotron1Buffed";
-        }
-        if (toSpawn == "PB_Arachnotron1Buffed" && pb_NoBuffArachnotron) {
-            toSpawn = "PB_Arachnotron1";
-        }
-    }
+	
+	override bool HandleSpawnExceptions(name toSpawn)
+	{
+		if(toSpawn == "PB_InfernalArachnotron" && pb_arachnotron_filter & DisablePB_InfernalArachnotron)
+			return false;
+		return true;
+	}
 }
 
 Class PB_Arachspawner_T3 : PB_MonsterSpawner
 {
     default
     {
+		PBRandomSpawner.Fallback "PB_Arachspawner_T2";
+		PBRandomSpawner.SpawnOverride "pb_arachnotron_override";
         dropitem "PB_Arachnophyte",255,1;
     }
-    override void HandleSpawnExeptions(in out name toSpawn)
-    {
-        if(pb_arachnotron_override != "Disabled") {
-            toSpawn = pb_arachnotron_override;
-            return;
-        }
-        if (toSpawn == "PB_Arachnophyte" && pb_NoArachnophyte) {
-            toSpawn = "PB_InfernalArachnotron";
-        }
-        if (toSpawn == "PB_InfernalArachnotron" && pb_NoInfernoArachnotron) {
-            toSpawn = "PB_Arachnotron1Buffed";
-        }
-        if (toSpawn == "PB_Arachnotron1Buffed" && pb_NoBuffArachnotron) {
-            toSpawn = "PB_Arachnotron1";
-        }
-    }
+	
+	override bool HandleSpawnExceptions(name toSpawn)
+	{
+		if(toSpawn == "PB_Arachnophyte" && pb_arachnotron_filter & DisablePB_Arachnophyte)
+			return false;
+		return true;
+	}
 }
 
 Class PB_Arachspawner_T4 : PB_MonsterSpawner
 {
     default
     {
+		PBRandomSpawner.Fallback "PB_Arachspawner_T3";
+		PBRandomSpawner.SpawnOverride "pb_arachnotron_override";
         dropitem "PB_EliteArachnotron",255,1;
     }
-    override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
+	{
+		if(toSpawn == "PB_EliteArachnotron" && pb_arachnotron_filter & DisablePB_EliteArachnotron)
+			return false;
+		return true;
+	}
+}
+
+Class PB_Arachspawner_DW : PB_MonsterSpawner
+{
+    default
     {
-        if(pb_arachnotron_override != "Disabled") {
-            toSpawn = pb_arachnotron_override;
-            return;
-        }
-        if (toSpawn == "PB_EliteArachnotron" && pb_NoArachnotron2) {
-            toSpawn = "PB_Arachnophyte";
-        }
-        if (toSpawn == "PB_Arachnophyte" && pb_NoArachnophyte) {
-            toSpawn = "PB_InfernalArachnotron";
-        }
-        if (toSpawn == "PB_InfernalArachnotron" && pb_NoInfernoArachnotron) {
-            toSpawn = "PB_Arachnotron1Buffed";
-        }
-        if (toSpawn == "PB_Arachnotron1Buffed" && pb_NoBuffArachnotron) {
-            toSpawn = "PB_Arachnotron1";
-        }
+		PBRandomSpawner.SpawnOverride "pb_arachnotron_override";
+        dropitem "PB_Arachnotron",255,31;
+        dropitem "PB_InfernalArachnotron",255,22;
+        dropitem "PB_Arachnophyte",255,9;
+        dropitem "PB_EliteArachnotron",255,38;
     }
+	
+	override bool HandleSpawnExceptions(name toSpawn)
+	{
+		if(toSpawn == "PB_InfernalArachnotron" && pb_arachnotron_filter & DisablePB_InfernalArachnotron)
+			return false;
+		if(toSpawn == "PB_Arachnophyte" && pb_arachnotron_filter & DisablePB_Arachnophyte)
+			return false;
+		if(toSpawn == "PB_EliteArachnotron" && pb_arachnotron_filter & DisablePB_EliteArachnotron)
+			return false;
+		return true;
+	}
 }

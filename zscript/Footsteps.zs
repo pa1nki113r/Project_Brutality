@@ -42,7 +42,7 @@ class PB_Footsteps : Actor
 		double isCrouched = toFollow.GetCrouchFactor();
 		
 		//2) Only play footsteps when on ground, and if the player is moving fast enough.
-		if ((playerVel2D > 0.1) && (toFollow.pos.z - toFollow.floorz <= 0)) {			
+		if ((playerVel2D > 0.1) && (toFollow.pos.z - toFollow.floorz <= 0) && !toFollow.FindInventory("PlayerDashed") && !toFollow.FindInventory("CanSlideKick")) {			
 			
 			sound stepsound;			
 			//current floor texture for the player:
@@ -51,7 +51,7 @@ class PB_Footsteps : Actor
 			if (floorpic == skyflatnum)
 				stepsound = "none";
 			else
-				stepsound = GetFlatSound(Texman.GetName(toFollow.floorpic));
+				stepsound = PB_Materialsys.GetFootstepFromTexName(TexMan.GetName(toFollow.floorpic));
 			//sound volume is amplified by speed.
 			double soundVolume; //multiplied by 0.12 because raw value is too high to be used as volume
 
@@ -87,14 +87,5 @@ class PB_Footsteps : Actor
 			// no need to poll for change too often
 			updateTics = 1;
 		}
-	}
-	
-	sound GetFlatSound(name texname) {
-		name tmpname = PB_Materialsys.GetMaterialFromTexName(texname);
-
-		if(tmpname == 'err_nomaterialfound' || tmpname == 'err_escapedloop') 
-			tmpname = "default";
-
-		return "step/"..tmpname;
 	}
 }

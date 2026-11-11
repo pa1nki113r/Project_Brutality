@@ -1,45 +1,22 @@
-Class PBLSSpawner : PB_SpawnerBase //replaces LostSoul
+Class PBLSSpawner : PB_SpawnerBase
 {
-	default
-	{
-		+LOOKALLAROUND;
-		scale 0.45;
-		-SHOOTABLE;
-		-COUNTKILL; 
-		-SOLID;
-		+NOTIMEFREEZE;
-		//CANPUSHWALLS;
-		//-CANUSEWALLS;
-		//-ACTIVATEMCROSS;
-		//-CANPASS;
-		//-ISMONSTER;
-		//+NODAMAGE;
-		//-NOMENU;
-		Species "LSspawner";
-	}
 	States
 	{
+		Death:
+			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSpawner_DW");
+			Stop;
 		Tier4:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSpawner_T4");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSpawner_T4");
 			Stop;
 		Tier3:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSpawner_T3");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSpawner_T3");
 			Stop;
 		Tier2:
-		Phantasm:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSpawner_T2");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSpawner_T2");
 			Stop;
 		Tier1:
-		LostSoul:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSpawner_T1");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_SoulSpawner_T1");
 			Stop;
-		Death:
-			TNT1 A 0;
-			Goto Spawn;
 	}
 }
 
@@ -47,32 +24,25 @@ Class PB_SoulSpawner_T1 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.SpawnOverride "pb_lostsoul_override";
 		dropitem "PB_LostSoul",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
-	{
-		if(pb_lostsoul_override != "Disabled") {
-				toSpawn = pb_lostsoul_override;
-				return;
-		}
-	}
-	
 }
 
 Class PB_SoulSpawner_T2 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_SoulSpawner_T1";
+		PBRandomSpawner.SpawnOverride "pb_lostsoul_override";
 		dropitem "PB_Phantasm",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_lostsoul_override != "Disabled") {
-				toSpawn = pb_lostsoul_override;
-				return;
-		}
-		if(pb_NoPhantasm && toSpawn == "PB_Phantasm")
-			toSpawn = "PB_LostSoul";
+		if(toSpawn == "PB_Phantasm" && pb_lostsoul_filter & DisablePB_Phantasm)
+			return false;
+		return true;
 	}
 }
 
@@ -80,16 +50,16 @@ Class PB_SoulSpawner_T3 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_SoulSpawner_T2";
+		PBRandomSpawner.SpawnOverride "pb_lostsoul_override";
 		dropitem "PB_Phantasm",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_lostsoul_override != "Disabled") {
-				toSpawn = pb_lostsoul_override;
-				return;
-		}
-		if(pb_NoPhantasm && toSpawn == "PB_Phantasm")
-			toSpawn = "PB_LostSoul";
+		if(toSpawn == "PB_Phantasm" && pb_lostsoul_filter & DisablePB_Phantasm)
+			return false;
+		return true;
 	}
 }
 
@@ -97,15 +67,32 @@ Class PB_SoulSpawner_T4 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_SoulSpawner_T3";
+		PBRandomSpawner.SpawnOverride "pb_lostsoul_override";
 		dropitem "PB_Phantasm",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_lostsoul_override != "Disabled") {
-				toSpawn = pb_lostsoul_override;
-				return;
-		}
-		if(pb_NoPhantasm && toSpawn == "PB_Phantasm")
-			toSpawn = "PB_LostSoul";
+		if(toSpawn == "PB_Phantasm" && pb_lostsoul_filter & DisablePB_Phantasm)
+			return false;
+		return true;
+	}
+}
+
+Class PB_SoulSpawner_DW : PB_MonsterSpawner
+{
+	default
+	{
+		PBRandomSpawner.SpawnOverride "pb_lostsoul_override";
+		dropitem "PB_LostSoul",255,1;
+		dropitem "PB_Phantasm",255,3;
+	}
+	
+	override bool HandleSpawnExceptions(name toSpawn)
+	{
+		if(toSpawn == "PB_Phantasm" && pb_lostsoul_filter & DisablePB_Phantasm)
+			return false;
+		return true;
 	}
 }

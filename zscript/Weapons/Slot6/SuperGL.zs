@@ -1,13 +1,10 @@
-Class PB_SuperGL : PB_Weapon
+Class PB_SuperGL : PB_WeaponBase
 {
 	default
 	{
-		//$Title Automatic Grenade Launcher
-		//$Category Project Brutality - Weapons
+		//$Title Grenade Launcher
+		//$Category Project Brutality/Weapons
 		//$Sprite SGL0Z0
-		//SpawnID 9520;
-		//Game Doom
-		//SpawnID 29;
 		weapon.slotnumber 6;
 		Speed 20;
 		Damage 20;
@@ -16,22 +13,16 @@ Class PB_SuperGL : PB_Weapon
 		Weapon.AmmoUse1 0;
 		Weapon.AmmoUse2 0;
 		Weapon.AmmoGive2 0;
-		Weapon.AmmoGive1 6;
+		Weapon.AmmoGive1 2;
 		Weapon.AmmoType1 "PB_RocketAmmo";
-		Weapon.AmmoType2 "GrenadeRounds";
+		Weapon.AmmoType2 "PB_SuperGLMag";
 		Inventory.PickupSound "misc/rockboxa";
-		+WEAPON.NOAUTOAIM;
 		+WEAPON.EXPLOSIVE;
-		+WEAPON.NOALERT;
-		+WEAPON.NOAUTOFIRE;
-		+FLOORCLIP;
-		Inventory.PickupMessage "UAC-MGL Automatic Grenade Launcher (Slot 6)";
-		Tag "UAC-M7 Super Grenade Launcher";
+		Inventory.PickupMessage "$PB_SGL_PICKUP";
+		Tag "$PB_SGL_TAG";
 		Inventory.AltHUDIcon "SGL0Z0";
-		PB_WeaponBase.respectItem "RespectSGL";
 		PB_WeaponBase.UsesWheel true;
 		PB_WeaponBase.WheelInfo "PB_SGLWheel";
-		PB_WeaponBase.unloadertoken "SGLUnloaded";
 	}
 	
 	int GrenadeMode;
@@ -52,8 +43,6 @@ Class PB_SuperGL : PB_Weapon
 		
 		WeaponRespect:
 			TNT1 A 0 {
-				A_SetInventory("RespectSGL",1);
-				A_SetInventory("PB_LockScreenTilt",1);
 				A_StartSound("weapons/sgl/inspect1", CHAN_AUTO);
 				A_SetCurrentGrenadeType("Impact");
                 A_SetCrosshair(-1);
@@ -107,9 +96,8 @@ Class PB_SuperGL : PB_Weapon
 		
 		Select:
 			TNT1 A 0 PB_WeaponRaise("weapons/sgl/inspect2");	//this replaces the jump to SelectFirstPersonLegs state and a lot of other things
-			TNT1 A 0 PB_WeapTokenSwitch("SGLSelected");
-			TNT1 A 0 A_SetInventory("HasExplosiveWeapon",1);
 			TNT1 A 0 A_SetInventory("CycleAnimation",0);
+			TNT1 A 0 A_SetInventory("CantWeaponSpecial",0);
 			TNT1 A 0 A_overlay(Det_layer,"DetonatorLayer");
 			TNT1 A 0 PB_RespectIfNeeded();
 		SelectContinue:
@@ -119,10 +107,8 @@ Class PB_SuperGL : PB_Weapon
 			goto ready;
 		
 		Deselect:
-			TNT1 A 0 PB_jumpIfHasBarrel("PlaceBarrel","PlaceFlameBarrel","PlaceIceBarrel");
 			TNT1 A 0 {
 				A_SetInventory("CycleAnimation", 0);
-				A_SetInventory("HasExplosiveWeapon", 0);
 				A_ClearOverlays(Det_layer,Det_layer);
 			}
 			SL02 FGHI 1 SGL_ChangeModeSprite("SL02","SL12","SL22","SL32","SL42","S001");
@@ -136,92 +122,73 @@ Class PB_SuperGL : PB_Weapon
 			TNT1 A 0 {
 				A_SetRoll(0);
 				PB_HandleCrosshair(89);
-				A_SetInventory("PB_LockScreenTilt",0);
 				A_SetInventory("CycleAnimation", 0);
 				A_SetInventory("CantWeaponSpecial",0);
 			}
 		ReadyToFire:
 			SL02 E 1 {
 				SGL_ChangeModeSprite("SL02","SL12","SL22","SL32","SL42","S001");
-				if (PressingFire() && CountInv("GrenadeRounds") > 0){
-					return resolvestate("Fire");
-				}
 				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
 			}
 			Loop;
-		
-		AltFire:
-			TNT1 A 0 PB_jumpIfHasBarrel("PlaceBarrel","PlaceFlameBarrel","PlaceIceBarrel");
-			SL02 E 1 {
-				SGL_ChangeModeSprite("SL02","SL12","SL22","SL32","SL42","S001");
-				return A_DoPBWeaponAction(WRF_ALLOWRELOAD);
-			}
-			goto ready;
-
-        NoAmmo:
-			SL02 E 1 {
-				SGL_ChangeModeSprite("SL02","SL12","SL22","SL32","SL42","S001");
-				
-			}
-			goto ready3;
-		
 		Fire:
-			TNT1 A 0 PB_jumpIfHasBarrel("ThrowBarrel","ThrowFlameBarrel","ThrowIceBarrel");
 			TNT1 A 0 {
 				A_WeaponOffset(0,32);
 				A_SetRoll(0);
 				PB_HandleCrosshair(89);
-				A_SetInventory("PB_LockScreenTilt",0);
 			}
-			TNT1 A 0 PB_jumpIfNoAmmo("Reload",1);
+			TNT1 A 0 PB_jumpIfNoAmmo("Reload");
+			S002 A 0;
 			SL60 A 1 BRIGHT {
 				PB_FireSGL();
 				SGL_ChangeModeSprite("SL60","SL61","SL62","SL63","SL64");
+				if(PB_GetMagUnloaded()) {A_SetWeaponSprite("S002");}
 				A_Alertmonsters();
 				A_Startsound("weapons/firegrenade", CHAN_WEAPON);
-				A_TakeInventory("GrenadeRounds",1);
+				PB_TakeAmmo("PB_SuperGLMag",1);
 				A_ZoomFactor(0.98);
 				A_GunFlash();
 				PB_GunSmoke_Launcher(0, 0, 0);
 			}
 			SL60 B 1 BRIGHT {
 				SGL_ChangeModeSprite("SL60","SL61","SL62","SL63","SL64");
+				if(PB_GetMagUnloaded()) {A_SetWeaponSprite("S002");}
 				//A_Spawnprojectile("ShakeYourAssDouble", 0, 0, 0, 0);
 				PB_SpawnCasing("EmptyGrenadeBrass", 30, 0, 34, -frandom(1, 3), -frandom(2, 4), 5);
 				A_ZoomFactor(0.99);
 				PB_WeaponRecoil(-3.2,+1.61);
+				A_GunFlash();
 			}
 			SL60 C 1 {
 				A_Overlay(-6, "MuzzleSparks", true);
 				SGL_ChangeModeSprite("SL60","SL61","SL62","SL63","SL64");
+				if(PB_GetMagUnloaded()) {A_SetWeaponSprite("S002");}
 				A_ZoomFactor(1.0);
 				PB_WeaponRecoil(-3.2,+1.61);
+				A_GunFlash();
 			}
-			//TNT1 A 0 A_GunFlash("CyclingAnimation")
+			TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(),"CycleUnloaded");
 			Goto CyclingAnimation;
 			
 		CyclingAnimation:
 			TNT1 A 0 A_SetInventory("CycleAnimation", 1);
 			TNT1 A 0 A_StartSound("RLCYCLE2", 13);
-			SL60 DEFGHIJKLMNOPQ 1 {
-				SGL_ChangeModeSprite("SL60","SL61","SL62","SL63","SL64");
-				return A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH); //A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH);
-			}
+			SL60 DEFGHIJKLMNOPQ 1 SGL_ChangeModeSprite("SL60","SL61","SL62","SL63","SL64");
 			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 9);
-			SL60 RSTUVWX 1 {
-				SGL_ChangeModeSprite("SL60","SL61","SL62","SL63","SL64");
-				return A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH); //A_DoPBWeaponAction(WRF_NOPRIMARY|WRF_NOBOB|WRF_NOSWITCH);
-			}
-			TNT1 A 0 A_SetInventory("CycleAnimation", 0);
+			SL60 RSTUVWX 1 SGL_ChangeModeSprite("SL60","SL61","SL62","SL63","SL64");
 			SL02 E 1 SGL_ChangeModeSprite("SL02","SL12","SL22","SL32","SL42");
-			Goto CycleDone;
-		
-		CycleDone:
 			SL02 E 1 {
 				//A_TakeInventory("SGLDetonateSoundCooldown",22);
 				SGL_ChangeModeSprite("SL02","SL12","SL22","SL32","SL42");
 				PB_ReFire();
 			}
+			Goto Ready;
+		CycleUnloaded:
+			TNT1 A 0 A_SetInventory("CycleAnimation", 1);
+			TNT1 A 0 A_StartSound("RLCYCLE2", 13);
+			S002 DEFGHIJKLMNO 1;
+			S002 VWX 1;
+			S001 E 2;
 			Goto Ready;
 			
 			
@@ -231,14 +198,180 @@ Class PB_SuperGL : PB_Weapon
 		//
 		
 		Reload:
-			TNT1 A 0 PB_jumpIfHasBarrel("IdleBarrel","IdleFlameBarrel","IdleIceBarrel");
-			TNT1 A 0 PB_checkReload(null,"Ready","NoAmmo",8,1);
+			TNT1 A 0 PB_CheckReload("ReloadUnloaded",null,"StartRechamber","Ready","Ready",7,1);
+			TNT1 A 0 A_StartSound("Ironsights",15);
+			SL03 ABCDEFGHIJ 1 {
+				A_SetRoll(roll-0.5,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
+			}
+			TNT1 A 0 A_StartSound("weapons/sgl/detach", 14);
+			SL03 KLMNO 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
+			}
+			
+			SL03 PQRSTU 1 SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
+			TNT1 A 0 {
+				PB_SpawnSGLDrum();
+				PB_SetMagUnloaded(true);
+			}
+			SL03 VWXYZ 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
+			}
+			SL04 ABC 1 {
+				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
+			}
+			SL04 DEFG 1 {
+				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
+			}
+			Goto ContinueReload;
+		ReloadUnloaded:
+			TNT1 A 0 A_StartSound("Ironsights",15);
+			S003 ABCD 1;
+		ContinueReload:
+			TNT1 A 0 A_StartSound("weapons/nailgun/up", 10);
+			SL04 HIJKLM 1 SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
+			TNT1 A 0 A_StartSound("weapons/sgl/inspect1", 16);
+			SL04 NOPQRST 1 {
+				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
+			}
+			SL04 UVW 1 {
+				A_SetRoll(roll+0.8,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
+			}
+			
+			SL04 XYZ 1 {
+				A_SetRoll(roll-1.2,SPF_INTERPOLATE);
+				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
+			}
+			TNT1 A 0 A_JumpIf(PB_GetChamberEmpty(),"Rechamber");
+			TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE);
+			TNT1 A 0 A_StartSound("weapons/sgl/slap", 9, CHANF_OVERLAP );
+			SL05 A 1 SGL_ChangeModeSprite("SL05","SL16","SL26","SL36","SL46");
+			TNT1 A 0 {
+				A_StartSound("weapons/nailgun/inspect4", 17, CHANF_OVERLAP);
+				PB_AmmoIntoMag("PB_SuperGLMag","PB_RocketAmmo",7,1);
+				PB_SetMagUnloaded(false);
+				PB_SetMagEmpty(false);
+			}
+			SL05 BCDEF 1 SGL_ChangeModeSprite("SL05","SL16","SL26","SL36","SL46");
+			TNT1 A 0 A_StartSound("Ironsights", 12);
+			SL05 GHIJKL 1 SGL_ChangeModeSprite("SL05","SL16","SL26","SL36","SL46");
+			TNT1 A 0 PB_SetReloading(false);
+			goto ready;
+		//Rechamber Animation
+		StartRechamber:
+			SL05 LKJIH 1 SGL_ChangeModeSprite("SL05","SL16","SL26","SL36","SL46");
+			SL04 WXYZ 1 SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
+		Rechamber:
+			TNT1 A 0 {
+				A_StartSound("weapons/nailgun/inspect4", 9, CHANF_OVERLAP);
+				PB_AmmoIntoMag("PB_SuperGLMag","PB_RocketAmmo",6,1);
+				PB_SetMagUnloaded(false);
+				PB_SetMagEmpty(false);
+				A_SetRoll(0,SPF_INTERPOLATE);
+				A_StartSound("RLCYCLE2", 13);
+			}
+			SL72 BCDEFGHIJK 1 SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
+			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 18);
+			SL72 LMNO 1 SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
+			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 12);
+			SL72 PQRSTUV 1 SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
+			TNT1 A 0 PB_SetChamberEmpty(false);
+			SL72 WXYZ 1 SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
+			SL73 ABCDEF 1 SGL_ChangeModeSprite("SL73","S073","S273","S173","S373");
+			TNT1 A 0 PB_SetReloading(false);
+			goto ready;
+		
+		//
+		//	fking unload
+		//
+		
+		Unload:
+			TNT1 A 0 {
+				A_SetCrosshair(-1);
+				PB_SetReloading(true);
+			}
+			TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(),"Ready3");
+			TNT1 A 0 A_JumpIf(!PB_GetChamberEmpty(),"UnloadChamber");
+		UnloadNormal:
+			S402 ABCDEFGHIJKL 1 SGL_ChangeModeSprite("S402","S412","S422","S432","S442");
+			TNT1 A 0 A_StartSound("weapons/sgl/detach", 14);
+			S402 MNOPQRST 1 SGL_ChangeModeSprite("S402","S412","S422","S432","S442");
+			TNT1 A 0 {
+				PB_UnloadSGL();
+				PB_SetMagUnloaded(true);
+				PB_SetMagEmpty(true);
+			}
+			S402 UVWXYZ 1 SGL_ChangeModeSprite("S402","S412","S422","S432","S442");
+			S403 ABCDE 1 SGL_ChangeModeSprite("S403","S413","S423","S433","S443");
+			TNT1 A 0 PB_SetReloading(false);
+			goto ready;
+		UnloadChamber:
+			TNT1 A 0 A_StartSound("Weapons/GrenadeLoad", 9);
+			S400 ABCD 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
+			TNT1 A 0 {
+				PB_UnloadSGL(CountInv("PB_SuperGLMag") - 1);
+				PB_SetChamberEmpty(true);
+			}
+			S400 EFGHIJKL 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
+			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 10);
+			S400 MNOPQRST 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
+			TNT1 A 0 A_StartSound("weapons/nailgun/up", 11);
+			TNT1 A 0 {
+				PB_UnloadSGL();
+				PB_SetMagUnloaded(true);
+				PB_SetMagEmpty(true);
+			}
+			S400 UVWXYZ 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
+			S401 ABCDE 1 SGL_ChangeModeSprite("S401","S411","S421","S431","S441");
+			TNT1 A 0 PB_SetReloading(false);
+			Goto ready;
+		
+		//
+		//	weapon special
+		//
+
+		WeaponSpecial:
+			TNT1 A 0 {
+				A_SetInventory("CantWeaponSpecial" ,1 );
+				A_SetInventory("GoWeaponSpecialAbility", 0);
+			}
+			TNT1 A 0 PB_PreHandleSGLWheel();
+			//Unload Previous Ammo Type
+			TNT1 A 0 PrintSGLMode();
 			TNT1 A 0 {
 				A_ZoomFactor(1.0);
 				A_SetCrosshair(-1);
-				A_SetInventory("PB_LockScreenTilt",1);
+				PB_SetReloading(true);
 			}
-			TNT1 A 0 A_JumpIfInventory("SGLUnloaded",1,"ReloadUnloaded");
+			TNT1 A 0 A_JumpIf(PB_GetMagUnloaded(), "SpecialFromUnloaded");
+			TNT1 A 0 A_JumpIf(PB_GetChamberEmpty(), "SpecialFromEmptyChamber");
+			TNT1 A 0 A_StartSound("Weapons/GrenadeLoad", 9);
+			S400 ABCD 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
+			TNT1 A 0 {
+				PB_UnloadSGL(CountInv("PB_SuperGLMag") - 1);
+				PB_SetChamberEmpty(true);
+			}
+			S400 EFGHIJKL 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
+			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 10);
+			S400 MNOPQRST 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
+			TNT1 A 0 {
+				A_StartSound("weapons/nailgun/up", 11);
+				PB_SetMagUnloaded(true);
+			}
+			S400 UVWXY 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
+			SL03 Z 1 SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
+			Goto LoadNewAmmoType;
+		SpecialFromUnloaded:
+			TNT1 A 0 A_StartSound("Ironsights",15);
+			S003 ABCD 1;
+			Goto LoadNewAmmoType;
+		SpecialFromEmptyChamber:
 			TNT1 A 0 A_StartSound("Ironsights",15);
 			SL03 ABCDEFGHIJ 1 {
 				A_SetRoll(roll-0.5,SPF_INTERPOLATE);
@@ -253,10 +386,24 @@ Class PB_SuperGL : PB_Weapon
 			SL03 PQRSTU 1 {
 				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
 			}
-			TNT1 A 0 PB_SpawnSGLDrum();	//
+			TNT1 A 0 {
+				PB_SpawnSGLDrum();
+				PB_SetMagUnloaded(true);
+			}
 			SL03 VWXYZ 1 {
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
 				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
+			}
+		LoadNewAmmoType:
+			TNT1 A 0 {
+				PB_SpawnSGLDrum();
+				PB_HandleWheel();	//do the mode change here, so the next animations plays the new ammo type 
+				A_SetInventory("CantWeaponSpecial" ,0 );
+				A_SetInventory("GrenadeTypeImpact", 0);
+				A_SetInventory("GrenadeTypeSticky", 0);
+				A_SetInventory("GrenadeTypeIncendiary", 0);
+				A_SetInventory("GrenadeTypeCryo", 0);
+				A_SetInventory("GrenadeTypeAcid", 0);
 			}
 			SL04 ABC 1 {
 				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
@@ -266,199 +413,7 @@ Class PB_SuperGL : PB_Weapon
 				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
 				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
 			}
-		ContinueFromReloadUnloaded:
-			TNT1 A 0 A_StartSound("weapons/nailgun/up", 10);
-			SL04 HIJKLM 1 {
-				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
-			}
-			TNT1 A 0 A_StartSound("weapons/sgl/inspect1", 16);
-			SL04 NOPQRST 1 {
-				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
-			}
-			
-			SL04 UVW 1 {
-				A_SetRoll(roll+0.8,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
-			}
-			
-			SL04 XYZ 1 {
-				A_SetRoll(roll-1.2,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
-			}
-			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",1,"ChamberedReload");
-			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 9, CHANF_OVERLAP);
-		//Rechamber Animation
-			TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE);
-			TNT1 A 0 A_StartSound("RLCYCLE2", 13);
-			SL72 BCDEFGHIJK 1 SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
-			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 18);
-			SL72 LMNO 1 SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
-			TNT1 A 0 PB_AmmoIntoMag("GrenadeRounds","PB_RocketAmmo",6,1);
-			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 12);
-			TNT1 A 0 A_setinventory(invoker.unloadertoken,0);
-			SL72 PQRSTUVWXYZ 1 SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
-			SL73 ABCDEF 1 SGL_ChangeModeSprite("SL73","S073","S273","S173","S373");
-			goto ready;
-		
-		ChamberedReload:
-			TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE);
-			TNT1 A 0 A_StartSound("weapons/sgl/slap", 9, CHANF_OVERLAP );
-			SL05 A 1 SGL_ChangeModeSprite("SL05","SL16","SL26","SL36","SL46");
-			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 17, CHANF_OVERLAP);
-			SL05 BCDEF 1 SGL_ChangeModeSprite("SL05","SL16","SL26","SL36","SL46");
-			TNT1 A 0 PB_AmmoIntoMag("GrenadeRounds","PB_RocketAmmo",7,1);
-			TNT1 A 0 A_setinventory(invoker.unloadertoken,0);
-			TNT1 A 0 A_StartSound("Ironsights", 12);
-			SL05 GHIJKL 1 SGL_ChangeModeSprite("SL05","SL16","SL26","SL36","SL46");
-			goto ready;
-		
-		ReloadUnloaded:
-			TNT1 A 0 A_StartSound("Ironsights",15);
-			S003 ABCD 1;
-			Goto ContinueFromReloadUnloaded;
-		
-		
-		//
-		//	fking unload
-		//
-		Unload:
-			TNT1 A 0 A_setinventory("Unloading",0);
-			TNT1 A 0 A_Jumpif(countinv(invoker.UnloaderToken) > 0 || countinv(invoker.ammotype2) < 1,"Ready3");
-			TNT1 A 0 A_JumpIfInventory("GrenadeRounds",1,"UnloadChamber");
-		UnloadNormal:
-			TNT1 A 0 {
-				A_ZoomFactor(1.0);
-				A_SetCrosshair(-1);
-				A_SetInventory("PB_LockScreenTilt",1);
-			}
-			TNT1 A 0 A_StartSound("Weapons/GrenadeLoad", 9);
-			S402 ABCDEFGHIJKL 1 SGL_ChangeModeSprite("S402","S412","S422","S432","S442");
-			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 10);
-			S402 MNOPQRST 1 SGL_ChangeModeSprite("S402","S412","S422","S432","S442");
-			TNT1 A 0 A_StartSound("weapons/nailgun/up", 11);
-			TNT1 A 0 PB_UnloadMag("GrenadeRounds","PB_RocketAmmo",1);
-			TNT1 A 0 {
-				A_SetInventory("SGLUnloaded",1);
-				A_SetInventory("Unloading",0);
-			}
-			S402 UVWXYZ 1 SGL_ChangeModeSprite("S402","S412","S422","S432","S442");
-			S403 ABCDE 1 SGL_ChangeModeSprite("S403","S413","S423","S433","S443");
-			goto ready;
-		
-		UnloadChamber:
-			TNT1 A 0 {
-				A_ZoomFactor(1.0);
-				A_SetCrosshair(-1);
-				A_SetInventory("PB_LockScreenTilt",1);
-			}
-			TNT1 A 0 A_StartSound("Weapons/GrenadeLoad", 9);
-			S400 ABCDEFGHIJKL 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
-			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 10);
-			S400 MNOPQRST 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
-			TNT1 A 0 A_StartSound("weapons/nailgun/up", 11);
-			TNT1 A 0 PB_UnloadMag("GrenadeRounds","PB_RocketAmmo",1);
-			TNT1 A 0 {
-				A_SetInventory("SGLUnloaded",1);
-				A_SetInventory("Unloading",0);
-			}
-			S400 UVWXYZ 1 SGL_ChangeModeSprite("S400","S410","S420","S430","S440");
-			S401 ABCDE 1 SGL_ChangeModeSprite("S401","S411","S421","S431","S441");
-			Goto ready;
-		
-		//
-		//	weapon special
-		//
-		
-		WeaponSpecial:
-			TNT1 A 0 A_setinventory("GoWeaponSpecialAbility",0);
-			TNT1 A 0 PB_jumpIfHasBarrel("IdleBarrel","IdleFlameBarrel","IdleIceBarrel");
-			TNT1 A 0 {
-				A_SetInventory("CantWeaponSpecial" ,1 );
-				A_SetInventory("PB_LockScreenTilt",1);
-				A_SetInventory("GoWeaponSpecialAbility", 0);
-			}
-			TNT1 A 0 PB_PreHandleSGLWheel();
-			//Unload Previous Ammo Type
-			TNT1 A 0 A_JumpIf(findinventory("SGLUnloaded"), "LoadNewAmmoType");
-			TNT1 A 0 A_StartSound("Ironsights",15);
-			TNT1 A 0 PrintSGLMode();
-			SL03 ABCDEF 1 {
-				A_SetRoll(roll-0.6,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
-			}
-			SL03 GHIJKL 1 {
-				A_SetRoll(roll+0.6,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
-			}
-			TNT1 A 0 A_StartSound("weapons/sgl/detach", 14);
-			SL03 MNOPQRST 1 SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
-			SL03 WXYZ 1 
-			{
-				A_SetRoll(roll+0.8,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL03","SL14","SL24","SL34","SL44");
-			}
-			
-		LoadNewAmmoType:
-			TNT1 A 0 A_JumpIf(CountInv("SGLUnloaded") <= 0, 5);	//why
-			S003 ABCD 1;
-			SL04 ABCDEF 1 SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
-			TNT1 A 0 A_StartSound("weapons/nailgun/up", 10);
-			TNT1 A 0 PB_HandleWheel();	//do the mode change here, so the next animations plays the new ammo type 
-			SL04 GHIJKLMN 1 {
-				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
-			}
-			TNT1 A 0 A_StartSound("weapons/sgl/inspect1", 16);
-			SL04 OPQRST 1 {
-				A_SetRoll(roll-0.5,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
-			}
-			//TNT1 A 0 A_StartSound("RLCYCLE2", 13)
-			TNT1 A 0 A_StartSound("weapons/nailgun/inspect4", 15);
-			SL04 UVWXY 1 {
-				A_SetRoll(roll+1.0,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
-			}
-			TNT1 A 0 A_StartSound("RLCYCLE2", 13);
-			SL04 Z 1 {
-				A_SetRoll(roll-2.0,SPF_INTERPOLATE);
-				A_StartSound("weapons/nailgun/inspect4", 9, CHANF_OVERLAP );
-				SGL_ChangeModeSprite("SL04","SL15","SL25","SL35","SL45");
-			}
-			SL72 BCDEFGHIJK 1 {
-				A_SetRoll(roll-0.5,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
-			}
-			TNT1 A 0 A_StartSound("weapons/sgl/cycle", 18);
-			SL72 LMNO 1 {
-				A_SetRoll(roll+2.0,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
-			}
-			TNT1 A 0 A_SetRoll(0,SPF_INTERPOLATE);
-			SL72 PQRSTUVWXYZ 1 SGL_ChangeModeSprite("SL72","S072","S272","S172","S372");
-			SL73 ABCD 1 {
-				A_SetRoll(roll+0.5,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL73","S073","S273","S173","S373");
-			}
-			SL73 EF 1 {
-				A_SetRoll(roll-1.0,SPF_INTERPOLATE);
-				SGL_ChangeModeSprite("SL73","S073","S273","S173","S373");
-			}
-			TNT1 A 0 {
-				A_SetInventory("CantWeaponSpecial" ,0 );
-				A_SetInventory("GrenadeTypeImpact", 0);
-				A_SetInventory("GrenadeTypeSticky", 0);
-				A_SetInventory("GrenadeTypeIncendiary", 0);
-				A_SetInventory("GrenadeTypeCryo", 0);
-				A_SetInventory("GrenadeTypeAcid", 0);
-				A_SetInventory("SGLUnloaded", 0);
-				
-				if(invoker.ammo1.amount > 0 && invoker.ammo2.amount < 7)
-					PB_AmmoIntoMag("GrenadeRounds","PB_RocketAmmo",7,1);
-				
-			}  
-			goto ready;
+			Goto ContinueReload;
 		
 		//
 		//flashes
@@ -485,29 +440,24 @@ Class PB_SuperGL : PB_Weapon
 			Stop;
 		
 		FlashKicking:
-			TNT1 A 0 PB_jumpIfHasBarrel("FlashBarrelKicking","FlashBarrelKicking","FlashBarrelKicking");
 			S006 ABCDEFGGGHIJKLM 1 SGL_ChangeModeSprite("S006","S007","S019","S008","S009",layer:OverlayID());
 			Goto Ready3;
 		
 		FlashAirKicking:
-			TNT1 A 0 PB_jumpIfHasBarrel("FlashBarrelAirKicking","FlashBarrelAirKicking","FlashBarrelAirKicking");
 			S006 ABCDEFGGGGHIJKLM 1 SGL_ChangeModeSprite("S006","S007","S019","S008","S009",layer:OverlayID());
 			Goto Ready3;
 			
 		FlashSlideKicking:
-			TNT1 A 0 PB_jumpIfHasBarrel("FlashBarrelSlideKicking","FlashBarrelSlideKicking","FlashBarrelSlideKicking");
 			S020 ABCDEFGHIJKLMNOPQRSSSTUVWX 1 SGL_ChangeModeSprite("S020","S021","S022","S023","S024",layer:OverlayID());
 			Goto Ready3;
 			
 		FlashSlideKickingStop:
-			TNT1 A 0 PB_jumpIfHasBarrel("FlashBarrelSlideKickingStop","FlashBarrelSlideKickingStop","FlashBarrelSlideKicking");
 			S020 TTTUVWX 1 SGL_ChangeModeSprite("S020","S021","S022","S023","S024",layer:OverlayID());
 			Goto Ready3;
 	
 		FlashPunching:
-			TNT1 A 0 PB_jumpIfHasBarrel("FlashBarrelPunching","FlashBarrelPunching","FlashBarrelPunching");
 			S030 ABCDEFGHHIJKLM 1 SGL_ChangeModeSprite("S030","S031","S032","S033","S034",layer:OverlayID());
-			Stop;
+			Goto Ready3;
 		
 		LoadSprites:
 			S001 ABCDEFGHI 0;
@@ -589,6 +539,21 @@ Class PB_SuperGL : PB_Weapon
 			stop;
 	}
 	
+	override void AttachToOwner(Actor Other)
+	{
+		Super.AttachToOwner(other);
+		if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 13, CVar.GetCvar("pb_helpflags", Other.Player))) {
+			Array<String> pbTipsBuf;
+			pbTipsBuf.Push("$PB_BARREL_TIP_1");
+			PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 13);
+		}
+		if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 14, CVar.GetCvar("pb_helpflags", Other.Player))) {
+			Array<String> pbTipsBuf;
+			pbTipsBuf.Push("$PB_BARREL_TIP_2");
+			PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 14);
+		}
+	}
+	
 	action int getSGLMode()
 	{
 		return invoker.GrenadeMode;
@@ -599,16 +564,22 @@ Class PB_SuperGL : PB_Weapon
 		invoker.GrenadeMode = mode;
 	}
 	
-	Action void SGL_ChangeModeSprite(name imp,name stk,name acid, name inc, name cryo, name unloaded = '', int layer = PSP_WEAPON)
+	Action void SGL_ChangeModeSprite(name imp,name stk,name acid, name inc, name cryo, name unloaded = '', name emptychamber = '', int layer = PSP_WEAPON)
 	{
 		let psp = player.findpsprite(layer);
 		
 		if(!psp)
 			return;
 			
-		if(findinventory(invoker.unloadertoken) && unloaded != '')
+		if(PB_GetMagUnloaded() && unloaded != '')
 		{
 			psp.sprite = getspriteindex(unloaded);
+			return;
+		}
+		
+		if(PB_GetMagUnloaded() && emptychamber != '')
+		{
+			psp.sprite = getspriteindex(emptychamber);
 			return;
 		}
 		
@@ -657,9 +628,31 @@ Class PB_SuperGL : PB_Weapon
 		A_fireprojectile(msl,0,0);		
 	}
 	
+	action void PB_UnloadSGL(int goal = 0)
+	{
+		switch(getSGLMode())
+		{
+		case SGL_Impact:
+			PB_UnloadMag("PB_SuperGLMag","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmo");
+			break;
+		case SGL_Sticky:
+			PB_UnloadMag("PB_SuperGLMag","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmoSticky");
+			break;
+		case SGL_Acid:
+			PB_UnloadMag("PB_SuperGLMag","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmoAcid");
+			break;
+		case SGL_Fire:
+			PB_UnloadMag("PB_SuperGLMag","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmoFire");
+			break;
+		case SGL_Cryo:
+			PB_UnloadMag("PB_SuperGLMag","PB_RocketAmmo",1,1,1,goal,"PB_SGLAmmoCryo");
+			break;
+		}
+	}
+	
 	action void PB_SpawnSGLDrum()
 	{
-		if(invoker.ammo2.amount < 1)
+		if(PB_GetMagEmpty() && !PB_GetMagUnloaded())
 		{
 			string csng = "SGL_Drum";
 			switch(getSGLMode())
@@ -683,6 +676,7 @@ Class PB_SuperGL : PB_Weapon
 		findinventory("GrenadeTypeIncendiary") && getSGLMode() == 		SGL_Fire ||
 		findinventory("GrenadeTypeCryo") && getSGLMode() == 			SGL_Cryo)
 		{
+			A_Print("$PB_ALREADYSELECTED");
 			A_SetInventory("CantWeaponSpecial" ,0 );
 			A_SetInventory("GrenadeTypeImpact", 0);
 			A_SetInventory("GrenadeTypeSticky", 0);
@@ -706,11 +700,11 @@ Class PB_SuperGL : PB_Weapon
 	
 	action void PrintSGLMode()
 	{
-		if(findinventory("GrenadeTypeImpact")) A_Print("$PB_SGLIMPACT", 2);
-		if(findinventory("GrenadeTypeSticky")) A_Print("$PB_SGLSTICKY", 2);
-		if(findinventory("GrenadeTypeIncendiary")) A_Print("$PB_SGLINCEN", 2);
-		if(findinventory("GrenadeTypeCryo")) A_Print("$PB_SGLCRYO", 2);
-		if(findinventory("GrenadeTypeAcid")) A_Print("$PB_SGLACID", 2);	
+		if(findinventory("GrenadeTypeImpact")) A_Print("$PB_SGL_IMPACT", 2);
+		if(findinventory("GrenadeTypeSticky")) A_Print("$PB_SGL_STICKY", 2);
+		if(findinventory("GrenadeTypeIncendiary")) A_Print("$PB_SGL_INCENDIARY", 2);
+		if(findinventory("GrenadeTypeCryo")) A_Print("$PB_SGL_CRYO", 2);
+		if(findinventory("GrenadeTypeAcid")) A_Print("$PB_SGL_ACID", 2);	
 	}
 	
 	action void PB_LookAndDetonateGrenades()
@@ -732,7 +726,7 @@ Class PB_SuperGL : PB_Weapon
 //	sgl tokens
 //
 
-Class GrenadeRounds : PB_WeaponAmmo
+Class PB_SuperGLMag : PB_WeaponAmmo
 {
 	default
 	{
@@ -742,14 +736,6 @@ Class GrenadeRounds : PB_WeaponAmmo
 		Ammo.BackpackMaxAmount 7;
 		+INVENTORY.IGNORESKILL;
 		Inventory.Icon "SGL0Z0";
-	}
-}
-
-Class RespectSGL : Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 1;
 	}
 }
 
@@ -807,29 +793,6 @@ Class CycleAnimation : Inventory
 		Inventory.MaxAmount 1;
 	}
 }
-/*
-Class SGLDetonateSoundCooldown : Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 22;
-	}
-}*/
-
-
-Class SGLUnloaded : Inventory
-{
-	default
-	{
-		Inventory.MaxAmount 1;
-	}
-}
-
-
-
-//
-//
-//
 
 Class PB_FragGrenade : Actor
 {
@@ -838,7 +801,7 @@ Class PB_FragGrenade : Actor
 		Radius 2;
 		Height 2;
 		speed 44;
-		Damage 30;
+		DamageFunction 135;
 		DamageType "Explosive";
 		+MISSILE;
 		+BLOODSPLATTER;
@@ -875,16 +838,6 @@ Class PB_FragGrenade : Actor
 			Loop;
 		Bounce:
 			TNT1 A 0;
-			TNT1 A 0 {
-				if(pb_sglgrenadeimpact == 1)
-					return resolvestate("Death");
-				else if(pb_sglgrenadeimpact >= 2)
-				{
-					A_Stop();
-					Return resolvestate("Rest");
-				}
-				return resolvestate(null);
-			}
 			Goto spawn;
 		Rest:
 			GRNP A 35 Bright Light("SGL_FRAG") A_Jumpif(CheckDetonation(),"Detonate");
@@ -898,6 +851,12 @@ Class PB_FragGrenade : Actor
 			TNT1 A 0 A_SpawnItemEx ("ExplosionFlareSpawner",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			TNT1 A 0 A_SpawnItemEx ("ImpactGrenadeExplosion",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			TNT1 A 0 A_SpawnItemEx ("NewRocketExploFX", 0, 0, 0);
+			TNT1 A 0 {
+				for(int i = 0; i < 20; i++)
+				{
+					A_SpawnProjectile("PB_Shrapnel", 0, 0, random (0, 360), 2, random (-90, 90));
+				}
+			}
 			TNT1 A 1;
 			XXXX A 0 A_Spawnprojectile ("ExplosionQuake", 1, 0, random (0, 360), 2, random (0, 160));
 			TNT1 AAAAAAAAA 0 A_Spawnprojectile ("MediumExplosionFlames", 0, 0, random (0, 360), 2, random (0, 360));
@@ -1058,6 +1017,12 @@ Class PB_StickyGrenade: PB_FragGrenade
 			TNT1 A 0 A_StartSound("excavator/explode", 1);
 			TNT1 A 0 A_StartSound("FAREXPL",3);
 			EXPL AAA 0 A_Spawnprojectile ("ExplosionSmoke", 0, 0, random (0, 360), 2, random (0, 360));
+			TNT1 A 0 {
+				for(int i = 0; i < 20; i++)
+				{
+					A_SpawnProjectile("PB_Shrapnel", 0, 0, random (0, 360), 2, random (-90, 90));
+				}
+			}
 			Stop;
 	}
 }
@@ -1193,16 +1158,6 @@ Class PB_IncendiaryGrenade : PB_FragGrenade
 
 		Bounce:
 			TNT1 A 0;
-			TNT1 A 0 {
-				if(pb_sglgrenadeimpact == 1)
-					return resolvestate("Death");
-				else if(pb_sglgrenadeimpact >= 2)
-				{
-					A_Stop();
-					Return resolvestate("Rest");
-				}
-				return resolvestate(null);
-			}
 			Goto spawn;
 
 		Rest:
@@ -1223,6 +1178,12 @@ Class PB_IncendiaryGrenade : PB_FragGrenade
 			FRFX ZZZ 0 BRIGHT A_Spawnprojectile ("BigNeoSmoke", 2, 0, random (0, 360), 2, random (0, 360));
 			EXPL AAAAA 0 A_Spawnprojectile ("FT_GroundFireSpawner", 12, random(-32,32), random (0, 360), 2, random (40, 60));
 			EXPL AAAAAAAAAA 0 A_Spawnprojectile ("FT_GroundFireSpawner", random(-32,32), 0, random (0, 360), 2, random (50, 130));
+			TNT1 A 0 {
+				for(int i = 0; i < 20; i++)
+				{
+					A_SpawnProjectile("PB_Shrapnel", 0, 0, random (0, 360), 2, random (-90, 90));
+				}
+			}
 			Stop;
 	}
 }
@@ -1252,16 +1213,6 @@ Class PB_CryoGrenade: PB_FragGrenade
 
 		Bounce:
 			TNT1 A 0;
-			TNT1 A 0 {
-				if(pb_sglgrenadeimpact == 1)
-					return resolvestate("Death");
-				else if(pb_sglgrenadeimpact >= 2)
-				{
-					A_Stop();
-					Return resolvestate("Rest");
-				}
-				return resolvestate(null);
-			}
 			Goto spawn;
 
 		Rest:
@@ -1283,6 +1234,12 @@ Class PB_CryoGrenade: PB_FragGrenade
 			TNT1 AAA 0 Bright A_SpawnItemEx("IceExplosionImpact", random(-2,2), random(-2,2), random(-2,2), 0, 0, 0, random(1,360), SXF_NOCHECKPOSITION);
 			TNT1 AAAAA 0 A_SpawnItemEx ("DetectFloorIce",random(-150,150), random(-150,150),1,0,0,0,0,SXF_NOCHECKPOSITION,0);
 			TNT1 A 0 A_SpawnItemEx ("DetectFloorCraterIce",0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			TNT1 A 0 {
+				for(int i = 0; i < 20; i++)
+				{
+					A_SpawnProjectile("PB_Shrapnel", 0, 0, random (0, 360), 2, random (-90, 90));
+				}
+			}
 			Stop;
 	}
 }
@@ -1291,7 +1248,7 @@ Class PB_AcidGrenade : PB_FragGrenade
 {
 	default
 	{
-		Damage 15;
+		DamageFunction 70;
 		DamageType "Disintegrate";
 		Decal "Scorch";
 		DeathSound "Daedabus/impact";
@@ -1309,16 +1266,6 @@ Class PB_AcidGrenade : PB_FragGrenade
 
 		Bounce:
 			TNT1 A 0;
-			TNT1 A 0 {
-				if(pb_sglgrenadeimpact == 1)
-					return resolvestate("Death");
-				else if(pb_sglgrenadeimpact >= 2)
-				{
-					A_Stop();
-					Return resolvestate("Rest");
-				}
-				return resolvestate(null);
-			}
 			Goto spawn;
 
 		Rest:
@@ -1328,8 +1275,14 @@ Class PB_AcidGrenade : PB_FragGrenade
 			TNT1 A 0 A_StartSound("Daedabus/impact");
 		Death:
 		XDeath:
+			TNT1 A 0 {
+				for(int i = 0; i < 20; i++)
+				{
+					A_SpawnProjectile("PB_Shrapnel", 0, 0, random (0, 360), 2, random (-90, 90));
+				}
+			}
 			TNT1 A 0 A_SpawnItem("BFGAltShockWave",0,0);
-			TNT1 A 0 A_SpawnItem("ACIDFOG", 0, 0);
+			TNT1 A 0 A_SpawnItemEx("ACIDFOG",flags:SXF_TRANSFERPOINTERS);
 			TNT1 A 1;
 			Stop;
 	}
@@ -1369,9 +1322,9 @@ Class ACIDFOG : Actor
 		Spawn:
 			TNT1 A 0 A_SpawnItemEx("PlasmaParticleSpawner", 0, 0, 0, 6, 6, 6, 0, 128);
 			TNT1 A 0 A_Explode ( 100, 120, 0, 0, 90 );
-			TNT1 AAAAAA 0 A_SpawnItemEx("GreenCloudLarge", random(3,-3), random(3,-3), random(3,-3), random(1,-1), random(1,-1), 0, 0, SXF_NOCHECKPOSITION, 0);
-			TNT1 AAAAAA 0 A_SpawnItemEx("GreenCloudMedium", random(3,-3), random(3,-3), random(3,-3), random(1,-1), random(1,-1), 0, 0, SXF_NOCHECKPOSITION, 0);
-			TNT1 AAAAAA 0 A_SpawnItemEx("GreenCloudSmall", random(3,-3), random(3,-3), random(3,-3), random(1,-1), random(1,-1), 0, 0, SXF_NOCHECKPOSITION, 0);
+			TNT1 AAAAAA 0 A_SpawnItemEx("GreenCloudLarge", random(3,-3), random(3,-3), random(3,-3), frandom(1,-1), frandom(1,-1), 0, 0, SXF_NOCHECKPOSITION|SXF_TRANSFERPOINTERS, 0);
+			TNT1 AAAAAA 0 A_SpawnItemEx("GreenCloudMedium", random(3,-3), random(3,-3), random(3,-3), frandom(1,-1), frandom(1,-1), 0, 0, SXF_NOCHECKPOSITION|SXF_TRANSFERPOINTERS, 0);
+			TNT1 AAAAAA 0 A_SpawnItemEx("GreenCloudSmall", random(3,-3), random(3,-3), random(3,-3), frandom(1,-1), frandom(1,-1), 0, 0, SXF_NOCHECKPOSITION|SXF_TRANSFERPOINTERS, 0);
 			TNT1 AAAAA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
 
 			TNT1 A 0 A_SpawnItemEx("NewAcidExplosionSmoke", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION, 0);
@@ -1437,9 +1390,9 @@ Class GreenCloudSmall : Actor
 					A_FadeIn(0.10);
 			}
 			TNT1 A 0 {timer555++;}
-			TNT1 A 0 A_Explode ( 7, 100, 0, 40);
+			TNT1 A 0 A_Explode ( 7, 100, XF_HURTSOURCE, 40);
 			GTXL TSRQPONMLK 1;
-			TNT1 A 0 A_Explode ( 7, 100, 0, 40 );
+			TNT1 A 0 A_Explode ( 7, 100, XF_HURTSOURCE, 40 );
 			TNT1 A 0 A_JumpIf(timer555 >= 5,1);
 			Loop;
 			TNT1 AA 0;
@@ -1464,9 +1417,9 @@ Class GreenCloudMedium : GreenCloudSmall
 					A_FadeIn(0.10);
 			}
 			TNT1 A 0 {timer555++;}
-			TNT1 A 0 A_Explode ( 9, 100, 0, 60);
+			TNT1 A 0 A_Explode ( 9, 100, XF_HURTSOURCE, 60);
 			GTXL TSRQPONMLK 1;
-			TNT1 A 0 A_Explode ( 9, 100, 0, 60);
+			TNT1 A 0 A_Explode ( 9, 100, XF_HURTSOURCE, 60);
 			TNT1 A 0 A_JumpIf(timer555 >= 5,1);
 			Loop;
 			TNT1 AA 0;
@@ -1496,10 +1449,10 @@ Class GreenCloudLarge : GreenCloudSmall
 			}
 			TNT1 A 0 {timer555++;}
 			TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
-			TNT1 A 0 A_Explode ( 12, 100, 0, 80);
+			TNT1 A 0 A_Explode ( 12, 100, XF_HURTSOURCE, 80);
 			GTXL TSRQPONMLK 1;
 			TNT1 AA 0 A_SpawnItemEx("GreenTrailSparks", random(10,-10), random(10,-10), random(10,-10), random(-2, 2), random(-2, 2), random(-2, 2), 0, SXF_NOCHECKPOSITION, 0);
-			TNT1 A 0 A_Explode ( 12, 100, 0, 80);
+			TNT1 A 0 A_Explode ( 12, 100, XF_HURTSOURCE, 80);
 			TNT1 A 0 A_JumpIf(timer555 >= 5,1);
 			Loop;
 			TNT1 AA 0;

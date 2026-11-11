@@ -39,7 +39,7 @@ class NashGoreGibs : Actor
 		BounceType 'Doom';
 		BounceFactor 0.2;
 		BounceSound "nashgore/gibbounce";
-        Decal "BloodSplat";
+        //Decal "BloodSplat";
 		+MISSILE
 		+NOBLOCKMAP
 		+THRUACTORS
@@ -61,7 +61,7 @@ class NashGoreGibs : Actor
 	override void BeginPlay(void)
 	{
 		ChangeStatNum(STAT_NashGore_Gore);
-		NashGoreStatics.QueueGore();
+		NashGoreStatics.QueueGore(self);
 		NashGoreStatics.RandomXFlip(self);
 		Super.BeginPlay();
 	}
@@ -134,17 +134,17 @@ class NashGoreGibs : Actor
 				zofs: spawnHeight,
 				frandom(-5.5, 5.5), frandom(-5.5, 5.5), frandom(0, 12.5),
 				flags: SXF_USEBLOODCOLOR, 100);
-			if (obj) obj.target = mo;
+			if (obj) {obj.target = mo; obj.CopyBloodColor(mo);}
 
 			// spawn lots of blood
 			if (random() < 70)
 			{
 				[result, obj] =
-				mo.A_SpawnItemEx("NashGoreBlood",
+				mo.A_SpawnItemEx("PB_GunshotBlood",
 					frandom(-spawnRadius, spawnRadius), frandom(-spawnRadius, spawnRadius), spawnHeight,
 					frandom(-2.0, 2.0), frandom(-2.0, 2.0), frandom(0.0, 4.0),
 					frandom(0, 360), SXF_USEBLOODCOLOR);
-				if (obj) obj.target = mo;
+				if (obj) {obj.target = mo; obj.CopyBloodColor(mo);}
 			}
 
 			// spawn sticky gibs and ceiling blood
@@ -201,6 +201,7 @@ class NashGoreGibs : Actor
 						double posAdjust = -4.f;
 						Vector3 stickPos = (t.HitLocation.X + cos(ang) * posAdjust, t.HitLocation.Y + sin(ang) * posAdjust, t.HitLocation.Z);
 						obj.SetOrigin(stickPos, true);
+						obj.CopyBloodColor(mo);
 					}
 				}
 			}
@@ -259,6 +260,7 @@ class NashGoreGibs : Actor
 			A_SpawnItemEx(cls, flags: (NashGoreBloodBase.BLOOD_FLAGS | SXF_TRANSFERPOINTERS) & ~SXF_NOCHECKPOSITION, 150);
 		}
 		"####" B 1 {
+			A_SprayDecal("BloodSplat",16,useBloodColor:true);
 			A_SpawnItemEx("NashGoreBloodFloorSplashSpawner",
 				0, 0, 0,
 				frandom(-4.0, 4.0), frandom(-4.0, 4.0), frandom(1.0, 4.0),

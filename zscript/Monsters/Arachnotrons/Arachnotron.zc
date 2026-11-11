@@ -1,9 +1,32 @@
-Class PB_Arachnotron1 : PB_Monster
+Class PB_Arachnotron : PB_Monster
 {
 	int artyCounter;
 	int plasmaBallCounter;
 	bool FirstTime;
 	bool shieldActive;
+
+	override void BeginPlay()
+	{ 	Super.BeginPlay();
+		FirstTime = true;
+		artyCounter = 0;
+		plasmaBallCounter = 0;
+		
+		if(pb_simplemonsterbehavior) canSuppress = false;
+		suppressiveOffZ = 25;
+        suppressiveOffXY = 0;
+        suppressiveMissile = "ArachnoRailGun";
+		suppressLimit = 8;
+		suppressLimit2 = 15;
+		shieldActive = false;
+	}
+
+
+	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle) 
+    {
+        if (shieldActive && damage < 1000 && mod != "Massacre")
+            return 0;
+        return super.DamageMobj(inflictor, source, Damage, mod, flags, angle);        
+    }
 
 	Default
 	{
@@ -16,8 +39,8 @@ Class PB_Arachnotron1 : PB_Monster
 		+FLOORCLIP;
 		+BOSSDEATH;
 		GibHealth 20;
-		Radius 60;
-		Height 64;
+		Radius 48;
+		Height 48;
 		PainChance "Siphon", 255;
 		PainChance "Stun", 255;
 		DamageFactor "Crush", 10.0;
@@ -36,18 +59,19 @@ Class PB_Arachnotron1 : PB_Monster
 		+DONTHARMSPECIES;
 		+DONTHARMCLASS;
 		Scale 1;
-		SeeSound "baby/sight";
+		SeeSound "pb/monsters/arachnotron/sight";
 		PainSound "SP_CRAWL";
-		DeathSound "baby/death";
-		ActiveSound "baby/active";
-		Obituary "$OB_BABY";
+		DeathSound "pb/monsters/arachnotron/death";
+		ActiveSound "pb/monsters/arachnotron/active";
+		Obituary "$OB_PB_ARACHNOTRON";
+		Tag "$FN_PB_ARACHNOTRON";
 		DropItem "Demonpickup2", 255;
 		DropItem "Demonpickup", 55;
 
 		PB_Monster.CanIFallback false;
 		PB_Monster.CanIReload false;
 		PB_Monster.CanIRoll false;
-		PB_Monster.CanISuppress false;
+		PB_Monster.CanISuppress true;
 	}
 
 	States
@@ -59,9 +83,9 @@ Class PB_Arachnotron1 : PB_Monster
 			A_FaceTarget();
 			A_NoBlocking(false);
 		}
-		BSPI AG 4;
+		BSP1 AG 4;
 		TNT1 A 0 A_Pain;
-		BSPI I 21;
+		BSP1 I 21;
 		TNT1 A 0 A_Recoil(4);
 		Goto Death;
 
@@ -84,33 +108,159 @@ Class PB_Arachnotron1 : PB_Monster
 		Stop; */
 
 	Spawn:
-		BSPI A 1;
-
-	Stand:
-		BSPI A 10 A_Look();
+		BSP1 A 10 A_Look();
 		Loop;
 
 	See:
-		BSPI A 1 {A_StartSound("baby/walk", 1); plasmaBallCounter = 0; }
-		BSPI AABBBCCC 1 A_SmartChase();
-		BSPI D 1;
-		BSPI DDDEEEFFF 1 A_SmartChase();
+		BSP1 A 1 {A_StartSound("pb/monsters/arachnotron/walk", 1); plasmaBallCounter = 0; }
+		BSP1 AABBBCCC 1 A_SmartChase();
+		BSP1 D 1;
+		BSP1 DDDEEEFFF 1 A_SmartChase();
 		Loop;
 
 	Missile:
-		BSPI A 2 BRIGHT A_FaceTarget;
-		// Just a simple state jump. Less complex than buffed spider, but may add another attack later.
-		Goto ClassicPlasma;
-
-	ClassicPlasma:
-		BSPI G 8;
-		BSPI H 2 BRIGHT 			
-		{
-			if (plasmaBallCounter <= 10)
+		BSP1 A 2 BRIGHT A_FaceTarget();
+		TNT1 A 0 {
+			if(pb_simplemonsterbehavior)
+				return ResolveState("ClassicPlasma");
+			int toJump = random(0,3);
+			if (toJump > 1 && FirstTime)
 			{
-				A_FaceTarget();
-				A_SpawnProjectile("ArachnoPlasma_Ball", 25, 0, 0, 0);
-				plasmaBallCounter++;
+				// [DarynS] Since this will only run once, we don't need a dedicated State for it.
+				// So we can handle the toggling of the variable, spawning the shield, and jumping to the attack state.
+				FirstTime = false;
+				A_SpawnItemEx("Shield",pos.x,pos.y,pos.z,flags: SXF_SETMASTER);	
+				return ResolveState("Arty");
+			}
+			else if (toJump == 0)
+				return ResolveState("RailGun");
+			else if (toJump > 1)
+				return ResolveState("ClassicPlasma");
+			else
+				return ResolveState("StartPlasmaBallAttack");
+		}
+		Goto See;
+
+	StartPlasmaBallAttack:
+		BSP1 G 9 {A_StartSound("arachnotron/charge1",0);A_StartSound("arachnotron/charge1",0);}
+	PlasmaBallAttack:
+		BSP1 G 6;
+		BSP1 H 2 BRIGHT {
+			A_FaceTarget();
+			A_DropAdjust2("ArachnoPlasma_Ball","ArachnoPlasma_Ball", 0, 0, 25, speedmult: 1.0, minRange: 0, maxRange: 1200, shootDownward: false, noPrediction:true);
+			plasmaBallCounter++;
+		}
+		TNT1 A 0
+		{ 
+			if (plasmaBallCounter <= 14 && HasClearShotIgnoringShield(self,target) )
+			{
+			//	bool collisionCheck = CanReachTarget("ArachnoPlasma_Ball",30,0,25, tolerance:1, debug : true);
+				
+				int ArtyChance = 92 ; //92
+				double chance = random(0, 100);
+				if (chance > ArtyChance)
+				{
+					artyCounter = 0;
+					return ResolveState("Arty");
+				}
+				else
+					return ResolveState("PlasmaBallAttack");
+			}
+			else if (plasmaBallCounter > 14 && HasClearShotIgnoringShield(self,target))
+			{
+				return ResolveState("RailGun");
+			}
+			else if (plasmaBallCounter <= 14 && !HasClearShotIgnoringShield(self,target) )
+			{
+				return ResolveState("RailGun");
+			}
+			return ResolveState(null);
+		}
+		Goto See;
+	
+	Arty:
+		BSP1 A 3 BRIGHT {A_FaceTarget(); plasmaBallCounter = 0; if(target && Distance3d(target) > 1800) { SetState(FindState("Missile"));  } }
+		BSP1 G 6 A_FaceTarget;
+		BSP1 H 2 BRIGHT {A_SpawnProjectile("ArachnoArtyPlasmaBall", 25, 0, 0, 0);  artyCounter += 1; }
+		BSP1 G 6 A_FaceTarget;
+		BSP1 H 2 BRIGHT {A_SpawnProjectile("ArachnoArtyPlasmaBall", 25, 0, 0, 0);  artyCounter += 1; }
+		BSP1 G 6 A_FaceTarget;
+		BSP1 H 2 BRIGHT {A_SpawnProjectile("ArachnoArtyPlasmaBall", 25, 0, 0, 0);  artyCounter += 1; }
+		BSP1 G 6 A_FaceTarget;
+		BSP1 H 2 BRIGHT {A_SpawnProjectile("ArachnoArtyPlasmaBall", 25, 0, 0, 0);  artyCounter += 1; }
+		Goto Missile;
+		
+	RailGun:
+	
+		BSP1 A 3 BRIGHT {A_FaceTarget(); plasmaBallCounter = 0; A_StartSound("arachnotron/charge2",0);A_StartSound("arachnotron/charge2",0);A_StartSound("arachnotron/charge2",0);}
+		BSP1 G 8;
+		BSP1 H 2 BRIGHT {A_DropAdjust2("ArachnoRailGun","ArachnoRailGun", 0, 0, 25, speedmult: 1.0, minRange: 0, maxRange: 1200,forceMinAngle: true);}
+
+		BSP1 A 3 BRIGHT {A_FaceTarget(); }
+		BSP1 G 8;
+		BSP1 H 2 BRIGHT {A_DropAdjust2("ArachnoRailGun","ArachnoRailGun", 0, 0, 25, speedmult: 1.0, minRange: 0, maxRange: 1200,forceMinAngle : true);}	
+		
+		BSP1 A 3 BRIGHT {A_FaceTarget(); }
+		BSP1 G 8;
+		BSP1 H 2 BRIGHT {A_DropAdjust2("ArachnoRailGun","ArachnoRailGun", 0, 0, 25, speedmult: 1.0, minRange: 0, maxRange: 1200,forceMinAngle : true);}	
+		Goto See;
+	FrontMove:
+		BSP1 A 2 {Thrust(1); }
+		BSP1 AABBBCCC 2 {Thrust(1); A_SmartChase(); }
+		BSP1 D 2 ;
+		BSP1 DDDEEEFFF 2 {Thrust(1); A_SmartChase();}
+		Goto See;
+
+	SuppressiveFire:
+		TNT1 A 0 { self.inSuppressiveFire = true;  }
+		TNT1 A 0 { int attackRoll = random(0, 99); if (attackRoll > 50 && suppressCount2 < suppressLimit2) { SetStateLabel("SuppressiveFire2");}}
+
+	
+		BSP1 A 3 BRIGHT { plasmaBallCounter = 0; }
+		BSP1 G 6 ;
+		BSP1 H 2 BRIGHT {self.suppressiveOffZ = 25; self.suppressiveOffXY =  0; self.suppressiveMissile = "ArachnoArtyPlasmaBallSuppress";  A_SuppressiveFire(highRiders : true, pitchOffset:30);if (CheckSight(target)) SetStateLabel("See");suppressCount += 1;}
+		BSP1 G 6 ;
+		BSP1 H 2 BRIGHT {self.suppressiveOffZ = 25; self.suppressiveOffXY =  0; self.suppressiveMissile = "ArachnoArtyPlasmaBallSuppress";  A_SuppressiveFire(highRiders : true, pitchOffset:60);if (CheckSight(target)) SetStateLabel("See");suppressCount += 1;}
+		BSP1 G 6 ;
+		BSP1 H 2 BRIGHT {self.suppressiveOffZ = 25; self.suppressiveOffXY =  0; self.suppressiveMissile = "ArachnoArtyPlasmaBallSuppress";  A_SuppressiveFire(highRiders : true, pitchOffset:90);if (CheckSight(target)) SetStateLabel("See");suppressCount += 1;}
+		BSP1 G 6 ;
+		BSP1 H 2 BRIGHT {self.suppressiveOffZ = 25; self.suppressiveOffXY =  0; self.suppressiveMissile = "ArachnoArtyPlasmaBallSuppress";  A_SuppressiveFire(highRiders : true, pitchOffset:40);if (CheckSight(target)) SetStateLabel("See");suppressCount += 1;}
+		
+		TNT1 A 0 { self.inSuppressiveFire = false; }
+		GoTo FrontMove;
+
+	SuppressiveFire2:
+		TNT1 A 0 { self.inSuppressiveFire = true; if (CheckSight(target)) SetState(FindState("See")); } 
+	    BSP1 G 10;
+		BSP1 H 2 BRIGHT {
+				self.suppressiveOffZ = 25; self.suppressiveOffXY = 0; self.suppressiveMissile = "ArachnoPlasma_Ball";  A_SuppressiveFire(pitchOffset:50);
+				suppressCount2 += 1;
+				if (suppressCount2 < suppressLimit2)
+				{
+					SetState(FindState("SuppressiveFire2"));
+					self.inSuppressiveFire = false;
+				}
+				else if (suppressCount2 >= suppressLimit2)
+				{
+					SetState(FindState("See"));
+					self.inSuppressiveFire = false;
+				}
+			}
+		GoTo See;
+	ClassicPlasma:
+		BSP1 G 7 {A_StartSound("arachnotron/charge1",0);A_StartSound("arachnotron/charge1",0);}
+	ClassicPlasmaLoop:
+		BSP1 G 6;
+		BSP1 H 2 BRIGHT {
+			A_FaceTarget();
+			A_SpawnProjectile("ArachnoPlasma_Ball", 25, 0, 0, 0);
+			plasmaBallCounter++;
+		}
+		TNT1 A 0
+		{
+			if (plasmaBallCounter <= 10 || pb_simplemonsterbehavior)
+			{
+				A_SpidRefire();
 			}					
 			else
 			{
@@ -118,59 +268,58 @@ Class PB_Arachnotron1 : PB_Monster
 			}
 			return ResolveState(null);
 		}
-		TNT1 A 0 A_SpidRefire();
 		Loop;
 	
 	Pain:
-		BSPI I 3;
-		BSPI I 3 A_Pain;
+		BSP1 I 3;
+		BSP1 I 3 A_Pain;
 		Goto See + 1;
 
 	Possession:
 		TNT1 A 0 A_SetInvulnerable;
-		BSPI I 3;
-		BSPI I 3 A_Pain;
+		BSP1 I 3;
+		BSP1 I 3 A_Pain;
 		TNT1 A 0 A_UnSetInvulnerable;
 		Goto See;
 
 	Pain.Stun:
 		TNT1 A 0;
 		TNT1 A 0 A_SpawnItemEx("StunElectrocute", random(-4, 4), random(-4, 4), random(16, 32), 0, 0);
-		BSPI I 1 A_Pain;
-		BSPI IIIIIIIIII 3 A_SpawnItemEx("StunElectrocute", random(-12, 12), random(-12, 12), random(16, 52), 0, 0);
-		BSPI I 1 A_Pain;
-		BSPI IIIIIIIIII 3 A_SpawnItemEx("StunElectrocute", random(-12, 12), random(-12, 12), random(16, 52), 0, 0);
-		BSPI I 1 A_Pain;
-		BSPI IIIIIIIIII 3 A_SpawnItemEx("StunElectrocute", random(-12, 12), random(-12, 12), random(16, 52), 0, 0);
-		BSPI I 1 A_Pain;
-		BSPI IIIIIIIIII 3 A_SpawnItemEx("StunElectrocute", random(-12, 12), random(-12, 12), random(16, 52), 0, 0);
-		BSPI I 1 A_Pain;
-		BSPI IIIIIIIIII 3 A_SpawnItemEx("StunElectrocute", random(-12, 12), random(-12, 12), random(16, 52), 0, 0);
-		BSPI I 1 A_Pain;
+		BSP1 I 1 A_Pain;
+		BSP1 IIIIIIIIII 3 A_SpawnItemEx("StunElectrocute", random(-12, 12), random(-12, 12), random(16, 52), 0, 0);
+		BSP1 I 1 A_Pain;
+		BSP1 IIIIIIIIII 3 A_SpawnItemEx("StunElectrocute", random(-12, 12), random(-12, 12), random(16, 52), 0, 0);
+		BSP1 I 1 A_Pain;
+		BSP1 IIIIIIIIII 3 A_SpawnItemEx("StunElectrocute", random(-12, 12), random(-12, 12), random(16, 52), 0, 0);
+		BSP1 I 1 A_Pain;
+		BSP1 IIIIIIIIII 3 A_SpawnItemEx("StunElectrocute", random(-12, 12), random(-12, 12), random(16, 52), 0, 0);
+		BSP1 I 1 A_Pain;
+		BSP1 IIIIIIIIII 3 A_SpawnItemEx("StunElectrocute", random(-12, 12), random(-12, 12), random(16, 52), 0, 0);
+		BSP1 I 1 A_Pain;
 		Goto See;
 
 	Pain.Siphon:
 		TNT1 AAA 0 A_SpawnItemEx("RedLightning_Small", random(-12, 12), random(-12, 12), random(16, 52), 0, 0);
-		BSPI I 1
+		BSP1 I 1
 		{
 			A_FaceTarget();
 			A_GiveToTarget("HealthBonus", 4);
 		}
-		BSPI I 5 A_FaceTarget;
+		BSP1 I 5 A_FaceTarget;
 		TNT1 A 0 A_Pain;
 		Goto See;
 
 	Pain.Kick:
 		TNT1 A 0 A_FaceTarget;
-		BSPI I 6;
-		BSPI I 6 A_Pain;
+		BSP1 I 6;
+		BSP1 I 6 A_Pain;
 		Goto See + 1;
 
 
 	Death:
 		TNT1 A 1 { A_BossDeath(); }
 		TNT1 A 0 { A_Jump(101, "RareDeath"); }
-		BSPI J 8 { A_Scream(); }
+		BSP1 J 8 { A_Scream(); }
 		TNT1 AAAAAAAAA 0 { A_SpawnProjectile("CeilBloodLauncherLong", 0, 0, random(0, 360), 2, random(50, 130)); }
 		TNT1 AAAA 0 { A_SpawnProjectile("Instestin", 32, 0, random(0, 360), 2, random(0, 160)); }
 		TNT1 AAAAA 0 { A_SpawnProjectile("XDeathBrain1", 32, 0, random(0, 360), 2, random(0, 160)); }
@@ -178,16 +327,16 @@ Class PB_Arachnotron1 : PB_Monster
 		TNT1 AAAAAAAAAA 0 { A_SpawnProjectile("BloodMist", 50, 0, random(0, 360), 2, random(60, 90)); }
 		TNT1 AAA 0 { A_SpawnProjectile("XDeathSpiderNew1", 42, 0, random(0, 360), 2, random(60, 90)); }
 		TNT1 AA 0 { A_SpawnProjectile("XDeathSpiderNew2", 42, 0, random(0, 360), 2, random(60, 90)); }
-		BSPI K 6 { A_NoBlocking(); }
-		BSPI LMNO 8;
-		BSPI P 1;
+		BSP1 K 6 { A_NoBlocking(); }
+		BSP1 LMNO 8;
+		BSP1 P 1;
 		TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
 		TNT1 A 0 { A_SpawnItem("PB_DeadSpider", 1); }
 		Stop;
 
 	RareDeath:
 		TNT1 A 1 { A_BossDeath(); }
-		BSPI Q 5 { A_Scream(); }
+		BSP1 Q 5 { A_Scream(); }
 		TNT1 A 0 { A_SpawnItemEx("ExplosionFlareSpawner", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION); }
 		TNT1 A 0 { A_SpawnItemEx("BarrelKaboom", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION); }
 		TNT1 A 0
@@ -208,9 +357,9 @@ Class PB_Arachnotron1 : PB_Monster
 		TNT1 AA 0 { A_SpawnProjectile("PB_SpiderPart2", 32, 0, random(0, 360), 2, random(0, 160)); }
 		TNT1 AAA 0 { A_SpawnProjectile("PEPart2", 32, 0, random(0, 360), 2, random(0, 160)); }
 		TNT1 AAAAAAAA 0 { A_SpawnProjectile("Brutal_FlyingBlood", 32, 0, random(0, 360), 2, random(0, 160)); }
-		BSPI R 6 { A_NoBlocking(); }
-		BSPI STUV 6;
-		BSPI WX 2;
+		BSP1 R 6 { A_NoBlocking(); }
+		BSP1 STUV 6;
+		BSP1 WX 2;
 		TNT1 A 0 { A_SpawnItem("GrowingBloodPool"); }
 		TNT1 A 0 { A_SpawnItem("PB_DeadSpider2", 1); }
 		Stop;
@@ -241,10 +390,10 @@ Class PB_Arachnotron1 : PB_Monster
 		TNT1 A 0 { A_Scream(); }
 		TNT1 A 0 { A_NoBlocking(); }
 		TNT1 AAA 0 { A_SpawnProjectile("PEPart2", 32, 0, random(0, 360), 2, random(0, 160)); }
-		BSPI LLLL 2 { A_SpawnProjectile("FlameTrails", 45, 0, random(0, 360), 2, random(50, 130)); }
-		BSPI MMMM 2 { A_SpawnProjectile("FlameTrails", 30, 0, random(0, 360), 2, random(50, 130)); }
-		BSPI NNNN 2 { A_SpawnProjectile("FlameTrails", 25, 0, random(0, 360), 2, random(50, 130)); }
-		BSPI OOOO 2 { A_SpawnProjectile("FlameTrails", 25, 0, random(0, 360), 2, random(50, 130)); }
+		BSP1 LLLL 2 { A_SpawnProjectile("FlameTrails", 45, 0, random(0, 360), 2, random(50, 130)); }
+		BSP1 MMMM 2 { A_SpawnProjectile("FlameTrails", 30, 0, random(0, 360), 2, random(50, 130)); }
+		BSP1 NNNN 2 { A_SpawnProjectile("FlameTrails", 25, 0, random(0, 360), 2, random(50, 130)); }
+		BSP1 OOOO 2 { A_SpawnProjectile("FlameTrails", 25, 0, random(0, 360), 2, random(50, 130)); }
 		TNT1 A 0 { A_StartSound("props/redfire"); }
 		Stop;
 /* 		Goto Burns;
@@ -270,26 +419,6 @@ Class PB_Arachnotron1 : PB_Monster
 	Rest:
 		CARB K -1;
 		Stop; */
-
-	Death.Fatality:
-		TNT1 A 1 { A_BossDeath(); }
-		TNT1 A 0 { A_Pain(); }
-		TNT1 A 0 { A_JumpIfInTargetInventory("FistsSelected", 1, "Death"); }
-		TNT1 A 0 { A_Jump(128, "Death.Fatality2"); }
-		TNT1 A 0 { A_GiveToTarget("GoFatality", 1); }
-		TNT1 A 0 { A_GiveToTarget("ArachnotronFatality", 1); }
-		TNT1 A 1 { A_BossDeath(); }
-		TNT1 A 0;
-		Stop;
-
-	Death.Fatality2:
-		TNT1 A 1 { A_BossDeath(); }
-		TNT1 A 0 { A_GiveToTarget("GoFatality", 1); }
-		TNT1 A 0 { A_GiveToTarget("ArachnotronFatality2", 1); }
-		TNT1 A 1;
-		TNT1 A 0;
-		Stop;
-
 	// --- Death.Cut and Death.Saw ---
 	Death.Cut:
 	Death.Saw:
@@ -309,7 +438,7 @@ Class PB_Arachnotron1 : PB_Monster
 	Death.Crush:
 	XDeath:
 		TNT1 A 1 { A_BossDeath(); }
-		BSPI J 4;
+		BSP1 J 4;
 		TNT1 A 0 { A_SpawnItemEx("ExplosionFlareSpawner", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION); }
 		TNT1 A 0 { A_SpawnItemEx("BarrelKaboom", 0, 0, 0, 0, 0, 0, 0, SXF_NOCHECKPOSITION); }
 		TNT1 A 0
@@ -365,8 +494,8 @@ Class PB_Arachnotron1 : PB_Monster
 		Stop; */
 		
 	Raise:
-		BSPI P 5;
-		BSPI ONMLKJ 5;
+		BSP1 P 5;
+		BSP1 ONMLKJ 5;
 		Goto See + 1;
 
 	Crush:
@@ -400,175 +529,6 @@ Class PB_Arachnotron1 : PB_Monster
 
 	Death.Massacre:
 		Goto Death;
-	}
-}
-
-Class PB_Arachnotron1Buffed : PB_Arachnotron1
-{
-	override void BeginPlay()
-	{ 	Super.BeginPlay();
-		FirstTime = true;
-		artyCounter = 0;
-		plasmaBallCounter = 0;
-		
-		suppressiveOffZ = 25;
-        suppressiveOffXY = 0;
-        suppressiveMissile = "ArachnoRailGun";
-		suppressLimit = 8;
-		suppressLimit2 = 15;
-		shieldActive = false;
-	}
-
-	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle) 
-    {
-        if (shieldActive)
-        {
- //           Console.PrintF("\cgArachnotron protected by shield!");
-            return 0;
-        }
-        return super.DamageMobj(inflictor, source, Damage, mod, flags, angle);        
-    }
-	Default
-	{
-		PB_Monster.CanISuppress true; // This new property gets used to switch Chase Functions
-	}
-
-	States
-	{
-	Missile:
-		BSPI A 2 BRIGHT A_FaceTarget();
-//		TNT1 A 0 {{SetState(FindState("Arty"));}}   /// Setting direct state is for debugging a state/projectile
-		TNT1 A 0 {
-			if (random(0,100) < 80 && FirstTime)
-			{
-				// [DarynS] Since this will only run once, we don't need a dedicated State for it.
-				// So we can handle the toggling of the variable, spawning the shield, and jumping to the attack state.
-				FirstTime = false;
-				A_SpawnItemEx("Shield",pos.x,pos.y,pos.z,flags: SXF_SETMASTER);	
-				return ResolveState("Arty");
-			}
-			else if (random(0, 99) > 50)
-				return ResolveState("ClassicPlasma");
-			else if (random(0, 99) < 40)
-				return ResolveState("RailGun");
-			else
-				return ResolveState("PlasmaBallAttack");
-		}
-
-/* 		BSPI H 2 BRIGHT {					/// Will keep just in case
-			int allowedChance = 0;
-			double chance = random(0, 100);
-			if (chance > allowedChance)
-			{A_DropAdjust2("ArachnoPlasma_Ball","ArachnoPlasma_Ball", 0, 0, 25, speedmult: 1.0, minRange: 0, maxRange: 1200, shootDownward: false);}
-			else
-			{A_SpawnProjectile("ArachnoPlasma_Ball", 25, 0, 0, 0);} 
-			
-		} */
-		
-		Goto See;
-
-	PlasmaBallAttack:
-		BSPI G 10;
-		BSPI H 2 BRIGHT 			
-			{ 
-				if (plasmaBallCounter <= 14 && HasClearShotIgnoringShield(self,target) )
-				{
-					A_FaceTarget();
-					A_DropAdjust2("ArachnoPlasma_Ball","ArachnoPlasma_Ball", 0, 0, 25, speedmult: 1.0, minRange: 0, maxRange: 1200, shootDownward: false);
-					plasmaBallCounter++;
-				//	bool collisionCheck = CanReachTarget("ArachnoPlasma_Ball",30,0,25, tolerance:1, debug : true);
-					
-					int ArtyChance = 92 ; //92
-					double chance = random(0, 100);
-					if (chance > ArtyChance)
-					{
-						artyCounter = 0;
-						return ResolveState("Arty");
-					}
-					else
-						return ResolveState("PlasmaBallAttack");
-				}
-				else if (plasmaBallCounter > 14 && HasClearShotIgnoringShield(self,target))
-				{
-					return ResolveState("RailGun");
-				}
-				else if (plasmaBallCounter <= 14 && !HasClearShotIgnoringShield(self,target) )
-				{
-					return ResolveState("RailGun");
-				}
-				return ResolveState(null);
-			}
-		Goto See;
-	
-	Arty:
-		BSPI A 3 BRIGHT {A_FaceTarget(); plasmaBallCounter = 0; if(target && Distance3d(target) > 1800) { SetState(FindState("Missile"));  } }
-		BSPI G 6 A_FaceTarget;
-		BSPI H 2 BRIGHT {A_SpawnProjectile("ArachnoArtyPlasmaBall", 25, 0, 0, 0);  artyCounter += 1; }
-		BSPI G 6 A_FaceTarget;
-		BSPI H 2 BRIGHT {A_SpawnProjectile("ArachnoArtyPlasmaBall", 25, 0, 0, 0);  artyCounter += 1; }
-		BSPI G 6 A_FaceTarget;
-		BSPI H 2 BRIGHT {A_SpawnProjectile("ArachnoArtyPlasmaBall", 25, 0, 0, 0);  artyCounter += 1; }
-		BSPI G 6 A_FaceTarget;
-		BSPI H 2 BRIGHT {A_SpawnProjectile("ArachnoArtyPlasmaBall", 25, 0, 0, 0);  artyCounter += 1; }
-		Goto Missile;
-		
-	RailGun:
-	
-		BSPI A 3 BRIGHT {A_FaceTarget(); plasmaBallCounter = 0; }
-		BSPI G 8;
-		BSPI H 2 BRIGHT {A_DropAdjust2("ArachnoRailGun","ArachnoRailGun", 0, 0, 25, speedmult: 1.0, minRange: 0, maxRange: 1200,forceMinAngle: true);}
-
-		BSPI A 3 BRIGHT {A_FaceTarget(); }
-		BSPI G 8;
-		BSPI H 2 BRIGHT {A_DropAdjust2("ArachnoRailGun","ArachnoRailGun", 0, 0, 25, speedmult: 1.0, minRange: 0, maxRange: 1200,forceMinAngle : true);}	
-		
-		BSPI A 3 BRIGHT {A_FaceTarget(); }
-		BSPI G 8;
-		BSPI H 2 BRIGHT {A_DropAdjust2("ArachnoRailGun","ArachnoRailGun", 0, 0, 25, speedmult: 1.0, minRange: 0, maxRange: 1200,forceMinAngle : true);}	
-		Goto See;
-	FrontMove:
-		BSPI A 2 {Thrust(1); }
-		BSPI AABBBCCC 2 {Thrust(1); A_SmartChase(); }
-		BSPI D 2 ;
-		BSPI DDDEEEFFF 2 {Thrust(1); A_SmartChase();}
-		Goto See;
-
-	SuppressiveFire:
-		TNT1 A 0 { self.inSuppressiveFire = true;  }
-		TNT1 A 0 { int attackRoll = random(0, 99); if (attackRoll > 50 && suppressCount2 < suppressLimit2) { SetStateLabel("SuppressiveFire2");}}
-
-	
-		BSPI A 3 BRIGHT { plasmaBallCounter = 0; }
-		BSPI G 6 ;
-		BSPI H 2 BRIGHT {self.suppressiveOffZ = 25; self.suppressiveOffXY =  0; self.suppressiveMissile = "ArachnoArtyPlasmaBallSuppress";  A_SuppressiveFire(highRiders : true, pitchOffset:30);if (CheckSight(target)) SetStateLabel("See");suppressCount += 1;}
-		BSPI G 6 ;
-		BSPI H 2 BRIGHT {self.suppressiveOffZ = 25; self.suppressiveOffXY =  0; self.suppressiveMissile = "ArachnoArtyPlasmaBallSuppress";  A_SuppressiveFire(highRiders : true, pitchOffset:60);if (CheckSight(target)) SetStateLabel("See");suppressCount += 1;}
-		BSPI G 6 ;
-		BSPI H 2 BRIGHT {self.suppressiveOffZ = 25; self.suppressiveOffXY =  0; self.suppressiveMissile = "ArachnoArtyPlasmaBallSuppress";  A_SuppressiveFire(highRiders : true, pitchOffset:90);if (CheckSight(target)) SetStateLabel("See");suppressCount += 1;}
-		BSPI G 6 ;
-		BSPI H 2 BRIGHT {self.suppressiveOffZ = 25; self.suppressiveOffXY =  0; self.suppressiveMissile = "ArachnoArtyPlasmaBallSuppress";  A_SuppressiveFire(highRiders : true, pitchOffset:40);if (CheckSight(target)) SetStateLabel("See");suppressCount += 1;}
-		
-		TNT1 A 0 { self.inSuppressiveFire = false; }
-		GoTo FrontMove;
-
-	SuppressiveFire2:
-		TNT1 A 0 { self.inSuppressiveFire = true; if (CheckSight(target)) SetState(FindState("See")); } 
-	    BSPI G 10;
-		BSPI H 2 BRIGHT {
-				self.suppressiveOffZ = 25; self.suppressiveOffXY = 0; self.suppressiveMissile = "ArachnoPlasma_Ball";  A_SuppressiveFire(pitchOffset:50);
-				suppressCount2 += 1;
-				if (suppressCount2 < suppressLimit2)
-				{
-					SetState(FindState("SuppressiveFire2"));
-					self.inSuppressiveFire = false;
-				}
-				else if (suppressCount2 >= suppressLimit2)
-				{
-					SetState(FindState("See"));
-					self.inSuppressiveFire = false;
-				}
-			}
-		GoTo See;
 	}
 }
 
@@ -673,7 +633,7 @@ Class ArachnoRailGun: FastProjectile
 		FSpawnParticleParams BlueRailSmoke;
 		string f = String.Format("%c", int("A") + random(0,3)); //this feels so illegal :p
 		BlueRailSmoke.Texture = TexMan.CheckForTexture("SMO1"..f..0);
-		BlueRailSmoke.Color1 = "0 204 0"; //"33B2FF";
+		BlueRailSmoke.Color1 = "0 0 204"; //"33B2FF";
 		BlueRailSmoke.Style = STYLE_ADD;
 		BlueRailSmoke.Flags = SPF_ROLL|SPF_FULLBRIGHT|SPF_NOTIMEFREEZE;
 		vector3 offsv = (random(-5,5),random(-5,5),random(-5,5)); 
@@ -927,10 +887,10 @@ Class ArachnoArtyPlasmaBall : ArachnoPlasma_Ball
         if (target)
         {
             // Attempt to cast the missile's target (which should be the shooter)
-            PB_Arachnotron1 myOwner = PB_Arachnotron1(target);
+            PB_Arachnotron myOwner = PB_Arachnotron(target);
 /*             if (myOwner == null)
             {
-                Console.Printf("ArachnoArtyPlasmaBall: FAILED to cast target to PB_Arachnotron1.\n");
+                Console.Printf("ArachnoArtyPlasmaBall: FAILED to cast target to PB_Arachnotron.\n");
             } */
             if (myOwner != null)
             {
@@ -1141,7 +1101,7 @@ Class ArachnoArtyPlasmaBall : ArachnoPlasma_Ball
 			TNT1 A 0 { ThrustThingZ(0, drop_rate, 0, 1); }
 			Loop; */
 			PLAR ABCDEFGHIJKLMNOPQRSTUVWXYZ 1 BRIGHT { ThrustThingZ(0, drop_rate, 0, 1); }
-			PLR2 ABCDEFGHIJKLMOPQRS 1 { ThrustThingZ(0, drop_rate, 0, 1); }
+			PLR2 ABCDEFGHIJKLMOPQRS 1 BRIGHT { ThrustThingZ(0, drop_rate, 0, 1); }
 			Loop;
 		
 		Death:
@@ -1171,7 +1131,7 @@ class ShieldPuff: Actor
 {
 	Default
 	{
-		renderstyle "Normal";
+		renderstyle "Add";
 		Scale 0.3;
 		+NOBLOCKMAP;
 		+NOGRAVITY;
@@ -1199,11 +1159,12 @@ class Shield : Actor
     Default
     {
         Health 300;
-        Radius 70;
-        Height 75;
+        Radius 64;
+        Height 72;
 		SeeSound "";
         DeathSound "";
-        RenderStyle "Normal";
+        RenderStyle "Add";
+		Alpha 0.99;
         Scale 0.28;
         Bloodtype "ShieldPuff";
 		Species "Arachnotron";
@@ -1220,27 +1181,25 @@ class Shield : Actor
 		DamageFactor "Blood", 0.0;
 		DamageFactor "BlueBlood", 0.0;
 		DamageFactor "GreenBlood", 0.0;
-		DamageFactor "Cutless", 0.3;
-		DamageFactor "Bullet", 0.4;
-		DamageFactor "Shotgun", 0.2;
-		DamageFactor "SSG", 0.3;
-		DamageFactor "Fire", 0.2;
-		DamageFactor "Nail", 0.2;
-		DamageFactor "Incinerate", 0.2;
-		DamageFactor "Explosive", 0.5;
+		DamageFactor "Cutless", 0.8;
+		DamageFactor "Bullet", 0.9;
+		DamageFactor "Shotgun", 0.7;
+		DamageFactor "SSG", 0.8;
+		DamageFactor "Fire", 0.7;
+		DamageFactor "Nail", 0.7;
+		DamageFactor "Incinerate", 0.7;
+		DamageFactor "Explosive", 1.0;
 		DamageFactor "Plasma", 1.2;
+		DamageFactor "Disintegrate", 1.2;
 		DamageFactor "Freeze", 1.3;
-		DamageFactor "Normal", 0.5;
+		DamageFactor "Electric", 8.0;
+		DamageFactor "Stun", 300;
+		DamageFactor "Normal", 1.0;
 
     }
 
 	override int DamageMobj(Actor inflictor, Actor source, int damage, Name mod, int flags, double angle) 
 	{
-		if (inflictor && inflictor.bRipper)
-        {
-            inflictor.Destroy(); 
-        }
-		
 		if (ownerActor) 
 		{
 			int finalDamage = ApplyDamageFactor(mod, damage);
@@ -1273,12 +1232,14 @@ class Shield : Actor
 		{
 			ownerActor = master;
 			SetOrigin(ownerActor.Pos, false);
-			PB_Arachnotron1 owner = PB_Arachnotron1(master);
+			PB_Arachnotron owner = PB_Arachnotron(master);
 			if (owner != null)
 			{
 				owner.shieldActive = true;
 				//owner.bShootable = false;
 				owner.bNopain = true;
+				owner.bNoblood = true;
+				owner.bDONTRIP = true;
 
 			}
 
@@ -1290,12 +1251,15 @@ class Shield : Actor
     {
         if (master)
         {
-            PB_Arachnotron1 owner = PB_Arachnotron1(master);
+            PB_Arachnotron owner = PB_Arachnotron(master);
             if (owner != null)
             {
                 owner.shieldActive = false;
 				//owner.bShootable = true;
 				owner.bNopain = false;
+				owner.bNoblood = false;
+				owner.bDONTRIP = false;
+				owner.TriggerPainChance("none",true);
 
             }
         }
@@ -1308,7 +1272,7 @@ class Shield : Actor
 
         if (ownerActor)
         {
-            SetOrigin(ownerActor.Pos, false);
+            SetOrigin(ownerActor.Pos, true);
         }
         else
         {
@@ -1319,14 +1283,15 @@ class Shield : Actor
 		States
 	{
 		Spawn:
-			TNT1 A 0 {A_StartSound("ShieldLoop",4,CHANF_LOOP);}
-			SHIA ADGJMPSVY 1;
-			SHIB ADGJMPSVY 1;
-			SHIC ADGJMPST 1;
+			TNT1 A 0 NoDelay {A_StartSound("ShieldUp",5,CHANF_OVERLAP);A_StartSound("ShieldUp",5,CHANF_OVERLAP);A_StartSound("ShieldUp",5,CHANF_OVERLAP);A_StartSound("ShieldLoop",4,CHANF_LOOP);}
+		Exist:
+			SHIA ADGJMPSVY 1 BRIGHT;
+			SHIB ADGJMPSVY 1 BRIGHT;
+			SHIC ADGJMPST 1 BRIGHT;
 			Loop;
 			
 		Death:
-			TNT1 A 0;
+			TNT1 A 1 {A_StartSound("ShieldDown",5,CHANF_OVERLAP);A_StartSound("ShieldDown",5,CHANF_OVERLAP);A_StartSound("ShieldDown",5,CHANF_OVERLAP);}
 			Stop;
 	}
 }
@@ -1341,7 +1306,7 @@ Class ArachnoPlasma_Ball : PB_Monster_Projectile
 		//Height 2;
 		Height 10;
 		Speed 55;
-		DamageFunction random(12,16);
+		DamageFunction 14;
 		DamageType "Plasma";
 		Decal "SmallerScorch";
 		Projectile;
@@ -1425,7 +1390,6 @@ class PB_DeadSpider : CurbstompedMarine
     {
         Radius 20;
         Height 10;
-        Scale 1.3;
         Mass 1000;
         Health 200;
         DamageFactor "Crusher", 50.0;
@@ -1442,7 +1406,7 @@ class PB_DeadSpider : CurbstompedMarine
     States
     {
     Spawn:
-        BSPI P -1;
+        BSP1 P -1;
         Stop;
 
     Raise:
@@ -1477,7 +1441,7 @@ class PB_DeadSpider2 : PB_DeadSpider
     States
     {
     Spawn:
-        BSPI Y -1;
+        BSP1 Y -1;
         Stop;
     }
 }
@@ -1546,7 +1510,6 @@ class PB_SpiderPart1 : Actor
         Radius 1;
         Height 8;
         Speed 12;
-        Scale 1.3;
         Mass 1;
         DamageType "Blood";
         SeeSound "misc/xdeath4";
@@ -1585,7 +1548,6 @@ class PB_SpiderPart2 : Actor
         Radius 1;
         Height 8;
         Speed 12;
-        Scale 2.0;
         Mass 1;
         DamageType "Blood";
         BounceFactor 0.5;

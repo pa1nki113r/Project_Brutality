@@ -1,81 +1,48 @@
-Class PBSpectreSpawner : PB_SpawnerBase //replaces Spectre
+Class PBSpectreSpawner : PB_SpawnerBase
 {
-	default
-	{
-		+LOOKALLAROUND;
-		scale 0.45;
-		-SHOOTABLE;
-		-COUNTKILL; 
-		-SOLID;
-		+NOTIMEFREEZE;
-		//CANPUSHWALLS;
-		//-CANUSEWALLS;
-		//-ACTIVATEMCROSS;
-		//-CANPASS;
-		//-ISMONSTER;
-		//+NODAMAGE;
-		//-NOMENU;
-		Species "spectrespawner";
-	}
 	States
 	{
+		Death:
+			TNT1 A 0 PB_SpawnerSpawn("PB_SpectreSpawner_DW");
+			Stop;
 		Tier4:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_SpectreSpawner_T4");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_SpectreSpawner_T4");
 			Stop;
 		Tier3:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_SpectreSpawner_T3");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_SpectreSpawner_T3");
 			Stop;
 		Tier2:
-		SpawnVoidS:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_SpectreSpawner_T2");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_SpectreSpawner_T2");
 			Stop;
 		Tier1:
-		SpawnSpectre:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_SpectreSpawner_T1");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_SpectreSpawner_T1");
 			Stop;
-		Death:
-			 TNT1 A 0;
-			Goto Spawn;
 	}
 }
-
 
 Class PB_SpectreSpawner_T1 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.SpawnOverride "pb_spectre_override";
 		dropitem "PB_Spectre",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
-	{
-		if(pb_spectre_override != "Disabled") {
-				toSpawn = pb_spectre_override;
-				return;
-		}
-	}
-	
-	
 }
 
 Class PB_SpectreSpawner_T2 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_SpectreSpawner_T1";
+		PBRandomSpawner.SpawnOverride "pb_spectre_override";
 		dropitem "PB_VoidSpectre",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_spectre_override != "Disabled") {
-				toSpawn = pb_spectre_override;
-				return;
-		}
-		if(pb_VoidSpectre && toSpawn == "PB_VoidSpectre")
-				toSpawn = "PB_Spectre";
-				
+		if(toSpawn == "PB_VoidSpectre" && pb_spectre_filter & DisablePB_VoidSpectre)
+			return false;
+		return true;
 	}
 }
 
@@ -83,16 +50,16 @@ Class PB_SpectreSpawner_T3 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_SpectreSpawner_T2";
+		PBRandomSpawner.SpawnOverride "pb_spectre_override";
 		dropitem "PB_VoidSpectre",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_spectre_override != "Disabled") {
-				toSpawn = pb_spectre_override;
-				return;
-		}
-		if(pb_VoidSpectre && toSpawn == "PB_VoidSpectre")
-			toSpawn = "PB_Spectre";
+		if(toSpawn == "PB_VoidSpectre" && pb_spectre_filter & DisablePB_VoidSpectre)
+			return false;
+		return true;
 	}
 }
 
@@ -100,15 +67,32 @@ Class PB_SpectreSpawner_T4 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_SpectreSpawner_T3";
+		PBRandomSpawner.SpawnOverride "pb_spectre_override";
 		dropitem "PB_VoidSpectre",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_spectre_override != "Disabled") {
-				toSpawn = pb_spectre_override;
-				return;
-		}
-		if(pb_VoidSpectre && toSpawn == "PB_VoidSpectre")
-			toSpawn = "PB_Spectre";
+		if(toSpawn == "PB_VoidSpectre" && pb_spectre_filter & DisablePB_VoidSpectre)
+			return false;
+		return true;
+	}
+}
+
+Class PB_SpectreSpawner_DW : PB_MonsterSpawner
+{
+	default
+	{
+		PBRandomSpawner.SpawnOverride "pb_spectre_override";
+		dropitem "PB_Spectre",255,62;
+		dropitem "PB_VoidSpectre",255,38;
+	}
+	
+	override bool HandleSpawnExceptions(name toSpawn)
+	{
+		if(toSpawn == "PB_VoidSpectre" && pb_spectre_filter & DisablePB_VoidSpectre)
+			return false;
+		return true;
 	}
 }

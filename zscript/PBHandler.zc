@@ -12,10 +12,14 @@ class PB_EventHandler : EventHandler
 	const tauntcooldown = 40;
 	
 	bool WSuSinMap;	//check for WolfensteinSS	
+	bool IoSTarginMap;
+	bool IoSEyeinMap;
 	
 	bool gz413detected;
 	
 	transient int pickuptic[MAXPLAYERS];
+	
+	array <PB_NailgunGlue> nails; //nail projectiles
 	
 	///////////////////////////////////////////////////////////////////////////
 	
@@ -68,6 +72,10 @@ class PB_EventHandler : EventHandler
 					pm.player.SetPSprite(PSP_WEAPON, wp.FindState("Ready"));
 				}
 			}
+		}
+		
+		if (e.Name == "pb_unload_weapon") {
+			pm.giveinventory("Unloading",1);
 		}
 		
 		if( e.name == "pb_flashlight_toggle" )
@@ -182,24 +190,7 @@ class PB_EventHandler : EventHandler
 			plr.SetInventory("ResetZoom",1);
 			plr.SetInventory("KnifeHasHit",0);
 			plr.SetInventory("PB_NoEffectInvul",0);
-			plr.SetInventory("HasCutingWeapon", 0);
-			plr.SetInventory("PB_LockScreenTilt",0);
-			
-			plr.SetInventory("HasBarrel",0);
-			plr.SetInventory("HasIceBarrel",0);
-			plr.SetInventory("HasFlameBarrel",0);
-			plr.SetInventory("GrabbedBarrel",0);
-			plr.SetInventory("GrabbedIceBarrel",0);
-			plr.SetInventory("GrabbedFlameBarrel",0);
-			plr.SetInventory("BarrelIsFrozen",0);
-			plr.SetInventory("BarrelIsFlaming",0);
-			for(int i=8;i>0;i--)
-			{
-				plr.SetInventory("Grab"..i,0);
-				plr.SetInventory("IGrab"..i,0);
-				plr.SetInventory("FGrab"..i,0);
-			}
-			
+			plr.SetInventory("PB_BarrelToken",0);
 			plr.A_SetRoll(0);
 			plr.A_SetPitch(0);
 			plr.A_OverlayFlags(-9,PSPF_PLAYERTRANSLATED, false);
@@ -232,25 +223,9 @@ class PB_EventHandler : EventHandler
 		let plinf = plr.player;
 		if (plr)
 		{
-			Plr.SetInventory ("PlayerIsDead",0); //this was causing resurrection without kicks
 			Plr.SetInventory ("DeathFader",0);
-			Plr.ACS_NamedExecuteAlways("UnFadder");
 			
-			plr.SetInventory("HasBarrel",0);
-			plr.SetInventory("HasIceBarrel",0);
-			plr.SetInventory("HasFlameBarrel",0);
-			plr.SetInventory("GrabbedBarrel",0);
-			plr.SetInventory("GrabbedIceBarrel",0);
-			plr.SetInventory("GrabbedFlameBarrel",0);
-			plr.SetInventory("BarrelIsFrozen",0);
-			plr.SetInventory("BarrelIsFlaming",0);
 			plr.Setinventory("KeepWeapManager",1);
-			for(int i=8;i>0;i--)
-			{
-				plr.SetInventory("Grab"..i,0);
-				plr.SetInventory("IGrab"..i,0);
-				plr.SetInventory("FGrab"..i,0);
-			}
 			
 			//clean the first person deaths from here when resurrected, if -for some reason- resurrecting skips the spawn state from the player, the overlay is already cleaned here
 			if(plinf)
@@ -295,7 +270,20 @@ class PB_EventHandler : EventHandler
 		{
 			holder.FixState();
 		}
+		
+		//painslayer code by agent_ash, see Weapons/Projectiles/painslayer-license for license
+		if (!e.isSaveGame)
+			return;
+		for (int i = 0; i < nails.Size(); i++) {
+			PB_NailgunGlue nail = nails[i];
+			if (!nail)
+				continue;
+			if (!nail.stuckToSecPlane)
+				continue;
+			nail.StickToWall();
+		}
 	}
+	
 	override void WorldUnloaded(WorldEvent e)
 	{
 		// [Ace] Hack to work around death exits.
@@ -303,7 +291,7 @@ class PB_EventHandler : EventHandler
 		// function correctly in multiplayer because the players had already been revived by that point.
 		foreach (p : players)
 		{
-			if (p.mo && p.mo.Health <= 0)
+			if (p.mo && p.mo.Health <= 0 && pb_disable_death_exits)
 			{
 				p.Resurrect();
 			}
@@ -335,7 +323,7 @@ class PB_EventHandler : EventHandler
 		}
 	}
 
-    Override Void WorldThingDied(WorldEvent e)
+    /*Override Void WorldThingDied(WorldEvent e)
 	{
         if(!e.thing || !e.Inflictor) return;
 
@@ -344,13 +332,13 @@ class PB_EventHandler : EventHandler
             if(!PB_HelpNotificationsHandler.CheckTipEvent(1 << 4, CVar.GetCvar("pb_helpflags", players[consoleplayer])))
             {
                 Array<String> pbTipsBuf;
-                pbTipsBuf.Push("By killing enemies with the Unmaker, you will earn souls.");
-                pbTipsBuf.Push("When your soul bar is full, you can use the Weapon Special button to switch to overcharge mode.");
-                pbTipsBuf.Push("Overcharge mode will deplete your soul bar and a bit of ammo until it your soul bar is empty.");
+                pbTipsBuf.Push("$PB_UNMAKER_TIP_1");
+				pbTipsBuf.Push(string.format(StringTable.Localize("$PB_UNMAKER_TIP_2"), PB_HelpNotificationsHandler.PB_FormatKeybinds("+pb_specialwheel")));
+                pbTipsBuf.Push("$PB_UNMAKER_TIP_3");
                 PB_HelpNotificationsHandler.PB_SendTipArray(pbTipsBuf, "pb_helpflags", 1 << 4);
             }
         }
-    }
+    }*/
 
     override void PlayerDied(PlayerEvent e)
     {
@@ -368,6 +356,21 @@ class PB_EventHandler : EventHandler
 	
 	Override Void WorldThingSpawned(WorldEvent e)
 	{
+		if (!e.Thing) return;
+
+		// Guard against projectiles spawned at NaN/infinite positions or velocities
+		// (e.g. RevenantMissile fired by an incompatible enemy via mods like Corruption
+		// Cards). A NaN position causes GZDoom's 3D audio to emit warnings; infinite
+		// velocity causes an int32 overflow in FastProjectile-derived Tick() loops that
+		// permanently stalls the game. !(v <= limit) catches both NaN and infinity.
+		let mo = e.Thing;
+		if (mo && (!(mo.pos.x == mo.pos.x) || !(mo.pos.y == mo.pos.y) || !(mo.pos.z == mo.pos.z)
+			|| (mo.bMissile && !(Abs(mo.vel.x) <= 65535.0 && Abs(mo.vel.y) <= 65535.0 && Abs(mo.vel.z) <= 65535.0))))
+		{
+			mo.Destroy();
+			return;
+		}
+
 		if(!e.Thing.bCORPSE && !e.Thing.bFRIENDLY && e.thing is 'PB_Monster')
 		{
 			CVar HatsEnabled = Cvar.FindCvar("PB_HatExtravaganza");
@@ -391,6 +394,14 @@ class PB_EventHandler : EventHandler
 		
 		if(e.Thing.bROLLSPRITE && !e.thing.bSQUAREPIXELS)
 			e.Thing.bSTRETCHPIXELS = true;
+		
+		//record all nail projectiles that exist in the world
+		if (e.Thing is "PB_NailgunGlue") {
+			let nail = PB_NailgunGlue(e.Thing);
+			if (nail) {
+				nails.Push(nail);
+			}
+		}
 	}
 	
 	 /* [Pop] Keeping this here so its backed up, in may become useful
@@ -438,90 +449,104 @@ class PB_EventHandler : EventHandler
 			//
 			//	Weapons
 			//
-			case 'Pistol':				e.replacement = 'PBPistolSpawner';				break;
-			case 'Shotgun':				e.replacement = 'PBShotgunSpawner';				break;
-			case 'SuperShotgun':		e.replacement = 'PBSSGSpawner';					break;
-			case 'Chaingun':			e.replacement = 'PBChaingunSpawner';			break;
-			case 'RocketLauncher':		e.replacement = 'PBRocketLauncherSpawner';		break;
-			case 'PlasmaRifle':			e.replacement = 'PBPlasmaRifleSpawner';			break;
-			case 'BFG9000':				e.replacement = 'PBBFGSpawner';					break;
-			case 'Chainsaw':			e.replacement = 'PBChainSawSpawner';			break;
+			case 'Pistol':					e.replacement = 'PBPistolSpawner';										break;
+			case 'Shotgun':					e.replacement = 'PBShotgunSpawner';										break;
+			case 'SuperShotgun':			e.replacement = 'PBSSGSpawner';											break;
+			case 'Chaingun':				e.replacement = 'PBChaingunSpawner';									break;
+			case 'RocketLauncher':			e.replacement = 'PBRocketLauncherSpawner';								break;
+			case 'PlasmaRifle':				e.replacement = 'PBPlasmaRifleSpawner';									break;
+			case 'BFG9000':					e.replacement = !(pb_chaingun_filter & DisablePB_MG42 || pb_mg_42_chaingun_spawn) && GetPlayingWolfMaps() == 2 ? 'PB_MG42' : 'PBBFGSpawner';	break;
+			case 'Chainsaw':				e.replacement = 'PBChainSawSpawner';									break;
 			
 			//
 			//	Ammo
 			//
-			case 'Clip':				e.replacement = 'PBClipSpawner';				break;
-			case 'ClipBox':				e.replacement = 'PBClipBoxSpawner';				break;
-			case 'Shell':				e.replacement = 'PBShellSpawner';				break;
-			case 'Shellbox':			e.replacement = 'PBShellboxSpawner';			break;
-			case 'RocketAmmo':			e.replacement = 'PBRocketSpawner';				break;
-			case 'RocketBox':			e.replacement = 'PBRocketBoxSpawner';			break;
-			case 'Cell':				e.replacement = 'PBCellSpawner';				break;
-			case 'CellPack':			e.replacement = 'PBCellPackSpawner';			break;
+			case 'Clip':					e.replacement = 'PBClipSpawner';				break;
+			case 'ClipBox':					e.replacement = 'PBClipBoxSpawner';				break;
+			case 'Shell':					e.replacement = 'PBShellSpawner';				break;
+			case 'Shellbox':				e.replacement = 'PBShellboxSpawner';			break;
+			case 'RocketAmmo':				e.replacement = 'PBRocketSpawner';				break;
+			case 'RocketBox':				e.replacement = 'PBRocketBoxSpawner';			break;
+			case 'Cell':					e.replacement = 'PBCellSpawner';				break;
+			case 'CellPack':				e.replacement = 'PBCellPackSpawner';			break;
 			
-			case 'Backpack':			e.replacement = 'PBBackpackSpawner';			break;
+			case 'Backpack':				e.replacement = 'PBBackpackSpawner';			break;
 			
 			//
 			//	Health & Armor
 			//
-			case 'HealthBonus':			e.replacement = 'PBHPBonusSpawner';				break;
-			case 'Stimpack':			e.replacement = 'PBStimSpawner';				break;
-			case 'Medikit':				e.replacement = 'PBMedikitSpawner';				break;
+			case 'HealthBonus':				e.replacement = 'PBHPBonusSpawner';				break;
+			case 'Stimpack':				e.replacement = 'PBStimSpawner';				break;
+			case 'Medikit':					e.replacement = 'PBMedikitSpawner';				break;
 			
-			case 'ArmorBonus':			e.replacement = 'PBAPBonusSpawner';				break;
-			case 'GreenArmor':			e.replacement = 'PBGreenSpawner';				break;
-			case 'BlueArmor':			e.replacement = 'PBBlueSpawner';				break;
+			case 'ArmorBonus':				e.replacement = 'PBAPBonusSpawner';				break;
+			case 'GreenArmor':				e.replacement = 'PBGreenSpawner';				break;
+			case 'BlueArmor':				e.replacement = 'PBBlueSpawner';				break;
 			
 			//
 			//	Powerups
 			//
-			case 'invulnerabilitysphere':		e.replacement = 'PB_InvulSpawner';			break;
-			case 'radsuit':						e.replacement = 'PB_RadSuitSpawner';		break;
-			case 'blursphere':					e.replacement = 'PB_BlurSpawner';			break;
-			case 'infrared':					e.replacement = 'PB_InfraRedSpawner';		break;
-			case 'soulsphere':					e.replacement = 'PB_SoulSphereSpawner';		break;
-			case 'megasphere':					e.replacement = 'PB_MegaSpawner';			break;
-			case 'Berserk':						e.replacement = 'PB_BerserkSpawner';		break;
-			case 'AllMap':						e.replacement = 'PB_AllMapSpawner';			break;
+			case 'invulnerabilitysphere':	e.replacement = 'PB_InvulSpawner';				break;
+			case 'radsuit':					e.replacement = 'PB_RadSuitSpawner';			break;
+			case 'blursphere':				e.replacement = 'PB_BlurSpawner';				break;
+			case 'infrared':				e.replacement = 'PB_InfraRedSpawner';			break;
+			case 'soulsphere':				e.replacement = 'PB_SoulSphereSpawner';			break;
+			case 'megasphere':				e.replacement = 'PB_MegaSpawner';				break;
+			case 'Berserk':					e.replacement = 'PB_BerserkSpawner';			break;
+			case 'AllMap':					e.replacement = 'PB_AllMapSpawner';				break;
 			
 			//
 			//	Monsters
 			//
-			case 'ZombieMan':				e.replacement = pb_vanillamonster_override ? 'Zombieman' : 'PBZombieManSpawner';						break;
-			case 'ShotgunGuy':				e.replacement = pb_vanillamonster_override ? 'ShotgunGuy' : 'PBShotgunGuySpawner';						break;
-			case 'DoomImp':					e.replacement = pb_vanillamonster_override ? 'DoomImp' : 'PBImpSpawner';								break;
-			case 'Demon':					e.replacement = pb_vanillamonster_override ? 'Demon' : 'PBPinkySpawner';								break;
-			case 'Spectre':					e.replacement = pb_vanillamonster_override ? 'Spectre' : 'PBSpectreSpawner';							break;
-			case 'ChaingunGuy':				e.replacement = pb_vanillamonster_override ? 'ChaingunGuy' : 'PBChainGunGuySpawner';					break;
-			case 'Cacodemon':				e.replacement = pb_vanillamonster_override ? 'Cacodemon' : 'PBCacoDemonSpawner';						break;
-			case 'HellKnight':				e.replacement = pb_vanillamonster_override ? 'HellKnight' : 'PBHKSpawner';								break;
-			case 'Arachnotron':				e.replacement = pb_vanillamonster_override ? 'Arachnotron' : 'PBArachnotronSpawner';					break;
-			case 'BaronOfHell':				e.replacement = pb_vanillamonster_override ? 'BaronOfHell' : 'PBBOHSpawner';							break;
-			case 'Revenant':				e.replacement = pb_vanillamonster_override ? 'Revenant' : 'PBRevSpawner';								break;
-			case 'LostSoul':				e.replacement = pb_vanillamonster_override ? 'LostSoul' : 'PBLSSpawner';								break;
-			case 'PainElemental':			e.replacement = pb_vanillamonster_override ? 'PainElemental' : 'PBPESpawner';							break;
-			case 'ArchVile':				e.replacement = pb_vanillamonster_override ? 'ArchVile' : 'PBArchVileSpawner';							break;
-			case 'Fatso':					e.replacement = pb_vanillamonster_override ? 'Fatso' : 'PBMancubusSpawner';								break;
-			case 'Cyberdemon':				e.replacement = pb_vanillamonster_override ? 'Cyberdemon' : 'PBCyberDemonSpawner';						break;
-			case 'SpiderMastermind':		e.replacement = pb_vanillamonster_override ? 'SpiderMastermind' : 'PBSpiderMasterMindSpawner';			break;
-			case 'WolfensteinSS':			e.replacement = pb_vanillamonster_override ? 'WolfensteinSS' : 'EvilNaziSpawner';	WSuSinMap = true;	break;
+			case 'ZombieMan':				e.replacement = pb_vanillamonster_override ? 'Zombieman' : 'PBZombieManSpawner';													break;
+			case 'ShotgunGuy':				e.replacement = pb_vanillamonster_override ? 'ShotgunGuy' : 'PBShotgunGuySpawner';													break;
+			case 'DoomImp':					e.replacement = pb_vanillamonster_override ? 'DoomImp' : 'PBImpSpawner';															break;
+			case 'Demon':					e.replacement = pb_vanillamonster_override ? 'Demon' : 'PBPinkySpawner';															break;
+			case 'Spectre':					e.replacement = pb_vanillamonster_override ? 'Spectre' : 'PBSpectreSpawner';														break;
+			case 'ChaingunGuy':				e.replacement = pb_vanillamonster_override ? 'ChaingunGuy' : 'PBChainGunGuySpawner';												break;
+			case 'Cacodemon':				e.replacement = pb_vanillamonster_override ? 'Cacodemon' : 'PBCacoDemonSpawner';													break;
+			case 'HellKnight':				e.replacement = pb_vanillamonster_override ? 'HellKnight' : 'PBHKSpawner';															break;
+			case 'Arachnotron':				e.replacement = pb_vanillamonster_override ? 'Arachnotron' : 'PBArachnotronSpawner';												break;
+			case 'BaronOfHell':				e.replacement = pb_vanillamonster_override ? 'BaronOfHell' : 'PBBOHSpawner';														break;
+			case 'Revenant':				e.replacement = pb_vanillamonster_override ? 'Revenant' : 'PBRevSpawner';															break;
+			case 'LostSoul':				e.replacement = pb_vanillamonster_override ? 'LostSoul' : 'PBLSSpawner';															break;
+			case 'PainElemental':			e.replacement = pb_vanillamonster_override ? 'PainElemental' : 'PBPESpawner';														break;
+			case 'ArchVile':				e.replacement = pb_vanillamonster_override ? 'ArchVile' : 'PBArchVileSpawner';														break;
+			case 'Fatso':					e.replacement = pb_vanillamonster_override ? 'Fatso' : 'PBMancubusSpawner';															break;
+			case 'Cyberdemon':				e.replacement = pb_vanillamonster_override ? 'Cyberdemon' : 'PBCyberDemonSpawner';													break;
+			case 'SpiderMastermind':		e.replacement = pb_vanillamonster_override ? 'SpiderMastermind' : 'PBSpiderMasterMindSpawner';										break;
+			case 'WolfensteinSS':			e.replacement = pb_vanillamonster_override || pb_vanillawolfss_override ? 'WolfensteinSS' : 'EvilNaziSpawner';	WSuSinMap = true;	break;
+			case 'BossBrain':				e.replacement = pb_vanillamonster_override || pb_vanillabossbrain_override ? 'BossBrain' : 'PB_BossBrain';							break;
+			case 'BossEye':					e.replacement = 'BossEye'; IoSEyeinMap = true;																						break;
+			case 'BossTarget':				e.replacement = 'BossTarget'; IoSTarginMap = true;																					break;
 
 			//
 			//	Stealth Monsters
 			//
-			case 'StealthArachnotron':		e.replacement = 'PBStealthArachnotronSpawner';	break;
-			case 'StealthArchvile':			e.replacement = 'PBStealthArchVileSpawner';	break;
-			case 'StealthBaron':			e.replacement = 'PBStealthBOHSpawner';	break;
-			case 'StealthCacodemon':		e.replacement = 'PBStealthCacoDemonSpawner';	break;
-			case 'StealthChaingunGuy':		e.replacement = 'PBStealthChainGunGuySpawner';	break;
-			case 'StealthDemon':			e.replacement = 'PBStealthPinkySpawner';	break;
-			case 'StealthDoomImp':			e.replacement = 'PBStealthImpSpawner';	break;
-			case 'StealthFatso':			e.replacement = 'PBStealthMancubusSpawner';	break;
-			case 'StealthHellKnight':		e.replacement = 'PBStealthHKSpawner';	break;
-			case 'StealthRevenant':			e.replacement = 'PBStealthRevSpawner';	break;
-			case 'StealthShotgunGuy':		e.replacement = 'PBStealthShotgunGuySpawner';	break;
-			case 'StealthZombieMan':		e.replacement = 'PBStealthZombieManSpawner';	break;
+			case 'StealthArachnotron':		e.replacement = pb_vanillamonster_override ? 'StealthArachnotron' : 'PBStealthArachnotronSpawner';		break;
+			case 'StealthArchvile':			e.replacement = pb_vanillamonster_override ? 'StealthArchvile' : 'PBStealthArchVileSpawner';			break;
+			case 'StealthBaron':			e.replacement = pb_vanillamonster_override ? 'StealthBaron' : 'PBStealthBOHSpawner';					break;
+			case 'StealthCacodemon':		e.replacement = pb_vanillamonster_override ? 'StealthCacodemon' : 'PBStealthCacoDemonSpawner';			break;
+			case 'StealthChaingunGuy':		e.replacement = pb_vanillamonster_override ? 'StealthChaingunGuy' : 'PBStealthChainGunGuySpawner';		break;
+			case 'StealthDemon':			e.replacement = pb_vanillamonster_override ? 'StealthDemon' : 'PBStealthPinkySpawner';					break;
+			case 'StealthDoomImp':			e.replacement = pb_vanillamonster_override ? 'StealthDoomImp' : 'PBStealthImpSpawner';					break;
+			case 'StealthFatso':			e.replacement = pb_vanillamonster_override ? 'StealthFatso' : 'PBStealthMancubusSpawner';				break;
+			case 'StealthHellKnight':		e.replacement = pb_vanillamonster_override ? 'StealthHellKnight' : 'PBStealthHKSpawner';				break;
+			case 'StealthRevenant':			e.replacement = pb_vanillamonster_override ? 'StealthRevenant' : 'PBStealthRevSpawner';					break;
+			case 'StealthShotgunGuy':		e.replacement = pb_vanillamonster_override ? 'StealthShotgunGuy' : 'PBStealthShotgunGuySpawner';		break;
+			case 'StealthZombieMan':		e.replacement = pb_vanillamonster_override ? 'StealthZombieMan' : 'PBStealthZombieManSpawner';			break;
 			
+			//
+			//	Decorations
+			//
+			case 'ExplosiveBarrel':			e.replacement = pb_disable_decorations ? 'ExplosiveBarrel' : 'PB_ExplosiveBarrel';								break;
+			case 'BurningBarrel':			e.replacement = pb_disable_decorations ? 'BurningBarrel' : (pb_decorative_flame_barrels ? 'PB_DecorativeBurningBarrel' : 'PB_BurningBarrel');	break;
+			
+			case 'DeadZombieman':			e.replacement = pb_vanillamonster_override ? 'DeadZombieman' : 'PBDeadZombiemanSpawner';						break;
+			case 'DeadShotgunGuy':			e.replacement = pb_vanillamonster_override ? 'DeadShotgunGuy' : 'PBDeadShotgunGuySpawner';						break;
+			case 'DeadDemon':				e.replacement = pb_vanillamonster_override ? 'DeadDemon' : 'PBDeadDemonSpawner';								break;
+			case 'DeadDoomImp':				e.replacement = pb_vanillamonster_override ? 'DeadDoomImp' : 'PBDeadImpSpawner';								break;
+			case 'DeadCacodemon':			e.replacement = pb_vanillamonster_override ? 'DeadCacodemon' : 'PBDeadCacoDemonSpawner';						break;
 		}
 	}
 	
@@ -557,6 +582,31 @@ class PB_EventHandler : EventHandler
 		}
 	}
 	
+	//[nV] on supported mapsets, instead of randomly spawning the mg 42 in maps with wolfss we can spawn it over specific actors.
+	//a return value of 0 means we are not in a wolfenstein-themed map; 1 means that no mg 42 should spawn, and 2 means than an mg 42 should spawn somewhere in this map.
+	//supported mapset list:
+	//- vanilla
+	//- switcheroom 2
+	static int GetPlayingWolfMaps()
+	{
+		name checksum = level.GetChecksum().MakeUpper();
+		switch(checksum)
+		{
+		case 'AA4CA3FC891D13821ACCABD836E29EB5': //vanilla map32
+		case '670EE49863DE8339C4F972819ADF467F': //switcheroom 2 map32
+			return 2;
+			break;
+		case '3FF94E27423F91C1585B3396F0C03459': //vanilla map31
+		case '0D9E620A6ACB6345B26E71A429A7C132': //switcheroom 2 map15
+		case '951D7BA19745E94301374BCD1AC8A012': //switcheroom 2 map31
+			return 1;
+			break;
+		default:
+			return 0;
+			break;
+		}
+		return 0;
+	}
 }
 
 class PB_CallSignHandler : CustomStringCVar {

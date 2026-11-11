@@ -1,169 +1,233 @@
+/*
+MIT License
+
+Copyright (c) 2026 generic name guy
+
+feel free to use this in your project! just include the above license info
+somewhere visible, please.
+*/
+
 class PB_Materialsys : StaticEventHandler
 {  
-    map<int, name> materialKeyMap;
-    array<int> materialRanges;
-    array<string> textureNames;
-    int lastMaterialKey;
-    
-    // format: 
-    // range from, range to, key
-    // key is used for identifying material type
-    void SetupMaterial(array<string> refArray, name materialId)
-    {
-        // console.printf("PB_Materialsys: Setting up %s...", materialId);
-        // push initial range
-        materialRanges.Push(textureNames.Size());
+	map<string, int> texToMatKeyMap;
+	array<PB_MaterialDataStorage> materialData;
+	
+	// key is used for identifying material type
+	void SetupMaterial( array<string> refArray, name materialId, PB_MaterialDataStorage matData, int key )
+	{
+		// dump texture names in the map as keys, with the material key as value
+		for ( int i = 0; i < refArray.Size(); i++ ) 
+			texToMatKeyMap.Insert( refArray[i].MakeLower(), key );
+		
+		/*console.printf( 
+			"PB_Materialsys: Finished setting up %s with a key of %i.", 
+			materialId, key
+		);*/
+	}
 
-        // dump textures in the names array
-        for (int i = 0; i < refArray.Size(); i++) 
-        {
-            textureNames.Push(refArray[i].MakeLower());
-            //console.printf("PB_Materialsys: Texture %s added to %s", refArray[i], materialId);
-        }
+	clearscope static name GetMaterialFromTexName( string texName )
+	{
+		PB_Materialsys seh = PB_Materialsys( PB_Materialsys.Find( "PB_Materialsys" ) );
+		return seh.GetMaterialDefFromTexName( texName ).materialName;
+	}
 
-        // push end range
-        materialRanges.Push(textureNames.Size() - 1);
+	clearscope static string GetFootstepFromTexName( string texName )
+	{
+		PB_Materialsys seh = PB_Materialsys( PB_Materialsys.Find( "PB_Materialsys" ) );
+		return seh.GetMaterialDefFromTexName( texName ).footstepSound;
+	}
 
-        // setup material key and add it to the key map
-        lastMaterialKey++;
-        materialRanges.Push(lastMaterialKey);
-        materialKeyMap.Insert(lastMaterialKey, materialId);
+	clearscope static PB_MaterialDataStorage GetMaterialDefFromTexName( string texName )
+	{
+		PB_Materialsys seh = PB_Materialsys( PB_Materialsys.Find( "PB_Materialsys" ) );
+		texName = texName.MakeLower();
+		
+		if( texName.CodePointCount() > 8 )
+			return seh.materialData[ seh.texToMatKeyMap.CheckValue( texName ) ];
 
-        //console.printf("PB_Materialsys: %s takes range %i..%i, with a key of %i.", materialId, materialRanges[materialRanges.Size() - 3], materialRanges[materialRanges.Size() - 2], materialRanges[materialRanges.Size() - 1]);
-        console.printf("PB_Materialsys: Finished setting up %s.", materialId);
-    }
+		// [gng] previously the check matched the first few characters of the 
+		// string, the map lookup cannot do this. it has to trim the characters
+		// one by one to find the proper material, this is still faster
+		while( texName.CodePointCount() >= 3 )
+		{
+			let [ result, exists ] = seh.texToMatKeyMap.CheckValue( texName );
 
-    clearscope static name GetMaterialFromTexName(string texName)
-    {
-        PB_Materialsys seh = PB_Materialsys(PB_Materialsys.Find("PB_Materialsys"));
-        int matindex;
+			if( exists )
+				return seh.materialData[ result ];	
+			else
+				texName.DeleteLastCharacter();
+		}
 
-        texName = texName.MakeLower();
+		return seh.materialData[0];
+	}
 
-        for(int i = 0; i < seh.textureNames.Size(); i++)
-        {
-            if(texName.IndexOf(seh.textureNames[i]) == 0)
-            {
-                matIndex = i;
-                break;
-            }
-        }
+	const PB_INCLUDE_FILE = "PBINCLUD";
 
-        // [gng] double check here or else it plays WATER sounds
-        if(texName.IndexOf(seh.textureNames[matindex]) < 0)
-            return 'err_nomaterialfound';
+	// generate the tables
+	override void OnRegister()
+	{
+		console.printf( "PB_Materialsys: Setting up material system." );
+		double startTime = MsTimeF();
 
-        // i = from range
-        // i + 1 = to range
-        // I + 2 = material key
-        for(int i = 0; i < seh.materialRanges.Size(); i += 3)
-        {
-            // console.printf("%i %i %i", seh.materialRanges[i], seh.materialRanges[i + 1], seh.materialRanges[i + 2]);
-            if(matIndex >= seh.materialRanges[i] && matIndex <= seh.materialRanges[i + 1])
-            {
-                // console.printf("%s", seh.materialKeyMap.GetIfExists(seh.materialRanges[i + 2]));
-                return seh.materialKeyMap.GetIfExists(seh.materialRanges[i + 2]);
-            }
-        }
+		array<String> jsonToParse;
+		array<String> tmpBufferReusable;
+		array<string> tempKeyNames;
 
-        return 'err_escapedloop';
-    }
+		// the reason this is done here is because you want the index to be 1
+		// always
+		PB_MaterialDataStorage matData = PB_MaterialDataStorage.CreateMaterial( 
+			"PB_BulletImpact", 
+			"FFFFFF", 
+			"step/default", 
+			"default"
+		);
+		matData.tmpTextureNames.Push( "-NOFLAT-" );
+		materialData.Push( matData );
 
-    // generate the tables
-    override void OnRegister()
-    {
-        console.printf("PB_Materialsys: Setting up material system.");
-        double startTime = MsTimeF();
+		int lump = Wads.FindLump( PB_INCLUDE_FILE, 0 );
+		PB_JsonObject materialsInclude;
+		array<int> materialFiles, textureFiles;
+		while ( lump != -1 )
+		{
+			String lumpContents = Wads.ReadLump( lump );
+			materialsInclude = PB_JsonObject( PB_JSON.parse( lumpContents ) );
 
-        array<string> texnamesBuf;
+			PB_JsonArray texturesJSON = PB_JsonArray( materialsInclude.Get( "textures" ) );
+			if( texturesJSON )
+			{
+				for( int i = 0; i < texturesJSON.arr.Size(); i++ )
+					textureFiles.Push( Wads.CheckNumForFullName( PB_JsonString( texturesJSON.arr[i] ).s ) );
+			}
+			texturesJSON.Destroy();
 
-        for (int i = 0; i < FLATS_WATER.Size(); i++) 
-			texnamesBuf.Push(FLATS_WATER[i]);
-        SetupMaterial(texnamesBuf, "water");
-        texnamesBuf.Clear();
+			PB_JsonArray materialsJSON = PB_JsonArray( materialsInclude.Get( "materials" ) );
+			if( materialsJSON )
+			{
+				for( int i = 0; i < materialsJSON.arr.Size(); i++ )
+					materialFiles.Push( Wads.CheckNumForFullName( PB_JsonString( materialsJSON.arr[i] ).s ) );
+			}
+			materialsJSON.Destroy();
 
-        for (int i = 0; i < FLATS_SLIME.Size(); i++) 
-			texnamesBuf.Push(FLATS_SLIME[i]);
-        SetupMaterial(texnamesBuf, "slime");
-        texnamesBuf.Clear();
+			lump = Wads.FindLump( PB_INCLUDE_FILE, lump + 1 );
+		}
 
-		for (int i = 0; i < FLATS_FLESH.Size(); i++) 
-			texnamesBuf.Push(FLATS_FLESH[i]);
-        SetupMaterial(texnamesBuf, "flesh");
-        texnamesBuf.Clear();
 
-		for (int i = 0; i < FLATS_LAVA.Size(); i++) 
-            texnamesBuf.Push(FLATS_LAVA[i]);
-        SetupMaterial(texnamesBuf, "lava");
-        texnamesBuf.Clear();
+		map<string, int> materialKeysToIndex; // this is used later for textures
 
-		for (int i = 0; i < FLATS_ROCK.Size(); i++) 
-			texnamesBuf.Push(FLATS_ROCK[i]);
-        SetupMaterial(texnamesBuf, "rock");
-        texnamesBuf.Clear();
+		// not entirely sure what this code does when multiple materials using 
+		// the same name are created, need to check that sometime
 
-		for (int i = 0; i < FLATS_WOOD.Size(); i++) 
-			texnamesBuf.Push(FLATS_WOOD[i]);
-        SetupMaterial(texnamesBuf, "wood");
-        texnamesBuf.Clear();
+		for( int i = materialFiles.Size() - 1; i >= 0; i-- )
+		{
+			if( materialFiles[i] == -1 ) 
+				continue;
 
-		for (int i = 0; i < FLATS_TILEA.Size(); i++) 
-			texnamesBuf.Push(FLATS_TILEA[i]);
-        SetupMaterial(texnamesBuf, "tile/a");
-        texnamesBuf.Clear();
+			PB_JsonObject matListJsonObject = PB_JsonObject( PB_JSON.parse( Wads.ReadLump( materialFiles[i] ) ) );
 
-		for (int i = 0; i < FLATS_TILEB.Size(); i++) 
-			texnamesBuf.Push(FLATS_TILEB[i]);
-        SetupMaterial(texnamesBuf, "tile/b");
-        texnamesBuf.Clear();
+			matListJsonObject.GetKeysInto( tempKeyNames );
 
-		for (int i = 0; i < FLATS_HARD.Size(); i++) 
-			texnamesBuf.Push(FLATS_HARD[i]);
-        SetupMaterial(texnamesBuf, "hard");
-        texnamesBuf.Clear();
+			for( int j = 0; j < tempKeyNames.Size(); j++ )
+			{
+				// tmpBufferReusable holds processed materials here
+				if( tmpBufferReusable.Find( tempKeyNames[j] ) == tmpBufferReusable.Size() )
+				{
+					tmpBufferReusable.Push( tempKeyNames[j] );
+					materialKeysToIndex.Insert( tempKeyNames[j], materialData.Size() );
 
-		for (int i = 0; i < FLATS_CARPET.Size(); i++) 
-			texnamesBuf.Push(FLATS_CARPET[i]);
-        SetupMaterial(texnamesBuf, "carpet");
-        texnamesBuf.Clear();
+					PB_JsonObject materialDef = PB_JsonObject( matListJsonObject.Get( tempKeyNames[j] ) );
 
-		for (int i = 0; i < FLATS_METALA.Size(); i++) 
-			texnamesBuf.Push(FLATS_METALA[i]);
-        SetupMaterial(texnamesBuf, "metal/a");
-        texnamesBuf.Clear();
+					PB_JsonString bulletImpact = PB_JsonString( materialDef.get( "bulletimpact" ) );
+					PB_JsonString tintColor = PB_JsonString( materialDef.get( "color" ) );
+					PB_JsonString footstepSound = PB_JsonString( materialDef.get( "footstep" ) );
 
-		for (int i = 0; i < FLATS_METALB.Size(); i++) 
-			texnamesBuf.Push(FLATS_METALB[i]);
-        SetupMaterial(texnamesBuf, "metal/b");
-        texnamesBuf.Clear();
+					PB_MaterialDataStorage matData = PB_MaterialDataStorage.CreateMaterial( 
+						bulletImpact ? bulletImpact.s : "PB_BulletImpact", 
+						tintColor ? tintColor.s : "FFFFFF", 
+						footstepSound ? footstepSound.s : "step/default", 
+						tempKeyNames[j]
+					);
 
-		for (int i = 0; i < FLATS_DIRT.Size(); i++) 
-			texnamesBuf.Push(FLATS_DIRT[i]);
-        SetupMaterial(texnamesBuf, "dirt");
-        texnamesBuf.Clear();
+					materialData.Push( matData );
+				}
+			}
+		}
+		
+		jsonToParse.Clear();
+		tempKeyNames.Clear();
 
-		for (int i = 0; i < FLATS_GRAVEL.Size(); i++) 
-			texnamesBuf.Push(FLATS_GRAVEL[i]);
-        SetupMaterial(texnamesBuf, "gravel");
-        texnamesBuf.Clear();
+		for( int i = textureFiles.Size() - 1; i >= 0; i-- )
+		{
+			if( textureFiles[i] == -1 ) 
+				continue;
 
-        console.printf("PB_Materialsys: Materials set up. took %fms", MsTimeF() - startTime);
-    }
+			PB_JsonObject matListJsonObject = PB_JsonObject( PB_JSON.parse( Wads.ReadLump( textureFiles[i] ) ) );
 
-    // definitions
-    // TODO: turn this into a lump?
-    static const string FLATS_SLIME[] = { "SFALL", "BFALL", "BDT_WFL", "BDT_BFL", "BDT_AFL", "BDT_SFL1", "BDT_SFL2", "NUKAGE1", "NUKAGE2", "NUKAGE3", "SLIME01", "SLIME02", "SLIME03", "SLIME04", "SLIME05", "SLIME06", "SLIME07", "SLIME08" };
-    static const string FLATS_WATER[] = { "FWATER1", "FWATER2", "FWATER3", "FWATER4", "BLOOD1", "BLOOD2", "BLOOD3", "WATER", "BLOOD", "WFALL", "BDT_W", "BDT_B", "BDT_S" };
-    static const string FLATS_FLESH[] = { "SFLR6_1","SFLR6_4","SFLR7_1","SFLR7_4" };
-    static const string FLATS_LAVA[] = { "LAVA1","LAVA2","LAVA3","LAVA4","BDT_LFL" };
-    static const string FLATS_ROCK[] = { "SLIME09","SLIME10","SLIME11","SLIME12","RROCK01","RROCK02","RROCK05","RROCK06","RROCK07","RROCK08","FLAT1","FLAT1_1","FLAT1_2","FLAT5_6","FLAT5_7","FLAT5_8","FLOOR5_4","GRNROCK","MFLR8_2","MFLR8_3","RROCK03","RROCK04","RROCK09","RROCK10","RROCK11","RROCK12","RROCK13","RROCK14","RROCK15","SLIME13", "STONE6", "STONE7", "SW1STON6", "TANROCK", "ZIMMER3", "ZIMMER4" };
-    static const string FLATS_WOOD[] = { "FLOOR0_2","CEIL1_1","CRATOP1","CRATOP2","FLAT5_1","FLAT5_2", "WOOD", "PAN", "CRAT", "PANEL", "STUCCO", "FLAT5_1", "FLAT5_2", "CEIL1_1", "FLOOR0_1", "FLOOR0_2", "FLOOR0_3", "FLOOR7_1", "FLAT5_5", "TANROCK2", "TANROCK3", "TANROCK8", "ZZWOLF5", "ZZWOLF6", "ZZWOLF7", "BIGDOOR5", "BIGDOOR6", "BIGDOOR7", "ZZWOLF5" };
-    static const string FLATS_TILEA[] = { "CEIL1_3","CEIL3_3","CEIL3_4","COMP01","FLAT2","FLAT3","FLAT8","FLAT9","FLAT17","FLAT18","FLAT19","FLOOR0_6","FLOOR0_7","FLOOR3_3","FLOOR4_1","FLOOR4_5","FLOOR4_6","FLOOR4_8","FLOOR5_1","FLOOR5_2","FLOOR5_3","TLITE6_1","TLITE6_4","TLITE6_5","TLITE6_6" };
-    static const string FLATS_TILEB[] = { "DEM1_1","DEM1_2","DEM1_3","DEM1_4","DEM1_5","DEM1_6","FLOOR7_2" };
-    static const string FLATS_HARD[] = { "CEIL3_1","CEIL3_2","CEIL3_5","CEIL3_6","CEIL5_1","CEIL5_2","FLAT5","FLOOR0_1","FLOOR0_3","FLOOR1_6","FLOOR1_7","FLOOR7_1","GRNLITE1","MFLR8_1" };
-    static const string FLATS_CARPET[] = { "CEIL4_1","CEIL4_2","CEIL4_3","FLAT5_3","FLAT5_4","FLAT5_5","FLAT14","FLOOR1_1" };
-    static const string FLATS_METALA[] = { "FLOOR0_5","CEIL1_2","FLAT1_3","FLAT20","GATE1","GATE2","GATE3","SLIME14","SLIME15","SLIME16","STEP1","STEP2", "SHAWN", "SILVER", "BRONZ", "SUPPORT", "ZZZFACE6", "ZZZFACE7", "ZZZFACE8", "ZZZFACE9", "FLOOR0_6", "FLOOR0_7", "FLOOR3_3", "FLOOR4_1", "FLOOR4_5", "FLOOR4_8", "FLOOR5_1", "STEP", "CEIL5_2", "FLAT22", "FLAT23", "CONS", "CEIL1_1", "CEIL1_2", "CEIL1_1", "SLIME14", "SLIME15", "SLIME16", "LITE", "COMM", "SW2MET", "BIGDOOR1", "BIGDOOR2", "BIGDOOR3", "BIGDOOR4", "DOOR", "EXITDOOR", "SPCDOOR", "BRNSMAL", "PLAT" };
-    static const string FLATS_METALB[] = { "CONS1_1","CONS1_5","CONS1_7","FLAT4","FLAT22","FLAT23","GATE4", "PIPE", "FLAT4", "COMP", "TEK", "MIDS", "MIDB", "FLAT23", "METAL", "SPACE", "STAR" };
-    static const string FLATS_DIRT[] = { "FLAT10","GRASS1","GRASS2","MFLR8_4","RROCK16","RROCK17","RROCK18","RROCK19","RROCK20", "ASHWALL3", "ASHWALL4", "ZIMMER5" };
-    static const string FLATS_GRAVEL[] = { "FLOOR6_1","FLOOR6_2" };
+			matListJsonObject.GetKeysInto( tempKeyNames );
+
+			PB_JsonArray textureList;
+
+			for( int i = 0; i < tempKeyNames.Size(); i++ )
+			{
+				textureList = PB_JsonArray( matListJsonObject.Get( tempKeyNames[i] ) );
+
+				int indexOfMat;
+				bool matExists;
+
+				[indexOfMat, matExists] = materialKeysToIndex.CheckValue( tempKeyNames[i] );
+
+				if( matExists )
+				{
+					PB_MaterialDataStorage matData = materialData[indexOfMat];
+
+					for( int i = 0; i < textureList.arr.Size(); i++ )
+					{
+						PB_JsonString tName = PB_JsonString( textureList.arr[i] );
+						matData.tmpTextureNames.Push( tName.s );
+					}
+				}
+				else
+				{  
+					console.printf( "PB_Materialsys: Material %s does not exist!", tempKeyNames[i] );
+					continue;
+				}
+			}
+			tempKeyNames.Clear();
+		}
+		jsonToParse.Clear();
+
+		for( int i = 0; i < materialData.Size(); i++ )
+		{
+			SetupMaterial( materialData[i].tmpTextureNames, materialData[i].materialName, materialData[i], i );
+			materialData[i].tmpTextureNames.Clear();
+		}
+
+		console.printf( "PB_Materialsys: Materials set up. took %fms", MsTimeF() - startTime );
+	}
+}
+
+class PB_MaterialDataStorage
+{
+	string bulletImpact;
+	color tintColor;
+	string footstepSound;
+	array<string> tmpTextureNames;
+
+	string materialName;
+
+	static PB_MaterialDataStorage CreateMaterial( string bImp, color tintCol, string stepS, string matName )
+	{
+		PB_MaterialDataStorage m = new( "PB_MaterialDataStorage" );
+
+		if( m )
+		{
+			m.bulletImpact = bImp;
+			m.tintColor = tintCol;
+			m.footstepSound = stepS;
+			m.materialName = matName;
+
+			return m;
+		}
+
+		return NULL;
+	}
 }

@@ -1,4 +1,4 @@
-ACTOR PB_InfectedImp: PB_Imp //Replaces DoomImp
+ACTOR PB_InfectedImp: PB_LegacyImp //Replaces DoomImp
 //ACTOR Imp Replaces DoomImp
 {
 	//$Title Savage Imp
@@ -7,7 +7,7 @@ ACTOR PB_InfectedImp: PB_Imp //Replaces DoomImp
 	Game Doom
     Scale 1
 	SpawnID 5
-	Health 110
+	Health 130
 	Radius 18
 	Height 56
 	Mass 100
@@ -42,6 +42,9 @@ ACTOR PB_InfectedImp: PB_Imp //Replaces DoomImp
 	PainSound "SavageImp/Pain"
 	DeathSound "SavageImp/Death"
 	ActiveSound "SavageImp/Active"
+	Obituary "$OB_PB_SAVAGEIMP"
+	HitObituary "$OB_PB_SAVAGEIMPHIT"
+	Tag "$FN_PB_SAVAGEIMP"
     damagefactor "Kick", 0.5
     damagefactor "SSG", 5.0
 	damagefactor "explosiveimpact", 2.0
@@ -54,7 +57,7 @@ ACTOR PB_InfectedImp: PB_Imp //Replaces DoomImp
 	PainChance "Trample", 255
 	
 	DropItem "Demonpickup" 60
-	
+	PB_Monster.MonPosHB 0.7, 0.65, 0.38, 0.40
 	States
 	{
 	
@@ -107,32 +110,9 @@ ACTOR PB_InfectedImp: PB_Imp //Replaces DoomImp
         1ROO NNNOOO 2 A_FaceTarget
         Goto Missile+26
 	
-	ReplaceVanilla:
-		TNT1 A 0 A_ChangeFlag("THRUACTORS", 1)
-		TNT1 A 0 A_ChangeFlag("COUNTKILL", 0)
-		TNT1 A 0 A_SpawnItemEx ("Vanilla_Imp",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION |SXF_TRANSFERSPECIAL| SXF_TRANSFERAMBUSHFLAG ,0)
-		Stop
-	
 	Spawn:
-		1ROO A 0
-		
-		TNT1 A 1 //ACS_NamedExecuteAlways("CeilingClimbingImps", 0)//Check for CVARs
-		TNT1 A 0 A_JumpIf(waterlevel == 2, "Swim")
-		TNT1 A 0 A_JumpIf(waterlevel == 3, "Swim")
-        TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
-		Goto Stand
-		
-	Stand:	
-        TNT1 A 0
-		TNT1 A 0 
-		TNT1 A 0 A_CheckSight("Stand2")
 		1ROS AB 10 A_Look
 		Loop
-		
-	Stand2:
-		1ROS AB 11 A_Look
-		Goto Stand
-		
 	Idle:
 	LookingForPlayer:
 	    TNT1 A 0 
@@ -210,8 +190,7 @@ ACTOR PB_InfectedImp: PB_Imp //Replaces DoomImp
 	ForgetTarget:
 		TNT1 A 0 A_ClearTarget
 		TNT1 A 0 A_TakeInventory("EnemyMemory", 25)
-		TNT1 A 0 A_GiveInventory("LookingForPlayer", 1)
-		Goto Stand
+		Goto Spawn
 	
 	See:
 		TNT1 A 0 A_TakeInventory("EnemyMemory", 15)
@@ -312,11 +291,11 @@ ACTOR PB_InfectedImp: PB_Imp //Replaces DoomImp
         TNT1 A 0 A_GiveInventory ("IsJumping")
         TNT1 A 0 A_FaceTarget
         1ROT F 6 
-		TNT1 A 0 A_CustomMeleeAttack(10, "imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
+		TNT1 A 0 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
         TNT1 A 0 A_TakeInventory ("IsJumping")
         TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
 		1ROT G 1
-		1ROT GG 2 A_CustomMeleeAttack(10, "imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
+		1ROT GG 2 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "ImpFatalityMarine") //A_CustomMissile("ImpAttack2",10,0,0,0)
 		1ROT G 1
 		TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
 		1ROT HHH 2 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
@@ -327,7 +306,7 @@ ACTOR PB_InfectedImp: PB_Imp //Replaces DoomImp
 	    TNT1 D 0 
         1ROO EF 4 A_FaceTarget
 		TNT1 D 0 
-        1ROO G 4 A_CustomMeleeAttack(10, "imp/melee", "", "Rip") //A_CustomMissile("ImpAttack",10,0,0,0)
+        1ROO G 4 A_CustomMeleeAttack(10, "pb/monsters/imp/melee", "", "Rip") //A_CustomMissile("ImpAttack",10,0,0,0)
 		TNT1 D 0 
         1ROO FE 4
 		Goto SeeContinue
@@ -402,27 +381,8 @@ ACTOR PB_InfectedImp: PB_Imp //Replaces DoomImp
 		TNT1 A 0
 	    TNT1 A 1 A_Pain
 		TNT1 A 0 A_NoBlocking
-        TNT1 A 0 A_GiveToTarget("ImpFatality3", 1)
 		TNT1 A 0 A_GiveToTarget("ImpFatality", 1)
-        Stop	
-		
-	Death.Fatality:
-		TNT1 A 0 A_Pain
-        TNT1 A 0 A_NoBlocking
-		TNT1 A 0 A_JumpIfIntargetInventory("FistsSelected", 1, 1)
-		Goto Death.ExplosiveImpact
-		TNT1 A 0 A_GiveToTarget("GoFatality", 1)
-		TNT1 A 0 A_Jump(255, "Death.Fatality1", "Death.Fatality2")
-		Goto Death.Fatality1
- 
-        Death.Fatality1:
-        TNT1 A 0 A_GiveToTarget("SavageImpFatality1", 1)
         Stop
-		Death.Fatality2:
-        TNT1 A 0 A_GiveToTarget("SavageImpFatality1", 1)
-		Stop
-	
-		
 	Pain.Melee:
 		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
 		TNT1 A 0 A_ChangeFlag("THRUSPECIES", 0)
@@ -531,6 +491,38 @@ ACTOR PB_InfectedImp: PB_Imp //Replaces DoomImp
         TNT1 A 0 ThrustThingZ(0,40,0,1)
          1ZD4 KL 8
 		Goto FallingAfterImpact
+		
+
+	Death.Nailgun:
+		TNT1 A 0 A_ChangeFLag("SLIDESONWALLS", 0)
+		TNT1 A 0 ThrustThingZ(0,random(22,30),0,1)
+		TNT1 A 0 A_Scream
+		TNT1 A 0 A_NoBlocking
+        TNT1 A 0 A_FaceTarget
+        TNT1 A 0 A_Recoil (30)
+		6723 A 4 A_SpawnProjectile("Brutal_LiquidBlood3", 15, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40))
+		TNT1 A 0 A_JumpIf((MomY == 0), "NailgunDeathEnd")
+		6723 B 4 A_SpawnProjectile("Brutal_LiquidBlood3", 15, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40))
+		TNT1 A 0 A_JumpIf((MomY == 0), "NailgunDeathEnd")
+		6723 C 4 A_SpawnProjectile("Brutal_LiquidBlood3", 15, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40))
+		TNT1 A 0 A_JumpIf((MomY == 0), "NailgunDeathEnd")
+		6723 D 4 A_SpawnProjectile("Brutal_LiquidBlood3", 15, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40))
+		TNT1 A 0 A_JumpIf((MomY == 0), "NailgunDeathEnd")
+		6723 E 4 A_SpawnProjectile("Brutal_LiquidBlood3", 15, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40))
+		TNT1 A 0 A_JumpIf((MomY == 0), "NailgunDeathEnd")
+		6723 F 4 A_SpawnProjectile("Brutal_LiquidBlood3", 15, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40))
+		TNT1 A 0 A_JumpIf((MomY == 0), "NailgunDeathEnd")
+		6723 G 4 A_SpawnProjectile("Brutal_LiquidBlood3", 15, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40))
+		TNT1 A 0 A_JumpIf((MomY == 0), "NailgunDeathEnd")
+		6723 H 4 A_SpawnProjectile("Brutal_LiquidBlood3", 15, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 40))
+		TNT1 A 0 A_JumpIf((MomY == 0), "NailgunDeathEnd")
+		TNT1 A 0 A_SpawnItemEX("GrowingBloodPool", 0, 0, 0, 0, 0, 0, 0, SXF_USEBLOODCOLOR | SXF_SETTARGET | SXF_NOCHECKPOSITION)
+	NailgunDeathEnd:
+		TNT1 A 0 A_Jump(128, 2)
+		TNT1 A 0 A_SpawnItem("DeadSavageImp1")
+		Stop
+		TNT1 A 0 A_SpawnItem("DeadSavageImp2")
+        Stop
 		
 
     Pain.Kick:
@@ -728,7 +720,11 @@ Death.MinorLeg:
 		TNT1 A 0 A_SpawnItem("DeadSavageImp1")
 		Stop
 		
-		Death.Incinerate:
+    Death.fire:
+	Death.FireExplosion:
+	Death.Flames:
+	Death.Burn:
+	Death.Incinerate:
 		TNT1 A 0
 		TNT1 A 0 A_Stop
         TNT1 A 0 A_Playsound("MELT")
@@ -766,20 +762,6 @@ Death.MinorLeg:
 		T6SB JJJJJJJ 12 A_SpawnProjectile("PlasmaSmoke", 14, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
 		T6SB J -1
 		Stop
-		
-    Death.fire:
-	Death.FireExplosion:
-	Death.Flames:
-	Death.Burn:
-		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
-		TNT1 A 0 A_ChangeFlag("THRUSPECIES", 0)
-		TNT1 A 0 A_ChangeFlag("CEILINGHUGGER", 0)
-		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate")
-		TNT1 A 0 A_Scream
-        TNT1 A 0 A_NoBlocking
-		TNT1 A 1 A_SpawnItemEx("BurningImpRunning",0,0,0,0,0,0,0,288)
-        Stop
-		
 		
 		Death20alt:
         TNT1 A 0
@@ -902,11 +884,7 @@ Death.MinorLeg:
 		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
 		TNT1 A 0 A_ChangeFlag("THRUSPECIES", 0)
 		TNT1 A 0 A_ChangeFlag("CEILINGHUGGER", 0)
-		TNT1 A 0 A_JumpIfInTargetInventory("HasIncendiaryWeapon",1,"Death.Incinerate")
-	    TNT1 A 0 A_JumpIfInTargetInventory("HasPlasmaWeapon", 1, "Death.Plasma")
-		TNT1 A 0 A_JumpIfInTargetInventory("HasCutingWeapon", 1, "Death.Decaptate")
 		TNT1 A 0 A_JumpIfHealthLower(-60, "Death.HeadExplode")
-		TNT1 A 0 A_JumpIfInTargetInventory("RandomHeadExploder", 1, "HeadExploder")
 		Goto Death.HeadMinor
 		
 	Death.HeadMinor:
@@ -1256,7 +1234,6 @@ DeathNoGuts:
 		TNT1 A 0 A_ChangeFlag("NOGRAVITY", 0)
 		TNT1 A 0 A_ChangeFlag("THRUSPECIES", 0)
 		TNT1 A 0 A_ChangeFlag("CEILINGHUGGER", 0)
-		TNT1 A 0 A_JumpIfInTargetInventory("SSGSelected", 1, "Death.SSG")
 		TNT1 A 0 A_XScream
 		TNT1 A 0 A_NoBlocking
 		TNT1 A 0 A_FaceTarget
@@ -1588,9 +1565,9 @@ ACTOR SavageImpTorso
     BLUD C 0 A_Recoil (3)
     BLUD C 0 ThrustThing (random(0,255),random(1,5))
     BLUD C 0 ThrustThingZ (0,random(0,50),random(0,1),0)
-TNT1 A 0 A_SetInvulnerable
-GORX B 10
-TNT1 A 0 A_UnSetInvulnerable
+	TNT1 A 0 A_SetInvulnerable
+	2ROG K 10
+	TNT1 A 0 A_UnSetInvulnerable
     Goto Dead
     
    Dead:
@@ -2269,20 +2246,5 @@ Actor DeadSavageImp_2RO4E: CurbstompedMarine
 	Spawn: 
 		2RO4 E -1 
 		Stop
-	}
-}
-///////////////////////////======VANILLA======//////////////////////////////////
-
-Actor Vanilla_SavageImp : PB_InfectedImp
-{
-	
-	States
-	{
-		Spawn:
-		TNT1 A 1 ACS_NamedExecuteAlways("CeilingClimbingImps", 0)//Check for CVARs
-		TNT1 A 0 A_JumpIf(waterlevel == 2, "Swim")
-		TNT1 A 0 A_JumpIf(waterlevel == 3, "Swim")
-        TNT1 A 0 A_JumpIfInventory("Fatality_Marine", 1, "FatalityMarine")
-		Goto Stand
 	}
 }

@@ -35,6 +35,11 @@ class gb_Sender
 	EventHandler.sendNetworkEvent(string.format("gb_give_item:%s", className));
   }
 
+  static void sendTakeItemEvent(string classname)
+  {
+	EventHandler.sendNetworkEvent(string.format("gb_take_item:%s", className));
+  }
+
   static
   void sendFreezePlayerEvent(int cheats, vector3 velocity, double gravity)
   {

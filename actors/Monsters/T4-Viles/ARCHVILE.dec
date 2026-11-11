@@ -4,17 +4,12 @@
 //
 //===========================================================================
 
-Actor HealingTime : Inventory
-{
-inventory.maxamount 1
-}
-
 Actor EnemyIsArchvile : Inventory
 {
 inventory.maxamount 1
 }
 
-ACTOR PB_Archvile: Archvile //Replaces Archvile
+ACTOR PB_Archvile: PB_Vile //Replaces Archvile
 {
 	//$Title Archvile
 	//$Category Project Brutality - Monsters/Archviles
@@ -23,14 +18,12 @@ ACTOR PB_Archvile: Archvile //Replaces Archvile
 	SpawnID 2300
 	Radius 20
 	Height 56
-	Scale 0.8
+	ProjectilePassHeight 72
 	damagefactor "Crush", 10.0
 	Mass 500
 	Speed 16
 	Health 1000
 	PainChance 10
-	PainChance "Kick", 90
-	PainChance "ExtremePunches", 90
 	PainChance "Stun", 255
 	PainChance "Siphon", 255
 	damagefactor "Avoid", 0.0
@@ -50,7 +43,8 @@ ACTOR PB_Archvile: Archvile //Replaces Archvile
 	ActiveSound "vile/active"
 	MeleeSound "vile/stop"
 	damagefactor "TeleportRemover", 0.0
-	Obituary "%o was exploded by an Arch-Vile."
+	Obituary "$OB_PB_ARCHVILE"
+	Tag "$FN_PB_ARCHVILE"
 	damagefactor "Blood", 0.0 damagefactor "BlueBlood", 0.0 damagefactor "GreenBlood", 0.0
 	
 	BloodType "PB_GunshotBlood", "PB_SawBlood", "PB_SawBlood"
@@ -95,38 +89,28 @@ ACTOR PB_Archvile: Archvile //Replaces Archvile
 		TNT1 A 1 A_SpawnItemEx("VileShrinkFX7", 0, 0, 5, 0, 0)
 		TNT1 A 1 A_SpawnItemEx("LilVile", 1)
 		stop
-	
-	ReplaceVanilla:
-		TNT1 A 0 A_ChangeFlag("THRUACTORS", 1)
-		TNT1 A 0 A_ChangeFlag("COUNTKILL", 0)
-		TNT1 A 0 A_SpawnItemEx("Vanilla_Vile",0,0,0,0,0,0,0,SXF_NOCHECKPOSITION |SXF_TRANSFERSPECIAL| SXF_TRANSFERAMBUSHFLAG ,0)
-		Stop
-	
 	Spawn:
-		DIAB B 1 A_Look
-		
-		TNT1 A 0 ACS_NamedExecuteAlways("ArchvileBigHeal", 0)
-		TNT1 A 0 ACS_NamedExecuteAlways("ArchvileDemonSummon", 0)
-		TNT1 A 0 A_GiveInventory("EnemyIsArchvile", 1)
-		TNT1 AA 0
-		Stand:
+		DIAB B 10 NoDelay {
+			PB_SetHeight(72);
+			A_GiveInventory("EnemyIsArchvile", 1);
+		}
+	Stand:
 		DIAB B 10 A_Look
 		Loop
 	See:
 		TNT1 A 0 
-		DIAB AA 2 A_VileChase
+		DIAB AA 2 PB_VileChase(56,76)
 		TNT1 A 0 A_PlaySound("vile/step",5)
 		TNT1 A 0 
-		DIAB BB 2 A_VileChase
+		DIAB BB 2 PB_VileChase(56,76)
 		TNT1 A 0 
-		DIAB CC 2 A_VileChase
+		DIAB CC 2 PB_VileChase(56,76)
 		TNT1 A 0 A_PlaySound("vile/step",5)
 		TNT1 A 0 
-		DIAB DD 2 A_VileChase
+		DIAB DD 2 PB_VileChase(56,76)
 		Loop
 		
 	Heal:
-		TNT1 A 0 A_JumpIfInventory("NoBigHeal", 1, 2)
 		TNT1 A 0 A_Jump(96, "BigHeal")
 		TNT1 A 0
 		VILE "[\]" 10 Bright
@@ -150,15 +134,14 @@ ACTOR PB_Archvile: Archvile //Replaces Archvile
 		Goto See
 		
 	Missile:
-		TNT1 A 0 A_JumpIfInventory("NoArchvileSummon", 1, 2)
 		TNT1 A 0 A_Jump(66, "SummonAfrit")
 		DIAB E 0 A_VileStart
 		DIAB E 10 BRIGHT A_FaceTarget 
-		DIAB E 1 A_VileTarget 
-		DIAB E 7 A_VileTarget
+		DIAB E 1 A_VileTarget("PBArchvileFire") 
+		DIAB E 7 A_VileTarget("PBArchvileFire")
 
 		
-		DIAB E 1 A_VileTarget 
+		DIAB E 1 A_VileTarget("PBArchvileFire")
         TNT1 A 0 A_SpawnProjectile("SmallFlameTrails", 85, 35, random (0, 40), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
         TNT1 A 0 A_SpawnProjectile("SmallFlameTrails", 85, -35, random (0, 40), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
         DIAB E 3 A_FaceTarget
@@ -167,14 +150,14 @@ ACTOR PB_Archvile: Archvile //Replaces Archvile
         DIAB F 3 BRIGHT A_FaceTarget
 		TNT1 A 0 
 		DIAB F 3 BRIGHT A_FaceTarget
-		DIAB E 1 A_VileTarget 
+		DIAB E 1 A_VileTarget("PBArchvileFire") 
         TNT1 A 0 A_SpawnProjectile("SmallFlameTrails", 85, 35, random (0, 40), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
         TNT1 A 0 A_SpawnProjectile("SmallFlameTrails", 85, -35, random (0, 40), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
         DIAB E 3 A_FaceTarget 
         TNT1 A 0 A_SpawnProjectile("SmallFlameTrails", 85, 35, random (0, 40), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
         TNT1 A 0 A_SpawnProjectile("SmallFlameTrails", 85, -35, random (0, 40), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
         DIAB F 3 BRIGHT A_FaceTarget
-		DIAB E 1 A_VileTarget 
+		DIAB E 1 A_VileTarget("PBArchvileFire") 
 		TNT1 A 0 
         TNT1 A 0 A_SpawnProjectile("SmallFlameTrails", 85, 35, random (0, 40), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
         TNT1 A 0 A_SpawnProjectile("SmallFlameTrails", 85, -35, random (0, 40), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
@@ -182,7 +165,7 @@ ACTOR PB_Archvile: Archvile //Replaces Archvile
         TNT1 A 0 A_SpawnProjectile("SmallFlameTrails", 85, 35, random (0, 40), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
         TNT1 A 0 A_SpawnProjectile("SmallFlameTrails", 85, -35, random (0, 40), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
         DIAB F 3 BRIGHT A_FaceTarget
-		DIAB E 1 A_VileTarget 
+		DIAB E 1 A_VileTarget("PBArchvileFire") 
 		TNT1 A 0 
         TNT1 A 0 A_SpawnProjectile("SmallFlameTrails", 85, 35, random (0, 40), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
         TNT1 A 0 A_SpawnProjectile("SmallFlameTrails", 85, -35, random (0, 40), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (0, 160))
@@ -568,23 +551,6 @@ ACTOR PB_Archvile: Archvile //Replaces Archvile
         XVIP QQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQQ 10 A_SpawnProjectile("SmallSmoke", 15, 0, random (0, 360), CMF_BADPITCH | CMF_ABSOLUTEPITCH | CMF_AIMDIRECTION, random (70, 130))
 		XVIP Q -1
 		Stop
-
-	Death.Fatality:
-		TNT1 A 0 A_Pain
-		TNT1 A 0 A_JumpIfIntargetInventory("FistsSelected", 1, 1)
-		Goto Death
-		TNT1 A 0 A_Jump(128, "Fatality2")
-		TNT1 A 0 A_GiveToTarget("GoFatality", 1)
-		TNT1 A 0 A_NoBlocking
-		TNT1 A 0 A_GiveToTarget("ArchvileFatality", 1)
-		Stop
-		
-	Fatality2:
-		TNT1 A 0 A_GiveToTarget("GoFatality", 1)
-		TNT1 A 0 A_NoBlocking
-		TNT1 A 0 A_GiveToTarget("ArchvileFatality2", 1)
-		Stop
-
 	Crush:
 		TNT1 A 0 A_PlaySound("misc/xdeath4")
 		CRS2 A 5
@@ -1414,21 +1380,3 @@ ACTOR DyingArchvileNoArm: BrutalizedArchvile
 	
 	}
 }		
-
-///////////////////////////======VANILLA======//////////////////////////////////
-
-Actor Vanilla_Vile : PB_Archvile
-{
-	
-	States
-	{
-		Spawn:
-		TNT1 A 0 ACS_NamedExecuteAlways("ArchvileBigHeal", 0)
-		TNT1 A 0 ACS_NamedExecuteAlways("ArchvileDemonSummon", 0)
-		TNT1 A 0 A_GiveInventory("EnemyIsArchvile", 1)
-		TNT1 AA 0
-		Stand:
-		DIAB B 10 A_Look
-		Loop
-	}
-}

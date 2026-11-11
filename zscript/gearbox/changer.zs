@@ -47,6 +47,10 @@ class gb_Changer play
   {
 	player.mo.A_giveinventory(item,1);
   }
+  void takeItem(PlayerInfo player, string item)
+  {
+	player.mo.A_takeinventory(item,1);
+  }
 
   static
   void setAngles(PlayerInfo player, double pitch, double angle)
@@ -60,6 +64,11 @@ class gb_Changer play
     // To prevent mods that add weapon sway from swaying while moving mouse in wheel.
     player.cmd.yaw   = 0;
     player.cmd.pitch = 0;
+	
+	if(multiplayer) return;
+	
+	player.minpitch = pitch;
+	player.maxpitch = pitch;
   }
 
   static

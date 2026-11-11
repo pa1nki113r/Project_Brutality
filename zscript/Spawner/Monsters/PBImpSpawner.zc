@@ -1,46 +1,22 @@
-Class PBImpSpawner : PB_SpawnerBase //replaces DoomImp
+Class PBImpSpawner : PB_SpawnerBase
 {
-	default
-	{
-		+LOOKALLAROUND;
-		scale 0.45;
-		-SHOOTABLE;
-		-COUNTKILL; 
-		-SOLID;
-		+NOTIMEFREEZE;
-		//CANPUSHWALLS;
-		//-CANUSEWALLS;
-		//-ACTIVATEMCROSS;
-		//-CANPASS;
-		//-ISMONSTER;
-		//+NODAMAGE;
-		//-NOMENU;
-		Species "ImpSpawner";
-	}
 	States
 	{
+		Death:
+			TNT1 A 0 PB_SpawnerSpawn("PB_ImpSpawner_DW");
+			Stop;
 		Tier4:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_ImpSpawner_T4");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_ImpSpawner_T4");
 			Stop;
 		Tier3:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_ImpSpawner_T3");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_ImpSpawner_T3");
 			Stop;
 		Tier2:
-		SpawnSavageImp:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_ImpSpawner_T2");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_ImpSpawner_T2");
 			Stop;
-			
 		Tier1:
-			TNT1 A 0;
-			TNT1 A 0 PB_SpawnerSpawn("PB_ImpSpawner_T1");//,0,0,0,0,0,0,0,SXF_TRANSFERSPECIAL | SXF_TRANSFERAMBUSHFLAG | SXF_TRANSFERPOINTERS | 288,0,tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_ImpSpawner_T1");
 			stop;
-			
-		Death:
-			TNT1 A 0;
-			Goto Spawn;
 	}
 }
 
@@ -48,21 +24,18 @@ Class PB_ImpSpawner_T1 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.SpawnOverride "pb_imp_override";
 		dropitem "DNImpVariant1",255,1;
 		dropitem "DNImpVariant2",255,1;
 		dropitem "DNImpVariant3",255,1;
-		dropitem "PB_Imp1",255,1;
+		dropitem "PB_Imp",255,1;
 	}
 	
-	override void HandleSpawnExeptions(in out name toSpawn)
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_imp_override != "Disabled") {
-				toSpawn = pb_imp_override;
-				return;
-		}
-		if(pb_NoBrownImps && (toSpawn == "DNImpVariant1" || toSpawn == "DNImpVariant2" || toSpawn == "DNImpVariant3"))
-			toSpawn = "PB_Imp1";
-		
+		if((toSpawn == "DNImpVariant1" || toSpawn == "DNImpVariant2" || toSpawn == "DNImpVariant3") && pb_imp_filter & DisableDNImpVariants)
+			return false;
+		return true;
 	}
 }
 
@@ -70,16 +43,16 @@ Class PB_ImpSpawner_T2 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_ImpSpawner_T1";
+		PBRandomSpawner.SpawnOverride "pb_imp_override";
 		dropitem "PB_InfectedImp",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_imp_override != "Disabled") {
-				toSpawn = pb_imp_override;
-				return;
-		}
-		if(pb_NoSavageImps && toSpawn == "PB_InfectedImp")
-			toSpawn = "PB_Imp1";
+		if(toSpawn == "PB_InfectedImp" && pb_imp_filter & DisablePB_InfectedImp)
+			return false;
+		return true;
 	}
 }
 
@@ -87,23 +60,19 @@ Class PB_ImpSpawner_T3 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_ImpSpawner_T2";
+		PBRandomSpawner.SpawnOverride "pb_imp_override";
 		dropitem "PB_DarkImpNether",255,1;
 		dropitem "PB_DarkImpVoid",255,1;
 		dropitem "PB_DarkImpNami",255,1;
 		dropitem "PB_DarkImpST",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_imp_override != "Disabled") {
-				toSpawn = pb_imp_override;
-				return;
-		}
-		if(pb_NoDarkImps && (toSpawn == "PB_DarkImpNether" || toSpawn == "PB_DarkImpVoid" || toSpawn == "PB_DarkImpNami" || toSpawn == "PB_DarkImpST"))
-			toSpawn = "PB_InfectedImp";
-			
-		if(pb_NoSavageImps && toSpawn == "PB_InfectedImp")
-			toSpawn = "PB_Imp1";
-		
+		if((toSpawn == "PB_DarkImpNether" || toSpawn == "PB_DarkImpVoid" || toSpawn == "PB_DarkImpNami" || toSpawn == "PB_DarkImpST") && pb_imp_filter & DisablePB_DarkImps)
+			return false;
+		return true;
 	}
 }
 
@@ -111,22 +80,46 @@ Class PB_ImpSpawner_T4 : PB_MonsterSpawner
 {
 	default
 	{
+		PBRandomSpawner.Fallback "PB_ImpSpawner_T3";
+		PBRandomSpawner.SpawnOverride "pb_imp_override";
 		dropitem "PB_DarkImpNether",255,1;
 		dropitem "PB_DarkImpVoid",255,1;
 		dropitem "PB_DarkImpNami",255,1;
 		dropitem "PB_DarkImpST",255,1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(pb_imp_override != "Disabled") {
-				toSpawn = pb_imp_override;
-				return;
-		}
-		if(pb_NoDarkImps && (toSpawn == "PB_DarkImpNether" || toSpawn == "PB_DarkImpVoid" || toSpawn == "PB_DarkImpNami" || toSpawn == "PB_DarkImpST"))
-			toSpawn = "PB_InfectedImp";
-			
-		if(pb_NoSavageImps && toSpawn == "PB_InfectedImp")
-			toSpawn = "PB_Imp1";
+		if((toSpawn == "PB_DarkImpNether" || toSpawn == "PB_DarkImpVoid" || toSpawn == "PB_DarkImpNami" || toSpawn == "PB_DarkImpST") && pb_imp_filter & DisablePB_DarkImps)
+			return false;
+		return true;
+	}
+}
 
+Class PB_ImpSpawner_DW : PB_MonsterSpawner
+{
+	default
+	{
+		PBRandomSpawner.SpawnOverride "pb_imp_override";
+		dropitem "DNImpVariant1",255,5;
+		dropitem "DNImpVariant2",255,4;
+		dropitem "DNImpVariant3",255,3;
+		dropitem "PB_Imp",255,6;
+		dropitem "PB_InfectedImp",255,10;
+		dropitem "PB_DarkImpNether",255,24;
+		dropitem "PB_DarkImpVoid",255,21;
+		dropitem "PB_DarkImpNami",255,19;
+		dropitem "PB_DarkImpST",255,7;
+	}
+	
+	override bool HandleSpawnExceptions(name toSpawn)
+	{
+		if((toSpawn == "DNImpVariant1" || toSpawn == "DNImpVariant2" || toSpawn == "DNImpVariant3") && pb_imp_filter & DisableDNImpVariants)
+			return false;
+		if(toSpawn == "PB_InfectedImp" && pb_imp_filter & DisablePB_InfectedImp)
+			return false;
+		if((toSpawn == "PB_DarkImpNether" || toSpawn == "PB_DarkImpVoid" || toSpawn == "PB_DarkImpNami" || toSpawn == "PB_DarkImpST") && pb_imp_filter & DisablePB_DarkImps)
+			return false;
+		return true;
 	}
 }

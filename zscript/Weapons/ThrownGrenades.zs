@@ -1,11 +1,18 @@
 mixin class PB_GrenadeTimer 
 {
-    const FUSE_LENGTH = 70.0;
+    double fuseLength;
+	property FuseLength : fuseLength;
 	
 	int grenadeTicks;
 	int nextBeepTime;
 	bool wentKaput;
 	Actor flareActor;
+	
+	string grenadeBeepSound;
+	property GrenadeBeepSound : grenadeBeepSound;
+
+	int beepDelay;
+	property BeepDelay : beepDelay;
 
 	int pbGrenadeDamage;
 	int pbGrenadeRange;
@@ -28,11 +35,11 @@ mixin class PB_GrenadeTimer
 			
 		if(grenadeTicks >= nextBeepTime)
 		{
-			A_StartSound("grenade/beep", CHAN_AUTO);
+			A_StartSound(grenadeBeepSound, CHAN_AUTO);
 			//A_SpawnItemEx("RedFlareSpawn");
 			
-			double delay = max(0.1 + 0.9 * ((FUSE_LENGTH - grenadeTicks) / FUSE_LENGTH), 0.15);
-			nextBeepTime = grenadeTicks + delay * 15;
+			double delay = max(0.1 + 0.9 * ((fuseLength - grenadeTicks) / fuseLength), 0.15);
+			nextBeepTime = grenadeTicks + delay * beepDelay;
 			// console.printf("%i %i %i %f", grenadeTicks, nextBeepTime, grenadeTime, delay);
 			
 			if(flareActor)
@@ -41,7 +48,7 @@ mixin class PB_GrenadeTimer
 		else if(flareActor)
 			flareActor.alpha *= 0.7;
 
-		if(grenadeTicks >= FUSE_LENGTH)
+		if(grenadeTicks >= fuseLength)
 			SetStateLabel("Explode");
 	}
 }
@@ -84,6 +91,9 @@ class PB_ThrownGrenade : Actor
 
 		PB_ThrownGrenade.GrenadeExplosionParams 120, 150;
 		PB_ThrownGrenade.FlareActorName 'PB_GrenadeWarningFlare_Green';
+		PB_ThrownGrenade.GrenadeBeepSound "grenade/beep";
+		PB_ThrownGrenade.FuseLength 70;
+		PB_ThrownGrenade.BeepDelay 15;
 	}
 	
 	override int SpecialBounceHit(Actor bounceMobj, Line bounceLine, readonly<SecPlane> bouncePlane)
@@ -96,9 +106,6 @@ class PB_ThrownGrenade : Actor
 		roll += frandom(-4.2, 4.2);
 		GrenadeBounceSmoke();
 		
-		if(pb_grenadeimpact && target && target.Player)
-			SetStateLabel("Explode");
-			
 		return Super.SpecialBounceHit(bounceMobj, bounceLine, bouncePlane);
 	}
 
@@ -163,12 +170,9 @@ class PB_ThrownGrenade : Actor
 				A_SpawnItemEx("PB_ExplosionFlames", zofs: 10, flags: SXF_NOCHECKPOSITION);
 				A_SpawnItemEx("NewExplosionFlare", zofs: 15, flags: SXF_NOCHECKPOSITION);
 				
-				if(pb_grenadeshrapnel)
+				for(int i = 0; i < 20; i++)
 				{
-					for(int i = 0; i < 20; i++)
-					{
-						A_SpawnProjectile("PB_Shrapnel", 0, 0, random (0, 360), 2, random (-90, 90));
-					}
+					A_SpawnProjectile("PB_Shrapnel", 0, 0, random (0, 360), 2, random (-90, 90));
 				}
 			}
 			TNT1 AAA 0
@@ -356,6 +360,26 @@ class PB_GrenadeWarningFlare_Red : PB_GrenadeWarningFlare_Green
 	}
 }
 
+class PB_GrenadeWarningFlare_Blue : PB_GrenadeWarningFlare_Green
+{
+	States
+	{
+		Spawn:
+			LENB B 1 bright;
+			Loop;
+	}
+}
+
+class PB_GrenadeWarningFlare_Yellow : PB_GrenadeWarningFlare_Green
+{
+	States
+	{
+		Spawn:
+			LENY B 1 bright;
+			Loop;
+	}
+}
+
 /*class PB_NewFragGrenadeExplosion : Actor
 {
 	Default
@@ -401,5 +425,89 @@ class PB_ExplosionFlames : PB_LightActor
 				Scale *= 1.05;
 			}
 			Stop;
+	}
+}
+
+class PB_ThrownStunGrenade : PB_ThrownGrenade
+{
+	string explosionActor;
+	property ExplosionActor : explosionActor;
+	
+	Default {
+		Scale 0.6;
+		BounceSound "StunGrenadeBounce";
+		
+		PB_ThrownGrenade.GrenadeExplosionParams 120, 150;
+		PB_ThrownGrenade.FlareActorName 'PB_GrenadeWarningFlare_Blue';
+		PB_ThrownGrenade.GrenadeBeepSound "";
+		PB_ThrownGrenade.FuseLength 35;
+		PB_ThrownGrenade.BeepDelay 8;
+		PB_ThrownStunGrenade.ExplosionActor "PB_StunGrenadeExplosion";
+	}
+
+	States
+	{
+
+		Spawn:
+			TNT1 A 0 NoDelay A_StartSound("StunGrenadeDetonate");
+			STNG A 1 A_SetRoll(roll += 15, SPF_INTERPOLATE);
+			Wait;
+		Death:
+			STNG Z 1 { 
+				A_SetRoll(0);
+				A_Explode(1, 128, XF_EXPLICITDAMAGETYPE, true, 128, 0, 0, NULL, 'Avoid');
+			}
+		DeathLoop:
+			STNG Z 1;
+			Loop;
+		Explode:
+			TNT1 A 0 {
+				if(flareActor)
+					flareActor.Destroy();
+				A_StopSound(4);
+				A_SpawnItemEx(explosionActor,0,0,1,0,0,0,0,SXF_NOCHECKPOSITION,0);
+			}
+			Stop;
+	}
+}
+
+class PB_StunGrenadeExplosion : Actor
+{
+	int expDmg;
+	int expRad;
+	string expType;
+	property props : expDmg, expRad, expType;
+	Default
+	{
+		+NOBLOCKMAP
+		+NOGRAVITY
+		+FORCEXYBILLBOARD
+		+SQUAREPIXELS
+		RenderStyle "Add";
+		Radius 2;
+		Height 2;
+		Scale 0.1;
+		PB_StunGrenadeExplosion.props 1, 300, "Stun";
+	}
+	States
+	{
+	Spawn:
+		TNT1 A 0 NoDelay A_StartSound("LGBOMB");
+		STFL ABCDEF 1 BRIGHT Light("LightningImpactLight") {
+			A_SetScale(Scale.X+0.24,Scale.Y+0.24);
+			A_SpawnProjectile("ElectroBlastTrail3",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(-180,180));
+		}
+		TNT1 A 0 {
+			A_SpawnItemEx("LightningGunPuff_Bigger");
+			A_SpawnItemEx("BlueFlare");
+			A_Explode(expDmg,expRad,XF_THRUSTLESS,false,expRad,damagetype:expType);
+			A_StartSound("STNBOEX");
+			for(int i = 0; i < 10; i++)
+			{
+				A_SpawnProjectile("ElectroBlastTrail3",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(-180,180));
+			}
+		}
+		XELC AABBCCDDEEFF 1 Bright Light("LightningImpactLight") A_SpawnProjectile("ElectroBlastTrail3",6,0,random(0,359),CMF_AIMDIRECTION|CMF_TRACKOWNER,random(-180,180));
+		Stop;
 	}
 }

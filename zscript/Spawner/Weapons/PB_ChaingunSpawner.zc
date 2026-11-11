@@ -1,45 +1,22 @@
-Class PBChaingunSpawner : PB_SpawnerBase //replaces Chaingun
+Class PBChaingunSpawner : PB_SpawnerBase
 {
-	default
-	{
-		scale 0.45;
-		-SHOOTABLE;
-		-COUNTKILL; 
-		-SOLID;
-		+NOTIMEFREEZE;
-		//CANPUSHWALLS;
-		//-CANUSEWALLS;
-		//-ACTIVATEMCROSS;
-		//-CANPASS;
-		-ISMONSTER;
-		+NODAMAGE;
-		-NOMENU;
-		Species "Minigunspawner";
-	}
 	States
 	{
-		CHAOTICRANDOM:
-			TNT1 A 0 A_Jump(256, "Tier4","Tier3", "Tier2", "Tier1");
+		Death:
+			TNT1 A 0 PB_SpawnerSpawn("PB_MGSpawnerDW");
 			Stop;
 		Tier4:
-			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_MGSpawnerT4",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_MGSpawnerT4");
 			Stop;
 		Tier3:
-			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_MGSpawnerT3",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_MGSpawnerT3");
 			Stop;
 		Tier2:
-			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_MGSpawnerT2",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_MGSpawnerT2");
 			Stop;
 		Tier1:
-			TNT1 A 0;
-			TNT1 A 0 A_SpawnItemEx("PB_MGSpawnerT1",flags:SXF_TRANSFERSPECIAL|SXF_TRANSFERAMBUSHFLAG|SXF_TRANSFERPOINTERS|288,tid:tid);
+			TNT1 A 0 PB_SpawnerSpawn("PB_MGSpawnerT1");
 			Stop;
-		Death:
-			TNT1 A 0;
-			Goto Spawn;
 	}
 }
 
@@ -48,13 +25,6 @@ class PB_MGSpawnerT1 : PB_WeaponSpawner
 	Default
 	{
 		DropItem 'PB_Minigun', 255, 1;
-		DropItem 'PB_Carbine', 255, 1;
-	}
-	
-	override void HandleSpawnExeptions(in out name toSpawn)
-	{
-		if(DisablePB_Carbine && toSpawn == "PB_Carbine")
-			toSpawn = "PB_Minigun";
 	}
 }
 
@@ -62,15 +32,15 @@ class PB_MGSpawnerT2 : PB_WeaponSpawner
 {
 	Default
 	{
-		DropItem 'PB_SMG', 255, 1;
-		DropItem 'PB_HDMRUpgrade', 255, 1;
+		PBRandomSpawner.Fallback 'PB_MGSpawnerT1';
+		DropItem 'PB_Carbine', 255, 1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(DisablePB_HDMRUpgrade && toSpawn == "PB_HDMRUpgrade")
-			toSpawn = "PB_SMG";
-		if(DisablePB_SMG && toSpawn == "PB_SMG")
-			toSpawn = "PB_Minigun";
+		if(toSpawn == "PB_Carbine" && pb_chaingun_filter & DisablePB_Carbine)
+			return false;
+		return true;
 	}
 }
 
@@ -78,18 +48,22 @@ class PB_MGSpawnerT3 : PB_WeaponSpawner
 {
 	Default
 	{
+		PBRandomSpawner.Fallback 'PB_MGSpawnerT2';
 		DropItem 'PB_Nailgun', 255, 1;
-		DropItem 'PB_SMG', 255, 1;
 		DropItem 'PB_HDMRUpgrade', 255, 1;
+		DropItem 'PB_MG42', 255, 1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(DisablePB_Nailgun && toSpawn == "PB_Nailgun")
-			toSpawn = "PB_HDMRUpgrade";
-		if(DisablePB_HDMRUpgrade && toSpawn == "PB_HDMRUpgrade")
-			toSpawn = "PB_SMG";
-		if(DisablePB_SMG && toSpawn == "PB_SMG")
-			toSpawn = "PB_Minigun";
+		if(toSpawn == "PB_Nailgun" && pb_chaingun_filter & DisablePB_Nailgun)
+			return false;
+		if(toSpawn == "PB_HDMRUpgrade" && pb_chaingun_filter & DisablePB_HDMRUpgrade)
+			return false;
+		//if we are in a mapset with a custom mg 42 spawn or there are no wolfss and the player has not enabled spawns on all maps, do not allow the mg 42
+		if(toSpawn == "PB_MG42" && (pb_chaingun_filter & DisablePB_MG42 || !pb_mg_42_chaingun_spawn && (!Handler.WSuSinMap || PB_EventHandler.GetPlayingWolfMaps())))
+			return false;
+		return true;
 	}
 }
 
@@ -97,14 +71,49 @@ class PB_MGSpawnerT4 : PB_WeaponSpawner
 {
 	Default
 	{
+		PBRandomSpawner.Fallback 'PB_MGSpawnerT3';
 		DropItem 'PB_LMG', 255, 1;
 		DropItem 'PB_MinigunUpgrade', 255, 1;
 	}
-	override void HandleSpawnExeptions(in out name toSpawn)
+	
+	override bool HandleSpawnExceptions(name toSpawn)
 	{
-		if(DisablePB_LMG && toSpawn == "PB_LMG")
-			toSpawn = "PB_MinigunUpgrade";
-		if(DisablePB_MinigunUpgrade && toSpawn == "PB_MinigunUpgrade")
-			toSpawn = "PB_Minigun";
+		if(toSpawn == "PB_LMG" && pb_chaingun_filter & DisablePB_LMG)
+			return false;
+		if(toSpawn == "PB_MinigunUpgrade" && pb_chaingun_filter & DisablePB_MinigunUpgrade)
+			return false;
+		return true;
+	}
+}
+
+class PB_MGSpawnerDW : PB_WeaponSpawner
+{
+	Default
+	{
+		DropItem 'PB_Minigun', 255, 72;
+		DropItem 'PB_Carbine', 255, 6;
+		DropItem 'PB_Nailgun', 255, 8;
+		DropItem 'PB_HDMRUpgrade', 255, 8;
+		DropItem 'PB_MG42', 255, 3;
+		DropItem 'PB_LMG', 255, 3;
+		DropItem 'PB_MinigunUpgrade', 255, 3;
+	}
+	
+	override bool HandleSpawnExceptions(name toSpawn)
+	{
+		if(toSpawn == "PB_Carbine" && pb_chaingun_filter & DisablePB_Carbine)
+			return false;
+		if(toSpawn == "PB_Nailgun" && pb_chaingun_filter & DisablePB_Nailgun)
+			return false;
+		if(toSpawn == "PB_HDMRUpgrade" && pb_chaingun_filter & DisablePB_HDMRUpgrade)
+			return false;
+		//if we are in a mapset with a custom mg 42 spawn or there are no wolfss and the player has not enabled spawns on all maps, do not allow the mg 42
+		if(toSpawn == "PB_MG42" && (pb_bfg_filter & DisablePB_MG42 || !pb_mg_42_chaingun_spawn && (!Handler.WSuSinMap || PB_EventHandler.GetPlayingWolfMaps())))
+			return false;
+		if(toSpawn == "PB_LMG" && pb_chaingun_filter & DisablePB_LMG)
+			return false;
+		if(toSpawn == "PB_MinigunUpgrade" && pb_chaingun_filter & DisablePB_MinigunUpgrade)
+			return false;
+		return true;
 	}
 }
