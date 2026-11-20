@@ -796,7 +796,7 @@ class equipmentCard
 {
 	//this function fills the respective arrays to correctly display the equipments in the wheel
  	//if any new equipment is added, create a new class inheriting from this class for the handler to catch it
-	virtual void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ownedtokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
+	virtual void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
 	{
 		return;
 	}
@@ -804,11 +804,10 @@ class equipmentCard
 
 class FragGrenCard : equipmentCard
 {
-	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ownedtokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
+	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
 	{
 		tags.push("$PB_FRAGGRENADE_TAG");
-		tokens.push("WW_FragGrenadeSelected");
-		ownedtokens.push("PB_GrenadeToken");
+		tokens.push("PB_FragGrenadeToken");
 		ammotypes.push("PB_GrenadeAmmo");
 		img.push("graphics/pywheel/Equip_Frag.png");
 		sx.push(1.3);
@@ -818,11 +817,10 @@ class FragGrenCard : equipmentCard
 
 class ShouldCanCard : equipmentCard
 {
-	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ownedtokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
+	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
 	{
 		tags.push("$PB_QUICKLAUNCHER_TAG");
-		tokens.push("WW_RevGunSelected");
-		ownedtokens.push("PB_QuickLauncherToken");
+		tokens.push("PB_QuickLauncherToken");
 		ammotypes.push("PB_QuickLauncherAmmo");
 		img.push("graphics/pywheel/Equip_RevGun.png");
 		sx.push(1.3);
@@ -832,11 +830,10 @@ class ShouldCanCard : equipmentCard
 
 class ProxMinCard : equipmentCard
 {
-	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ownedtokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
+	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
 	{
 		tags.push("$PB_PROXMINE_TAG");
-		tokens.push("WW_ProximityMineSelected");
-		ownedtokens.push("PB_ProxMineToken");
+		tokens.push("PB_ProxMineToken");
 		ammotypes.push("PB_ProxMineAmmo");
 		img.push("graphics/pywheel/Equip_Mine.png");
 		sx.push(1.3);
@@ -846,11 +843,10 @@ class ProxMinCard : equipmentCard
 
 Class StunGrenCard : equipmentCard
 {
-	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ownedtokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
+	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
 	{
 		tags.push("$PB_STUNGRENADE_TAG");
-		tokens.push("WW_StunGrenadeSelected");
-		ownedtokens.push("PB_StunGrenadeToken");
+		tokens.push("PB_StunGrenadeToken");
 		ammotypes.push("PB_StunGrenadeAmmo");
 		img.push("graphics/pywheel/Equip_Stun.png");
 		sx.push(1.3);
@@ -860,11 +856,10 @@ Class StunGrenCard : equipmentCard
 
 Class LeechCard : equipmentCard
 {
-	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ownedtokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
+	override void InfoFiller(out array<string> tags,out array<string> tokens,out array<string> ammotypes,out array<string>img,out array<double>sx,out array<double>sy)
 	{
 		tags.push("$PB_LEECH_TAG");
-		tokens.push("WW_LeechSelected");
-		ownedtokens.push("PB_LeechToken");
+		tokens.push("PB_LeechToken");
 		ammotypes.push("PB_DTech");
 		img.push("graphics/pywheel/Equip_Leech.png");
 		sx.push(1.3);

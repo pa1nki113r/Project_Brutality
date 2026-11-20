@@ -52,6 +52,13 @@ class gb_Changer play
 	player.mo.A_takeinventory(item,1);
   }
 
+  void setEquip(PlayerInfo player, string item)	//added to, well, give items to the player
+  {
+	let plr = PlayerPawnBase(player.mo);
+	if(!plr) return;
+	plr.selectedEquipment = PB_Equipment(plr.FindInventory(item));
+  }
+  
   static
   void setAngles(PlayerInfo player, double pitch, double angle)
   {
