@@ -462,7 +462,7 @@ class gb_EventHandler : EventHandler
 				gb_Sender.sendGiveItemEvent(mspecialsmenu.ConfirmSelection());	break;
 			case gb_activity.Equipments:
 				gb_Sender.sendGiveItemEvent("ToggleEquipment");	
-				gb_Sender.sendGiveItemEvent(mEquipmenu.ConfirmSelection());		break;
+				gb_Sender.sendSetEquipEvent(mEquipmenu.ConfirmSelection());	break;
 		}
 	}
 

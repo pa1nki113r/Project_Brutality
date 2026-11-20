@@ -78,7 +78,7 @@ Class gb_equipmentmenu
 			{
 				let eq = equipmentCard(new(AllClasses[i]));
 				if(eq)
-					eq.InfoFiller(tags,token,ownedtoken,ammotype,img,scalex,scaley);
+					eq.InfoFiller(tags,token,ammotype,img,scalex,scaley);
 			}
 		}
 	}
@@ -89,7 +89,7 @@ Class gb_equipmentmenu
 		helditems.clear();
 		for(int i = 0; i < tags.size(); i++)
 		{
-			if(player.FindInventory(ownedtoken[i]))
+			if(player.FindInventory(token[i]))
 			{
 				viewModel.tags        .push(tags[i]);
 				viewModel.slots       .push(i + 1);
@@ -111,7 +111,6 @@ Class gb_equipmentmenu
 	array <int> helditems;
 	array <string> tags;
 	array <string> token;
-	array <string> ownedtoken;
 	array <string> ammotype;
 	array <string> img;
 	array <double> scalex;

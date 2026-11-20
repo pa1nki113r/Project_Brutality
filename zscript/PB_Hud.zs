@@ -1442,25 +1442,10 @@ class PB_Hud_ZS : BaseStatusBar
 				//Equipment
 				PBHud_DrawImage("EQUPBO", (-15, -17), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_RIGHT_BOTTOM, playerBoxAlpha);
 				
-				if(CheckInventory("FragGrenadeSelected")) {
-					PBHud_DrawImage("ALISTGRN", (-46, -45), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_CENTER, scale: (0.8, 0.8));
-					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_GrenadeAmmo")), (-47, -33), DI_TEXT_ALIGN_CENTER, Font.CR_GREEN, scale: (0.8, 0.8));
-				}
-				else if(CheckInventory("ProximityMineSelected")) {
-					PBHud_DrawImage("ALISTMIN", (-46, -45), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_CENTER, scale: (0.8, 0.8));
-					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_ProxMineAmmo")), (-47, -33), DI_TEXT_ALIGN_CENTER, Font.CR_PURPLE, scale: (0.8, 0.8));
-				}
-				else if(CheckInventory("StunGrenadeSelected")) {
-					PBHud_DrawImage("ALISTSTN", (-46, -45), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_CENTER, scale: (0.8, 0.8));
-					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_StunGrenadeAmmo")), (-47, -33), DI_TEXT_ALIGN_CENTER, Font.CR_CYAN, scale: (0.8, 0.8));
-				}
-				else if(CheckInventory("RevGunSelected")) {
-					PBHud_DrawImage("ALISTREV", (-46, -45), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_CENTER, scale: (0.8, 0.8));
-					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_QuickLauncherAmmo")), (-47, -33), DI_TEXT_ALIGN_CENTER, Font.CR_LIGHTBLUE, scale: (0.8, 0.8));
-				}
-				else if(CheckInventory("LeechSelected")) {
-					PBHud_DrawImage("ALISTLCH", (-46, -45), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_CENTER, scale: (0.8, 0.8));
-					PBHud_DrawString(mBoldFont, Formatnumber(GetAmount("PB_DTech")), (-47, -33), DI_TEXT_ALIGN_CENTER, cachedFontColors[DTECHAMMO], scale: (0.8, 0.8));
+				let equip = PlayerPawnBase(plr).selectedEquipment;
+				if(equip) {
+					PBHud_DrawImage(TexMan.GetName(GetIcon(equip, 0)), (-46, -45), DI_SCREEN_RIGHT_BOTTOM | DI_ITEM_CENTER, scale: (0.8, 0.8));
+					PBHud_DrawString(mBoldFont, Formatnumber(plr.CountInv(equip.ammoType)), (-47, -33), DI_TEXT_ALIGN_CENTER, Font.FindFontColor(equip.fontColor), scale: (0.8, 0.8));
 				}
 			}
 
