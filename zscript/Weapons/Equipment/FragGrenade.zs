@@ -10,52 +10,39 @@ class PB_FragGrenadeToken : PB_Equipment {
 	
 	States {
 	UseEquipment:
-		TNT1 A 0 A_Giveinventory("PlayerIsThrowingAGrenade",1);
-		HNDF ABCDE 1 A_SetRoll(roll+2.0, SPF_INTERPOLATE);
-		HNDF FGHI 1 {
-			A_SetRoll(roll+2.0, SPF_INTERPOLATE);
-			if(JustPressed(BT_USER1)) {
-				A_GiveInventory("UseEquipment",1);
-			}
-		}
+		TNT1 A 0 A_GiveInventory("PlayerIsThrowingAGrenade",1);
+		HNDF ABCDE 1 PB_SetRoll(roll+2.0);
+		TNT1 A 0 A_DoubleTapFlag();
+		HNDF FGHI 1 PB_SetRoll(roll+2.0);
 		TNT1 A 0 A_StartSound("OPNGRN",0);
-		HNDF JKLMNOPQR 1 {
-			A_SetRoll(roll+2.0, SPF_INTERPOLATE);
-			if(JustPressed(BT_USER1)) {
-				A_GiveInventory("UseEquipment",1);
-			}
-		}
-		TNT1 A 0 A_JumpIfInventory("UseEquipment", 1, "TossGrenade");
-		TNT1 A 1 A_SetRoll(roll-18.0);
+		HNDF JKLMNOPQR 1;
+		TNT1 A 0 A_JumpIf(HasDoubleTapped(), "TossGrenade");
+		TNT1 A 1 PB_SetRoll(roll-18.0);
 		HND1 I 1 A_StartSound("THRGRN",0);
 		HND1 J 1 {
-			A_FireProjectile("PB_ThrownGrenade",0,0,0,0,0,0);
+			A_FireProjectile("PB_ThrownGrenade");
 			A_TakeInventory("PB_GrenadeAmmo", 1, TIF_NOTAKEINFINITE);
-			A_FireProjectile("Alerter",0,0,0,0,0,0);
+			A_FireProjectile("Alerter");
 		}
-		HND1 KLMNOPQ 1 A_SetRoll(roll-5.0);
+		HND1 KLMNOPQ 1 PB_SetRoll(roll-5.0);
 		TNT1 A 0 {
-			A_SetRoll(0, SPF_INTERPOLATE);
-			A_TakeInventory("UseEquipment", 1);
-			A_TakeInventory("ToggleEquipment", 1);
+			PB_SetRoll(0);
 			A_TakeInventory("PlayerIsThrowingAGrenade", 1);
 		}
 		TNT1 A 0 PB_ReThrow();
 		Stop;
 	TossGrenade:
 		TNT1 A 1;
-		HND1 RSTU 1 A_SetRoll(roll-1.5, SPF_INTERPOLATE);
+		HND1 RSTU 1 PB_SetRoll(roll-1.5);
 		TNT1 A 0 {
 			A_StartSound("THRGRN", 1);
 			A_TakeInventory("PB_GrenadeAmmo", 1, TIF_NOTAKEINFINITE);
-			A_FireProjectile("Alerter",0,0,0,0,0,0);
-			A_FireProjectile("ThrownGrenade15", 0,0,0,-2,0,3);
+			A_FireProjectile("Alerter");
+			A_FireProjectile("ThrownGrenade15", spawnheight:-2, pitch:3);
 		}
-		HND1 VWXY 1 A_SetRoll(roll-1.5, SPF_INTERPOLATE);
+		HND1 VWXY 1 PB_SetRoll(roll-1.5);
 		TNT1 A 0 {
-			A_SetRoll(0);
-			A_TakeInventory("UseEquipment", 1);
-			A_TakeInventory("ToggleEquipment", 1);
+			PB_SetRoll(0);
 			A_TakeInventory("PlayerIsThrowingAGrenade", 1);
 		}
 		TNT1 A 0 PB_ReThrow();

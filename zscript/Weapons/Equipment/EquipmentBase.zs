@@ -4,6 +4,7 @@ class PB_Equipment : CustomInventory abstract {
 		self.AmmoUse 1;
 		self.SelectString "YOU NEED TO SET THIS TO SOMETHING";
 		self.FailString "YOU NEED TO SET THIS TO SOMETHING";
+		self.MuzzleSmokeColor "FFFFFF";
 	}
 	
 	name fontColor;
@@ -27,6 +28,19 @@ class PB_Equipment : CustomInventory abstract {
 	bool handless;
 	property Handless : handless;
 	
+	string smokeColor;
+	property MuzzleSmokeColor : smokeColor;
+	
+	bool canDoubleTap;
+	bool doubleTapped;
+	
+	override void DoEffect() {
+		super.DoEffect();
+		if(canDoubleTap && owner.player.cmd.buttons & BT_USER1 && !(owner.player.oldbuttons & BT_USER1)) {
+			doubleTapped = true;
+		}
+	}
+	
 	virtual bool UseEquipment() {
 		if(owner.CountInv(ammoType) >= ammoUse) {
 			Use(false);
@@ -42,6 +56,16 @@ class PB_Equipment : CustomInventory abstract {
 		if(!PressingUser1() || !invoker.UseEquipment()) {
 			player.SetPSprite(1, player.readyweapon.ResolveState("GoingToReady2"));
 		}
+	}
+	
+	action void A_DoubleTapFlag(bool set = true) {
+		invoker.canDoubleTap = set;
+	}
+	
+	action bool HasDoubleTapped() {
+		bool doubleTapped = invoker.doubleTapped;
+		invoker.canDoubleTap = invoker.doubleTapped = false;
+		return doubleTapped;
 	}
 	
 	//functions from pb_weaponbase
@@ -80,12 +104,30 @@ class PB_Equipment : CustomInventory abstract {
 		roll += addRoll;
 	}
 	
+	//[Pop]This function is so we can replace all of the shitty A_Quake or QuakeEx
+	//whatever the fucks in the mod, ESPECIALLY on the weapon front
+	//no more of these SHAKEYOURASSMINOR and SHAKEYOURASSMAJOR actor spawning garbage
+	//its pretty bare bones but maybe we can extend it in the future if we need it
+	action void PB_QuakeCamera(int qDur, float camRoll)
+	{
+		A_QuakeEx(0, 0, 0, qDur, 0, 100, "", 0, 1, 0, 0, 0, 0, (camRoll / 2), 1, 0, 0, 0);
+		//also, camroll / 2, 2 should be made a scaling CVar at some point, or attach it to some other cvar
+		//DONT FORGET DIPSHIT
+	}
+	
+	//Checks if the owner has a berserk
+	bool OwnerHasBerserk()
+	{
+		return (owner.CountInv("PB_PowerStrength") >= 1);
+	}
+	
 	//Set weapon recoil, factoring in the recoil multiplier cvar
 	//Normally you want to use PB_WeaponRecoil instead, because it accounts for the berserk powerup
 	action void PB_WeaponRecoilBasic(float pitchDelta, float angleDelta = 0)
 	{
 		double fac = 1.0;
-		if (invoker.GunBraced)
+		bool GunBraced = PB_WeaponBase(player.readyweapon).GunBraced;
+		if (GunBraced)
 		{
 			fac *= 0.33;
 		}
@@ -107,7 +149,7 @@ class PB_Equipment : CustomInventory abstract {
 	action void PB_SpawnCasing(class<Actor> casing, double xOfs = 0, double horOfs = 0, double vertOfs = 0, double xSpeed = 0, double horSpeed = 0, double vertSpeed = 0, bool ejectionSmoke = true, bool sparks = false)
 	{
 		vertOfs -= (self.player.viewz - self.pos.z) / self.player.CrouchFactor;
-        horOfs *= invoker.WeaponScaleX;
+        horOfs *= player.readyweapon.WeaponScaleX;
 		double fovOfs = (120 - self.player.desiredfov) / 3.f; // good enough
 		
 		PlayerPawnBase plr = PlayerPawnBase(self);
@@ -221,6 +263,7 @@ class PB_Equipment : CustomInventory abstract {
 	States {
 	Use:
 		TNT1 A 0 {
+			HasDoubleTapped();
 			A_Overlay(-90, "UseEquipment");
 			A_OverlayOffset(-90); //no args resets it to default position.
 		}

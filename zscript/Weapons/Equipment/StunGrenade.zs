@@ -18,10 +18,6 @@ class PB_StunGrenadeToken : PB_Equipment {
 		TNT1 A 0 A_TakeInventory("PB_StunGrenadeAmmo", 1, TIF_NOTAKEINFINITE);
 		HND1 J 1 A_FireProjectile("PB_ThrownStunGrenade",0,0,0,0,0,0);
 		HND1 KLMNOPQ 1;
-		TNT1 A 0 {
-			A_TakeInventory("UseEquipment", 1);
-			A_TakeInventory("ToggleEquipment", 1);
-		}
 		TNT1 A 0 PB_ReThrow();
 		Stop;
 	}
