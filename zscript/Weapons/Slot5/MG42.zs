@@ -203,10 +203,7 @@ class PB_MG42 : PB_WeaponBase
 			Loop;
 
 		WeaponRespect:
-			TNT1 A 0 {
-				A_SetCrosshair(-1);
-				A_PlaySound("weapons/MG42/Select");
-			}
+			TNT1 A 0 A_SetCrosshair(-1);
 			MGR1 ABCDEFGHIJKLMNOPQRST 1 A_DoPBWeaponAction();
 			TNT1 A 0 A_PlaySound("MG42OP");
 			MGR1 UVWXYZ 1 A_DoPBWeaponAction();
