@@ -18,10 +18,6 @@ class PB_ProxMineToken : PB_Equipment {
 			A_TakeInventory("PB_ProxMineAmmo", 1, TIF_NOTAKEINFINITE);
 		}
 		XHFF MNOPQRSTUVWXYZ 1;
-		TNT1 A 0 {
-			A_TakeInventory("UseEquipment", 1);
-			A_TakeInventory("ToggleEquipment", 1);
-		}
 		TNT1 A 0 PB_ReThrow();
 		Stop;
 	}

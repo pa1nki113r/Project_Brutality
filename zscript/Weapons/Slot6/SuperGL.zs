@@ -13,7 +13,7 @@ Class PB_SuperGL : PB_WeaponBase
 		Weapon.AmmoUse1 0;
 		Weapon.AmmoUse2 0;
 		Weapon.AmmoGive2 0;
-		Weapon.AmmoGive1 2;
+		Weapon.AmmoGive1 6;
 		Weapon.AmmoType1 "PB_RocketAmmo";
 		Weapon.AmmoType2 "PB_SuperGLMag";
 		Inventory.PickupSound "misc/rockboxa";

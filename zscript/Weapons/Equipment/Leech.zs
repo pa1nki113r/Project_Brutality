@@ -6,6 +6,7 @@ class PB_LeechToken : PB_Equipment {
 		PB_Equipment.SelectString "$PB_LEECH_WHEEL";
 		PB_Equipment.SelectSound "SiphonGrowl";
 		PB_Equipment.FailString "$PB_LEECH_OUT";
+		PB_Equipment.AmmoUse 4;
 	}
 	
 	States {
@@ -25,21 +26,23 @@ class PB_LeechToken : PB_Equipment {
 			A_StartSound("SiphonHold",3,CHANF_LOOPING);
 			A_FireBullets(0, 0, -1, 3, "SiphonPuff", FBF_NORANDOM|FBF_NOFLASH);
 			A_TakeInventory("PB_Dtech", 4, TIF_NOTAKEINFINITE);
+			if(PressingUser1()) {
+				if(CountInv("PB_DTech") > 4) {
+					return resolvestate(null);
+				}
+				else {
+					A_Print("$PB_LEECH_OUT");
+				}
+			}
+			return resolvestate("FinishLeech");
 		}
-		TNT1 A 0 A_JumpIf(CountInv("PB_Dtech") > 4 && PressingUser1(), "HoldLeech");
+		Loop;
+	FinishLeech:
 		TNT1 A 0 {
 			A_StopSound(3);
 			A_ClearOverlays(-91,-91);
-			if(CountInv("PB_Dtech") < 4 && PressingUser1()) {
-				A_Print("$PB_LEECH_OUT");
-			}
 		}
 		SYNP ONMLK 1;
-		TNT1 A 0 {
-			A_WeaponOffset(0,32);
-			A_TakeInventory("UseEquipment", 1);
-			A_TakeInventory("ToggleEquipment", 1);
-		}
 		TNT1 A 0 PB_ReThrow();
 		Stop;
 	}
